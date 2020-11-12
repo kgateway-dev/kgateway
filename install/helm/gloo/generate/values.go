@@ -28,9 +28,9 @@ type Global struct {
 	Image      *Image      `json:"image,omitempty"`
 	Extensions interface{} `json:"extensions,omitempty"`
 	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
-	GlooStats  Stats       `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
-	GlooMtls   Mtls        `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication (currently just Gloo to Envoy communication)"`
-	IstioSDS   IstioSDS    `json:"istioSDS,omitempty" desc:"Config used for installing Gloo with Istio SDS cert rotation features to facilitate Istio mTLS"`
+	GlooStats  Stats       `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo Edge pods. Can be overridden by individual deployments"`
+	GlooMtls   Mtls        `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication"`
+	IstioSDS   IstioSDS    `json:"istioSDS,omitempty" desc:"Config used for installing Gloo Edge with Istio SDS cert rotation features to facilitate Istio mTLS"`
 }
 
 type Namespace struct {
@@ -38,14 +38,14 @@ type Namespace struct {
 }
 
 type Crds struct {
-	Create bool `json:"create" desc:"create CRDs for Gloo (turn off if installing with Helm to a
-cluster that already has Gloo CRDs). This field is deprecated and is included only to ensure backwards-compatibility with Helm 2."`
+	Create bool `json:"create" desc:"create CRDs for Gloo Edge (turn off if installing with Helm to a
+cluster that already has Gloo Edge CRDs). This field is deprecated and is included only to ensure backwards-compatibility with Helm 2."`
 }
 
 type Rbac struct {
 	Create     bool   `json:"create" desc:"create rbac rules for the gloo-system service account"`
 	Namespaced bool   `json:"namespaced" desc:"use Roles instead of ClusterRoles"`
-	NameSuffix string `json:"nameSuffix" desc:"When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'"`
+	NameSuffix string `json:"nameSuffix" desc:"When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo Edge RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'"`
 }
 
 // Common
@@ -88,7 +88,7 @@ type DeploymentSpec struct {
 type Integrations struct {
 	Knative                 *Knative                 `json:"knative,omitEmpty"`
 	Consul                  *Consul                  `json:"consul,omitEmpty" desc:"Consul settings to inject into the consul client on startup"`
-	ConsulUpstreamDiscovery *ConsulUpstreamDiscovery `json:"consulUpstreamDiscovery,omitEmpty" desc:"Settings for gloo's behavior when discovering consul services and creating upstreams for them."`
+	ConsulUpstreamDiscovery *ConsulUpstreamDiscovery `json:"consulUpstreamDiscovery,omitEmpty" desc:"Settings for Gloo Edge's behavior when discovering consul services and creating upstreams for them."`
 }
 
 type Consul struct {
@@ -105,16 +105,16 @@ type Consul struct {
 	ServiceDiscovery   *ServiceDiscoveryOptions `json:"serviceDiscovery,omitEmpty" desc:"Enable Service Discovery via Consul with this field set to empty struct '{}' to enable with defaults"`
 	HttpAddress        string                   `json:"httpAddress,omitEmpty" desc:"The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500."`
 	DnsAddress         string                   `json:"dnsAddress,omitEmpty" desc:"The address of the DNS server used to resolve hostnames in the Consul service address. Used by service discovery (required when Consul service instances are stored as DNS names). Defaults to 127.0.0.1:8600. (the default Consul DNS server)"`
-	DnsPollingInterval *Duration                `json:"dnsPollingInterval,omitEmpty" desc:"The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s."`
+	DnsPollingInterval *Duration                `json:"dnsPollingInterval,omitEmpty" desc:"The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo Edge will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s."`
 }
 
 type ServiceDiscoveryOptions struct {
-	DataCenters []string `json:"dataCenters,omitEmpty" desc:"Use this parameter to restrict the data centers that will be considered when discovering and routing to services. If not provided, Gloo will use all available data centers."`
+	DataCenters []string `json:"dataCenters,omitEmpty" desc:"Use this parameter to restrict the data centers that will be considered when discovering and routing to services. If not provided, Gloo Edge will use all available data centers."`
 }
 
 type ConsulUpstreamDiscovery struct {
-	UseTlsDiscovery  bool         `json:"useTlsDiscovery,omitEmpty" desc:"Allow gloo to automatically apply tls to consul services that are tagged the tlsTagName value. Requires RootCaResourceNamespace and RootCaResourceName to be set if true."`
-	TlsTagName       string       `json:"tlsTagName,omitEmpty" desc:"The tag gloo should use to identify consul services that ought to use TLS. If splitTlsServices is true, then this tag is also used to sort serviceInstances into the tls upstream. Defaults to 'glooUseTls'."`
+	UseTlsDiscovery  bool         `json:"useTlsDiscovery,omitEmpty" desc:"Allow Gloo Edge to automatically apply tls to consul services that are tagged the tlsTagName value. Requires RootCaResourceNamespace and RootCaResourceName to be set if true."`
+	TlsTagName       string       `json:"tlsTagName,omitEmpty" desc:"The tag Gloo Edge should use to identify consul services that ought to use TLS. If splitTlsServices is true, then this tag is also used to sort serviceInstances into the tls upstream. Defaults to 'glooUseTls'."`
 	SplitTlsServices bool         `json:"splitTlsServices,omitEmpty" desc:"If true, then create two upstreams to be created when a consul service contains the tls tag; one with TLS and one without."`
 	DiscoveryRootCa  *ResourceRef `json:"discoveryRootCa" desc:"The name/namespace of the root CA needed to use TLS with consul services."`
 }
@@ -133,7 +133,7 @@ type Duration struct {
 
 type Knative struct {
 	Enabled                    *bool             `json:"enabled" desc:"enabled knative components"`
-	Version                    *string           `json:"version,omitEmpty" desc:"the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
+	Version                    *string           `json:"version,omitEmpty" desc:"the version of knative installed to the cluster. if using version < 0.8.0, Gloo Edge will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
 	Proxy                      *KnativeProxy     `json:"proxy,omitempty"`
 	RequireIngressClass        *bool             `json:"requireIngressClass" desc:"only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'."`
 	ExtraKnativeInternalLabels map[string]string `json:"extraKnativeInternalLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative internal deployment."`
@@ -152,29 +152,29 @@ type KnativeProxy struct {
 }
 
 type Settings struct {
-	WatchNamespaces               []string             `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for gloo to watch for services and CRDs. Empty list means all namespaces"`
-	WriteNamespace                string               `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Discovery."`
+	WatchNamespaces               []string             `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces"`
+	WriteNamespace                string               `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery."`
 	Integrations                  *Integrations        `json:"integrations,omitempty"`
-	Create                        bool                 `json:"create" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers"`
+	Create                        bool                 `json:"create" desc:"create a Settings CRD which provides bootstrap configuration to Gloo Edge controllers"`
 	Extensions                    interface{}          `json:"extensions,omitempty"`
 	SingleNamespace               bool                 `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
-	InvalidConfigPolicy           *InvalidConfigPolicy `json:"invalidConfigPolicy,omitempty" desc:"Define policies for Gloo to handle invalid configuration"`
-	Linkerd                       bool                 `json:"linkerd" desc:"Enable automatic Linkerd integration in Gloo."`
-	DisableProxyGarbageCollection bool                 `json:"disableProxyGarbageCollection" desc:"Set this option to determine the state of an Envoy listener when the corresponding Gloo Proxy resource has no routes. If false (default), Gloo will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes. If true, Gloo will keep serving the routes from the last applied valid configuration."`
-	DisableKubernetesDestinations bool                 `json:"disableKubernetesDestinations" desc:"Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result in significant overhead. If you do not plan on using this feature, you can set this flag to true to turn it off."`
+	InvalidConfigPolicy           *InvalidConfigPolicy `json:"invalidConfigPolicy,omitempty" desc:"Define policies for Gloo Edge to handle invalid configuration"`
+	Linkerd                       bool                 `json:"linkerd" desc:"Enable automatic Linkerd integration in Gloo Edge"`
+	DisableProxyGarbageCollection bool                 `json:"disableProxyGarbageCollection" desc:"Set this option to determine the state of an Envoy listener when the corresponding Proxy resource has no routes. If false (default), Gloo Edge will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes. If true, Gloo Edge will keep serving the routes from the last applied valid configuration."`
+	DisableKubernetesDestinations bool                 `json:"disableKubernetesDestinations" desc:"Gloo Edge allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo Edge scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo Edge is watching, this can result in significant overhead. If you do not plan on using this feature, you can set this flag to true to turn it off."`
 	Aws                           AwsSettings          `json:"aws,omitempty"`
-	RateLimit                     interface{}          `json:"rateLimit,omitempty" desc:"Partial config for GlooE’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes."`
+	RateLimit                     interface{}          `json:"rateLimit,omitempty" desc:"Partial config for Gloo Edge Enterprise’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes."`
 	EnableRestEds                 bool                 `json:"enableRestEds,omitempty" desc:"Whether or not to use rest xds for all EDS by default. Set to true by default in versions > v1.6.0."`
 }
 
 type AwsSettings struct {
-	EnableCredentialsDiscovery      bool   `json:"enableCredentialsDiscovery" desc:"Enable AWS credentials discovery in Envoy for lambda requests. If enableServiceAccountCredentials is also set, it will take precedence as only one may be enabled in Gloo "`
-	EnableServiceAccountCredentials bool   `json:"enableServiceAccountCredentials" desc:"Use ServiceAccount credentials to authenticate lambda requests. If enableCredentialsDiscovery is also set, this will take precedence as only one may be enabled in Gloo"`
+	EnableCredentialsDiscovery      bool   `json:"enableCredentialsDiscovery" desc:"Enable AWS credentials discovery in Envoy for lambda requests. If enableServiceAccountCredentials is also set, it will take precedence as only one may be enabled in Gloo Edge"`
+	EnableServiceAccountCredentials bool   `json:"enableServiceAccountCredentials" desc:"Use ServiceAccount credentials to authenticate lambda requests. If enableCredentialsDiscovery is also set, this will take precedence as only one may be enabled in Gloo Edge"`
 	StsCredentialsRegion            string `json:"stsCredentialsRegion" desc:"Regional endpoint to use for AWS STS requests. If empty will default to global sts endpoint."`
 }
 
 type InvalidConfigPolicy struct {
-	ReplaceInvalidRoutes     bool   `json:"replaceInvalidRoutes,omitempty" desc:"Rather than pausing configuration updates, in the event of an invalid Route defined on a virtual service or route table, Gloo will serve the route with a predefined direct response action. This allows valid routes to be updated when other routes are invalid."`
+	ReplaceInvalidRoutes     bool   `json:"replaceInvalidRoutes,omitempty" desc:"Rather than pausing configuration updates, in the event of an invalid Route defined on a virtual service or route table, Gloo Edge will serve the route with a predefined direct response action. This allows valid routes to be updated when other routes are invalid."`
 	InvalidRouteResponseCode int64  `json:"invalidRouteResponseCode,omitempty" desc:"the response code for the direct response"`
 	InvalidRouteResponseBody string `json:"invalidRouteResponseBody,omitempty" desc:"the response body for the direct response"`
 }
@@ -211,12 +211,12 @@ type DiscoveryDeployment struct {
 	FloatingUserId       bool              `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser            float64           `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	FsGroup              float64           `json:"fsGroup" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
-	ExtraDiscoveryLabels map[string]string `json:"extraDiscoveryLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo discovery deployment."`
+	ExtraDiscoveryLabels map[string]string `json:"extraDiscoveryLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge discovery deployment."`
 	*DeploymentSpec
 }
 
 type Gateway struct {
-	Enabled                       *bool              `json:"enabled" desc:"enable Gloo API Gateway features"`
+	Enabled                       *bool              `json:"enabled" desc:"enable Gloo Edge API Gateway features"`
 	Validation                    *GatewayValidation `json:"validation" desc:"enable Validation Webhook on the Gateway. This will cause requests to modify Gateway-related Custom Resources to be validated by the Gateway."`
 	Deployment                    *GatewayDeployment `json:"deployment,omitempty"`
 	CertGenJob                    *CertGenJob        `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
@@ -232,7 +232,7 @@ type ServiceAccount struct {
 }
 
 type GatewayValidation struct {
-	Enabled               bool     `json:"enabled" desc:"enable Gloo API Gateway validation hook (default true)"`
+	Enabled               bool     `json:"enabled" desc:"enable Gloo Edge API Gateway validation hook (default true)"`
 	AlwaysAcceptResources bool     `json:"alwaysAcceptResources" desc:"unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright."`
 	AllowWarnings         bool     `json:"allowWarnings" desc:"set this to false in order to ensure validation webhook rejects resources that would have warning status or rejected status, rather than just rejected."`
 	SecretName            string   `json:"secretName" desc:"Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled."`
@@ -249,7 +249,7 @@ type GatewayDeployment struct {
 	Stats              *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway pod"`
 	FloatingUserId     bool              `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser          float64           `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
-	ExtraGatewayLabels map[string]string `json:"extraGatewayLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo gateway deployment."`
+	ExtraGatewayLabels map[string]string `json:"extraGatewayLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway deployment."`
 	*DeploymentSpec
 }
 
@@ -329,7 +329,7 @@ type GatewayProxyPodTemplate struct {
 	GracefulShutdown              *GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
 	TerminationGracePeriodSeconds int                   `json:"terminationGracePeriodSeconds" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info"`
 	CustomReadinessProbe          *appsv1.Probe         `json:"customReadinessProbe,omitEmpty"`
-	ExtraGatewayProxyLabels       map[string]string     `json:"extraGatewayProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo gateway proxy deployment."`
+	ExtraGatewayProxyLabels       map[string]string     `json:"extraGatewayProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment."`
 }
 
 type GracefulShutdownSpec struct {
@@ -370,10 +370,10 @@ type AccessLogger struct {
 	Port                    uint              `json:"port,omitempty"`
 	ServiceName             string            `json:"serviceName,omitempty"`
 	Enabled                 bool              `json:"enabled"`
-	Stats                   *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
+	Stats                   *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the access logging pod"`
 	RunAsUser               float64           `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	FsGroup                 float64           `json:"fsGroup" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
-	ExtraAccessLoggerLabels map[string]string `json:"extraAccessLoggerLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo access logger deployment."`
+	ExtraAccessLoggerLabels map[string]string `json:"extraAccessLoggerLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the access logger deployment."`
 	*DeploymentSpec
 }
 
@@ -385,7 +385,7 @@ type Ingress struct {
 	Enabled             *bool              `json:"enabled"`
 	Deployment          *IngressDeployment `json:"deployment,omitempty"`
 	RequireIngressClass *bool              `json:"requireIngressClass" desc:"only serve traffic for Ingress objects with the Ingress Class annotation 'kubernetes.io/ingress.class'. By default the annotation value must be set to 'gloo', however this can be overriden via customIngressClass."`
-	CustomIngress       *bool              `json:"customIngressClass" desc:"Only relevant when requireIngressClass is set to true. Setting this value will cause the Gloo Ingress Controller to process only those Ingress objects which have their ingress class set to this value (e.g. 'kubernetes.io/ingress.class=SOMEVALUE')."`
+	CustomIngress       *bool              `json:"customIngressClass" desc:"Only relevant when requireIngressClass is set to true. Setting this value will cause the Gloo Edge Ingress Controller to process only those Ingress objects which have their ingress class set to this value (e.g. 'kubernetes.io/ingress.class=SOMEVALUE')."`
 }
 
 type IngressDeployment struct {
@@ -459,6 +459,6 @@ type EnvoySidecarContainer struct {
 }
 
 type IstioSDS struct {
-	Enabled        bool          `json:"enabled,omitempty" desc:"Enables SDS cert-rotator sidecar for istio mTLS cert rotation`
+	Enabled        bool          `json:"enabled,omitempty" desc:"Enables SDS cert-rotator sidecar for istio mTLS cert rotation"`
 	CustomSidecars []interface{} `json:"customSidecars,omitempty" desc:"Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if IstioSDS.enabled is false"`
 }

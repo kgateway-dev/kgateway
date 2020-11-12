@@ -25,7 +25,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-var _ = Describe("Installing gloo in gloo mtls mode", func() {
+var _ = Describe("Installing gloo edge in mtls mode", func() {
 
 	var (
 		ctx    context.Context

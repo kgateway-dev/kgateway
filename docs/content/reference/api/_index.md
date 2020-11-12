@@ -1,6 +1,6 @@
 ---
 title: "API Reference"
-description: Reference documentation for the Gloo API
+description: Reference documentation for the Gloo Edge API
 weight: 10
 ---
 
@@ -8,11 +8,11 @@ weight: 10
 
 
 
-### API Reference for Gloo, The Hybrid Application Gateway
+### API Reference for Gloo Edge, The Hybrid Application Gateway
 
 API Version: `gloo.solo.io.v1`
 
-Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway built on top of Envoy. Gloo is designed for microservice, monolithic, and serverless applications. By employing function-level routing, Gloo can completely decouple client APIs from upstream APIs at the routing level. Gloo serves as an abstraction layer between clients and upstream services, allowing front-end teams to work independently of teams developing the microservices their apps connect to.
+Gloo Edge is a high-performance, plugin-extendable, platform-agnostic API Gateway built on top of Envoy. Gloo Edge is designed for microservice, monolithic, and serverless applications. By employing function-level routing, Gloo Edge can completely decouple client APIs from upstream APIs at the routing level. Gloo Edge serves as an abstraction layer between clients and upstream services, allowing front-end teams to work independently of teams developing the microservices their apps connect to.
 
 
 ### API Resources:

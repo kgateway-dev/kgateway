@@ -58,7 +58,7 @@ The following fields are available when specifying CORS on your `VirtualService`
 
 #### Regex Grammar
 
-Note that Gloo uses [ECMAScript](https://en.cppreference.com/w/cpp/regex/ecmascript) regex grammar.
+Note that Gloo Edge uses [ECMAScript](https://en.cppreference.com/w/cpp/regex/ecmascript) regex grammar.
 
 For example, in order to match all subdomains:
 

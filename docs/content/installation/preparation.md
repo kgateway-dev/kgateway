@@ -3,16 +3,16 @@ title: Preparation
 weight: 10
 ---
 
-Installing Gloo in your environment and walking through the step-by-step guides requires the installation of utilities on your local system and the selection of a deployment model. This document outlines the common utilities that you should have on your local system, and a brief discussion of deployment options for Gloo.
+Installing Gloo Edge in your environment and walking through the step-by-step guides requires the installation of utilities on your local system and the selection of a deployment model. This document outlines the common utilities that you should have on your local system, and a brief discussion of deployment options for Gloo Edge.
 
 ---
 
 ## Utilities List
 
-Below is a list of all the required components and common utilities for use with Gloo as you work through the concepts and guides.
+Below is a list of all the required components and common utilities for use with Gloo Edge as you work through the concepts and guides.
 
 - **kubectl** - Command line utility for Kubernetes
-- **glooctl** - Command line utility for Gloo
+- **glooctl** - Command line utility for Gloo Edge
 - **jq** - Utility for manipulating JSON
 - **git** - Utility for working with a versioned source control system
 - **curl** - Utility for transferring data to/from a server, especially with HTTP/S
@@ -29,21 +29,21 @@ You will also want some type of text editor that understands *YAML*. For real, t
 
 ## Deployment Requirements
 
-There are a number of options when it comes to installing Gloo Gateway. The requirements for each deployment model are described below.
+There are a number of options when it comes to installing Gloo Edge. The requirements for each deployment model are described below.
 
 ### Kubernetes Deployments
 
-Not sure how you will deploy Gloo? This [section]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) is for you. Gloo Gateway deploys as a set of containers, and is usually deployed on a Kubernetes cluster. In order to install Gloo Gateway, you will need access to a Kubernetes deployment. That could be a local cluster using *minikube* or *minishift*. It could be a hosted cluster on one of the public clouds such as *Google Kubernetes Engine*, *Elastic Kubernetes Service*, or *Azure Kubernetes Service*. You could even host your own Kubernetes cluster in your datacenter! 
+Not sure how you will deploy Gloo Edge? This [section]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) is for you. Gloo Edge deploys as a set of containers, and is usually deployed on a Kubernetes cluster. In order to install Gloo Edge, you will need access to a Kubernetes deployment. That could be a local cluster using *minikube* or *minishift*. It could be a hosted cluster on one of the public clouds such as *Google Kubernetes Engine*, *Elastic Kubernetes Service*, or *Azure Kubernetes Service*. You could even host your own Kubernetes cluster in your datacenter! 
 
 As long as you can run *kubectl* and have cluster-admin permissions, you're all set.
 
 ### Docker Compose Deployments
 
-A less common option is to use Docker Compose to deploy the Gloo Gateway components locally and store the configuration and secrets data in the Gloo containers. This will require that *docker* and *docker-compose* are installed on your local machine. Further instructions for setup can be found [here]({{% versioned_link_path fromRoot="/installation/gateway/development/docker-compose-file/" %}}).
+A less common option is to use Docker Compose to deploy the Gloo Edge components locally and store the configuration and secrets data in the Gloo Edge containers. This will require that *docker* and *docker-compose* are installed on your local machine. Further instructions for setup can be found [here]({{% versioned_link_path fromRoot="/installation/gateway/development/docker-compose-file/" %}}).
 
 ### Consul and Vault Deployments
 
-Similar to the Docker Compose option, this option leverages HashiCorp Consul for configuration data and HashiCorp Vault for secrets data instead of storing the values directly in the Gloo containers. This will require that *docker* and *docker-compose* are installed locally. Further instructions for setup can be found [here]({{% versioned_link_path fromRoot="/installation/gateway/development/docker-compose-consul/" %}}).
+Similar to the Docker Compose option, this option leverages HashiCorp Consul for configuration data and HashiCorp Vault for secrets data instead of storing the values directly in the Gloo Edge containers. This will require that *docker* and *docker-compose* are installed locally. Further instructions for setup can be found [here]({{% versioned_link_path fromRoot="/installation/gateway/development/docker-compose-consul/" %}}).
 
 ### Nomad Deployments
 
@@ -53,10 +53,10 @@ Nomad is a workload scheduler that can be used in place of Docker Compose or Kub
 
 ## Where to Next?
 
-The most common starting point is to [install Gloo Gateway]({{% versioned_link_path fromRoot="/installation/" %}}). Once Gloo Gateway is installed, [Traffic Management]({{% versioned_link_path fromRoot="/guides/traffic_management/" %}}) is likely your go-to destination.  Otherwise, here are some common paths to learning.
+The most common starting point is to [install Gloo Edge]({{% versioned_link_path fromRoot="/installation/" %}}). Once Gloo Edge is installed, [Traffic Management]({{% versioned_link_path fromRoot="/guides/traffic_management/" %}}) is likely your go-to destination.  Otherwise, here are some common paths to learning.
 
 - Do you need a Kubernetes cluster? Start [here]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}).
-- Need to install the Gloo Gateway? Start [here]({{% versioned_link_path fromRoot="/installation/" %}}).
-- Want to know more about Gloo Routing? Start [here]({{% versioned_link_path fromRoot="/introduction/traffic_management/" %}}).
-- Concerned about security? Start [here]({{% versioned_link_path fromRoot="/guides/security/" %}}). (*Enterprise Gloo only*)
-- Monitoring your thing? Start [here]({{% versioned_link_path fromRoot="/guides/observability/" %}}). (*Enterprise Gloo only*)
+- Need to install the Gloo Edge? Start [here]({{% versioned_link_path fromRoot="/installation/" %}}).
+- Want to know more about Gloo Edge Routing? Start [here]({{% versioned_link_path fromRoot="/introduction/traffic_management/" %}}).
+- Concerned about security? Start [here]({{% versioned_link_path fromRoot="/guides/security/" %}}). (*Enterprise Gloo Edge only*)
+- Monitoring your thing? Start [here]({{% versioned_link_path fromRoot="/guides/observability/" %}}). (*Enterprise Gloo Edge only*)

@@ -1,12 +1,12 @@
 ---
 title: "Deployment Patterns"
 weight: 30
-description: Deployment options and patterns for Gloo.
+description: Deployment options and patterns for Gloo Edge.
 ---
 
-Gloo has a very flexible architecture and can be deployed in many ways on various infrastructure stacks. We recommend using Kubernetes, if that is your platform of choice, because it simplifies operations. Kubernetes, however, is not the only way to deploy Gloo. You can deploy and manage Gloo on any infrastructure (think VMs, or other container orchestrators) with out of the box support for Consul as the configuration backend. 
+Gloo Edge has a very flexible architecture and can be deployed in many ways on various infrastructure stacks. We recommend using Kubernetes, if that is your platform of choice, because it simplifies operations. Kubernetes, however, is not the only way to deploy Gloo Edge. You can deploy and manage Gloo Edge on any infrastructure (think VMs, or other container orchestrators) with out of the box support for Consul as the configuration backend. 
 
-You may be asking yourself, what options make sense for which problems? In this document we will be looking at the following deployment architectures for Gloo: 
+You may be asking yourself, what options make sense for which problems? In this document we will be looking at the following deployment architectures for Gloo Edge: 
 
 * [Simple ingress to Kubernetes](#simple-ingress-to-kubernetes)
 * [Kube-native edge API Gateway for Kubernetes](#kube-native-edge-api-gateway-for-kubernetes)
@@ -23,17 +23,17 @@ Let's dig a bit deeper and see why you might use some of these architectures.
 
 ## Simple ingress to Kubernetes
 
-Gloo can play the role of a very simple [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) Controller. See [the docs for setting up Gloo]({{< versioned_link_path fromRoot="/guides/integrations/ingress" >}}) as an Ingress controller. In this mode, you get a simple HTTP proxy based on [Envoy Proxy](https://www.envoyproxy.io) (restricted by the Kubernetes Ingress API) that can interpret the `Ingress` sepc. Note; a large portion of the Envoy (and Gloo) functionality is not exposed through the Ingress API. Consider using [Gateway mode]({{< versioned_link_path fromRoot="/installation/gateway" >}}) for non-trivial deployments. 
+Gloo Edge can play the role of a very simple [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) Controller. See [the docs for setting up Gloo Edge]({{< versioned_link_path fromRoot="/guides/integrations/ingress" >}}) as an Ingress controller. In this mode, you get a simple HTTP proxy based on [Envoy Proxy](https://www.envoyproxy.io) (restricted by the Kubernetes Ingress API) that can interpret the `Ingress` sepc. Note; a large portion of the Envoy (and Gloo Edge) functionality is not exposed through the Ingress API. Consider using [gateway mode]({{< versioned_link_path fromRoot="/installation/gateway" >}}) for non-trivial deployments. 
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/ingress.png" %}})
 
-In this deployment model, the only component from the Gloo control plane that's required is the `gloo` deployment. Take a look at the [Gloo Ingress Installation docs]({{< versioned_link_path fromRoot="/installation/ingress" >}}) for more.
+In this deployment model, the only component from the Gloo Edge control plane that's required is the `gloo` deployment. Take a look at the [Gloo Edge Ingress Installation docs]({{< versioned_link_path fromRoot="/installation/ingress" >}}) for more.
 
 ---
 
 ## Kube-native edge API Gateway for Kubernetes
 
-Since the Kubernetes Ingress API is very limited and restricted to HTTP traffic, we recommend avoiding it for anything but very trivial hello-world usecases. For any non-trivial cluster, you'll want to use the [Gloo Gateway functionality]({{< versioned_link_path fromRoot="/installation/gateway" >}}). In this model, the proxy is deployed as a full-featured API gateway with functionality like traffic routing, header matching, rate limiting, security features (WAF, Oauth, etc) and others. Having these features close to the applications is desirable, therefore you run the Gateway within the cluster as the edge ingress proxy (note, this is ingress with a lowercase "i" and not necessarily the Kubernetes Ingress resource.)
+Since the Kubernetes Ingress API is very limited and restricted to HTTP traffic, we recommend avoiding it for anything but very trivial hello-world usecases. For any non-trivial cluster, you'll want to use the [Gloo Edge gateway functionality]({{< versioned_link_path fromRoot="/installation/gateway" >}}). In this model, the proxy is deployed as a full-featured API gateway with functionality like traffic routing, header matching, rate limiting, security features (WAF, Oauth, etc) and others. Having these features close to the applications is desirable, therefore you run the Gateway within the cluster as the edge ingress proxy (note, this is ingress with a lowercase "i" and not necessarily the Kubernetes Ingress resource.)
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/gateway.png" %}})
 
@@ -61,17 +61,17 @@ A variation of the previous deployment pattern of sharding the gateway is by exp
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/bounded-context.png" %}})
 
-In this model, the proxy sits close to its boundary of services and shares a single control plane with the rest of the cluster. Each group of services is self-managed by that group and enforces the idea of decentralizing these operations. This helps scale out the ability to make changes independently and the Gloo API specifically supports this (though API delegation). 
+In this model, the proxy sits close to its boundary of services and shares a single control plane with the rest of the cluster. Each group of services is self-managed by that group and enforces the idea of decentralizing these operations. This helps scale out the ability to make changes independently and the Gloo Edge API specifically supports this (though API delegation). 
 
 ---
 
 ## API Gateway for a service mesh
 
-A service mesh uses proxies (including Envoy) to build a network of L7 connectivity where it solves for issues like application-network observability, security, and resilience. These proxies are typically used to solve these challenges in a so-called "east-west" traffic manner. Just like we've seen in the previous deployment pattern, however, we know we will want to provide strict boundaries around our microservices and be very opinionated (and decoupled from implementation) about how it gets exposed to the outside world. This includes ingress and egress from the service mesh. An API Gateway built on Envoy, like Gloo, can be deployed very complementary to a service mesh and solve these API challenges. Many times, [a Gateway built on Envoy Proxy can be a stepping stone to get to service mesh](https://medium.com/solo-io/getting-started-with-a-service-mesh-starts-with-a-gateway-96384deedca2).
+A service mesh uses proxies (including Envoy) to build a network of L7 connectivity where it solves for issues like application-network observability, security, and resilience. These proxies are typically used to solve these challenges in a so-called "east-west" traffic manner. Just like we've seen in the previous deployment pattern, however, we know we will want to provide strict boundaries around our microservices and be very opinionated (and decoupled from implementation) about how it gets exposed to the outside world. This includes ingress and egress from the service mesh. An API Gateway built on Envoy, like Gloo Edge, can be deployed very complementary to a service mesh and solve these API challenges. Many times, [a Gateway built on Envoy Proxy can be a stepping stone to get to service mesh](https://medium.com/solo-io/getting-started-with-a-service-mesh-starts-with-a-gateway-96384deedca2).
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/service-mesh-ingress.png" %}})
 
-A service mesh doesn't inherently solve (nor should it) API-level challenges. Things like Web Application Firewall, domain-specific rate limiting, Oauth AuthZ/N, request transformation, etc don't belong in the service mesh. Gloo helps fill those gaps. 
+A service mesh doesn't inherently solve (nor should it) API-level challenges. Things like Web Application Firewall, domain-specific rate limiting, Oauth AuthZ/N, request transformation, etc don't belong in the service mesh. Gloo Edge helps fill those gaps. 
 
 ---
 
@@ -87,18 +87,18 @@ In this scenario, each proxy would have its own API Gateway configurations and b
 
 ## API Gateway in OpenShift
 
-OpenShift comes out of the box with a Router component which is the main ingress point to the cluster. This Router is based on HAProxy and basically acts as a L4 reverse proxy and connection load balancer. It can do TLS termination and collect basic metrics. For a basic deployment of Gloo, we can add it behind the OpenShift Router.
+OpenShift comes out of the box with a Router component which is the main ingress point to the cluster. This Router is based on HAProxy and basically acts as a L4 reverse proxy and connection load balancer. It can do TLS termination and collect basic metrics. For a basic deployment of Gloo Edge, we can add it behind the OpenShift Router.
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/openshift-api-gateway.png" %}})
 
 In this scenario, although we’re taking an additional hop, we get access to API Gateway functionality like end-user authentication/authorization, request caching, request/response transformation, etc and important L7 network control for doing things like traffic shadowing, traffic shifting and canary deployments.
 
-Alternatively to running behind the OpenShift Router, we could run Gloo on infrastructure nodes as NodePort. This has the advantage of directly exposing the API Gateway and eliminating the HAProxy hop, but has the drawback that network folks don’t typically like NodePort. You could also use something like BGP routing or metallb to expose Gloo through a LoadBalancer directly.
+Alternatively to running behind the OpenShift Router, we could run Gloo Edge on infrastructure nodes as NodePort. This has the advantage of directly exposing the API Gateway and eliminating the HAProxy hop, but has the drawback that network folks don’t typically like NodePort. You could also use something like BGP routing or metallb to expose Gloo Edge through a LoadBalancer directly.
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/openshift-api-gateway2.png" %}})
 
-At this point this gives us basic API Gateway functionality with minimal fuss, however we want to explore ways to decentralize this deployment. At the moment, it’s still fairly centralized and shared, although much less so from a process perspective because we can use GitOps and other declarative, SCM-driven approaches to self-service the configuration of Gloo at this point. Gloo’s configuration is declarative and defined as CRDs in Kubernetes/OpenShift.
-If we need further isolation, we can also use proxy sharding which Gloo supports and assign certain APIs to their own gateways. This involves a slight management overhead, but allows you to separate failure domains for higher-value APIs.
+At this point this gives us basic API Gateway functionality with minimal fuss, however we want to explore ways to decentralize this deployment. At the moment, it’s still fairly centralized and shared, although much less so from a process perspective because we can use GitOps and other declarative, SCM-driven approaches to self-service the configuration of Gloo Edge at this point. Gloo Edge’s configuration is declarative and defined as CRDs in Kubernetes/OpenShift.
+If we need further isolation, we can also use proxy sharding which Gloo Edge supports and assign certain APIs to their own gateways. This involves a slight management overhead, but allows you to separate failure domains for higher-value APIs.
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/openshift-api-gateway3.png" %}})
 
@@ -108,7 +108,7 @@ This solves some problems experienced with Legacy API Management vendors where a
 
 ## Across multiple clusters
 
-The previous deployment patterns can be extended out to multiple clusters. You may have multiple clusters divided by team, or service boundary, or some other construct. You may wish to abstract how your services get exposed to other parts of the organization by using an API Gateway. Gloo can play very well in this deployment. Each cluster would have its own deployment of the Gloo control plane with various proxies (see above) playing a role of ingress, sharded ingress, or even bounded context-API. 
+The previous deployment patterns can be extended out to multiple clusters. You may have multiple clusters divided by team, or service boundary, or some other construct. You may wish to abstract how your services get exposed to other parts of the organization by using an API Gateway. Gloo Edge can play very well in this deployment. Each cluster would have its own deployment of the Gloo Edge control plane with various proxies (see above) playing a role of ingress, sharded ingress, or even bounded context-API. 
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/multi-cluster.png" %}})
 
@@ -118,9 +118,9 @@ In this model, all traffic between the clusters routes between the API Gateways 
 
 ## Next Steps
 
-Now that you have an understanding of the Gloo deployment patterns, there are number of potential next steps that we'd like to recommend.
+Now that you have an understanding of the Gloo Edge deployment patterns, there are number of potential next steps that we'd like to recommend.
 
-* **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo yourself or try one of our Katacoda courses.
-* **[Deployment Options]({{% versioned_link_path fromRoot="/introduction/architecture/deployment_arch/" %}})**: Learn about specific implementations of Gloo with Kubernetes or HashiCorp.
-* **[Concepts]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}})**: Learn more about the core concepts behind Gloo and how they interact.
-* **[Developer Guides]({{% versioned_link_path fromRoot="/guides/dev/" %}})**: extend Gloo's functionality for your use case through various plugins.
+* **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo Edge yourself or try one of our Katacoda courses.
+* **[Deployment Options]({{% versioned_link_path fromRoot="/introduction/architecture/deployment_arch/" %}})**: Learn about specific implementations of Gloo Edge with Kubernetes or HashiCorp.
+* **[Concepts]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}})**: Learn more about the core concepts behind Gloo Edge and how they interact.
+* **[Developer Guides]({{% versioned_link_path fromRoot="/guides/dev/" %}})**: extend Gloo Edge's functionality for your use case through various plugins.

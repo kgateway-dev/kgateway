@@ -20,9 +20,9 @@ The route rules in a *Virtual Service* can use query parameter matching rules to
 
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 
-If you have not yet deployed Gloo, you can start by following the directions contained within the guide [Installing Gloo Gateway on Kubernetes]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+If you have not yet deployed Gloo Edge, you can start by following the directions contained within the guide [Installing Gloo Edge on Kubernetes]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
 
-This guide also assumes that you are running Gloo Gateway in a Kubernetes cluster. Each example can be adapted to alternative deployments, such as using the HashiCorp stack of Nomad, Consul, and Vault.
+This guide also assumes that you are running Gloo Edge in a Kubernetes cluster. Each example can be adapted to alternative deployments, such as using the HashiCorp stack of Nomad, Consul, and Vault.
 
 ---
 

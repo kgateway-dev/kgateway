@@ -4,13 +4,13 @@ weight: 80
 description: Configuring a custom certificate authority for extauth to use.
 ---
 
-Gloo Enterprise includes external authentication, which allows you to offload authentication responsibilities from Envoy to an external authentication server. There may be cases where you need the external authentication server to trust certificates issued from a custom certificate authority. In this guide, we will show you how to add the certificate authority during Gloo Enterprise installation or after installation is complete.
+Gloo Edge Enterprise includes external authentication, which allows you to offload authentication responsibilities from Envoy to an external authentication server. There may be cases where you need the external authentication server to trust certificates issued from a custom certificate authority. In this guide, we will show you how to add the certificate authority during Gloo Edge Enterprise installation or after installation is complete.
 
 The external authentication server runs as its own Kubernetes pod or as a sidecar to the `gateway-proxy` pods. The certificate authority public certificate will be saved as Kubernetes secret, and then an initialization container will be used to inject the CA certificate into the list of trusted certificate authorities for the external authentication pods. 
 
 For this guide, we will create a temporary certificate authority using OpenSSL. In a production scenario, you would retrieve the public certificate from an existing certificate authority you wish to be trusted.
 
-This guide assumes that you already have a Kubernetes cluster available for installation of Gloo Enterprise, or that you have a running instance of Gloo Enterprise.
+This guide assumes that you already have a Kubernetes cluster available for installation of Gloo Edge Enterprise, or that you have a running instance of Gloo Edge Enterprise.
 
 ## Create a certificate authority
 
@@ -34,18 +34,18 @@ kubectl create namespace gloo-system
 kubectl create secret generic trusted-ca --from-file=tls.crt=ca.cert.pem -n gloo-system
 ```
 
-Now we are ready to either [install Gloo Enterprise](#install-gloo-enterprise) or [update an existing Gloo Enterprise installation](#update-gloo-enterprise).
+Now we are ready to either [install Gloo Edge Enterprise](#install-gloo-edge-enterprise) or [update an existing Gloo Edge Enterprise installation](#update-gloo-edge-enterprise).
 
-## Install Gloo Enterprise
+## Install Gloo Edge Enterprise
 
-To add the customization of a trusted certificate authority to the Gloo Enterprise installation, we are going to need to use Helm for the installation and `kustomize` to perform a last mile helm chart customization, as outlined [in this guide]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/helm_advanced/" >}}). Essentially, we are going to have Helm render an installation manifest, and then tailor the manifest using kustomize to add the necessary configuration.
+To add the customization of a trusted certificate authority to the Gloo Edge Enterprise installation, we are going to need to use Helm for the installation and `kustomize` to perform a last mile helm chart customization, as outlined [in this guide]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/helm_advanced/" >}}). Essentially, we are going to have Helm render an installation manifest, and then tailor the manifest using kustomize to add the necessary configuration.
 
 ```bash
-# Add the Gloo Enterprise repo to Helm if you haven't already
+# Add the Gloo Edge Enterprise repo to Helm if you haven't already
 helm repo add glooe http://storage.googleapis.com/gloo-ee-helm
 helm repo update
 
-# Grab the current GlooE version
+# Grab the current Gloo Edge Enterprise version
 version=$(helm search repo glooe -ojson | jq .[0].version -r)
 
 # Create the patch
@@ -105,7 +105,7 @@ patchesStrategicMerge:
 EOF
 ```
 
-Finally, we'll install Gloo Enterprise with Helm using kustomize to add our patch in. Be sure to update the value for the license key.
+Finally, we'll install Gloo Edge Enterprise with Helm using kustomize to add our patch in. Be sure to update the value for the license key.
 
 ```bash
 helm install gloo glooe/gloo-ee --namespace gloo-system \
@@ -129,9 +129,9 @@ You should see the init container `add-ca-cert` has completed it's work.
 
 You've successfully added a custom certificate authority for external authentication!
 
-## Update Gloo Enterprise
+## Update Gloo Edge Enterprise
 
-To update an existing Gloo Enterprise installation to support an additional trusted root certificate authority, we are going to patch the deployment for the external authentication server. You can do this by using `kubectl patch`. We are going to add three values for the volume, volumeMount, and initialization container.
+To update an existing Gloo Edge Enterprise installation to support an additional trusted root certificate authority, we are going to patch the deployment for the external authentication server. You can do this by using `kubectl patch`. We are going to add three values for the volume, volumeMount, and initialization container.
 
 ```bash
 # Get the current image of the extauth pod

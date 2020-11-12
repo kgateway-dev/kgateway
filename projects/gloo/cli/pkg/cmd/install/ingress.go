@@ -28,7 +28,7 @@ func ingressCmd(opts *options.Options) *cobra.Command {
 				ExtraValues:    ingressOverrides,
 				Verbose:        opts.Top.Verbose,
 			}); err != nil {
-				return eris.Wrapf(err, "installing gloo in ingress mode")
+				return eris.Wrapf(err, "installing gloo edge in ingress mode")
 			}
 
 			return nil

@@ -1,11 +1,11 @@
 ---
 title: "Building External Auth Plugins"
 weight: 7
-description: Guidelines and best practices for developing and configuring Go plugins to extend Gloo's ext auth server
+description: Guidelines and best practices for developing and configuring Go plugins to extend Gloo Edge's ext auth server
 ---
 
 In the [**Plugin Auth** guide]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/plugin_auth" %}}) 
-we showed how easy it is to extend Gloo with custom authentication logic using Go plugins. That guide uses a 
+we showed how easy it is to extend Gloo Edge with custom authentication logic using Go plugins. That guide uses a 
 [plugin](https://github.com/solo-io/ext-auth-plugin-examples/tree/master/plugins/required_header) that has already been 
 built and published, and primarily focuses on giving an overview of the plugin development workflow.
 
@@ -24,7 +24,7 @@ publish your external auth plugins.
         - [Compare dependencies](#compare-dependencies)
         - [Verify compatibility script](#verify-compatibility-script)
         - [Dockerfile](#dockerfile)
-- [Configuring Gloo to load your plugins](#configuring-gloo-to-load-your-plugins)
+- [Configuring Gloo Edge to load your plugins](#configuring-gloo-edge-to-load-your-plugins)
     - [Configuring Virtual Services to use your plugins](#configuring-virtual-services-to-use-your-plugins)
 - [Multi-step AuthConfigs](#multi-step-authconfigs)
     - [Header propagation](#header-propagation)
@@ -34,7 +34,7 @@ publish your external auth plugins.
 This guide will make frequent references to the code contained in our 
 [Ext Auth Plugin examples](https://github.com/solo-io/ext-auth-plugin-examples) GitHub repository. In addition to the sample 
 plugin implementation, the repository contains useful tools to verify whether your plugin is compatible with a certain 
-version of Gloo Enterprise. Given the [constraints imposed by Go plugins](#build-helper-tools), these utilities will 
+version of Gloo Edge Enterprise. Given the [constraints imposed by Go plugins](#build-helper-tools), these utilities will 
 significantly improve the experience of developing external auth plugins.
 
 {{% notice note %}}
@@ -43,27 +43,27 @@ We recommend that you fork the example repository and use it as a starting point
 
 ### Development workflow overview
 In the [**Plugin Auth** guide]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/plugin_auth#development-workflow-overview" %}}) 
-we gave a high-level description of the steps required to extend Gloo with your own plugins:
+we gave a high-level description of the steps required to extend Gloo Edge with your own plugins:
 
 1. Write a plugin and publish it as a `docker image` which, when run, copies the compiled plugin file to a 
 predefined directory.
-2. Configure Gloo to load the plugin by running the image as an `initContainer` on the `extauth` deployment. This can be 
-done by installing Gloo with [dedicated value overrides]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/plugin_auth#installation" %}}) 
-or by modifying the Gloo installation manifest manually.
+2. Configure Gloo Edge to load the plugin by running the image as an `initContainer` on the `extauth` deployment. This can be 
+done by installing Gloo Edge with [dedicated value overrides]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/plugin_auth#installation" %}}) 
+or by modifying the Gloo Edge installation manifest manually.
 3. Reference your plugin in your Virtual Services for it to be invoked for requests matching particular virtual hosts or 
 routes.
 
 In the following sections we will see each one of them in greater detail.
 
 ## Building and publishing and auth plugin
-In this section we will see how to develop an auth plugin and distribute it the format that Gloo expects.
+In this section we will see how to develop an auth plugin and distribute it the format that Gloo Edge expects.
 
 ### API overview
 When developing external auth plugins, there are two interfaces we need to be familiar with. They are both defined 
 [here](https://github.com/solo-io/ext-auth-plugins/blob/master/api/interface.go).
 
 ##### ExtAuthPlugin
-Gloo expects auth plugins to implement the 
+Gloo Edge expects auth plugins to implement the 
 [ExtAuthPlugin](https://github.com/solo-io/ext-auth-plugins/blob/master/api/interface.go#L41) interface.
 
 ```go
@@ -73,7 +73,7 @@ type ExtAuthPlugin interface {
 }
 ```
 
-Objects that implement this interface are used as factories for authentication service instances. After Gloo detects a 
+Objects that implement this interface are used as factories for authentication service instances. After Gloo Edge detects a 
 reference to your plugin on a Virtual Service and loads it, it will call the `NewConfigInstance` function to get an 
 object to deserialize the plugin configuration into. 
 
@@ -116,7 +116,7 @@ type NestedConfig struct {
  }
 ```
 
-Gloo will populate the struct fields with the values found on the correspondent YAML attributes. 
+Gloo Edge will populate the struct fields with the values found on the correspondent YAML attributes. 
 
 {{% notice note %}}
 You might have noticed that the `configs` attribute in the configuration example above is an array. It is in fact 
@@ -124,14 +124,14 @@ possible to define multiple configuration in the same `AuthConfig`. We'll see ho
 [later](#multi-step-authconfigs).
 {{% /notice %}}
 
-The `GetAuthService` function will be invoked by Gloo right after this step. As its `configInstance` argument, Gloo will 
+The `GetAuthService` function will be invoked by Gloo Edge right after this step. As its `configInstance` argument, Gloo Edge will 
 pass the object that it just populated with the values from the plugin configuration. This function must return an 
 instance of the [AuthService](https://github.com/solo-io/ext-auth-plugins/blob/master/api/interface.go#L49) interface.
 
 ##### AuthService
-`AuthService` instances are responsible for authorizing individual requests. This is the interface that all of Gloo's 
+`AuthService` instances are responsible for authorizing individual requests. This is the interface that all of Gloo Edge's 
 out-of-the box auth implementations (basic auth, OIDC, etc.) implement as well. Your plugin is responsible for providing 
-Gloo with a valid `AuthService` implementation.
+Gloo Edge with a valid `AuthService` implementation.
 
 ```go
 type AuthService interface {
@@ -140,12 +140,12 @@ type AuthService interface {
 }
 ```
 
-The `Start` function will be called once by Gloo, when the auth service is started. It is intended as a hook to perform 
+The `Start` function will be called once by Gloo Edge, when the auth service is started. It is intended as a hook to perform 
 initialization logic or to start auxiliary processes that span the whole lifecycle of the service.
 
-All the functions we have just described (`NewConfigInstance`, `GetAuthService`, and `Start`) will be invoked when Gloo 
+All the functions we have just described (`NewConfigInstance`, `GetAuthService`, and `Start`) will be invoked when Gloo Edge 
 detects a new auth configuration on your Virtual Services. The `Authorize` function, on the other hand, will be invoked 
-each time a request hits Gloo and matches the virtual host on which the your plugin is defined. 
+each time a request hits Gloo Edge and matches the virtual host on which the your plugin is defined. 
 The `AuthorizationResponse` that it returns will determine whether the request will be allowed or denied. 
 We provide minimal responses of both types via the `AuthorizedResponse()` and `UnauthorizedResponse()` 
 functions in [the same package](https://github.com/solo-io/ext-auth-plugins/blob/master/api/interface.go#L114-L134). 
@@ -153,18 +153,18 @@ You can use them as a basis for your own responses.
 
 #### About the AuthService lifecycle
 We mentioned how `ExtAuthPlugin` implementations function as factories for `AuthService` instances. It's worth spending 
-a few words on the lifecycle of `AuthService`s. You might have noticed that Gloo passes a `context.Context` to each of 
+a few words on the lifecycle of `AuthService`s. You might have noticed that Gloo Edge passes a `context.Context` to each of 
 the functions we just saw. The context will live as long as the plugin configuration that generated it is valid. 
-Whenever the auth configuration changes, Gloo will start new `AuthService` instances and signal the termination of the 
+Whenever the auth configuration changes, Gloo Edge will start new `AuthService` instances and signal the termination of the 
 previous ones by cancelling the context it provided them with.
 
 Assuming we start with a clean sheet, i.e. no `AuthConfig` resources are referenced on any of your Virtual Services, 
-the following is the sequence of actions that the Gloo external auth service performs when it detects a change in an 
+the following is the sequence of actions that the Gloo Edge external auth service performs when it detects a change in an 
 auth configuration. The service:
 
 1. starts a new cancellable `context.Context`
 1. loops over all detected `configs` in the `AuthConfig` and for each one, if it is a plugin:
-    1. loads the correspondent plugin `.so` file from the `auth-plugins` directory (more info about this [later](#configuring-gloo-to-load-your-plugins))
+    1. loads the correspondent plugin `.so` file from the `auth-plugins` directory (more info about this [later](#configuring-gloo-edge-to-load-your-plugins))
     2. invokes `NewConfigInstance` **passing in the context**
     3. deserializes the detected plugin config into the provided object
     4. invokes `GetAuthService` **passing in the context** and the configuration object
@@ -178,7 +178,7 @@ This will prevent your plugin from leaking memory. You can find a great overview
 in [this Go Blog post](https://blog.golang.org/context).
 
 #### How to make your plugin implement `ExtAuthPlugin`
-Earlier in this guide we mentioned that Gloo expects auth plugins to implement the 
+Earlier in this guide we mentioned that Gloo Edge expects auth plugins to implement the 
 [ExtAuthPlugin](https://github.com/solo-io/ext-auth-plugins/blob/master/api/interface.go#L62) interface. To understand 
 what we mean by that, let's take a closer look at how Go plugins work.
 
@@ -186,13 +186,13 @@ The [official Go docs](https://golang.org/pkg/plugin/) describe a plugin as:
 
 >> "*a Go main package with exported functions and variables that has been built with: `go build -buildmode=plugin`*"
 
-In order for Gloo to be able to load your plugin, the `main` package of your plugin must export a variable that 
+In order for Gloo Edge to be able to load your plugin, the `main` package of your plugin must export a variable that 
 implements the [ExtAuthPlugin](https://github.com/solo-io/ext-auth-plugins/blob/master/api/interface.go#L62) interface. 
-This is usually a struct or a pointer to a struct (Gloo is smart enough to handle both cases). 
-Gloo will use the [Lookup function](https://golang.org/pkg/plugin/#Plugin.Lookup) to find the exported variable and 
+This is usually a struct or a pointer to a struct (Gloo Edge is smart enough to handle both cases). 
+Gloo Edge will use the [Lookup function](https://golang.org/pkg/plugin/#Plugin.Lookup) to find the exported variable and 
 assert that it in fact implements the expected interface.
 
-You can specify the name of the variable Gloo looks for when you reference your plugin in your Virtual Services:
+You can specify the name of the variable Gloo Edge looks for when you reference your plugin in your Virtual Services:
 
 {{< highlight yaml "hl_lines=5" >}}
 plugin_auth:
@@ -226,24 +226,24 @@ meant make your plugin development experience as smooth as possible. You can fin
 [Ext Auth Plugin examples](https://github.com/solo-io/ext-auth-plugin-examples) GitHub repository.
 
 {{% notice note %}}
-Gloo publishes information about the environment it was built with to a Google Storage bucket. The tools in this section 
-will make use of this information. You can find the information for a specific Gloo version in the following files located 
+Gloo Edge publishes information about the environment it was built with to a Google Storage bucket. The tools in this section 
+will make use of this information. You can find the information for a specific Gloo Edge version in the following files located 
 under `http://storage.googleapis.com/gloo-ee-dependencies/[GLOOE_VERSION]`:
 
-- `dependencies`: contains the versions of all dependencies used by Gloo (generated by running `go list -m all` on the Gloo Enterprise module)
-- `build_env`: values that can be used to replicate the environment the given Gloo version was built in.
-- `verify-plugins-linux-amd64`: a script to verify that the plugin can be loaded by the given Gloo version.
+- `dependencies`: contains the versions of all dependencies used by Gloo Edge (generated by running `go list -m all` on the Gloo Edge Enterprise module)
+- `build_env`: values that can be used to replicate the environment the given Gloo Edge version was built in.
+- `verify-plugins-linux-amd64`: a script to verify that the plugin can be loaded by the given Gloo Edge version.
 
 You can get all these files by running `GLOOE_VERSION=desired_version make get-glooe-info` in our example repository.
 {{% /notice %}}
 
 #### Compare dependencies
-We manage Gloo dependencies using [Go Modules](https://github.com/golang/go/wiki/Modules). The `go.mod` file contains 
+We manage Gloo Edge dependencies using [Go Modules](https://github.com/golang/go/wiki/Modules). The `go.mod` file contains 
 constraints that you impose on your module dependencies, but it does not provide complete information about all the 
 dependencies. This is why we also publish the output of `go list -m all` in the `dependencies` file mentioned in the 
 previous section.
 When you develop your plugins, we suggest that you use Go Modules for dependency management. This way you will be able 
-to take advantage of a script we provide for comparing the dependencies of your plugin with the Gloo ones. 
+to take advantage of a script we provide for comparing the dependencies of your plugin with the Gloo Edge ones. 
 It is located at `scripts/compare_dependencies.go` and can be invoked via the following `make` command:
 
 ```bash
@@ -256,7 +256,7 @@ and to a file (`mismatched_dependencies.json`) and exit with code 1. Here's an e
 ```json
 [
   {
-    "message": "Please pin your dependency to the same version as the Gloo one using a [require] clause",
+    "message": "Please pin your dependency to the same version as the Gloo Edge one using a [require] clause",
     "pluginDependencies": {
       "name": "go.uber.org/zap",
       "version": "v1.12.0",
@@ -290,7 +290,7 @@ require (
 ```
 
 If you are using a different dependency management tool (e.g. [dep](https://github.com/golang/dep)), you should still 
-be able to use the information in the Gloo `dependencies` file to verify that the dependencies match.
+be able to use the information in the Gloo Edge `dependencies` file to verify that the dependencies match.
 
 {{% notice note %}}
 Please see [this section](https://github.com/solo-io/ext-auth-plugin-examples#compare-deps) of the README in the examples 
@@ -299,8 +299,8 @@ mismatches that can occur.
 {{% /notice %}}
   
 #### Verify compatibility script
-As part of each Gloo Enterprise release, we ship a script to verify whether your plugin can be loaded by that version of 
-Gloo Enterprise. You can find it in the aforementioned Google Cloud bucket at 
+As part of each Gloo Edge Enterprise release, we ship a script to verify whether your plugin can be loaded by that version of 
+Gloo Edge Enterprise. You can find it in the aforementioned Google Cloud bucket at 
 `http://storage.googleapis.com/gloo-ee-dependencies/[GLOOE_VERSION]/verify-plugins-linux-amd64`. The script accepts 
 three arguments:
 
@@ -333,7 +333,7 @@ The script is compiled to run on `linux` with `amd64` architectures. We will exp
 {{% /notice %}}
  
 #### Dockerfile
-We mentioned that the plugin must be compiled with the same `GOPATH` as Gloo. We also cannot easily cross-compile with 
+We mentioned that the plugin must be compiled with the same `GOPATH` as Gloo Edge. We also cannot easily cross-compile with 
 `go build` because we need to run with CGO enabled. The best way to get around these constraints is to compile inside a 
 container.
 
@@ -343,12 +343,12 @@ you use [multi-stage builds](https://docs.docker.com/develop/develop-images/mult
 your final image to a minimum. See the comments for an explanation of each build layer:
 
 {{< highlight yaml >}}
-# This stage is parametrized to replicate the same environment Gloo Enterprise was built in.
+# This stage is parametrized to replicate the same environment Gloo Edge Enterprise was built in.
 # All ARGs need to be set via the docker `--build-arg` flags.
 ARG GO_BUILD_IMAGE
 FROM $GO_BUILD_IMAGE AS build-env
 
-# This must contain the value of the `gcflag` build flag that Gloo was built with
+# This must contain the value of the `gcflag` build flag that Gloo Edge was built with
 ARG GC_FLAGS
 # This must contain the path to the plugin verification script
 ARG VERIFY_SCRIPT
@@ -368,12 +368,12 @@ ADD . /go/src/github.com/solo-io/ext-auth-plugin-examples/
 WORKDIR /go/src/github.com/solo-io/ext-auth-plugin-examples
 
 # De-vendor all the dependencies and move them to the GOPATH, so they will be loaded from there.
-# We need this so that the import paths for any library shared between the plugins and Gloo are the same.
+# We need this so that the import paths for any library shared between the plugins and Gloo Edge are the same.
 #
 # For example, if we were to vendor the ext-auth-plugin dependency, the ext-auth-server would load the plugin interface
 # as `GLOOE_REPO/vendor/github.com/solo-io/ext-auth-plugins/api.ExtAuthPlugin`, while the plugin
 # would instead implement `THIS_REPO/vendor/github.com/solo-io/ext-auth-plugins/api.ExtAuthPlugin`. These would be seen 
-# by the go runtime as two different types, causing Gloo to fail.
+# by the go runtime as two different types, causing Gloo Edge to fail.
 # Also, some packages cause problems if loaded more than once. For example, loading `golang.org/x/net/trace` twice
 # causes a panic (see here: https://github.com/golang/go/issues/24137). By flattening the dependencies this way we
 # prevent these sorts of problems.
@@ -382,7 +382,7 @@ RUN cp -a vendor/. /go/src/ && rm -rf vendor
 # Build plugins with CGO enabled, passing the GC_FLAGS flags
 RUN CGO_ENABLED=1 GOARCH=amd64 GOOS=linux go build -buildmode=plugin -gcflags="$GC_FLAGS" -o plugins/RequiredHeader.so plugins/required_header/plugin.go
 
-# Run the script to verify that the plugin(s) can be loaded by Gloo
+# Run the script to verify that the plugin(s) can be loaded by Gloo Edge
 RUN chmod +x $VERIFY_SCRIPT
 RUN $VERIFY_SCRIPT -pluginDir plugins -manifest plugins/plugin_manifest.yaml
 
@@ -416,19 +416,19 @@ with targets that automate these steps and can be easily modified to fit your ne
 {{% /notice %}}
 
 #### Wrapping it up
-If you followed the guide to this point, you should have an image that is guaranteed to be compatible with Gloo.
+If you followed the guide to this point, you should have an image that is guaranteed to be compatible with Gloo Edge.
 
-The next step is to see how to set up Gloo to use your plugins.
+The next step is to see how to set up Gloo Edge to use your plugins.
 
-## Configuring Gloo to load your plugins
-The Gloo `extauth` server loads plugins from a directory in the file system it has access to. It is possible to 
+## Configuring Gloo Edge to load your plugins
+The Gloo Edge `extauth` server loads plugins from a directory in the file system it has access to. It is possible to 
 accomplish this in different ways, but the preferred one (and the reason why we packaged the plugins as docker images 
 with a `copy` entry point) is by running the plugin container(s) as `initContainer`(s) and mounting a volume shared with 
 the `extauth` deployment.
 
 In the [**Plugin Auth** guide]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/plugin_auth" %}}) we saw how to do 
 this [using glooctl]({{% versioned_link_path fromRoot="/guides/security/auth/plugin_auth#installation" %}}). 
-Here we will see how to accomplish the same result by editing the raw Gloo Enterprise YAML manifest.
+Here we will see how to accomplish the same result by editing the raw Gloo Edge Enterprise YAML manifest.
 
 Let's start with a basic version of the `extauth` deployment. Note that we are omitting many attributes for brevity.
 
@@ -500,7 +500,7 @@ both the `extauth` container and the plugin `initContainers` at the `/auth-plugi
 plugin container is configured to copy the plugin files to when it is run.
 
 {{% notice note %}}
-Currently, Gloo expects to find the plugin files in the `/auth-plugins` directory. We plan to make this location configurable soon.
+Currently, Gloo Edge expects to find the plugin files in the `/auth-plugins` directory. We plan to make this location configurable soon.
 {{% /notice %}}
 
 ### Configuring Virtual Services to use your plugins
@@ -530,11 +530,11 @@ spec:
 {{< /highlight >}}
 
 Elements in the `configs` array (from now on **steps**) will be executed in the order they are defined. The first step 
-to deny the request will cause execution to be interrupted and Gloo to return the response generated by the step that 
+to deny the request will cause execution to be interrupted and Gloo Edge to return the response generated by the step that 
 denied it. No steps after the failing one will be executed.
 
 {{% notice note %}}
-Some of the external auth schemes that Gloo provides out-of-the-box take advantage of this feature. 
+Some of the external auth schemes that Gloo Edge provides out-of-the-box take advantage of this feature. 
 To see an example of this, see the appendix to the 
 [**Open Policy Agent** Authorization guide]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/opa" %}}), where we 
 use an OPA step to enforce a policy on a 
@@ -557,7 +557,7 @@ import (
 	envoyauthv2 "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
 )
 
-// Response returned by authorization services to the Gloo ext-auth server
+// Response returned by authorization services to the Gloo Edge ext-auth server
 type AuthorizationResponse struct {
 	// Additional user information
 	UserInfo UserInfo
@@ -567,13 +567,13 @@ type AuthorizationResponse struct {
 {{< /highlight >}}
 
 You can see that it wraps the Envoy [CheckResponse](https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/external_auth.proto#service-auth-v2-checkresponse) 
-type. Gloo conforms to the Envoy API semantics when merging headers in plugin chains. If you go to the linked Envoy docs 
+type. Gloo Edge conforms to the Envoy API semantics when merging headers in plugin chains. If you go to the linked Envoy docs 
 page and inspect the [OkHttpResponse](https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/external_auth.proto#service-auth-v2-okhttpresponse) 
 object, you will see that it consists of just an array of [HeadersValueOption objects](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/base.proto#envoy-api-msg-core-headervalueoption).
 A `HeadersValueOption` associates a header value with an `Append` flag. The flag determines whether the header will 
 overridden or appended to the one in the request.
 
-To give a concrete example, suppose Gloo receives a request that with the following header:
+To give a concrete example, suppose Gloo Edge receives a request that with the following header:
 
 ```text
 Headers:
@@ -630,7 +630,7 @@ Each request contains a generic `State` map. Whichever values are stored in that
 passed to the next step.
 
 ## Conclusion
-If you got to this point, we hope that you have a good understanding of how the Gloo Ext Auth plugin framework works and 
+If you got to this point, we hope that you have a good understanding of how the Gloo Edge Ext Auth plugin framework works and 
 that you are ready to start hacking away! If you have any questions or ideas about how to improve this guide, please 
-contact us on our [**Slack**](https://slack.solo.io) or open an issue in the [Gloo repository](https://github.com/solo-io/gloo), 
+contact us on our [**Slack**](https://slack.solo.io) or open an issue in the [Gloo Edge repository](https://github.com/solo-io/gloo), 
 adding the "**Area: Docs**" label.

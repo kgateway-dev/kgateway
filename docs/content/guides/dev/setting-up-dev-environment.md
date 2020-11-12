@@ -8,7 +8,7 @@ weight: 1
 
 ### Prerequisites
 
-Developing on Gloo requires the following to be installed on your system:
+Developing on Gloo Edge requires the following to be installed on your system:
 
 - [`make`](https://www.gnu.org/software/make/)
 - [`git`](https://git-scm.com/)
@@ -59,15 +59,15 @@ go get -u github.com/gogo/protobuf/...
 
 ```
 
-### Setting up the Solo-Kit and Gloo Repositories
+### Setting up the Solo-Kit and Gloo Edge Repositories
 
-Next, we'll clone the Gloo and Solo-Kit source code. Solo-Kit is required for code generation in Gloo. 
+Next, we'll clone the Gloo Edge and Solo-Kit source code. Solo-Kit is required for code generation in Gloo Edge. 
 
 {{% notice info %}}
-Currently, Gloo plugins must live inside the [Gloo repository](https://github.com/solo-io/gloo) itself. 
+Currently, Gloo Edge plugins must live inside the [Gloo Edge repository](https://github.com/solo-io/gloo) itself. 
 {{% /notice %}}
 
-Ensure you've installed `go` and have a your `$GOPATH` set. If unset, it will default to `${HOME}/go`. The Gloo repo 
+Ensure you've installed `go` and have a your `$GOPATH` set. If unset, it will default to `${HOME}/go`. The Gloo Edge repo 
 should live in `${GOPATH}/src/github.com/solo-io/gloo`. 
 
 To clone your fork of the repository:
@@ -83,7 +83,7 @@ git clone https://github.com/solo-io/gloo
 git clone git@github.com:solo-io/gloo.git
 ```
 
-You should now be able to run any `main.go` file in the Gloo repository using:
+You should now be able to run any `main.go` file in the Gloo Edge repository using:
 
 ```bash
 go run <path-to-cmd>/main.go
@@ -100,12 +100,12 @@ go run projects/gateway/cmd/main.go
 
 ```
 
-Awesome! You're ready to start developing on Gloo! Check out the [Writing Upstream Plugins Guide]({{% versioned_link_path fromRoot="/guides/dev/writing-upstream-plugins" %}}) to see how to add plugins to gloo.
+Awesome! You're ready to start developing on Gloo Edge! Check out the [Writing Upstream Plugins Guide]({{% versioned_link_path fromRoot="/guides/dev/writing-upstream-plugins" %}}) to see how to add plugins to gloo.
 
 
 ### Enabling Code Generation
 
-To generate or re-generate code in Gloo, some additional dependencies are required. Follow these steps if you are making changes to Gloo's Protobuf-based API.
+To generate or re-generate code in Gloo Edge, some additional dependencies are required. Follow these steps if you are making changes to Gloo Edge's Protobuf-based API.
 
 Install Solo-Kit and required go packages:
 
@@ -116,7 +116,7 @@ cd ${GOPATH}/src/github.com/solo-io/gloo
 make install-go-tools
 ```
 
-You can test that code generation works with Gloo:
+You can test that code generation works with Gloo Edge:
 
 ```bash
 make -B generated-code

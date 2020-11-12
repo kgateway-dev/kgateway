@@ -9,7 +9,7 @@ data from the request, the routing destination, and the response. The proxy can 
 
 An access log may be written locally to a file or the `stdout` pipe in the proxy container, or it can be exported to a gRPC server for custom handling.
 
-With Gloo (starting in `0.18.1`), access logs can be enabled and customized per Envoy listener by modifying the **Gateway** Custom Resource.
+With Gloo Edge (starting in `0.18.1`), access logs can be enabled and customized per Envoy listener by modifying the **Gateway** Custom Resource.
 
 ### Data Available for Logging
 
@@ -34,7 +34,7 @@ proxy are connection properties: bytes received and sent.
 
 ### File-based Access Logging
 
-File-based access logging can be enabled in Gloo by customizing the **Gateway** CRD. For file-based access logs (also referred to 
+File-based access logging can be enabled in Gloo Edge by customizing the **Gateway** CRD. For file-based access logs (also referred to 
 as file sink access logs), there are two main configurations to set:
 * Path: This is where the logs are written, either to `/dev/stdout` or to a file that is in a writable volume in the proxy container 
 * Format: This provides a log template for either string or json-formatted logs
@@ -217,7 +217,7 @@ as writing them to a file in the access log gRPC service container, or sending t
 
 #### Deploying the open source gRPC access logger
 
-Open source Gloo includes an optional gRPC access log server implementation that can be turned on and deployed using
+Open source Gloo Edge includes an optional gRPC access log server implementation that can be turned on and deployed using
 the following helm values:
 
 ```yaml
@@ -298,13 +298,13 @@ The code for this server implementation is available [here](https://github.com/s
 
 #### Building a custom service
 
-If you are building a custom access logging gRPC service, you will need get it deployed alongside Gloo. The Envoy
-config (that Gloo stores in `gateway-proxy-envoy-config`) will need to include a new static cluster pointing to your 
+If you are building a custom access logging gRPC service, you will need get it deployed alongside Gloo Edge. The Envoy
+config (that Gloo Edge stores in `gateway-proxy-envoy-config`) will need to include a new static cluster pointing to your 
 custom access log server. Once you have a named static cluster in your envoy config, you can reference it in 
 your **gateway** CRD. 
 
-The Gloo access logger was written to be customizable with callbacks, so it may provide a useful starting point. Feel free
-to open an issue in the Gloo repo to track improvements to the existing implementation. 
+The Gloo Edge access logger was written to be customizable with callbacks, so it may provide a useful starting point. Feel free
+to open an issue in the Gloo Edge repo to track improvements to the existing implementation. 
 
 To verify your Envoy access logging configuration, use `glooctl check`. If there is a problem configuring the Envoy 
 listener with your custom access logging server, it should be reported there. 

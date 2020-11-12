@@ -1,30 +1,30 @@
 ---
-title: Run Gloo Gateway Locally
+title: Run Gloo Edge Locally
 menuTitle: Local Files
 weight: 20
-description: How to run Gloo Locally using Docker-Compose
+description: How to run Gloo Edge Locally using Docker-Compose
 ---
 
-While Gloo is typically run on Kubernetes, it doesn't need to be! You can run Gloo on your local machine using Docker Compose.
+While Gloo Edge is typically run on Kubernetes, it doesn't need to be! You can run Gloo Edge on your local machine using Docker Compose.
 
-Kubernetes provides APIs for config storage ([CRDs](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)), credential storage ([Secrets](https://kubernetes.io/docs/concepts/configuration/secret/)), and service discovery ([Services](https://kubernetes.io/docs/concepts/services-networking/service/)). These APIs need to be substituted with another option when Gloo is not running on Kubernetes.
+Kubernetes provides APIs for config storage ([CRDs](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)), credential storage ([Secrets](https://kubernetes.io/docs/concepts/configuration/secret/)), and service discovery ([Services](https://kubernetes.io/docs/concepts/services-networking/service/)). These APIs need to be substituted with another option when Gloo Edge is not running on Kubernetes.
 
-Fortunately, Gloo provides alternate mechanisms for configuration, credential storage, and service discovery that do not require Kubernetes, including the use of local `.yaml` files, [HashiCorp Consul Key-Value storage](https://www.consul.io/api/kv.html) and [HashiCorp Vault Key-Value storage](https://www.vaultproject.io/docs/secrets/kv/kv-v2.html).
+Fortunately, Gloo Edge provides alternate mechanisms for configuration, credential storage, and service discovery that do not require Kubernetes, including the use of local `.yaml` files, [HashiCorp Consul Key-Value storage](https://www.consul.io/api/kv.html) and [HashiCorp Vault Key-Value storage](https://www.vaultproject.io/docs/secrets/kv/kv-v2.html).
 
-This tutorial provides a basic installation flow for running Gloo with Docker Compose, using the local filesystem of the containers to store configuration and credentials data.
+This tutorial provides a basic installation flow for running Gloo Edge with Docker Compose, using the local filesystem of the containers to store configuration and credentials data.
 (A similar tutorial using Consul and Vault instead of the local filesystem can be found [here]({{< versioned_link_path fromRoot="/installation/gateway/development/docker-compose-consul/" >}}).)
 
 First we will copy the necessary files from the [Solo.io GitHub](https://github.com/solo-io/gloo) repository. 
 
-Then we will use `docker-compose` to create the containers for Gloo and the Pet Store application.
+Then we will use `docker-compose` to create the containers for Gloo Edge and the Pet Store application.
 
-Once the containers are up and running, we will examine the *Upstream* YAML file for the Pet Store application and the *Virtual Service* YAML file used by Gloo to route requests from the Gloo Gateway to the Pet Store application.
+Once the containers are up and running, we will examine the *Upstream* YAML file for the Pet Store application and the *Virtual Service* YAML file used by Gloo Edge to route requests from the Gateway to the Pet Store application.
 
 Finally, we will use curl to validate the routing rule on the *Virtual Service* is working.
 
 {{% notice note %}}
 The deployment steps in this tutorial are for demonstration and learning on a local machine.
-If you are interested in running a production deployment of Gloo using flat files, you will likely want to change the deployment architecture from how it is described in this guide.
+If you are interested in running a production deployment of Gloo Edge using flat files, you will likely want to change the deployment architecture from how it is described in this guide.
 If you are an enterprise customer, please contact us for assistance!
 {{% /notice %}}
 
@@ -32,9 +32,9 @@ If you are an enterprise customer, please contact us for assistance!
 
 ## Architecture
 
-Gloo without Kubernetes uses multiple pieces of software for deployment and functionality.
+Gloo Edge without Kubernetes uses multiple pieces of software for deployment and functionality.
 
-- **Docker Compose**: The components of Gloo are deployed as containers running Gloo, Envoy, and the Gloo Gateway
+- **Docker Compose**: The components of Gloo Edge are deployed as containers running Gloo Edge, Envoy, and the Gateway
 - **File System**: The local filesystem of the machine is used to store configuration data
 
 ## Preparing for Installation
@@ -50,9 +50,9 @@ Installation on your local system requires the following applications to be inst
 
 ### Download the Installation Files
 
-This tutorial uses files stored on the [Gloo GitHub repository](https://github.com/solo-io/gloo).
+This tutorial uses files stored on the [Gloo Edge GitHub repository](https://github.com/solo-io/gloo).
 
-In order to install Gloo using Docker-Compose, let's clone the repository:
+In order to install Gloo Edge using Docker-Compose, let's clone the repository:
 
 ```
 git clone --branch master https://github.com/solo-io/gloo
@@ -82,9 +82,9 @@ The files used for installation live in the `install/docker-compose-file` direct
 
 ### Prepare the Directory Structure
 
-Since we are using the filesystem to store the Gloo configuration and credentials, we need to set up a directory structure to support that. Each of the Gloo containers created by the `docker-compose.yaml` file will attach to the `data` directory inside the `install/docker-compose-file` parent directory. 
+Since we are using the filesystem to store the Gloo Edge configuration and credentials, we need to set up a directory structure to support that. Each of the Gloo Edge containers created by the `docker-compose.yaml` file will attach to the `data` directory inside the `install/docker-compose-file` parent directory. 
 
-Although much of the structure is already set up, there are some additional empty directories that must be created for use by the Gloo containers. Let's run the `prepare-directories.sh` script to create the rest.
+Although much of the structure is already set up, there are some additional empty directories that must be created for use by the Gloo Edge containers. Let's run the `prepare-directories.sh` script to create the rest.
 
 ```bash
 ./prepare-directories.sh
@@ -124,11 +124,11 @@ The updated `data` directory structure should look like this:
 
 ```
 
-* `data/gloo-system/default.yaml` provides the initial configuration for the Gloo and Gateway containers, including where to store secrets, configs, and artifacts.
+* `data/gloo-system/default.yaml` provides the initial configuration for the Gloo Edge and Gateway containers, including where to store secrets, configs, and artifacts.
 
 * `data/config/gateways/gloo-system/gateway-proxy.yaml` defines additional configuration for the Gateway container.
 
-* `data/config/upstreams/gloo-system/petstore.yaml` defines an *Upstream* configuration for the Pet Store application that Gloo can use as a target to route requests.
+* `data/config/upstreams/gloo-system/petstore.yaml` defines an *Upstream* configuration for the Pet Store application that Gloo Edge can use as a target to route requests.
 
 * `data/config/virtualservices/gloo-system/default.yaml` defines a default *Virtual Service* with routing rules to send traffic from the proxy to the Pet Store *Upstream*.
 
@@ -142,7 +142,7 @@ Now that we have the proper directory structure in place, we can deploy the cont
 
 With the necessary directory structure in place, it is time to deploy the containers using Docker Compose. The `docker-compose.yaml` file will create four containers: `petstore`, `gloo`, `gateway`, and `gateway-proxy`.
 
-Let's run `docker-compose up` from the `docker-compose-file` directory to start up the containers. The version of Gloo can be controlled using the environment variable `GLOO_VERSION`. It's probably best to stick with the default version, unless you have a compelling reason to change it.
+Let's run `docker-compose up` from the `docker-compose-file` directory to start up the containers. The version of Gloo Edge can be controlled using the environment variable `GLOO_VERSION`. It's probably best to stick with the default version, unless you have a compelling reason to change it.
 
 ```bash
 docker-compose up
@@ -169,7 +169,7 @@ The containers should have loaded their base configuration as well as the Pet St
 
 ## Examining the *Upstream* and *Virtual Service*
 
-Docker Compose created the necessary Gloo containers along with the Pet Store application. The configuration comes pre-loaded with an example *Upstream* Gloo uses to allow function level routing. Let's examine the contents of the `petstore.yaml` file.
+Docker Compose created the necessary Gloo Edge containers along with the Pet Store application. The configuration comes pre-loaded with an example *Upstream* Gloo Edge uses to allow function level routing. Let's examine the contents of the `petstore.yaml` file.
 
 ```shell
 # view the upstream definition
@@ -233,9 +233,9 @@ static:
             transfer-encoding: {}
 ```
 
-The *Upstream* configuration defines the address where the Pet Store service can be found and the REST services that are offered by the application. Gloo can use the transformations found in the configuration as a target for routing requests.
+The *Upstream* configuration defines the address where the Pet Store service can be found and the REST services that are offered by the application. Gloo Edge can use the transformations found in the configuration as a target for routing requests.
 
-The other half of the equation is the *Virtual Service*. Let's take a look at the `default.yaml` file that defines the default *Virtual Service* on the Gloo Gateway.
+The other half of the equation is the *Virtual Service*. Let's take a look at the `default.yaml` file that defines the default *Virtual Service* on the Gateway.
 
 ```shell
 # see how the route is configured:
@@ -295,11 +295,11 @@ virtualHost:
 
 The default *Virtual Service* defines several possible routes to pass through to the Pet Store application. For instance, a request on the prefix `/petstore` would route that request to the `/api/pets` prefix on the Pet Store *Upstream*.
 
-You'll need to wait a minute for the virtual service to get processed by Gloo and the routes exposed externally.
+You'll need to wait a minute for the virtual service to get processed by Gloo Edge and the routes exposed externally.
 
-### Testing the Gloo Configuration
+### Testing the Gloo Edge Configuration
 
-We should now be able to send a request to the Gloo proxy and receive a reply based on the prefix we use. Let's use `curl` to send a request:
+We should now be able to send a request to the Gloo Edge proxy and receive a reply based on the prefix we use. Let's use `curl` to send a request:
 
 ```bash
 curl http://localhost:8080/petstore
@@ -325,6 +325,6 @@ curl http://localhost:8080/petstore/findWithId/1
 
 ## Next Steps
 
-Congratulations! You've successfully deployed Gloo with Docker Compose and created your first route. Now let's delve deeper into the world of [Traffic Management with Gloo]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}). 
+Congratulations! You've successfully deployed Gloo Edge with Docker Compose and created your first route. Now let's delve deeper into the world of [Traffic Management with Gloo Edge]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}). 
 
-Most of the existing tutorials for Gloo use Kubernetes as the underlying resource, but they can also use a Docker Compose deployment. It will be necessary to handcraft the proper YAML files for each configuration, so it might make more sense to check out using either Kubernetes or Consul & Vault to store configuration data.
+Most of the existing tutorials for Gloo Edge use Kubernetes as the underlying resource, but they can also use a Docker Compose deployment. It will be necessary to handcraft the proper YAML files for each configuration, so it might make more sense to check out using either Kubernetes or Consul & Vault to store configuration data.

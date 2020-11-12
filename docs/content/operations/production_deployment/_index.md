@@ -1,21 +1,21 @@
 ---
 title: Production Deployments
-description: This document shows some tips and tricks for deploying Gloo into a production environment
+description: This document shows some tips and tricks for deploying Gloo Edge into a production environment
 weight: 20
 ---
 
-This document shows some of the Production options that may be useful. We will continue to add to this document and welcome users of Gloo to send PRs to this as well.
+This document shows some of the Production options that may be useful. We will continue to add to this document and welcome users of Gloo Edge to send PRs to this as well.
 
 ## Dropping capabilities
 
-One of the more important (and unique) things about Gloo is the ability to significantly lock down the edge proxy. Other proxies require privileges to write to disk or access the Kubernetes API, while Gloo splits those responsibilities between control plane and data plane. The data plane can be locked down with zero privileges while separating out the need to secure the control plane differently. 
+One of the more important (and unique) things about Gloo Edge is the ability to significantly lock down the edge proxy. Other proxies require privileges to write to disk or access the Kubernetes API, while Gloo Edge splits those responsibilities between control plane and data plane. The data plane can be locked down with zero privileges while separating out the need to secure the control plane differently. 
 
-For example, Gloo's data plane (the `gateway-proxy` pod) has ReadOnly file system. Additionally it doesn't require any additional tokens mounted in or OS-level privileges. By default some of these options are enabled to simplify developer experience, but if your use case doesn't need them, you should lock them down. 
+For example, Gloo Edge's data plane (the `gateway-proxy` pod) has ReadOnly file system. Additionally it doesn't require any additional tokens mounted in or OS-level privileges. By default some of these options are enabled to simplify developer experience, but if your use case doesn't need them, you should lock them down. 
 
 * **Disable service account token mount**
-    - For example, when integrating with Istio's SDS (see integration with Istio), you need to have a service account token mounted. If you're not integrating with Istio, you can elimiate the need for the service account token. When installing Gloo, set the `gateway.proxyServiceAccount.disableAutomount` field. 
+    - For example, when integrating with Istio's SDS (see integration with Istio), you need to have a service account token mounted. If you're not integrating with Istio, you can eliminate the need for the service account token. When installing Gloo Edge, set the `gateway.proxyServiceAccount.disableAutomount` field. 
 * **Disable Kubernetes destinations**
-    - Gloo out of the box routes to upstreams. It can also route directly to Kubernetes destinations (bypassing upstreams). Upstreams is the recommended abstraction to which to route in VirtualServices, and you can disable the Kubernetes destinations with the `settings.gloo.disableKubernetesDestinations`. This saves on memory overhead so Gloo pod doesn't cache both upstreams and Kubernetes destinations. 
+    - Gloo Edge out of the box routes to upstreams. It can also route directly to Kubernetes destinations (bypassing upstreams). Upstreams is the recommended abstraction to which to route in VirtualServices, and you can disable the Kubernetes destinations with the `settings.gloo.disableKubernetesDestinations`. This saves on memory overhead so Gloo Edge pod doesn't cache both upstreams and Kubernetes destinations. 
 
 ## Enable replacing invalid routes
 
@@ -32,14 +32,14 @@ report itself as ready.
 
 * **Enable liveness/readiness probes for Envoy**
     - To enable liveness and readiness probes, specify `gatewayProxies.gatewayProxy.podTemplate.probes=true` in your Helm installation.
-If you are running Gloo Enterprise, you'll need to prefix that Helm values key with `"gloo."`; e.g. `gloo.gatewayProxies.gatewayProxy.podTemplate.probes=true`.
+If you are running Gloo Edge Enterprise, you'll need to prefix that Helm values key with `"gloo."`; e.g. `gloo.gatewayProxies.gatewayProxy.podTemplate.probes=true`.
 * **Configure your load balancer correctly**
-    - If you are running Gloo behind a load balancer, be sure to configure your load balancer properly to consume the readiness probe mentioned above.
+    - If you are running Gloo Edge behind a load balancer, be sure to configure your load balancer properly to consume the readiness probe mentioned above.
 
 ## Envoy performance
 
 * **Enable Envoy's gzip filter**
-    - Optionally, you may choose to enable Envoy's gzip filter through Gloo. More information on that can be found [here]({{% versioned_link_path fromRoot="/installation/advanced_configuration/gzip/" %}}).
+    - Optionally, you may choose to enable Envoy's gzip filter through Gloo Edge. More information on that can be found [here]({{% versioned_link_path fromRoot="/installation/advanced_configuration/gzip/" %}}).
 * **Set up an EDS warming timeout**
     - Set up the endpoints warming timeout to some nonzero value. More details [here]({{%versioned_link_path fromRoot="/operations/upgrading/1.3.0/#recommended-settings" %}}).
 

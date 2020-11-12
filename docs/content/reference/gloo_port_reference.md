@@ -1,36 +1,36 @@
 ---
-title: "Gloo Port Reference"
-description: Listing of ports used by Gloo Gateway and Gloo Enterprise
+title: "Gloo Edge Port Reference"
+description: Listing of ports used by Gloo Edge and Gloo Edge Enterprise
 weight: 35
 ---
 
-Gloo Gateway and Gloo Enterprise both deploy containers that listen on certain ports for incoming traffic. This document lists out the pods and services that make up Gloo and Gloo Enterprise, and the ports which these pods and services listen on. It is also possible to set up mutual TLS (mTLS) for communication between Gloo resources. The addition of mTLS changes the ports and traffic flows slightly, which is addressed in this document as well.
+Gloo Edge and Gloo Edge Enterprise both deploy containers that listen on certain ports for incoming traffic. This document lists out the pods and services that make up Gloo Edge and Gloo Edge Enterprise, and the ports which these pods and services listen on. It is also possible to set up mutual TLS (mTLS) for communication between Gloo Edge resources. The addition of mTLS changes the ports and traffic flows slightly, which is addressed in this document as well.
 
-This document is specific to the pods and services deployed in a Kubernetes environment. Deploying Gloo using the HashiCorp stack is also supported, and the port mappings and services should be the same.
+This document is specific to the pods and services deployed in a Kubernetes environment. Deploying Gloo Edge using the HashiCorp stack is also supported, and the port mappings and services should be the same.
 
 {{% notice note %}}
-It is possible to customize some port settings by providing custom values to the Helm chart that installs Gloo open-source and Gloo Enterprise. The port reference below is for an installation of Gloo that uses the default settings in the Helm chart.
+It is possible to customize some port settings by providing custom values to the Helm chart that installs Gloo Edge open-source and Gloo Edge Enterprise. The port reference below is for an installation of Gloo Edge that uses the default settings in the Helm chart.
 {{% /notice %}}
 
 ---
 
-## Gloo Gateway Open-source
+## Gloo Edge Open-source
 
-Gloo open-source software is the free, open-source version of Gloo Gateway. The installation process uses a Helm chart to create the necessary custom resource definitions (CRDs), deployments, services, pods, etc. The services and pods listen on specific ports to enable communication between the components that make up Gloo and outside sources that will consume Upstream resources through Gloo.
+Gloo Edge open-source software is the free, open-source version of Gloo Edge. The installation process uses a Helm chart to create the necessary custom resource definitions (CRDs), deployments, services, pods, etc. The services and pods listen on specific ports to enable communication between the components that make up Gloo Edge and outside sources that will consume Upstream resources through Gloo Edge.
 
 ### What's included
 
-A standard installation of Gloo Gateway includes four primary components:
+A standard installation of Gloo Edge includes four primary components:
 
 * **Gateway**
   * Translates Gateway, Virtual Service, and RouteTable custom resources into a Proxy custom resource.
   * Validates proposed configurations before application.
-* **Gloo**
+* **Gloo Edge**
   * Creates an Envoy configuration from multiple custom resources.
   * Serves Envoy configurations using xDS.
   * Validates Proxy configurations for the Gateway.
 * **Proxy**
-  * Receives and loads configuration from Gloo xDS.
+  * Receives and loads configuration from Gloo Edge xDS.
   * Proxies incoming traffic.
 * **Discovery**
   * Discovers Upstreams in the cluster.
@@ -71,13 +71,13 @@ The following table lists the services backed by the deployed pods.
 
 ---
 
-## Gloo Enterprise
+## Gloo Edge Enterprise
 
-Gloo Enterprise (GlooE) adds many pods and services to provide the extra functionality included in the paid offering. More information on what is included in Gloo Enterprise can be found on the [Gloo product page](https://www.solo.io/products/gloo/). 
+Gloo Edge Enterprise adds many pods and services to provide the extra functionality included in the paid offering. More information on what is included in Gloo Edge Enterprise can be found on the [Gloo Edge product page](https://www.solo.io/products/gloo/). 
 
 ### What's included
 
-At a high level, the following additional components are available in GlooE.
+At a high level, the following additional components are available in Gloo Edge Enterprise.
 
 * API and UI server
 * External authentication
@@ -90,7 +90,7 @@ The Prometheus server and Grafana dashboard are optional components. If you have
 
 ### Pods and ports
 
-The GlooE components are instantiated using pods and services. The following table lists the deployed pods and ports in use by each pod.
+The Gloo Edge Enterprise components are instantiated using pods and services. The following table lists the deployed pods and ports in use by each pod.
 
 | Pod | Port | Usage |
 |-----|------|-------|
@@ -112,7 +112,7 @@ The following table lists the services backed by the deployed pods.
 
 | Service | Port | Target | Target Port | Usage |
 |---------|------|--------|-------------|-------|
-| apiserver-ui | 8080 | api-server | 8080 | Gloo UI |
+| apiserver-ui | 8080 | api-server | 8080 | Gloo Edge UI |
 | extauth | 8083 | extauth | 8083 | External authentication |
 | glooe-grafana | 80 | grafana | 3000 | Grafana UI |
 | glooe-prometheus-kube-state-metrics | 80 | prometheus-kube-state-metrics | 8080 | Kubernetes metric collection |
@@ -124,12 +124,12 @@ The following table lists the services backed by the deployed pods.
 
 ## mTLS considerations
 
-Gloo supports the use of mutual TLS (mTLS) communication between the Gloo pod and other services, including the Envoy proxy, Extauth server, and Rate-limiting server. Enabling mTLS includes the addition of sidecars for multiple pods, Envoy proxy for TLS termination and SDS for certificate rotation and management. More information on the details of mTLS implementation are available in the [mTLS doc]({{< versioned_link_path fromRoot="/guides/security/tls/mtls/" >}}).
+Gloo Edge supports the use of mutual TLS (mTLS) communication between the Gloo Edge pod and other services, including the Envoy proxy, Extauth server, and Rate-limiting server. Enabling mTLS includes the addition of sidecars for multiple pods, Envoy proxy for TLS termination and SDS for certificate rotation and management. More information on the details of mTLS implementation are available in the [mTLS doc]({{< versioned_link_path fromRoot="/guides/security/tls/mtls/" >}}).
 
 ### Updated pods
 
 The following pods are updated to support mTLS:
-* **Gloo**: Envoy and SDS sidecars are added.
+* **Gloo Edge**: Envoy and SDS sidecars are added.
 * **Gateway-proxy**: SDS sidecars added and ConfigMap updated for mTLS.
 * **ExtAuth**: Envoy and SDS sidecars are added.
 * **Rate-limit**: Envoy and SDS sidecars are added.
@@ -138,15 +138,15 @@ The additional Envoy sidecar has an admin port listening on 8081 for each pod.
 
 ### Updated traffic flow
 
-The Envoy sidecar on the Gloo, Extauth, and Rate-limit pods will be intercepting the inbound traffic for each pod and performing the TLS decryption before passing the traffic to the main container. This does not alter the ports being used by the pods and services, but it does create additional ports that are used internally within the pod for communication. For instance, the Gloo pod continues to listen on 9977 as the xDS server. Internally, the Gloo container is listening on 127.0.0.1:9999 for xDS requests. The Envoy sidecar in the pod accepts requests on 9977, decrypts the request, and sends it to port 9999 on the localhost for processing.
+The Envoy sidecar on the Gloo Edge, Extauth, and Rate-limit pods will be intercepting the inbound traffic for each pod and performing the TLS decryption before passing the traffic to the main container. This does not alter the ports being used by the pods and services, but it does create additional ports that are used internally within the pod for communication. For instance, the Gloo Edge pod continues to listen on 9977 as the xDS server. Internally, the Gloo Edge container is listening on 127.0.0.1:9999 for xDS requests. The Envoy sidecar in the pod accepts requests on 9977, decrypts the request, and sends it to port 9999 on the localhost for processing.
 
 ---
 
 ## Summary and next steps
 
-This document provides the ports being used by pods and services on a default installation of Gloo Gateway and Gloo Enterprise. Some of these ports can be customized, and additional components can be added that introduce more pods and services. To better understand the architecture of Gloo, we recommend reading the following docs:
+This document provides the ports being used by pods and services on a default installation of Gloo Edge and Gloo Edge Enterprise. Some of these ports can be customized, and additional components can be added that introduce more pods and services. To better understand the architecture of Gloo Edge, we recommend reading the following docs:
 
-* [Gloo Architecture]({{< versioned_link_path fromRoot="/introduction/architecture/" >}})
+* [Gloo Edge Architecture]({{< versioned_link_path fromRoot="/introduction/architecture/" >}})
 * [Custom Resource Usage]({{< versioned_link_path fromRoot="/introduction/architecture/custom_resources/" >}})
 * [Deployment Options]({{< versioned_link_path fromRoot="/introduction/architecture/deployment_options/" >}})
 * [mTLS Deployment]({{< versioned_link_path fromRoot="/guides/security/tls/mtls/" >}})

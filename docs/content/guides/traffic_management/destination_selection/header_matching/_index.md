@@ -6,7 +6,7 @@ description: Matching based on incoming or generated headers
 
 The route rules in a *Virtual Service* can use header matching rules to match requests to routes based on the contents of the headers. When configuring the matcher on a route, you may want to specify one or more {{< protobuf name="gloo.solo.io.HeaderMatcher" display="Header Matchers">}} to require headers with matching values be present on the request. Each header matcher has three attributes:
 
-* `name` - the name of the request header. Note: Gloo/Envoy use HTTP/2 so if you want to match against HTTP/1 `Host`,
+* `name` - the name of the request header. Note: Gloo Edge/Envoy use HTTP/2 so if you want to match against HTTP/1 `Host`,
 use `:authority` (HTTP/2) as the name instead.
 * `regex` - boolean (true|false) defaults to `false`. Indicates how to interpret the `value` attribute:
   * `false` (default) - treat `value` field as an [Envoy exact_match](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-field-route-headermatcher-exact-match)
@@ -18,7 +18,7 @@ use `:authority` (HTTP/2) as the name instead.
   * `invertMatch` - inverts the matching logic. A request matches if it does **not** match the above criteria.
 
 {{% notice note %}}
-The `invertMatch` attribute was introduced with **Gloo**, release 0.20.9. If you are using an earlier version, the 
+The `invertMatch` attribute was introduced with **Gloo Edge**, release 0.20.9. If you are using an earlier version, the 
 attribute will not be available.
 {{% /notice %}}
 
@@ -28,9 +28,9 @@ In this guide, we're going to take a closer look at an example Virtual Service t
 
 ## Setup
 
-If you have not yet deployed Gloo, you can start by following the directions contained within the guide [Installing Gloo Gateway on Kubernetes]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+If you have not yet deployed Gloo Edge, you can start by following the directions contained within the guide [Installing Gloo Edge on Kubernetes]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
 
-This guide also assumes that you are running Gloo Gateway in a Kubernetes cluster. Each example can be adapted to alternative deployments, such as using the HashiCorp stack of Nomad, Consul, and Vault.
+This guide also assumes that you are running Gloo Edge in a Kubernetes cluster. Each example can be adapted to alternative deployments, such as using the HashiCorp stack of Nomad, Consul, and Vault.
 
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 

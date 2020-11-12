@@ -1,10 +1,10 @@
 # Regression tests
-This directory contains test that install each of the 3 Gloo flavours (`gateway`, `ingress`, and `knative`) and run 
+This directory contains test that install each of the 3 Gloo Edge flavours (`gateway`, `ingress`, and `knative`) and run 
 regression tests against them.
 
 ## Build test assets
-The tests require that a Gloo Helm chart archive be present in the `_test` folder. This chart will be used to install 
-Gloo to the GKE `kube2e-tests` cluster (by running `glooctl install <deployment-type> -f -test/<chart-archive-name>`).
+The tests require that a Gloo Edge Helm chart archive be present in the `_test` folder. This chart will be used to install 
+Gloo Edge to the GKE `kube2e-tests` cluster (by running `glooctl install <deployment-type> -f -test/<chart-archive-name>`).
 
 To build the chart, execute the `docker` and `build-test-assets` make targets:
 
@@ -23,7 +23,7 @@ tests by running the following command from this directory:
 ginkgo -r
 ```
 
-Although running tests in parallel *should* work, the fact that Gloo creates some cluster-scoped resources is a 
+Although running tests in parallel *should* work, the fact that Gloo Edge creates some cluster-scoped resources is a 
 potential source of problems.
 
 ### Test environment variables
@@ -33,7 +33,7 @@ The below table contains the environment variables that can be used to configure
 | ---               |   ---     |    ---      |
 | RUN_KUBE2E_TESTS  | Y         | Must be set to 1, otherwise tests will be skipped |
 | DEBUG             | N         | Set to 1 for debug log output |
-| WAIT_ON_FAIL      | N         | Set to 1 to prevent Ginkgo from cleaning up the Gloo installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output.
+| WAIT_ON_FAIL      | N         | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output.
 
 
 ### To run locally with kind:

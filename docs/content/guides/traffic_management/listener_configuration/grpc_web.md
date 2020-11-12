@@ -4,13 +4,13 @@ weight: 20
 description: Enable or disable the transcoding of messages to support gRPC web clients
 ---
 
-gRPC-Web is a Javascript library that lets browser clients using HTTP-1 or HTTP-2 access a gRPC service. Envoy supports the gRPC-Web protocol out of the box, functioning as a proxy between web clients and the gRPC service. In this guide you'll see how to enable or disable the gRPC-Web protocol on Envoy through Gloo's gateway Custom Resource.
+gRPC-Web is a Javascript library that lets browser clients using HTTP-1 or HTTP-2 access a gRPC service. Envoy supports the gRPC-Web protocol out of the box, functioning as a proxy between web clients and the gRPC service. In this guide you'll see how to enable or disable the gRPC-Web protocol on Envoy through Gloo Edge's gateway Custom Resource.
 
 ---
 
 ## Configuring Gateway gRPC Options
 
-In order to serve gRPC-Web clients, the server must first transcode the message into a format that the web client can understand [details](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md#protocol-differences-vs-grpc-over-http2). Gloo configures Envoy to do this by default. If you would like to disable this behavior, you can do so by editing the gateway Custom Resource for the Gateway you would like to alter.
+In order to serve gRPC-Web clients, the server must first transcode the message into a format that the web client can understand [details](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md#protocol-differences-vs-grpc-over-http2). Gloo Edge configures Envoy to do this by default. If you would like to disable this behavior, you can do so by editing the gateway Custom Resource for the Gateway you would like to alter.
 
 The relevant section of the gateway CR is highlighted below.
 

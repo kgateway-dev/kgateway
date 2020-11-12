@@ -8,10 +8,10 @@ assignees: ''
 ---
 
 **Describe the requested changes**
-List the desired changes to be made to the Gloo docs.
+List the desired changes to be made to the Gloo Edge docs.
 
 **Link to any relevant existing docs**
-1. https://docs.solo.io/gloo/latest/...
+1. https://docs.solo.io/gloo-edge/latest/...
 2. ...
 
 **Browser Information**

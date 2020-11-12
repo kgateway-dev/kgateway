@@ -5,7 +5,7 @@ description: JWT verification and Access Control (without an external auth serve
 ---
 
 {{% notice note %}}
-The JWT feature was introduced with **Gloo Enterprise**, release 0.13.16. If you are using an earlier version, this tutorial will not work.
+The JWT feature was introduced with **Gloo Edge Enterprise**, release 0.13.16. If you are using an earlier version, this tutorial will not work.
 {{% /notice %}}
 
 ## Table of Contents
@@ -32,7 +32,7 @@ The JWT feature was introduced with **Gloo Enterprise**, release 0.13.16. If you
 It is also assumed that you are using a local `minikube` cluster.
 
 ## Verifying Kubernetes service account JWTs
-In this guide, we will show how to use Gloo to verify Kubernetes service account JWTs and how to define RBAC policies to 
+In this guide, we will show how to use Gloo Edge to verify Kubernetes service account JWTs and how to define RBAC policies to 
 control the resources service accounts are allowed to access.
 
 ### Deploy sample application
@@ -88,7 +88,7 @@ kubectl run --generator=run-pod/v1 test-pod --image=fedora:30 --serviceaccount=s
 ```
 
 #### Anatomy of Kubernetes service account
-A service account provides an identity for processes that run inside a Pod. When kubernetes starts a pod, it automatically generates a JWT contains information about the pod's service account and attaches it to the pod. Inside the JWT are *claims* that provide identity information, and a signature for verification. To verify these JWTs, the Kubernetes API server is provided with a public key. Gloo can use this public key to perform JWT verification for kubernetes service accounts.
+A service account provides an identity for processes that run inside a Pod. When kubernetes starts a pod, it automatically generates a JWT contains information about the pod's service account and attaches it to the pod. Inside the JWT are *claims* that provide identity information, and a signature for verification. To verify these JWTs, the Kubernetes API server is provided with a public key. Gloo Edge can use this public key to perform JWT verification for kubernetes service accounts.
 
 Let's see the claims for `svc-a`, the service account we just created:
 
@@ -203,7 +203,7 @@ With the above configuration, the Virtual Service will look for a JWT on incomin
 To see all the attributes supported by the JWT API, be sure to check out the correspondent <b>{{< protobuf display="API docs" name="jwt.options.gloo.solo.io.VhostExtension">}}</b>.
 {{% /notice %}}
 
-To make things more interesting, we can further configure Gloo to enforce an access control policy on incoming JWTs. Let's add a policy to our Virtual Service:
+To make things more interesting, we can further configure Gloo Edge to enforce an access control policy on incoming JWTs. Let's add a policy to our Virtual Service:
 
 {{< highlight shell "hl_lines=37-48" >}}
 apiVersion: gateway.solo.io/v1
@@ -363,15 +363,15 @@ kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/
 ```
 
 ## Appendix - Use a remote JSON Web Key Set (JWKS) server
-In the previous part of the guide we saw how to configure Gloo with a public key to verify JWTs. The way we provided Gloo with the key was to include the key itself into the Virtual Service definition. While the simplicity of this approach make it a good candidate for test setups and quick prototyping, it can quickly become unwieldy. A more flexible and scalable approach is to use a **JSON Web Key Set (JWKS) Server**. A JWKS server allows us to manage the verification keys independently and centrally, making routine tasks such as key rotation much easier.
+In the previous part of the guide we saw how to configure Gloo Edge with a public key to verify JWTs. The way we provided Gloo Edge with the key was to include the key itself into the Virtual Service definition. While the simplicity of this approach make it a good candidate for test setups and quick prototyping, it can quickly become unwieldy. A more flexible and scalable approach is to use a **JSON Web Key Set (JWKS) Server**. A JWKS server allows us to manage the verification keys independently and centrally, making routine tasks such as key rotation much easier.
 
-In this appendix we will demonstrate how to use an external JSON Web Key Set (JWKS) server with Gloo. We will:
+In this appendix we will demonstrate how to use an external JSON Web Key Set (JWKS) server with Gloo Edge. We will:
 
 1. create a private key that will be used to sign and verify custom JWTs that we will create;
 1. convert the key from PEM to JSON Web Key format;
 1. deploy a JWKS server to serve the key;
-1. configure Gloo to verify JWTs using the key stored in the server;
-1. create and sign a custom JWT and use it to authenticate with Gloo.
+1. configure Gloo Edge to verify JWTs using the key stored in the server;
+1. create and sign a custom JWT and use it to authenticate with Gloo Edge.
 
 ### Create the private key
 Let's start by creating a private key that we will use to sign our JWTs:
@@ -442,7 +442,7 @@ jq '{"keys":[.]}' jwks.json | tee tmp.json && mv tmp.json jwks.json
 Our `jwks.json` file now contains a valid JSON Web Key Set (JWKS).
 
 ### Create JWKS server
-Let's create our JWKS server. All that the server needs to do is to serve a JSON Web Key Set file. Later we will configure Gloo to grab the JSON Web Key Set from the server.
+Let's create our JWKS server. All that the server needs to do is to serve a JSON Web Key Set file. Later we will configure Gloo Edge to grab the JSON Web Key Set from the server.
 
 We will start by copying the `jwks.json` to a ConfigMap:
 
@@ -496,7 +496,7 @@ spec:
     app: jwks-server
 ```
 
-Gloo should have discovered the service and created an upstream named `gloo-system-jwks-server-80`; you can verify this by running `kubectl get upstreams -n gloo-system`. Should this not be the case (for example because you have disabled the discovery feature), you have to create the upstream yourself:
+Gloo Edge should have discovered the service and created an upstream named `gloo-system-jwks-server-80`; you can verify this by running `kubectl get upstreams -n gloo-system`. Should this not be the case (for example because you have disabled the discovery feature), you have to create the upstream yourself:
 
 {{< tabs >}}
 {{< tab name="glooctl" codelang="shell">}}
@@ -520,7 +520,7 @@ spec:
 {{< /tab >}}
 {{< /tabs >}} 
 
-Now we can configure Gloo to use the JWKS server:
+Now we can configure Gloo Edge to use the JWKS server:
 
 {{< highlight yaml "hl_lines=20-30" >}}
 apiVersion: gateway.solo.io/v1
@@ -584,7 +584,7 @@ Here is an image of how the page should look like (click to enlarge):
 <img src="../jwt-io.png" alt="jwt.io debugger" style="border: solid 1px; color: lightgrey" width="500px"/>
 
 ### Testing the configuration
-Now we are ready to test our configuration. Let's port-forward the Gloo Gateway Proxy service so that it is reachable from you machine at `localhost:8080`:
+Now we are ready to test our configuration. Let's port-forward the Gateway Proxy service so that it is reachable from your machine at `localhost:8080`:
 
 ```
 kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80 &

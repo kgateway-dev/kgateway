@@ -80,7 +80,7 @@ spec:
 {{< /tab >}}
 {{< /tabs >}}
 
-Let's test that the configuration was correctly picked up by Gloo by executing the following command:
+Let's test that the configuration was correctly picked up by Gloo Edge by executing the following command:
 
 ```shell
 curl $(glooctl proxy url)/get | jq
@@ -128,7 +128,7 @@ You should see the following output, indicating that an access log entry has bee
 ```
 
 ### Adding custom access log attributes
-Envoy's access log [command operators](https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log#command-operators) provide a powerful way of extracting information from HTTP streams. The `REQ` and `RESP` operators allow you to log headers, but there is no way of including custom information that is not included in the headers, e.g. attributes included in the request/response payloads, or environment variables. There is a `DYNAMIC_METADATA` operator, but it relies on the custom information having been written to the [Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) by an Envoy filter. Fortunately, as we saw in the [main page]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations#dynamicmetadatavalues" %}}) of the transformation docs, Gloo's Transformation API provides you with the means of adding information the dynamic metadata.
+Envoy's access log [command operators](https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log#command-operators) provide a powerful way of extracting information from HTTP streams. The `REQ` and `RESP` operators allow you to log headers, but there is no way of including custom information that is not included in the headers, e.g. attributes included in the request/response payloads, or environment variables. There is a `DYNAMIC_METADATA` operator, but it relies on the custom information having been written to the [Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) by an Envoy filter. Fortunately, as we saw in the [main page]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations#dynamicmetadatavalues" %}}) of the transformation docs, Gloo Edge's Transformation API provides you with the means of adding information the dynamic metadata.
 
 Let's see how this can be done.
 
@@ -178,14 +178,14 @@ spec:
             systemTime: '%START_TIME%'
             # Unique tracking ID
             requestId: '%REQ(X-REQUEST-ID)%'
-            # The 'pod' dynamic metadata entry that is set by the Gloo transformation filter
+            # The 'pod' dynamic metadata entry that is set by the Gloo Edge transformation filter
             pod_name: '%DYNAMIC_METADATA(io.solo.transformation:pod_name)%'
-            # The 'error' dynamic metadata entry that is set by the Gloo transformation filter
+            # The 'error' dynamic metadata entry that is set by the Gloo Edge transformation filter
             endpoint_url: '%DYNAMIC_METADATA(io.solo.transformation:endpoint_url)%'
           path: /dev/stdout
 {{< /highlight >}}
 
-This relies on the `pod_name` and `endpoint_url` dynamic metadata entries having being added to the HTTP stream by Gloo's transformation filter.
+This relies on the `pod_name` and `endpoint_url` dynamic metadata entries having being added to the HTTP stream by Gloo Edge's transformation filter.
 
 #### Update Virtual Service
 For the above dynamic metadata to be available, we need to update our Virtual Service definition. Specifically, we need to add a transformation that extracts the value of the `POD_NAME` environment variable and the value of the `url` response attribute and uses them to populate the corresponding metadata attributes.
@@ -229,7 +229,7 @@ spec:
 {{< /highlight >}}
 
 #### Test our configuration
-To test that our configuration has been correctly picked up by Gloo, let's execute our `curl` command again:
+To test that our configuration has been correctly picked up by Gloo Edge, let's execute our `curl` command again:
 
 ```shell
 curl $(glooctl proxy url)/get | jq

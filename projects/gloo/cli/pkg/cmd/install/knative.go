@@ -116,7 +116,7 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 					ExtraValues:    knativeOverrides,
 					Verbose:        opts.Top.Verbose,
 				}); err != nil {
-					return eris.Wrapf(err, "installing gloo in knative mode")
+					return eris.Wrapf(err, "installing gloo edge in knative mode")
 				}
 			}
 			return nil

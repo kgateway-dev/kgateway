@@ -1,10 +1,10 @@
 ---
 title: Websockets
 weight: 40
-description: Learn how to configure Websockets support in Gloo
+description: Learn how to configure Websockets support in Gloo Edge
 ---
 
-Websockets is a protocol allowing full-duplex communication through a single TCP connection. Gloo _enables websocket upgrades by default_ without any additional configuration changes. This document will show how to fine tune the websocket support as needed.
+Websockets is a protocol allowing full-duplex communication through a single TCP connection. Gloo Edge _enables websocket upgrades by default_ without any additional configuration changes. This document will show how to fine tune the websocket support as needed.
 
 ---
 

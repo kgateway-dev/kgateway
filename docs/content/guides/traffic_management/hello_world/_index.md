@@ -4,12 +4,12 @@ weight: 10
 description: Follow this guide for hands on, step-by-step tutorial for creating your first Virtual Service and routing rules in Kubernetes.
 ---
 
-In this guide, we will introduce Gloo's *Upstream* and *Virtual Service* concepts by accomplishing the following tasks:
+In this guide, we will introduce Gloo Edge's *Upstream* and *Virtual Service* concepts by accomplishing the following tasks:
 
 * Deploy a REST service to Kubernetes using the Pet Store sample application
-* Observe that Gloo's Discovery system finds the Pet Store service and creates an Upstream Custom Resource (CR) for it
+* Observe that Gloo Edge's Discovery system finds the Pet Store service and creates an Upstream Custom Resource (CR) for it
 * Create a Virtual Service and add routes sending traffic to specific paths on the Pet Store Upstream based on incoming web requests
-* Verify Gloo correctly configures Envoy to route to the Upstream
+* Verify Gloo Edge correctly configures Envoy to route to the Upstream
 * Test the routes by submitting web requests using `curl`
 
 {{% notice note %}}
@@ -24,18 +24,18 @@ To follow along in this guide, you will need to fulfill a few prerequisites.
 
 ### Prerequisite Software
 
-Your local system should have `kubectl` and `glooctl` installed, and you should have access to a Kubernetes deployment to install the Gloo Gateway.
+Your local system should have `kubectl` and `glooctl` installed, and you should have access to a Kubernetes deployment to install Gloo Edge.
 
 * [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 * `glooctl`
 * Kubernetes v1.11.3+ deployed somewhere. [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) is a
 great way to get a cluster up quickly.
 
-### Install the Gloo Gateway and glooctl
+### Install Gloo Edge and glooctl
 
-The [linked guide]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes" >}}) walks you through the process of installing `glooctl` locally and installing the Gloo Gateway on Kubernetes to the default `gloo-system` namespace.
+The [linked guide]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes" >}}) walks you through the process of installing `glooctl` locally and installing Gloo Edge on Kubernetes to the default `gloo-system` namespace.
 
-Once you have completed the installation of `glooctl` and Gloo Gateway, you are now ready to deploy an example application and configure routing.
+Once you have completed the installation of `glooctl` and Gloo Edge, you are now ready to deploy an example application and configure routing.
 
 --- 
 
@@ -88,7 +88,7 @@ petstore  ClusterIP  10.XX.XX.XX  <none>       8080/TCP  1m
 
 ### Verify the Upstream for the Pet Store Application
 
-The Gloo discovery services watch for new services added to the Kubernetes cluster. When the petstore service was created, Gloo automatically created an Upstream for the petstore service. If everything deployed properly, the Upstream **STATUS** should be **Accepted**. 
+The Gloo Edge discovery services watch for new services added to the Kubernetes cluster. When the petstore service was created, Gloo Edge automatically created an Upstream for the petstore service. If everything deployed properly, the Upstream **STATUS** should be **Accepted**. 
 
 <video controls loop>
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/helloworld_upstreams.mp4" type="video/mp4">
@@ -122,12 +122,12 @@ glooctl get upstreams
 +--------------------------------+------------+----------+------------------------------+
 ```
 
-This command lists all the Upstreams Gloo has discovered, each written to an *Upstream* CR. 
+This command lists all the Upstreams Gloo Edge has discovered, each written to an *Upstream* CR. 
 
 The Upstream we want to see is `default-petstore-8080`. 
     
 {{% notice note %}}
-The Upstream was created in the `gloo-system` namespace rather than `default` because it was created by the discovery service. Upstreams and Virtual Services do not need to live in the `gloo-system` namespace to be processed by Gloo. 
+The Upstream was created in the `gloo-system` namespace rather than `default` because it was created by the discovery service. Upstreams and Virtual Services do not need to live in the `gloo-system` namespace to be processed by Gloo Edge. 
 {{% /notice %}}
 
 ### Investigate the YAML of the Upstream
@@ -138,7 +138,7 @@ You can view more information about the properties of a particular Upstream by s
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/helloworld_upstreams_2.mp4" type="video/mp4">
 </video>
 
-Let's take a closer look at the upstream that Gloo's Discovery service created:
+Let's take a closer look at the upstream that Gloo Edge's Discovery service created:
 
 ```shell
 glooctl get upstream default-petstore-8080 --output kube-yaml
@@ -165,13 +165,13 @@ status:
   state: 1
 ```
 
-By default the upstream created is rather simple. It represents a specific kubernetes service. However, the petstore application is a swagger service. Gloo can discover this swagger spec, but by default Gloo's function discovery features are turned off to improve performance. To enable Function Discovery Service (fds) on our petstore, we need to label the namespace.
+By default the upstream created is rather simple. It represents a specific kubernetes service. However, the petstore application is a swagger service. Gloo Edge can discover this swagger spec, but by default Gloo Edge's function discovery features are turned off to improve performance. To enable Function Discovery Service (fds) on our petstore, we need to label the namespace.
 
 ```shell
 kubectl label namespace default  discovery.solo.io/function_discovery=enabled
 ```
 
-Now Gloo's function discovery will discover the swagger spec. Fds populated our Upstream with the available rest endpoints it implements.
+Now Gloo Edge's function discovery will discover the swagger spec. Fds populated our Upstream with the available rest endpoints it implements.
 
 ```shell
 glooctl get upstream default-petstore-8080
@@ -267,13 +267,13 @@ status:
   state: 1
 ```
 
-The application endpoints were discovered by Gloo's Function Discovery (fds) service. This was possible because the petstore application implements OpenAPI (specifically, discovering a Swagger JSON document at `petstore-svc/swagger.json`).
+The application endpoints were discovered by Gloo Edge's Function Discovery (fds) service. This was possible because the petstore application implements OpenAPI (specifically, discovering a Swagger JSON document at `petstore-svc/swagger.json`).
 
 ---
 
 ## Configuring Routing
 
-We have confirmed that the Pet Store application was deployed successfully and that the Function Discovery service on Gloo automatically added an Upstream entry with all the published application endpoints of the Pet Store application. Now let's configure some routing rules on the default Virtual Service and test them to ensure we get a valid response.
+We have confirmed that the Pet Store application was deployed successfully and that the Function Discovery service on Gloo Edge automatically added an Upstream entry with all the published application endpoints of the Pet Store application. Now let's configure some routing rules on the default Virtual Service and test them to ensure we get a valid response.
 
 <video controls loop>
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/helloworld_virtualservice.mp4" type="video/mp4">
@@ -281,7 +281,7 @@ We have confirmed that the Pet Store application was deployed successfully and t
 
 ### Add a Routing Rule
 
-Even though the Upstream has been created, Gloo will not route traffic to it until we add some routing rules on a Virtual Service. Let’s now use glooctl to create a basic route for this Upstream with the `--prefix-rewrite` flag to rewrite the path on incoming requests to match the path our petstore application expects.
+Even though the Upstream has been created, Gloo Edge will not route traffic to it until we add some routing rules on a Virtual Service. Let’s now use glooctl to create a basic route for this Upstream with the `--prefix-rewrite` flag to rewrite the path on incoming requests to match the path our petstore application expects.
 
 ```shell
 glooctl add route \
@@ -324,7 +324,7 @@ glooctl get virtualservice default
 
 Let's verify that a Virtual Service was created with that route. 
 
-Routes are associated with Virtual Services in Gloo. When we created the route in the previous step, we didn't provide a Virtual Service, so Gloo created a Virtual Service called `default` and added the route. 
+Routes are associated with Virtual Services in Gloo Edge. When we created the route in the previous step, we didn't provide a Virtual Service, so Gloo Edge created a Virtual Service called `default` and added the route. 
 
 With `glooctl`, we can see that the `default` Virtual Service was created with our route:
 
@@ -361,13 +361,13 @@ virtualHost:
           namespace: gloo-system
 ```
     
-When a Virtual Service is created, Gloo immediately updates the proxy configuration. Since the status of this Virtual Service is `Accepted`, we know this route is now active. 
+When a Virtual Service is created, Gloo Edge immediately updates the proxy configuration. Since the status of this Virtual Service is `Accepted`, we know this route is now active. 
 
 At this point we have a Virtual Service with a routing rule sending traffic on the path `/all-pets` to the Upstream `petstore` at a path of `/api/pets`.
 
 ### Test the Route Rule
 
-Let’s test the route rule by retrieving the URL of the Gloo gateway, and sending a web request to the `/all-pets` path of the URL using curl:
+Let’s test the route rule by retrieving the URL of Gloo Edge, and sending a web request to the `/all-pets` path of the URL using curl:
 
 ```shell
 curl $(glooctl proxy url)/all-pets

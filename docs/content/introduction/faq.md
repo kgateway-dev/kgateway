@@ -4,27 +4,27 @@ weight: 80
 description: Frequently Asked Questions
 ---
 
-## Gloo API Gateway
+## Gloo Edge API Gateway
 
-This section covers some of the high-level questions we commonly see in community meetings, on our [public slack](https://slack.solo.io), or on [GitHub issues](https://github.com/solo-io/gloo/issues). Gloo is an API Gateway built on top of [Envoy Proxy](https://envoyproxy.io) that comes with a simple yet powerful control plane for managing Envoy as an edge ingress, API Gateway, or service proxy. Gloo's control plane is built on a plugin model that enables extension and customization depending on your environment and comes with an out of the box Discovery plugin that can discover services running VMs, registered in Consul, running in Kubernetes, or deployed on a public cloud including Functions running in a Cloud Functions environment.  The Envoy community moves fast and no two operational environments are identical, so we built Gloo with this flexibility in mind.
+This section covers some of the high-level questions we commonly see in community meetings, on our [public slack](https://slack.solo.io), or on [GitHub issues](https://github.com/solo-io/gloo/issues). Gloo Edge is an API Gateway built on top of [Envoy Proxy](https://envoyproxy.io) that comes with a simple yet powerful control plane for managing Envoy as an edge ingress, API Gateway, or service proxy. Gloo Edge's control plane is built on a plugin model that enables extension and customization depending on your environment and comes with an out of the box Discovery plugin that can discover services running VMs, registered in Consul, running in Kubernetes, or deployed on a public cloud including Functions running in a Cloud Functions environment.  The Envoy community moves fast and no two operational environments are identical, so we built Gloo Edge with this flexibility in mind.
 
-#### What are Gloo's primary use cases?
+#### What are Gloo Edge's primary use cases?
 
-Gloo was built to support the difficult challenges of monolith to microservice migration, which includes being able to "gloo" multiple types of compute resources (those running on VMs/monoliths with those running on containers and Kubernetes with those running on cloud/on-prem FaaS) as well as security and observability domains. Operational environments are always heterogeneous and Gloo bridges that world to provide "hybrid integration".
+Gloo Edge was built to support the difficult challenges of monolith to microservice migration, which includes being able to "gloo" multiple types of compute resources (those running on VMs/monoliths with those running on containers and Kubernetes with those running on cloud/on-prem FaaS) as well as security and observability domains. Operational environments are always heterogeneous and Gloo Edge bridges that world to provide "hybrid integration".
 
-Other use cases Gloo can solve:
+Other use cases Gloo Edge can solve:
 
 * Kubernetes cluster Ingress (supporting both [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) as well as a [more powerful API]({{< versioned_link_path fromRoot="/reference/api" >}}))
 * API Gateway functionality running *outside* Kubernetes
-* GraphQL endpoint for the services that Gloo can discover
+* GraphQL endpoint for the services that Gloo Edge can discover
 
-#### What's the difference between Gloo and Envoy
+#### What's the difference between Gloo Edge and Envoy
 
-Envoy Proxy is a data-plane component with powerful routing, observability, and resilience capabilities. Envoy can be difficult to operationalize and complex to configure. Gloo adds the following:
+Envoy Proxy is a data-plane component with powerful routing, observability, and resilience capabilities. Envoy can be difficult to operationalize and complex to configure. Gloo Edge adds the following:
 
 * A [flexible control plane]({{< versioned_link_path fromRoot="/guides/dev" >}}) with extensibility in mind
 * More ergonomic, [domain-specific APIs]({{< versioned_link_path fromRoot="/introduction/architecture/concepts" >}}) to drive Envoy configuration
-* [Function-level routing]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/" >}}); Envoy understands routing to clusters (`host:port`) while Gloo understands routing to a Swagger/OAS endpoint, gRPC function, Cloud Function like Lambda, etc.
+* [Function-level routing]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/" >}}); Envoy understands routing to clusters (`host:port`) while Gloo Edge understands routing to a Swagger/OAS endpoint, gRPC function, Cloud Function like Lambda, etc.
 * [Transformation of request/response](https://github.com/solo-io/envoy-gloo/tree/master/source/extensions/filters/http/transformation) via a super-fast C++ templating filter [built on Inja](https://github.com/pantor/inja)
 * Envoy filters to call [AWS Lambda directly](https://github.com/solo-io/envoy-gloo/tree/master/source/extensions/filters/http/aws_lambda), handling the complex security handshaking
 * [Discovery of services running in a hybrid platform]({{< versioned_link_path fromRoot="/introduction/architecture#discovery-architecture" >}}) (like VMs, containers, infrastructure as code, function as a service, etc)
@@ -33,9 +33,9 @@ Envoy Proxy is a data-plane component with powerful routing, observability, and 
 * [OIDC integration]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/oauth/" >}}), pluggable [external-auth service]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/" >}}) - enterprise feature
 
 
-#### What's the difference between Gloo and Istio
+#### What's the difference between Gloo Edge and Istio
 
-Gloo is NOT a service mesh but can be deployed complementary to a service mesh like Istio. Istio solves the challenges of service-to-service communication by controlling requests as they flow through the system. Gloo can be deployed at the edge of the service-mesh boundary, between service meshes, or within the mesh to add the following capabilities:
+Gloo Edge is NOT a service mesh but can be deployed complementary to a service mesh like Istio. Istio solves the challenges of service-to-service communication by controlling requests as they flow through the system. Gloo Edge can be deployed at the edge of the service-mesh boundary, between service meshes, or within the mesh to add the following capabilities:
 
 * Oauth flows for end-user authentication
 * GraphQL endpoints for aggregation of multiple services/APIs
@@ -45,17 +45,17 @@ Gloo is NOT a service mesh but can be deployed complementary to a service mesh l
 * Unified discovery services of infrastructure like Kubernetes, Consul, Vault, AWS EC2
 * Unified discovery services of functions like REST/OAS spec, gRPC reflection, SOAP/WSDL, GraphQL, WebSockets, Cloud Functions, AWS Lambda
 
-See our blog on [API Gateways and Service Mesh](https://medium.com/solo-io/api-gateways-are-going-through-an-identity-crisis-d1d833a313d7) as well as [Integrating Gloo with Istio 1.1](https://medium.com/solo-io/integrating-istio-1-1-mtls-and-gloo-proxy-f84be943e65e)
+See our blog on [API Gateways and Service Mesh](https://medium.com/solo-io/api-gateways-are-going-through-an-identity-crisis-d1d833a313d7) as well as [Integrating Gloo Edge with Istio 1.1](https://medium.com/solo-io/integrating-istio-1-1-mtls-and-gloo-proxy-f84be943e65e)
 
 ### Functionality
 
 We strive to write good documentation and lots of tutorials in our user guides. If you have a suggestion for how to improve, please tell us! In this section, we'll look at some frequent questions asked when getting started:
 
-#### How to change the ports on which Gloo gateway proxy listens?
+#### How to change the ports on which Gloo Edge gateway proxy listens?
 
-When considering changing the ports, it's important to understand that the Gloo `gateway-proxy` (Envoy) listens on a port, and when running in Kubernetes, the Kubernetes service maps to a routable service:port as well.
+When considering changing the ports, it's important to understand that the Gloo Edge `gateway-proxy` (Envoy) listens on a port, and when running in Kubernetes, the Kubernetes service maps to a routable service:port as well.
 
-Gloo's `gateway-proxy` listens on port `8080` and `8443` by default. The listeners for a Gloo `gateway-proxy` are defined with Gateway resources and can be found with:
+Gloo Edge's `gateway-proxy` listens on port `8080` and `8443` by default. The listeners for a Gloo Edge `gateway-proxy` are defined with Gateway resources and can be found with:
 
 ```shell
 kubectl --namespace gloo-system get gateway
@@ -130,7 +130,7 @@ status:
   loadBalancer: {}
 {{< /highlight >}}
 
-If you expose Gloo's `gateway-proxy` outside your Kubernetes cluster with a Cloud loadbalancer or NodePort, you should keep in mind that you will route to port `80` and `443` as defined in the Kubernetes service.
+If you expose Gloo Edge's `gateway-proxy` outside your Kubernetes cluster with a Cloud loadbalancer or NodePort, you should keep in mind that you will route to port `80` and `443` as defined in the Kubernetes service.
 
 #### How do VirtualServices get associated with Gateways/listeners
 
@@ -181,11 +181,9 @@ spec:
       anotherlabel-name: anotherlabel-value
 {{< /highlight >}}
 
+#### How do I configure TLS for Gloo Edge?
 
-
-#### How do I configure TLS for Gloo
-
-Gloo can be configured with TLS and SNI for multiple virtual hosts. Please [see the documentation for how to do that]({{< versioned_link_path fromRoot="/guides/security/tls/server_tls/">}})
+Gloo Edge can be configured with TLS and SNI for multiple virtual hosts. Please [see the documentation for how to do that]({{< versioned_link_path fromRoot="/guides/security/tls/server_tls/">}})
 
 #### I want to call my HTTP/HTTPS services; what URL do I use?
 
@@ -213,9 +211,9 @@ https://192.168.64.50:31767
 
 There will be times when a configuration goes awry or you encounter unexpected behavior. Here are some helpful hints to diagnose these problems.
 
-#### How can I see exactly what configuration the Gloo gateway-proxy should see and is seeing?
+#### How can I see exactly what configuration the Gloo Edge gateway-proxy should see and is seeing?
 
-To show what configuration the `gateway-proxy` *should* see, we look at the Proxy object which is Gloo's lower-level domain-specific API object (VirtualService and Gateway both drive the configuration of the Proxy object):
+To show what configuration the `gateway-proxy` *should* see, we look at the Proxy object which is Gloo Edge's lower-level domain-specific API object (VirtualService and Gateway both drive the configuration of the Proxy object):
 
 ```shell
 kubectl --namespace gloo-system get proxy --output yaml
@@ -397,7 +395,7 @@ If you want to quickly get the logs for the proxy:
 glooctl proxy logs -f
 ```
 
-#### Why are the ports on my Gloo gateway proxy not opened?
+#### Why are the ports on my Gloo Edge gateway proxy not opened?
 
 For Envoy to open the ports and actually listen, you need to have a Route defined in one of the VirtualServices that will be associated with that particular Gateway/Listener. For example, if have only **one** VirtualService and that has **zero** routes, the corresponding listeners on the `gateway-proxy` will not be active:
 
@@ -417,7 +415,7 @@ This is by design with the intention of not over-exposing your cluster by accide
 
 #### Why am I getting error: multiple "filter chains with the same matching rules are defined"
 
-When you create multiple VirtualServices that have TLS/SSL configuration, Gloo will use SNI to try and route to the correct VirtualService. For this to work, you need to specify the `domain` explicitly in your VirtualService as well as the SNI domains. [See the TLS documentation for more]({{< versioned_link_path fromRoot="/guides/security/tls/server_tls/">}}). If you don't do this, then you'll have multiple VirtualServices with different certificate information and Envoy will not know which one to use since the hosts are the same.
+When you create multiple VirtualServices that have TLS/SSL configuration, Gloo Edge will use SNI to try and route to the correct VirtualService. For this to work, you need to specify the `domain` explicitly in your VirtualService as well as the SNI domains. [See the TLS documentation for more]({{< versioned_link_path fromRoot="/guides/security/tls/server_tls/">}}). If you don't do this, then you'll have multiple VirtualServices with different certificate information and Envoy will not know which one to use since the hosts are the same.
 
 #### When I have both HTTP and HTTPS routes, why are they merged and only available on HTTPS?
 

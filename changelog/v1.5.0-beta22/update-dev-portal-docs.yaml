@@ -1,6 +1,6 @@
 changelog:
 - type: NON_USER_FACING
   description: >
-    Update the Dev Portal section of the Gloo docs to redirect users to the [new Dev Portal docs](https://docs.solo.io/dev-portal/latest).
+    Update the Dev Portal section of the Gloo docs to redirect users to the [new Dev Portal docs](https://docs.solo.io/gloo-portal/latest).
   issueLink: https://github.com/solo-io/gloo/issues/3598
   resolvesIssue: false

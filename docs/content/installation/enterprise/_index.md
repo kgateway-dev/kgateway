@@ -1,11 +1,11 @@
 ---
-title: "Installing Gloo Enterprise"
-menuTitle: Gloo Enterprise
-description: How to install Gloo to run in Gateway Mode on Kubernetes (Default).
+title: "Installing Gloo Edge Enterprise"
+menuTitle: Gloo Edge Enterprise
+description: How to install Gloo Edge to run in Gateway Mode on Kubernetes (Default).
 weight: 60
 ---
 
-## Installing the Gloo Gateway on Kubernetes
+## Installing the Gloo Edge on Kubernetes
 
 These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your Kubernetes cluster [here]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}).
 
@@ -14,9 +14,9 @@ Note: For certain providers with more strict multi-tenant security, like OpenShi
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 
 {{% notice note %}}
-To install Gloo Enterprise you need a License Key. If you don't have one, go to [**https://solo.io/gloo**](https://www.solo.io/products/gloo/#enterprise-trial) and
+To install Gloo Edge Enterprise you need a License Key. If you don't have one, go to [**https://solo.io/gloo**](https://www.solo.io/products/gloo/#enterprise-trial) and
 request a trial now. Once you request a trial, an e-mail will be sent to you with your unique License Key that you will
-need as part of installing Gloo.
+need as part of installing Gloo Edge.
 {{% /notice %}}
 
 {{% notice info %}}
@@ -31,15 +31,15 @@ Before starting installation, please ensure that you've prepared your Kubernetes
 
 ### Installing on Kubernetes with `glooctl`
 
-Once your Kubernetes cluster is up and running, run the following command to deploy the Gloo Gateway to the `gloo-system` namespace:
+Once your Kubernetes cluster is up and running, run the following command to deploy the Gloo Edge to the `gloo-system` namespace:
 
 ```bash
 glooctl install gateway enterprise --license-key YOUR_LICENSE_KEY
 ```
 
 <details>
-<summary>Special Instructions to Install Gloo Enterprise on Kind</summary>
-If you followed the cluster setup instructions for Kind [here]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#kind" >}}), then you should have exposed custom ports 31500 (for http) and 32500 (https) from your cluster's Docker container to its host machine. The purpose of this is to make it easier to access your service endpoints from your host workstation.  Use the following custom installation for Gloo to publish those same ports from the proxy as well.
+<summary>Special Instructions to Install Gloo Edge Enterprise on Kind</summary>
+If you followed the cluster setup instructions for Kind [here]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#kind" >}}), then you should have exposed custom ports 31500 (for http) and 32500 (https) from your cluster's Docker container to its host machine. The purpose of this is to make it easier to access your service endpoints from your host workstation.  Use the following custom installation for Gloo Edge to publish those same ports from the proxy as well.
 
 ```bash
 cat <<EOF | glooctl install gateway enterprise --license-key YOUR_LICENSE_KEY --values -
@@ -57,12 +57,12 @@ EOF
 
 ```
 Creating namespace gloo-system... Done.
-Starting Gloo Enterprise installation...
+Starting Gloo Edge Enterprise installation...
 
-Gloo Enterprise was successfully installed!
+Gloo Edge Enterprise was successfully installed!
 ```
 
-Note also that the url to invoke services published via Gloo will be slightly different with Kind-hosted clusters.  Much of the Gloo documentation instructs you to use `$(glooctl proxy url)` as the header for your service url.  This will not work with kind.  For example, instead of using curl commands like this:
+Note also that the url to invoke services published via Gloo Edge will be slightly different with Kind-hosted clusters.  Much of the Gloo Edge documentation instructs you to use `$(glooctl proxy url)` as the header for your service url.  This will not work with kind.  For example, instead of using curl commands like this:
 
 ```bash
 curl $(glooctl proxy url)/all-pets
@@ -75,7 +75,7 @@ curl http://localhost:31500/all-pets
 ```
 </details>
 
-Once you've installed Gloo, please be sure [to verify your installation](#verify-your-installation).
+Once you've installed Gloo Edge, please be sure [to verify your installation](#verify-your-installation).
 
 
 {{% notice note %}}
@@ -88,16 +88,16 @@ apply to the cluster instead of installing them.
 ### Installing on Kubernetes with Helm
 
 
-This is the recommended method for installing Gloo to your production environment as it offers rich customization to
-the Gloo control plane and the proxies Gloo manages.
+This is the recommended method for installing Gloo Edge to your production environment as it offers rich customization to
+the Gloo Edge control plane and the proxies Gloo Edge manages.
 
-As a first step, you have to add the Gloo repository to the list of known chart repositories:
+As a first step, you have to add the Gloo Edge repository to the list of known chart repositories:
 
 ```shell
 helm repo add glooe http://storage.googleapis.com/gloo-ee-helm
 ```
 
-Finally, install Gloo using the following command:
+Finally, install Gloo Edge using the following command:
 
 {{< tabs >}}
 {{< tab name="Helm 2" codelang="shell">}}
@@ -110,11 +110,11 @@ helm install gloo glooe/gloo-ee --namespace gloo-system \
 {{< /tab >}}
 {{< /tabs >}}
 
-Once you've installed Gloo, please be sure [to verify your installation](#verify-your-installation).
+Once you've installed Gloo Edge, please be sure [to verify your installation](#verify-your-installation).
 
 #### Customizing your installation with Helm
 
-You can customize the Gloo installation by providing your own value file.
+You can customize the Gloo Edge installation by providing your own value file.
 
 For example, you can create a file named `value-overrides.yaml` with the following content:
 
@@ -128,7 +128,7 @@ settings:
   writeNamespace: my-custom-namespace
 ```
 
-and use it to override default values in the Gloo Helm chart:
+and use it to override default values in the Gloo Edge Helm chart:
 
 {{< tabs >}}
 {{< tab name="Helm 2" codelang="shell">}}
@@ -141,14 +141,14 @@ helm install gloo glooe/gloo-ee --namespace gloo-system \
 {{< /tab >}}
 {{< /tabs >}}
 
-#### List of Gloo Helm chart values
+#### List of Gloo Edge Helm chart values
 
 The table below describes the most important enterprise-only values that you can override in your custom values file.
 
 The table for gloo open-source overrides (also available in enterprise) is [here]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}}). To make customizations that are not part of the helm chart, please see our [advanced customization guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/helm_advanced/" %}})
 
 {{% notice note %}}
-Open source helm values in Gloo enterprise must be prefixed with `gloo`, unless they are the Gloo settings (i.e., `settings.<rest of helm value>`).
+Open source helm values in Gloo Edge enterprise must be prefixed with `gloo`, unless they are the Gloo Edge settings (i.e., `settings.<rest of helm value>`).
 {{% /notice %}}
 
 | option                                                    | type     | description                                                                                                                                                                                                                                                    |
@@ -159,17 +159,17 @@ Open source helm values in Gloo enterprise must be prefixed with `gloo`, unless 
 | global.extensions.extAuth.enabled                         | bool     | deploy ext-auth in your gloo system namespace. default is `true` |
 | global.extensions.extAuth.envoySidecar                    | bool     | deploy ext-auth in the gateway-proxy pod, as a sidecar to envoy. communicates over unix domain socket instead of TCP. default is `false` |
 | observability.enabled                                     | bool     | deploy observability in your gloo system namespace. default is `true` |
-| observability.customGrafana.enabled                       | bool     | indicate you'll be using your own instance of grafana rather than the one shipped with Gloo. default is `false`
+| observability.customGrafana.enabled                       | bool     | indicate you'll be using your own instance of grafana rather than the one shipped with Gloo Edge. default is `false`
 | observability.customGrafana.username                      | string   | set this and the `password` field to authenticate to the custom grafana instance using basic auth
 | observability.customGrafana.password                      | string   | set this and the `username` field to authenticate to the custom grafana instance using basic auth
 | observability.customGrafana.apiKey                        | string   | authenticate to the custom grafana instance using this api key
 | observability.customGrafana.url                           | string   | the URL for the custom grafana instance
-| apiServer.enterprise                                      | bool     | deploy UI with permissions to modify Gloo resources. default is `true`
+| apiServer.enterprise                                      | bool     | deploy UI with permissions to modify Gloo Edge resources. default is `true`
 ---
 ## Verify your Installation
 
-Check that the Gloo pods and services have been created. Depending on your install option, you may see some differences
-from the following example. And if you choose to install Gloo into a different namespace than the default `gloo-system`,
+Check that the Gloo Edge pods and services have been created. Depending on your install option, you may see some differences
+from the following example. And if you choose to install Gloo Edge into a different namespace than the default `gloo-system`,
 then you will need to query your chosen namespace instead.
 
 ```shell
@@ -240,13 +240,13 @@ NOT opening the listener ports when there are no listeners (routes) is by design
 
 ## Uninstall {#uninstall}
 
-To uninstall Gloo and all related components, simply run the following.
+To uninstall Gloo Edge and all related components, simply run the following.
 
 ```shell
 glooctl uninstall
 ```
 
-If you installed Gloo to a different namespace, you will have to specify that namespace using the `-n` option:
+If you installed Gloo Edge to a different namespace, you will have to specify that namespace using the `-n` option:
 
 ```shell
 glooctl uninstall -n my-namespace
@@ -254,4 +254,4 @@ glooctl uninstall -n my-namespace
 
 ## Next Steps
 
-After you've installed Gloo, please check out our [User Guides]({{< versioned_link_path fromRoot="/guides/" >}}).
+After you've installed Gloo Edge, please check out our [User Guides]({{< versioned_link_path fromRoot="/guides/" >}}).

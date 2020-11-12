@@ -5,7 +5,7 @@ description: Route HTTP traffic to HTTPS services
 ---
 
 To help users or old services find your https endpoints, it is a common practice to redirect http traffic to https endpoints.
-With Gloo, this is a simple matter of creating an auxiliary http virtual service that routes to your full
+With Gloo Edge, this is a simple matter of creating an auxiliary http virtual service that routes to your full
 {{% protobuf
 display="https virtual service" 
 name="gateway.solo.io.VirtualService"

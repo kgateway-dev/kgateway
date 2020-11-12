@@ -8,17 +8,17 @@ description: External Auth with Oauth
 {{< readfile file="static/content/enterprise_only_feature_disclaimer" markdown="true">}}
 {{% /notice %}}
 
-Gloo supports authentication via **OpenID Connect (OIDC)**. OIDC is an identity layer on top of the **OAuth 2.0** protocol. In OAuth 2.0 flows, authentication is performed by an external **Identity Provider** (IdP) which, in case of success, returns an **Access Token** representing the user identity. The protocol does not define the contents and structure of the Access Token, which greatly reduces the portability of OAuth 2.0 implementations.
+Gloo Edge supports authentication via **OpenID Connect (OIDC)**. OIDC is an identity layer on top of the **OAuth 2.0** protocol. In OAuth 2.0 flows, authentication is performed by an external **Identity Provider** (IdP) which, in case of success, returns an **Access Token** representing the user identity. The protocol does not define the contents and structure of the Access Token, which greatly reduces the portability of OAuth 2.0 implementations.
 
-The goal of OIDC is to address this ambiguity by additionally requiring Identity Providers to return a well-defined **ID Token**. OIDC ID tokens follow the [JSON Web Token]({{% versioned_link_path fromRoot="/guides/security/auth/jwt" %}}) standard and contain specific fields that your applications can expect and handle. This standardization allows you to switch between Identity Providers - or support multiple ones at the same time - with minimal, if any, changes to your downstream services; it also allows you to consistently apply additional security measures like _Role-based Access Control (RBAC)_ based on the identity of your users, i.e. the contents of their ID token (check out [this guide]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control" %}}) for an example of how to use Gloo to apply RBAC policies to JWTs). 
+The goal of OIDC is to address this ambiguity by additionally requiring Identity Providers to return a well-defined **ID Token**. OIDC ID tokens follow the [JSON Web Token]({{% versioned_link_path fromRoot="/guides/security/auth/jwt" %}}) standard and contain specific fields that your applications can expect and handle. This standardization allows you to switch between Identity Providers - or support multiple ones at the same time - with minimal, if any, changes to your downstream services; it also allows you to consistently apply additional security measures like _Role-based Access Control (RBAC)_ based on the identity of your users, i.e. the contents of their ID token (check out [this guide]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control" %}}) for an example of how to use Gloo Edge to apply RBAC policies to JWTs). 
 
-In this guide, we will focus on the format of the Gloo API for OIDC authentication.
+In this guide, we will focus on the format of the Gloo Edge API for OIDC authentication.
 
 {{% notice warning %}}
-This feature requires Gloo's external auth server to communicate with an external OIDC provider/authorization server.
+This feature requires Gloo Edge's external auth server to communicate with an external OIDC provider/authorization server.
 Because of this interaction, the OIDC flow may take longer than the default timeout of 200ms.
 You can increase this timeout by setting the {{% protobuf name="enterprise.gloo.solo.io.Settings" display="`requestTimeout` value on external auth settings"%}}.
-The external auth settings can be configured on the {{% protobuf name="gloo.solo.io.Settings" display="global Gloo `Settings` object"%}}.
+The external auth settings can be configured on the {{% protobuf name="gloo.solo.io.Settings" display="global Gloo Edge `Settings` object"%}}.
 {{% /notice %}}
 
 ## Configuration format
@@ -53,17 +53,17 @@ spec:
 
 The `AuthConfig` consists of a single `config` of type `oauth`. Let's go through each of its attributes:
 
-- `issuer_url`: The url of the OpenID Connect identity provider. Gloo will automatically discover OpenID Connect 
+- `issuer_url`: The url of the OpenID Connect identity provider. Gloo Edge will automatically discover OpenID Connect 
 configuration by querying the `.well-known/openid-configuration` endpoint on the `issuer_url`. For example, if you are 
-using Google as an identity provider, Gloo will expect to find OIDC discovery information at 
+using Google as an identity provider, Gloo Edge will expect to find OIDC discovery information at 
 `https://accounts.google.com/.well-known/openid-configuration`.
 - `auth_endpoint_query_params`: A map of query parameters appended to the issuer url in the form
  `issuer_url`?`paramKey`:`paramValue`. These query parameters are sent to the [authorization endpoint](https://auth0.com/docs/protocols/oauth2#oauth-endpoints)
-  when Gloo initiates the OIDC flow. This can be useful when integrating Gloo with some identity providers that require
+  when Gloo Edge initiates the OIDC flow. This can be useful when integrating Gloo Edge with some identity providers that require
   custom parameters to be sent to the authorization endpoint.
 - `app_url`: This is the public URL of your application. It is used in combination with the `callback_path` attribute.
 - `callback_path`: The callback path relative to the `app_url`. Once a user has been authenticated, the identity provider 
-will redirect them to this URL. Gloo will intercept requests with this path, exchange the authorization code received from 
+will redirect them to this URL. Gloo Edge will intercept requests with this path, exchange the authorization code received from 
 the Identity Provider for an ID token, place the ID token in a cookie on the request, and forward the request to its original destination. 
 
 {{% notice note %}}
@@ -90,7 +90,7 @@ metadata:
 data:
   # The value is a base64 encoding of the following YAML:
   # client_secret: secretvalue
-  # Gloo expects OAuth client secrets in this format.
+  # Gloo Edge expects OAuth client secrets in this format.
   oauth: Y2xpZW50U2VjcmV0OiBzZWNyZXR2YWx1ZQo=
 {{< /tab >}}
 {{< /tabs >}} 
@@ -227,6 +227,6 @@ spec:
 
 ## Examples
 We have seen how a sample OIDC `AuthConfig` is structured. For complete examples of how to set up an OIDC flow with 
-Gloo, check out the following guides:
+Gloo Edge, check out the following guides:
 
 {{% children description="true" %}}

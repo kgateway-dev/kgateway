@@ -5,7 +5,7 @@ description: Filter, monitor, and block potentially harmful HTTP traffic.
 ---
 
 {{% notice note %}}
-The WAF feature was introduced with **Gloo Enterprise**, release 0.18.23. If you are using an earlier version, this tutorial will not work.
+The WAF feature was introduced with **Gloo Edge Enterprise**, release 0.18.23. If you are using an earlier version, this tutorial will not work.
 {{% /notice %}}
 
 ## **What is a Web Application Firewall (WAF)**
@@ -15,15 +15,15 @@ and uses a set of rules to determine access to the web application. In enterpris
 deployed to an application or group of applications to provide a layer of protection between the applications and the 
 end users.
 
-Gloo now supports the popular Web Application Firewall framework/ruleset [ModSecurity](https://www.modsecurity.org/) 3.0.3.
+Gloo Edge now supports the popular Web Application Firewall framework/ruleset [ModSecurity](https://www.modsecurity.org/) 3.0.3.
 
-## **WAF in Gloo**
-Gloo Enterprise now includes the ability to enable the ModSecurity Web Application Firewall for any incoming and outgoing HTTP connections. There is support for configuring rule sets based on the OWASP Core Rule Set as well as custom rule sets. More information on available rule sets, and the rules language generally, can be found [here](https://www.modsecurity.org/rules.html).
+## **WAF in Gloo Edge**
+Gloo Edge Enterprise now includes the ability to enable the ModSecurity Web Application Firewall for any incoming and outgoing HTTP connections. There is support for configuring rule sets based on the OWASP Core Rule Set as well as custom rule sets. More information on available rule sets, and the rules language generally, can be found [here](https://www.modsecurity.org/rules.html).
 
 ## **Why Mod Security**
 API Gateways act as a control point for the outside world to access the various application services running in your environment. A Web Application Firewall offers a standard way to to inspect and handle all incoming traffic. Mod Security is one such firewall. ModSecurity uses a simple rules language to interpret and process incoming http traffic. There are many rule sets publically available, such as the [OWASP Core Rule Set](https://github.com/SpiderLabs/owasp-modsecurity-crs).
 
-### Configuring WAF in Gloo
+### Configuring WAF in Gloo Edge
 ModSecurity rule sets are defined in gloo in one of 3 places:
 
   * `HttpGateway`
@@ -32,12 +32,12 @@ ModSecurity rule sets are defined in gloo in one of 3 places:
 
 The precedence is as such: `Route` > `VirtualService` > `HttpGateway`. 
 
-The configuration of the three of them is nearly identical at the moment, and follows the same pattern as other enterprise features in Gloo. 
+The configuration of the three of them is nearly identical at the moment, and follows the same pattern as other enterprise features in Gloo Edge. 
 The configuration is included in the `options` object of the `httpGateway`. This process will be enumerated 
-below, but first we will go over the general flow of configuring WAF in Gloo.
+below, but first we will go over the general flow of configuring WAF in Gloo Edge.
 
 The WAF filter at its core supports a list of `RuleSet` objects which are then loaded into the ModSecurity library. 
-The Gloo API has a few conveniences built on top of that to allow easier access to the OWASP Core Rule Set (via the [coreRuleSet](#core-rule-set) field). 
+The Gloo Edge API has a few conveniences built on top of that to allow easier access to the OWASP Core Rule Set (via the [coreRuleSet](#core-rule-set) field). 
 The  `RuleSet` Api looks as follows:
 
 ```proto
@@ -69,18 +69,18 @@ A very simple example of a config is as follows:
         # Deny requests which are container the header value user-agent:scammer
         SecRule REQUEST_HEADERS:User-Agent "scammer" "deny,status:403,id:107,phase:1,msg:'blocked scammer'"
 ```
-This tutorial will not do a deep dive on the rules as there is already plenty of information available, further documentation on the rules can be found [here](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-(v2.x)). The purpose instead will be to understand how to apply the rules into new and existing Gloo configs.
+This tutorial will not do a deep dive on the rules as there is already plenty of information available, further documentation on the rules can be found [here](https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual-(v2.x)). The purpose instead will be to understand how to apply the rules into new and existing Gloo Edge configs.
 
 As stated earlier, the above rule is very simple. It does only two things:
 
 1. It enables the rules engine. This step is important, by default the rules engine is off, so it must be explicitally turned on. It can also be set to `DetectionOnly`, which runs the rules but does not perform any obtrusive actions.
 2. It creates a rule which inspects the request header `"user-agent"`. If that specific header equals the value `"scammer"` then the request will be denied and return a `403` status.
 
-This is a very basic example of the capabilities of the ModSecurity rules engine but useful in how it demonstrates its implementation in Enterprise Gloo.
+This is a very basic example of the capabilities of the ModSecurity rules engine but useful in how it demonstrates its implementation in Enterprise Gloo Edge.
 
 The following sections will explain how to enable this rule on the gateway level as well as on the virtual service level.
 
-The following tutorials assume basic knowledge of Gloo and its routing capabilities, as well a kubernetes cluster running Gloo Enterprise edition and the [petstore example]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}).
+The following tutorials assume basic knowledge of Gloo Edge and its routing capabilities, as well a kubernetes cluster running Gloo Edge Enterprise edition and the [petstore example]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}).
 
 #### Http Gateway
 
@@ -165,11 +165,11 @@ spec:
 
 After this config has been successfully applied, run the curl command from above and the output should be the same.
 
-The two methods outlined above represent the two main ways to apply basic rule string WAF configs to Gloo routes.
+The two methods outlined above represent the two main ways to apply basic rule string WAF configs to Gloo Edge routes.
 
 #### Core Rule Set
 
-As mentioned earlier, the main free Mod Security rule set available is the OWASP Core Rule Set. As with all other rule sets, the Core Rule Set can be applied manually via the rule set configs, Gloo offers an easy way to apply the entire Core Rule Set, and configure it.
+As mentioned earlier, the main free Mod Security rule set available is the OWASP Core Rule Set. As with all other rule sets, the Core Rule Set can be applied manually via the rule set configs, Gloo Edge offers an easy way to apply the entire Core Rule Set, and configure it.
 
 In order to apply the Core Rule Set add the following to the default virtual service. Without the coreRuleSet field, the OWASP Core Rule Set files will not be included.
 
@@ -263,7 +263,7 @@ We are applying a WAF rule at the `virtualHost` level, meaning that the rule wil
 
 ## Audit Logging
 
-Audit Logging is supported starting Gloo-e v1.4.0-beta6, but it works differently than in other ModSecurity integrations.
+Audit Logging is supported starting Gloo Edge Enterprise v1.4.0-beta6, but it works differently than in other ModSecurity integrations.
 ModSecurity native audit logging is not a good fit for Envoy/Kubernetes cloud native environments.
 ModSecurity has 3 logging engines. They are not a good fit for the following reasons:
 1. Serial - all logs written to one file, which globally locks on each write. This will be horrendous

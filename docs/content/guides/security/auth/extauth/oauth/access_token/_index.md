@@ -1,16 +1,16 @@
 ---
 title: Authenticate with an Access Token
 weight: 30
-description: Integrating Gloo and Access Tokens
+description: Integrating Gloo Edge and Access Tokens
 ---
 
 {{% notice note %}}
 {{< readfile file="static/content/enterprise_only_feature_disclaimer" markdown="true">}}
 {{% /notice %}}
 
-You may already have an OIDC compliant authentication system in place at your organization which can issue and validate access tokens. In that case, Gloo can rely on your existing system by accepting requests with an access token and validating that token against an introspection endpoint.
+You may already have an OIDC compliant authentication system in place at your organization which can issue and validate access tokens. In that case, Gloo Edge can rely on your existing system by accepting requests with an access token and validating that token against an introspection endpoint.
 
-In this guide we will deploy ORY Hydra, a simple OpenID Connect Provider. Hydra will serve as our existing OIDC compliant authentication system. We will generate a valid access token from the Hydra deployment and have Gloo validate that token using Hyrda's introspection endpoint.
+In this guide we will deploy ORY Hydra, a simple OpenID Connect Provider. Hydra will serve as our existing OIDC compliant authentication system. We will generate a valid access token from the Hydra deployment and have Gloo Edge validate that token using Hyrda's introspection endpoint.
 
 ## Setup
 
@@ -55,7 +55,7 @@ spec:
             port: 80
 ```
 
-To verify that the Virtual Service has been accepted by Gloo, let's port-forward the Gateway Proxy service so that it is 
+To verify that the Virtual Service has been accepted by Gloo Edge, let's port-forward the Gateway Proxy service so that it is 
 reachable from your machine at `localhost:8080`:
 
 ```
@@ -67,12 +67,12 @@ If you open your browser and navigate to [http://localhost:8080](http://localhos
 ![Pet Clinic app homepage](./../petclinic-home.png)
 
 ## Securing the Virtual Service
-As we just saw, we were able to reach our application without having to provide any credentials. This is because by default Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior.
+As we just saw, we were able to reach our application without having to provide any credentials. This is because by default Gloo Edge allows any request on routes that do not specify authentication configuration. Let's change this behavior.
 
 We will update the Virtual Service so that each request to the sample application is authenticated using an **OpenID Connect** flow.
 
 ### Install Hydra
-To implement the authentication flow, we need an OpenID Connect provider available to Gloo. For demonstration purposes, will deploy the [Hydra](https://www.ory.sh/hydra/docs/) provider in the same cluster, as it easy to install and configure.
+To implement the authentication flow, we need an OpenID Connect provider available to Gloo Edge. For demonstration purposes, will deploy the [Hydra](https://www.ory.sh/hydra/docs/) provider in the same cluster, as it easy to install and configure.
 
 Let's start by adding the Ory helm repository.
 
@@ -182,7 +182,7 @@ curl -X POST http://127.0.0.1:4445/oauth2/introspect \
   -d "token=$ACCESS_TOKEN" | jq
 ```
 
-This is the same path that Gloo will use to check on the validity of tokens. The next step is to take the introspection URL and add it to an *AuthConfig* and then associate that AuthConfig with the Virtual Service we created earlier.
+This is the same path that Gloo Edge will use to check on the validity of tokens. The next step is to take the introspection URL and add it to an *AuthConfig* and then associate that AuthConfig with the Virtual Service we created earlier.
 
 #### Create an AuthConfig
 {{% notice warning %}}
@@ -204,7 +204,7 @@ spec:
         introspectionUrl: http://hydra-example-admin.default:4445/oauth2/introspect
 {{< /highlight >}}
 
-The above configuration instructs Gloo to use the `introspectionUrl` to validate access tokens that are submitted with the request. If the token is missing or invalid, Gloo will deny the request. We can use the internal hostname of the Hydra administrative service, since the request will come from Gloo's exauth pod which has access to Kubernetes DNS.
+The above configuration instructs Gloo Edge to use the `introspectionUrl` to validate access tokens that are submitted with the request. If the token is missing or invalid, Gloo Edge will deny the request. We can use the internal hostname of the Hydra administrative service, since the request will come from Gloo Edge's exauth pod which has access to Kubernetes DNS.
 
 #### Update the Virtual Service
 Once the AuthConfig has been created, we can use it to secure our Virtual Service:
@@ -237,9 +237,9 @@ spec:
 {{< /highlight >}}
 
 ### Testing our configuration
-The authentication flow to get the access token happens outside of Gloo's purview. To access the petclinic site, we will simply include the access token in our request. Gloo will validate that the token is active using the URL we specified in the AuthConfig.
+The authentication flow to get the access token happens outside of Gloo Edge's purview. To access the petclinic site, we will simply include the access token in our request. Gloo Edge will validate that the token is active using the URL we specified in the AuthConfig.
 
-1. Port-forward the Gloo Gateway Proxy service so that it is reachable from your machine at `localhost:8080`:
+1. Port-forward the Gloo Edge Proxy service so that it is reachable from your machine at `localhost:8080`:
 ```
 kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80 &
 portForwardPid3=$! # Store the port-forward pid so we can kill the process later
@@ -271,7 +271,7 @@ You will receive a 200 HTTP response and the body of the petclinic homepage.
 
 ### Logging
 
-If Gloo is running on kubernetes, the extauth server logs can be viewed with:
+If Gloo Edge is running on kubernetes, the extauth server logs can be viewed with:
 ```
 kubectl logs -n gloo-system deploy/extauth -f
 ```
@@ -295,4 +295,4 @@ kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/
 
 ## Summary and Next Steps
 
-In this guide you saw how Gloo could be used with an existing OIDC system to validate access tokens and grant access to a VirtualService. You may want to also check out the authentication guides that use [Dex]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/oauth/dex/" >}}) and [Google]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/oauth/dex/" >}}) for more alternatives when it comes to OAuth-based authentication.
+In this guide you saw how Gloo Edge could be used with an existing OIDC system to validate access tokens and grant access to a VirtualService. You may want to also check out the authentication guides that use [Dex]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/oauth/dex/" >}}) and [Google]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/oauth/dex/" >}}) for more alternatives when it comes to OAuth-based authentication.

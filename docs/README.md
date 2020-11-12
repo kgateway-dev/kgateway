@@ -1,4 +1,4 @@
-# Gloo docs
+# Gloo Edge docs
 
 ## Deploying to a test site
 

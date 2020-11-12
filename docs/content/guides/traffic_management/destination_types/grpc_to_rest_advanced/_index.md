@@ -4,13 +4,13 @@ weight: 135
 description: Routing gRPC services to a REST API using provided descriptors
 ---
 
-In our gRPC to REST [introduction]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest" %}}), we explored why users might want to use gRPC to JSON transcoding to expose their gRPC services as REST APIs. As shown in that guide, Gloo has its own API for gRPC to JSON transcoding that automatically annotates your proto methods with HTTP mappings as a convenience. For some use cases, it may make more sense to control [these HTTP mappings](https://cloud.google.com/service-infrastructure/docs/service-management/reference/rpc/google.api#google.api.HttpRule) with more granularity by using the [underlying envoy filter](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter) directly. In this guide, we will explore how to do that with Gloo.
+In our gRPC to REST [introduction]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest" %}}), we explored why users might want to use gRPC to JSON transcoding to expose their gRPC services as REST APIs. As shown in that guide, Gloo Edge has its own API for gRPC to JSON transcoding that automatically annotates your proto methods with HTTP mappings as a convenience. For some use cases, it may make more sense to control [these HTTP mappings](https://cloud.google.com/service-infrastructure/docs/service-management/reference/rpc/google.api#google.api.HttpRule) with more granularity by using the [underlying envoy filter](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter) directly. In this guide, we will explore how to do that with Gloo Edge.
 
 ## Overview
 
-In this guide we will deploy a gRPC micro-service and transform its gRPC API to a REST API via Gloo.
+In this guide we will deploy a gRPC micro-service and transform its gRPC API to a REST API via Gloo Edge.
 
-To understand the details of the binary protobuf, a protobuf descriptor is needed. Since we are manually controlling the HTTP mappings for our gRPC service, we will have to generate this descriptor and provide it to Gloo.
+To understand the details of the binary protobuf, a protobuf descriptor is needed. Since we are manually controlling the HTTP mappings for our gRPC service, we will have to generate this descriptor and provide it to Gloo Edge.
 
 In this guide we are going to:
 
@@ -24,7 +24,7 @@ Let's get started!
 
 ## Prereqs
 
-- Gloo installed with version 1.5.0-beta19 or later.
+- Gloo Edge installed with version 1.5.0-beta19 or later.
 - Protoc installed (guide tested with version 3.6.1)
 
 ## Deploy the demo gRPC bookstore
@@ -69,11 +69,11 @@ spec:
     app: bookstore
 ```
 
-The source code for this service lives in the Gloo repo at `docs/examples/grpc-json-transcoding/bookstore`. In the following step, we demonstrate how we can get the proto descriptor set from the source and use that to configure Envoy for gRPC to JSON transcoding.
+The source code for this service lives in the Gloo Edge repo at `docs/examples/grpc-json-transcoding/bookstore`. In the following step, we demonstrate how we can get the proto descriptor set from the source and use that to configure Envoy for gRPC to JSON transcoding.
 
 ## Generate descriptors for the service
 
-Clone the Gloo repo and `cd` into the `docs/examples/grpc-json-transcoding/bookstore` directory. Now run:
+Clone the Gloo Edge repo and `cd` into the `docs/examples/grpc-json-transcoding/bookstore` directory. Now run:
 ```shell script
 cd /tmp/
 git clone https://github.com/protocolbuffers/protobuf
@@ -89,11 +89,11 @@ Go generate will run the following:
 protoc -I${GOOGLE_PROTOS_HOME} -I${PROTOBUF_HOME} -I. --include_source_info --go_out=plugins=grpc:. --include_imports --descriptor_set_out=descriptors/proto.pb bookstore.proto
 ```
 
-which is responsible for generating our binary descriptors and writing them out into `docs/examples/grpc-json-transcoding/bookstore/descriptors/proto.pb` in the Gloo repo.
+which is responsible for generating our binary descriptors and writing them out into `docs/examples/grpc-json-transcoding/bookstore/descriptors/proto.pb` in the Gloo Edge repo.
 
 ## Configure the gateway with a gRPC to JSON Transcoder
 
-Next we need to configure our `Gateway` to handle gRPC to JSON transcoding using our generated descriptors. Since yaml can't handle binary data, we need to encode the binary descriptor set for our gRPC service in base64 (standard encoding). From the root of the Gloo repo:
+Next we need to configure our `Gateway` to handle gRPC to JSON transcoding using our generated descriptors. Since yaml can't handle binary data, we need to encode the binary descriptor set for our gRPC service in base64 (standard encoding). From the root of the Gloo Edge repo:
 
 ```shell script
 cat docs/examples/grpc-json-transcoding/bookstore/descriptors/proto.pb | base64
@@ -171,8 +171,8 @@ curl -H "Host: foo.example.com" $(glooctl proxy url)/shelves
 
 ## Conclusion
 
-In this guide we have deployed a gRPC micro-service and created an external REST API that translates to the gRPC API via Gloo. This allows you to enjoy the benefits of using gRPC for your microservices while still having a traditional REST API without the need to maintain two sets of code. 
+In this guide we have deployed a gRPC micro-service and created an external REST API that translates to the gRPC API via Gloo Edge. This allows you to enjoy the benefits of using gRPC for your microservices while still having a traditional REST API without the need to maintain two sets of code. 
 
 ### Next Steps
 
-Learn more about how Gloo handles [gRPC for web clients]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" %}}).
+Learn more about how Gloo Edge handles [gRPC for web clients]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" %}}).

@@ -1,18 +1,18 @@
 ---
-title: "Building a Proxy Controller for Gloo"
+title: "Building a Proxy Controller for Gloo Edge"
 weight: 2
 ---
 
-In this tutorial, we're going to show how to use Gloo's {{< protobuf name="gloo.solo.io.Proxy" display="Proxy API">}}
+In this tutorial, we're going to show how to use Gloo Edge's {{< protobuf name="gloo.solo.io.Proxy" display="Proxy API">}}
 to build a router which automatically creates routes for every existing kubernetes service. Then we will show how to
 enable the same functionality for consul services as well.
 
 ## Why Write a Custom Proxy Controller
 
 Building a `Proxy` [controller](https://kubernetes.io/docs/concepts/architecture/controller/) allows you to add custom
-Gloo operational logic to your setup. In this example, we will write a proxy controller that creates and manages a
-second Gloo `Proxy` (`my-cool-proxy`) alongside the Gloo-managed one (`gateway-proxy`). The `my-cool-proxy` envoy
-proxy will route to Gloo-discovered kubernetes services using the host header alone, relieving the Gloo admin from
+Gloo Edge operational logic to your setup. In this example, we will write a proxy controller that creates and manages a
+second Gloo Edge `Proxy` (`my-cool-proxy`) alongside the Gloo Edge managed one (`gateway-proxy`). The `my-cool-proxy` envoy
+proxy will route to Gloo Edge discovered kubernetes services using the host header alone, relieving the Gloo Edge admin from
 creating virtual services or route tables to route to each discovered service.
 
 Other common use cases that can be solved with custom proxy controllers include:
@@ -21,18 +21,18 @@ Other common use cases that can be solved with custom proxy controllers include:
 
 ## How it will work
 
-A custom `Proxy` controller takes any inputs (in our case, Gloo custom resources in kubernetes) and writes the desired
+A custom `Proxy` controller takes any inputs (in our case, Gloo Edge custom resources in kubernetes) and writes the desired
 output to managed `Proxy` custom resource(s).
 
 In our case, we will write a controller that takes `Upstream`s and `Proxy`s as inputs and outputs a new `Proxy`. Then
 we will deploy the new controller to create and manage our new `my-cool-proxy` `Proxy` custom resource. Finally, we
-will deploy a second envoy proxy to kubernetes, have it register to Gloo with its role configured to match the
-name of our managed `Proxy` custom resource (`my-cool-proxy`), and configure it to receive configuration from Gloo.
+will deploy a second envoy proxy to kubernetes, have it register to Gloo Edge with its role configured to match the
+name of our managed `Proxy` custom resource (`my-cool-proxy`), and configure it to receive configuration from Gloo Edge.
 
 ## Writing the Code
 
 {{% notice note %}}
-Tested with Gloo v1.2.12 and Gloo Enterprise v1.2.0.
+Tested with Gloo Edge v1.2.12 and Gloo Edge Enterprise v1.2.0.
 {{% /notice %}}
 
 You can view the complete code written in this section [here](https://github.com/solo-io/gloo/tree/master/example/proxycontroller).
@@ -60,7 +60,7 @@ module <your module name here>
 go 1.13
 
 require (
-	github.com/solo-io/gloo v1.2.12    // change to update Gloo version to build against
+	github.com/solo-io/gloo v1.2.12    // change to update Gloo Edge version to build against
 	github.com/solo-io/go-utils v0.11.5
 	github.com/solo-io/solo-kit v0.11.15
 	k8s.io/client-go v11.0.0+incompatible
@@ -104,7 +104,7 @@ replace (
 ```
 {{% /expand %}}
 
-The basis of this `go.mod` file is from the [`Gloo go.mod file`](https://github.com/solo-io/gloo/blob/master/go.mod)
+The basis of this `go.mod` file is from the [`Gloo Edge go.mod file`](https://github.com/solo-io/gloo/blob/master/go.mod)
 
 
 
@@ -151,9 +151,9 @@ func must(err error) {
 
 ```
 
-### Gloo API Clients
+### Gloo Edge API Clients
 
-Then we'll want to use Gloo's libraries to initialize a client for Proxies and Upstreams. Add the following function to your code:
+Then we'll want to use Gloo Edge's libraries to initialize a client for Proxies and Upstreams. Add the following function to your code:
 
 ```go
 
@@ -167,7 +167,7 @@ func initGlooClients(ctx context.Context) (v1.UpstreamClient, v1.ProxyClient) {
 	// wrapper for kubernetes shared informer factory
 	cache := kube.NewKubeCache(ctx)
 
-	// initialize the CRD client for Gloo Upstreams
+	// initialize the CRD client for Gloo Edge Upstreams
 	upstreamClient, err := v1.NewUpstreamClient(&factory.KubeResourceClientFactory{
 		Crd:         v1.UpstreamCrd,
 		Cfg:         restConfig,
@@ -179,7 +179,7 @@ func initGlooClients(ctx context.Context) (v1.UpstreamClient, v1.ProxyClient) {
 	err = upstreamClient.Register()
 	must(err)
 
-	// initialize the CRD client for Gloo Proxies
+	// initialize the CRD client for Gloo Edge Proxies
 	proxyClient, err := v1.NewProxyClient(&factory.KubeResourceClientFactory{
 		Crd:         v1.ProxyCrd,
 		Cfg:         restConfig,
@@ -196,7 +196,7 @@ func initGlooClients(ctx context.Context) (v1.UpstreamClient, v1.ProxyClient) {
 
 ```
 
-This function will initialize clients for interacting with Gloo's Upstream and Proxy APIs. 
+This function will initialize clients for interacting with Gloo Edge's Upstream and Proxy APIs. 
 
 ### Proxy Configuration
 
@@ -242,7 +242,7 @@ func makeDesiredProxy(upstreams v1.UpstreamList) *v1.Proxy {
 					},
 				},
 
-				// tell Gloo where to send the requests
+				// tell Gloo Edge where to send the requests
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{
@@ -314,7 +314,7 @@ func resync(ctx context.Context, upstreams v1.UpstreamList, client v1.ProxyClien
 	// proxy exists! this is an update, not a create
 	if err == nil {
 
-		// sleep for 1s as Gloo may be re-validating our proxy, which can cause resource version to change
+		// sleep for 1s as Gloo Edge may be re-validating our proxy, which can cause resource version to change
 		time.Sleep(time.Second)
 
 		// ensure resource version is the latest
@@ -353,7 +353,7 @@ func main() {
 	// root context for the whole thing
 	ctx := context.Background()
 
-	// initialize Gloo API clients
+	// initialize Gloo Edge API clients
 	upstreamClient, proxyClient := initGlooClients(ctx)
 
 	// start a watch on upstreams. we'll use this as our trigger
@@ -408,7 +408,7 @@ func main() {
 	// root context for the whole thing
 	ctx := context.Background()
 
-	// initialize Gloo API clients, built on top of CRDs
+	// initialize Gloo Edge API clients, built on top of CRDs
 	upstreamClient, proxyClient := initGlooClients(ctx)
 
 	// start a watch on upstreams. we'll use this as our trigger
@@ -440,7 +440,7 @@ func initGlooClients(ctx context.Context) (v1.UpstreamClient, v1.ProxyClient) {
 	// wrapper for kubernetes shared informer factory
 	cache := kube.NewKubeCache(ctx)
 
-	// initialize the CRD client for Gloo Upstreams
+	// initialize the CRD client for Gloo Edge Upstreams
 	upstreamClient, err := v1.NewUpstreamClient(&factory.KubeResourceClientFactory{
 		Crd:         v1.UpstreamCrd,
 		Cfg:         restConfig,
@@ -452,7 +452,7 @@ func initGlooClients(ctx context.Context) (v1.UpstreamClient, v1.ProxyClient) {
 	err = upstreamClient.Register()
 	must(err)
 
-	// initialize the CRD client for Gloo Proxies
+	// initialize the CRD client for Gloo Edge Proxies
 	proxyClient, err := v1.NewProxyClient(&factory.KubeResourceClientFactory{
 		Crd:         v1.ProxyCrd,
 		Cfg:         restConfig,
@@ -482,7 +482,7 @@ func resync(ctx context.Context, upstreams v1.UpstreamList, client v1.ProxyClien
 	// proxy exists! this is an update, not a create
 	if err == nil {
 
-		// sleep for 1s as Gloo may be re-validating our proxy, which can cause resource version to change
+		// sleep for 1s as Gloo Edge may be re-validating our proxy, which can cause resource version to change
 		time.Sleep(time.Second)
 
 		// ensure resource version is the latest
@@ -537,7 +537,7 @@ func makeDesiredProxy(upstreams v1.UpstreamList) *v1.Proxy {
 					},
 				},
 
-				// tell Gloo where to send the requests
+				// tell Gloo Edge where to send the requests
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{
@@ -598,7 +598,7 @@ func must(err error) {
 
 While it's possible to package [this application in a Docker container](https://github.com/solo-io/gloo/tree/master/example/proxycontroller/Dockerfile)
 and [deploy it as a pod](https://github.com/solo-io/gloo/tree/master/example/proxycontroller/install/proxycontroller.yaml)
-inside of Kubernetes, let's just try running it locally. [Make sure you have Gloo installed]({{% versioned_link_path fromRoot="/installation" %}})
+inside of Kubernetes, let's just try running it locally. [Make sure you have Gloo Edge installed]({{% versioned_link_path fromRoot="/installation" %}})
 in your cluster so that Discovery will create some Upstreams for us.
 
 
@@ -870,18 +870,18 @@ metadata:
 
 The proxy should have been created with the `default-petstore-8080` virtualHost.
 
-Now that we have a proxy called `my-cool-proxy`, Gloo will be serving xDS configuration that matches this proxy CRD.
+Now that we have a proxy called `my-cool-proxy`, Gloo Edge will be serving xDS configuration that matches this proxy CRD.
 However, we don't actually have an Envoy instance deployed that will receive this config. In the next section, 
-we'll walk through the steps to deploy an Envoy pod wired to receive config from Gloo, identifying itself as 
+we'll walk through the steps to deploy an Envoy pod wired to receive config from Gloo Edge, identifying itself as 
 `my-cool-proxy`.  
 
 
 ## Deploying Envoy to Kubernetes
 
-Gloo comes pre-installed with at least one proxy depending on your setup: the `gateway-proxy`. This proxy is configured 
+Gloo Edge comes pre-installed with at least one proxy depending on your setup: the `gateway-proxy`. This proxy is configured 
 by the `gateway` proxy controller. It's not very different from the controller we just wrote!
 
-We'll need to deploy another proxy that will register to Gloo with it's `role` configured to match the name of our proxy 
+We'll need to deploy another proxy that will register to Gloo Edge with it's `role` configured to match the name of our proxy 
 CRD, `my-cool-proxy`. Let's do it!
 
 If you'd prefer, you can deploy the `my-cool-proxy` envoy configmap, service, and deployment in one step:
@@ -893,7 +893,7 @@ and then skip to [testing the proxy](#testing-the-proxy).
 
 ### Creating the ConfigMap
 
-Envoy needs a ConfigMap which points it at Gloo as its configuration server. Run the following command to create 
+Envoy needs a ConfigMap which points it at Gloo Edge as its configuration server. Run the following command to create 
 the configmap you'll need:
 
 
@@ -1015,8 +1015,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        # image: quay.io/solo-io/gloo-envoy-wrapper:1.2.12 # <- use this instead if using open-source Gloo
-        image: quay.io/solo-io/gloo-ee-envoy-wrapper:1.2.0 # <- you must use closed-source envoy if using Gloo Enterprise
+        # image: quay.io/solo-io/gloo-envoy-wrapper:1.2.12 # <- use this instead if using open-source Gloo Edge
+        image: quay.io/solo-io/gloo-ee-envoy-wrapper:1.2.0 # <- you must use closed-source envoy if using Gloo Edge Enterprise
         imagePullPolicy: Always
         name: my-cool-proxy
         ports:
@@ -1088,7 +1088,7 @@ kube-system-kube-dns-53           54m
 kube-system-tiller-deploy-44134   54m
 ```
 
-Sweet! You're an official Gloo developer! You've just seen how easy it is to extend Gloo to service one of many 
+Sweet! You're an official Gloo Edge developer! You've just seen how easy it is to extend Gloo Edge to service one of many 
 potential use cases. Take a look at our 
 {{< protobuf name="gloo.solo.io.Proxy" display="API Reference Documentation">}} to learn about the 
 wide range of configuration options Proxies expose such as request transformation, SSL termination, serverless computing, 
@@ -1109,7 +1109,7 @@ Get the Host IP address where consul will be reachable from within minikube pods
 minikube ssh "route -n | grep ^0.0.0.0 | awk '{ print \$2 }'"
 ```
 
-Enable consul service discovery in Gloo, replacing address with the value you got before:
+Enable consul service discovery in Gloo Edge, replacing address with the value you got before:
 ```shell script
 kubectl patch settings -n gloo-system default --patch '{"spec": {"consul": {"address": "10.0.2.2:8500", "serviceDiscovery": {}}}}' --type=merge
 ```
@@ -1156,4 +1156,4 @@ returns
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
-Nice. You've configured Gloo to proactively create routes to discovered consul services!
+Nice. You've configured Gloo Edge to proactively create routes to discovered consul services!

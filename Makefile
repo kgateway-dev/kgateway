@@ -319,7 +319,7 @@ discovery-docker: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH) $(DISCOVERY_
 		-t $(IMAGE_REPO)/discovery:$(VERSION)
 
 #----------------------------------------------------------------------------------
-# Gloo
+# Gloo Edge
 #----------------------------------------------------------------------------------
 
 GLOO_DIR=projects/gloo
@@ -344,7 +344,7 @@ gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfi
 		-t $(IMAGE_REPO)/gloo:$(VERSION)
 
 #----------------------------------------------------------------------------------
-# SDS Server - gRPC server for serving Secret Discovery Service config for Gloo MTLS
+# SDS Server - gRPC server for serving Secret Discovery Service config for Gloo Edge MTLS
 #----------------------------------------------------------------------------------
 
 SDS_DIR=projects/sds
@@ -468,7 +468,7 @@ ifeq ($(RELEASE),"true")
 endif
 
 #----------------------------------------------------------------------------------
-# Build the Gloo Manifests that are published as release assets
+# Build the Gloo Edge Manifests that are published as release assets
 #----------------------------------------------------------------------------------
 
 .PHONY: render-manifests
@@ -585,10 +585,10 @@ push-kind-images: docker
 #
 # The following targets are used to generate the assets on which the kube2e tests rely upon. The following actions are performed:
 #
-#   1. Generate Gloo value files
-#   2. Package the Gloo Helm chart to the _test directory (also generate an index file)
+#   1. Generate Gloo Edge value files
+#   2. Package the Gloo Edge Helm chart to the _test directory (also generate an index file)
 #
-# The Kube2e tests will use the generated Gloo Chart to install Gloo to the GKE test cluster.
+# The Kube2e tests will use the generated Gloo Edge Chart to install Gloo Edge to the GKE test cluster.
 
 .PHONY: build-test-assets
 build-test-assets: build-test-chart $(OUTPUT_DIR)/glooctl-linux-$(GOARCH) \

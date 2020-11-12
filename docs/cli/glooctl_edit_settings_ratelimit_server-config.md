@@ -11,7 +11,7 @@ Add rate-limit descriptor settings (Enterprise)
 This allows using lyft rate-limit server configuration language to configure the rate-limit server.
 		For more information see: https://github.com/lyft/ratelimit
 		Note: do not add the 'domain' configuration key.
-		This is a Gloo Enterprise feature.
+		This is a Gloo Edge Enterprise feature.
 
 ```
 glooctl edit settings ratelimit server-config [flags]

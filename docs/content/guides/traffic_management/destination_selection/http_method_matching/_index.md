@@ -4,10 +4,10 @@ weight: 40
 description: Match requests to routes based on HTTP method
 ---
 
-The route rules in a *Virtual Service* can evaluate based on the request HTTP method, e.g. GET, POST, DELETE, etc. You can specify one or more HTTP Methods to match against, and if any one of those method verbs is present, the request will match, that is Gloo will conditional OR the match for HTTP Method. 
+The route rules in a *Virtual Service* can evaluate based on the request HTTP method, e.g. GET, POST, DELETE, etc. You can specify one or more HTTP Methods to match against, and if any one of those method verbs is present, the request will match, that is Gloo Edge will conditional OR the match for HTTP Method. 
 
 {{% notice note %}}
-Gloo/Envoy is based on HTTP/2, the HTTP method gets translated into a header value match against the HTTP/2 `:method` header, which [by spec](https://http2.github.io/http2-spec/#HttpRequest) includes all of the HTTP/1 verbs.
+Gloo Edge/Envoy is based on HTTP/2, the HTTP method gets translated into a header value match against the HTTP/2 `:method` header, which [by spec](https://http2.github.io/http2-spec/#HttpRequest) includes all of the HTTP/1 verbs.
 {{% /notice %}}
 
 In this guide, we're going to take a closer look at different method matches by creating an *Upstream* and then creating a Virtual Service to route requests to that Upstream based on the method used in the request.
@@ -16,9 +16,9 @@ In this guide, we're going to take a closer look at different method matches by 
 
 ## Setup
 
-If you have not yet deployed Gloo, you can start by following the directions contained within the guide [Installing Gloo Gateway on Kubernetes]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+If you have not yet deployed Gloo Edge, you can start by following the directions contained within the guide [Installing Gloo Edge on Kubernetes]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
 
-This guide also assumes that you are running Gloo Gateway in a Kubernetes cluster. Each example can be adapted to alternative deployments, such as using the HashiCorp stack of Nomad, Consul, and Vault.
+This guide also assumes that you are running Gloo Edge in a Kubernetes cluster. Each example can be adapted to alternative deployments, such as using the HashiCorp stack of Nomad, Consul, and Vault.
 
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 

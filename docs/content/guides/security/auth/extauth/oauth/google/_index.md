@@ -10,10 +10,10 @@ like setting up a domain and SSL certificates.
 
 ## Setup
 {{% notice warning %}}
-This feature requires Gloo's external auth server to communicate with an external OIDC provider/authorization server.
+This feature requires Gloo Edge's external auth server to communicate with an external OIDC provider/authorization server.
 Because of this interaction, the OIDC flow may take longer than the default timeout of 200ms.
 You can increase this timeout by setting the {{% protobuf name="enterprise.gloo.solo.io.Settings" display="`requestTimeout` value on external auth settings"%}}.
-The external auth settings can be configured on the {{% protobuf name="gloo.solo.io.Settings" display="global Gloo `Settings` object"%}}.
+The external auth settings can be configured on the {{% protobuf name="gloo.solo.io.Settings" display="global Gloo Edge `Settings` object"%}}.
 {{% /notice %}}
 
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
@@ -61,7 +61,7 @@ spec:
         prefixRewrite: '/'
 ```
 
-To verify that the Virtual Service has been accepted by Gloo, let's port-forward the Gateway Proxy service so that it is 
+To verify that the Virtual Service has been accepted by Gloo Edge, let's port-forward the Gateway Proxy service so that it is 
 reachable from you machine at `localhost:8080`:
 ```
 kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80
@@ -72,7 +72,7 @@ If you open your browser and navigate to [http://localhost:8080/app](http://loca
 ![Pet Clinic app homepage](petclinic-home.png)
 
 ## Securing the Virtual Service
-As we just saw, we were able to reach our application without having to provide any credentials. This is because by default Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. We will update the Virtual Service so that each request to the sample application is authenticated using an **OpenID Connect** flow.
+As we just saw, we were able to reach our application without having to provide any credentials. This is because by default Gloo Edge allows any request on routes that do not specify authentication configuration. Let's change this behavior. We will update the Virtual Service so that each request to the sample application is authenticated using an **OpenID Connect** flow.
 
 ### Register your application with Google
 In order to use Google as our identity provider, we need to register our application with the Google API.
@@ -101,7 +101,7 @@ CLIENT_SECRET=<your client secret>
 ```
 
 ### Create a client ID secret
-Gloo expects the client secret to stored in a Kubernetes secret. Let's create the secret with the value of our `CLIENT_SECRET` variable:
+Gloo Edge expects the client secret to stored in a Kubernetes secret. Let's create the secret with the value of our `CLIENT_SECRET` variable:
 
 ```shell
 glooctl create secret oauth --namespace gloo-system --name google --client-secret $CLIENT_SECRET
@@ -191,7 +191,7 @@ This example is sending the `/callback` prefix to `/login`, a path that does not
 {{% /notice %}}
 
 ## Testing our configuration
-Since we didn't register an external URL, Google will only allow authentication with applications running on localhost for security reasons. We can make the Gloo Gateway available on localhost using `kubectl port-forward`:
+Since we didn't register an external URL, Google will only allow authentication with applications running on localhost for security reasons. We can make the Gloo Edge proxy available on localhost using `kubectl port-forward`:
 
 ```shell
 kubectl port-forward -n gloo-system deploy/gateway-proxy 8080 &
@@ -202,7 +202,7 @@ Now if you open your browser and go to http://localhost:8080/app you should be r
 
 ![Google login page](google-login.png)
  
-If you provide your Google credentials, Gloo should redirect you to the `/callback` page, with the information from Google added as a query string.
+If you provide your Google credentials, Gloo Edge should redirect you to the `/callback` page, with the information from Google added as a query string.
 
 ![Pet Clinic app homepage](petclinic-querystring.jpeg)
 
@@ -210,7 +210,7 @@ If this does not work, one thing to check is the `requestTimeout` setting on you
 
 ### Logging
 
-If Gloo is running on kubernetes, the extauth server logs can be viewed with:
+If Gloo Edge is running on kubernetes, the extauth server logs can be viewed with:
 ```
 kubectl logs -n gloo-system deploy/extauth -f
 ```

@@ -1,6 +1,6 @@
 # Session Affinity Demo App
 
-This is a very simple app for demonstrating Gloo's session affinity (sticky sessions) capabilities.
+This is a very simple app for demonstrating Gloo Edge's session affinity (sticky sessions) capabilities.
 
 It can be deployed in a `DaemonSet` in a multi-node Kubernetes cluster to test session affinity configuration.
 

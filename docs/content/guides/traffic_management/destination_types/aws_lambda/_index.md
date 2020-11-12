@@ -6,15 +6,15 @@ description: Routing to AWS Lambda as an Upstream
 
 ## How to setup and use AWS Upstream
 
-There are 2 steps to enabling Gloo to discover and access AWS Lambda services.
+There are 2 steps to enabling Gloo Edge to discover and access AWS Lambda services.
 
-1. Create an AWS Secret to give Gloo credentials to access AWS.
-2. Create a Gloo upstream, referencing AWS Secret, that will populate the Gloo function catalog with available
+1. Create an AWS Secret to give Gloo Edge credentials to access AWS.
+2. Create a Gloo Edge upstream, referencing AWS Secret, that will populate the Gloo Edge function catalog with available
 AWS Lambda functions. 
 
 ### Create AWS Secret
 
-The following command will create a Kubernetes secret that contains the AWS Access Key and Secret Key needed by Gloo
+The following command will create a Kubernetes secret that contains the AWS Access Key and Secret Key needed by Gloo Edge
 to connect to AWS for service discovery.
 
 ```shell
@@ -71,13 +71,13 @@ aws_secret_access_key:  40 bytes
 
 ### Create AWS Upstream
 
-This is how you create an AWS Upstream so that Gloo can do both: Lambda service discovery; and allow you to create routing rules
+This is how you create an AWS Upstream so that Gloo Edge can do both: Lambda service discovery; and allow you to create routing rules
 referencing those Lambda functions.
 
 ```shell
 glooctl create upstream aws --help
 
-AWS Upstreams represent a set of AWS Lambda Functions for a Region that can be routed to with Gloo. AWS Upstreams require a valid set of AWS Credentials to be provided. These should be uploaded to Gloo using `glooctl create secret aws`
+AWS Upstreams represent a set of AWS Lambda Functions for a Region that can be routed to with Gloo Edge. AWS Upstreams require a valid set of AWS Credentials to be provided. These should be uploaded to Gloo Edge using `glooctl create secret aws`
 
 Usage:
   glooctl create upstream aws [flags]

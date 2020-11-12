@@ -18,9 +18,9 @@ While gRPC works great for internal micro-services, it may be desirable to have 
 1. Making the API more Web friendly
 1. Supporting low-end devices such as IoT where gRPC is not supported.
 
-Gloo allows you to define JSON/REST to your gRPC API so you can have the best of both worlds - outwards facing REST API and an internal gRPC API with no extra code.
+Gloo Edge allows you to define JSON/REST to your gRPC API so you can have the best of both worlds - outwards facing REST API and an internal gRPC API with no extra code.
 
-With Gloo, there are two ways to leverage gRPC to JSON functionality. In this guide, we explore Gloo's simplified gRPC to JSON transcoding API, where there is no need to annotate your proto definitions with the `google.api.http` options (as described [here](https://cloud.google.com/service-infrastructure/docs/service-management/reference/rpc/google.api#google.api.HttpRule)). A simple gRPC proto will work.
+With Gloo Edge, there are two ways to leverage gRPC to JSON functionality. In this guide, we explore Gloo Edge's simplified gRPC to JSON transcoding API, where there is no need to annotate your proto definitions with the `google.api.http` options (as described [here](https://cloud.google.com/service-infrastructure/docs/service-management/reference/rpc/google.api#google.api.HttpRule)). A simple gRPC proto will work.
 
 For more advanced use cases where you will want more control over the mapping of your service from gRPC to REST, take a look at the [advanced gRPC to REST guide]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest_advanced" %}})
  
@@ -28,9 +28,9 @@ For more advanced use cases where you will want more control over the mapping of
 
 ## Overview
 
-In this guide we will deploy a gRPC micro-service and transform its gRPC API to a REST API via Gloo.
+In this guide we will deploy a gRPC micro-service and transform its gRPC API to a REST API via Gloo Edge.
 
-Usually, to understand the details of the binary protobuf, a protobuf descriptor is needed. As this micro-service is built with server reflection enabled; together with Gloo's automatic function discovery functionality the required protobuf descriptor will be automatically discovered.
+Usually, to understand the details of the binary protobuf, a protobuf descriptor is needed. As this micro-service is built with server reflection enabled; together with Gloo Edge's automatic function discovery functionality the required protobuf descriptor will be automatically discovered.
 
 In this guide we are going to:
 
@@ -43,7 +43,7 @@ Let's get started!
 
 ### Prereqs
 
-Install Gloo with Function Discovery Service (FDS) [blacklist mode]({{< versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/#configuring-the-fdsmode-setting" >}}) enabled
+Install Gloo Edge with Function Discovery Service (FDS) [blacklist mode]({{< versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/#configuring-the-fdsmode-setting" >}}) enabled
 
 ---
 
@@ -57,7 +57,7 @@ kubectl expose deployment grpcstore-demo --port 80 --target-port=8080
 ```
 
 ### Verify that gRPC functions were discovered
-After a few seconds Gloo should have discovered the service with it's proto descriptor:
+After a few seconds Gloo Edge should have discovered the service with it's proto descriptor:
 
 ```shell
 kubectl get upstream -n gloo-system default-grpcstore-demo-80 -o yaml
@@ -102,7 +102,7 @@ status:
 The descriptors field above was truncated for brevity.
 {{% /notice %}}
 
-As you can see Gloo's function discovery detected the gRPC functions on that service. 
+As you can see Gloo Edge's function discovery detected the gRPC functions on that service. 
 
 ### Create a REST to gRPC translation
 
@@ -206,8 +206,8 @@ curl $URL/items
 
 ## Conclusion
 
-In this guide we have deployed a gRPC micro-service and created an external REST API that translates to the gRPC API via Gloo. This allows you to enjoy the benefits of using gRPC for your microservices while still having a traditional REST API without the need to maintain two sets of code. 
+In this guide we have deployed a gRPC micro-service and created an external REST API that translates to the gRPC API via Gloo Edge. This allows you to enjoy the benefits of using gRPC for your microservices while still having a traditional REST API without the need to maintain two sets of code. 
 
 ### Next Steps
 
-Learn more about how Gloo handles [gRPC for web clients]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" %}}). Gloo can also use a [REST endpoint]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/rest_endpoint/" %}}) as an Upstream. Our [function discovery guide]({{% versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/" %}}) covers how to set up the Function Discovery Service (FDS) for a Swagger document or gRPC service. For advanced gRPC to JSON use cases, check out our [advanced gRPC to REST guide]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest_advanced" %}}).
+Learn more about how Gloo Edge handles [gRPC for web clients]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" %}}). Gloo Edge can also use a [REST endpoint]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/rest_endpoint/" %}}) as an Upstream. Our [function discovery guide]({{% versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/" %}}) covers how to set up the Function Discovery Service (FDS) for a Swagger document or gRPC service. For advanced gRPC to JSON use cases, check out our [advanced gRPC to REST guide]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest_advanced" %}}).

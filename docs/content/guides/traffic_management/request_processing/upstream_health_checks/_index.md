@@ -4,7 +4,7 @@ weight: 50
 description: Automatically monitor the status of Upstreams by configuring health checks for them
 ---
 
-As part of configuring an Upstream, Gloo provides the option of adding *health checks* that periodically assess the readiness of the Upstream to receive requests. See the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.14.1/intro/arch_overview/upstream/health_checking#arch-overview-health-checking) for more information. 
+As part of configuring an Upstream, Gloo Edge provides the option of adding *health checks* that periodically assess the readiness of the Upstream to receive requests. See the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.14.1/intro/arch_overview/upstream/health_checking#arch-overview-health-checking) for more information. 
 
 ## Configuration
 

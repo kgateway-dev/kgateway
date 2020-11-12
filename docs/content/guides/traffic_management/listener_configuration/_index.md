@@ -3,7 +3,7 @@ title: Listener Configuration
 weight: 20
 ---
 
-**Gateway** definitions set up the protocols and ports on which Gloo listens for traffic.  For example, by default Gloo will have a gateway configured for HTTP and HTTPS traffic. Gloo allows you to configure properties of your gateways with several plugins.
+**Gateway** definitions set up the protocols and ports on which Gloo Edge listens for traffic.  For example, by default Gloo Edge will have a gateway configured for HTTP and HTTPS traffic. Gloo Edge allows you to configure properties of your gateways with several plugins.
 
 These guides show you how to apply these advanced listener configurations to refine your gateways' behavior.
 
@@ -96,6 +96,6 @@ metadata: # collapsed for brevity
 
 ## Next Steps
 
-The guide above showed some basics on how to manipulate settings for the gateway listener in Gloo. The following guides provide additional detail around what you may want to change in the gateway CR and how to do so.
+The guide above showed some basics on how to manipulate settings for the gateway listener in Gloo Edge. The following guides provide additional detail around what you may want to change in the gateway CR and how to do so.
 
 {{% children description="true" depth="1" %}}

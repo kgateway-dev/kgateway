@@ -1,33 +1,33 @@
 ---
 title: Service Failover
-description: Creating a failover service in Gloo Federation
+description: Creating a failover service in Gloo Edge Federation
 weight: 30
 ---
 
-When an Upstream fails or becomes unhealthy, Gloo Federation can automatically fail traffic over to a different Gloo instance and Upstream. In this guide we will demonstrate that functionality by registering two clusters with Gloo Federation. Then we will create a Kubernetes service on each cluster and verify it is available as an Upstream. We will create a FailoverScheme in Gloo Federation with one Upstream as the primary and the second as a backup. Finally, we will simulate a failure of the primary Upstream and verify that the service fails over to the secondary.
+When an Upstream fails or becomes unhealthy, Gloo Edge Federation can automatically fail traffic over to a different Gloo Edge instance and Upstream. In this guide we will demonstrate that functionality by registering two clusters with Gloo Edge Federation. Then we will create a Kubernetes service on each cluster and verify it is available as an Upstream. We will create a FailoverScheme in Gloo Edge Federation with one Upstream as the primary and the second as a backup. Finally, we will simulate a failure of the primary Upstream and verify that the service fails over to the secondary.
 
 ## Prerequisites
 
 To successfully follow this Service Failover guide, you will need the following software available and configured on your system.
 
 * Kubectl - Used to execute commands against the clusters
-* Glooctl - Used to register the Kubernetes clusters with Gloo Federation
-* openssl  - Generates certificates to enable mTLS between multiple Gloo instances
+* Glooctl - Used to register the Kubernetes clusters with Gloo Edge Federation
+* openssl  - Generates certificates to enable mTLS between multiple Gloo Edge instances
 
-You will also need two Kubernetes clusters running Gloo Enterprise and an installation of Gloo Federation with both clusters registered. You can use [kind](https://kind.sigs.k8s.io/) to deploy local clusters on Docker, or select one of [many other deployment options]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) for Gloo on Kubernetes. 
+You will also need two Kubernetes clusters running Gloo Edge Enterprise and an installation of Gloo Edge Federation with both clusters registered. You can use [kind](https://kind.sigs.k8s.io/) to deploy local clusters on Docker, or select one of [many other deployment options]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) for Gloo Edge on Kubernetes. 
 
-If you wish to quickly spin up the entire environment and validate the process, you can jump into our [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}). It builds two clusters using kind and takes care of setting up the entire Gloo Federation and Service Failover environment.
+If you wish to quickly spin up the entire environment and validate the process, you can jump into our [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}). It builds two clusters using kind and takes care of setting up the entire Gloo Edge Federation and Service Failover environment.
 
-For the purposes of this example, we have two clusters `local` and `remote`. The local cluster is also running Gloo Federation in addition to Gloo Enterprise. The kubectl context for the local cluster is `gloo-fed` and the remote cluster is `gloo-fed-2`.
+For the purposes of this example, we have two clusters `local` and `remote`. The local cluster is also running Gloo Edge Federation in addition to Gloo Edge Enterprise. The kubectl context for the local cluster is `gloo-fed` and the remote cluster is `gloo-fed-2`.
 
 {{% notice note %}}
-Gloo Enterprise version >= 1.5.0-beta4 is needed for failover.
+Gloo Edge Enterprise version >= 1.5.0-beta4 is needed for failover.
 If you are using the demo command, that uses the latest version by default.
 {{% /notice %}}
 
-## Configure Gloo for Failover
+## Configure Gloo Edge for Failover
 
-The first step to enabling failover is security. As failover allows communication between multiple clusters, it is crucial that the traffic be encrypted. Therefore certificates need to be provisioned and placed in the clusters to allow for mTLS between the Gloo instances running on separate clusters. 
+The first step to enabling failover is security. As failover allows communication between multiple clusters, it is crucial that the traffic be encrypted. Therefore certificates need to be provisioned and placed in the clusters to allow for mTLS between the Gloo Edge instances running on separate clusters. 
 
 ### Create the certificates and secrets for mTLS
 
@@ -43,7 +43,7 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout mtls.key -out mtls.crt -subj "/CN=solo.io"
 ```
 
-Once the certificates have been generated, we can place them in the cluster as secrets so that Gloo can access them.
+Once the certificates have been generated, we can place them in the cluster as secrets so that Gloo Edge can access them.
 
 ```
 # Set the name of the local and remote cluster contexts
@@ -67,14 +67,14 @@ glooctl create secret tls --name failover-upstream \
 
 ### Create the failover gateway
 
-In order to use a Gloo Instance as a failover target it first needs to be configured with an additional listener to route incoming failover requests.
+In order to use a Gloo Edge Instance as a failover target it first needs to be configured with an additional listener to route incoming failover requests.
 
-The Gateway resource below sets up a TCP proxy which is configured to terminate mTLS traffic from the primary gloo instance, and forward the traffic based on the SNI name. The SNI name and routing are automatically handled by Gloo Federation, but the certificates are the ones created in the previous step.
+The Gateway resource below sets up a TCP proxy which is configured to terminate mTLS traffic from the primary Gloo Edge instance, and forward the traffic based on the SNI name. The SNI name and routing are automatically handled by Gloo Edge Federation, but the certificates are the ones created in the previous step.
 
-The service creates an externally addressable way of communicating with the Gloo instance in question. This service may look different for different setups, in our example it is a LoadBalancer service on the specified port. If you are using clusters built with kind, you will need to use a NodePort service. Gloo Federation will automatically discover all external addresses for any Gloo instance.
+The service creates an externally addressable way of communicating with the Gloo Edge instance in question. This service may look different for different setups, in our example it is a LoadBalancer service on the specified port. If you are using clusters built with kind, you will need to use a NodePort service. Gloo Edge Federation will automatically discover all external addresses for any Gloo Edge instance.
 
 {{% notice note %}}
-The gateway and service below can also be created by setting the helm value for Gloo when installing:
+The gateway and service below can also be created by setting the helm value for Gloo Edge when installing:
 `gatewayProxies.NAME.failover.enabled=true`.
 {{% /notice %}}
 
@@ -138,7 +138,7 @@ kubectl get svc -n gloo-system failover
 
 ## Deploy our Sample Application
 
-To demonstrate Gloo multi-cluster failover feature, we will create a relatively contrived example which can easily show off the power of the feature.
+To demonstrate Gloo Edge multi-cluster failover feature, we will create a relatively contrived example which can easily show off the power of the feature.
 
 This application consists of two simple workloads which just return a color. The workload in the local cluster returns the color "blue", and the workload in the remote cluster returns the color "green". Each workload also has a `healthcheck` endpoint running at "/health" which can be manually made to fail for demonstration purposes.
 
@@ -420,7 +420,7 @@ EOF
 
 Now that we have our two applications up and running, we can configure health checks and the failover resource.
 
-## Configure Failover Through Gloo-Fed
+## Configure Failover Through Gloo Edge Federation
 
 A major part of failover is health checking. In order for Envoy to determine the state of the primary and failover endpoints, health checking must be enabled. In this section we will specify a health check for the Blue instance of the application and create the failover configuration.
 
@@ -439,7 +439,7 @@ spec:
 "
 ```
 
-Once health checking has been enabled we can go ahead and actually create our FailoverScheme resource. This is the Gloo Federation resource which will dynamically configure failover from one root Upstream, to a set of prioritized Upstreams.
+Once health checking has been enabled we can go ahead and actually create our FailoverScheme resource. This is the Gloo Edge Federation resource which will dynamically configure failover from one root Upstream, to a set of prioritized Upstreams.
 
 We will create the FailoverScheme resource in the `gloo-fed` namespace:
 
@@ -598,4 +598,4 @@ kubectl delete secret tls --name failover-upstream --context $LOCAL_CLUSTER_CONT
 
 ## Next Steps
 
-Gloo Federation enables configurations to be applied across multiple clusters. You can learn more by following the [Federation Configuration guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" %}}). We also recommend reading up about some of the [concepts]({{% versioned_link_path fromRoot="/introduction/gloo_federation/" %}}) used by Gloo Federation.
+Gloo Edge Federation enables configurations to be applied across multiple clusters. You can learn more by following the [Federation Configuration guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" %}}). We also recommend reading up about some of the [concepts]({{% versioned_link_path fromRoot="/introduction/gloo_federation/" %}}) used by Gloo Edge Federation.

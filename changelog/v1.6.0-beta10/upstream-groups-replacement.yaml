@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3818
+    description: >- 
+      Fixed a bug where invalid route replacement did not correctly replace
+      routes that referred to a missing `UpstreamGroup`, which potentially resulted
+      in incorrect config being sent to envoy. Now, the route will be replaced correctly
+      according to the invalid config policy.

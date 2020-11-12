@@ -1,11 +1,11 @@
 ---
-title: Gloo and Istio mTLS with older versions of Istio
+title: Gloo Edge and Istio mTLS with older versions of Istio
 weight: 1
 ---
 
 This reference guide contains instructions for older versions of Istio (1.0 to 1.5). If you are running Istio 1.6, you can use the latest documentation [here]({{% versioned_link_path fromRoot="/guides/integrations/service_mesh/gloo_istio_mtls/" %}}).
 
-Serving as the Ingress for an Istio cluster -- without compromising on security -- means supporting mutual TLS (mTLS) communication between Gloo and the rest of the cluster. Mutual TLS means that the client proves its identity to the server (in addition to the server proving its identity to the client, which happens in regular TLS).
+Serving as the Ingress for an Istio cluster -- without compromising on security -- means supporting mutual TLS (mTLS) communication between Gloo Edge and the rest of the cluster. Mutual TLS means that the client proves its identity to the server (in addition to the server proving its identity to the client, which happens in regular TLS).
 
 ## Guide versions
 
@@ -13,9 +13,9 @@ Serving as the Ingress for an Istio cluster -- without compromising on security 
 
 This guide was tested with Istio 1.0.9, 1.1.17, 1.3.6, 1.4.3, and 1.5.1.
 
-### Gloo versions
+### Gloo Edge versions
 
-This guide was tested with Gloo v1.3.1 except where noted.
+This guide was tested with Gloo Edge v1.3.1 except where noted.
 
 ### Kubernetes versions
 
@@ -59,7 +59,7 @@ For more information on [Istio's identity provisioning through SDS](https://isti
 
 ## Step 2 - Install bookinfo
 
-Before configuring Gloo, you'll need to install the bookinfo sample app to be consistent with this guide, or you can use your preferred Upstream. Either way, you'll need to enable istio-injection in the default namespace:
+Before configuring Gloo Edge, you'll need to install the bookinfo sample app to be consistent with this guide, or you can use your preferred Upstream. Either way, you'll need to enable istio-injection in the default namespace:
 
 ```bash
 kubectl label namespace default istio-injection=enabled
@@ -72,9 +72,9 @@ kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
 
 ---
 
-## Step 3 - Configure Gloo
+## Step 3 - Configure Gloo Edge
 
-If necessary, install Gloo with either glooctl:
+If necessary, install Gloo Edge with either glooctl:
 ```
 glooctl install gateway
 ```
@@ -84,11 +84,11 @@ kubectl create ns gloo-system; helm install --namespace gloo-system --version 1.
 ```
 See the [quick start]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) guide for more information.
 
-Gloo is installed to the `gloo-system` namespace and should *not* be injected with the Istio sidecar. If you have automatic injection enabled for Istio, make sure the `istio-injection` label does *not* exist on the `gloo-system` namespace. See [the Istio docs on automatic sidecar injection](https://istio.io/docs/setup/kubernetes/additional-setup/sidecar-injection/#automatic-sidecar-injection) for more.
+Gloo Edge is installed to the `gloo-system` namespace and should *not* be injected with the Istio sidecar. If you have automatic injection enabled for Istio, make sure the `istio-injection` label does *not* exist on the `gloo-system` namespace. See [the Istio docs on automatic sidecar injection](https://istio.io/docs/setup/kubernetes/additional-setup/sidecar-injection/#automatic-sidecar-injection) for more.
 
-For Gloo to successfully send requests to an Istio Upstream with mTLS enabled, we need to add the Istio mTLS secret to the gateway-proxy pod. The secret allows Gloo to authenticate with the Upstream service.
+For Gloo Edge to successfully send requests to an Istio Upstream with mTLS enabled, we need to add the Istio mTLS secret to the gateway-proxy pod. The secret allows Gloo Edge to authenticate with the Upstream service.
 
-The last configuration step is to configure the relevant Gloo Upstreams with mTLS. We can be fine-grained about which Upstreams have these settings as not all Gloo Upstreams may need/want mTLS enabled. This gives us the flexibility to route to Upstreams both with and without mTLS enabled - a common occurrence in a brown-field environment or during a migration to Istio.
+The last configuration step is to configure the relevant Gloo Edge Upstreams with mTLS. We can be fine-grained about which Upstreams have these settings as not all Gloo Edge Upstreams may need/want mTLS enabled. This gives us the flexibility to route to Upstreams both with and without mTLS enabled - a common occurrence in a brown-field environment or during a migration to Istio.
 
 Version-specific configurations for the gateway-proxy and the sample Upstream can be found below:
 - [Istio 1.0.x](#istio-10x)
@@ -106,13 +106,13 @@ Edit the Upstream with this command:
 kubectl edit upstream default-productpage-9080 --namespace gloo-system
 ```
 
-For Gloo versions 1.1.x and up, you must disable function discovery before editing the Upstream to prevent your change from being overwritten by Gloo:
+For Gloo Edge versions 1.1.x and up, you must disable function discovery before editing the Upstream to prevent your change from being overwritten by Gloo Edge:
 
 ```bash
 kubectl label namespace default discovery.solo.io/function_discovery=disabled
 ```
 
-To test this out, we need a route in Gloo:
+To test this out, we need a route in Gloo Edge:
 ```bash
 glooctl add route --name prodpage --namespace gloo-system --path-prefix / --dest-name default-productpage-9080 --dest-namespace gloo-system
 ```
@@ -234,7 +234,7 @@ status:
 
 {{% expand "Click to see instructions for Istio 1.1.x." %}}
 
-Gloo can easily and automatically plug into the Istio SDS architecture. To allow Gloo to do this, let's configure the Gloo gateway proxy (Envoy) to communicate with the Istio SDS over the Unix Domain Socket:
+Gloo Edge can easily and automatically plug into the Istio SDS architecture. To allow Gloo Edge to do this, let's configure the Gloo Edge gateway proxy (Envoy) to communicate with the Istio SDS over the Unix Domain Socket:
 
 Here's an example of an edited deployment:
 {{< highlight yaml "hl_lines=51-52 63-66" >}}
@@ -429,7 +429,7 @@ spec:
 ...
 {{< /highlight >}}
 
-For either version, in the above snippet we configure the location of the Unix Domain Socket where the Istio node agent is listening. Istio's node agent is the one that generates the certificates/keys, communicates with Istio Citadel to sign the certificate, and ultimately provides the SDS API for Envoy/Gloo's Gateway proxy. The other configurations control the location of the JWT token for the service account under which the proxy runs (so the node agent can verify what identity is being requested) and how the request will be sent (in a header, etc). 
+For either version, in the above snippet we configure the location of the Unix Domain Socket where the Istio node agent is listening. Istio's node agent is the one that generates the certificates/keys, communicates with Istio Citadel to sign the certificate, and ultimately provides the SDS API for Envoy/Gloo Edge's Gateway proxy. The other configurations control the location of the JWT token for the service account under which the proxy runs (so the node agent can verify what identity is being requested) and how the request will be sent (in a header, etc). 
 
 ---
 
@@ -441,7 +441,7 @@ For either version, in the above snippet we configure the location of the Unix D
 
 {{% notice warning %}}
 
-The Gloo integration with Istio 1.5.x requires Gloo version 1.3.20 or 1.4.0-beta1, or higher.
+The Gloo Edge integration with Istio 1.5.x requires Gloo Edge version 1.3.20 or 1.4.0-beta1, or higher.
 
 {{% /notice %}}
 
@@ -679,7 +679,7 @@ spec:
 ...
 {{< /highlight >}}
 
-Note that `alpn_protocols` is supported in Upstreams starting in Gloo 1.3.20.
+Note that `alpn_protocols` is supported in Upstreams starting in Gloo Edge 1.3.20.
 
 {{% /expand %}}
 
@@ -690,7 +690,7 @@ Note that `alpn_protocols` is supported in Upstreams starting in Gloo 1.3.20.
 
 {{% notice warning %}}
 
-The Gloo integration with Istio 1.6.x requires Gloo version 1.5.0-beta23, or higher.
+The Gloo Edge integration with Istio 1.6.x requires Gloo Edge version 1.5.0-beta23, or higher.
 
 {{% /notice %}}
 
@@ -928,6 +928,6 @@ spec:
 ...
 {{< /highlight >}}
 
-Note that `alpn_protocols` is supported in Upstreams starting in Gloo 1.3.20.
+Note that `alpn_protocols` is supported in Upstreams starting in Gloo Edge 1.3.20.
 
 {{% /expand %}}
