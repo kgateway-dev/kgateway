@@ -16,7 +16,7 @@ Gloo Edge is a feature-rich, Kubernetes-native ingress controller, and next-gene
 &nbsp; [**Twitter**](https://twitter.com/soloio_inc) |
 &nbsp; [**Enterprise Trial**](https://www.solo.io/products/gloo/#enterprise-trial)
 
-<BR><center><img src="https://docs.solo.io/gloo-edge/latest/img/gloo-architecture-envoys.png" alt="Gloo Edge Architecture" width="906"></center>
+<BR><center><img src="https://docs.solo.io/gloo-edge/master/img/gloo-architecture-envoys.png" alt="Gloo Edge Architecture" width="906"></center>
 
 ## Summary
 
