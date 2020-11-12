@@ -357,11 +357,11 @@ func preInstallMessage(installOpts *options.Install, mode Mode) {
 	}
 	switch mode {
 	case Federation:
-		fmt.Println("Starting Gloo Federation installation...")
+		fmt.Println("Starting Gloo Edge Federation installation...")
 	case Enterprise:
-		fmt.Println("Starting Gloo Enterprise installation...")
+		fmt.Println("Starting Gloo Edge Enterprise installation...")
 	default:
-		fmt.Println("Starting Gloo installation...")
+		fmt.Println("Starting Gloo Edge installation...")
 	}
 }
 func postInstallMessage(installOpts *options.Install, mode Mode) {
@@ -370,11 +370,11 @@ func postInstallMessage(installOpts *options.Install, mode Mode) {
 	}
 	switch mode {
 	case Federation:
-		fmt.Println("\nGloo Federation was successfully installed!")
+		fmt.Println("\nGloo Edge Federation was successfully installed!")
 	case Enterprise:
-		fmt.Println("\nGloo Enterprise was successfully installed!")
+		fmt.Println("\nGloo Edge Enterprise was successfully installed!")
 	default:
-		fmt.Println("\nGloo was successfully installed!")
+		fmt.Println("\nGloo Edge was successfully installed!")
 	}
 }
 
