@@ -584,7 +584,7 @@ Here is an image of how the page should look like (click to enlarge):
 <img src="../jwt-io.png" alt="jwt.io debugger" style="border: solid 1px; color: lightgrey" width="500px"/>
 
 ### Testing the configuration
-Now we are ready to test our configuration. Let's port-forward the Gloo Edge Proxy service so that it is reachable from you machine at `localhost:8080`:
+Now we are ready to test our configuration. Let's port-forward the Gateway Proxy service so that it is reachable from your machine at `localhost:8080`:
 
 ```
 kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80 &
