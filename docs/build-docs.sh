@@ -113,6 +113,13 @@ function generateSiteForVersion() {
   # Generate the versioned static site.
   make site-release
 
+  # If we are on the latest version, then copy over `404.html` so firebase uses that.
+  # https://firebase.google.com/docs/hosting/full-config#404
+  if [[ "$version" ==  "latest" ]]
+  then
+    cp site-latest/404.html $docsSiteDir/public/404.html
+  fi
+
   cat site-latest/index.json | node $workingDir/search/generate-search-index.js > site-latest/search-index.json
   # Copy over versioned static site to firebase content folder.
   mkdir -p $docsSiteDir/public/gloo-edge/$version
