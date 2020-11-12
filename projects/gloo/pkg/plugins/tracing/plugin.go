@@ -7,13 +7,14 @@ import (
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
+	"github.com/golang/protobuf/ptypes/any"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	hcmp "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 // default all tracing percentages to 100%
@@ -83,16 +84,20 @@ func (p *Plugin) ProcessHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSet
 }
 
 func envoyTracingProvider(tracingSettings *tracing.ListenerTracingSettings) *envoy_config_trace_v3.Tracing_Http {
-	typedConfig, err := protoutils.AnyGogoToPb(tracingSettings.Provider.GetTypedConfig())
-
-	if err != nil {
+	if tracingSettings.Provider == nil {
 		return nil
+	}
+
+	typedGogoMsg := utils.MustMessageToAny(tracingSettings.Provider.GetTypedConfig())
+	newGolangAny := &any.Any{
+		TypeUrl: typedGogoMsg.GetTypeUrl(),
+		Value:   typedGogoMsg.GetValue(),
 	}
 
 	return &envoy_config_trace_v3.Tracing_Http{
 		Name: tracingSettings.Provider.GetName(),
 		ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
-			TypedConfig: typedConfig,
+			TypedConfig: newGolangAny,
 		},
 	}
 }
