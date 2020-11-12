@@ -3,17 +3,16 @@ package setup
 import (
 	"context"
 
-	"github.com/solo-io/gloo/pkg/version"
-
-	"github.com/solo-io/reporting-client/pkg/client"
-
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
+	"github.com/solo-io/gloo/pkg/utils/usage"
+	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
+	"github.com/solo-io/reporting-client/pkg/client"
 )
 
 func Main(customCtx context.Context) error {
-	// TODO: Figure out if we want to recreate usage reporter without the envoy metrics service
-	return startSetupLoop(customCtx, nil)
+	usageReporter := &usage.DefaultUsageReader{}
+	return startSetupLoop(customCtx, usageReporter)
 }
 
 func StartGlooInTest(customCtx context.Context) error {

@@ -1,10 +1,11 @@
 package usage
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"time"
-
+	
 	"github.com/solo-io/reporting-client/pkg/client"
 )
 
@@ -17,11 +18,17 @@ const (
 	// report once per period
 	ReportingPeriod = time.Hour * 24
 
-	numEnvoys        = "numActiveEnvoys"
-	totalRequests    = "totalRequests"
-	totalConnections = "totalConnections"
 	args             = "args"
 )
+
+type DefaultUsageReader struct {
+}
+
+var _ client.UsagePayloadReader = &DefaultUsageReader{}
+
+func (d *DefaultUsageReader) GetPayload() (map[string]string, error) {
+	return map[string]string{}, nil
+}
 
 type CliUsageReader struct {
 }
