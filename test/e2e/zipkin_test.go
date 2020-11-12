@@ -54,9 +54,9 @@ var _ = Describe("Zipkin config loading", func() {
 		cancel()
 	})
 
-	startZipkinServer := func(handler http.Handler) {
+	startZipkinServer := func(address string, handler http.Handler) {
 		zipkinServer = &http.Server{
-			Addr:    envoyInstance.LocalAddr() + ":9411",
+			Addr:    address,
 			Handler: handler,
 		}
 		go func() {
@@ -64,36 +64,11 @@ var _ = Describe("Zipkin config loading", func() {
 		}()
 	}
 
-	startZipkinServerWithDefaultHandler := func() {
-		startZipkinServer(nil)
-	}
-
 	stopZipkinServer := func() {
 		if zipkinServer != nil {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 			zipkinServer.Shutdown(ctx)
-		}
-	}
-
-	basicReq := func() func() (string, error) {
-		return func() (string, error) {
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "127.0.0.1", 11082), nil)
-			if err != nil {
-				return "", err
-			}
-			req.Header.Set("Content-Type", "application/json")
-
-			// Set a random trace ID
-			req.Header.Set("x-client-trace-id", "test-trace-id-1234567890")
-
-			res, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return "", err
-			}
-			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
-			return string(body), err
 		}
 	}
 
@@ -109,9 +84,9 @@ var _ = Describe("Zipkin config loading", func() {
 			fmt.Fprintf(w, "Dummy Zipkin Collector received request on - %q", html.EscapeString(r.URL.Path))
 			apiHit <- true
 		})
-		startZipkinServerWithDefaultHandler()
+		startZipkinServer(":9411", nil)
 
-		testRequest := basicReq()
+		testRequest := createRequestWithTracingEnabled("127.0.0.1", 11082)
 		Eventually(testRequest, 15, 1).Should(ContainSubstring(`<title>Envoy Admin</title>`))
 
 		truez := true
@@ -134,28 +109,6 @@ var _ = Describe("Zipkin config loading", func() {
 			testClients    services.TestClients
 			writeNamespace string
 		)
-
-		basicReq := func() func() (string, error) {
-			return func() (string, error) {
-				port := defaults.HttpPort
-				req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "127.0.0.1", port), nil)
-				if err != nil {
-					return "", err
-				}
-				req.Header.Set("Content-Type", "application/json")
-
-				// Set a random trace ID
-				req.Header.Set("x-client-trace-id", "test-trace-id-1234567890")
-
-				res, err := http.DefaultClient.Do(req)
-				if err != nil {
-					return "", err
-				}
-				defer res.Body.Close()
-				body, err := ioutil.ReadAll(res.Body)
-				return string(body), err
-			}
-		}
 
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
@@ -190,16 +143,6 @@ var _ = Describe("Zipkin config loading", func() {
 			envoyInstance.Clean()
 			cancel()
 		})
-
-		setTracingOnGateway := func(httpGateway *gatewayv1.HttpGateway, tracing *tracing.ListenerTracingSettings) {
-			if httpGateway != nil {
-				httpGateway.Options = &gloov1.HttpListenerOptions{
-					HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
-						Tracing: tracing,
-					},
-				}
-			}
-		}
 
 		It("should not send trace msgs with nil provider", func() {
 			gatewayClient := testClients.GatewayClient
@@ -272,10 +215,10 @@ var _ = Describe("Zipkin config loading", func() {
 				fmt.Fprintf(w, "Dummy Zipkin Collector received request on - %q", html.EscapeString(r.URL.Path))
 				apiHit <- true
 			}))
-			startZipkinServer(zipkinHandler)
+			startZipkinServer(envoyInstance.LocalAddr() + ":9411", zipkinHandler)
 
 			// ensure we can reach out test upstream with a request
-			testRequest := basicReq()
+			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
 			Eventually(testRequest, 15*time.Second, 1*time.Second).Should(BeEmpty())
 
 			// we haven't configured tracing, so we don't expect the zipkin server to receive an api hit
@@ -371,10 +314,10 @@ var _ = Describe("Zipkin config loading", func() {
 				fmt.Fprintf(w, "Dummy Zipkin Collector received request on - %q", html.EscapeString(r.URL.Path))
 				apiHit <- true
 			}))
-			startZipkinServer(zipkinHandler)
+			startZipkinServer(envoyInstance.LocalAddr() + ":9411", zipkinHandler)
 
 			// ensure we can reach out test upstream with a request
-			testRequest := basicReq()
+			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
 			Eventually(testRequest, 15*time.Second, 1*time.Second).Should(BeEmpty())
 
 			// ensure the zipkin server received tracing from the test upstream
@@ -385,3 +328,34 @@ var _ = Describe("Zipkin config loading", func() {
 		})
 	})
 })
+
+func createRequestWithTracingEnabled(address string, port uint32) func() (string, error) {
+	return func() (string, error) {
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", address, port), nil)
+		if err != nil {
+			return "", err
+		}
+		req.Header.Set("Content-Type", "application/json")
+
+		// Set a random trace ID
+		req.Header.Set("x-client-trace-id", "test-trace-id-1234567890")
+
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return "", err
+		}
+		defer res.Body.Close()
+		body, err := ioutil.ReadAll(res.Body)
+		return string(body), err
+	}
+}
+
+func setTracingOnGateway(httpGateway *gatewayv1.HttpGateway, tracing *tracing.ListenerTracingSettings) {
+	if httpGateway != nil {
+		httpGateway.Options = &gloov1.HttpListenerOptions{
+			HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
+				Tracing: tracing,
+			},
+		}
+	}
+}
