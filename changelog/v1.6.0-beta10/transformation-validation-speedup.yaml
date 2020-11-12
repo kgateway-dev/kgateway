@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/3853
+  description: Use multi-tool any resolver to avoid slowdown involved with using `types.Struct` as a middle man.
