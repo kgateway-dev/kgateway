@@ -11,7 +11,7 @@ managed by Okta.
 In this guide we will see how to authenticate users with your application via an OIDC flow that uses Okta as the identity 
 provider. This guide is an example to get you started for test purposes with Okta.  It omits many of the factors that need to be considered for full production deployments.
 
-First, we will use Gloo Edge to expose a simple [htpbin](https://httpbin.org/) Service running on Kubernetes.
+First, we will use Gloo Edge to expose a simple [httpbin](https://httpbin.org/) Service running on Kubernetes.
 
 Second, we’ll secure the access using Okta OIDC.  Okta will return a JWT token, and we’ll use Gloo Edge to extract some claims from this token create new headers corresponding to these claims.
 
@@ -343,7 +343,7 @@ After this callback, the normal request flow continues and the upstream applicat
 
 ![GlooTest Response](./glootest-get-1.png)
 
-You can also test other `httpbin` endpoints via the Gloo Edge gateway.  For example, consider this base64 conversion service endpoint:  https://mydomain.com/base64/R2xvbyBpcyBhd2Vzb21lCg==
+You can also test other `httpbin` endpoints via the Gloo Edge gateway.  For example, consider this base64 conversion service endpoint:  https://glootest.com/base64/R2xvbyBpcyBhd2Vzb21lCg==
 
 ![GlooTest Base64 Conversion](./httpbin-base64.png)
 
