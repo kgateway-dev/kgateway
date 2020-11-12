@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3855
+    description: Add Istio 1.8.x support to the existing glooctl istio integrations.
