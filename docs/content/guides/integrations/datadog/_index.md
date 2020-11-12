@@ -51,7 +51,7 @@ If this is the first time you've logged into Datadog, you can also follow the wi
 From the Datadog portal, select Integrations and the Agents subcategory. Then select the Kubernetes agent. Under the directions, you can find the Helm command to install the Datadog agent on your cluster. It will look like this:
 
 ```bash
-helm install datadog-gloo -f datadog-values.yaml --set datadog.apiKey=API_KEY stable/datadog 
+helm install datadog-gloo -f datadog-values.yaml --set datadog.apiKey=API_KEY datadog/datadog 
 ```
 
 Copy this command for later use.
@@ -136,9 +136,10 @@ Assuming that you have deployed Gloo Edge in the namespace `gloo-system`, run th
 kubectl edit deployments -n gloo-system gateway-proxy
 ```
 
-Then update the `spec.template` section of the yaml with these additional annotations.
+Then update the `spec.template.metadata` section of the yaml with these additional annotations.  Be sure to add the annotations in the `spec.template.metadata.annotations` section, not the `metadata.annotations` section.  Adding them to the wrong section will cause the annotations not to be propagated through to the `gateway-proxy` pod.
 
 ```yaml
+spec:
   template:
     metadata:
       annotations:
@@ -206,7 +207,7 @@ kubectl get pods -o wide --field-selector spec.nodeName=$NODE_NAME
 You may see two pods returned. You want the one that doesn't have `kube-state-metrics` in the name. Now you can run the `agent status` command from inside the Datadog agent pod. Change the `POD_NAME` to reflect your pod name.
 
 ```bash
-kubectl exec -it POD_NAME agent status | grep envoy
+kubectl exec POD_NAME -- agent status | grep envoy
 ```
 
 The output should be similar to this:
@@ -216,7 +217,9 @@ envoy (1.14.0)
       Instance ID: envoy:f312c8247060dc62 [OK]
 ```
 
-That means the Datadog agent has fired up the Envoy integration and should be collecting metrics. You can now verify this by going back to the portal and checking through the Metrics Explorer.
+That means the Datadog agent has fired up the Envoy integration and should be collecting metrics. You can now verify this by going back to the Datadog portal and navigating to the Envoy Overview dashboard.
+
+![Envoy Overview Dashboard](./envoy-dd-dash-1.png)
 
 ---
 
