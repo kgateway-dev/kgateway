@@ -14,7 +14,7 @@ In this document we will show a simple OPA policy that dictates that all virtual
 
 ### Prerequisites
 
-Before you get started, you will need to have the Gloo Edge running in a Kubernetes cluster. For more information, you can follow this [installation guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+Before you get started, you will need to have Gloo Edge running in a Kubernetes cluster. For more information, you can follow this [installation guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
 
 ### Setup
 
