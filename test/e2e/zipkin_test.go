@@ -215,7 +215,7 @@ var _ = Describe("Zipkin config loading", func() {
 				fmt.Fprintf(w, "Dummy Zipkin Collector received request on - %q", html.EscapeString(r.URL.Path))
 				apiHit <- true
 			}))
-			startZipkinServer(envoyInstance.LocalAddr() + ":9411", zipkinHandler)
+			startZipkinServer(envoyInstance.LocalAddr()+":9411", zipkinHandler)
 
 			// ensure we can reach out test upstream with a request
 			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
@@ -314,7 +314,7 @@ var _ = Describe("Zipkin config loading", func() {
 				fmt.Fprintf(w, "Dummy Zipkin Collector received request on - %q", html.EscapeString(r.URL.Path))
 				apiHit <- true
 			}))
-			startZipkinServer(envoyInstance.LocalAddr() + ":9411", zipkinHandler)
+			startZipkinServer(envoyInstance.LocalAddr()+":9411", zipkinHandler)
 
 			// ensure we can reach out test upstream with a request
 			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
