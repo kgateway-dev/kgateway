@@ -1,11 +1,10 @@
 package usage
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"time"
-	
+
 	"github.com/solo-io/reporting-client/pkg/client"
 )
 
@@ -18,7 +17,7 @@ const (
 	// report once per period
 	ReportingPeriod = time.Hour * 24
 
-	args             = "args"
+	args = "args"
 )
 
 type DefaultUsageReader struct {
