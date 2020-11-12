@@ -20,9 +20,6 @@ spec:
   - name: grpc-validation
     port: {{ .Values.gloo.deployment.validationPort }}
     protocol: TCP
-  - name: metrics-grpc
-    port: 9966
-    protocol: TCP
   - name: wasm-cache
     port: 9979
     protocol: TCP

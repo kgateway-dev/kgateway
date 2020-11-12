@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"regexp"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/go-utils/installutils/kuberesource"
 	"github.com/solo-io/go-utils/manifesttestutils"
@@ -159,7 +157,7 @@ var _ = Describe("Helm Test", func() {
 				testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 					return !nonNamespacedKinds.Has(resource.GetKind())
 				}).ExpectAll(func(resource *unstructured.Unstructured) {
-					Expect(resource.GetNamespace()).NotTo(BeEmpty(), fmt.Sprintf("Resource %+v does not have a namespace", resource))
+					ExpectWithOffset(1, resource.GetNamespace()).NotTo(BeEmpty(), fmt.Sprintf("Resource %+v does not have a namespace", resource))
 				})
 			})
 
@@ -207,9 +205,9 @@ var _ = Describe("Helm Test", func() {
 						return resource.GetKind() == "Deployment"
 					}).ExpectAll(func(deployment *unstructured.Unstructured) {
 						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
 						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
 						promAnnotations := normalPromAnnotations
 						if structuredDeployment.GetName() == "gateway-proxy" {
@@ -218,7 +216,7 @@ var _ = Describe("Helm Test", func() {
 
 						deploymentAnnotations := structuredDeployment.Spec.Template.ObjectMeta.Annotations
 						for annotation, value := range promAnnotations {
-							Expect(deploymentAnnotations[annotation]).To(Equal(value), fmt.Sprintf("Annotation %s should be set to %s on deployment %+v", deployment, annotation, value))
+							ExpectWithOffset(1, deploymentAnnotations[annotation]).To(Equal(value), fmt.Sprintf("Annotation %s should be set to %s on deployment %+v", deployment, annotation, value))
 						}
 
 						if structuredDeployment.GetName() != "gateway-proxy" {
@@ -227,11 +225,11 @@ var _ = Describe("Helm Test", func() {
 								for _, envVar := range container.Env {
 									if envVar.Name == "START_STATS_SERVER" {
 										foundExpected = true
-										Expect(envVar.Value).To(Equal("true"), fmt.Sprintf("Should have the START_STATS_SERVER env var set to 'true' on deployment %+v", deployment))
+										ExpectWithOffset(1, envVar.Value).To(Equal("true"), fmt.Sprintf("Should have the START_STATS_SERVER env var set to 'true' on deployment %+v", deployment))
 									}
 								}
 
-								Expect(foundExpected).To(BeTrue(), fmt.Sprintf("Should have found the START_STATS_SERVER env var on deployment %+v", deployment))
+								ExpectWithOffset(1, foundExpected).To(BeTrue(), fmt.Sprintf("Should have found the START_STATS_SERVER env var on deployment %+v", deployment))
 							}
 						}
 					})
@@ -266,20 +264,20 @@ var _ = Describe("Helm Test", func() {
 						return resource.GetKind() == "Deployment"
 					}).ExpectAll(func(deployment *unstructured.Unstructured) {
 						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
 						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
 						deploymentLabels := structuredDeployment.Spec.Template.Labels
 						var foundTestValue = false
 						for label, value := range deploymentLabels {
 							if label == "foo" {
-								Expect(value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
+								ExpectWithOffset(1, value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
 									" value bar. Found value %s", deployment.GetName(), value))
 								foundTestValue = true
 							}
 						}
-						Expect(foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
+						ExpectWithOffset(1, foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
 						resourcesTested += 1
 					})
 					// Is there an elegant way to parameterized the expected number of deployments based on the valueArgs?
@@ -303,9 +301,9 @@ var _ = Describe("Helm Test", func() {
 						return resource.GetKind() == "Deployment"
 					}).ExpectAll(func(deployment *unstructured.Unstructured) {
 						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
 						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
 						deploymentLabels := structuredDeployment.Spec.Template.Labels
 						if structuredDeployment.Name != "clusteringress-proxy" {
@@ -314,17 +312,78 @@ var _ = Describe("Helm Test", func() {
 						var foundTestValue = false
 						for label, value := range deploymentLabels {
 							if label == "foo" {
-								Expect(value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
+								ExpectWithOffset(1, value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
 									" value bar. Found value %s", deployment.GetName(), value))
 								foundTestValue = true
 							}
 						}
-						Expect(foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
+						ExpectWithOffset(1, foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
 						resourcesTested += 1
 					})
 					// Is there an elegant way to parameterized the expected number of deployments based on the valueArgs?
 					Expect(resourcesTested).To(Equal(1), "Tested %d resources when we were expecting 1."+
 						"What happened to the clusteringress-proxy deployment?", resourcesTested)
+				})
+
+				It("should set route prefix_rewrite in clusteringress-envoy-config from global.glooStats", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"settings.integrations.knative.enabled=true",
+							"settings.integrations.knative.version=0.7.0",
+							"settings.integrations.knative.proxy.stats=true",
+							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == "clusteringress-envoy-config" {
+							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
+							ExpectWithOffset(1, structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
+						}
+					})
+				})
+
+				It("should set route prefix_rewrite in knative proxy configs from global.glooStats", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"settings.integrations.knative.enabled=true",
+							"settings.integrations.knative.version=0.8.0",
+							"settings.integrations.knative.proxy.stats=true",
+							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == "knative-internal-proxy-config" ||
+							structuredConfigMap.GetName() == "knative-external-proxy-config" {
+							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
+							ExpectWithOffset(1, structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
+						}
+					})
+				})
+
+				It("should be able to set consul config values", func() {
+					settings := makeUnstructureFromTemplateFile("fixtures/settings/consul_config_values.yaml", namespace)
+					prepareMakefileFromValuesFile("val_consul_test_inputs.yaml")
+					testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+				})
+
+				It("should be able to set consul config upstream discovery values", func() {
+					settings := makeUnstructureFromTemplateFile("fixtures/settings/consul_config_upstream_discovery.yaml", namespace)
+					prepareMakefileFromValuesFile("val_consul_discovery_test_inputs.yaml")
+					testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 				})
 
 				It("should be able to override global defaults", func() {
@@ -338,15 +397,15 @@ var _ = Describe("Helm Test", func() {
 							(resource.GetName() == "gloo" || resource.GetName() == "discovery")
 					}).ExpectAll(func(deployment *unstructured.Unstructured) {
 						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
 						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
 						if structuredDeployment.GetName() == "gloo" {
-							Expect(structuredDeployment.Spec.Template.ObjectMeta.Annotations).To(BeEmpty(), fmt.Sprintf("No annotations should be present on deployment %+v", structuredDeployment))
+							ExpectWithOffset(1, structuredDeployment.Spec.Template.ObjectMeta.Annotations).To(BeEmpty(), fmt.Sprintf("No annotations should be present on deployment %+v", structuredDeployment))
 						} else if structuredDeployment.GetName() == "discovery" {
 							for annotation, value := range normalPromAnnotations {
-								Expect(structuredDeployment.Spec.Template.ObjectMeta.Annotations[annotation]).To(Equal(value), fmt.Sprintf("Annotation %s should be set to %s on deployment %+v", deployment, annotation, value))
+								ExpectWithOffset(1, structuredDeployment.Spec.Template.ObjectMeta.Annotations[annotation]).To(Equal(value), fmt.Sprintf("Annotation %s should be set to %s on deployment %+v", deployment, annotation, value))
 							}
 						} else {
 							Fail(fmt.Sprintf("Unexpected deployment found: %+v", structuredDeployment))
@@ -444,6 +503,50 @@ var _ = Describe("Helm Test", func() {
 						if structuredConfigMap.GetName() == "gateway-proxy-envoy-config" {
 							expectedTestListener := "    - name: test_listener"
 							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedTestListener))
+						}
+					})
+				})
+
+				It("should set route prefix_rewrite in gateway-proxy-envoy-config from global.glooStats", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"global.glooStats.enabled=true",
+							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == "gateway-proxy-envoy-config" {
+							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
+							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
+						}
+					})
+				})
+
+				It("should set route prefix_rewrite in gateway-proxy-envoy-config from gatewayProxies.gatewayProxy", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.stats.enabled=true",
+							"gatewayProxies.gatewayProxy.stats.routePrefixRewrite=/stats?format=json"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == "gateway-proxy-envoy-config" {
+							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
+							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
 						}
 					})
 				})
@@ -1198,26 +1301,6 @@ var _ = Describe("Helm Test", func() {
 						testManifest.Expect("Deployment", namespace, "gateway-proxy").To(matchers.BeEquivalentToDiff(gatewayProxyDeployment))
 					})
 
-					It("creates a deployment with gloo wasm envoy", func() {
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"global.wasm.enabled=true"},
-						})
-						podname := v1.EnvVar{
-							Name: "POD_NAME",
-							ValueFrom: &v1.EnvVarSource{
-								FieldRef: &v1.ObjectFieldSelector{
-									FieldPath: "metadata.name",
-								},
-							},
-						}
-
-						versionRegex := regexp.MustCompile("([0-9]+\\.[0-9]+\\.[0-9]+)")
-						wasmVersion := versionRegex.ReplaceAllString(version, "${1}-wasm")
-						container := GetQuayContainerSpec("gloo-envoy-wrapper", wasmVersion, GetPodNamespaceEnvVar(), podname)
-						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = container.Image
-						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
-					})
-
 					It("disables net bind", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.podTemplate.disableNetBind=true"},
@@ -1565,6 +1648,44 @@ var _ = Describe("Helm Test", func() {
 							gatewayProxyDeployment.GetNamespace(),
 							gatewayProxyDeployment.GetName()).To(BeNil())
 					})
+
+					Context("pass image pull secrets", func() {
+						pullSecretName := "test-pull-secret"
+						pullSecret := []v1.LocalObjectReference{
+							{Name: pullSecretName},
+						}
+
+						It("via global values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("global.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							gatewayProxyDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+						})
+
+						It("via podTemplate values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							gatewayProxyDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+						})
+
+						It("podTemplate values win over global", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"global.image.pullSecret=wrong",
+									fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							gatewayProxyDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+						})
+					})
 				})
 
 				Context("gateway validation resources", func() {
@@ -1653,11 +1774,11 @@ spec:
 					})
 
 					It("correctly sets the `gloo.enableRestEds` to false in the settings", func() {
-						settings := makeUnstructureFromTemplateFile("fixtures/settings/enable_rest_eds.yaml", namespace)
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/disable_rest_eds.yaml", namespace)
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"settings.enableRestEds=true",
+								"settings.enableRestEds=false",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
@@ -2098,18 +2219,6 @@ metadata:
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
 
-					It("creates a deployment with gloo wasm envoy", func() {
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"global.wasm.enabled=true"},
-						})
-						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
-							glooDeployment.Spec.Template.Spec.Containers[0].Env, v1.EnvVar{
-								Name:  wasm.WasmEnabled,
-								Value: "true",
-							})
-						testManifest.ExpectDeploymentAppsV1(glooDeployment)
-					})
-
 					It("should allow overriding runAsUser", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gloo.deployment.runAsUser=10102"},
@@ -2193,6 +2302,44 @@ metadata:
 							},
 						})
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
+					})
+
+					Context("pass image pull secrets", func() {
+						pullSecretName := "test-pull-secret"
+						pullSecret := []v1.LocalObjectReference{
+							{Name: pullSecretName},
+						}
+
+						It("via global values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("global.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							glooDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(glooDeployment)
+						})
+
+						It("via podTemplate values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("gloo.deployment.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							glooDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(glooDeployment)
+						})
+
+						It("podTemplate values win over global", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"global.image.pullSecret=wrong",
+									fmt.Sprintf("gloo.deployment.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							glooDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(glooDeployment)
+						})
 					})
 				})
 
@@ -2365,6 +2512,44 @@ metadata:
 						gatewayDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
 						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
 					})
+
+					Context("pass image pull secrets", func() {
+						pullSecretName := "test-pull-secret"
+						pullSecret := []v1.LocalObjectReference{
+							{Name: pullSecretName},
+						}
+
+						It("via global values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("global.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							gatewayDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
+						})
+
+						It("via podTemplate values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("gateway.deployment.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							gatewayDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
+						})
+
+						It("podTemplate values win over global", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"global.image.pullSecret=wrong",
+									fmt.Sprintf("gateway.deployment.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							gatewayDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
+						})
+					})
 				})
 
 				Context("discovery service account", func() {
@@ -2514,6 +2699,44 @@ metadata:
 						uid := int64(10102)
 						discoveryDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+					})
+
+					Context("pass image pull secrets", func() {
+						pullSecretName := "test-pull-secret"
+						pullSecret := []v1.LocalObjectReference{
+							{Name: pullSecretName},
+						}
+
+						It("via global values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("global.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							discoveryDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+						})
+
+						It("via podTemplate values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("discovery.deployment.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							discoveryDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+						})
+
+						It("podTemplate values win over global", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"global.image.pullSecret=wrong",
+									fmt.Sprintf("discovery.deployment.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							discoveryDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+						})
 					})
 				})
 
@@ -2748,6 +2971,29 @@ metadata:
 					testManifest.ExpectService(ingressProxyService)
 				})
 
+				It("should set route prefix_rewrite in ingress-envoy-config from global.glooStats", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"ingress.enabled=true",
+							"ingressProxy.deployment.stats=true",
+							"global.glooStats.enabled=true",
+							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == "ingress-envoy-config" {
+							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
+							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
+						}
+					})
+				})
 			})
 
 			Describe("merge ingress and gateway", func() {
