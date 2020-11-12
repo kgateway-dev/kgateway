@@ -3,6 +3,11 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"html"
+	"io/ioutil"
+	"net/http"
+	"time"
+
 	envoy_config_trace_v3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/proto"
@@ -16,10 +21,6 @@ import (
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"html"
-	"io/ioutil"
-	"net/http"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -29,11 +30,11 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
-var _ =Describe("Zipkin config loading", func() {
+var _ = Describe("Zipkin config loading", func() {
 	var (
-		cancel        	context.CancelFunc
-		envoyInstance 	*services.EnvoyInstance
-		zipkinServer	*http.Server
+		cancel        context.CancelFunc
+		envoyInstance *services.EnvoyInstance
+		zipkinServer  *http.Server
 	)
 
 	BeforeEach(func() {
@@ -53,11 +54,9 @@ var _ =Describe("Zipkin config loading", func() {
 		cancel()
 	})
 
-
-
 	startZipkinServer := func(handler http.Handler) {
 		zipkinServer = &http.Server{
-			Addr: ":9411",
+			Addr:    envoyInstance.LocalAddr() + ":9411",
 			Handler: handler,
 		}
 		go func() {
@@ -227,14 +226,14 @@ var _ =Describe("Zipkin config loading", func() {
 			// create zipkin upstream
 			zipkinUs := &gloov1.Upstream{
 				Metadata: core.Metadata{
-					Name: 		"zipkin",
-					Namespace: 	"default",
+					Name:      "zipkin",
+					Namespace: "default",
 				},
 				UpstreamType: &gloov1.Upstream_Static{
 					Static: &static_plugin_gloo.UpstreamSpec{
 						Hosts: []*static_plugin_gloo.Host{
 							{
-								Addr: "127.0.0.1",
+								Addr: envoyInstance.LocalAddr(),
 								Port: 9411,
 							},
 						},
@@ -275,6 +274,7 @@ var _ =Describe("Zipkin config loading", func() {
 			}))
 			startZipkinServer(zipkinHandler)
 
+			// ensure we can reach out test upstream with a request
 			testRequest := basicReq()
 			Eventually(testRequest, 15*time.Second, 1*time.Second).Should(BeEmpty())
 
@@ -325,21 +325,21 @@ var _ =Describe("Zipkin config loading", func() {
 			// create zipkin upstream
 			zipkinUs := &gloov1.Upstream{
 				Metadata: core.Metadata{
-					Name: 		"zipkin",
-					Namespace: 	"default",
+					Name:      "zipkin",
+					Namespace: "default",
 				},
 				UpstreamType: &gloov1.Upstream_Static{
 					Static: &static_plugin_gloo.UpstreamSpec{
 						Hosts: []*static_plugin_gloo.Host{
 							{
-								Addr: "127.0.0.1",
+								Addr: envoyInstance.LocalAddr(),
 								Port: 9411,
 							},
 						},
 					},
 				},
 			}
-			 _, err = testClients.UpstreamClient.Write(zipkinUs, clients.WriteOpts{})
+			_, err = testClients.UpstreamClient.Write(zipkinUs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
 			// write a virtual service so we have a proxy to our test upstream
@@ -373,9 +373,11 @@ var _ =Describe("Zipkin config loading", func() {
 			}))
 			startZipkinServer(zipkinHandler)
 
+			// ensure we can reach out test upstream with a request
 			testRequest := basicReq()
 			Eventually(testRequest, 15*time.Second, 1*time.Second).Should(BeEmpty())
 
+			// ensure the zipkin server received tracing from the test upstream
 			expectedZipkinApiHit := true
 			Eventually(apiHit, 5*time.Second).Should(Receive(&expectedZipkinApiHit))
 
