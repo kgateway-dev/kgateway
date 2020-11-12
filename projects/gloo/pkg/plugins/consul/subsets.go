@@ -46,7 +46,7 @@ func (p *plugin) ProcessRouteAction(params plugins.RouteActionParams, inAction *
 	case *v1.RouteAction_ClusterHeader:
 		// ClusterHeader must use the naming convention {{namespace}}_{{clustername}}
 		out.ClusterSpecifier = &envoyroute.RouteAction_ClusterHeader{
-			ClusterHeader: dest.ClusterHeader,
+			ClusterHeader: inAction.GetClusterHeader(),
 		}
 		return nil
 	}
