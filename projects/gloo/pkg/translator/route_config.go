@@ -337,6 +337,10 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 		upstreamGroupRef := dest.UpstreamGroup
 		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
 		if err != nil {
+			// the UpstreamGroup isn't found but set a bogus cluster so route replacement will still work
+			out.ClusterSpecifier = &envoyroute.RouteAction_Cluster{
+				Cluster: "",
+			}
 			return pluginutils.NewUpstreamGroupNotFoundErr(*upstreamGroupRef)
 		}
 		md := &v1.MultiDestination{
