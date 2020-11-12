@@ -25,6 +25,8 @@ jobs:
 
     - name: Generate versioned docs site
       run: make -C docs build-site
+      env:
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
     - name: Deploy to Firebase
       uses: w9jds/firebase-action@master
