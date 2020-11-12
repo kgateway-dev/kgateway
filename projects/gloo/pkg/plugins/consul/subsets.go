@@ -44,7 +44,7 @@ func (p *plugin) ProcessRouteAction(params plugins.RouteActionParams, inAction *
 		return setWeightedClusters(params.Params, md, out)
 
 	case *v1.RouteAction_ClusterHeader:
-		// ClusterHeader must use the naming convention {{namespace}}_{{clustername}}
+		// ClusterHeader must use the naming convention {{clustername}}_{{namespace}}
 		out.ClusterSpecifier = &envoyroute.RouteAction_ClusterHeader{
 			ClusterHeader: inAction.GetClusterHeader(),
 		}

@@ -458,6 +458,42 @@ var _ = Describe("Gateway", func() {
 				}, time.Second, 200*time.Millisecond).Should(Equal(404))
 			})
 
+			It("should direct requests that use cluster_header to the proper upstream", func() {
+				up := tu.Upstream
+				vs := getTrivialVirtualService("gloo-system")
+
+				// Create route that uses cluster header destination
+				vs.GetVirtualHost().Routes = []*gatewayv1.Route{{
+					Action: &gatewayv1.Route_RouteAction{
+						RouteAction: &gloov1.RouteAction{
+							Destination: &gloov1.RouteAction_ClusterHeader{
+								ClusterHeader: "cluster-header-name",
+							},
+						},
+					}}}
+
+				_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+				fmt.Printf("%+v\n", up.Metadata)
+
+				// Create a regular request
+				request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), nil)
+				request.Header.Add("cluster-header-name", "local-1_default")
+
+				Expect(err).NotTo(HaveOccurred())
+				request = request.WithContext(ctx)
+
+				// Check that we can reach the upstream
+				client := &http.Client{}
+				Eventually(func() int {
+					response, err := client.Do(request)
+					if err != nil {
+						return 0
+					}
+					return response.StatusCode
+				}, 20*time.Second, 500*time.Millisecond).Should(Equal(200))
+			})
+
 			Context("ssl", func() {
 
 				TestUpstreamSslReachable := func() {
@@ -552,7 +588,8 @@ func getTrivialVirtualService(ns string) *gatewayv1.VirtualService {
 						},
 					},
 				},
-			}},
+			},
+				{}},
 		},
 	}
 }
