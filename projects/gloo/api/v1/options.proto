@@ -121,8 +121,10 @@ message HttpListenerOptions {
     // For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/grpc_json_transcoder/v3/transcoder.proto
     grpc_json.options.gloo.solo.io.GrpcJsonTranscoder grpc_json_transcoder = 13;
 
-    // Enterprise-only: Header sanitization if route destination will use cluster_header
-    bool sanitize_cluster_header = 14;
+    // Enterprise-only: Controls whether the downstream HTTP header will be sanitized for
+    // the header that is being used as a ClusterHeader destination
+    // Defaults to false
+    google.protobuf.BoolValue sanitize_cluster_header = 14;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners

@@ -474,7 +474,6 @@ var _ = Describe("Gateway", func() {
 
 				_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
-				fmt.Printf("%+v\n", up.Metadata)
 
 				// Create a regular request
 				request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), nil)
@@ -588,8 +587,7 @@ func getTrivialVirtualService(ns string) *gatewayv1.VirtualService {
 						},
 					},
 				},
-			},
-				{}},
+			}},
 		},
 	}
 }
