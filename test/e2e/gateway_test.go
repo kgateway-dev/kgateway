@@ -3,9 +3,10 @@ package e2e_test
 import (
 	"context"
 	"fmt"
-	"github.com/gogo/protobuf/types"
 	"net/http"
 	"time"
+
+	"github.com/gogo/protobuf/types"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
