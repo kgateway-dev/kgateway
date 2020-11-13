@@ -1,4 +1,4 @@
-package sanitize_http_headers_test
+package sanitize_cluster_header_test
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestExtAuth(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "SanitizeHttpHeaders Suite")
+	RunSpecs(t, "SanitizeClusterHeader Suite")
 }

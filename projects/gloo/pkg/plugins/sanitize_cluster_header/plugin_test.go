@@ -1,4 +1,4 @@
-package sanitize_http_headers_test
+package sanitize_cluster_header_test
 
 import (
 	"github.com/gogo/protobuf/types"
@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/extauth"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/sanitize_http_headers"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/sanitize_cluster_header"
 )
 
 var _ = Describe("Plugin", func() {

@@ -1,4 +1,4 @@
-package sanitize_http_headers
+package sanitize_cluster_header
 
 import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/extauth"
@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	ExtensionName      = "sanitize_http_headers"
+	ExtensionName      = "sanitize_cluster_header"
 	SanitizeFilterName = "io.solo.filters.http.sanitize"
 )
 
