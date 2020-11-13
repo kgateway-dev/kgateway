@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"github.com/gogo/protobuf/types"
 	"net/http"
 	"time"
 
@@ -42,8 +43,8 @@ var _ = Describe("Gateway", func() {
 
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
-			defaults.HttpPort = services.NextBindPort()
-			defaults.HttpsPort = services.NextBindPort()
+			defaults.HttpPort = 8080
+			defaults.HttpsPort = 8081
 			validationPort := services.AllocateGlooPort()
 
 			writeNamespace = "gloo-system"
@@ -459,6 +460,7 @@ var _ = Describe("Gateway", func() {
 			})
 
 			It("should direct requests that use cluster_header to the proper upstream", func() {
+
 				vs := getTrivialVirtualService("gloo-system")
 
 				// Create route that uses cluster header destination
@@ -476,10 +478,9 @@ var _ = Describe("Gateway", func() {
 
 				// Create a regular request
 				request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), nil)
-				request.Header.Add("cluster-header-name", "local-1_default")
-
 				Expect(err).NotTo(HaveOccurred())
-				request = request.WithContext(ctx)
+				request = request.WithContext(context.TODO())
+				request.Header.Add("cluster-header-name", "local-1_default")
 
 				// Check that we can reach the upstream
 				client := &http.Client{}
@@ -489,7 +490,58 @@ var _ = Describe("Gateway", func() {
 						return 0
 					}
 					return response.StatusCode
-				}, 20*time.Second, 500*time.Millisecond).Should(Equal(200))
+				}, 10*time.Second, 500*time.Millisecond).Should(Equal(200))
+			})
+
+			It("sanitizes downstream http header for cluster_header when told to do so", func() {
+				gatewayClient := testClients.GatewayClient
+				gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// Configure gateway to use cluster header sanitation
+				for _, g := range gw {
+					httpGateway := g.GetHttpGateway()
+					if httpGateway != nil {
+						httpGateway.Options = &gloov1.HttpListenerOptions{
+							SanitizeClusterHeader: &types.BoolValue{Value: true},
+						}
+					}
+					_, err = gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+					Expect(err).NotTo(HaveOccurred())
+				}
+
+				vs := getTrivialVirtualService(writeNamespace)
+
+				// Create route that uses cluster header destination
+				vs.GetVirtualHost().Routes = []*gatewayv1.Route{{
+					Action: &gatewayv1.Route_RouteAction{
+						RouteAction: &gloov1.RouteAction{
+							Destination: &gloov1.RouteAction_ClusterHeader{
+								ClusterHeader: "cluster-header-name",
+							},
+						},
+					}}}
+
+				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// Create a regular request
+				request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), nil)
+				request.Header.Add("cluster-header-name", "local-1_default")
+
+				Expect(err).NotTo(HaveOccurred())
+				request = request.WithContext(ctx)
+
+				// Check that the request times out because the cluster_header is sanitized
+				client := &http.Client{}
+				Eventually(func() int {
+					response, err := client.Do(request)
+					if err != nil {
+						return 0
+					}
+					return response.StatusCode
+				}, 10*time.Second, 500*time.Millisecond).Should(Equal(0))
+
 			})
 
 			Context("ssl", func() {

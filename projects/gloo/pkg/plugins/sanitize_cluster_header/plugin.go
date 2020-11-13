@@ -30,12 +30,10 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	var filters []plugins.StagedHttpFilter
-
 	// check if we should sanitize for cluster_header
 	if sanitizeClusterHeader := listener.GetOptions().GetSanitizeClusterHeader(); sanitizeClusterHeader == nil || sanitizeClusterHeader.GetValue() == false {
 		return filters, nil
 	}
-
 	headersToRemoveSet := make(map[string]int)
 
 	// get all headers used for cluster_header destination
