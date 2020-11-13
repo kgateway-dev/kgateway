@@ -34,7 +34,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	if sanitizeClusterHeader := listener.GetOptions().GetSanitizeClusterHeader(); sanitizeClusterHeader == nil || sanitizeClusterHeader.GetValue() == false {
 		return filters, nil
 	}
-	headersToRemoveSet := make(map[string]int)
+	headersToRemoveSet := make(map[string]struct{})
 
 	// get all headers used for cluster_header destination
 	hosts := listener.GetVirtualHosts()
@@ -42,7 +42,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		routes := host.GetRoutes()
 		for _, route := range routes {
 			if header := route.GetRouteAction().GetClusterHeader(); header != "" {
-				headersToRemoveSet[header] = 0
+				headersToRemoveSet[header] = struct{}{}
 			}
 		}
 	}
