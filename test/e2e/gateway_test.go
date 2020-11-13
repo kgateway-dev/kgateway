@@ -30,7 +30,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = FDescribe("Gateway", func() {
+var _ = Describe("Gateway", func() {
 
 	var (
 		ctx            context.Context
@@ -479,9 +479,11 @@ var _ = FDescribe("Gateway", func() {
 			})
 
 			It("should direct requests that use cluster_header to the proper upstream", func() {
+				// Construct upstream name {{name}}_{{namespace}}
+				us := tu.Upstream
+				upstreamName := fmt.Sprintf("%s_%s", us.Metadata.Name, us.Metadata.Namespace)
 
 				vs := getTrivialVirtualService("gloo-system")
-
 				// Create route that uses cluster header destination
 				vs.GetVirtualHost().Routes = []*gatewayv1.Route{{
 					Action: &gatewayv1.Route_RouteAction{
@@ -499,20 +501,24 @@ var _ = FDescribe("Gateway", func() {
 				request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), nil)
 				Expect(err).NotTo(HaveOccurred())
 				request = request.WithContext(context.TODO())
-				request.Header.Add("cluster-header-name", "local-1_default")
+				request.Header.Add("cluster-header-name", upstreamName)
 
 				// Check that we can reach the upstream
 				client := &http.Client{}
-				Eventually(func() int {
+				Eventually(func() (int, error) {
 					response, err := client.Do(request)
-					if err != nil {
-						return 0
+					if response == nil {
+						return 0, err
 					}
-					return response.StatusCode
+					return response.StatusCode, err
 				}, 10*time.Second, 500*time.Millisecond).Should(Equal(200))
 			})
 
 			It("sanitizes downstream http header for cluster_header when told to do so", func() {
+				// Construct upstream name {{name}}_{{namespace}}
+				us := tu.Upstream
+				upstreamName := fmt.Sprintf("%s_%s", us.Metadata.Name, us.Metadata.Namespace)
+
 				gatewayClient := testClients.GatewayClient
 				gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{})
 				Expect(err).NotTo(HaveOccurred())
@@ -546,20 +552,15 @@ var _ = FDescribe("Gateway", func() {
 
 				// Create a regular request
 				request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), nil)
-				request.Header.Add("cluster-header-name", "local-1_default")
+				request.Header.Add("cluster-header-name", upstreamName)
 
 				Expect(err).NotTo(HaveOccurred())
-				request = request.WithContext(ctx)
 
-				// Check that the request times out because the cluster_header is sanitized
+				// Check that the request times out because the cluster_header is sanitized, and request has no upstream destination
 				client := &http.Client{}
-				Eventually(func() int {
-					response, err := client.Do(request)
-					if err != nil {
-						return 0
-					}
-					return response.StatusCode
-				}, 10*time.Second, 500*time.Millisecond).Should(Equal(0))
+				_, err = client.Do(request)
+
+				Expect(err).To(HaveOccurred())
 
 			})
 
