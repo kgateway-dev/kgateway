@@ -3,6 +3,9 @@ package tracing.options.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing";
 
+import "envoy/config/trace/v3/zipkin.proto";
+import "envoy/config/trace/v3/datadog.proto";
+
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
@@ -11,6 +14,7 @@ import "google/protobuf/any.proto";
 option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+
 
 // Contains settings for configuring Envoy's tracing capabilities at the listener level.
 // See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
@@ -65,12 +69,12 @@ message Provider {
     // Built-in trace drivers:
     //  envoy.tracers.lightstep
     //  envoy.tracers.zipkin
-    //  envoy.tracers.dynamic_ot
-    //  envoy.tracers.datadog
-    //  envoy.tracers.opencensus
-    //  envoy.tracers.xray
     string name = 1;
     // Trace driver specific configuration which depends on the driver being instantiated.
     // See the trace drivers for examples: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/trace
-    google.protobuf.Any typed_config = 2;
+    oneof typed_config {
+        ZipkinConfig zipkin_config = 1;
+
+        DatadogConfig datadog_config = 2;
+    }
 }
