@@ -173,8 +173,8 @@ type HttpListenerOptions struct {
 	// envoy.filters.http.grpc_json_transcoder.
 	// For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/grpc_json_transcoder/v3/transcoder.proto
 	GrpcJsonTranscoder *grpc_json.GrpcJsonTranscoder `protobuf:"bytes,13,opt,name=grpc_json_transcoder,json=grpcJsonTranscoder,proto3" json:"grpc_json_transcoder,omitempty"`
-	// Enterprise-only: Controls whether the downstream HTTP header will be sanitized for
-	// the header that is being used as a ClusterHeader destination
+	// Enterprise-only: If using the HTTP header specified by cluster_header to direct traffic to a cluster,
+	// this option will sanitize that header from downstream traffic.
 	// Defaults to false
 	SanitizeClusterHeader *types.BoolValue `protobuf:"bytes,14,opt,name=sanitize_cluster_header,json=sanitizeClusterHeader,proto3" json:"sanitize_cluster_header,omitempty"`
 	XXX_NoUnkeyedLiteral  struct{}         `json:"-"`

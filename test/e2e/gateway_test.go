@@ -459,7 +459,6 @@ var _ = Describe("Gateway", func() {
 			})
 
 			It("should direct requests that use cluster_header to the proper upstream", func() {
-				up := tu.Upstream
 				vs := getTrivialVirtualService("gloo-system")
 
 				// Create route that uses cluster header destination
