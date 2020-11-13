@@ -29,7 +29,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Gateway", func() {
+var _ = FDescribe("Gateway", func() {
 
 	var (
 		ctx            context.Context
@@ -332,12 +332,31 @@ var _ = Describe("Gateway", func() {
 
 				err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
+				// Check that the new instance of envoy is running
+				request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d", envoyInstance.AdminPort), nil)
+				Expect(err).NotTo(HaveOccurred())
+				client := &http.Client{}
+				Eventually(func() (int, error) {
+					response, err := client.Do(request)
+					if response == nil {
+						return 0, err
+					}
+					return response.StatusCode, err
+				}, 5*time.Second, 1*time.Second).Should(Equal(200))
 			})
 
 			AfterEach(func() {
 				if envoyInstance != nil {
 					_ = envoyInstance.Clean()
 				}
+				// Wait till envoy is completely cleaned up
+				request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d", envoyInstance.AdminPort), nil)
+				Expect(err).NotTo(HaveOccurred())
+				client := &http.Client{}
+				Eventually(func() error {
+					_, err := client.Do(request)
+					return err
+				}, 5*time.Second, 1*time.Second).Should(HaveOccurred())
 			})
 
 			It("works when rapid virtual service creation and deletion causes no race conditions", func() {
