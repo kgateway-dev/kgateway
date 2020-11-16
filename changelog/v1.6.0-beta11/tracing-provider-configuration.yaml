@@ -1,0 +1,8 @@
+changelog:
+  - type: NEW_FEATURE
+    resolvesIssue: false
+    issueLink: https://github.com/solo-io/gloo/issues/3762
+    description: >
+      Allow an external tracing provider to be configured on a listener via the Gloo API.
+      See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/http_tracer.proto#envoy-v3-api-msg-config-trace-v3-tracing-http
+      for more details on this setting.
