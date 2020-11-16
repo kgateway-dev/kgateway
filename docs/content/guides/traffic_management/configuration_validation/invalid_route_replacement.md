@@ -85,8 +85,7 @@ Enabling route replacement can be done by directly patching the **Settings** CRD
 
 {{< tabs >}}
 {{< tab name="patching Settings" codelang="shell">}}
-kubectl patch settings -n gloo-system default \
-    --patch '{"spec": {"gloo": {"invalidConfigPolicy": {"replaceInvalidRoutes": true}}}}' --type=merge
+kubectl patch settings -n gloo-system default --patch '{"spec": {"gloo": {"invalidConfigPolicy": {"replaceInvalidRoutes": true, "invalidRouteResponseCode": 404, "invalidRouteResponseBody": "Gloo Gateway has invalid configuration. Administrators should run glooctl check to find and fix config errors."}}}}' --type=merge
 {{< /tab >}}
 {{< tab name="using Helm" codelang="bash">}}
 # set the following value when running `helm install` or `helm template`
