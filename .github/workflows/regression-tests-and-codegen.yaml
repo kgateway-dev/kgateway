@@ -15,7 +15,7 @@ jobs:
         go-version: 1.14
       id: go
     - name: Install Protoc
-      uses: solo-io/setup-protoc@master
+      uses: arduino/setup-protoc@v1.1.2
       with:
         version: '3.6.1'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
