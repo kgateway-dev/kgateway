@@ -1,5 +1,10 @@
 changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/3849
-    description: Disable gloo metrics service as it is unused, and CPU intensive.
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/3849
+  description: Disable gloo metrics service as it is unused, and CPU intensive.
+- type: NON_USER_FACING
+  description: Update upstream protoc setup action
+  issueLink: https://github.com/solo-io/gloo/issues/3810
+- type: NON_USER_FACING
+  description: Update kind setup action
 
