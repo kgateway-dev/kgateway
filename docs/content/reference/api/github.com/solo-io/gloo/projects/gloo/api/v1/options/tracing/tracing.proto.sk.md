@@ -15,6 +15,8 @@ weight: 5
 - [RouteTracingSettings](#routetracingsettings)
 - [TracePercentages](#tracepercentages)
 - [Provider](#provider)
+- [__ZipkinConfig](#__zipkinconfig)
+- [__DatadogConfig](#__datadogconfig)
   
 
 
@@ -105,15 +107,67 @@ Contains settings for configuring Envoy's HTTP tracer provider
 See here for additional information on Envoy's tracer provider: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/http_tracer.proto#envoy-v3-api-msg-config-trace-v3-tracing-http
 
 ```yaml
-"name": string
-"typedConfig": .google.protobuf.Any
+"upstreamRef": .core.solo.io.ResourceRef
+"zipkinConfig": .envoy.config.trace.v3.ZipkinConfig
+"datadogConfig": .envoy.config.trace.v3.DatadogConfig
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `name` | `string` | Required. The name of the HTTP trace driver to instantiate. The name must match a supported HTTP trace driver. Built-in trace drivers: envoy.tracers.lightstep envoy.tracers.zipkin envoy.tracers.dynamic_ot envoy.tracers.datadog envoy.tracers.opencensus envoy.tracers.xray. |  |
-| `typedConfig` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | Trace driver specific configuration which depends on the driver being instantiated. See the trace drivers for examples: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/trace. |  |
+| `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | UpstreamRef contains the ref to the gloo upstream that holds the external provider collector cluster. |  |
+| `zipkinConfig` | [.envoy.config.trace.v3.ZipkinConfig](../../../../external/envoy/config/trace/v3/zipkin.proto.sk/#zipkinconfig) |  Only one of `zipkinConfig` or `datadogConfig` can be set. |  |
+| `datadogConfig` | [.envoy.config.trace.v3.DatadogConfig](../../../../external/envoy/config/trace/v3/datadog.proto.sk/#datadogconfig) |  Only one of `datadogConfig` or `zipkinConfig` can be set. |  |
+
+
+
+
+---
+### __ZipkinConfig
+
+ 
+*
+WIP
+
+These were my attempts to create the smallest possible message
+
+Since we no longer require a collector_cluster, i didn't want the typed_config options to support that.
+It may be overkill.
+
+Alternative option would be to delete the record of collector_cluster in the envoy defintion,
+but that felt wrong as well. Open to suggestions.
+
+```yaml
+"collectorEndpoint": string
+"traceId128bit": bool
+"sharedSpanContext": .google.protobuf.BoolValue
+"collectorEndpointVersion": .envoy.config.trace.v3.ZipkinConfig.CollectorEndpointVersion
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `collectorEndpoint` | `string` |  |  |
+| `traceId128bit` | `bool` |  |  |
+| `sharedSpanContext` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |  |
+| `collectorEndpointVersion` | [.envoy.config.trace.v3.ZipkinConfig.CollectorEndpointVersion](../../../../external/envoy/config/trace/v3/zipkin.proto.sk/#collectorendpointversion) |  |  |
+
+
+
+
+---
+### __DatadogConfig
+
+
+
+```yaml
+"serviceName": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `serviceName` | `string` |  |  |
 
 
 

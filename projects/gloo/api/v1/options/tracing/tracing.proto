@@ -4,6 +4,7 @@ package tracing.options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing";
 
 import "gloo/projects/gloo/api/external/envoy/config/trace/v3/zipkin.proto";
+import "gloo/projects/gloo/api/external/envoy/config/trace/v3/datadog.proto";
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
@@ -70,20 +71,30 @@ message Provider {
     core.solo.io.ResourceRef upstream_ref = 1;
     // Supported trace driver specific configuration.
     oneof typed_config {
-        ZipkinConfig zipkin_config = 2;
-        DatadogConfig datadog_config = 3;
+        envoy.config.trace.v3.ZipkinConfig zipkin_config = 2;
+        envoy.config.trace.v3.DatadogConfig datadog_config = 3;
     }
 }
 
-// TODO - Add comments
+/**
+    WIP
 
-message ZipkinConfig {
+    These were my attempts to create the smallest possible message
+
+   Since we no longer require a collector_cluster, i didn't want the typed_config options to support that.
+   It may be overkill.
+
+   Alternative option would be to delete the record of collector_cluster in the envoy defintion,
+   but that felt wrong as well. Open to suggestions.
+
+ */
+message __ZipkinConfig {
     string collector_endpoint = 1;
     bool trace_id_128bit = 2;
     google.protobuf.BoolValue shared_span_context = 3;
     envoy.config.trace.v3.ZipkinConfig.CollectorEndpointVersion collector_endpoint_version = 4;
 }
 
-message DatadogConfig {
+message __DatadogConfig {
     string service_name = 1;
 }

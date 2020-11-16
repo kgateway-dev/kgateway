@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
@@ -231,7 +231,7 @@ var _ = Describe("Zipkin config loading", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// configure zipkin, and write tracing configuration to gateway
-			zipkinConfig := &tracing.ZipkinConfig{
+			zipkinConfig := &envoytrace_gloo.ZipkinConfig{
 				CollectorEndpoint:        "/api/v2/spans",
 				CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
 			}

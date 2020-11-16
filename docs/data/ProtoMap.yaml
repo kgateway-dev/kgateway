@@ -509,9 +509,6 @@ apis:
   envoy.config.trace.v3.DatadogConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/datadog.proto.sk/#DatadogConfig
     package: envoy.config.trace.v3
-  envoy.config.trace.v3.Tracing:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/http_tracer.proto.sk/#Tracing
-    package: envoy.config.trace.v3
   envoy.config.trace.v3.ZipkinConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/zipkin.proto.sk/#ZipkinConfig
     package: envoy.config.trace.v3
@@ -1193,6 +1190,12 @@ apis:
   tcp.options.gloo.solo.io.TcpProxySettings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tcp/tcp.proto.sk/#TcpProxySettings
     package: tcp.options.gloo.solo.io
+  tracing.options.gloo.solo.io.__DatadogConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/#__DatadogConfig
+    package: tracing.options.gloo.solo.io
+  tracing.options.gloo.solo.io.__ZipkinConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/#__ZipkinConfig
+    package: tracing.options.gloo.solo.io
   tracing.options.gloo.solo.io.ListenerTracingSettings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/#ListenerTracingSettings
     package: tracing.options.gloo.solo.io

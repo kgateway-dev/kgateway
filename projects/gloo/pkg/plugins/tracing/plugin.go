@@ -16,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	hcmp "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
+	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
 // default all tracing percentages to 100%
@@ -90,13 +91,14 @@ func envoyTracingProvider(tracingSettings *tracing.ListenerTracingSettings) *env
 	}
 
 	us := tracingSettings.Provider.UpstreamRef
+	clusterName := translatorutil.UpstreamToClusterName(*us)
 
 	// Todo - How to verify that this is a static upstream
 	// Todo - Under what circumstances should this error? I assume if we do, we want to do it loudly
 
 	switch typed := tracingSettings.Provider.GetTypedConfig().(type) {
 	case *tracing.Provider_ZipkinConfig:
-		converted, err := gogoutils.ToEnvoyZipkinTracingProvider(typed.ZipkinConfig, *us)
+		converted, err := gogoutils.ToEnvoyZipkinTracingProvider(typed.ZipkinConfig, clusterName)
 		if err != nil {
 			return nil
 		}
@@ -111,14 +113,13 @@ func envoyTracingProvider(tracingSettings *tracing.ListenerTracingSettings) *env
 			ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
 				TypedConfig: &any.Any{
 					TypeUrl: "type.googleapis.com/envoy.config.trace.v3.ZipkinConfig",
-					Value: marshalled,
+					Value:   marshalled,
 				},
 			},
 		}
 
-
 	case *tracing.Provider_DatadogConfig:
-		converted, err := gogoutils.ToEnvoyDatadogTracingProvider(typed.DatadogConfig, *us)
+		converted, err := gogoutils.ToEnvoyDatadogTracingProvider(typed.DatadogConfig, clusterName)
 		if err != nil {
 			return nil
 		}
@@ -133,7 +134,7 @@ func envoyTracingProvider(tracingSettings *tracing.ListenerTracingSettings) *env
 			ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
 				TypedConfig: &any.Any{
 					TypeUrl: "type.googleapis.com/envoy.config.trace.v3.DatadogConfig",
-					Value: marshalled,
+					Value:   marshalled,
 				},
 			},
 		}
