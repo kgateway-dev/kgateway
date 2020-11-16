@@ -325,67 +325,6 @@ var _ = Describe("Helm Test", func() {
 						"What happened to the clusteringress-proxy deployment?", resourcesTested)
 				})
 
-				It("should set route prefix_rewrite in clusteringress-envoy-config from global.glooStats", func() {
-					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{
-							"settings.integrations.knative.enabled=true",
-							"settings.integrations.knative.version=0.7.0",
-							"settings.integrations.knative.proxy.stats=true",
-							"global.glooStats.routePrefixRewrite=/stats?format=json"},
-					})
-
-					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-						return resource.GetKind() == "ConfigMap"
-					}).ExpectAll(func(configMap *unstructured.Unstructured) {
-						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
-						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
-						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
-						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
-
-						if structuredConfigMap.GetName() == "clusteringress-envoy-config" {
-							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
-							ExpectWithOffset(1, structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
-						}
-					})
-				})
-
-				It("should set route prefix_rewrite in knative proxy configs from global.glooStats", func() {
-					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{
-							"settings.integrations.knative.enabled=true",
-							"settings.integrations.knative.version=0.8.0",
-							"settings.integrations.knative.proxy.stats=true",
-							"global.glooStats.routePrefixRewrite=/stats?format=json"},
-					})
-
-					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-						return resource.GetKind() == "ConfigMap"
-					}).ExpectAll(func(configMap *unstructured.Unstructured) {
-						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
-						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
-						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
-						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
-
-						if structuredConfigMap.GetName() == "knative-internal-proxy-config" ||
-							structuredConfigMap.GetName() == "knative-external-proxy-config" {
-							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
-							ExpectWithOffset(1, structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
-						}
-					})
-				})
-
-				It("should be able to set consul config values", func() {
-					settings := makeUnstructureFromTemplateFile("fixtures/settings/consul_config_values.yaml", namespace)
-					prepareMakefileFromValuesFile("val_consul_test_inputs.yaml")
-					testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
-				})
-
-				It("should be able to set consul config upstream discovery values", func() {
-					settings := makeUnstructureFromTemplateFile("fixtures/settings/consul_config_upstream_discovery.yaml", namespace)
-					prepareMakefileFromValuesFile("val_consul_discovery_test_inputs.yaml")
-					testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
-				})
-
 				It("should be able to override global defaults", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"discovery.deployment.stats.enabled=true", "global.glooStats.enabled=false"},
@@ -503,50 +442,6 @@ var _ = Describe("Helm Test", func() {
 						if structuredConfigMap.GetName() == "gateway-proxy-envoy-config" {
 							expectedTestListener := "    - name: test_listener"
 							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedTestListener))
-						}
-					})
-				})
-
-				It("should set route prefix_rewrite in gateway-proxy-envoy-config from global.glooStats", func() {
-					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{
-							"global.glooStats.enabled=true",
-							"global.glooStats.routePrefixRewrite=/stats?format=json"},
-					})
-
-					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-						return resource.GetKind() == "ConfigMap"
-					}).ExpectAll(func(configMap *unstructured.Unstructured) {
-						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
-						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
-
-						if structuredConfigMap.GetName() == "gateway-proxy-envoy-config" {
-							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
-							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
-						}
-					})
-				})
-
-				It("should set route prefix_rewrite in gateway-proxy-envoy-config from gatewayProxies.gatewayProxy", func() {
-					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{
-							"gatewayProxies.gatewayProxy.stats.enabled=true",
-							"gatewayProxies.gatewayProxy.stats.routePrefixRewrite=/stats?format=json"},
-					})
-
-					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-						return resource.GetKind() == "ConfigMap"
-					}).ExpectAll(func(configMap *unstructured.Unstructured) {
-						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
-						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
-
-						if structuredConfigMap.GetName() == "gateway-proxy-envoy-config" {
-							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
-							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
 						}
 					})
 				})
@@ -1648,44 +1543,6 @@ var _ = Describe("Helm Test", func() {
 							gatewayProxyDeployment.GetNamespace(),
 							gatewayProxyDeployment.GetName()).To(BeNil())
 					})
-
-					Context("pass image pull secrets", func() {
-						pullSecretName := "test-pull-secret"
-						pullSecret := []v1.LocalObjectReference{
-							{Name: pullSecretName},
-						}
-
-						It("via global values", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									fmt.Sprintf("global.image.pullSecret=%s", pullSecretName),
-								},
-							})
-							gatewayProxyDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
-							testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
-						})
-
-						It("via podTemplate values", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.image.pullSecret=%s", pullSecretName),
-								},
-							})
-							gatewayProxyDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
-							testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
-						})
-
-						It("podTemplate values win over global", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									"global.image.pullSecret=wrong",
-									fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.image.pullSecret=%s", pullSecretName),
-								},
-							})
-							gatewayProxyDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
-							testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
-						})
-					})
 				})
 
 				Context("gateway validation resources", func() {
@@ -1774,7 +1631,7 @@ spec:
 					})
 
 					It("correctly sets the `gloo.enableRestEds` to false in the settings", func() {
-						settings := makeUnstructureFromTemplateFile("fixtures/settings/disable_rest_eds.yaml", namespace)
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/enable_rest_eds.yaml", namespace)
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
@@ -2303,44 +2160,6 @@ metadata:
 						})
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
-
-					Context("pass image pull secrets", func() {
-						pullSecretName := "test-pull-secret"
-						pullSecret := []v1.LocalObjectReference{
-							{Name: pullSecretName},
-						}
-
-						It("via global values", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									fmt.Sprintf("global.image.pullSecret=%s", pullSecretName),
-								},
-							})
-							glooDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
-							testManifest.ExpectDeploymentAppsV1(glooDeployment)
-						})
-
-						It("via podTemplate values", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									fmt.Sprintf("gloo.deployment.image.pullSecret=%s", pullSecretName),
-								},
-							})
-							glooDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
-							testManifest.ExpectDeploymentAppsV1(glooDeployment)
-						})
-
-						It("podTemplate values win over global", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									"global.image.pullSecret=wrong",
-									fmt.Sprintf("gloo.deployment.image.pullSecret=%s", pullSecretName),
-								},
-							})
-							glooDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
-							testManifest.ExpectDeploymentAppsV1(glooDeployment)
-						})
-					})
 				})
 
 				Context("gateway service account", func() {
@@ -2512,44 +2331,6 @@ metadata:
 						gatewayDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
 						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
 					})
-
-					Context("pass image pull secrets", func() {
-						pullSecretName := "test-pull-secret"
-						pullSecret := []v1.LocalObjectReference{
-							{Name: pullSecretName},
-						}
-
-						It("via global values", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									fmt.Sprintf("global.image.pullSecret=%s", pullSecretName),
-								},
-							})
-							gatewayDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
-							testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
-						})
-
-						It("via podTemplate values", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									fmt.Sprintf("gateway.deployment.image.pullSecret=%s", pullSecretName),
-								},
-							})
-							gatewayDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
-							testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
-						})
-
-						It("podTemplate values win over global", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									"global.image.pullSecret=wrong",
-									fmt.Sprintf("gateway.deployment.image.pullSecret=%s", pullSecretName),
-								},
-							})
-							gatewayDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
-							testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
-						})
-					})
 				})
 
 				Context("discovery service account", func() {
@@ -2699,44 +2480,6 @@ metadata:
 						uid := int64(10102)
 						discoveryDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
-					})
-
-					Context("pass image pull secrets", func() {
-						pullSecretName := "test-pull-secret"
-						pullSecret := []v1.LocalObjectReference{
-							{Name: pullSecretName},
-						}
-
-						It("via global values", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									fmt.Sprintf("global.image.pullSecret=%s", pullSecretName),
-								},
-							})
-							discoveryDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
-							testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
-						})
-
-						It("via podTemplate values", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									fmt.Sprintf("discovery.deployment.image.pullSecret=%s", pullSecretName),
-								},
-							})
-							discoveryDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
-							testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
-						})
-
-						It("podTemplate values win over global", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									"global.image.pullSecret=wrong",
-									fmt.Sprintf("discovery.deployment.image.pullSecret=%s", pullSecretName),
-								},
-							})
-							discoveryDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
-							testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
-						})
 					})
 				})
 
@@ -2971,29 +2714,6 @@ metadata:
 					testManifest.ExpectService(ingressProxyService)
 				})
 
-				It("should set route prefix_rewrite in ingress-envoy-config from global.glooStats", func() {
-					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{
-							"ingress.enabled=true",
-							"ingressProxy.deployment.stats=true",
-							"global.glooStats.enabled=true",
-							"global.glooStats.routePrefixRewrite=/stats?format=json"},
-					})
-
-					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-						return resource.GetKind() == "ConfigMap"
-					}).ExpectAll(func(configMap *unstructured.Unstructured) {
-						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
-						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
-
-						if structuredConfigMap.GetName() == "ingress-envoy-config" {
-							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
-							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
-						}
-					})
-				})
 			})
 
 			Describe("merge ingress and gateway", func() {
