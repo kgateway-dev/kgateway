@@ -15,7 +15,7 @@ jobs:
         go-version: 1.14
       id: go
     - name: Install Protoc
-      uses: solo-io/setup-protoc@fix_deprecated_protoc_min
+      uses: solo-io/setup-protoc@fbd9cacb561364c7175247f7192156c2269d08d6
       with:
         version: '3.6.1'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
