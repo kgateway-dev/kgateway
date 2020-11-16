@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"net/http"
 	"time"
 
@@ -42,8 +43,8 @@ var _ = Describe("Gateway", func() {
 
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
-			defaults.HttpPort = 8080
-			defaults.HttpsPort = 8081
+			defaults.HttpPort = services.NextBindPort()
+			defaults.HttpsPort = services.NextBindPort()
 			validationPort := services.AllocateGlooPort()
 
 			writeNamespace = "gloo-system"
@@ -480,7 +481,7 @@ var _ = Describe("Gateway", func() {
 			It("should direct requests that use cluster_header to the proper upstream", func() {
 				// Construct upstream name {{name}}_{{namespace}}
 				us := tu.Upstream
-				upstreamName := fmt.Sprintf("%s_%s", us.Metadata.Name, us.Metadata.Namespace)
+				upstreamName := translator.UpstreamToClusterName(core.ResourceRef{Namespace: us.Metadata.Namespace, Name: us.Metadata.Name})
 
 				vs := getTrivialVirtualService("gloo-system")
 				// Create route that uses cluster header destination
