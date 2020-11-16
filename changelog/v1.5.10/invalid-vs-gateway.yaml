@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3538
+    description: >- 
+      Fixed a bug where a bad authconfig which should invalidate
+      a single virtual service was incorrectly invalidating the entire gateway 
