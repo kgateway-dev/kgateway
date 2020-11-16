@@ -15,7 +15,7 @@ jobs:
         go-version: 1.14
       id: go
     - name: Install Protoc
-      uses: solo-io/setup-protoc@master
+      uses: solo-io/setup-protoc@fix_deprecated_protoc_min
       with:
         version: '3.6.1'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -32,102 +32,102 @@ jobs:
     - name: Generate Code
       run: |
         ./ci/check-code-and-docs-gen.sh
-  regression_tests:
-    name: k8s regression tests
-    runs-on: ubuntu-18.04
-    strategy:
-      matrix:
-        kube-e2e-test-type: ['gateway', 'ingress', 'knative', 'helm', 'wasm', 'gloomtls']
-    steps:
-    - name: Cancel Previous Actions
-      uses: styfle/cancel-workflow-action@0.4.1
-      with:
-        access_token: ${{ github.token }}
-    - name: Set up Go 1.14
-      uses: actions/setup-go@v1
-      with:
-        go-version: 1.14
-      id: go
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - uses: actions/cache@v1
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-    - uses: engineerd/setup-kind@v0.4.0
-      with:
-        name: kind
-    - uses: azure/setup-kubectl@v1
-      id: kubectl
-      with:
-        version: 'v1.18.0'
-    - uses: azure/setup-helm@v1
-      with:
-        version: v3.2.0
-    - name: Setup test env
-      run: |
-        ./ci/kind.sh
-    - name: Testing - kube e2e regression tests
-      env:
-        KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
-      run: |
-        make run-ci-regression-tests
-    - name: Debug Info
-      if: failure()
-      run: |
-        # see what's in the cluster if we failed
-        kubectl get all -A
-        kubectl get configmaps -A
-  glooctl_e2e_tests:
-    name: glooctl e2e tests
-    runs-on: ubuntu-18.04
-    steps:
-    - name: Cancel Previous Actions
-      uses: styfle/cancel-workflow-action@0.4.1
-      with:
-        access_token: ${{ github.token }}
-    - name: Set up Go 1.14
-      uses: actions/setup-go@v1
-      with:
-        go-version: 1.14
-      id: go
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - uses: actions/cache@v1
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-    - uses: engineerd/setup-kind@v0.4.0
-      with:
-        name: kind
-    - uses: azure/setup-kubectl@v1
-      id: kubectl
-      with:
-        version: 'v1.18.0'
-    - uses: azure/setup-helm@v1
-      with:
-        version: v3.2.0
-    - name: Setup test env
-      run: |
-        ./ci/kind.sh
-        curl -sSL https://github.com/istio/istio/releases/download/1.7.2/istio-1.7.2-linux-amd64.tar.gz | tar -xzf - istio-1.7.2/bin/istioctl
-        ./istio-1.7.2/bin/istioctl install --set profile=minimal
-    - name: Testing - kube e2e regression tests
-      env:
-        KUBE2E_TESTS: glooctl
-      run: |
-        make run-ci-regression-tests
-    - name: Debug Info
-      if: failure()
-      run: |
-        # see what's in the cluster if we failed
-        kubectl get all -A
-        kubectl get configmaps -A
+#  regression_tests:
+#    name: k8s regression tests
+#    runs-on: ubuntu-18.04
+#    strategy:
+#      matrix:
+#        kube-e2e-test-type: ['gateway', 'ingress', 'knative', 'helm', 'wasm', 'gloomtls']
+#    steps:
+#    - name: Cancel Previous Actions
+#      uses: styfle/cancel-workflow-action@0.4.1
+#      with:
+#        access_token: ${{ github.token }}
+#    - name: Set up Go 1.14
+#      uses: actions/setup-go@v1
+#      with:
+#        go-version: 1.14
+#      id: go
+#    - name: Check out code into the Go module directory
+#      uses: actions/checkout@v2
+#      with:
+#        fetch-depth: 0
+#    - uses: actions/cache@v1
+#      with:
+#        path: ~/go/pkg/mod
+#        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+#        restore-keys: |
+#          ${{ runner.os }}-go-
+#    - uses: engineerd/setup-kind@v0.4.0
+#      with:
+#        name: kind
+#    - uses: azure/setup-kubectl@v1
+#      id: kubectl
+#      with:
+#        version: 'v1.18.0'
+#    - uses: azure/setup-helm@v1
+#      with:
+#        version: v3.2.0
+#    - name: Setup test env
+#      run: |
+#        ./ci/kind.sh
+#    - name: Testing - kube e2e regression tests
+#      env:
+#        KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
+#      run: |
+#        make run-ci-regression-tests
+#    - name: Debug Info
+#      if: failure()
+#      run: |
+#        # see what's in the cluster if we failed
+#        kubectl get all -A
+#        kubectl get configmaps -A
+#  glooctl_e2e_tests:
+#    name: glooctl e2e tests
+#    runs-on: ubuntu-18.04
+#    steps:
+#    - name: Cancel Previous Actions
+#      uses: styfle/cancel-workflow-action@0.4.1
+#      with:
+#        access_token: ${{ github.token }}
+#    - name: Set up Go 1.14
+#      uses: actions/setup-go@v1
+#      with:
+#        go-version: 1.14
+#      id: go
+#    - name: Check out code into the Go module directory
+#      uses: actions/checkout@v2
+#      with:
+#        fetch-depth: 0
+#    - uses: actions/cache@v1
+#      with:
+#        path: ~/go/pkg/mod
+#        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+#        restore-keys: |
+#          ${{ runner.os }}-go-
+#    - uses: engineerd/setup-kind@v0.4.0
+#      with:
+#        name: kind
+#    - uses: azure/setup-kubectl@v1
+#      id: kubectl
+#      with:
+#        version: 'v1.18.0'
+#    - uses: azure/setup-helm@v1
+#      with:
+#        version: v3.2.0
+#    - name: Setup test env
+#      run: |
+#        ./ci/kind.sh
+#        curl -sSL https://github.com/istio/istio/releases/download/1.7.2/istio-1.7.2-linux-amd64.tar.gz | tar -xzf - istio-1.7.2/bin/istioctl
+#        ./istio-1.7.2/bin/istioctl install --set profile=minimal
+#    - name: Testing - kube e2e regression tests
+#      env:
+#        KUBE2E_TESTS: glooctl
+#      run: |
+#        make run-ci-regression-tests
+#    - name: Debug Info
+#      if: failure()
+#      run: |
+#        # see what's in the cluster if we failed
+#        kubectl get all -A
+#        kubectl get configmaps -A
