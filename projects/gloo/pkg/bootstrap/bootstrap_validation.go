@@ -1,10 +1,13 @@
 package bootstrap
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"os/exec"
 
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -18,7 +21,6 @@ import (
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
@@ -49,12 +51,17 @@ func ValidateBootstrap(ctx context.Context, bootstrapYaml string) error {
 }
 
 func BuildPerFilterBootstrapYaml(filterName string, msg proto.Message) string {
+
+	typedFilter := utils.MustMessageToAny(msg)
 	vhosts := []*envoy_config_route_v3.VirtualHost{
 		{
 			Name:    "placeholder_host",
 			Domains: []string{"*"},
 			TypedPerFilterConfig: map[string]*any.Any{
-				filterName: utils.MustGogoMessageToAnyGoProto(msg),
+				filterName: &any.Any{
+					TypeUrl: typedFilter.GetTypeUrl(),
+					Value:   typedFilter.GetValue(),
+				},
 			},
 		},
 	}
@@ -100,7 +107,12 @@ func BuildPerFilterBootstrapYaml(filterName string, msg proto.Message) string {
 		},
 	}
 
-	b, _ := protoutils.MarshalBytes(bootstrap)
-	json := string(b)
+	buf := &bytes.Buffer{}
+	marshaler := &jsonpb.Marshaler{
+		AnyResolver: &protoutils.MultiAnyResolver{},
+		OrigName:    true,
+	}
+	marshaler.Marshal(buf, bootstrap)
+	json := string(buf.Bytes())
 	return json // returns a json, but json is valid yaml
 }
