@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gogo/protobuf/types"
-
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -513,56 +511,6 @@ var _ = Describe("Gateway", func() {
 					}
 					return response.StatusCode, err
 				}, 10*time.Second, 500*time.Millisecond).Should(Equal(200))
-			})
-
-			It("sanitizes downstream http header for cluster_header when told to do so", func() {
-				// Construct upstream name {{name}}_{{namespace}}
-				us := tu.Upstream
-				upstreamName := fmt.Sprintf("%s_%s", us.Metadata.Name, us.Metadata.Namespace)
-
-				gatewayClient := testClients.GatewayClient
-				gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{})
-				Expect(err).NotTo(HaveOccurred())
-
-				// Configure gateway to use cluster header sanitation
-				for _, g := range gw {
-					httpGateway := g.GetHttpGateway()
-					if httpGateway != nil {
-						httpGateway.Options = &gloov1.HttpListenerOptions{
-							SanitizeClusterHeader: &types.BoolValue{Value: true},
-						}
-					}
-					_, err = gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-					Expect(err).NotTo(HaveOccurred())
-				}
-
-				vs := getTrivialVirtualService(writeNamespace)
-
-				// Create route that uses cluster header destination
-				vs.GetVirtualHost().Routes = []*gatewayv1.Route{{
-					Action: &gatewayv1.Route_RouteAction{
-						RouteAction: &gloov1.RouteAction{
-							Destination: &gloov1.RouteAction_ClusterHeader{
-								ClusterHeader: "cluster-header-name",
-							},
-						},
-					}}}
-
-				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred())
-
-				// Create a regular request
-				request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), nil)
-				request.Header.Add("cluster-header-name", upstreamName)
-
-				Expect(err).NotTo(HaveOccurred())
-
-				// Check that the request times out because the cluster_header is sanitized, and request has no upstream destination
-				client := &http.Client{}
-				_, err = client.Do(request)
-
-				Expect(err).To(HaveOccurred())
-
 			})
 
 			Context("ssl", func() {
