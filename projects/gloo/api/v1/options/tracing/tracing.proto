@@ -3,8 +3,7 @@ package tracing.options.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing";
 
-import "envoy/config/trace/v3/zipkin.proto";
-import "envoy/config/trace/v3/datadog.proto";
+import "gloo/projects/gloo/api/external/envoy/config/trace/v3/zipkin.proto";
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
@@ -14,6 +13,8 @@ import "google/protobuf/any.proto";
 option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+
+import "solo-kit/api/v1/ref.proto";
 
 
 // Contains settings for configuring Envoy's tracing capabilities at the listener level.
@@ -65,16 +66,24 @@ message TracePercentages {
 // Contains settings for configuring Envoy's HTTP tracer provider
 // See here for additional information on Envoy's tracer provider: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/http_tracer.proto#envoy-v3-api-msg-config-trace-v3-tracing-http
 message Provider {
-    // Required. The name of the HTTP trace driver to instantiate. The name must match a supported HTTP trace driver.
-    // Built-in trace drivers:
-    //  envoy.tracers.lightstep
-    //  envoy.tracers.zipkin
-    string name = 1;
-    // Trace driver specific configuration which depends on the driver being instantiated.
-    // See the trace drivers for examples: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/trace
+    // UpstreamRef contains the ref to the gloo upstream that holds the external provider collector cluster
+    core.solo.io.ResourceRef upstream_ref = 1;
+    // Supported trace driver specific configuration.
     oneof typed_config {
-        ZipkinConfig zipkin_config = 1;
-
-        DatadogConfig datadog_config = 2;
+        ZipkinConfig zipkin_config = 2;
+        DatadogConfig datadog_config = 3;
     }
+}
+
+// TODO - Add comments
+
+message ZipkinConfig {
+    string collector_endpoint = 1;
+    bool trace_id_128bit = 2;
+    google.protobuf.BoolValue shared_span_context = 3;
+    envoy.config.trace.v3.ZipkinConfig.CollectorEndpointVersion collector_endpoint_version = 4;
+}
+
+message DatadogConfig {
+    string service_name = 1;
 }

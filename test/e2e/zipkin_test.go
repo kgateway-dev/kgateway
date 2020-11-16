@@ -8,9 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	envoy_config_trace_v3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
-	"github.com/gogo/protobuf/types"
-	"github.com/golang/protobuf/proto"
+	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -233,20 +231,16 @@ var _ = Describe("Zipkin config loading", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// configure zipkin, and write tracing configuration to gateway
-			zipkinConfig := &envoy_config_trace_v3.ZipkinConfig{
-				CollectorCluster:         "zipkin_default",
+			zipkinConfig := &tracing.ZipkinConfig{
 				CollectorEndpoint:        "/api/v2/spans",
-				CollectorEndpointVersion: envoy_config_trace_v3.ZipkinConfig_HTTP_JSON,
+				CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
 			}
-			serializedZipkinConfig, err := proto.Marshal(zipkinConfig)
-			Expect(err).NotTo(HaveOccurred())
 
 			zipkinTracing := &tracing.ListenerTracingSettings{
 				Provider: &tracing.Provider{
-					Name: "envoy.tracers.zipkin",
-					TypedConfig: &types.Any{
-						TypeUrl: "type.googleapis.com/envoy.config.trace.v3.ZipkinConfig",
-						Value:   serializedZipkinConfig,
+					UpstreamRef: nil,
+					TypedConfig: &tracing.Provider_ZipkinConfig{
+						ZipkinConfig: zipkinConfig,
 					},
 				},
 			}

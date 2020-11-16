@@ -2,8 +2,10 @@ package gogoutils
 
 import (
 	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
+	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // Converts between Envoy and Gloo/solokit versions of envoy protos
@@ -13,50 +15,37 @@ import (
 // we should work to remove that assumption from solokit and delete this code:
 // https://github.com/solo-io/gloo/issues/1793
 
-func ToGlooHttpTracingProvider(envoyHttpTracingProvider *envoytrace.Tracing_Http) (*envoytrace_gloo.Tracing_Http, error) {
-	if envoyHttpTracingProvider == nil {
-		return nil, nil
+func ToEnvoyDatadogTracingProvider(glooDatadogTracingProvider *tracing.DatadogConfig, us core.ResourceRef) (*envoytrace.DatadogConfig, error) {
+	envoyDatadogConfig := &envoytrace.DatadogConfig{
+		CollectorCluster: translatorutil.UpstreamToClusterName(us),
+		ServiceName: glooDatadogTracingProvider.ServiceName,
 	}
+	return envoyDatadogConfig, nil
+}
 
-	glooTracingProvider := &envoytrace_gloo.Tracing_Http{
-		Name: envoyHttpTracingProvider.GetName(),
+func ToEnvoyZipkinTracingProvider(glooZipkinTracingProvider *tracing.ZipkinConfig, us core.ResourceRef) (*envoytrace.ZipkinConfig, error) {
+	envoyZipkinConfig := &envoytrace.ZipkinConfig{
+		CollectorCluster: translatorutil.UpstreamToClusterName(us),
+		CollectorEndpoint: glooZipkinTracingProvider.CollectorEndpoint,
+		CollectorEndpointVersion:  ToEnvoyZipkinCollectorEndpointVersion(glooZipkinTracingProvider.CollectorEndpointVersion),
+		TraceId_128Bit: glooZipkinTracingProvider.TraceId_128Bit,
+		SharedSpanContext: BoolGogoToProto(glooZipkinTracingProvider.SharedSpanContext),
 	}
+	return envoyZipkinConfig, nil
+}
 
-	switch typedConfig := envoyHttpTracingProvider.GetConfigType().(type) {
-	case *envoytrace.Tracing_Http_TypedConfig:
-		converted, err := protoutils.AnyPbToGogo(typedConfig.TypedConfig)
-		if err != nil {
-			return nil, err
-		}
-		glooTracingProvider.ConfigType = &envoytrace_gloo.Tracing_Http_TypedConfig{
-			TypedConfig: converted,
-		}
+func ToEnvoyZipkinCollectorEndpointVersion (version envoytrace_gloo.ZipkinConfig_CollectorEndpointVersion) envoytrace.ZipkinConfig_CollectorEndpointVersion {
+	switch str := version.String(); str {
+	case envoytrace_gloo.ZipkinConfig_CollectorEndpointVersion_name[int32(envoytrace_gloo.ZipkinConfig_HTTP_JSON)]:
+		return envoytrace.ZipkinConfig_HTTP_JSON
+	case envoytrace_gloo.ZipkinConfig_CollectorEndpointVersion_name[int32(envoytrace_gloo.ZipkinConfig_HTTP_PROTO)]:
+		return envoytrace.ZipkinConfig_HTTP_PROTO
+	case envoytrace_gloo.ZipkinConfig_CollectorEndpointVersion_name[int32(envoytrace_gloo.ZipkinConfig_GRPC)]:
+		return envoytrace.ZipkinConfig_GRPC
 	}
-
-	return glooTracingProvider, nil
+	return envoytrace.ZipkinConfig_HTTP_JSON
 }
 
 
-func ToEnvoyHttpTracingProvider(glooTracingProvider *envoytrace_gloo.Tracing_Http) (*envoytrace.Tracing_Http, error) {
-	if glooTracingProvider == nil {
-		return nil, nil
-	}
 
-	envoyHttpTracingProvider := &envoytrace.Tracing_Http{
-		Name: glooTracingProvider.GetName(),
-	}
-
-	switch typedConfig := glooTracingProvider.GetConfigType().(type) {
-	case *envoytrace_gloo.Tracing_Http_TypedConfig:
-		converted, err := protoutils.AnyGogoToPb(typedConfig.TypedConfig)
-		if err != nil {
-			return nil, err
-		}
-		envoyHttpTracingProvider.ConfigType = &envoytrace.Tracing_Http_TypedConfig{
-			TypedConfig: converted,
-		}
-	}
-
-	return envoyHttpTracingProvider, nil
-}
 

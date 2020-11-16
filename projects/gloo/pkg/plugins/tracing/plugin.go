@@ -6,15 +6,16 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	hcmp "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 // default all tracing percentages to 100%
@@ -88,18 +89,56 @@ func envoyTracingProvider(tracingSettings *tracing.ListenerTracingSettings) *env
 		return nil
 	}
 
-	typedGogoMsg := utils.MustMessageToAny(tracingSettings.Provider.GetTypedConfig())
-	newGolangAny := &any.Any{
-		TypeUrl: typedGogoMsg.GetTypeUrl(),
-		Value:   typedGogoMsg.GetValue(),
-	}
+	us := tracingSettings.Provider.UpstreamRef
 
-	return &envoy_config_trace_v3.Tracing_Http{
-		Name: tracingSettings.Provider.GetName(),
-		ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
-			TypedConfig: newGolangAny,
-		},
+	// Todo - How to verify that this is a static upstream
+	// Todo - Under what circumstances should this error? I assume if we do, we want to do it loudly
+
+	switch typed := tracingSettings.Provider.GetTypedConfig().(type) {
+	case *tracing.Provider_ZipkinConfig:
+		converted, err := gogoutils.ToEnvoyZipkinTracingProvider(typed.ZipkinConfig, *us)
+		if err != nil {
+			return nil
+		}
+
+		marshalled, err := proto.Marshal(converted)
+		if err != nil {
+			return nil
+		}
+
+		return &envoy_config_trace_v3.Tracing_Http{
+			Name: "envoy.tracers.zipkin",
+			ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
+				TypedConfig: &any.Any{
+					TypeUrl: "type.googleapis.com/envoy.config.trace.v3.ZipkinConfig",
+					Value: marshalled,
+				},
+			},
+		}
+
+
+	case *tracing.Provider_DatadogConfig:
+		converted, err := gogoutils.ToEnvoyDatadogTracingProvider(typed.DatadogConfig, *us)
+		if err != nil {
+			return nil
+		}
+
+		marshalled, err := proto.Marshal(converted)
+		if err != nil {
+			return nil
+		}
+
+		return &envoy_config_trace_v3.Tracing_Http{
+			Name: "envoy.tracers.datadog",
+			ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
+				TypedConfig: &any.Any{
+					TypeUrl: "type.googleapis.com/envoy.config.trace.v3.DatadogConfig",
+					Value: marshalled,
+				},
+			},
+		}
 	}
+	return nil
 }
 
 func envoySimplePercent(numerator float32) *envoy_type.Percent {
