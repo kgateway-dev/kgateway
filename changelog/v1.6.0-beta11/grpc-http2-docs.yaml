@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Include HTTP/2 settings for gRPC guide
+    issueLink: https://github.com/solo-io/gloo/issues/951
