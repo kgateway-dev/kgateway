@@ -3,8 +3,6 @@ package hcm_test
 import (
 	"time"
 
-	"github.com/golang/protobuf/ptypes/any"
-
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -55,10 +53,7 @@ var _ = Describe("Plugin", func() {
 			Tracing: &tracingv1.ListenerTracingSettings{
 				RequestHeadersForTags: []string{"path", "origin"},
 				Verbose:               true,
-				Provider: &tracingv1.Provider{
-					Name:        "envoy.tracers.zipkin",
-					TypedConfig: &types.Any{},
-				},
+				ProviderConfig:        nil,
 			},
 
 			ForwardClientCertDetails: hcm.HttpConnectionManagerSettings_APPEND_FORWARD,
@@ -167,8 +162,7 @@ var _ = Describe("Plugin", func() {
 		Expect(trace.ClientSampling.Value).To(Equal(100.0))
 		Expect(trace.RandomSampling.Value).To(Equal(100.0))
 		Expect(trace.OverallSampling.Value).To(Equal(100.0))
-		Expect(trace.Provider.GetName()).To(Equal(hcms.Tracing.Provider.Name))
-		Expect(trace.Provider.GetTypedConfig()).To(Equal(&any.Any{}))
+		Expect(trace.Provider).To(Equal(nil))
 
 		Expect(len(cfg.UpgradeConfigs)).To(Equal(1))
 		Expect(cfg.UpgradeConfigs[0].UpgradeType).To(Equal("websocket"))

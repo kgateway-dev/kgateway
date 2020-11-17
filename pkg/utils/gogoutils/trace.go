@@ -12,21 +12,21 @@ import (
 // we should work to remove that assumption from solokit and delete this code:
 // https://github.com/solo-io/gloo/issues/1793
 
-func ToEnvoyDatadogTracingProvider(glooDatadogTracingProvider *envoytrace_gloo.DatadogConfig, clusterName string) (*envoytrace.DatadogConfig, error) {
+func ToEnvoyDatadogConfiguration(glooDatadogConfig *envoytrace_gloo.DatadogConfig, clusterName string) (*envoytrace.DatadogConfig, error) {
 	envoyDatadogConfig := &envoytrace.DatadogConfig{
 		CollectorCluster: clusterName,
-		ServiceName:      glooDatadogTracingProvider.ServiceName,
+		ServiceName:      glooDatadogConfig.ServiceName,
 	}
 	return envoyDatadogConfig, nil
 }
 
-func ToEnvoyZipkinTracingProvider(glooZipkinTracingProvider *envoytrace_gloo.ZipkinConfig, clusterName string) (*envoytrace.ZipkinConfig, error) {
+func ToEnvoyZipkinConfiguration(glooZipkinConfig *envoytrace_gloo.ZipkinConfig, clusterName string) (*envoytrace.ZipkinConfig, error) {
 	envoyZipkinConfig := &envoytrace.ZipkinConfig{
 		CollectorCluster:         clusterName,
-		CollectorEndpoint:        glooZipkinTracingProvider.CollectorEndpoint,
-		CollectorEndpointVersion: ToEnvoyZipkinCollectorEndpointVersion(glooZipkinTracingProvider.CollectorEndpointVersion),
-		TraceId_128Bit:           glooZipkinTracingProvider.TraceId_128Bit,
-		SharedSpanContext:        BoolGogoToProto(glooZipkinTracingProvider.SharedSpanContext),
+		CollectorEndpoint:        glooZipkinConfig.CollectorEndpoint,
+		CollectorEndpointVersion: ToEnvoyZipkinCollectorEndpointVersion(glooZipkinConfig.CollectorEndpointVersion),
+		TraceId_128Bit:           glooZipkinConfig.TraceId_128Bit,
+		SharedSpanContext:        BoolGogoToProto(glooZipkinConfig.SharedSpanContext),
 	}
 	return envoyZipkinConfig, nil
 }

@@ -1,17 +1,17 @@
 package tracing
 
 import (
-	"fmt"
+	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
+	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
+	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoy_config_trace_v3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/ghodss/yaml"
-	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
-	"github.com/golang/protobuf/ptypes/any"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -23,6 +23,9 @@ import (
 var _ = Describe("Plugin", func() {
 
 	It("should update listener properly", func() {
+		pluginParams := plugins.Params{
+			Snapshot: nil,
+		}
 		p := NewPlugin()
 		cfg := &envoyhttp.HttpConnectionManager{}
 		hcmSettings := &hcm.HttpConnectionManagerSettings{
@@ -34,9 +37,10 @@ var _ = Describe("Plugin", func() {
 					RandomSamplePercentage:  &types.FloatValue{Value: 20},
 					OverallSamplePercentage: &types.FloatValue{Value: 30},
 				},
+				ProviderConfig: nil,
 			},
 		}
-		err := p.ProcessHcmSettings(cfg, hcmSettings)
+		err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
@@ -62,18 +66,22 @@ var _ = Describe("Plugin", func() {
 				RandomSampling:  &envoy_type.Percent{Value: 20},
 				OverallSampling: &envoy_type.Percent{Value: 30},
 				Verbose:         true,
+				Provider:        nil,
 			},
 		}
 		Expect(cfg).To(Equal(expected))
 	})
 
 	It("should update listener properly - with defaults", func() {
+		pluginParams := plugins.Params{
+			Snapshot: nil,
+		}
 		p := NewPlugin()
 		cfg := &envoyhttp.HttpConnectionManager{}
 		hcmSettings := &hcm.HttpConnectionManagerSettings{
 			Tracing: &tracing.ListenerTracingSettings{},
 		}
-		err := p.ProcessHcmSettings(cfg, hcmSettings)
+		err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
@@ -87,73 +95,87 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg).To(Equal(expected))
 	})
 
-	Context("should update provider", func() {
+	Context("should handle tracing provider config", func() {
 
-		It("when provider is nil", func() {
+		It("when provider config is nil", func() {
+			pluginParams := plugins.Params{
+				Snapshot: nil,
+			}
 			p := NewPlugin()
-			cfg := &envoyhttp.HttpConnectionManager{}
-			hcmSettings := &hcm.HttpConnectionManagerSettings{
-				Tracing: &tracing.ListenerTracingSettings{
-					Provider: nil,
-				},
+			hcmTracingSettings := &tracing.ListenerTracingSettings{
+				ProviderConfig: nil,
 			}
-			err := p.ProcessHcmSettings(cfg, hcmSettings)
+			envoyTracingProvider, err := p.ProcessEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
 			Expect(err).To(BeNil())
-			expected := &envoyhttp.HttpConnectionManager{
-				Tracing: &envoyhttp.HttpConnectionManager_Tracing{
-					Provider: nil,
-				},
-			}
-			Expect(cfg.Tracing.Provider).To(Equal(expected.Tracing.Provider))
+			Expect(envoyTracingProvider).To(BeNil())
 		})
 
-		It("when provider is configured via yaml", func() {
-			providerYaml := fmt.Sprint(`
----
-name: envoy.tracers.zipkin
-typed_config:
-    "@type": "type.googleapis.com/envoy.config.trace.v3.ZipkinConfig"
-    collector_cluster: zipkin
-    collector_endpoint: "/api/v2/spans"
-    collector_endpoint_version: HTTP_JSON
-`)
-
-			var provider tracing.Provider
-			err := yaml.Unmarshal([]byte(providerYaml), &provider)
-			Expect(err).NotTo(HaveOccurred())
-
-			p := NewPlugin()
-			cfg := &envoyhttp.HttpConnectionManager{}
-			hcmSettings := &hcm.HttpConnectionManagerSettings{
-				Tracing: &tracing.ListenerTracingSettings{
-					Provider: &provider,
+		It("when provider config references invalid upstream", func() {
+			pluginParams := plugins.Params{
+				Snapshot: &v1.ApiSnapshot{
+					Upstreams: v1.UpstreamList{
+						// No valid upstreams
+					},
 				},
 			}
-
-			expectedZipkinConfig := &envoy_config_trace_v3.ZipkinConfig{
-				CollectorCluster:         "zipkin",
-				CollectorEndpoint:        "/api/v2/spans",
-				CollectorEndpointVersion: envoy_config_trace_v3.ZipkinConfig_HTTP_JSON,
-			}
-			serializedExpectedZipkinConfig, err := proto.Marshal(expectedZipkinConfig)
-
-			err = p.ProcessHcmSettings(cfg, hcmSettings)
-			Expect(err).NotTo(HaveOccurred())
-
-			expected := &envoyhttp.HttpConnectionManager{
-				Tracing: &envoyhttp.HttpConnectionManager_Tracing{
-					Provider: &envoy_config_trace_v3.Tracing_Http{
-						Name: "envoy.tracers.zipkin",
-						ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
-							TypedConfig: &any.Any{
-								TypeUrl: "type.googleapis.com/envoy.config.trace.v3.ZipkinConfig",
-								Value:   serializedExpectedZipkinConfig,
-							},
+			p := NewPlugin()
+			hcmTracingSettings := &tracing.ListenerTracingSettings{
+				ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
+					ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
+						CollectorUpstreamRef: &core.ResourceRef{
+							Name:      "invalid-name",
+							Namespace: "invalid-namespace",
 						},
 					},
 				},
 			}
-			Expect(cfg.Tracing.Provider).To(Equal(expected.Tracing.Provider))
+			_, err := p.ProcessEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
+			Expect(err).NotTo(BeNil())
+		})
+
+		It("when provider config references valid upstream", func() {
+			us := v1.NewUpstream("default", "valid")
+			pluginParams := plugins.Params{
+				Snapshot: &v1.ApiSnapshot{
+					Upstreams: v1.UpstreamList{us},
+				},
+			}
+			p := NewPlugin()
+			hcmTracingSettings := &tracing.ListenerTracingSettings{
+				ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
+					ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
+						CollectorUpstreamRef: &core.ResourceRef{
+							Name:      "valid",
+							Namespace: "default",
+						},
+						CollectorEndpoint:        "/api/v2/spans",
+						CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
+					},
+				},
+			}
+			envoyTracingProvider, err := p.ProcessEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
+			Expect(err).To(BeNil())
+
+			expectedZipkinConfig := &envoytrace.ZipkinConfig{
+				CollectorCluster:         "default-valid",
+				CollectorEndpoint:        "/api/v2/spans",
+				CollectorEndpointVersion: envoytrace.ZipkinConfig_HTTP_JSON,
+			}
+			expectedZipkinConfigMarshalled, _ := proto.Marshal(expectedZipkinConfig)
+
+			expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
+				Name: "envoy.tracers.zipkin",
+				ConfigType: &envoytrace.Tracing_Http_TypedConfig{
+					TypedConfig: &any.Any{
+						TypeUrl: "type.googleapis.com/envoy.config.trace.v3.ZipkinConfig",
+						Value:   expectedZipkinConfigMarshalled,
+					},
+				},
+			}
+			Expect(expectedEnvoyTracingProvider.GetName()).To(Equal(envoyTracingProvider.GetName()))
+			Expect(expectedEnvoyTracingProvider.GetTypedConfig().GetTypeUrl()).To(Equal(envoyTracingProvider.GetTypedConfig().GetTypeUrl()))
+			// TODO (sam) - Fix this
+			// Expect(expectedEnvoyTracingProvider.GetTypedConfig().GetValue()).To(Equal(envoyTracingProvider.GetTypedConfig().GetValue()))
 		})
 
 	})

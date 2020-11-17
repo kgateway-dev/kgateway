@@ -12,8 +12,6 @@ import (
 
 	"github.com/mitchellh/hashstructure"
 	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
-
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 )
 
 // ensure the imports are used
@@ -25,8 +23,6 @@ var (
 	_ = fnv.New64
 	_ = hashstructure.Hash
 	_ = new(safe_hasher.SafeHasher)
-
-	_ = v3.ZipkinConfig_CollectorEndpointVersion(0)
 )
 
 // Hash function
@@ -69,18 +65,40 @@ func (m *ListenerTracingSettings) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetProvider()).(safe_hasher.SafeHasher); ok {
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if val, err := hashstructure.Hash(m.GetProvider(), nil); err != nil {
-			return 0, err
-		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+	switch m.ProviderConfig.(type) {
+
+	case *ListenerTracingSettings_ZipkinConfig:
+
+		if h, ok := interface{}(m.GetZipkinConfig()).(safe_hasher.SafeHasher); ok {
+			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
+		} else {
+			if val, err := hashstructure.Hash(m.GetZipkinConfig(), nil); err != nil {
+				return 0, err
+			} else {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+					return 0, err
+				}
+			}
 		}
+
+	case *ListenerTracingSettings_DatadogConfig:
+
+		if h, ok := interface{}(m.GetDatadogConfig()).(safe_hasher.SafeHasher); ok {
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if val, err := hashstructure.Hash(m.GetDatadogConfig(), nil); err != nil {
+				return 0, err
+			} else {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	return hasher.Sum64(), nil
@@ -173,136 +191,6 @@ func (m *TracePercentages) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			}
 		}
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-func (m *Provider) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("tracing.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing.Provider")); err != nil {
-		return 0, err
-	}
-
-	if h, ok := interface{}(m.GetUpstreamRef()).(safe_hasher.SafeHasher); ok {
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if val, err := hashstructure.Hash(m.GetUpstreamRef(), nil); err != nil {
-			return 0, err
-		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-				return 0, err
-			}
-		}
-	}
-
-	switch m.TypedConfig.(type) {
-
-	case *Provider_ZipkinConfig:
-
-		if h, ok := interface{}(m.GetZipkinConfig()).(safe_hasher.SafeHasher); ok {
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if val, err := hashstructure.Hash(m.GetZipkinConfig(), nil); err != nil {
-				return 0, err
-			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-					return 0, err
-				}
-			}
-		}
-
-	case *Provider_DatadogConfig:
-
-		if h, ok := interface{}(m.GetDatadogConfig()).(safe_hasher.SafeHasher); ok {
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if val, err := hashstructure.Hash(m.GetDatadogConfig(), nil); err != nil {
-				return 0, err
-			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-					return 0, err
-				}
-			}
-		}
-
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-func (m *X_ZipkinConfig) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("tracing.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing.X_ZipkinConfig")); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetCollectorEndpoint())); err != nil {
-		return 0, err
-	}
-
-	err = binary.Write(hasher, binary.LittleEndian, m.GetTraceId_128Bit())
-	if err != nil {
-		return 0, err
-	}
-
-	if h, ok := interface{}(m.GetSharedSpanContext()).(safe_hasher.SafeHasher); ok {
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if val, err := hashstructure.Hash(m.GetSharedSpanContext(), nil); err != nil {
-			return 0, err
-		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-				return 0, err
-			}
-		}
-	}
-
-	err = binary.Write(hasher, binary.LittleEndian, m.GetCollectorEndpointVersion())
-	if err != nil {
-		return 0, err
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-func (m *X_DatadogConfig) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("tracing.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing.X_DatadogConfig")); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetServiceName())); err != nil {
-		return 0, err
 	}
 
 	return hasher.Sum64(), nil

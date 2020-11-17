@@ -9,6 +9,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes/any"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
@@ -17,6 +18,7 @@ import (
 	hcmp "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // default all tracing percentages to 100%
@@ -38,7 +40,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 // Manage the tracing portion of the HCM settings
-func (p *Plugin) ProcessHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpConnectionManagerSettings) error {
+func (p *Plugin) ProcessHcmSettings(snapshot *v1.ApiSnapshot, cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpConnectionManagerSettings) error {
 
 	// only apply tracing config to the listener is using the HCM plugin
 	if hcmSettings == nil {
@@ -67,7 +69,12 @@ func (p *Plugin) ProcessHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSet
 	}
 	trCfg.CustomTags = customTags
 	trCfg.Verbose = tracingSettings.Verbose
-	trCfg.Provider = envoyTracingProvider(tracingSettings)
+
+	tracingProvider, err := p.ProcessEnvoyTracingProvider(snapshot, tracingSettings)
+	if err != nil {
+		return err
+	}
+	trCfg.Provider = tracingProvider
 
 	// Gloo configures envoy as an ingress, rather than an egress
 	// 06/2020 removing below- OperationName field is being deprecated, and we set it to the default value anyway
@@ -85,27 +92,26 @@ func (p *Plugin) ProcessHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSet
 	return nil
 }
 
-func envoyTracingProvider(tracingSettings *tracing.ListenerTracingSettings) *envoy_config_trace_v3.Tracing_Http {
-	if tracingSettings.Provider == nil {
-		return nil
+func (p *Plugin) ProcessEnvoyTracingProvider(snapshot *v1.ApiSnapshot, tracingSettings *tracing.ListenerTracingSettings) (*envoy_config_trace_v3.Tracing_Http, error) {
+	if tracingSettings == nil || tracingSettings.ProviderConfig == nil {
+		return nil, nil
 	}
 
-	us := tracingSettings.Provider.UpstreamRef
-	clusterName := translatorutil.UpstreamToClusterName(*us)
-
-	// Todo - How to verify that this is a static upstream
-	// Todo - Under what circumstances should this error? I assume if we do, we want to do it loudly
-
-	switch typed := tracingSettings.Provider.GetTypedConfig().(type) {
-	case *tracing.Provider_ZipkinConfig:
-		converted, err := gogoutils.ToEnvoyZipkinTracingProvider(typed.ZipkinConfig, clusterName)
+	switch typed := tracingSettings.ProviderConfig.(type) {
+	case *tracing.ListenerTracingSettings_ZipkinConfig:
+		zipkinCollectorClusterName, err := getEnvoyTracingCollectorClusterName(snapshot, typed.ZipkinConfig.CollectorUpstreamRef)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 
-		marshalled, err := proto.Marshal(converted)
+		envoyZipkinConfig, err := gogoutils.ToEnvoyZipkinConfiguration(typed.ZipkinConfig, zipkinCollectorClusterName)
 		if err != nil {
-			return nil
+			return nil, err
+		}
+
+		marshalledZipkinConfig, err := proto.Marshal(envoyZipkinConfig)
+		if err != nil {
+			return nil, err
 		}
 
 		return &envoy_config_trace_v3.Tracing_Http{
@@ -113,20 +119,25 @@ func envoyTracingProvider(tracingSettings *tracing.ListenerTracingSettings) *env
 			ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
 				TypedConfig: &any.Any{
 					TypeUrl: "type.googleapis.com/envoy.config.trace.v3.ZipkinConfig",
-					Value:   marshalled,
+					Value:   marshalledZipkinConfig,
 				},
 			},
+		}, nil
+
+	case *tracing.ListenerTracingSettings_DatadogConfig:
+		datadogCollectorClusterName, err := getEnvoyTracingCollectorClusterName(snapshot, typed.DatadogConfig.CollectorUpstreamRef)
+		if err != nil {
+			return nil, err
 		}
 
-	case *tracing.Provider_DatadogConfig:
-		converted, err := gogoutils.ToEnvoyDatadogTracingProvider(typed.DatadogConfig, clusterName)
+		envoyDatadogConfig, err := gogoutils.ToEnvoyDatadogConfiguration(typed.DatadogConfig, datadogCollectorClusterName)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 
-		marshalled, err := proto.Marshal(converted)
+		marshalledDatadogConfig, err := proto.Marshal(envoyDatadogConfig)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 
 		return &envoy_config_trace_v3.Tracing_Http{
@@ -134,12 +145,30 @@ func envoyTracingProvider(tracingSettings *tracing.ListenerTracingSettings) *env
 			ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
 				TypedConfig: &any.Any{
 					TypeUrl: "type.googleapis.com/envoy.config.trace.v3.DatadogConfig",
-					Value:   marshalled,
+					Value:   marshalledDatadogConfig,
 				},
 			},
-		}
+		}, nil
 	}
-	return nil
+	return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration")
+}
+
+func getEnvoyTracingCollectorClusterName(snapshot *v1.ApiSnapshot, collectorUpstreamRef *core.ResourceRef) (string, error) {
+	if snapshot == nil {
+		return "", errors.Errorf("Invalid Snapshot (nil provided)")
+	}
+
+	if collectorUpstreamRef == nil {
+		return "", errors.Errorf("Invalid CollectorUpstreamRef (nil ref provided)")
+	}
+
+	// Make sure the upstream exists
+	_, err := snapshot.Upstreams.Find(collectorUpstreamRef.Namespace, collectorUpstreamRef.Name)
+	if err != nil {
+		return "", errors.Errorf("Invalid CollectorUpstreamRef (no upstream found for ref provided)")
+	}
+
+	return translatorutil.UpstreamToClusterName(*collectorUpstreamRef), nil
 }
 
 func envoySimplePercent(numerator float32) *envoy_type.Percent {

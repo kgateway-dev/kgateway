@@ -14,9 +14,6 @@ weight: 5
 - [ListenerTracingSettings](#listenertracingsettings)
 - [RouteTracingSettings](#routetracingsettings)
 - [TracePercentages](#tracepercentages)
-- [Provider](#provider)
-- [__ZipkinConfig](#__zipkinconfig)
-- [__DatadogConfig](#__datadogconfig)
   
 
 
@@ -39,7 +36,8 @@ See here for additional information about configuring tracing with Gloo: https:/
 "requestHeadersForTags": []string
 "verbose": bool
 "tracePercentages": .tracing.options.gloo.solo.io.TracePercentages
-"provider": .tracing.options.gloo.solo.io.Provider
+"zipkinConfig": .envoy.config.trace.v3.ZipkinConfig
+"datadogConfig": .envoy.config.trace.v3.DatadogConfig
 
 ```
 
@@ -48,7 +46,8 @@ See here for additional information about configuring tracing with Gloo: https:/
 | `requestHeadersForTags` | `[]string` | Optional. If specified, Envoy will include the headers and header values for any matching request headers. |  |
 | `verbose` | `bool` | Optional. If true, Envoy will include logs for streaming events. Default: false. |  |
 | `tracePercentages` | [.tracing.options.gloo.solo.io.TracePercentages](../tracing.proto.sk/#tracepercentages) | Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided. TracePercentages defines the limits for random, forced, and overall tracing percentages. |  |
-| `provider` | [.tracing.options.gloo.solo.io.Provider](../tracing.proto.sk/#provider) | Optional. If not specified, no tracing will be performed Provider defines the configuration for an external tracing provider. |  |
+| `zipkinConfig` | [.envoy.config.trace.v3.ZipkinConfig](../../../../external/envoy/config/trace/v3/zipkin.proto.sk/#zipkinconfig) |  Only one of `zipkinConfig` or `datadogConfig` can be set. |  |
+| `datadogConfig` | [.envoy.config.trace.v3.DatadogConfig](../../../../external/envoy/config/trace/v3/datadog.proto.sk/#datadogconfig) |  Only one of `datadogConfig` or `zipkinConfig` can be set. |  |
 
 
 
@@ -95,79 +94,6 @@ TracePercentages defines the limits for random, forced, and overall tracing perc
 | `clientSamplePercentage` | [.google.protobuf.FloatValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/float-value) | Percentage of requests that should produce traces when the `x-client-trace-id` header is provided. optional, defaults to 100.0 This should be a value between 0.0 and 100.0, with up to 6 significant digits. |  |
 | `randomSamplePercentage` | [.google.protobuf.FloatValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/float-value) | Percentage of requests that should produce traces by random sampling. optional, defaults to 100.0 This should be a value between 0.0 and 100.0, with up to 6 significant digits. |  |
 | `overallSamplePercentage` | [.google.protobuf.FloatValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/float-value) | Overall percentage of requests that should produce traces. optional, defaults to 100.0 This should be a value between 0.0 and 100.0, with up to 6 significant digits. |  |
-
-
-
-
----
-### Provider
-
- 
-Contains settings for configuring Envoy's HTTP tracer provider
-See here for additional information on Envoy's tracer provider: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/http_tracer.proto#envoy-v3-api-msg-config-trace-v3-tracing-http
-
-```yaml
-"upstreamRef": .core.solo.io.ResourceRef
-"zipkinConfig": .envoy.config.trace.v3.ZipkinConfig
-"datadogConfig": .envoy.config.trace.v3.DatadogConfig
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | UpstreamRef contains the ref to the gloo upstream that holds the external provider collector cluster. |  |
-| `zipkinConfig` | [.envoy.config.trace.v3.ZipkinConfig](../../../../external/envoy/config/trace/v3/zipkin.proto.sk/#zipkinconfig) |  Only one of `zipkinConfig` or `datadogConfig` can be set. |  |
-| `datadogConfig` | [.envoy.config.trace.v3.DatadogConfig](../../../../external/envoy/config/trace/v3/datadog.proto.sk/#datadogconfig) |  Only one of `datadogConfig` or `zipkinConfig` can be set. |  |
-
-
-
-
----
-### __ZipkinConfig
-
- 
-*
-WIP
-
-These were my attempts to create the smallest possible message
-
-Since we no longer require a collector_cluster, i didn't want the typed_config options to support that.
-It may be overkill.
-
-Alternative option would be to delete the record of collector_cluster in the envoy defintion,
-but that felt wrong as well. Open to suggestions.
-
-```yaml
-"collectorEndpoint": string
-"traceId128bit": bool
-"sharedSpanContext": .google.protobuf.BoolValue
-"collectorEndpointVersion": .envoy.config.trace.v3.ZipkinConfig.CollectorEndpointVersion
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `collectorEndpoint` | `string` |  |  |
-| `traceId128bit` | `bool` |  |  |
-| `sharedSpanContext` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |  |
-| `collectorEndpointVersion` | [.envoy.config.trace.v3.ZipkinConfig.CollectorEndpointVersion](../../../../external/envoy/config/trace/v3/zipkin.proto.sk/#collectorendpointversion) |  |  |
-
-
-
-
----
-### __DatadogConfig
-
-
-
-```yaml
-"serviceName": string
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `serviceName` | `string` |  |  |
 
 
 

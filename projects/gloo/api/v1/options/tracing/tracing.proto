@@ -30,8 +30,11 @@ message ListenerTracingSettings {
     // TracePercentages defines the limits for random, forced, and overall tracing percentages.
     TracePercentages trace_percentages = 3;
     // Optional. If not specified, no tracing will be performed
-    // Provider defines the configuration for an external tracing provider.
-    Provider provider = 4;
+    // ProviderConfig defines the configuration for an external tracing provider.
+    oneof provider_config {
+        envoy.config.trace.v3.ZipkinConfig zipkin_config = 4;
+        envoy.config.trace.v3.DatadogConfig datadog_config = 5;
+    }
 }
 
 // Contains settings for configuring Envoy's tracing capabilities at the route level.
@@ -62,39 +65,4 @@ message TracePercentages {
     // optional, defaults to 100.0
     // This should be a value between 0.0 and 100.0, with up to 6 significant digits.
     google.protobuf.FloatValue overall_sample_percentage = 3;
-}
-
-// Contains settings for configuring Envoy's HTTP tracer provider
-// See here for additional information on Envoy's tracer provider: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/http_tracer.proto#envoy-v3-api-msg-config-trace-v3-tracing-http
-message Provider {
-    // UpstreamRef contains the ref to the gloo upstream that holds the external provider collector cluster
-    core.solo.io.ResourceRef upstream_ref = 1;
-    // Supported trace driver specific configuration.
-    oneof typed_config {
-        envoy.config.trace.v3.ZipkinConfig zipkin_config = 2;
-        envoy.config.trace.v3.DatadogConfig datadog_config = 3;
-    }
-}
-
-/**
-    WIP
-
-    These were my attempts to create the smallest possible message
-
-   Since we no longer require a collector_cluster, i didn't want the typed_config options to support that.
-   It may be overkill.
-
-   Alternative option would be to delete the record of collector_cluster in the envoy defintion,
-   but that felt wrong as well. Open to suggestions.
-
- */
-message __ZipkinConfig {
-    string collector_endpoint = 1;
-    bool trace_id_128bit = 2;
-    google.protobuf.BoolValue shared_span_context = 3;
-    envoy.config.trace.v3.ZipkinConfig.CollectorEndpointVersion collector_endpoint_version = 4;
-}
-
-message __DatadogConfig {
-    string service_name = 1;
 }

@@ -10,6 +10,8 @@ import "udpa/annotations/status.proto";
 import "udpa/annotations/versioning.proto";
 import "validate/validate.proto";
 
+import "solo-kit/api/v1/ref.proto";
+
 option java_package = "io.envoyproxy.envoy.config.trace.v3";
 option java_outer_classname = "ZipkinProto";
 option java_multiple_files = true;
@@ -46,10 +48,10 @@ message ZipkinConfig {
     GRPC = 3;
   }
 
-  // The cluster manager cluster that hosts the Zipkin collectors. Note that the
+  // The upstream that hosts the Zipkin collectors. Note that the
   // Zipkin cluster must be defined in the :ref:`Bootstrap static cluster
   // resources <envoy_api_field_config.bootstrap.v3.Bootstrap.StaticResources.clusters>`.
-  string collector_cluster = 1 [(validate.rules).string = {min_len: 1}];
+  core.solo.io.ResourceRef collector_upstream_ref = 1;
 
   // The API endpoint of the Zipkin service where the spans will be sent. When
   // using a standard Zipkin installation, the API endpoint is typically

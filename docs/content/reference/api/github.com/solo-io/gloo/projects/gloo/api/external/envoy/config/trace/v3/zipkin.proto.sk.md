@@ -32,7 +32,7 @@ Configuration for the Zipkin tracer.
 [#next-free-field: 6]
 
 ```yaml
-"collectorCluster": string
+"collectorUpstreamRef": .core.solo.io.ResourceRef
 "collectorEndpoint": string
 "traceId128bit": bool
 "sharedSpanContext": .google.protobuf.BoolValue
@@ -42,7 +42,7 @@ Configuration for the Zipkin tracer.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `collectorCluster` | `string` | The cluster manager cluster that hosts the Zipkin collectors. Note that the Zipkin cluster must be defined in the :ref:`Bootstrap static cluster resources <envoy_api_field_config.bootstrap.v3.Bootstrap.StaticResources.clusters>`. |  |
+| `collectorUpstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The upstream that hosts the Zipkin collectors. Note that the Zipkin cluster must be defined in the :ref:`Bootstrap static cluster resources <envoy_api_field_config.bootstrap.v3.Bootstrap.StaticResources.clusters>`. |  |
 | `collectorEndpoint` | `string` | The API endpoint of the Zipkin service where the spans will be sent. When using a standard Zipkin installation, the API endpoint is typically /api/v1/spans, which is the default value. |  |
 | `traceId128bit` | `bool` | Determines whether a 128bit trace id will be used when creating a new trace instance. The default value is false, which will result in a 64 bit trace id being used. |  |
 | `sharedSpanContext` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Determines whether client and server spans will share the same span context. The default value is true. |  |

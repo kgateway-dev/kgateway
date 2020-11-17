@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils"
+
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
@@ -106,6 +108,8 @@ var _ = Describe("Zipkin config loading", func() {
 			cancel         context.CancelFunc
 			testClients    services.TestClients
 			writeNamespace string
+			testUs         *v1helpers.TestUpstream
+			zipkinUs       *gloov1.Upstream
 		)
 
 		BeforeEach(func() {
@@ -135,37 +139,15 @@ var _ = Describe("Zipkin config loading", func() {
 			// run envoy
 			err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
 			Expect(err).NotTo(HaveOccurred())
-		})
-
-		AfterEach(func() {
-			envoyInstance.Clean()
-			cancel()
-		})
-
-		It("should not send trace msgs with nil provider", func() {
-			gatewayClient := testClients.GatewayClient
-			gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			tracingWithoutProvider := tracing.ListenerTracingSettings{
-				Provider: nil,
-			}
-			for _, g := range gw {
-				httpGateway := g.GetHttpGateway()
-				setTracingOnGateway(httpGateway, &tracingWithoutProvider)
-
-				_, err := gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
-			}
 
 			// create test upstream
-			// this is the upstream that will handle requests with tracing enabled
-			testUs := v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+			// this is the upstream that will handle requests
+			testUs = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 			_, err = testClients.UpstreamClient.Write(testUs.Upstream, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
 			// create zipkin upstream
-			zipkinUs := &gloov1.Upstream{
+			zipkinUs = &gloov1.Upstream{
 				Metadata: core.Metadata{
 					Name:      "zipkin",
 					Namespace: "default",
@@ -183,6 +165,28 @@ var _ = Describe("Zipkin config loading", func() {
 			}
 			_, err = testClients.UpstreamClient.Write(zipkinUs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			envoyInstance.Clean()
+			cancel()
+		})
+
+		It("should not send trace msgs with nil provider", func() {
+			gatewayClient := testClients.GatewayClient
+			gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			tracingWithoutProvider := &tracing.ListenerTracingSettings{
+				ProviderConfig: nil,
+			}
+			for _, g := range gw {
+				httpGateway := g.GetHttpGateway()
+				setTracingOnGateway(httpGateway, tracingWithoutProvider)
+
+				_, err := gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+			}
 
 			// write a virtual service so we have a proxy to our test upstream
 			testVs := getTrivialVirtualServiceForUpstream("gloo-system", testUs.Upstream.Metadata.Ref())
@@ -231,16 +235,12 @@ var _ = Describe("Zipkin config loading", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// configure zipkin, and write tracing configuration to gateway
-			zipkinConfig := &envoytrace_gloo.ZipkinConfig{
-				CollectorEndpoint:        "/api/v2/spans",
-				CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
-			}
-
 			zipkinTracing := &tracing.ListenerTracingSettings{
-				Provider: &tracing.Provider{
-					UpstreamRef: nil,
-					TypedConfig: &tracing.Provider_ZipkinConfig{
-						ZipkinConfig: zipkinConfig,
+				ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
+					ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
+						CollectorUpstreamRef:     utils.ResourceRefPtr(zipkinUs.Metadata.Ref()),
+						CollectorEndpoint:        "/api/v2/spans",
+						CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
 					},
 				},
 			}
@@ -252,32 +252,6 @@ var _ = Describe("Zipkin config loading", func() {
 				_, err := gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 			}
-
-			// create test upstream
-			// this is the upstream that will handle requests with tracing enabled
-			testUs := v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-			_, err = testClients.UpstreamClient.Write(testUs.Upstream, clients.WriteOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			// create zipkin upstream
-			zipkinUs := &gloov1.Upstream{
-				Metadata: core.Metadata{
-					Name:      "zipkin",
-					Namespace: "default",
-				},
-				UpstreamType: &gloov1.Upstream_Static{
-					Static: &static_plugin_gloo.UpstreamSpec{
-						Hosts: []*static_plugin_gloo.Host{
-							{
-								Addr: envoyInstance.LocalAddr(),
-								Port: 9411,
-							},
-						},
-					},
-				},
-			}
-			_, err = testClients.UpstreamClient.Write(zipkinUs, clients.WriteOpts{})
-			Expect(err).NotTo(HaveOccurred())
 
 			// write a virtual service so we have a proxy to our test upstream
 			testVs := getTrivialVirtualServiceForUpstream("gloo-system", testUs.Upstream.Metadata.Ref())
@@ -319,6 +293,45 @@ var _ = Describe("Zipkin config loading", func() {
 			Eventually(apiHit, 5*time.Second).Should(Receive(&expectedZipkinApiHit))
 
 			stopZipkinServer()
+		})
+
+		It("should error with misconfigured zipkin provider", func() {
+			gatewayClient := testClients.GatewayClient
+			gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// configure zipkin with an invalid CollectorUpstreamRef
+			invalidZipkinTracing := &tracing.ListenerTracingSettings{
+				ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
+					ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
+						CollectorUpstreamRef:     nil,
+						CollectorEndpoint:        "/api/v2/spans",
+						CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
+					},
+				},
+			}
+
+			for _, g := range gw {
+				httpGateway := g.GetHttpGateway()
+				setTracingOnGateway(httpGateway, invalidZipkinTracing)
+
+				_, err := gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			// write a virtual service so we have a proxy to our test upstream
+			testVs := getTrivialVirtualServiceForUpstream("gloo-system", testUs.Upstream.Metadata.Ref())
+			_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// ensure the proxy creation returns an error
+			Eventually(func() error {
+				_, err := testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				if err != nil {
+					return err
+				}
+				return nil
+			}, "5s", "0.1s").Should(Not(HaveOccurred()))
 		})
 	})
 })

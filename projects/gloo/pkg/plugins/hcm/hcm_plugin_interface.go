@@ -2,6 +2,7 @@ package hcm
 
 import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
@@ -10,5 +11,5 @@ import (
 // settings
 type HcmPlugin interface {
 	plugins.Plugin
-	ProcessHcmSettings(cfg *envoyhttp.HttpConnectionManager, settings *hcm.HttpConnectionManagerSettings) error
+	ProcessHcmSettings(snapshot *v1.ApiSnapshot, cfg *envoyhttp.HttpConnectionManager, settings *hcm.HttpConnectionManagerSettings) error
 }
