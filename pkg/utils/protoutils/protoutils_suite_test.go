@@ -1,4 +1,4 @@
-package metricsservice
+package protoutils_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestMetrics(t *testing.T) {
+func TestProtoutils(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Metrics Service Suite")
+	RunSpecs(t, "Protoutils Suite")
 }

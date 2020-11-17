@@ -14,6 +14,7 @@ weight: 5
 - [HttpConnectionManagerSettings](#httpconnectionmanagersettings)
 - [SetCurrentClientCertDetails](#setcurrentclientcertdetails)
 - [ForwardClientCertDetails](#forwardclientcertdetails)
+- [ServerHeaderTransformation](#serverheadertransformation)
   
 
 
@@ -55,6 +56,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 "upgrades": []protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
 "maxConnectionDuration": .google.protobuf.Duration
 "maxStreamDuration": .google.protobuf.Duration
+"serverHeaderTransformation": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ServerHeaderTransformation
 
 ```
 
@@ -83,6 +85,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `upgrades` | [[]protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig](../../protocol_upgrade/protocol_upgrade.proto.sk/#protocolupgradeconfig) | HttpConnectionManager configuration for protocol upgrade requests. Note: WebSocket upgrades are enabled by default on the HTTP Connection Manager and must be explicitly disabled. |  |
 | `maxConnectionDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions. |  |
 | `maxStreamDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `serverHeaderTransformation` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ServerHeaderTransformation](../hcm.proto.sk/#serverheadertransformation) | For an explanation of the settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto.html#envoy-v3-api-enum-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-serverheadertransformation. |  |
 
 
 
@@ -124,6 +127,20 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `APPEND_FORWARD` |  |
 | `SANITIZE_SET` |  |
 | `ALWAYS_FORWARD_ONLY` |  |
+
+
+
+
+---
+### ServerHeaderTransformation
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `OVERWRITE` | (DEFAULT) Overwrite any Server header with the contents of server_name. |
+| `APPEND_IF_ABSENT` | If no Server header is present, append Server server_name If a Server header is present, pass it through. |
+| `PASS_THROUGH` | Pass through the value of the server header, and do not append a header if none is present. |
 
 
 

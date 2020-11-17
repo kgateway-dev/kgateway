@@ -319,7 +319,7 @@ var _ = Describe("Translator", func() {
 
 			Expect(err).To(BeNil())
 			Expect(errs.Validate()).To(HaveOccurred())
-			Expect(errs.Validate().Error()).To(ContainSubstring("HttpListener Error: ProcessingError. Reason: auth config not found:"))
+			Expect(errs.Validate().Error()).To(ContainSubstring("VirtualHost Error: ProcessingError. Reason: auth config not found:"))
 		})
 	})
 
@@ -1039,6 +1039,40 @@ var _ = Describe("Translator", func() {
 			Expect(clusters.Clusters).To(HaveLen(2))
 			Expect(clusters.Clusters[0].Name).To(Equal(UpstreamToClusterName(upstream.Metadata.Ref())))
 			Expect(clusters.Clusters[1].Name).To(Equal(UpstreamToClusterName(upstream2.Metadata.Ref())))
+		})
+	})
+
+	Context("when handling missing upstream groups", func() {
+		BeforeEach(func() {
+			metadata := core.Metadata{
+				Name:      "missing",
+				Namespace: "gloo-system",
+			}
+			ref := metadata.Ref()
+
+			routes = []*v1.Route{{
+				Matchers: []*matchers.Matcher{matcher},
+				Action: &v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_UpstreamGroup{
+							UpstreamGroup: &ref,
+						},
+					},
+				},
+			}}
+		})
+
+		It("should set a ClusterSpecifier on the referring route", func() {
+			snap, _, _, err := translator.Translate(params, proxy)
+			Expect(err).NotTo(HaveOccurred())
+
+			routes := snap.GetResources(xds.RouteType)
+			routesProto := routes.Items["http-listener-routes"]
+
+			routeConfig := routesProto.ResourceProto().(*envoyapi.RouteConfiguration)
+			clusterSpecifier := routeConfig.VirtualHosts[0].Routes[0].GetRoute().GetClusterSpecifier()
+			clusterRouteAction := clusterSpecifier.(*envoyrouteapi.RouteAction_Cluster)
+			Expect(clusterRouteAction.Cluster).To(Equal(""))
 		})
 	})
 
