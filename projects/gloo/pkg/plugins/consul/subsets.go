@@ -42,6 +42,13 @@ func (p *plugin) ProcessRouteAction(params plugins.RouteActionParams, inAction *
 			Destinations: upstreamGroup.Destinations,
 		}
 		return setWeightedClusters(params.Params, md, out)
+
+	case *v1.RouteAction_ClusterHeader:
+		// ClusterHeader must use the naming convention {{clustername}}_{{namespace}}
+		out.ClusterSpecifier = &envoyroute.RouteAction_ClusterHeader{
+			ClusterHeader: inAction.GetClusterHeader(),
+		}
+		return nil
 	}
 	return eris.Errorf("unknown upstream destination type")
 }

@@ -563,6 +563,12 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
+	case *RouteAction_ClusterHeader:
+
+		if _, err = hasher.Write([]byte(m.GetClusterHeader())); err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -332,12 +334,31 @@ var _ = Describe("Gateway", func() {
 
 				err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
+				// Check that the new instance of envoy is running
+				request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d", envoyInstance.AdminPort), nil)
+				Expect(err).NotTo(HaveOccurred())
+				client := &http.Client{}
+				Eventually(func() (int, error) {
+					response, err := client.Do(request)
+					if response == nil {
+						return 0, err
+					}
+					return response.StatusCode, err
+				}, 5*time.Second, 1*time.Second).Should(Equal(200))
 			})
 
 			AfterEach(func() {
 				if envoyInstance != nil {
 					_ = envoyInstance.Clean()
 				}
+				// Wait till envoy is completely cleaned up
+				request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d", envoyInstance.AdminPort), nil)
+				Expect(err).NotTo(HaveOccurred())
+				client := &http.Client{}
+				Eventually(func() error {
+					_, err := client.Do(request)
+					return err
+				}, 5*time.Second, 1*time.Second).Should(HaveOccurred())
 			})
 
 			It("works when rapid virtual service creation and deletion causes no race conditions", func() {
@@ -456,6 +477,42 @@ var _ = Describe("Gateway", func() {
 					}
 					return response.StatusCode
 				}, time.Second, 200*time.Millisecond).Should(Equal(404))
+			})
+
+			It("should direct requests that use cluster_header to the proper upstream", func() {
+				// Construct upstream name {{name}}_{{namespace}}
+				us := tu.Upstream
+				upstreamName := translator.UpstreamToClusterName(us.Metadata.Ref())
+
+				vs := getTrivialVirtualService("gloo-system")
+				// Create route that uses cluster header destination
+				vs.GetVirtualHost().Routes = []*gatewayv1.Route{{
+					Action: &gatewayv1.Route_RouteAction{
+						RouteAction: &gloov1.RouteAction{
+							Destination: &gloov1.RouteAction_ClusterHeader{
+								ClusterHeader: "cluster-header-name",
+							},
+						},
+					}}}
+
+				_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// Create a regular request
+				request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), nil)
+				Expect(err).NotTo(HaveOccurred())
+				request = request.WithContext(context.TODO())
+				request.Header.Add("cluster-header-name", upstreamName)
+
+				// Check that we can reach the upstream
+				client := &http.Client{}
+				Eventually(func() (int, error) {
+					response, err := client.Do(request)
+					if response == nil {
+						return 0, err
+					}
+					return response.StatusCode, err
+				}, 10*time.Second, 500*time.Millisecond).Should(Equal(200))
 			})
 
 			Context("ssl", func() {
