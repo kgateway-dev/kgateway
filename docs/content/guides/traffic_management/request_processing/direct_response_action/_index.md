@@ -5,7 +5,7 @@ description: Respond with a direct response instead of being proxied to any back
 ---
 
 
-Gloo allows you to specify a direct response instead of routing to a destination. 
+Gloo Edge allows you to specify a direct response instead of routing to a destination. 
 
 ## Setup 
 

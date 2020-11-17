@@ -38,7 +38,7 @@ func UninstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *c
 		Long:   constants.UNINSTALL_COMMAND.Long,
 		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("Uninstalling Gloo...\n")
+			fmt.Printf("Uninstalling Gloo Edge...\n")
 			if err := Uninstall(opts, &install.CmdKubectl{}, Gloo); err != nil {
 				return err
 			}
@@ -63,7 +63,7 @@ func UninstallGlooFedCmd(opts *options.Options, optionsFunc ...cliutils.OptionsF
 		Long:   constants.UNINSTALL_GLOO_FED_COMMAND.Long,
 		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("Uninstalling Gloo Federation...\n")
+			fmt.Printf("Uninstalling Gloo Edge Federation...\n")
 			if err := Uninstall(opts, &install.CmdKubectl{}, Federation); err != nil {
 				return err
 			}

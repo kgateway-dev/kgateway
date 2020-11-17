@@ -1,38 +1,38 @@
 ---
-title: "Developer Portal"
+title: "Gloo Portal"
 weight: 70
 description: Publish interactive documentation for your APIs
 ---
 
 In this guide we will see how to publish interactive documentation for your APIs and expose it to users via the 
-Gloo Enterprise developer portal.
+Gloo Edge Enterprise Portal.
 
 ## Important Update
-We recently released an updated version of the Developer Portal. The new Developer Portal adds a number of new features, 
-including the ability to automatically generate routing configuration for your Gloo Gateways based on your service 
+We recently released an updated version of the Gloo Portal. The new Gloo Portal adds a number of new features, 
+including the ability to automatically generate routing configuration for your Gloo Edge installation based on your service 
 specifications.
 
-The new Developer Portal is a standalone application that can be installed on top of **Gloo Enterprise** starting with 
+The new Gloo Portal is a standalone application that can be installed on top of **Gloo Edge Enterprise** starting with 
 release v1.5.0-beta10. For more information, check out the 
-[new Developer Portal documentation](https://docs.solo.io/dev-portal/latest).
+[new Gloo Portal documentation](https://docs.solo.io/gloo-portal/latest).
 
 ## Initial setup
 {{% notice warning %}}
-The developer portal feature described on this page was introduced with **Gloo Enterprise**, release v1.3.0 and 
-deprecated with **Gloo Enterprise**, release v1.5.0-beta10. 
+The Gloo Portal feature described on this page was introduced with **Gloo Edge Enterprise**, release v1.3.0 and 
+deprecated with **Gloo Edge Enterprise**, release v1.5.0-beta10. 
 If you are using an earlier version, this feature will not be available. If you are running this (or a later) version of 
-Gloo Enterprise, use [these installation instructions](https://docs.solo.io/dev-portal/latest/setup/gloo).
+Gloo Edge Enterprise, use [these installation instructions](https://docs.solo.io/gloo-portal/latest/setup/gloo).
 {{% /notice %}}
 
-Before we can start configuring our portal, we need to enable the developer portal feature in Gloo and configure our 
+Before we can start configuring our portal, we need to enable the Gloo Portal feature in Gloo Edge and configure our 
 cluster with an example application and the corresponding routing configuration.
 
-#### Enabling the developer portal feature in Gloo
-The Gloo Developer Portal can be installed as part of Gloo Enterprise by providing an additional `devPortal=true` Helm 
-value during your installation or upgrade process. Please refer to the Gloo Enterprise [installation guide](https://docs.solo.io/gloo/latest/installation/enterprise/) 
+#### Enabling the Gloo Portal feature in Gloo Edge
+The Gloo Edge Portal can be installed as part of Gloo Edge Enterprise by providing an additional `devPortal=true` Helm 
+value during your installation or upgrade process. Please refer to the Gloo Edge Enterprise [installation guide](https://docs.solo.io/gloo-edge/latest/installation/enterprise/) 
 for more details on the various installation options.
 
-You can install Gloo Enterprise with the Developer Portal either via `helm` or via `gloooctl`:
+You can install Gloo Edge Enterprise with the Gloo Portal either via `helm` or via `gloooctl`:
 
 {{< tabs >}}
 {{% tab name="helm" %}}
@@ -124,7 +124,7 @@ spec:
     app: petstore
 ```
 
-Let's also create a Gloo virtual service that will route al requests for paths starting with `api` to this service:
+Let's also create a Gloo Edge virtual service that will route all requests for paths starting with `api` to this service:
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -165,19 +165,19 @@ The above request should result in the following response:
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
-## Access the developer portal administrator UI
-Developer portals can be managed through a the Gloo Enterprise UI. To access the UI run:
+## Access the Gloo Portal administrator UI
+Gloo Portals can be managed through a the Gloo Edge Enterprise UI. To access the UI run:
 
 ```shell 
 kubectl port-forward -n gloo-system deployment/api-server 8081:8080
 ```
 
-If you open your browser and navigate to `localhost:8081`, you should see the Gloo Enterprise UI landing page:
-![GlooE UI]({{% versioned_link_path fromRoot="/guides/dev_portal/img/ui-landing-page.png" %}})
+If you open your browser and navigate to `localhost:8081`, you should see the Gloo Edge Enterprise UI landing page:
+![Gloo Edge Enterprise UI]({{% versioned_link_path fromRoot="/guides/dev_portal/img/ui-landing-page.png" %}})
 
-If the developer portal was successfully installed and your license key is valid you should see the "Dev Portal" link 
-in the top right corner of the screen. If you click on it, you will see the developer portal overview page. This page 
-presents a summary of the main developer portal resources (nothing interesting at this point, since we did not create 
+If the Gloo Portal was successfully installed and your license key is valid you should see the "Gloo Portal" link 
+in the top right corner of the screen. If you click on it, you will see the Gloo Portal overview page. This page 
+presents a summary of the main Gloo Portal resources (nothing interesting at this point, since we did not create 
 any resources yet).
 ![Empty landing page]({{% versioned_link_path fromRoot="/guides/dev_portal/img/dev-portal-empty-landing.png" %}})
 
@@ -190,14 +190,14 @@ The first step prompts you to define the basic attributes of your portal:
 
 1. `Name`: this will be title of the portal
 2. `Description`: short description text that will be displayed close to the title on the portal
-3. `Portal Domain(s)`: these are the domains that are associated with the portal. The developer portal web server will 
+3. `Portal Domain(s)`: these are the domains that are associated with the portal. The Gloo Portal web server will 
 decide which portal to server to a user based on the host header contained in the user request. For example, if you are 
 planning on serving your portal from `my-portal.example.org`, you will need to include this host name in the portal 
-domains. When a user navigates to `my-portal.example.org`, the dev portal web server will verify if any portal is 
+domains. When a user navigates to `my-portal.example.org`, the Gloo Portal web server will verify if any portal is 
 associated with that host and, if so, display it.
 
 {{% notice note %}}
-Portal domains must not overlap. In case multiple portals specify overlapping domains, the developer portal controller 
+Portal domains must not overlap. In case multiple portals specify overlapping domains, the Gloo Portal controller 
 will reject the most recently updated portal resources, i.e. it will accept the portal that first defined the 
 overlapping domain.
 {{% /notice %}}
@@ -226,8 +226,8 @@ You should see the details of the portal we just created:
 ![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/portal-details-1.png" %}})
 
 ### Adding static pages to the portal
-A common feature of developer portals is to allow the administrator to add custom pages to the web application. We can 
-do that by visiting the portal details page on the Gloo Enterprise UI again, selecting the "Pages" tab in the lower 
+A common feature of Gloo Portals is to allow the administrator to add custom pages to the web application. We can 
+do that by visiting the portal details page on the Gloo Edge Enterprise UI again, selecting the "Pages" tab in the lower 
 part of the screen and clicking the "Add a Page" button. 
 The resulting form prompts us for the basic properties of a static portal page.
 
@@ -291,7 +291,7 @@ Now let's add a user to the group by clicking on the "Create a User" button. Thi
     - `Name`: this is the username, it is required and must be unique within the cluster (it can be an email address)
     - `Email`: the user email address (optional)
     - `Password`: the initial user password; this is required. When the user logs in to a portal for the first time, they 
-     will be prompted to update their password. User credential distribution is currently up to the Gloo administrator, 
+     will be prompted to update their password. User credential distribution is currently up to the Gloo Edge administrator, 
      but we plan on adding a standard email verification flow soon;
 2. In the next step we can select the APIs that this user has direct access to (i.e. not through a group); 
 we don't have any APIs yet, so let's skip this for now;
@@ -318,7 +318,7 @@ In this section we will see how to publish interactive OpenAPI documentation to 
 Before we can publish an API, we need to create an OpenAPI document that describes the service it represents. 
 the document does not need to match the entirety of the endpoints exposes by your service. You can choose to 
 expose only a subset of the endpoints, for example if you want to expose just a part of a larger monolithic application. 
-It is up to the user to verify that the document matches the service it describes; the developer portal will not attempt 
+It is up to the user to verify that the document matches the service it describes; the Gloo Portal will not attempt 
 to validate the document against the service.
 
 {{% expand "Here is the full OpenAPI document representing our example application (click to expand)" %}}
@@ -564,7 +564,7 @@ Please save the above document to your local file system for the next step
 (you can download it [here]({{% versioned_link_path fromRoot="/guides/dev_portal/specs/petstore.json" %}})).
 
 #### Create an API
-Let's go back to the Gloo Enterprise UI, and navigate to the "APIs" section of the developer portal screen. Click on the 
+Let's go back to the Gloo Edge Enterprise UI, and navigate to the "APIs" section of the Gloo Portal screen. Click on the 
 "Create an API" button to display the API creation wizard.
 
 1. The first step requires you to upload an OpenAPI document that represent your API. You can either provide a URL or 
@@ -574,7 +574,7 @@ upload the file from you local file system. Here you can
 4. Skip the user step (as the user will have access through the group)
 5. Add the group to give it access to this API and submit the form.
 
-You should now see the details of the API we just created. The developer portal server will parse the OpenAPI document 
+You should now see the details of the API we just created. The Gloo Portal server will parse the OpenAPI document 
 and display some of the properties of the document, for example the display name and the description. In the lower part 
 of the screen you can see which groups and users are allowed to see this API (if it is published to a portal they have 
 access to).
@@ -591,7 +591,7 @@ If you click on the document you can browse through all of the info that we incl
 
 ![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/portal-api-2.png" %}})
 
-Before we test our interactive document, we need to port forward the Gloo gateway proxy (which the document expects to 
+Before we test our interactive document, we need to port forward the Gloo Edge gateway proxy (which the document expects to 
 be listening at `localhost:8080`):
 
 ```
@@ -610,19 +610,19 @@ You should see the response from the server in the "Server response" section.
 
 ## Secure an API
 We were able to query the published API without providing any credentials, but in a real-world scenario access to the 
-API will most likely need to be secured. The Gloo Enterprise developer portal currently supports self-service for APIs 
-that are secured using API keys. It does so by leveraging the Gloo Enterprise 
+API will most likely need to be secured. The Gloo Edge Enterprise Gloo Portal currently supports self-service for APIs 
+that are secured using API keys. It does so by leveraging the Gloo Edge Enterprise 
 [API keys]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/apikey_auth" %}}) authentication feature. 
-In the following sections we will see how to configure Gloo to allow users to generate API keys to send authenticated 
+In the following sections we will see how to configure Gloo Edge to allow users to generate API keys to send authenticated 
 requests via the interactive API document.
 
 #### Create a key scope
 An API key scope is a way of grouping APIs that share a common API key configuration within the context of a portal. 
 The portal server uses the key scope information to generate API key secrets. When a user requests an API key for a 
-particular key scope, the server will generate an API key secret that can be consumed by Gloo. 
+particular key scope, the server will generate an API key secret that can be consumed by Gloo Edge. 
 This will become easier to understand after seeing a concrete example. 
 
-Let's go back to the Gloo Enterprise UI, and navigate to the "API Key Scopes" section of the developer portal screen. 
+Let's go back to the Gloo Edge Enterprise UI, and navigate to the "API Key Scopes" section of the Gloo Portal screen. 
 Click the "Create a Scope" button to open the API key scope creation wizard. 
 
 ![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/key-scope-1.png" %}})
@@ -699,16 +699,16 @@ spec:
 {{< /highlight >}} 
 
 Note that we also added `api-key` to the headers allowed by our CORS configuration. `api-key` is the name of the header 
-that Gloo inspects for an API key. The interactive documentation will send requests with that header to the service.
+that Gloo Edge inspects for an API key. The interactive documentation will send requests with that header to the service.
 
 ##### Note on CORS
 We need the CORS configuration because the portal app is served from `localhost:1234`, but the interactive API document 
 sends requests to `localhost:8080`. Without it, the request violated the same-origin security policy. 
-The CORS configuration allows your browser and Gloo to validate the cross-origin request.
+The CORS configuration allows your browser and Gloo Edge to validate the cross-origin request.
 
 #### Update our OpenAPI document
 Next we need to update our API specification in order to account for the changes we just made, so let's go back to the 
-details page for our API in the Gloo Enterprise UI. The UI provides an OpenAPI editor that we can use to update our 
+details page for our API in the Gloo Edge Enterprise UI. The UI provides an OpenAPI editor that we can use to update our 
 document. You can open it by clicking the "Open editor" button in the lower left corner. 
 
 We need to add these attributes too the root object:
@@ -737,7 +737,7 @@ This does not enforce the security schemes on the operations and only serves to 
 Here we are defining an API key authentication scheme that expects API keys to be included in a header named `api-key`.
 
 {{% notice note %}}
-It is important that the header name is `api-key`, otherwise Gloo will not be able to authenticate the requests sent from the document.
+It is important that the header name is `api-key`, otherwise Gloo Edge will not be able to authenticate the requests sent from the document.
 {{% /notice %}}
 
 The `security` attribute lists the required security schemes to execute an operation. Since we define it at the root of 
@@ -991,7 +991,7 @@ save the changes by clicking "Publish Changes".
 
 #### Test the updated doc
 Now that everything is in place, let's go back to the portal and open the interactive API doc. If you try querying the 
-same endpoint we tested earlier, you will now get a 401 Unauthorized response. This is Gloo rejecting the request 
+same endpoint we tested earlier, you will now get a 401 Unauthorized response. This is Gloo Edge rejecting the request 
 because it did not provide an API key.
 
 ![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/portal-api-4-no-auth-ko.png" %}})

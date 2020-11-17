@@ -1,12 +1,12 @@
 ---
-title: Gloo Metrics
+title: Gloo Edge Metrics
 weight: 40
-description: Configuring Gloo to ship telemetry/metrics to Prometheus
+description: Configuring Gloo Edge to ship telemetry/metrics to Prometheus
 ---
 
 
 
-All Gloo pods ship with optional [Prometheus](https://prometheus.io/) monitoring capabilities.
+All Gloo Edge pods ship with optional [Prometheus](https://prometheus.io/) monitoring capabilities.
 
 This functionality is turned on by default, and can be turned off a couple of different ways: through [Helm chart install
 options]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-the-gloo-gateway-on-kubernetes" >}}); and through environment variables.
@@ -18,14 +18,14 @@ You can take a look at the [Help strings](#metrics-context) we publish to see wh
 #### Helm Chart Options
 
 The first way is via the Helm chart. A global settings value for enabling metrics and debug endpoints on all pods part
-of the Gloo installation can be toggled using `global.glooStats.enabled` (default `true`). 
+of the Gloo Edge installation can be toggled using `global.glooStats.enabled` (default `true`). 
 
 In addition, all deployment resources in the chart accept an argument `stats` which when set, override any default
 value inherited from `global.glooStats`.
 
-For example, to add stats to the Gloo `gateway`, when installing with Helm add  `--set discovery.deployment.stats.enabled=true`.
+For example, to add stats to the Gloo Edge `gateway`, when installing with Helm add  `--set discovery.deployment.stats.enabled=true`.
 
-For example, to add stats to the Gloo `discovery` pod, first write your values file. Run:
+For example, to add stats to the Gloo Edge `discovery` pod, first write your values file. Run:
 
 ```shell script
 echo "crds:
@@ -107,14 +107,14 @@ server on port `9091`.
 
 The other method is to manually set the `START_STATS_SERVER=1` in the pod.
 
-### Monitoring Gloo with Prometheus
+### Monitoring Gloo Edge with Prometheus
 
 Prometheus has great support for monitoring kubernetes pods. Docs for that can be found
 [here](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kubernetes_sd_config). If the stats
 are enabled through the Helm chart than the Prometheus annotations are automatically added to the pod spec. And those
 Prometheus stats are available from the admin page in our pods.
 
-For example, assuming you installed Gloo as previously using Helm, and enabled stats for discovery, you
+For example, assuming you installed Gloo Edge as previously using Helm, and enabled stats for discovery, you
 could then `kubectl port-forward <pod> 9091:9091` those pods (or deployments/services selecting those pods) to access
 their admin page as follows.
 
@@ -124,7 +124,7 @@ kubectl --namespace gloo-system port-forward deployment/discovery 9091:9091
 
 And then open <http://localhost:9091> for the admin page, including the Prometheus metrics at <http://localhost:9091/metrics>.
 
-More information on Gloo's admin ports can be found [here]({{% versioned_link_path fromRoot="/introduction/observability/#grafana-and-prometheus" %}}).
+More information on Gloo Edge's admin ports can be found [here]({{% versioned_link_path fromRoot="/introduction/observability/#grafana-and-prometheus" %}}).
 
 #### Metrics Context
 
@@ -133,7 +133,7 @@ You can see exactly what metrics are published from a particular pod by taking a
 pod you're interested in, you can curl `/metrics` on its stats port (usually `9091`) to see this content.
 
 For example, here's a look at the Help strings published by our `gloo` pod as of 0.20.13. You can do the
-same thing for any of our pods, including the closed-source ones in the case of Gloo Enterprise.
+same thing for any of our pods, including the closed-source ones in the case of Gloo Edge Enterprise.
 
 ```bash
 $ kubectl port-forward deployment/gloo 9091 &

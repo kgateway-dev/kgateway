@@ -1,6 +1,6 @@
-# Knative Networking with Gloo Cluster Ingress
+# Knative Networking with Gloo Edge Cluster Ingress
 
-With Knative support enabled, Gloo will configure Envoy using [Knative's Cluster Ingress Resource](https://github.com/knative/serving/blob/master/pkg/client/informers/externalversions/networking/v1alpha1/ingress.go).
+With Knative support enabled, Gloo Edge will configure Envoy using [Knative's Cluster Ingress Resource](https://github.com/knative/serving/blob/master/pkg/client/informers/externalversions/networking/v1alpha1/ingress.go).
 
 The installation process detailed in this document provides a way of using Knative-Serving without needing to install Istio.
 
@@ -12,10 +12,10 @@ The installation process detailed in this document provides a way of using Knati
 
 ### Install
 
-#### 1. Install Glooctl
+#### 1. Install glooctl
 
-If this is your first time running Gloo, you’ll need to download the command-line interface (CLI) onto your local machine. 
-You’ll use this CLI to interact with Gloo, including installing it onto your Kubernetes cluster.
+If this is your first time running Gloo Edge, you’ll need to download the command-line interface (CLI) onto your local machine. 
+You’ll use this CLI to interact with Gloo Edge, including installing it onto your Kubernetes cluster.
 
 To install the CLI, run:
 
@@ -23,7 +23,7 @@ To install the CLI, run:
 
 Alternatively, you can download the CLI directly via the github releases page. 
 
-Next, add Gloo to your path with:
+Next, add Gloo Edge to your path with:
 
 `export PATH=$HOME/.gloo/bin:$PATH`
 
@@ -31,14 +31,14 @@ Verify the CLI is installed and running correctly with:
 
 `glooctl version`
 
-#### 2. Install Knative and Gloo to your Kubernetes Cluster using Glooctl
+#### 2. Install Knative and Gloo Edge to your Kubernetes Cluster using glooctl
 
-Once your Kubernetes cluster is up and running, run the following command to deploy Knative-Serving components to the `knative-serving` namespace and Gloo to the `gloo-system` namespace:
+Once your Kubernetes cluster is up and running, run the following command to deploy Knative-Serving components to the `knative-serving` namespace and Gloo Edge to the `gloo-system` namespace:
 
 `glooctl install knative`
 
 
-Check that the Gloo and Knative pods and services have been created:
+Check that the Gloo Edge and Knative pods and services have been created:
 
 ```bash
 kubectl get all -n gloo-system
@@ -111,7 +111,7 @@ Create a Knative App:
 kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/test/kube2e/artifacts/knative-hello-service.yaml
 ```
 
-Get the URL of the Gloo-Knative Ingress:
+Get the URL of the Gloo Edge Knative Ingress:
 
 ```bash
 export INGRESS=$(glooctl proxy url --name knative-proxy)

@@ -10,17 +10,17 @@ In this guide we will create a route to a specific REST endpoint.
 
 ## Setup
 
-Let's configure Gloo to route to a single, static Upstream. In this case, we'll route requests through Gloo to the JSON testing API available at `http://jsonplaceholder.typicode.com/`. 
+Let's configure Gloo Edge to route to a single, static Upstream. In this case, we'll route requests through Gloo Edge to the JSON testing API available at `http://jsonplaceholder.typicode.com/`. 
 
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 
-If you haven't already deployed Gloo and an example swagger service on Kubernetes, [go back to the Hello World]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) guide and run through it to get the Pet Store application deployed.
+If you haven't already deployed Gloo Edge and an example swagger service on Kubernetes, [go back to the Hello World]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) guide and run through it to get the Pet Store application deployed.
 
 ---
 
 ## Configure function routing
 
-Now that we've seen the traditional routing functionality of Gloo (i.e. API-to-service), let's try doing some function routing.
+Now that we've seen the traditional routing functionality of Gloo Edge (i.e. API-to-service), let's try doing some function routing.
 
 Let's take a look at the Upstream that was created for our petstore service:
 
@@ -81,7 +81,7 @@ glooctl get upstream default-petstore-8080 --output yaml
 
 We can see there are functions on our `default-petstore-8080` Upstream. These functions were populated automatically by the `discovery` pod. You can see the function discovery service in action by running `kubectl logs -l gloo=discovery -n gloo-system`.
 
-The {{< protobuf name="gloo.solo.io.Upstream" display="function spec" >}} you see on the functions listed above is populated by the transformation plugin. This powerful plugin configures Gloo's [request/response transformation Envoy filter](https://github.com/solo-io/envoy-transformation), transforming requests to the structure expected by our Pet Store application.
+The {{< protobuf name="gloo.solo.io.Upstream" display="function spec" >}} you see on the functions listed above is populated by the transformation plugin. This powerful plugin configures Gloo Edge's [request/response transformation Envoy filter](https://github.com/solo-io/envoy-transformation), transforming requests to the structure expected by our Pet Store application.
 
 In a nutshell, this plugin takes [Inja templates](https://github.com/pantor/inja) for HTTP body, headers, and path as its parameters (documented in the plugin spec) and transforms incoming requests from those templates. Parameters for these templates can come from the request body (if it's JSON), or they can come from parameters specified in the extensions on a route.
 
@@ -141,11 +141,11 @@ curl $(glooctl proxy url)/petstore/findPet -d '{"id": 2}'
 {"id":2,"name":"Cat","status":"pending"}
 ```
 
-Great! We just called our first function through Gloo.
+Great! We just called our first function through Gloo Edge.
 
 ### Pass parameters in a header
 
-Parameters can also come from headers. Let's tell Gloo to look for `id` in a header.
+Parameters can also come from headers. Let's tell Gloo Edge to look for `id` in a header.
 
 Let's take a look at the route we created:
 ```shell
@@ -182,7 +182,7 @@ virtualHost:
           namespace: gloo-system
 {{< /highlight >}}
 
-We can tell Gloo to grab the template parameters from the request with a flag called `rest-parameters` like this:
+We can tell Gloo Edge to grab the template parameters from the request with a flag called `rest-parameters` like this:
 
 ```shell
 glooctl add route \

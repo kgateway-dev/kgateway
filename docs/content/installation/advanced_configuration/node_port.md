@@ -1,14 +1,14 @@
 ---
-title: Exposing Gloo with NodePort
+title: Exposing Gloo Edge with NodePort
 weight: 30
-description: Exposing Gloo's listeners on a Kubernetes Service Node Port
+description: Exposing Gloo Edge's listeners on a Kubernetes Service Node Port
 ---
 
 By default, microservices deployed in Kubernetes have an internal flat network that is not accessible from the outside of the cluster. This is true even if you use Kubernetes on a public cloud (like Amazon AWS or Google Cloud).
 
 A NodePort service is a way to make Kubernetes services available from outside the cluster (and potentially allow access from the internet) by opening ports on all of the nodes in the cluster and allowing traffic to go directly to the pods running within the cluster.
 
-In this document, we will review how to expose Gloo via a NodePort service. It's important to note that NodePort is *not* a recommended production setting. Node port has the following drawbacks not limited to:
+In this document, we will review how to expose Gloo Edge via a NodePort service. It's important to note that NodePort is *not* a recommended production setting. Node port has the following drawbacks not limited to:
 
 * You must coordinate what services use what ports so there is no conflict
 * A single service can be served on a port
@@ -31,9 +31,9 @@ One advantage of using a NodePort is that it allows relatively easy deployment o
 
 ---
 
-## How to use Gloo with NodePort?
+## How to use Gloo Edge with NodePort?
 
-In Gloo, the service that's responsible for ingress traffic is called `gateway-proxy`. To use Gloo with NodePort we simply need to configure the `gateway-proxy` Kubernetes service to use NodePort. For example, when installing with Helm, use the following command:
+In Gloo Edge, the service that's responsible for ingress traffic is called `gateway-proxy`. To use Gloo Edge with NodePort we simply need to configure the `gateway-proxy` Kubernetes service to use NodePort. For example, when installing with Helm, use the following command:
 
 ```
 helm install gloo/gloo --namespace gloo-system --set gatewayProxies.gatewayProxy.service.type=NodePort
@@ -69,9 +69,9 @@ status:
   loadBalancer: {}
 ```
 
-In our example, port 30348 was allocated. You can now use `http://NODE-IP:30348` to make requests to your Gloo virtual services.
+In our example, port 30348 was allocated. You can now use `http://NODE-IP:30348` to make requests to your Gloo Edge virtual services.
 
-If you are not using helm, or you already have Gloo installed, you can delete the existing Service, and expose a node port like this:
+If you are not using helm, or you already have Gloo Edge installed, you can delete the existing Service, and expose a node port like this:
 
 ```
 kubectl -n gloo-system delete svc gateway-proxy
@@ -83,4 +83,4 @@ kubectl -n gloo-system expose deploy/gateway-proxy \
   --target-port 8080
 ```
 
-Note, if we manually expose it like this, we will only get a single port exposed. By default Gloo will use two ports, one for HTTP and one for HTTPS traffic. If you need to expose two ports, then you can do this directly in a `yaml` file.
+Note, if we manually expose it like this, we will only get a single port exposed. By default Gloo Edge will use two ports, one for HTTP and one for HTTPS traffic. If you need to expose two ports, then you can do this directly in a `yaml` file.

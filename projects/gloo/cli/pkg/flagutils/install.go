@@ -47,7 +47,7 @@ func AddKnativeInstallFlags(set *pflag.FlagSet, install *options.Knative) {
 	set.BoolVarP(&install.InstallKnative, "install-knative", "k", true,
 		"Bundle Knative-Serving with your Gloo installation")
 	set.BoolVarP(&install.SkipGlooInstall, "skip-installing-gloo", "g", false,
-		"Skip installing Gloo. Only Knative components will be installed")
+		"Skip installing Gloo Edge. Only Knative components will be installed")
 	set.BoolVarP(&install.InstallKnativeEventing, "install-eventing", "e", false,
 		"Bundle Knative-Eventing with your Gloo installation. Requires install-knative to be true")
 	set.StringVar(&install.InstallKnativeEventingVersion, "install-eventing-version", "0.10.0",

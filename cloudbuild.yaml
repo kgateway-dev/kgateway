@@ -1,7 +1,7 @@
 steps:
 
-# clones Gloo so it can be setup & tested
-# All steps after this must set working directory to use the cloned Gloo source
+# clones Gloo Edge so it can be setup & tested
+# All steps after this must set working directory to use the cloned Gloo Edge source
 
 # $COMMIT_SHA is a default gcloud env var, to run via cloudbuild submit use:
 # gcloud builds submit --substitutions COMMIT_SHA=<commit sha>,REPO_NAME=solo-io/gloo --project solo-public

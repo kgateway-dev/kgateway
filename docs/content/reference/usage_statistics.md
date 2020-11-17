@@ -1,12 +1,12 @@
 ---
 title: Internal Usage Statistics
 weight: 40
-description: Gloo's usage stats collection
+description: Gloo Edge's usage stats collection
 ---
 
 ## Internal Usage Statistics
 
-We periodically collect usage data from instances of Gloo and `glooctl`. The details of this
+We periodically collect usage data from instances of Gloo Edge and `glooctl`. The details of this
 collection can be found [here](https://github.com/solo-io/reporting-client). Briefly, the data
 that is collected includes:
 
@@ -22,7 +22,7 @@ personally-identifying information; it is just a random UUID used to associate m
 usage records with the same source. As with the rest of this data, it will not be created or
 recorded if this statistics collection is disabled.
 
-Usage statistics collection can be disabled in Gloo by setting the 
+Usage statistics collection can be disabled in Gloo Edge by setting the 
 `DISABLE_USAGE_REPORTING` environment variable on the `gloo` pod. This can be done at install 
 time by setting the helm value `gloo.deployment.disableUsageStatistics` to `true`.
 For `glooctl`, setting the `disableUsageReporting` key to `true` in its config file serves

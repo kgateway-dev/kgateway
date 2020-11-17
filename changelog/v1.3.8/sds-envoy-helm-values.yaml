@@ -13,5 +13,5 @@ changelog:
             image:
               tag: test
       ```
-      For more information, check out the [corresponding documentation](https://docs.solo.io/gloo/latest/security/mtls/).
+      For more information, check out the [corresponding documentation](https://docs.solo.io/gloo-edge/latest/security/mtls/).
   issueLink: https://github.com/solo-io/gloo/issues/2134

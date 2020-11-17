@@ -1,10 +1,10 @@
 ---
-title: Envoy WASM filters with Gloo
+title: Envoy WASM filters with Gloo Edge
 weight: 70
-description: Using WASM filters in Envoy with Gloo
+description: Using WASM filters in Envoy with Gloo Edge
 ---
 
-Experimental support for Envoy WASM filters has been added to Open Source Gloo as of version 1.2.6. This guide is specifically for Gloo 1.5.x, as there have been some changes to the configuration API since prior versions.
+Experimental support for Envoy WASM filters has been added to Open Source Gloo Edge as of version 1.2.6. This guide is specifically for Gloo Edge 1.5.x, as there have been some changes to the configuration API since prior versions.
 
 {{% notice note %}}
 This feature is considered incredibly experimental. It uses a fork of Envoy which does not have any official support. It 
@@ -17,7 +17,7 @@ is meant to show off the potential of WASM filters, and how they will integrate 
 
 Getting started with WASM is simple, it requires setting one new value in the gloo helm chart.
 
-Gloo can be installed with this value set using either `glooctl` or `helm 3` as follows:
+Gloo Edge can be installed with this value set using either `glooctl` or `helm 3` as follows:
 {{< tabs >}}
 {{< tab name="glooctl" codelang="shell script">}}
 glooctl install gateway --values <(echo '{"crds":{"create":true},"global":{"wasm":{"enabled":true}}}')
@@ -73,6 +73,6 @@ Once that is saved, the hard work has been done. All traffic on the http gateway
 
 To find our more information about WASM filters, and how to build/run them check out [`wasm`](https://github.com/solo-io/wasm).
 
-`wasme` is a tool for building and deploying Envoy WASM filters, in Gloo, and in vanilla Envoy. Much more detailed information can be found there on how the filters work.
+`wasme` is a tool for building and deploying Envoy WASM filters, in Gloo Edge, and in vanilla Envoy. Much more detailed information can be found there on how the filters work.
 
-To find more information about WASM filters, and find more filters which can be included in Gloo check out [WebAssembly Hub!](https://webassemblyhub.io/).
+To find more information about WASM filters, and find more filters which can be included in Gloo Edge check out [WebAssembly Hub!](https://webassemblyhub.io/).

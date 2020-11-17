@@ -5,7 +5,7 @@ description: Introduction to JWT and what they are used for
 ---
 
 {{% notice note %}}
-The JWT feature was introduced with **Gloo Enterprise**, release 0.13.16. If you are using an earlier version, this tutorial will not work.
+The JWT feature was introduced with **Gloo Edge Enterprise**, release 0.13.16. If you are using an earlier version, this tutorial will not work.
 {{% /notice %}}
 
 ## What are JSON Web Tokens?
@@ -54,15 +54,15 @@ Most commonly asymmetric encryption is used to sign JWTs. To verify them a publi
 has the advantage of making verification easy - the public key can be distributed as it is not secret
 and cannot be used to sign new JWTs. The JWT can be independently verified by anyone using the public key.
 
-## JWTs in Gloo
-Gloo supports JWT verification using the JWT extension. You can define multiple JWT providers.
+## JWTs in Gloo Edge
+Gloo Edge supports JWT verification using the JWT extension. You can define multiple JWT providers.
 In each provider you can specify where to find the keys required for JWT verification, the 
 values for the issuer and audience claims to verify, as well as {{< protobuf name="jwt.options.gloo.solo.io.Provider" display="other settings">}}.
 
 We have a few guides that go into more detail:
 
-- [JWT and Access Control](./access_control) - Demonstrates how to use Gloo as an internal API Gateway
-  in a Kubernetes environment. Gloo is used to verify Kubernetes service account JWTs and to define
+- [JWT and Access Control](./access_control) - Demonstrates how to use Gloo Edge as an internal API Gateway
+  in a Kubernetes environment. Gloo Edge is used to verify Kubernetes service account JWTs and to define
   an RBAC policy on what those service accounts are allowed to access.
 - [JWT Claim Based Routing](./claim_routing) - Shows a method of using JWT claims to perform routing
   decisions. This can be used, for example, to send your own organization employees to a canary build

@@ -65,7 +65,7 @@ curl http://<instance-public-ip>/
 
 ## Create a secret with aws credentials
 
-- Gloo needs AWS credentials to be able to find EC2 resources
+- Gloo Edge needs AWS credentials to be able to find EC2 resources
 - Recommendation: create a set of credentials that only have access to the relevant resources.
   - In this example, pretend that the secret we create only has access to resources with the `gloo-tag:group1` tag.
 ```bash
@@ -77,11 +77,11 @@ glooctl create secret aws \
 ```
 
 
-## Create roles for Gloo to assume on behalf of your upstreams
-- For additional control over Gloo's access to your resources and as an additional filter on your EC2 Upstream's list of
+## Create roles for Gloo Edge to assume on behalf of your upstreams
+- For additional control over Gloo Edge's access to your resources and as an additional filter on your EC2 Upstream's list of
 available instances it is recommended that you credential your upstreams with a low-access user account that has the
 ability to assume the specific roles it requires.
-- When you provide both a secret ref and a list of Role ARNs to your upstream, Gloo will call the AWS API with credentials
+- When you provide both a secret ref and a list of Role ARNs to your upstream, Gloo Edge will call the AWS API with credentials
 composed from that user account and those roles (via the AssumeRole feature).
 - To configure you AWS account for this use case, there are two steps to take (if you have not already done so):
   - Create a policy that allows the policy holder to describe EC2 instances
@@ -187,7 +187,7 @@ curl $URL/echoapp
 # Potential features, as needed
 ## Discover upstreams
 - The user currently specifies the upstream.
-- Alternatively, the user could just provide credentials, and allow Gloo to discover the specs by inspection of the tags.
+- Alternatively, the user could just provide credentials, and allow Gloo Edge to discover the specs by inspection of the tags.
 ## Port selection from tag
 - Currently, the port is specified on the upstream spec.
 - It might be useful to allow the user to define the port through a resource tag
@@ -214,7 +214,7 @@ curl $URL/echoapp
          ],
          "Condition":{
             "StringEquals":{
-               "ec2:ResourceTag/Owner":"Gloo"
+               "ec2:ResourceTag/Owner":"Gloo Edge"
             }
          }
       }
@@ -224,7 +224,7 @@ curl $URL/echoapp
 
 ### Action
 - The action that the EC2 upstream credentials must have is `ec2:DescribeInstances`.
-  - [DescribeInstances](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html) is the only AWS API that Gloo needs.
+  - [DescribeInstances](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html) is the only AWS API that Gloo Edge needs.
   
 ### Resource list
 - To restrict an upstream's access to a specific set of instances, list them (wildcards supported) by their Amazon Resource Name (ARN).
@@ -234,12 +234,12 @@ curl $URL/echoapp
 
 ### Conditions
 - It is also possible to identify resources by various conditions.
-- The `ResourceTags`, in particular, are how Gloo chooses which EC2 instances to associate with a given upstream.
+- The `ResourceTags`, in particular, are how Gloo Edge chooses which EC2 instances to associate with a given upstream.
   - Refer to the [policy condition docs](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_condition.html) for details
 
 ## Considerations
 - AWS has a highly expressive policy definition protocol for restricting an account's access to resources.
-- Gloo uses the intersection of an upstream's credentials and its filter spec to determine which EC2 instances should be associated with an upstream.
+- Gloo Edge uses the intersection of an upstream's credentials and its filter spec to determine which EC2 instances should be associated with an upstream.
 - You have a few options where to store your config:
   - Permissive upstream credentials (an upstream may be able to list EC2 instances that it should not route to), discerning upstream filters (upstream filters refine the set of target instances)
   - Restrictive upstream credentials (only allow upstream to the credentials that it should route to), no upstream filters

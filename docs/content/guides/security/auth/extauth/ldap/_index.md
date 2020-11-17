@@ -5,7 +5,7 @@ description: Authenticate and authorize requests using LDAP.
 ---
 
 {{% notice note %}}
-The LDAP feature was introduced with **Gloo Enterprise**, release 0.18.27. If you are using an earlier 
+The LDAP feature was introduced with **Gloo Edge Enterprise**, release 0.18.27. If you are using an earlier 
 version, this tutorial will not work.
 {{% /notice %}}
 
@@ -15,7 +15,7 @@ organizational information. A common use case for LDAP is to maintain informatio
 assign them to specific user groups, and give each of them access to resources based on their group memberships.
 
 In this guide we will deploy a simple LDAP server to your Kubernetes cluster and see how you can use it together with 
-Gloo to authenticate users and control access to a target service based on the user's group memberships.
+Gloo Edge to authenticate users and control access to a target service based on the user's group memberships.
 
 {{% notice note %}}
 We recommend that you check out [**this excellent tutorial**](https://www.digitalocean.com/community/tutorials/understanding-the-ldap-protocol-data-hierarchy-and-entry-components) 
@@ -255,26 +255,26 @@ Now that we have all the necessary components in place, let use the LDAP server 
 earlier .
 
 #### LDAP auth flow
-Before updating our Virtual Service, it is important to understand how Gloo interacts with the LDAP server. Let's first 
+Before updating our Virtual Service, it is important to understand how Gloo Edge interacts with the LDAP server. Let's first 
 look at the {{< protobuf
 display="LDAP auth configuration"
 name="enterprise.gloo.solo.io.Ldap"
 >}}:
 
-- `address`: this is the address of the LDAP server that Gloo will query when a request matches the Virtual Service.
-- `userDnTemplate`: this is a template string that Gloo uses to build the DNs of the user entry that 
+- `address`: this is the address of the LDAP server that Gloo Edge will query when a request matches the Virtual Service.
+- `userDnTemplate`: this is a template string that Gloo Edge uses to build the DNs of the user entry that 
    needs to be authenticated and authorized. It must contains a single occurrence of the “%s” placeholder.
 - `membershipAttributeName`: case-insensitive name of the attribute that contains the names of the groups an entry is 
    member of. Defaults to `memberOf` if not provided.
 - `allowedGroups`: DNs of the user groups that are allowed to access the secured upstream.
 
-To better understand how this configuration is used, let's go over the steps that Gloo performs when it detects a 
+To better understand how this configuration is used, let's go over the steps that Gloo Edge performs when it detects a 
 request that needs to be authenticated with LDAP:
 
 1. Look for a [Basic Authentication](https://en.wikipedia.org/wiki/Basic_access_authentication) header on the request 
    and extract the username and credentials
 2. If the header is not present, return a `401` response
-3. Try to perform a [BIND](https://ldap.com/the-ldap-bind-operation/) operation with the LDAP server. To do this, Gloo 
+3. Try to perform a [BIND](https://ldap.com/the-ldap-bind-operation/) operation with the LDAP server. To do this, Gloo Edge 
    needs to know the DN of the user entry. It will build it by substituting the name of the user (extracted from the 
    basic auth header) for the `%s` placeholder in the `userDnTemplate`. It is important to note that 
    [special characters](https://ldapwiki.com/wiki/DN%20Escape%20Values) will be removed from the username before performing 
@@ -285,7 +285,7 @@ request that needs to be authenticated with LDAP:
 6. Check if one of the values for the attribute matches one of the `allowedGroups`; if so, allow the request, otherwise return a `403` response.
 
 #### Create an LDAP AuthConfig
-Now that we have a good understanding of how Gloo interacts with the LDAP server we can create an `AuthConfig` CRD with 
+Now that we have a good understanding of how Gloo Edge interacts with the LDAP server we can create an `AuthConfig` CRD with 
 our LDAP configuration:
 
 {{< highlight shell "hl_lines=10-13" >}}
@@ -309,7 +309,7 @@ We can see that:
 
 - the configuration points to the Kubernetes DNS name and port of our LDAP service (`ldap.default.svc.cluster.local:389` if 
   you deployed it to the `default` namespace);
-- Gloo will look for user entries with DNs in the format `uid=<USERNAME_FROM_HEADER>,ou=people,dc=solo,dc=io`, which, 
+- Gloo Edge will look for user entries with DNs in the format `uid=<USERNAME_FROM_HEADER>,ou=people,dc=solo,dc=io`, which, 
   if you recall, is the format of the user entry DNs we bootstrapped our server with;
 - only members of the `cn=managers,ou=groups,dc=solo,dc=io` group can access the upstream.
 
@@ -359,7 +359,7 @@ returns
 * Connection #0 to host 192.168.99.100 left intact
 {{< /highlight >}}
 
-We can see that Gloo returned a `401` response.
+We can see that Gloo Edge returned a `401` response.
 
 ##### Unknown user
 Now let's try the unknown user, which will produce the same result:
@@ -389,7 +389,7 @@ returns
 {{< /highlight >}}
 
 ##### Developer user
-If we try to authenticate as a user that belongs to the "developers" group, Gloo will return a `403` response, 
+If we try to authenticate as a user that belongs to the "developers" group, Gloo Edge will return a `403` response, 
 indicating that the user was successfully authenticated, but lacks the permissions to access the resource.
 
 ```shell script
@@ -449,7 +449,7 @@ returns
 {{< /highlight >}}
 
 ### Summary 
-I this tutorial we have shown how Gloo can integrate with LDAP to authenticate incoming requests and authorize them based 
+I this tutorial we have shown how Gloo Edge can integrate with LDAP to authenticate incoming requests and authorize them based 
 on the group memberships of the user associated with the request credentials.
 
 To clean up the resources we created, you can run the following commands:

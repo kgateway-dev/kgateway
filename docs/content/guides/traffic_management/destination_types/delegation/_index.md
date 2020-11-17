@@ -6,11 +6,11 @@ description: Delegate ownership of configuration to Route Tables for a given dom
 ---
 
 
-The Gloo Virtual Service makes it possible to define all routes for a domain on a single configuration resource.
+The Gloo Edge Virtual Service makes it possible to define all routes for a domain on a single configuration resource.
 
 However, condensing all routing config onto a single object can be cumbersome when dealing with a large number of routes.
 
-Gloo provides a feature referred to as *delegation*. Delegation allows a complete routing configuration to be assembled from separate config objects. The root config object *delegates* responsibility to other objects, forming a tree of config objects. The tree always has a *Virtual Service* as its root, which delegates to any number of *Route Tables*. Route Tables can further delegate to other Route Tables.
+Gloo Edge provides a feature referred to as *delegation*. Delegation allows a complete routing configuration to be assembled from separate config objects. The root config object *delegates* responsibility to other objects, forming a tree of config objects. The tree always has a *Virtual Service* as its root, which delegates to any number of *Route Tables*. Route Tables can further delegate to other Route Tables.
 
 ## Motivation
 
@@ -81,7 +81,7 @@ graph LR;
 {{< /mermaid >}}
 
 
-Routes defined at any level *must* inherit the prefix delegated to them, else Gloo will not consider the config tree valid:
+Routes defined at any level *must* inherit the prefix delegated to them, else Gloo Edge will not consider the config tree valid:
 
 {{<mermaid align="left">}}
 graph LR;
@@ -99,7 +99,7 @@ graph LR;
     
 {{< /mermaid >}}
 
-Gloo will flatten the non-delegated routes defined in config tree down to a single {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}} object, such that:
+Gloo Edge will flatten the non-delegated routes defined in config tree down to a single {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}} object, such that:
 
 
 {{<mermaid align="left">}}
@@ -310,22 +310,22 @@ graph LR;
 By using a {{< protobuf name="gateway.solo.io.RouteTableSelector" display="RouteTableSelector" >}}, a route can delegate to multiple route tables. 
 You can specify three types of selection criteria (`labels` and `expressions` cannot be used together):
 
-1. `labels`: if present, Gloo will select route tables whose labels match the specified ones;
-1. `expressions`: if present, Gloo will select according to the expression (adhering to the same semantics as [kubernetes label selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement)).
+1. `labels`: if present, Gloo Edge will select route tables whose labels match the specified ones;
+1. `expressions`: if present, Gloo Edge will select according to the expression (adhering to the same semantics as [kubernetes label selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement)).
 An example config for this selection model follows [here](#route-table-selector-expression);
-1. `namespaces`: if present, Gloo will select route tables in these namespaces. If omitted, Gloo will only select route 
+1. `namespaces`: if present, Gloo Edge will select route tables in these namespaces. If omitted, Gloo Edge will only select route 
 tables in the same namespace as the resource (Virtual Service or Route Table) that owns this selector. The reserved 
-value `*` can be used to select Route Tables in all namespaces watched by Gloo.
+value `*` can be used to select Route Tables in all namespaces watched by Gloo Edge.
 
 
 {{% notice warning %}}
 If a `RouteTableSelector` matches multiple route tables and the route tables do not specify different `weights`, 
-Gloo will sort the routes which belong to those tables to avoid short-circuiting (e.g. having a route with a `/foo` 
+Gloo Edge will sort the routes which belong to those tables to avoid short-circuiting (e.g. having a route with a `/foo` 
 prefix matcher coming before a route with a `/foo/bar` one). The sorting occurs by descending specificity: 
 routes with longer paths will come first, and in case of equal paths, precedence will be given to the route that defines 
 the more restrictive matchers. The algorithm used for sorting the routes can be found 
 [here](https://github.com/solo-io/gloo/blob/v1.3.2/projects/gloo/pkg/utils/sort_routes.go#L23).
-In this scenario, Gloo will also alert the user by adding a warning to the status of the parent resource (the one that 
+In this scenario, Gloo Edge will also alert the user by adding a warning to the status of the parent resource (the one that 
 specifies the `RouteTableSelector`).
 
 Please see the [Route Table weight](#route-table-weight) section below for more information about how to control 
@@ -480,7 +480,7 @@ Note that candidate route tables must match **all** selector expressions (logica
 As you might have noticed, we specified a `weight` attribute on the above route tables. This attribute can be used 
 to determine the order in which the routes will appear on the final `Proxy` resource when multiple route tables match 
 a `RouteTableSelector`. The field is optional; if no value is specified, the `weight` defaults to 0 (zero). 
-Gloo will process the route tables matched by a selector in ascending order by weight and collect the routes of each 
+Gloo Edge will process the route tables matched by a selector in ascending order by weight and collect the routes of each 
 route table in the order they are defined. 
 
 In the above example, we want the `/a/b` route to come before the `/a` route, to avoid the latter one short-circuiting 
@@ -488,24 +488,24 @@ the former; hence, we set the weight of the `a-b-routes` table to `10` and the w
 As you can see in the diagram above, the resulting `Proxy` object defines the routes in the desired order.
 
 #### Matcher restrictions
-The Gloo route delegation model imposes some restrictions on the virtual service and parent route table's
+The Gloo Edge route delegation model imposes some restrictions on the virtual service and parent route table's
 matchers (i.e., any resource delegating routing config to another route table). Most notably, parent matchers must have
 only a single prefix matcher. Further, any parent matcher must have its own prefix start with the same prefix as _its_
 parent (if any).
 
-Further, in versions prior to **Gloo 1.5.0-beta21**, parent matchers cannot use header, query parameter, or method matchers.
-In more recent Gloo versions, parent matchers can now use those matchers so long as their child route tables have
-headers, query parameters, and methods that are a superset of those defined on the parent. In Gloo versions
-**Gloo 1.5.0-beta25** and higher, the `inheritableMatchers` boolean field was added to virtual services and route
+Further, in versions prior to **Gloo Edge 1.5.0-beta21**, parent matchers cannot use header, query parameter, or method matchers.
+In more recent Gloo Edge versions, parent matchers can now use those matchers so long as their child route tables have
+headers, query parameters, and methods that are a superset of those defined on the parent. In Gloo Edge versions
+**Gloo Edge 1.5.0-beta25** and higher, the `inheritableMatchers` boolean field was added to virtual services and route
 tables, which allows users to enable matcher inheritance for non-path matchers from parents (rather than requiring the
 whole subset enumerated on any chlidren).
 
-In all versions of Gloo, the leaf route table can use any kind of path matcher, so long as it begins with the same prefix
+In all versions of Gloo Edge, the leaf route table can use any kind of path matcher, so long as it begins with the same prefix
 as its parent.
 
 ## Learn more
 
-Explore Gloo's Routing API in the API documentation:
+Explore Gloo Edge's Routing API in the API documentation:
 
 - {{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Services">}}
 

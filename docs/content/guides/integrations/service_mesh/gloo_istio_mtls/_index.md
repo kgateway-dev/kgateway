@@ -1,9 +1,9 @@
 ---
-title: Gloo and Istio mTLS
+title: Gloo Edge and Istio mTLS
 weight: 3
 ---
 
-Serving as the Ingress for an Istio cluster -- without compromising on security -- means supporting mutual TLS (mTLS) communication between Gloo and the rest of the cluster. Mutual TLS means that the client proves its identity to the server (in addition to the server proving its identity to the client, which happens in regular TLS).
+Serving as the Ingress for an Istio cluster -- without compromising on security -- means supporting mutual TLS (mTLS) communication between Gloo Edge and the rest of the cluster. Mutual TLS means that the client proves its identity to the server (in addition to the server proving its identity to the client, which happens in regular TLS).
 
 ## Guide versions
 
@@ -11,13 +11,13 @@ Serving as the Ingress for an Istio cluster -- without compromising on security 
 
 This guide was tested with Istio 1.6.6 and 1.7. For older versions of Istio, see [here]({{% versioned_link_path fromRoot="/guides/integrations/service_mesh/gloo_istio_mtls/older_istio_versions/" %}}).
 
-### Gloo versions
+### Gloo Edge versions
 
-This guide was tested with Gloo v1.5.0-beta25.
+This guide was tested with Gloo Edge v1.5.0-beta25.
 
 {{% notice warning %}}
 
-The Gloo integration with Istio 1.6.x requires Gloo version 1.4.10, or 1.5.0-beta25 or higher.
+The Gloo Edge integration with Istio 1.6.x requires Gloo Edge version 1.4.10, or 1.5.0-beta25 or higher.
 
 {{% /notice %}}
 
@@ -51,7 +51,7 @@ Use `kubectl get pods -n istio-system` to check the status on the Istio pods and
 
 ## Step 2 - Install bookinfo
 
-Before configuring Gloo, you'll need to install the bookinfo sample app to be consistent with this guide, or you can use your preferred Upstream. Either way, you'll need to enable istio-injection in the default namespace:
+Before configuring Gloo Edge, you'll need to install the bookinfo sample app to be consistent with this guide, or you can use your preferred Upstream. Either way, you'll need to enable istio-injection in the default namespace:
 
 ```bash
 kubectl label namespace default istio-injection=enabled
@@ -64,9 +64,9 @@ kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
 
 ---
 
-## Step 3 - Configure Gloo
+## Step 3 - Configure Gloo Edge
 
-If necessary, install Gloo with either glooctl:
+If necessary, install Gloo Edge with either glooctl:
 ```
 glooctl install gateway
 ```
@@ -76,9 +76,9 @@ kubectl create ns gloo-system; helm install --namespace gloo-system --version 1.
 ```
 See the [quick start]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) guide for more information.
 
-Gloo is installed to the `gloo-system` namespace and should *not* be injected with the Istio sidecar. If you have automatic injection enabled for Istio, make sure the `istio-injection` label does *not* exist on the `gloo-system` namespace. See [the Istio docs on automatic sidecar injection](https://istio.io/docs/setup/kubernetes/additional-setup/sidecar-injection/#automatic-sidecar-injection) for more.
+Gloo Edge is installed to the `gloo-system` namespace and should *not* be injected with the Istio sidecar. If you have automatic injection enabled for Istio, make sure the `istio-injection` label does *not* exist on the `gloo-system` namespace. See [the Istio docs on automatic sidecar injection](https://istio.io/docs/setup/kubernetes/additional-setup/sidecar-injection/#automatic-sidecar-injection) for more.
 
-For Gloo to successfully send requests to an Istio Upstream with mTLS enabled, we need to add the Istio mTLS secret to the gateway-proxy pod. The secret allows Gloo to authenticate with the Upstream service. We will also add an SDS server container to the pod, to handle cert rotation when Istio updates its certs.
+For Gloo Edge to successfully send requests to an Istio Upstream with mTLS enabled, we need to add the Istio mTLS secret to the gateway-proxy pod. The secret allows Gloo Edge to authenticate with the Upstream service. We will also add an SDS server container to the pod, to handle cert rotation when Istio updates its certs.
 
 We can use `glooctl` to update our `gateway-proxy` deployment to handle Istio mTLS certs:
 ```bash
@@ -87,7 +87,7 @@ glooctl istio inject
 
 Under the hood, this will update the deployment to add the SDS server sidecar, as well as the istio-proxy to generate the mTLS certs. It will also update the `configMap` used by the `gateway-proxy` pod to bootstrap envoy, so that it has the SDS server listed in its `static_resources`.
 
-The last configuration step is to configure the relevant Gloo Upstreams with mTLS. We can be fine-grained about which Upstreams have these settings as not all Gloo Upstreams may need/want mTLS enabled. This gives us the flexibility to route to Upstreams both with and without mTLS enabled - a common occurrence in a brown-field environment or during a migration to Istio.
+The last configuration step is to configure the relevant Gloo Edge Upstreams with mTLS. We can be fine-grained about which Upstreams have these settings as not all Gloo Edge Upstreams may need/want mTLS enabled. This gives us the flexibility to route to Upstreams both with and without mTLS enabled - a common occurrence in a brown-field environment or during a migration to Istio.
 
 Edit the Upstream with this command:
 ```bash
@@ -128,7 +128,7 @@ EOF
 
 More details on configuring PeerAuthentication policies can be found [here](https://istio.io/latest/docs/tasks/security/authentication/authn-policy/).
 
-To test this out, we need a route in Gloo:
+To test this out, we need a route in Gloo Edge:
 ```bash
 glooctl add route --name prodpage --namespace gloo-system --path-prefix / --dest-name default-productpage-9080 --dest-namespace gloo-system
 ```

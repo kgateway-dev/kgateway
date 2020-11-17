@@ -1,10 +1,10 @@
 ---
 title: Open Policy Agent (OPA)
 weight: 80
-description: Define fine-grained policies to control Gloo configuration itself.
+description: Define fine-grained policies to control Gloo Edge configuration itself.
 ---
 
-In Kubernetes, Gloo stores its configuration as Custom Resource Definitions (CRDs). You can use normal Kubernetes Role Based Access Control (RBAC) to create a policy that grants users the ability to create a Gloo VirtualService. RBAC only allows administrators to grant permissions to entire objects. With the Open Policy Agent, one can specify very fine-grained control over Gloo objects. For example, with RBAC you can say, "user john@example.com is allowed to create virtual service" With OPA, in addition to specifying access,  you can say "virtual services must point to the domain example.com". 
+In Kubernetes, Gloo Edge stores its configuration as Custom Resource Definitions (CRDs). You can use normal Kubernetes Role Based Access Control (RBAC) to create a policy that grants users the ability to create a Gloo Edge VirtualService. RBAC only allows administrators to grant permissions to entire objects. With the Open Policy Agent, one can specify very fine-grained control over Gloo Edge objects. For example, with RBAC you can say, "user john@example.com is allowed to create virtual service" With OPA, in addition to specifying access,  you can say "virtual services must point to the domain example.com". 
 
 You can of-course combine both, as you see fit.
 
@@ -14,15 +14,15 @@ In this document we will show a simple OPA policy that dictates that all virtual
 
 ### Prerequisites
 
-Before you get started, you will need to have the Gloo Gateway running in a Kubernetes cluster. For more information, you can follow this [installation guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+Before you get started, you will need to have Gloo Edge running in a Kubernetes cluster. For more information, you can follow this [installation guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
 
 ### Setup
 
-First, setup OPA as a validating web hook. In this mode, OPA validates the Kubernetes objects before they are visible to the controllers that act on them (Gloo in our case).
+First, setup OPA as a validating web hook. In this mode, OPA validates the Kubernetes objects before they are visible to the controllers that act on them (Gloo Edge in our case).
 
 You can use the [setup.sh](setup.sh) script for that purpose.
 
-This script follows the docs outlined in [official OPA docs](https://www.openpolicyagent.org/docs/latest/kubernetes-admission-control/) with some small adaptations for the Gloo API.
+This script follows the docs outlined in [official OPA docs](https://www.openpolicyagent.org/docs/latest/kubernetes-admission-control/) with some small adaptations for the Gloo Edge API.
 
 {{% expand "Click to see the full setup.sh file that should be used for this project." %}}
 ```
@@ -161,7 +161,7 @@ For your convenience, here's the content of teardown.sh:
 
 ## Next Steps
 
-Now that you've see how to configure a basic policy with OPA, you can go further down the rabbit hole of policies, or check out some of the other security features in Gloo.
+Now that you've see how to configure a basic policy with OPA, you can go further down the rabbit hole of policies, or check out some of the other security features in Gloo Edge.
 
 * [**Web Application Firewall**]({{% versioned_link_path fromRoot="/guides/security/waf/" %}})
 * [**Data Loss Prevention**]({{% versioned_link_path fromRoot="/guides/security/data_loss_prevention/" %}})

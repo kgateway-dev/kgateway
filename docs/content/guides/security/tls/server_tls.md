@@ -1,16 +1,16 @@
 ---
 title: Setting up Server TLS
 weight: 10
-description: Set up Server-side TLS for Gloo
+description: Set up Server-side TLS for Gloo Edge
 ---
 
-Gloo can encrypt traffic coming from external clients over TLS/HTTPS. [We can also configure Gloo to do mTLS with external clients as well]({{% versioned_link_path fromRoot="/guides/security/tls/client_tls//" %}}). In this document, we'll explore configuring Gloo for server TLS.
+Gloo Edge can encrypt traffic coming from external clients over TLS/HTTPS. [We can also configure Gloo Edge to do mTLS with external clients as well]({{% versioned_link_path fromRoot="/guides/security/tls/client_tls//" %}}). In this document, we'll explore configuring Gloo Edge for server TLS.
 
 ---
 
 ## Server TLS
 
-Gloo supports server-side TLS where the server presents a certificate to the client based on the domain specified in the client request. This means we can support multiple virtual hosts on a single port and use Server Name Identification (SNI) to determine what certificate to serve depending what domain the client is requesting. In Gloo, we associate our TLS configuration with a specific Virtual Service which can then describe which SNI hosts would be candidates for both the TLS certificates as well as the routing rules that are defined in the Virtual Service. Let's look at setting up TLS.
+Gloo Edge supports server-side TLS where the server presents a certificate to the client based on the domain specified in the client request. This means we can support multiple virtual hosts on a single port and use Server Name Identification (SNI) to determine what certificate to serve depending what domain the client is requesting. In Gloo Edge, we associate our TLS configuration with a specific Virtual Service which can then describe which SNI hosts would be candidates for both the TLS certificates as well as the routing rules that are defined in the Virtual Service. Let's look at setting up TLS.
 
 ### Prepare sample environment
 
@@ -22,7 +22,7 @@ To start, let's make sure the `petstore` application is deployed:
 kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
-If we query the Gloo Upstreams we should see it:
+If we query the Gloo Edge Upstreams we should see it:
 
 ```bash
 glooctl get upstream default-petstore-8080
@@ -189,16 +189,16 @@ curl -k $(glooctl proxy url --port https)/sample-route-1
 
 ## Configuring downstream mTLS in a Virtual Service
 
-Gloo can be configured to verify downstream client certificates. As seen in the example above, you can reference a Kubernetes secret on your Virtual Service which allows Gloo to verify the Upstream. If this secret also contains a root CA, Gloo will use it to verify downstream client certificates.
+Gloo Edge can be configured to verify downstream client certificates. As seen in the example above, you can reference a Kubernetes secret on your Virtual Service which allows Gloo Edge to verify the Upstream. If this secret also contains a root CA, Gloo Edge will use it to verify downstream client certificates.
 
-We need to create a new set of self-signed certs to use in between the client and Gloo.
+We need to create a new set of self-signed certs to use in between the client and Gloo Edge.
 
 ```bash
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
    -keyout mtls.key -out mtls.crt -subj "/CN=gloo.gloo-system.com"
 ```
 
-Since they are self-signed, we can use mtls.crt as both our client cert and our root CA file for Gloo to verify the client.
+Since they are self-signed, we can use mtls.crt as both our client cert and our root CA file for Gloo Edge to verify the client.
 
 We will use `glooctl` to create the TLS `secret`, adding the `rootca` with an additional flag:
 
@@ -267,7 +267,7 @@ Since we used self-signed certs, `curl` cannot validate the certificate. In this
 curl -k $(glooctl proxy url --port https)/sample-route-1
 ```
 
-This will fail with Gloo refusing the client connection because the client has not provided any certs.
+This will fail with Gloo Edge refusing the client connection because the client has not provided any certs.
 
 ```
 curl: (35) error:1401E410:SSL routines:CONNECT_CR_FINISHED:sslv3 alert handshake failure
@@ -287,7 +287,7 @@ curl --cert mtls.crt --key mtls.key -k $(glooctl proxy url --port https)/sample-
 
 ## Serving certificates for multiple virtual hosts with SNI
 
-Let's say we had another Virtual Service that serves a different certificate for a different virtual host. Gloo allows you to serve multiple virtual hosts from a single HTTPS port and use [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication) to determine which certificate to present to which virtual host. In the previous example, we create a certificate for the `petstore.example.com` domain. Let's create a new self-signed certificate for a different domain, `animalstore.example.com` and see how Gloo can serve multiple virtual hosts on a single port/listener.
+Let's say we had another Virtual Service that serves a different certificate for a different virtual host. Gloo Edge allows you to serve multiple virtual hosts from a single HTTPS port and use [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication) to determine which certificate to present to which virtual host. In the previous example, we create a certificate for the `petstore.example.com` domain. Let's create a new self-signed certificate for a different domain, `animalstore.example.com` and see how Gloo Edge can serve multiple virtual hosts on a single port/listener.
 
 First we'll create the self-signed certificate for the domain `animalstore.example.com`.
 
@@ -401,9 +401,9 @@ curl -k --resolve animalstore.example.com:443:$(kubectl get svc -n gloo-system g
 
 ### Understanding how it all works
 
-By default, when a Virtual Service does NOT have any SSL/TLS configuration, it will be attached to the HTTP listener that we have for Gloo proxy (listening on port `8080` by default, but exposed in Kubernetes on port `80` in the `gateway-proxy` service). When we add the SSL/TLS configuration, that Virtual Service will automatically become bound to the HTTPS port (listening on port `8443` on the gateway-proxy, but mapped to port `443` on the Kubernetes service). 
+By default, when a Virtual Service does NOT have any SSL/TLS configuration, it will be attached to the HTTP listener that we have for Gloo Edge proxy (listening on port `8080` by default, but exposed in Kubernetes on port `80` in the `gateway-proxy` service). When we add the SSL/TLS configuration, that Virtual Service will automatically become bound to the HTTPS port (listening on port `8443` on the gateway-proxy, but mapped to port `443` on the Kubernetes service). 
 
-To verify that, let's take a look at the Gloo `Proxy` object. The Gloo `Proxy` object is the lowest-level domain object that reflects the configuration Gloo sends to Envoy. All of the other higher-level objects (like `Gateway` and `VirtualService`) drive the configuration of the `Proxy` object. 
+To verify that, let's take a look at the Gloo Edge `Proxy` object. The Gloo Edge `Proxy` object is the lowest-level domain object that reflects the configuration Gloo Edge sends to Envoy. All of the other higher-level objects (like `Gateway` and `VirtualService`) drive the configuration of the `Proxy` object. 
 
 ```bash
 kubectl get proxy -n gloo-system gateway-proxy -oyaml
@@ -506,8 +506,8 @@ status:
 
 ## Next Steps
 
-As we mentioned earlier, you can configure Gloo to perform mutual TLS (mTLS) and client side TLS with Upstreams. Check out these guides to learn more:
+As we mentioned earlier, you can configure Gloo Edge to perform mutual TLS (mTLS) and client side TLS with Upstreams. Check out these guides to learn more:
 
 * **[Setting up Upstream TLS]({{% versioned_link_path fromRoot="/guides/security/tls/client_tls//" %}})**
 * **[Setting up Upstream TLS with Service Annotations]({{% versioned_link_path fromRoot="/guides/security/tls/client_tls_service_annotations//" %}})**
-* **[Gloo mTLS mode]({{% versioned_link_path fromRoot="/guides/security/tls/mtls/" %}})**
+* **[Gloo Edge mTLS mode]({{% versioned_link_path fromRoot="/guides/security/tls/mtls/" %}})**

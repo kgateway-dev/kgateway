@@ -35,7 +35,7 @@ spec:
 {{< /tab >}}
 {{< /tabs >}}
 
-Let's test that the configuration was correctly picked up by Gloo by executing the following command:
+Let's test that the configuration was correctly picked up by Gloo Edge by executing the following command:
 
 ```shell
 curl $(glooctl proxy url)/get | jq
@@ -60,7 +60,7 @@ You should get a response with status `200` and a JSON body similar to this:
 ```
 
 #### Update Virtual Service
-As you can see from the response above, the upstream service returns the request headers as part of the JSON payload. We will now configure Gloo to extract the values of the `foo` and `bar` query parameters and use them to create two new headers named - you guessed it - `foo` and `bar`.
+As you can see from the response above, the upstream service returns the request headers as part of the JSON payload. We will now configure Gloo Edge to extract the values of the `foo` and `bar` query parameters and use them to create two new headers named - you guessed it - `foo` and `bar`.
 
 To implement this behavior, we need to add the following to our Virtual Service definition:
 

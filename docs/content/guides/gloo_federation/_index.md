@@ -1,9 +1,9 @@
 ---
-title: Gloo Federation
-description: Gloo Federation documentation
+title: Gloo Edge Federation
+description: Gloo Edge Federation documentation
 weight: 55
 ---
 
-Gloo Federation allows users to manage the configuration for all of their Gloo instances from one place, no matter what platform they run on. The following sections describe how to use Gloo Federation.
+Gloo Edge Federation allows users to manage the configuration for all of their Gloo Edge instances from one place, no matter what platform they run on. The following sections describe how to use Gloo Edge Federation.
 
 {{% children description="true" %}}

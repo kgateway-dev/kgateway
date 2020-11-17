@@ -3,26 +3,26 @@ title: Traffic Management
 weight: 20
 ---
 
-Gloo acts as the control plane to manage traffic flowing between downstream clients and upstream services. Traffic management can take many forms as a request flows through the Envoy proxies managed by Gloo. Requests from clients can be transformed, redirected, routed, and shadowed, to cite just a few examples.
+Gloo Edge acts as the control plane to manage traffic flowing between downstream clients and upstream services. Traffic management can take many forms as a request flows through the Envoy proxies managed by Gloo Edge. Requests from clients can be transformed, redirected, routed, and shadowed, to cite just a few examples.
 
 ---
 
 ## Fundamentals
 
-The primary components that deal with traffic management in Gloo are as follows:
+The primary components that deal with traffic management in Gloo Edge are as follows:
 
-* **Gateways** - Gloo listens for incoming traffic on *Gateways*. The Gateway definition includes the protocols and ports on which Gloo listens for traffic.
-* **Virtual Services** - *Virtual Services* are bound to a Gateway and configured to respond for specific domains. Each contains a set of route rules, security configuration, rate limiting, transformations, and other core routing capabilities supported by Gloo.
+* **Gateways** - Gloo Edge listens for incoming traffic on *Gateways*. The Gateway definition includes the protocols and ports on which Gloo Edge listens for traffic.
+* **Virtual Services** - *Virtual Services* are bound to a Gateway and configured to respond for specific domains. Each contains a set of route rules, security configuration, rate limiting, transformations, and other core routing capabilities supported by Gloo Edge.
 * **Routes** - Routes are associated with Virtual Services and direct traffic based on characteristics of the request and the upstream destination.
 * **Upstreams** - Routes send traffic to destinations, called *Upstreams*. Upstreams take many forms, including Kubernetes services, AWS Lambda functions, or Consul services.
 
-Additional information can be found in the [Gloo Core Concepts document]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}}).
+Additional information can be found in the [Gloo Edge Core Concepts document]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}}).
 
 ---
 
 ## Listener configuration
 
-The Gateway component of Gloo is what listens for incoming requests. An example configuration is shown below for an SSL Gateway. The `spec` portion defines the options for the Gateway.
+The Gateway component of Gloo Edge is what listens for incoming requests. An example configuration is shown below for an SSL Gateway. The `spec` portion defines the options for the Gateway.
 
 {{< highlight proto "hl_lines=8-15" >}}
 apiVersion: gateway.solo.io/v1
@@ -46,9 +46,9 @@ A full listing of configuration options is available in the {{< protobuf name="g
 
 The listeners on a gateway typically listen for HTTP requests coming in on a specific address and port as defined by `bindAddress` and `bindPort`. Additional options can be configured by including an `options` section in the spec. SSL for a gateway is enabled by setting the `ssl` property to `true`.
 
-Gloo Gateway can be configured to act as a gateway on layer 7 (HTTP/S) or layer 4 (TCP). The majority of services will likely be using HTTP, but there may be some cases where applications either do not use HTTP or should be presented as a TCP endpoint. When Gloo operates as a TCP Proxy, the options for traffic management are greatly reduced. Gloo currently supports standard routing, SSL, and Server Name Indication (SNI) domain matching. Applications not using HTTP can be configured using the [TCP Proxy guide]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/tcp_proxy/" %}}).
+Gloo Edge can be configured to act as a gateway on layer 7 (HTTP/S) or layer 4 (TCP). The majority of services will likely be using HTTP, but there may be some cases where applications either do not use HTTP or should be presented as a TCP endpoint. When Gloo Edge operates as a TCP Proxy, the options for traffic management are greatly reduced. Gloo Edge currently supports standard routing, SSL, and Server Name Indication (SNI) domain matching. Applications not using HTTP can be configured using the [TCP Proxy guide]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/tcp_proxy/" %}}).
 
-Gloo Gateway is meant to serve as an abstraction layer, simplifying the configuration of the underlying Envoy proxy and adding new functionality. The advanced options on Envoy are not exposed by default, but they can be accessed by adding an `httpGateway` section to your listener configuration. 
+Gloo Edge is meant to serve as an abstraction layer, simplifying the configuration of the underlying Envoy proxy and adding new functionality. The advanced options on Envoy are not exposed by default, but they can be accessed by adding an `httpGateway` section to your listener configuration. 
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -108,17 +108,17 @@ More information on each type of matcher is available in the following guides.
 
 ### Destination types
 
-Once an incoming request has been matched by a route rule, the traffic can either be sent to a destination or processed locally. The most common destination for a route is a single Gloo Upstream. It’s also possible to route to multiple Upstreams, by either specifying multiple destinations, or by configuring an Upstream Group. Finally, it’s possible to route directly to Kubernetes or Consul services, without needing to use Gloo Upstreams or discovery.
+Once an incoming request has been matched by a route rule, the traffic can either be sent to a destination or processed locally. The most common destination for a route is a single Gloo Edge Upstream. It’s also possible to route to multiple Upstreams, by either specifying multiple destinations, or by configuring an Upstream Group. Finally, it’s possible to route directly to Kubernetes or Consul services, without needing to use Gloo Edge Upstreams or discovery.
 
 #### Single Upstreams
 
-Upstreams can be added manually, creating what are called [Static Upstreams]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/static_upstream//" %}}). Gloo also has a discovery service that can monitor Kubernetes or Consul and [automatically add new services]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/discovered_upstream/" %}}) as they are discovered. When routing to an Upstream, you can take advantage of Gloo’s endpoint discovery system, and configure routes to specific functions, either on a REST or gRPC service, or on a cloud function.
+Upstreams can be added manually, creating what are called [Static Upstreams]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/static_upstream//" %}}). Gloo Edge also has a discovery service that can monitor Kubernetes or Consul and [automatically add new services]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/discovered_upstream/" %}}) as they are discovered. When routing to an Upstream, you can take advantage of Gloo Edge’s endpoint discovery system, and configure routes to specific functions, either on a REST or gRPC service, or on a cloud function.
 
 #### Multiple Upstreams
 
 There may be times you want to specify multiple Upstreams for a given route. Perhaps you are performing Blue/Green testing, and want to send a certain percentage of traffic to an alternate version of a service. You can specify [multiple Upstream destinations]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/multi_destination/" %}}) in your route, [create an Upstream Group]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/upstream_groups//" %}}) for your route, or send traffic to a [subset of pods in Kubernetes]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/upstream_groups//" %}}).
 
-Gloo can also use Upstream Groups to perform a [canary release]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/canary/" %}}), by slowly and iteratively introducing a new destination for a percentage of the traffic on a Virtual Service. Gloo can be used with [Flagger](https://docs.flagger.app/tutorials/gloo-progressive-delivery) to automatically change the percentages in an Upstream Group as part of a canary release.
+Gloo Edge can also use Upstream Groups to perform a [canary release]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/canary/" %}}), by slowly and iteratively introducing a new destination for a percentage of the traffic on a Virtual Service. Gloo Edge can be used with [Flagger](https://docs.flagger.app/tutorials/gloo-progressive-delivery) to automatically change the percentages in an Upstream Group as part of a canary release.
 
 In addition to static and discovered Upstreams, the following Upstreams can be created to map directly a specialty construct:
 
@@ -138,7 +138,7 @@ In a route delegation, a prefix of the main Virtual Service can be delegated to 
 
 ### Request processing
 
-One of the core features of any API Gateway is the ability to transform the traffic that it manages. To really enable the decoupling of your services, the API Gateway should be able to mutate requests before forwarding them to your Upstream services and do the same with the resulting responses before they reach the downstream clients. Gloo delivers on this promise by providing you with a powerful transformation API.
+One of the core features of any API Gateway is the ability to transform the traffic that it manages. To really enable the decoupling of your services, the API Gateway should be able to mutate requests before forwarding them to your Upstream services and do the same with the resulting responses before they reach the downstream clients. Gloo Edge delivers on this promise by providing you with a powerful transformation API.
 
 #### Transformations
 
@@ -146,15 +146,15 @@ Transformations can be applied to *VirtualHosts*, *Routes*, and *WeightedDestina
 
 #### Direct response and redirects
 
-Not all requests should be sent to an Upstream destination. In some cases, the request should be redirected either to another site ([Host Redirect]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/redirect_action/" %}})) or to another Virtual Service in Gloo. You may also wish to redirect clients requesting the HTTP version of a service to the [HTTPS version instead]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/https_redirect/" %}}). Other requests should have a [direct response]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/direct_response_action/" %}}) from the Virtual Service, such as a 404 not found.
+Not all requests should be sent to an Upstream destination. In some cases, the request should be redirected either to another site ([Host Redirect]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/redirect_action/" %}})) or to another Virtual Service in Gloo Edge. You may also wish to redirect clients requesting the HTTP version of a service to the [HTTPS version instead]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/https_redirect/" %}}). Other requests should have a [direct response]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/direct_response_action/" %}}) from the Virtual Service, such as a 404 not found.
 
 #### Faults
 
-Faults are a way to test the resilience of your services by injecting faults (errors and delays) into a percentage of your requests. Gloo can do this automatically by [following this guide]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/faults/" %}}).
+Faults are a way to test the resilience of your services by injecting faults (errors and delays) into a percentage of your requests. Gloo Edge can do this automatically by [following this guide]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/faults/" %}}).
 
 #### Timeouts and retries
 
-Gloo will attempt to send requests to the proper Upstream, but there may be times when that Upstream service is unable to handle additional requests. The `timeout` and `retry` portions of the `options` section for a route define how long to wait for a response from the Upstream service and what type of retry strategy should be used.
+Gloo Edge will attempt to send requests to the proper Upstream, but there may be times when that Upstream service is unable to handle additional requests. The `timeout` and `retry` portions of the `options` section for a route define how long to wait for a response from the Upstream service and what type of retry strategy should be used.
 
 ```yaml
       options:
@@ -175,7 +175,7 @@ You can control the rollout of changes using canary releases or blue-green deplo
 
 ## Configuration validation
 
-When configuring an API gateway or edge proxy, invalid configurations can quickly lead to bugs, service outages, and security vulnerabilities. Whenever Gloo configuration objects are updated, Gloo validates and processes the new configuration. This is achieved through a four-step process:
+When configuring an API gateway or edge proxy, invalid configurations can quickly lead to bugs, service outages, and security vulnerabilities. Whenever Gloo Edge configuration objects are updated, Gloo Edge validates and processes the new configuration. This is achieved through a four-step process:
 
 1. Admit or reject change with a Kubernetes Validating Webhook
 1. Process a batch of changes and report any errors
@@ -188,9 +188,9 @@ More detail on the validation process and its settings can be found in the [Conf
 
 ## Next Steps
 
-Now that you have an understanding of how Gloo handles traffic management we have a few suggested paths:
+Now that you have an understanding of how Gloo Edge handles traffic management we have a few suggested paths:
 
-* **[Security]({{% versioned_link_path fromRoot="/introduction/security/" %}})** - learn more about Gloo and its security features
-* **[Setup]({{% versioned_link_path fromRoot="/installation/" %}})** - Deploy your own instance of Gloo
+* **[Security]({{% versioned_link_path fromRoot="/introduction/security/" %}})** - learn more about Gloo Edge and its security features
+* **[Setup]({{% versioned_link_path fromRoot="/installation/" %}})** - Deploy your own instance of Gloo Edge
 * **[Traffic management guides]({{% versioned_link_path fromRoot="/guides/traffic_management/" %}})** - Try out the traffic management guides to learn more
 

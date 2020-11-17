@@ -1,16 +1,16 @@
 ---
 title: RateLimitConfigs (Enterprise)
-description: Powerful, reusable configuration for Gloo Enterprise's rate-limit service.
+description: Powerful, reusable configuration for Gloo Edge Enterprise's rate-limit service.
 weight: 20
 ---
 
 {{% notice note %}}
-Rate limit configuration via `RateLimitConfig` resources was introduced with **Gloo Enterprise**, release `v1.5.0-beta3`. 
+Rate limit configuration via `RateLimitConfig` resources was introduced with **Gloo Edge Enterprise**, release `v1.5.0-beta3`. 
 If you are using an earlier version, this feature will not be available.
 {{% /notice %}}
 
 As we saw in the [Envoy API guide]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/envoy/" %}}), 
-Gloo Enterprise exposes a fine-grained API that allows you to configure a vast number of rate limiting use cases.
+Gloo Edge Enterprise exposes a fine-grained API that allows you to configure a vast number of rate limiting use cases.
 The two main objects that make up the API are:
 1. the [`descriptors`]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/envoy//#descriptors" %}}), 
   which configure the rate limit server and are defined on the global `Settings` resource, and
@@ -31,10 +31,10 @@ Although powerful, this API has some drawbacks:
 To address these shortcomings, we introduced a new custom resource.
 
 ### RateLimitConfig resources
-Starting with Gloo Enterprise `v1.5.0-beta3` you can define you rate limits by creating `RateLimitConfig` resources. 
-A `RateLimitConfig` resource represents a self-contained rate limit policy; this means that Gloo will use the resource 
-to configure both the Envoy proxies and the Gloo Enterprise rate limit server they communicate with. 
-Gloo guarantees that rate limit rules defined on different `RateLimitConfig` resources are completely independent of each other.
+Starting with Gloo Edge Enterprise `v1.5.0-beta3` you can define you rate limits by creating `RateLimitConfig` resources. 
+A `RateLimitConfig` resource represents a self-contained rate limit policy; this means that Gloo Edge will use the resource 
+to configure both the Envoy proxies and the Gloo Edge Enterprise rate limit server they communicate with. 
+Gloo Edge guarantees that rate limit rules defined on different `RateLimitConfig` resources are completely independent of each other.
 
 Here is a simple example of a `RateLimitConfig` resource:
 
@@ -98,7 +98,7 @@ As mentioned earlier, all the examples that are listed in the [Envoy API guide](
 apply to `RateLimitConfig`s as well, so please be sure to check them out.
 
 #### Initial setup
-First, we need to install Gloo Enterprise (minimum version `1.5.0-beta3`). Please refer to the corresponding
+First, we need to install Gloo Edge Enterprise (minimum version `1.5.0-beta3`). Please refer to the corresponding
 [installation guide]({{< versioned_link_path fromRoot="/installation/enterprise" >}}) for details.
  
 Let's also deploy a simple application which returns "Hello World" when receiving HTTP requests:
@@ -266,7 +266,7 @@ Let's see what each of these resources represents:
   the counter will be increased. After the counter has been increased **4 times within a 1-minute time window**, successive 
   requests in the same time window will be rejected with a `429` response code;
 - `per-upstream-counter` defines a set of counters. Each counter tracks requests to a specific `cluster` (the Envoy 
-  equivalent of a Gloo `Upstream`). After an `Upstream` has received **3 requests within a 1-minute time window**, successive 
+  equivalent of a Gloo Edge `Upstream`). After an `Upstream` has received **3 requests within a 1-minute time window**, successive 
   requests to the same upstream in the same time window will be rejected with a `429` response code.
   
 Now let's apply these policies to our `VirtualService`:
@@ -314,7 +314,7 @@ the `VirtualHost`. This will cause requests to be rate-limited either when:
 - one of the two upstreams is hit more than **3 times within a minute**, or
 - the aggregate of both upstreams is hit more than **4 times within a minute**.
 
-You can verify that Gloo has been correctly configured by port-forwarding the rate limit server and requesting a 
+You can verify that Gloo Edge has been correctly configured by port-forwarding the rate limit server and requesting a 
 config dump. First run:
 
 ```shell script

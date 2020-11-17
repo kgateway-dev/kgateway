@@ -1,21 +1,21 @@
 ---
 title: AWS Lambda + EKS ServiceAccounts
 weight: 101
-description: Using EKS ServiceAccounts with Gloo for AWS Lambda
+description: Using EKS ServiceAccounts with Gloo Edge for AWS Lambda
 ---
 
-# How to use EKS ServiceAccounts to authenticate AWS Lambda requests with Gloo
+# How to use EKS ServiceAccounts to authenticate AWS Lambda requests with Gloo Edge
 
 Recently, AWS added the ability to associate Kubernetes ServiceAccounts with IAM roles.
 This [blog post](https://aws.amazon.com/blogs/opensource/introducing-fine-grained-iam-roles-service-accounts/) 
 explains the feature in more detail.
 
-Gloo Api Gateway now supports discovering, and authenticating AWS Lambdas in kubernetes using 
+Gloo Edge Api Gateway now supports discovering, and authenticating AWS Lambdas in kubernetes using 
 these projected ServiceAccounts
 
 ## Configuring EKS cluster to use IAM ServiceAccount roles
 
-The first step to enabling this IAM ServiceAccount roles with Gloo is creating/configuring an EKS
+The first step to enabling this IAM ServiceAccount roles with Gloo Edge is creating/configuring an EKS
 cluster to use this feature.
 
 A full tutorial can be found [in AWS' docs](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html).
@@ -40,16 +40,16 @@ The ARN will be of the form: `arn:aws:iam::123456789012:user/Development/product
 For more info on ARNs see: https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
 
 
-## Deploying Gloo
+## Deploying Gloo Edge
 
 As this feature is brand new, it is currently only available on a beta branch of gloo. The following 
-are the version requirements for closed source and open source Gloo.
+are the version requirements for closed source and open source Gloo Edge.
 
     Closed Source: v1.5.0-beta8
     
     Open Source: v1.5.0-beta22
 
-For the purpose of this tutorial we will be installing open source Gloo, but closed source Gloo 
+For the purpose of this tutorial we will be installing open source Gloo Edge, but closed source Gloo Edge 
 will work exactly the same, with slightly different helm values specified below.
 
 {{< tabs >}}
@@ -100,7 +100,7 @@ kubectl rollout status deployment -n gloo-system discovery
 
 ## Routing to our Lambda
 
-Now that Gloo is running with our credentials set up, we can go ahead and create our Gloo config to 
+Now that Gloo Edge is running with our credentials set up, we can go ahead and create our Gloo Edge config to 
 enable routing to our AWS Lambda
 
 First we need to create our Upstream.
@@ -117,7 +117,7 @@ spec:
 EOF
 ```
 
-Since FDS is enabled, Gloo will go ahead and discover all available lambdas using the ServicaAccount credentials. 
+Since FDS is enabled, Gloo Edge will go ahead and discover all available lambdas using the ServicaAccount credentials. 
 The lambda we will be using for the purposes of this demo will be called `uppercase`, and it is a very simple lambda
 which will uppercase any text in the request body.
 ```shell script

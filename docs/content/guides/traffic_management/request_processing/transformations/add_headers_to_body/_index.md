@@ -47,7 +47,7 @@ cat << EOF > data.json
 EOF
 ```
 
-Let's test that the configuration was correctly picked up by Gloo by executing the following command:
+Let's test that the configuration was correctly picked up by Gloo Edge by executing the following command:
 
 ```shell
 curl -H "Content-Type: application/json" $(glooctl proxy url)/post -d @data.json | jq
@@ -86,7 +86,7 @@ You should get a response with status `200` and a JSON body similar to this:
 ```
 
 ### Updating the response code
-As you can see from the response above, the upstream service echoes the JSON payload we included in our request inside the `data` response body attribute. We will now configure Gloo to add the values of two headers to the body:
+As you can see from the response above, the upstream service echoes the JSON payload we included in our request inside the `data` response body attribute. We will now configure Gloo Edge to add the values of two headers to the body:
 
 - the value of the `root` header will be added to a new `root` attribute at the top level of the JSON body,
 - the value of the `nested` header will be added to a new `nested` attribute inside the `payload` attribute.

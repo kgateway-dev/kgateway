@@ -1,12 +1,12 @@
 ---
 title: Tracing Setup
 weight: 4
-description: Configure Gloo for tracing
+description: Configure Gloo Edge for tracing
 ---
 
 ## Tracing
 
-Gloo makes it easy to implement tracing on your system through [Envoy's tracing capabilities](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html).
+Gloo Edge makes it easy to implement tracing on your system through [Envoy's tracing capabilities](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html).
 
 #### Usage
 
@@ -19,7 +19,7 @@ Gloo makes it easy to implement tracing on your system through [Envoy's tracing 
 
 #### Configuration
 
-There are two steps to make tracing available through Gloo:
+There are two steps to make tracing available through Gloo Edge:
 1. Specify a trace provider in the bootstrap config
 1. Enable tracing on the listener
 1. (Optional) Annotate routes with descriptors
@@ -65,7 +65,7 @@ gatewayProxies:
                       port_value: 1234
 {{< /highlight >}}
 
-When you install Gloo using these Helm values, Envoy will be configured with the tracing provider you specified.
+When you install Gloo Edge using these Helm values, Envoy will be configured with the tracing provider you specified.
 
 **Option 2: Set the trace provider by editing the config map:**
 
@@ -150,7 +150,7 @@ When the `gateway-proxy` pod restarts it should have the new trace provider conf
 
 ##### 2. Enable tracing on the listener
 
-After you have installed Gloo with a tracing provider, you can enable tracing on a listener-by-listener basis. Gloo exposes this feature through a listener plugin. Please see [the tracing listener plugin docs]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/http_connection_manager/#tracing" %}}) for details on how to enable tracing on a listener.
+After you have installed Gloo Edge with a tracing provider, you can enable tracing on a listener-by-listener basis. Gloo Edge exposes this feature through a listener plugin. Please see [the tracing listener plugin docs]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/http_connection_manager/#tracing" %}}) for details on how to enable tracing on a listener.
 
 ##### 3. (Optional) Annotate routes with descriptors
 

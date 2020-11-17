@@ -1,24 +1,24 @@
 ---
 title: Configuration format history
 weight: 100
-description: Overview of the external auth configuration formats supported by each GlooE version.
+description: Overview of the external auth configuration formats supported by each Gloo Edge Enterprise version.
 ---
 
-#### GlooE versions >=0.20.1
+#### Gloo Edge Enterprise versions >=0.20.1
 
-**Gloo Enterprise**, release [**0.20.1**]({{< versioned_link_path fromRoot="/reference/changelog/enterprise" >}}), simplified the
+**Gloo Edge Enterprise**, release [**0.20.1**]({{< versioned_link_path fromRoot="/reference/changelog/enterprise" >}}), simplified the
 external auth configuration format. You can now specify the `extauth` configuration directly on the `Options`/`Plugins`
-(Gloo 1.0+ vs Gloo 0.x respectively) attribute of the relevant resource:
+(Gloo Edge 1.0+ vs Gloo Edge 0.x respectively) attribute of the relevant resource:
 
 ```yaml
-options: # Pre Gloo 1.0, this was virtualHostPlugins, routePlugins, or weightedDestinationPlugins
+options: # Pre Gloo Edge 1.0, this was virtualHostPlugins, routePlugins, or weightedDestinationPlugins
   extauth:
     configRef:
       name: basic-auth
       namespace: gloo-system
 ```
 
-Compare this to the old format (not supported in Gloo 1.0+):
+Compare this to the old format (not supported in Gloo Edge 1.0+):
 
 ```yaml
 virtualHostPlugins:
@@ -33,13 +33,13 @@ virtualHostPlugins:
 For more information on the latest configuration format see the [main page]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/#auth-configuration-overview" >}}) 
 of the authentication section of the docs.
 
-#### GlooE versions >=0.19.0
+#### Gloo Edge Enterprise versions >=0.19.0
 
 {{% notice info %}}
-As of now, this configuration format is still supported by **Gloo Enterprise**.
+As of now, this configuration format is still supported by **Gloo Edge Enterprise**.
 {{% /notice %}}
 
-**Gloo Enterprise**, release [**0.19.0**]({{< versioned_link_path fromRoot="/reference/changelog/enterprise" >}}), introduced the possibility to 
+**Gloo Edge Enterprise**, release [**0.19.0**]({{< versioned_link_path fromRoot="/reference/changelog/enterprise" >}}), introduced the possibility to 
 configure authentication on **Routes** and **WeightedDestinations**. As part of this change, authentication configurations 
 have been promoted to top-level resources, i.e. they are stored in a dedicated `AuthConfig` resource. 
 **The new features require this new configuration format**.
@@ -121,13 +121,13 @@ spec:
             namespace: gloo-system
 {{< /highlight >}}
 
-#### GlooE versions >=0.18.21
+#### Gloo Edge Enterprise versions >=0.18.21
 
 {{% notice info %}}
-As of now, this configuration format is still supported by **Gloo Enterprise**.
+As of now, this configuration format is still supported by **Gloo Edge Enterprise**.
 {{% /notice %}}
 
-**Gloo Enterprise**, release [**0.18.21**]({{< versioned_link_path fromRoot="/reference/changelog/enterprise" >}}), introduced a change in the 
+**Gloo Edge Enterprise**, release [**0.18.21**]({{< versioned_link_path fromRoot="/reference/changelog/enterprise" >}}), introduced a change in the 
 authentication configuration format. It turned the `extauth` attribute from being an object into an array. This allows us 
 to define multiple configuration steps that are executed in the order in which they are specified. If any one of these 
 steps fails, the request will be denied without executing any subsequent steps. Authentication can still be configured 
@@ -167,13 +167,13 @@ spec:
                       hashedPassword: "8BvzLUO9IfGPGGsPnAgSu1"
 {{< /highlight >}}
 
-#### GlooE versions <0.18.21
+#### Gloo Edge Enterprise versions <0.18.21
 
 {{% notice info %}}
-As of now, this configuration format is still supported by **Gloo Enterprise**.
+As of now, this configuration format is still supported by **Gloo Edge Enterprise**.
 {{% /notice %}}
 
-This is the original configuration format that was first introduced in the early days of **Gloo Enterprise** 
+This is the original configuration format that was first introduced in the early days of **Gloo Edge Enterprise** 
 (it was originally released with version **v0.0.10**). This configuration format supports authentication only on **Virtual Hosts**. 
 The configuration has to be specified directly on the Virtual Service CRD:
 

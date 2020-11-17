@@ -120,13 +120,13 @@ var _ = Describe("Install", func() {
 	It("should error when not overriding helm chart in dev mode", func() {
 		_, err := testutils.GlooctlOut("install ingress --dry-run")
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("installing gloo in ingress mode: you must provide a Gloo Helm chart URI via the 'file' option when running an unreleased version of glooctl"))
+		Expect(err.Error()).To(ContainSubstring("installing gloo edge in ingress mode: you must provide a Gloo Helm chart URI via the 'file' option when running an unreleased version of glooctl"))
 	})
 
 	It("should error when not providing file with valid extension", func() {
 		_, err := testutils.GlooctlOut("install gateway --file foo --dry-run")
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("installing gloo in gateway mode: unsupported file extension for Helm chart URI: [foo]. Extension must either be .tgz or .tar.gz"))
+		Expect(err.Error()).To(ContainSubstring("installing gloo edge in gateway mode: unsupported file extension for Helm chart URI: [foo]. Extension must either be .tgz or .tar.gz"))
 	})
 
 	It("should error when not providing valid file", func() {

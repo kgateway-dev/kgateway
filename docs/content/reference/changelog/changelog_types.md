@@ -10,7 +10,7 @@ You will find several different kinds of changelog entries:
 
 A notice about a dependency in the project that had its version bumped in this release. Be sure to check for any
 "**Breaking Change**" entries accompanying a dependency bump. For example, a `gloo`
-version bump in Gloo Enterprise may mean a change to a proto API.
+version bump in Gloo Edge Enterprise may mean a change to a proto API.
 
 - **Breaking Changes**
 

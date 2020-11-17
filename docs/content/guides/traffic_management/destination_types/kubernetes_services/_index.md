@@ -4,7 +4,7 @@ weight: 80
 description: Routing to services registered as Kubernetes Services through the API
 ---
 
-If you are running Gloo in a Kubernetes cluster, it is possible to directly specify 
+If you are running Gloo Edge in a Kubernetes cluster, it is possible to directly specify 
 [Kubernetes Services](https://kubernetes.io/docs/concepts/services-networking/service/) as routing destinations. 
 The `kube` destination type has two required fields:
 

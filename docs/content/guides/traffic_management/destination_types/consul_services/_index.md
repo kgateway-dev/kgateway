@@ -4,13 +4,13 @@ weight: 90
 description: Routing to services registered in Consul service-discovery
 ---
 
-Gloo's service discovery leverages existing registry or catalog implementations. A widely deployed service for registering and discovery services is [HashiCorp Consul](https://www.hashicorp.com/products/consul/). If your services already register into Consul, we can use Gloo to read the service catalog from Consul and discover these services automatically.
+Gloo Edge's service discovery leverages existing registry or catalog implementations. A widely deployed service for registering and discovery services is [HashiCorp Consul](https://www.hashicorp.com/products/consul/). If your services already register into Consul, we can use Gloo Edge to read the service catalog from Consul and discover these services automatically.
 
-When services registered into Consul require a bit more fine-grained grouping and routing, Gloo can do that too.
+When services registered into Consul require a bit more fine-grained grouping and routing, Gloo Edge can do that too.
 
-## Configuring Gloo to Discover from Consul
+## Configuring Gloo Edge to Discover from Consul
 
-Gloo can automatically discover [Upstreams]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#upstreams" %}}) from Consul. You can also explicitly create upstreams from Consul. 
+Gloo Edge can automatically discover [Upstreams]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#upstreams" %}}) from Consul. You can also explicitly create upstreams from Consul. 
 
 To enable automatic discovery of Consul services, update your {{< protobuf name="gloo.solo.io.Settings" >}} resource and add the `consul` section:
 
@@ -39,7 +39,7 @@ spec:
     ...
 {{< / highlight >}}
 
-If you have Discovery enabled, Gloo will automatically discover upstreams from the Consul cluster. After enabling this setting, go check your upstreams:
+If you have Discovery enabled, Gloo Edge will automatically discover upstreams from the Consul cluster. After enabling this setting, go check your upstreams:
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
 kubectl get upstream -n gloo-system
@@ -52,7 +52,7 @@ glooctl get upstreams
 
 ### Explicitly creating consul upstreams
 
-Even if you opt not to automatically discovery upstreams from Consul (ie, you disable Discovery), you can create them explicitly. You still need the Consul server settings in the `settings` configuration for Gloo.
+Even if you opt not to automatically discovery upstreams from Consul (ie, you disable Discovery), you can create them explicitly. You still need the Consul server settings in the `settings` configuration for Gloo Edge.
 
 
 {{< tabs >}}
@@ -139,7 +139,7 @@ spec:
             namespace: gloo-system
 {{< /highlight >}}
 
-Also, with using Upstreams instead of the consul-specific config, you can also leverage the fact that Gloo does [function discovery]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/#functions" %}}) (ie, REST or gRPC based on swagger or reflection respectively). 
+Also, with using Upstreams instead of the consul-specific config, you can also leverage the fact that Gloo Edge does [function discovery]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/#functions" %}}) (ie, REST or gRPC based on swagger or reflection respectively). 
 
 ### Subset based routing
 
@@ -148,13 +148,13 @@ If you have subsets within the Consul registry for a particular service, you can
 protobuf
 name="gloo.solo.io.ConsulServiceDestination"
 display="consul destination type"
->}} settings. This allows you to target a subset of these service instances via the optional `tags` and `dataCenters` fields. Gloo will detect the correspondent IP addresses and ports and load balance traffic between them. 
+>}} settings. This allows you to target a subset of these service instances via the optional `tags` and `dataCenters` fields. Gloo Edge will detect the correspondent IP addresses and ports and load balance traffic between them. 
 
 
-If the ports and data centers for all of the endpoints for a Consul service are the same, and you don't need to slice and dice them up into finer-grained subsets, you can just use [Upstreams]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/#upstreams" %}}) like you do with any other service to which to route. Also, with using Upstreams instead of the consul-specific config, you can also leverage the fact that Gloo does [function discovery]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/#functions" %}}) (ie, REST or gRPC based on swagger or reflection respectively).
+If the ports and data centers for all of the endpoints for a Consul service are the same, and you don't need to slice and dice them up into finer-grained subsets, you can just use [Upstreams]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/#upstreams" %}}) like you do with any other service to which to route. Also, with using Upstreams instead of the consul-specific config, you can also leverage the fact that Gloo Edge does [function discovery]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/#functions" %}}) (ie, REST or gRPC based on swagger or reflection respectively).
 
 {{% notice note %}}
-When providing the `tags` option, Gloo will only match service instances that **exactly** match the given tag set.
+When providing the `tags` option, Gloo Edge will only match service instances that **exactly** match the given tag set.
 {{% /notice %}}
 
 For example, the following configuration will forward all matching requests to the second and third service instances,
@@ -198,6 +198,6 @@ routes:
 {{< /highlight >}}
 
 {{% notice note %}}
-As is the case with [`Subsets`]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/subsets/" %}}), Gloo will fall back to forwarding the request to all available service 
+As is the case with [`Subsets`]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/subsets/" %}}), Gloo Edge will fall back to forwarding the request to all available service 
 instances if the given criteria do not match any subset of instances.
 {{% /notice %}}

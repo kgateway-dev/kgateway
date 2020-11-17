@@ -1,13 +1,13 @@
 ---
 title: Setting up Manual TLS
-description: Manually configure server TLS for Knative services using Gloo.
+description: Manually configure server TLS for Knative services using Gloo Edge.
 ---
 
-At the time of writing, Knative only exposes TLS through cert-manager, in a feature called Automatic TLS (https://knative.dev/development/serving/using-auto-tls/). Automatic TLS works the same with Gloo and can be enabled by following the linked tutorial.
+At the time of writing, Knative only exposes TLS through cert-manager, in a feature called Automatic TLS (https://knative.dev/development/serving/using-auto-tls/). Automatic TLS works the same with Gloo Edge and can be enabled by following the linked tutorial.
 
-This guide shows how to directly configure Gloo to serve a Knative service on port 443 using server TLS. In this model, you specify the name of a TLS-cert secret (and optional SNI domains) on the *annotations* that live on your knative service.
+This guide shows how to directly configure Gloo Edge to serve a Knative service on port 443 using server TLS. In this model, you specify the name of a TLS-cert secret (and optional SNI domains) on the *annotations* that live on your knative service.
 
-It assumes you've already followed the [installation guide for Gloo and Knative]({{% versioned_link_path fromRoot="/installation/knative" %}}). 
+It assumes you've already followed the [installation guide for Gloo Edge and Knative]({{% versioned_link_path fromRoot="/installation/knative" %}}). 
 
 ### Before you start
 
@@ -18,7 +18,7 @@ It assumes you've already followed the [installation guide for Gloo and Knative]
 
 ### Steps
 
-1. First, [ensure Knative is installed with Gloo]({{% versioned_link_path fromRoot="/installation/knative" %}}). 
+1. First, [ensure Knative is installed with Gloo Edge]({{% versioned_link_path fromRoot="/installation/knative" %}}). 
 
 1. Next, let's create a private key and certificate to use for serving traffic. If you have your own key/cert pair, you can use those instead of creating self-signed certs here.
 
@@ -82,9 +82,9 @@ spec:
      helloworld-go   http://helloworld-go.default.example.com
      ```
   
-     Gloo will use the `Host` header to route requests to the correct
+     Gloo Edge will use the `Host` header to route requests to the correct
      service. You can send a request to the `helloworld-go` service with curl
-     using the `Host` and URL of the Gloo Gateway from above:
+     using the `Host` and URL of the Gloo Edge gateway from above:
 
      {{% notice note %}}
    Note that if you are trying to run this guide on minikube, you will not have an external load balancer IP for the ingress, so you will instead need to use the nodePort, more details can be found in <a href="#testing-on-minikube">the minikube instructions below</a>.
