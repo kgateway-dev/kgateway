@@ -120,6 +120,11 @@ message HttpListenerOptions {
     // envoy.filters.http.grpc_json_transcoder.
     // For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/grpc_json_transcoder/v3/transcoder.proto
     grpc_json.options.gloo.solo.io.GrpcJsonTranscoder grpc_json_transcoder = 13;
+
+    // Enterprise-only: If using the HTTP header specified by cluster_header to direct traffic to a cluster,
+    // this option will sanitize that header from downstream traffic.
+    // Defaults to false
+    google.protobuf.BoolValue sanitize_cluster_header = 14;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners

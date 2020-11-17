@@ -59,6 +59,9 @@ func MarkPerFilterConfig(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route
 			out.TypedPerFilterConfig = make(map[string]*any.Any)
 		}
 		return configureSingleDest(dest.Single, out.GetTypedPerFilterConfig(), filterName, perFilterConfig)
+	// intentionally ignored because destination is not specified at runtime, so perFilterConfig is useless
+	case *v1.RouteAction_ClusterHeader:
+		return nil
 	}
 
 	err = errors.Errorf("unexpected destination type %v", reflect.TypeOf(inAction.Destination).Name())
