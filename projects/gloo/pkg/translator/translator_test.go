@@ -932,6 +932,57 @@ var _ = Describe("Translator", func() {
 
 	})
 
+	Context("when handling cluster_header HTTP header name", func() {
+		Context("with valid http header", func() {
+			BeforeEach(func() {
+				routes = []*v1.Route{{
+					Name:     "testRouteClusterHeader",
+					Matchers: []*matchers.Matcher{matcher},
+					Action: &v1.Route_RouteAction{
+						RouteAction: &v1.RouteAction{
+							Destination: &v1.RouteAction_ClusterHeader{
+								ClusterHeader: "test-cluster",
+							},
+						},
+					},
+				}}
+			})
+
+			It("should translate valid HTTP header name", func() {
+				translate()
+				route := routeConfiguration.VirtualHosts[0].Routes[0].GetRoute()
+				Expect(route).ToNot(BeNil())
+				cluster := route.GetClusterHeader()
+				Expect(cluster).ToNot(BeNil())
+				Expect(cluster).To(Equal("test-cluster"))
+			})
+		})
+
+		Context("with invalid http header", func() {
+			BeforeEach(func() {
+				routes = []*v1.Route{{
+					Name:     "testRouteClusterHeader",
+					Matchers: []*matchers.Matcher{matcher},
+					Action: &v1.Route_RouteAction{
+						RouteAction: &v1.RouteAction{
+							Destination: &v1.RouteAction_ClusterHeader{
+								ClusterHeader: "invalid:-cluster",
+							},
+						},
+					},
+				}}
+			})
+
+			It("should warn about invalid http header name", func() {
+				_, _, report, _ := translator.Translate(params, proxy)
+				routeReportWarning := report.GetListenerReports()[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0].GetWarnings()[0]
+				reason := routeReportWarning.GetReason()
+				Expect(reason).To(Equal("invalid:-cluster is an invalid HTTP header name"))
+			})
+		})
+
+	})
+
 	Context("when handling upstream groups", func() {
 
 		var (
