@@ -2,8 +2,7 @@ package tracing
 
 import (
 	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
-	"github.com/gogo/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
+	"github.com/golang/protobuf/ptypes"
 	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -113,7 +112,7 @@ var _ = Describe("Plugin", func() {
 			Expect(cfg.Tracing.Provider).To(BeNil())
 		})
 
-		FIt("when provider config references invalid upstream", func() {
+		It("when provider config references invalid upstream", func() {
 			pluginParams := plugins.Params{
 				Snapshot: &v1.ApiSnapshot{
 					Upstreams: v1.UpstreamList{
@@ -139,7 +138,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(BeNil())
 		})
 
-		FIt("when provider config references valid upstream", func() {
+		It("when provider config references valid upstream", func() {
 			us := v1.NewUpstream("default", "valid")
 			pluginParams := plugins.Params{
 				Snapshot: &v1.ApiSnapshot{
@@ -158,6 +157,8 @@ var _ = Describe("Plugin", func() {
 							},
 							CollectorEndpoint:        "/api/v2/spans",
 							CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
+							SharedSpanContext: nil,
+							TraceId_128Bit: false,
 						},
 					},
 				},
@@ -166,25 +167,23 @@ var _ = Describe("Plugin", func() {
 			Expect(err).To(BeNil())
 
 			expectedZipkinConfig := &envoytrace.ZipkinConfig{
-				CollectorCluster:         "default-valid",
+				CollectorCluster:         "valid_default",
 				CollectorEndpoint:        "/api/v2/spans",
 				CollectorEndpointVersion: envoytrace.ZipkinConfig_HTTP_JSON,
+				SharedSpanContext: nil,
+				TraceId_128Bit: false,
 			}
-			expectedZipkinConfigMarshalled, _ := proto.Marshal(expectedZipkinConfig)
+			expectedZipkinConfigMarshalled, _ := ptypes.MarshalAny(expectedZipkinConfig)
 
 			expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
 				Name: "envoy.tracers.zipkin",
 				ConfigType: &envoytrace.Tracing_Http_TypedConfig{
-					TypedConfig: &any.Any{
-						TypeUrl: "type.googleapis.com/envoy.config.trace.v3.ZipkinConfig",
-						Value:   expectedZipkinConfigMarshalled,
-					},
+					TypedConfig: expectedZipkinConfigMarshalled,
 				},
 			}
+
 			Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
-			Expect(cfg.Tracing.Provider.GetTypedConfig().GetTypeUrl()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig().GetTypeUrl()))
-			// TODO (sam) - Fix this
-			// Expect(expectedEnvoyTracingProvider.GetTypedConfig().GetValue()).To(Equal(envoyTracingProvider.GetTypedConfig().GetValue()))
+			Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
 		})
 
 	})

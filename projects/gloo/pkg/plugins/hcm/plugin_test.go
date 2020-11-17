@@ -1,6 +1,10 @@
 package hcm_test
 
 import (
+	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/solo-io/gloo/pkg/utils"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	"time"
 
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
@@ -31,6 +35,11 @@ import (
 var _ = Describe("Plugin", func() {
 	It("copy all settings to hcm filter", func() {
 		pd := func(t time.Duration) *time.Duration { return &t }
+		collectorUs := v1.NewUpstream("default", "valid")
+		snapshot := &v1.ApiSnapshot{
+			Upstreams: v1.UpstreamList{collectorUs},
+		}
+
 		hcms := &hcm.HttpConnectionManagerSettings{
 			UseRemoteAddress:    &types.BoolValue{Value: false},
 			XffNumTrustedHops:   5,
@@ -53,7 +62,15 @@ var _ = Describe("Plugin", func() {
 			Tracing: &tracingv1.ListenerTracingSettings{
 				RequestHeadersForTags: []string{"path", "origin"},
 				Verbose:               true,
-				ProviderConfig:        nil,
+				ProviderConfig:        &tracingv1.ListenerTracingSettings_ZipkinConfig{
+					ZipkinConfig: &v3.ZipkinConfig{
+						CollectorUpstreamRef: utils.ResourceRefPtr(collectorUs.Metadata.Ref()),
+						CollectorEndpointVersion: v3.ZipkinConfig_HTTP_JSON,
+						CollectorEndpoint: "/api/v2/spans",
+						SharedSpanContext: nil,
+						TraceId_128Bit: false,
+					},
+				},
 			},
 
 			ForwardClientCertDetails: hcm.HttpConnectionManagerSettings_APPEND_FORWARD,
@@ -104,7 +121,7 @@ var _ = Describe("Plugin", func() {
 		p := NewPlugin()
 		pluginsList := []plugins.Plugin{tracing.NewPlugin(), p}
 		p.RegisterHcmPlugins(pluginsList)
-		err := p.ProcessListener(plugins.Params{}, in, outl)
+		err := p.ProcessListener(plugins.Params{Snapshot: snapshot}, in, outl)
 		Expect(err).NotTo(HaveOccurred())
 
 		var cfg envoyhttp.HttpConnectionManager
@@ -162,7 +179,25 @@ var _ = Describe("Plugin", func() {
 		Expect(trace.ClientSampling.Value).To(Equal(100.0))
 		Expect(trace.RandomSampling.Value).To(Equal(100.0))
 		Expect(trace.OverallSampling.Value).To(Equal(100.0))
-		Expect(trace.Provider).To(BeNil())
+
+		// Tracing Provider
+		expectedZipkinConfig := &envoytrace.ZipkinConfig{
+			CollectorCluster:         "valid_default",
+			CollectorEndpoint:        "/api/v2/spans",
+			CollectorEndpointVersion: envoytrace.ZipkinConfig_HTTP_JSON,
+			SharedSpanContext: nil,
+			TraceId_128Bit: false,
+		}
+		expectedZipkinConfigMarshalled, _ := ptypes.MarshalAny(expectedZipkinConfig)
+
+		expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
+			Name: "envoy.tracers.zipkin",
+			ConfigType: &envoytrace.Tracing_Http_TypedConfig{
+				TypedConfig: expectedZipkinConfigMarshalled,
+			},
+		}
+		Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
+		Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
 
 		Expect(len(cfg.UpgradeConfigs)).To(Equal(1))
 		Expect(cfg.UpgradeConfigs[0].UpgradeType).To(Equal("websocket"))
