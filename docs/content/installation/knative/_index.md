@@ -22,7 +22,9 @@ These directions assume you've prepared your Kubernetes cluster appropriately. F
 
 ### Installing on Kubernetes with `glooctl`
 
-Using `glooctl` will install Knative Serving components to the `knative-serving` namespace if it does not already exist in your cluster and install Gloo Edge's Knative Ingress. The Knative installation is a modified version of the Knative Serving manifest with the dependencies on Istio removed.
+Using `glooctl` will install Knative Serving components to the `knative-serving` namespace if it does not already exist in your cluster and install Gloo Edge's Knative Ingress. The Knative installation is a modified version of the Knative Serving manifest with the dependencies on Istio removed. 
+
+If you will be installing Gloo Edge Knative Ingress on a cluster that already has the Knative Serving components deployed, you can use the flag `--install-knative=false` to skip the Knative installation. More details can be found in the [Knative installation guide](https://knative.dev/docs/install/any-kubernetes-cluster/).
 
 Once your Kubernetes cluster is up and running, run the following command to deploy the Gloo Edge Ingress to the `gloo-system` namespace and Knative-Serving components to the `knative-serving` namespace:
 
