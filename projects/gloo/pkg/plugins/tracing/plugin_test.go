@@ -110,7 +110,7 @@ var _ = Describe("Plugin", func() {
 			Expect(envoyTracingProvider).To(BeNil())
 		})
 
-		It("when provider config references invalid upstream", func() {
+		FIt("when provider config references invalid upstream", func() {
 			pluginParams := plugins.Params{
 				Snapshot: &v1.ApiSnapshot{
 					Upstreams: v1.UpstreamList{
@@ -133,7 +133,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(BeNil())
 		})
 
-		It("when provider config references valid upstream", func() {
+		FIt("when provider config references valid upstream", func() {
 			us := v1.NewUpstream("default", "valid")
 			pluginParams := plugins.Params{
 				Snapshot: &v1.ApiSnapshot{
