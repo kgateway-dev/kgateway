@@ -1,11 +1,12 @@
 package hcm_test
 
 import (
+	"time"
+
 	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/gloo/pkg/utils"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
-	"time"
 
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 
@@ -62,13 +63,13 @@ var _ = Describe("Plugin", func() {
 			Tracing: &tracingv1.ListenerTracingSettings{
 				RequestHeadersForTags: []string{"path", "origin"},
 				Verbose:               true,
-				ProviderConfig:        &tracingv1.ListenerTracingSettings_ZipkinConfig{
+				ProviderConfig: &tracingv1.ListenerTracingSettings_ZipkinConfig{
 					ZipkinConfig: &v3.ZipkinConfig{
-						CollectorUpstreamRef: utils.ResourceRefPtr(collectorUs.Metadata.Ref()),
+						CollectorUpstreamRef:     utils.ResourceRefPtr(collectorUs.Metadata.Ref()),
 						CollectorEndpointVersion: v3.ZipkinConfig_HTTP_JSON,
-						CollectorEndpoint: "/api/v2/spans",
-						SharedSpanContext: nil,
-						TraceId_128Bit: false,
+						CollectorEndpoint:        "/api/v2/spans",
+						SharedSpanContext:        nil,
+						TraceId_128Bit:           false,
 					},
 				},
 			},
@@ -185,8 +186,8 @@ var _ = Describe("Plugin", func() {
 			CollectorCluster:         "valid_default",
 			CollectorEndpoint:        "/api/v2/spans",
 			CollectorEndpointVersion: envoytrace.ZipkinConfig_HTTP_JSON,
-			SharedSpanContext: nil,
-			TraceId_128Bit: false,
+			SharedSpanContext:        nil,
+			TraceId_128Bit:           false,
 		}
 		expectedZipkinConfigMarshalled, _ := ptypes.MarshalAny(expectedZipkinConfig)
 

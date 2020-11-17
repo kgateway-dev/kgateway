@@ -157,8 +157,8 @@ var _ = Describe("Plugin", func() {
 							},
 							CollectorEndpoint:        "/api/v2/spans",
 							CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
-							SharedSpanContext: nil,
-							TraceId_128Bit: false,
+							SharedSpanContext:        nil,
+							TraceId_128Bit:           false,
 						},
 					},
 				},
@@ -170,8 +170,8 @@ var _ = Describe("Plugin", func() {
 				CollectorCluster:         "valid_default",
 				CollectorEndpoint:        "/api/v2/spans",
 				CollectorEndpointVersion: envoytrace.ZipkinConfig_HTTP_JSON,
-				SharedSpanContext: nil,
-				TraceId_128Bit: false,
+				SharedSpanContext:        nil,
+				TraceId_128Bit:           false,
 			}
 			expectedZipkinConfigMarshalled, _ := ptypes.MarshalAny(expectedZipkinConfig)
 
