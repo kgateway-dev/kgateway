@@ -6,9 +6,8 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
-	"github.com/golang/protobuf/ptypes/any"
+	"github.com/golang/protobuf/ptypes"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -70,7 +69,7 @@ func (p *Plugin) ProcessHcmSettings(snapshot *v1.ApiSnapshot, cfg *envoyhttp.Htt
 	trCfg.CustomTags = customTags
 	trCfg.Verbose = tracingSettings.Verbose
 
-	tracingProvider, err := p.ProcessEnvoyTracingProvider(snapshot, tracingSettings)
+	tracingProvider, err := p.processEnvoyTracingProvider(snapshot, tracingSettings)
 	if err != nil {
 		return err
 	}
@@ -92,12 +91,12 @@ func (p *Plugin) ProcessHcmSettings(snapshot *v1.ApiSnapshot, cfg *envoyhttp.Htt
 	return nil
 }
 
-func (p *Plugin) ProcessEnvoyTracingProvider(snapshot *v1.ApiSnapshot, tracingSettings *tracing.ListenerTracingSettings) (*envoy_config_trace_v3.Tracing_Http, error) {
-	if tracingSettings == nil || tracingSettings.ProviderConfig == nil {
+func (p *Plugin) processEnvoyTracingProvider(snapshot *v1.ApiSnapshot, tracingSettings *tracing.ListenerTracingSettings) (*envoy_config_trace_v3.Tracing_Http, error) {
+	if tracingSettings.GetProviderConfig() == nil {
 		return nil, nil
 	}
 
-	switch typed := tracingSettings.ProviderConfig.(type) {
+	switch typed := tracingSettings.GetProviderConfig().(type) {
 	case *tracing.ListenerTracingSettings_ZipkinConfig:
 		zipkinCollectorClusterName, err := getEnvoyTracingCollectorClusterName(snapshot, typed.ZipkinConfig.CollectorUpstreamRef)
 		if err != nil {
@@ -109,7 +108,7 @@ func (p *Plugin) ProcessEnvoyTracingProvider(snapshot *v1.ApiSnapshot, tracingSe
 			return nil, err
 		}
 
-		marshalledZipkinConfig, err := proto.Marshal(envoyZipkinConfig)
+		marshalledZipkinConfig, err := ptypes.MarshalAny(envoyZipkinConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -117,10 +116,7 @@ func (p *Plugin) ProcessEnvoyTracingProvider(snapshot *v1.ApiSnapshot, tracingSe
 		return &envoy_config_trace_v3.Tracing_Http{
 			Name: "envoy.tracers.zipkin",
 			ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
-				TypedConfig: &any.Any{
-					TypeUrl: "type.googleapis.com/envoy.config.trace.v3.ZipkinConfig",
-					Value:   marshalledZipkinConfig,
-				},
+				TypedConfig: marshalledZipkinConfig,
 			},
 		}, nil
 
@@ -135,7 +131,7 @@ func (p *Plugin) ProcessEnvoyTracingProvider(snapshot *v1.ApiSnapshot, tracingSe
 			return nil, err
 		}
 
-		marshalledDatadogConfig, err := proto.Marshal(envoyDatadogConfig)
+		marshalledDatadogConfig, err := ptypes.MarshalAny(envoyDatadogConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -143,10 +139,7 @@ func (p *Plugin) ProcessEnvoyTracingProvider(snapshot *v1.ApiSnapshot, tracingSe
 		return &envoy_config_trace_v3.Tracing_Http{
 			Name: "envoy.tracers.datadog",
 			ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
-				TypedConfig: &any.Any{
-					TypeUrl: "type.googleapis.com/envoy.config.trace.v3.DatadogConfig",
-					Value:   marshalledDatadogConfig,
-				},
+				TypedConfig: marshalledDatadogConfig,
 			},
 		}, nil
 	}
@@ -165,7 +158,7 @@ func getEnvoyTracingCollectorClusterName(snapshot *v1.ApiSnapshot, collectorUpst
 	// Make sure the upstream exists
 	_, err := snapshot.Upstreams.Find(collectorUpstreamRef.Namespace, collectorUpstreamRef.Name)
 	if err != nil {
-		return "", errors.Errorf("Invalid CollectorUpstreamRef (no upstream found for ref provided)")
+		return "", errors.Errorf("Invalid CollectorUpstreamRef (no upstream found for ref %v)", collectorUpstreamRef)
 	}
 
 	return translatorutil.UpstreamToClusterName(*collectorUpstreamRef), nil

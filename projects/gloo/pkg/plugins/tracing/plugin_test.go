@@ -105,12 +105,12 @@ var _ = Describe("Plugin", func() {
 			hcmTracingSettings := &tracing.ListenerTracingSettings{
 				ProviderConfig: nil,
 			}
-			envoyTracingProvider, err := p.ProcessEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
+			envoyTracingProvider, err := p.processEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
 			Expect(err).To(BeNil())
 			Expect(envoyTracingProvider).To(BeNil())
 		})
 
-		It("when provider config references invalid upstream", func() {
+		FIt("when provider config references invalid upstream", func() {
 			pluginParams := plugins.Params{
 				Snapshot: &v1.ApiSnapshot{
 					Upstreams: v1.UpstreamList{
@@ -129,11 +129,11 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}
-			_, err := p.ProcessEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
+			_, err := p.processEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
 			Expect(err).NotTo(BeNil())
 		})
 
-		It("when provider config references valid upstream", func() {
+		FIt("when provider config references valid upstream", func() {
 			us := v1.NewUpstream("default", "valid")
 			pluginParams := plugins.Params{
 				Snapshot: &v1.ApiSnapshot{
@@ -153,7 +153,7 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}
-			envoyTracingProvider, err := p.ProcessEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
+			envoyTracingProvider, err := p.processEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
 			Expect(err).To(BeNil())
 
 			expectedZipkinConfig := &envoytrace.ZipkinConfig{

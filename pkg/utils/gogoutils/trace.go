@@ -37,8 +37,6 @@ func ToEnvoyZipkinCollectorEndpointVersion(version envoytrace_gloo.ZipkinConfig_
 		return envoytrace.ZipkinConfig_HTTP_JSON
 	case envoytrace_gloo.ZipkinConfig_CollectorEndpointVersion_name[int32(envoytrace_gloo.ZipkinConfig_HTTP_PROTO)]:
 		return envoytrace.ZipkinConfig_HTTP_PROTO
-	case envoytrace_gloo.ZipkinConfig_CollectorEndpointVersion_name[int32(envoytrace_gloo.ZipkinConfig_GRPC)]:
-		return envoytrace.ZipkinConfig_GRPC
 	}
 	return envoytrace.ZipkinConfig_HTTP_JSON
 }
