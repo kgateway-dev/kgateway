@@ -69,7 +69,7 @@ func (p *Plugin) ProcessHcmSettings(snapshot *v1.ApiSnapshot, cfg *envoyhttp.Htt
 	trCfg.CustomTags = customTags
 	trCfg.Verbose = tracingSettings.Verbose
 
-	tracingProvider, err := p.processEnvoyTracingProvider(snapshot, tracingSettings)
+	tracingProvider, err := processEnvoyTracingProvider(snapshot, tracingSettings)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func (p *Plugin) ProcessHcmSettings(snapshot *v1.ApiSnapshot, cfg *envoyhttp.Htt
 	return nil
 }
 
-func (p *Plugin) processEnvoyTracingProvider(snapshot *v1.ApiSnapshot, tracingSettings *tracing.ListenerTracingSettings) (*envoy_config_trace_v3.Tracing_Http, error) {
+func processEnvoyTracingProvider(snapshot *v1.ApiSnapshot, tracingSettings *tracing.ListenerTracingSettings) (*envoy_config_trace_v3.Tracing_Http, error) {
 	if tracingSettings.GetProviderConfig() == nil {
 		return nil, nil
 	}
@@ -142,8 +142,10 @@ func (p *Plugin) processEnvoyTracingProvider(snapshot *v1.ApiSnapshot, tracingSe
 				TypedConfig: marshalledDatadogConfig,
 			},
 		}, nil
+
+	default:
+		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", typed)
 	}
-	return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration")
 }
 
 func getEnvoyTracingCollectorClusterName(snapshot *v1.ApiSnapshot, collectorUpstreamRef *core.ResourceRef) (string, error) {

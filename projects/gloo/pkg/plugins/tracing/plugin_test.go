@@ -102,12 +102,15 @@ var _ = Describe("Plugin", func() {
 				Snapshot: nil,
 			}
 			p := NewPlugin()
-			hcmTracingSettings := &tracing.ListenerTracingSettings{
-				ProviderConfig: nil,
+			cfg := &envoyhttp.HttpConnectionManager{}
+			hcmSettings := &hcm.HttpConnectionManagerSettings{
+				Tracing: &tracing.ListenerTracingSettings{
+					ProviderConfig: nil,
+				},
 			}
-			envoyTracingProvider, err := p.processEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
+			err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
 			Expect(err).To(BeNil())
-			Expect(envoyTracingProvider).To(BeNil())
+			Expect(cfg.Tracing.Provider).To(BeNil())
 		})
 
 		FIt("when provider config references invalid upstream", func() {
@@ -119,17 +122,20 @@ var _ = Describe("Plugin", func() {
 				},
 			}
 			p := NewPlugin()
-			hcmTracingSettings := &tracing.ListenerTracingSettings{
-				ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
-					ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
-						CollectorUpstreamRef: &core.ResourceRef{
-							Name:      "invalid-name",
-							Namespace: "invalid-namespace",
+			cfg := &envoyhttp.HttpConnectionManager{}
+			hcmSettings := &hcm.HttpConnectionManagerSettings{
+				Tracing: &tracing.ListenerTracingSettings{
+					ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
+						ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
+							CollectorUpstreamRef: &core.ResourceRef{
+								Name:      "invalid-name",
+								Namespace: "invalid-namespace",
+							},
 						},
 					},
 				},
 			}
-			_, err := p.processEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
+			err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
 			Expect(err).NotTo(BeNil())
 		})
 
@@ -141,19 +147,22 @@ var _ = Describe("Plugin", func() {
 				},
 			}
 			p := NewPlugin()
-			hcmTracingSettings := &tracing.ListenerTracingSettings{
-				ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
-					ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
-						CollectorUpstreamRef: &core.ResourceRef{
-							Name:      "valid",
-							Namespace: "default",
+			cfg := &envoyhttp.HttpConnectionManager{}
+			hcmSettings := &hcm.HttpConnectionManagerSettings{
+				Tracing: &tracing.ListenerTracingSettings{
+					ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
+						ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
+							CollectorUpstreamRef: &core.ResourceRef{
+								Name:      "valid",
+								Namespace: "default",
+							},
+							CollectorEndpoint:        "/api/v2/spans",
+							CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
 						},
-						CollectorEndpoint:        "/api/v2/spans",
-						CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
 					},
 				},
 			}
-			envoyTracingProvider, err := p.processEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
+			err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
 			Expect(err).To(BeNil())
 
 			expectedZipkinConfig := &envoytrace.ZipkinConfig{
@@ -172,8 +181,8 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}
-			Expect(expectedEnvoyTracingProvider.GetName()).To(Equal(envoyTracingProvider.GetName()))
-			Expect(expectedEnvoyTracingProvider.GetTypedConfig().GetTypeUrl()).To(Equal(envoyTracingProvider.GetTypedConfig().GetTypeUrl()))
+			Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
+			Expect(cfg.Tracing.Provider.GetTypedConfig().GetTypeUrl()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig().GetTypeUrl()))
 			// TODO (sam) - Fix this
 			// Expect(expectedEnvoyTracingProvider.GetTypedConfig().GetValue()).To(Equal(envoyTracingProvider.GetTypedConfig().GetValue()))
 		})

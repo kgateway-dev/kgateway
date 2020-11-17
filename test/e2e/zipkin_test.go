@@ -76,15 +76,15 @@ var _ = Describe("Zipkin config loading", func() {
 		err := envoyInstance.RunWithConfig(int(defaults.HttpPort), "./envoyconfigs/zipkin-envoy-conf.yaml")
 		Expect(err).NotTo(HaveOccurred())
 
-		apiHit := make(chan bool, 1)
-
 		// Start a dummy server listening on 9411 for Zipkin requests
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		apiHit := make(chan bool, 1)
+		zipkinHandler := http.NewServeMux()
+		zipkinHandler.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			Expect(r.URL.Path).To(Equal("/api/v2/spans")) // Zipkin json collector API
 			fmt.Fprintf(w, "Dummy Zipkin Collector received request on - %q", html.EscapeString(r.URL.Path))
 			apiHit <- true
-		})
-		startZipkinServer(":9411", nil)
+		}))
+		startZipkinServer(":9411", zipkinHandler)
 
 		testRequest := createRequestWithTracingEnabled("127.0.0.1", 11082)
 		Eventually(testRequest, 15, 1).Should(ContainSubstring(`<title>Envoy Admin</title>`))
@@ -174,19 +174,17 @@ var _ = Describe("Zipkin config loading", func() {
 
 		It("should not send trace msgs with nil provider", func() {
 			gatewayClient := testClients.GatewayClient
-			gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{})
+			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
 			tracingWithoutProvider := &tracing.ListenerTracingSettings{
 				ProviderConfig: nil,
 			}
-			for _, g := range gw {
-				httpGateway := g.GetHttpGateway()
-				setTracingOnGateway(httpGateway, tracingWithoutProvider)
 
-				_, err := gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
-			}
+			httpGateway := gw.GetHttpGateway()
+			setTracingOnGateway(httpGateway, tracingWithoutProvider)
+			_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
 
 			// write a virtual service so we have a proxy to our test upstream
 			testVs := getTrivialVirtualServiceForUpstream("gloo-system", testUs.Upstream.Metadata.Ref())
@@ -194,14 +192,13 @@ var _ = Describe("Zipkin config loading", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// ensure the proxy and virtual service are created
-			Eventually(
-				func() (*gloov1.Proxy, error) {
-					return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-				}, "5s", "0.1s").ShouldNot(BeNil())
-			Eventually(
-				func() (*gatewayv1.VirtualService, error) {
-					return testClients.VirtualServiceClient.Read(testVs.Metadata.Namespace, testVs.Metadata.Name, clients.ReadOpts{})
-				}, "5s", "0.1s").ShouldNot(BeNil())
+			Eventually(func() (*gloov1.Proxy, error) {
+				return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+			}, "5s", "0.1s").ShouldNot(BeNil())
+
+			Eventually(func() (*gatewayv1.VirtualService, error) {
+				return testClients.VirtualServiceClient.Read(testVs.Metadata.GetNamespace(), testVs.Metadata.GetName(), clients.ReadOpts{})
+			}, "5s", "0.1s").ShouldNot(BeNil())
 
 			// ensure the upstream is reachable
 			TestUpstreamReachable := func() {
@@ -231,7 +228,7 @@ var _ = Describe("Zipkin config loading", func() {
 
 		It("should send trace msgs with zipkin provider", func() {
 			gatewayClient := testClients.GatewayClient
-			gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{})
+			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
 			// configure zipkin, and write tracing configuration to gateway
@@ -245,13 +242,10 @@ var _ = Describe("Zipkin config loading", func() {
 				},
 			}
 
-			for _, g := range gw {
-				httpGateway := g.GetHttpGateway()
-				setTracingOnGateway(httpGateway, zipkinTracing)
-
-				_, err := gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
-			}
+			httpGateway := gw.GetHttpGateway()
+			setTracingOnGateway(httpGateway, zipkinTracing)
+			_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
 
 			// write a virtual service so we have a proxy to our test upstream
 			testVs := getTrivialVirtualServiceForUpstream("gloo-system", testUs.Upstream.Metadata.Ref())
@@ -259,14 +253,12 @@ var _ = Describe("Zipkin config loading", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// ensure the proxy and virtual service are created
-			Eventually(
-				func() (*gloov1.Proxy, error) {
-					return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-				}, "5s", "0.1s").ShouldNot(BeNil())
-			Eventually(
-				func() (*gatewayv1.VirtualService, error) {
-					return testClients.VirtualServiceClient.Read(testVs.Metadata.Namespace, testVs.Metadata.Name, clients.ReadOpts{})
-				}, "5s", "0.1s").ShouldNot(BeNil())
+			Eventually(func() (*gloov1.Proxy, error) {
+				return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+			}, "5s", "0.1s").ShouldNot(BeNil())
+			Eventually(func() (*gatewayv1.VirtualService, error) {
+				return testClients.VirtualServiceClient.Read(testVs.Metadata.GetNamespace(), testVs.Metadata.GetName(), clients.ReadOpts{})
+			}, "5s", "0.1s").ShouldNot(BeNil())
 
 			// ensure the upstream is reachable
 			TestUpstreamReachable := func() {
@@ -297,7 +289,7 @@ var _ = Describe("Zipkin config loading", func() {
 
 		It("should error with misconfigured zipkin provider", func() {
 			gatewayClient := testClients.GatewayClient
-			gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{})
+			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
 			// configure zipkin with an invalid CollectorUpstreamRef
@@ -311,13 +303,10 @@ var _ = Describe("Zipkin config loading", func() {
 				},
 			}
 
-			for _, g := range gw {
-				httpGateway := g.GetHttpGateway()
-				setTracingOnGateway(httpGateway, invalidZipkinTracing)
-
-				_, err := gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
-			}
+			httpGateway := gw.GetHttpGateway()
+			setTracingOnGateway(httpGateway, invalidZipkinTracing)
+			_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
 
 			// write a virtual service so we have a proxy to our test upstream
 			testVs := getTrivialVirtualServiceForUpstream("gloo-system", testUs.Upstream.Metadata.Ref())
