@@ -43,9 +43,6 @@ message ZipkinConfig {
 
     // Zipkin API v2, protobuf over HTTP.
     HTTP_PROTO = 2;
-
-    // [#not-implemented-hide:]
-    GRPC = 3;
   }
 
   // The upstream that hosts the Zipkin collectors. Note that the

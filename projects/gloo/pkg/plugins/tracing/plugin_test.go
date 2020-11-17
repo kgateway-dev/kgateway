@@ -105,7 +105,7 @@ var _ = Describe("Plugin", func() {
 			hcmTracingSettings := &tracing.ListenerTracingSettings{
 				ProviderConfig: nil,
 			}
-			envoyTracingProvider, err := p.ProcessEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
+			envoyTracingProvider, err := p.processEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
 			Expect(err).To(BeNil())
 			Expect(envoyTracingProvider).To(BeNil())
 		})
@@ -129,7 +129,7 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}
-			_, err := p.ProcessEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
+			_, err := p.processEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
 			Expect(err).NotTo(BeNil())
 		})
 
@@ -153,7 +153,7 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}
-			envoyTracingProvider, err := p.ProcessEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
+			envoyTracingProvider, err := p.processEnvoyTracingProvider(pluginParams.Snapshot, hcmTracingSettings)
 			Expect(err).To(BeNil())
 
 			expectedZipkinConfig := &envoytrace.ZipkinConfig{

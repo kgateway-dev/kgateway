@@ -62,7 +62,6 @@ Available Zipkin collector endpoint versions.
 | `DEPRECATED_AND_UNAVAILABLE_DO_NOT_USE` | Zipkin API v1, JSON over HTTP. [#comment: The default implementation of Zipkin client before this field is added was only v1 and the way user configure this was by not explicitly specifying the version. Consequently, before this is added, the corresponding Zipkin collector expected to receive v1 payload. Hence the motivation of adding HTTP_JSON_V1 as the default is to avoid a breaking change when user upgrading Envoy with this change. Furthermore, we also immediately deprecate this field, since in Zipkin realm this v1 version is considered to be not preferable anymore.] |
 | `HTTP_JSON` | Zipkin API v2, JSON over HTTP. |
 | `HTTP_PROTO` | Zipkin API v2, protobuf over HTTP. |
-| `GRPC` | [#not-implemented-hide:] |
 
 
 
