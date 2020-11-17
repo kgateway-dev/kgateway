@@ -98,7 +98,7 @@ func (p *Plugin) processEnvoyTracingProvider(snapshot *v1.ApiSnapshot, tracingSe
 
 	switch typed := tracingSettings.GetProviderConfig().(type) {
 	case *tracing.ListenerTracingSettings_ZipkinConfig:
-		zipkinCollectorClusterName, err := getEnvoyTracingCollectorClusterName(snapshot, typed.ZipkinConfig.CollectorUpstreamRef)
+		zipkinCollectorClusterName, err := getEnvoyTracingCollectorClusterName(snapshot, typed.ZipkinConfig.GetCollectorUpstreamRef())
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +121,7 @@ func (p *Plugin) processEnvoyTracingProvider(snapshot *v1.ApiSnapshot, tracingSe
 		}, nil
 
 	case *tracing.ListenerTracingSettings_DatadogConfig:
-		datadogCollectorClusterName, err := getEnvoyTracingCollectorClusterName(snapshot, typed.DatadogConfig.CollectorUpstreamRef)
+		datadogCollectorClusterName, err := getEnvoyTracingCollectorClusterName(snapshot, typed.DatadogConfig.GetCollectorUpstreamRef())
 		if err != nil {
 			return nil, err
 		}
@@ -156,7 +156,7 @@ func getEnvoyTracingCollectorClusterName(snapshot *v1.ApiSnapshot, collectorUpst
 	}
 
 	// Make sure the upstream exists
-	_, err := snapshot.Upstreams.Find(collectorUpstreamRef.Namespace, collectorUpstreamRef.Name)
+	_, err := snapshot.Upstreams.Find(collectorUpstreamRef.GetNamespace(), collectorUpstreamRef.GetName())
 	if err != nil {
 		return "", errors.Errorf("Invalid CollectorUpstreamRef (no upstream found for ref %v)", collectorUpstreamRef)
 	}

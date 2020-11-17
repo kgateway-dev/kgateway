@@ -15,7 +15,7 @@ import (
 func ToEnvoyDatadogConfiguration(glooDatadogConfig *envoytrace_gloo.DatadogConfig, clusterName string) (*envoytrace.DatadogConfig, error) {
 	envoyDatadogConfig := &envoytrace.DatadogConfig{
 		CollectorCluster: clusterName,
-		ServiceName:      glooDatadogConfig.ServiceName,
+		ServiceName:      glooDatadogConfig.GetServiceName(),
 	}
 	return envoyDatadogConfig, nil
 }
@@ -23,10 +23,10 @@ func ToEnvoyDatadogConfiguration(glooDatadogConfig *envoytrace_gloo.DatadogConfi
 func ToEnvoyZipkinConfiguration(glooZipkinConfig *envoytrace_gloo.ZipkinConfig, clusterName string) (*envoytrace.ZipkinConfig, error) {
 	envoyZipkinConfig := &envoytrace.ZipkinConfig{
 		CollectorCluster:         clusterName,
-		CollectorEndpoint:        glooZipkinConfig.CollectorEndpoint,
-		CollectorEndpointVersion: ToEnvoyZipkinCollectorEndpointVersion(glooZipkinConfig.CollectorEndpointVersion),
-		TraceId_128Bit:           glooZipkinConfig.TraceId_128Bit,
-		SharedSpanContext:        BoolGogoToProto(glooZipkinConfig.SharedSpanContext),
+		CollectorEndpoint:        glooZipkinConfig.GetCollectorEndpoint(),
+		CollectorEndpointVersion: ToEnvoyZipkinCollectorEndpointVersion(glooZipkinConfig.GetCollectorEndpointVersion()),
+		TraceId_128Bit:           glooZipkinConfig.GetTraceId_128Bit(),
+		SharedSpanContext:        BoolGogoToProto(glooZipkinConfig.GetSharedSpanContext()),
 	}
 	return envoyZipkinConfig, nil
 }
