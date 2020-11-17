@@ -482,7 +482,7 @@ var _ = Describe("Gateway", func() {
 			It("should direct requests that use cluster_header to the proper upstream", func() {
 				// Construct upstream name {{name}}_{{namespace}}
 				us := tu.Upstream
-				upstreamName := translator.UpstreamToClusterName(core.ResourceRef{Namespace: us.Metadata.Namespace, Name: us.Metadata.Name})
+				upstreamName := translator.UpstreamToClusterName(us.Metadata.Ref())
 
 				vs := getTrivialVirtualService("gloo-system")
 				// Create route that uses cluster header destination
