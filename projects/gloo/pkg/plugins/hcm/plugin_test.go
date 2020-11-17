@@ -162,7 +162,7 @@ var _ = Describe("Plugin", func() {
 		Expect(trace.ClientSampling.Value).To(Equal(100.0))
 		Expect(trace.RandomSampling.Value).To(Equal(100.0))
 		Expect(trace.OverallSampling.Value).To(Equal(100.0))
-		Expect(trace.Provider).To(Equal(nil))
+		Expect(trace.Provider).To(BeNil())
 
 		Expect(len(cfg.UpgradeConfigs)).To(Equal(1))
 		Expect(cfg.UpgradeConfigs[0].UpgradeType).To(Equal("websocket"))
