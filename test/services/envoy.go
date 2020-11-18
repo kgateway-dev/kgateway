@@ -101,6 +101,8 @@ static_resources:
                     port_value: {{.Port}}
     http2_protocol_options: {}
     type: STATIC
+    common_lb_config:
+      healthy_panic_threshold: 0.0
 {{if .RatelimitAddr}}
   - name: ratelimit_cluster
     connect_timeout: 5.000s
@@ -115,6 +117,8 @@ static_resources:
                     port_value: {{.RatelimitPort}}
     http2_protocol_options: {}
     type: STATIC
+    common_lb_config:
+      healthy_panic_threshold: 0.0
 {{end}}
 {{if .AccessLogAddr}}
   - name: access_log_cluster
@@ -130,6 +134,8 @@ static_resources:
                     port_value: {{.AccessLogPort}}
     http2_protocol_options: {}
     type: STATIC
+    common_lb_config:
+      healthy_panic_threshold: 0.0
 {{end}}
   - name: aws_sts_cluster
     connect_timeout: 5.000s
@@ -149,6 +155,8 @@ static_resources:
       typed_config:
         "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         sni: sts.amazonaws.com
+    common_lb_config:
+      healthy_panic_threshold: 0.0
 {{if .MetricsAddr}}
   - name: metrics_cluster
     connect_timeout: 5.000s
@@ -163,6 +171,8 @@ static_resources:
                     port_value: {{.MetricsPort}}
     http2_protocol_options: {}
     type: STATIC
+    common_lb_config:
+      healthy_panic_threshold: 0.0
 {{end}}
 
 dynamic_resources:
