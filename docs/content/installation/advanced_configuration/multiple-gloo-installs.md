@@ -30,7 +30,7 @@ Currently, installing Gloo Edge with specific `watchNamespaces` requires install
 
 ## Installing Namespace-Scoped Gloo Edge with Helm
 
-In this section we'll deploy Gloo Edge twice, each instance to a different namespace, with two different Helm value files.
+In this section we'll deploy Gloo Edge twice, each instance to a different namespace, with two different Helm value files. For Gloo Edge Enterprise users, we have included a settings for the Grafana RBAC configuration. Gloo Edge Open Source users can safely remove those settings.
 
 Create a file named `gloo1-overrides.yaml` and paste the following inside:
 
@@ -44,6 +44,9 @@ settings:
   watchNamespaces:
   - default
   - gloo1
+grafana: # The grafana settings can be removed for Gloo Edge OSS
+  rbac:
+    namespaced: true
 {{< /tab >}}
 {{< tab name="Helm 3" codelang="yaml">}}
 settings:
@@ -52,6 +55,9 @@ settings:
   watchNamespaces:
   - default
   - gloo1
+grafana: # The grafana settings can be removed for Gloo Edge OSS
+  rbac:
+    namespaced: true
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -129,6 +135,9 @@ settings:
   watchNamespaces:
   - default
   - gloo2
+grafana: # The grafana settings can be removed for Gloo Edge OSS
+  rbac:
+    namespaced: true
 {{< /tab >}}
 {{< tab name="Helm 3" codelang="yaml">}}
 settings:
@@ -137,6 +146,9 @@ settings:
   watchNamespaces:
   - default
   - gloo2
+grafana: # The grafana settings can be removed for Gloo Edge OSS
+  rbac:
+    namespaced: true
 {{< /tab >}}
 {{< /tabs >}}
 
