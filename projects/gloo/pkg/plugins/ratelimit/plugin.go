@@ -19,7 +19,7 @@ const (
 	CustomDomain       = "custom"
 	requestType        = "both"
 
-	customStage    = 1
+	CustomStage    = 1
 	DefaultTimeout = 100 * time.Millisecond
 )
 
