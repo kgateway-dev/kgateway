@@ -3,22 +3,16 @@ package hcm_test
 import (
 	"time"
 
-	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/gloo/pkg/utils"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
-
-	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tracing"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -32,6 +26,14 @@ import (
 	tracingv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
+
+type UnimplementedHcmPlugin struct {
+	plugins.Plugin
+}
+
+func (*UnimplementedHcmPlugin) ProcessHcmSettings(snapshot *v1.ApiSnapshot, cfg *envoyhttp.HttpConnectionManager, settings *hcm.HttpConnectionManagerSettings) error {
+	return nil
+}
 
 var _ = Describe("Plugin", func() {
 	It("copy all settings to hcm filter", func() {
@@ -120,7 +122,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		p := NewPlugin()
-		pluginsList := []plugins.Plugin{tracing.NewPlugin(), p}
+		pluginsList := []plugins.Plugin{&UnimplementedHcmPlugin{Plugin: p}, p}
 		p.RegisterHcmPlugins(pluginsList)
 		err := p.ProcessListener(plugins.Params{Snapshot: snapshot}, in, outl)
 		Expect(err).NotTo(HaveOccurred())
@@ -158,47 +160,8 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxStreamDuration()).To(Equal(gogoutils.DurationStdToProto(hcms.MaxStreamDuration)))
 		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_OVERWRITE))
 
-		trace := cfg.Tracing
-		Expect(trace.CustomTags).To(ConsistOf([]*envoytracing.CustomTag{
-			{
-				Tag: "path",
-				Type: &envoytracing.CustomTag_RequestHeader{
-					RequestHeader: &envoytracing.CustomTag_Header{
-						Name: "path",
-					},
-				},
-			},
-			{
-				Tag: "origin",
-				Type: &envoytracing.CustomTag_RequestHeader{
-					RequestHeader: &envoytracing.CustomTag_Header{
-						Name: "origin",
-					},
-				},
-			}}))
-		Expect(trace.Verbose).To(BeTrue())
-		Expect(trace.ClientSampling.Value).To(Equal(100.0))
-		Expect(trace.RandomSampling.Value).To(Equal(100.0))
-		Expect(trace.OverallSampling.Value).To(Equal(100.0))
-
-		// Tracing Provider
-		expectedZipkinConfig := &envoytrace.ZipkinConfig{
-			CollectorCluster:         "valid_default",
-			CollectorEndpoint:        "/api/v2/spans",
-			CollectorEndpointVersion: envoytrace.ZipkinConfig_HTTP_JSON,
-			SharedSpanContext:        nil,
-			TraceId_128Bit:           false,
-		}
-		expectedZipkinConfigMarshalled, _ := ptypes.MarshalAny(expectedZipkinConfig)
-
-		expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
-			Name: "envoy.tracers.zipkin",
-			ConfigType: &envoytrace.Tracing_Http_TypedConfig{
-				TypedConfig: expectedZipkinConfigMarshalled,
-			},
-		}
-		Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
-		Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+		// We are using an UnimplementedHcmPlugin
+		Expect(cfg.Tracing).To(BeNil())
 
 		Expect(len(cfg.UpgradeConfigs)).To(Equal(1))
 		Expect(cfg.UpgradeConfigs[0].UpgradeType).To(Equal("websocket"))
@@ -241,7 +204,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		p := NewPlugin()
-		pluginsList := []plugins.Plugin{tracing.NewPlugin(), p}
+		pluginsList := []plugins.Plugin{&UnimplementedHcmPlugin{Plugin: p}, p}
 		p.RegisterHcmPlugins(pluginsList)
 		err := p.ProcessListener(plugins.Params{}, in, outl)
 		Expect(err).NotTo(HaveOccurred())
