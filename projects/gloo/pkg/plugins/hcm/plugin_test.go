@@ -42,7 +42,7 @@ var _ = Describe("Plugin", func() {
 		mockTracing = mock_hcm.NewMockHcmPlugin(ctrl)
 	})
 
-	FIt("copy all settings to hcm filter", func() {
+	It("copy all settings to hcm filter", func() {
 		pd := func(t time.Duration) *time.Duration { return &t }
 		collectorUs := v1.NewUpstream("default", "valid")
 		snapshot := &v1.ApiSnapshot{
