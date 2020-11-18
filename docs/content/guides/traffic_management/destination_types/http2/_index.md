@@ -199,4 +199,4 @@ You can see that the `spec.Http2` setting has been set back to `true`. As mentio
 
 ## Summary
 
-In this guide you saw how you can use either an annotation or port name to enable HTTP/2 for a Kubernetes service and the accompanying Upstream. The most common application for HTTP/2 is gRPC, so we recommend checking out our guides for working with [gRCP Upstreams]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/" %}}).
+In this guide you saw how you can use either an annotation or port name to enable HTTP/2 for a Kubernetes service and the accompanying Upstream. The most common application for HTTP/2 is gRPC, so we recommend checking out our guides for working with [gRPC Upstreams]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/" %}}).
