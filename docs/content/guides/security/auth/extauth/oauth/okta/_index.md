@@ -326,18 +326,14 @@ Note that the `/callback` path will be handled by this same Virtual Service beca
 ### Verify Okta Integration
 
 {{< notice note >}}
-The examples in this guide were tested using both Safari and Chrome on MacOS.  You may experience some issues in development mode due to the use of self-signed certificates.  These present as 403 Forbidden errors, possibly with an `ERR_CERT_INVALID` error code.  With Safari, you can work through this by clicking through advanced settings and indicating you understand the risks.  With Chrome, you may need to use the `thisisunsafe` workaround described [here](https://medium.com/@dblazeski/chrome-bypass-net-err-cert-invalid-for-development-daefae43eb12).
-
-You may also experience browser issues if there is an overlap between the email of your Okta user and an active Google oauth connection in your browser.  Issuing these requests in Incognito (Chrome) or Private (Safari) windows resolves these problems.
-
-In any event, particularly when establishing an initial connection, you may need to issue the https://glootest.com/get request more than once.  If this occurs, be sure to re-issue the https://glootest.com/get request and not the https://glootest.com/callback... request.
+You may encounter issues in completing this section.  If so, check out the `Troubleshooting` section immediately following this one.
 {{< /notice >}}
 
 We will now confirm that the initial Okta integration using a web browser.  First, navigate to https://glootest.com.  You should be redirected to the Okta Login page.  Sign in as one of your configured Okta users who is authorized for this application.
 
 ![Okta Sign In](./okta-sign-in.png)
 
-Gloo Edge has redirected you to the `/callback` endpoint we configured in the AuthConfig, with the information it got from Okta OIDC added as a query string to create a Cookie.  This cookie contains both an `access_token` and an `id_token` from Okta.  The `id_token` is a JWT from which we will extract claims to drive fine-grained RBAC decisions later in this exercise.  
+Gloo Edge has redirected you to the `/callback` endpoint we configured in the AuthConfig, with the information it received from Okta OIDC added as a query string to create a Cookie.  This cookie contains both an `access_token` and an `id_token` from Okta.  The `id_token` is a JWT from which we will extract claims to drive fine-grained RBAC decisions later in this exercise.  
 
 After this callback, the normal request flow continues and the upstream application responds.  You should get output that looks something like below.  In particular, note the `Cookie` header supplied by Okta containing both an `access_token` and an `id_token`.
 
@@ -346,6 +342,28 @@ After this callback, the normal request flow continues and the upstream applicat
 You can also test other `httpbin` endpoints via the Gloo Edge gateway.  For example, consider this base64 conversion service endpoint:  https://glootest.com/base64/R2xvbyBpcyBhd2Vzb21lCg==
 
 ![GlooTest Base64 Conversion](./httpbin-base64.png)
+
+### Troubleshooting Okta Integration
+
+The examples in this guide were tested using both Safari and Chrome on MacOS.  You may experience some issues in development mode due to the use of self-signed certificates.  These present as 403 Forbidden errors, possibly with an `ERR_CERT_INVALID` error code.  With Safari, you can work through this by clicking through advanced settings and indicating you understand the risks.  With Chrome, you may need to use the `thisisunsafe` workaround described [here](https://medium.com/@dblazeski/chrome-bypass-net-err-cert-invalid-for-development-daefae43eb12).
+
+You may experience browser issues if there is an overlap between the email of your Okta user and an active Google oauth connection in your browser.  Issuing these requests in Incognito (Chrome) or Private (Safari) windows resolves these problems.
+
+It is common for initial requests that are routed through Okta, or any external security service provider, to fail due to an untuned `requestTimeout` parameter in the Gloo `Settings` object.  The default timeout is 200ms, which is often inadequate to account for the external network hop to Okta.  Increasing that timeout should resolve the problem.
+
+You can get the current state of the `Settings` object like this:
+```shell
+% kubectl get settings.gloo.solo.io -n gloo-system -oyaml
+```
+
+Then apply a change to the `spec.extauth` stanza to add a `requestTimeout` greater than 200ms, like this:
+```yaml
+    extauth:
+      requestTimeout: 1s
+      extauthzServerRef:
+        name: extauth
+        namespace: gloo-system
+```
 
 ## JWT Claim Extraction
 
