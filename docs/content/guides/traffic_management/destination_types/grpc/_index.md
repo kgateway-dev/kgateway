@@ -361,4 +361,4 @@ Nice! If you happen to be using a certificate that has the correct domain listed
 
 ## Summary
 
-In this guide we saw how to present a gRPC Upstream through Gloo Edge and connect to it using a gRPC client. We also saw how to add a domain filter and enable TLS. For more information on gRPC, check out the guide for presenting a [gRPC service as a REST API]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) through Gloo Edge. You can find out more about using TLS with Gloo Edge in the [Network Encryption]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}) section of our guides. 
+In this guide we saw how to present a gRPC Upstream through Gloo Edge and connect to it using a gRPC client. We also saw how to add a domain filter and enable TLS. For more information on gRPC, check out the guide for presenting a [gRPC service as a REST API]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest/" %}}) through Gloo Edge. You can find out more about using TLS with Gloo Edge in the [Network Encryption]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}) section of our guides. 
