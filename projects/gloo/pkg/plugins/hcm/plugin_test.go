@@ -211,6 +211,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		p := NewPlugin()
+		mockTracing.EXPECT().ProcessHcmSettings(nil, gomock.Any(), hcms).Return(nil)
 		pluginsList := []plugins.Plugin{mockTracing, p}
 		p.RegisterHcmPlugins(pluginsList)
 		err := p.ProcessListener(plugins.Params{}, in, outl)
