@@ -3,6 +3,9 @@ package hcm_test
 import (
 	"time"
 
+	"github.com/golang/mock/gomock"
+	mock_hcm "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm/mocks"
+
 	"github.com/solo-io/gloo/pkg/utils"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 
@@ -27,16 +30,19 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
-type UnimplementedHcmPlugin struct {
-	plugins.Plugin
-}
-
-func (*UnimplementedHcmPlugin) ProcessHcmSettings(snapshot *v1.ApiSnapshot, cfg *envoyhttp.HttpConnectionManager, settings *hcm.HttpConnectionManagerSettings) error {
-	return nil
-}
-
 var _ = Describe("Plugin", func() {
-	It("copy all settings to hcm filter", func() {
+
+	var (
+		ctrl        *gomock.Controller
+		mockTracing *mock_hcm.MockHcmPlugin
+	)
+
+	BeforeEach(func() {
+		ctrl = gomock.NewController(GinkgoT())
+		mockTracing = mock_hcm.NewMockHcmPlugin(ctrl)
+	})
+
+	FIt("copy all settings to hcm filter", func() {
 		pd := func(t time.Duration) *time.Duration { return &t }
 		collectorUs := v1.NewUpstream("default", "valid")
 		snapshot := &v1.ApiSnapshot{
@@ -122,7 +128,8 @@ var _ = Describe("Plugin", func() {
 		}
 
 		p := NewPlugin()
-		pluginsList := []plugins.Plugin{&UnimplementedHcmPlugin{Plugin: p}, p}
+		mockTracing.EXPECT().ProcessHcmSettings(snapshot, gomock.Any(), hcms).Return(nil)
+		pluginsList := []plugins.Plugin{mockTracing, p}
 		p.RegisterHcmPlugins(pluginsList)
 		err := p.ProcessListener(plugins.Params{Snapshot: snapshot}, in, outl)
 		Expect(err).NotTo(HaveOccurred())
@@ -160,7 +167,7 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxStreamDuration()).To(Equal(gogoutils.DurationStdToProto(hcms.MaxStreamDuration)))
 		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_OVERWRITE))
 
-		// We are using an UnimplementedHcmPlugin
+		// Confirm that MockTracingPlugin return the proper value
 		Expect(cfg.Tracing).To(BeNil())
 
 		Expect(len(cfg.UpgradeConfigs)).To(Equal(1))
@@ -204,7 +211,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		p := NewPlugin()
-		pluginsList := []plugins.Plugin{&UnimplementedHcmPlugin{Plugin: p}, p}
+		pluginsList := []plugins.Plugin{mockTracing, p}
 		p.RegisterHcmPlugins(pluginsList)
 		err := p.ProcessListener(plugins.Params{}, in, outl)
 		Expect(err).NotTo(HaveOccurred())

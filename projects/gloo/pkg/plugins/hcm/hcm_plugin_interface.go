@@ -7,6 +7,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
+//go:generate mockgen -destination ./mocks/hcmplugin_mock.go github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm HcmPlugin
+
 // Other plugins may implement this interface if they need to make modifications to a listener's HttpConnectionManager
 // settings
 type HcmPlugin interface {
