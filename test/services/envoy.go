@@ -467,6 +467,12 @@ func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32, configFil
 		return err
 	}
 	ei.cmd = cmd
+
+	// Default to run envoy with panic_mode disabled
+	err = ei.DisablePanicMode()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -478,8 +484,12 @@ func (ei *EnvoyInstance) LocalAddr() string {
 	return ei.GlooAddr
 }
 
-func (ei *EnvoyInstance) SetPanicThreshold() error {
-	_, err := http.Post(fmt.Sprintf("http://localhost:%d/runtime_modify?upstream.healthy_panic_threshold=%d", ei.AdminPort, 0), "", nil)
+func (ei *EnvoyInstance) DisablePanicMode() error {
+	return ei.setRuntimeConfiguration(fmt.Sprintf("upstream.healthy_panic_threshold=%d", 0))
+}
+
+func (ei *EnvoyInstance) setRuntimeConfiguration(queryParameters string) error {
+	_, err := http.Post(fmt.Sprintf("http://localhost:%d/runtime_modify?%s", ei.AdminPort, queryParameters), "", nil)
 	return err
 }
 
