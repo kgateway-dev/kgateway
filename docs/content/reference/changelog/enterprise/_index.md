@@ -6,5 +6,5 @@ description: Changelogs for Gloo Edge Enterprise
 
 <br>
 
-## Gloo Edge Enterprise
+## Changelog
 {{< readfile file="static/content/glooe-changelog.docgen" markdown="true" >}}

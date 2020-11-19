@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
@@ -45,6 +46,7 @@ func rootApp(ctx context.Context) *cobra.Command {
 		},
 	}
 	app.AddCommand(changelogMdFromGithubCmd(opts))
+	app.AddCommand(minorReleaseChangelogMdFromGithubCmd(opts))
 
 	app.PersistentFlags().StringVar(&opts.HugoDataSoloOpts.version, "version", "", "version of docs and code")
 	app.PersistentFlags().StringVar(&opts.HugoDataSoloOpts.product, "product", "gloo", "product to which the docs refer (defaults to gloo)")
@@ -63,6 +65,20 @@ func changelogMdFromGithubCmd(opts *options) *cobra.Command {
 				return nil
 			}
 			return generateChangelogMd(args)
+		},
+	}
+	return app
+}
+
+func minorReleaseChangelogMdFromGithubCmd(opts *options) *cobra.Command {
+	app := &cobra.Command{
+		Use:   "gen-minor-releases-changelog-md",
+		Short: "generate an aggregated changelog markdown file for each minor release version",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if os.Getenv(skipChangelogGeneration) != "" {
+				return nil
+			}
+			return generateMinorReleaseChangelog()
 		},
 	}
 	return app
@@ -115,11 +131,7 @@ func generateChangelogMd(args []string) error {
 		return InvalidInputError(target)
 	}
 
-	allReleases, _, err := client.Repositories.ListReleases(context.Background(), "solo-io", repo,
-		&github.ListOptions{
-			Page:    0,
-			PerPage: 10000000,
-		})
+	allReleases, err := getAllReleases(client, repo)
 	if err != nil {
 		return err
 	}
@@ -129,4 +141,91 @@ func generateChangelogMd(args []string) error {
 		fmt.Printf("%v", *release.Body)
 	}
 	return nil
+}
+
+func generateMinorReleaseChangelog() error {
+	client := github.NewClient(nil)
+	// get changelogs from gloo releases
+	repo := "gloo"
+	allReleases, err := getAllReleases(client, repo)
+	if err != nil {
+		return err
+	}
+
+	var releaseList []*github.RepositoryRelease
+	for _, release := range allReleases {
+		releaseList = append(releaseList, release)
+	}
+
+	err = parseReleases(releaseList)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func getAllReleases(client *github.Client, repo string) ([]*github.RepositoryRelease, error) {
+	allReleases, _, err := client.Repositories.ListReleases(context.Background(), "solo-io", repo,
+		&github.ListOptions{
+			Page:    0,
+			PerPage: 10000000,
+		})
+	if err != nil {
+		return nil, err
+	}
+	return allReleases, nil
+}
+
+func parseReleases(releases []*github.RepositoryRelease) error {
+	var minorReleaseMap = make(map[string]string)
+	for _, release := range releases {
+		var releaseTag = release.GetTagName()
+		version, err := parseVersionTag(releaseTag)
+		if err != nil {
+			return err
+		}
+		minorVersion := fmt.Sprintf("v%s.%s", version.MajorRelease, version.MinorRelease)
+		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("##### %v\n", version.Tag) + release.GetBody()
+	}
+
+	for minorVersion, body := range minorReleaseMap {
+		fmt.Printf("### %v\n\n", minorVersion)
+		fmt.Printf("%v", body)
+	}
+	return nil
+}
+
+func parseVersionTag(versionTag string) (*Version, error) {
+	var version *Version
+	versionRegexp := regexp.MustCompile("^v([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$")
+	matches := versionRegexp.FindStringSubmatch(versionTag)
+	if len(matches) < 5 {
+		return nil, fmt.Errorf("tag %s is not formatted correctly, %+v", versionTag, matches)
+	}
+	version = &Version{
+		Tag:               matches[0],
+		MajorRelease:      matches[1],
+		MinorRelease:      matches[2],
+		Patch:             matches[3],
+		PreReleaseVersion: matches[4],
+	}
+	return version, nil
+}
+
+type Release struct {
+	Version         *Version
+	Fixes           string
+	DependencyBumps string
+	NewFeatures     string
+	HelmChanges     string
+	BreakingChanges string
+	CVEs            string
+}
+
+type Version struct {
+	Tag               string
+	MajorRelease      string
+	MinorRelease      string
+	Patch             string
+	PreReleaseVersion string
 }

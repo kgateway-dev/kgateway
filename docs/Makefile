@@ -22,6 +22,7 @@ site-common: clean
 	git -C themes/hugo-theme-soloio checkout $(SOLO_HUGO_THEME_REVISION)
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
+	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-minor-releases-changelog-md > content/static/content/minor-release-changelog.docgen
 
 .PHONY: site-test
 site-test: site-common

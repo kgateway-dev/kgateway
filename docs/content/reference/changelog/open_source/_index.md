@@ -6,5 +6,5 @@ description: Changelogs for Open Source Gloo Edge
 
 <br>
 
-## Open Source Gloo Edge
+## Changelog
 {{< readfile file="static/content/gloo-changelog.docgen" markdown="true" >}}
