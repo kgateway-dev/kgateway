@@ -26,9 +26,9 @@ type DefaultUsageReader struct {
 
 var _ client.UsagePayloadReader = &DefaultUsageReader{}
 
-// todo (mholland) now that this implementation of GetPayload no longer requires a context,
-// the context isn't used by any GetPayload implemenation. Do we still need the context in this function's input list?
-// Removing it would require a minor version update for the reporting-client repo.
+// Now that this implementation of GetPayload no longer requires a context,
+// the context isn't used by any GetPayload implementation. However, we opted to leave it as an input,
+// since there's a chance we might need it in the future.
 func (d *DefaultUsageReader) GetPayload(ctx context.Context) (map[string]string, error) {
 	return map[string]string{}, nil
 }
