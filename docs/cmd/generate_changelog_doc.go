@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 
 	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
@@ -78,7 +79,7 @@ func minorReleaseChangelogMdFromGithubCmd(opts *options) *cobra.Command {
 			if os.Getenv(skipChangelogGeneration) != "" {
 				return nil
 			}
-			return generateMinorReleaseChangelog()
+			return generateMinorReleaseChangelog(args)
 		},
 	}
 	return app
@@ -143,10 +144,30 @@ func generateChangelogMd(args []string) error {
 	return nil
 }
 
-func generateMinorReleaseChangelog() error {
+func generateMinorReleaseChangelog(args []string) error {
+	if len(args) != 1 {
+		return InvalidInputError(fmt.Sprintf("%v", len(args)-1))
+	}
 	client := github.NewClient(nil)
-	// get changelogs from gloo releases
-	repo := "gloo"
+	target := args[0]
+	var repo string
+	switch target {
+	case glooDocGen:
+		repo = "gloo"
+	case glooEDocGen:
+		repo = "solo-projects"
+		ctx := context.Background()
+		if os.Getenv("GITHUB_TOKEN") == "" {
+			return MissingGithubTokenError()
+		}
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
+		)
+		tc := oauth2.NewClient(ctx, ts)
+		client = github.NewClient(tc)
+	default:
+		return InvalidInputError(target)
+	}
 	allReleases, err := getAllReleases(client, repo)
 	if err != nil {
 		return err
@@ -177,19 +198,28 @@ func getAllReleases(client *github.Client, repo string) ([]*github.RepositoryRel
 }
 
 func parseReleases(releases []*github.RepositoryRelease) error {
-	var minorReleaseMap = make(map[string]string)
+	var minorReleaseMap = make(map[Version]string)
 	for _, release := range releases {
 		var releaseTag = release.GetTagName()
 		version, err := parseVersionTag(releaseTag)
 		if err != nil {
 			return err
 		}
-		minorVersion := fmt.Sprintf("v%s.%s", version.MajorRelease, version.MinorRelease)
+		minorVersion := Version{
+			MajorRelease: version.MajorRelease,
+			MinorRelease: version.MinorRelease,
+		}
 		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("##### %v\n", version.Tag) + release.GetBody()
 	}
 
-	for minorVersion, body := range minorReleaseMap {
-		fmt.Printf("### %v\n\n", minorVersion)
+	var versions Versions
+	for minorVersion, _ := range minorReleaseMap {
+		versions = append(versions, minorVersion)
+	}
+	sort.Sort(versions)
+	for _, version := range versions {
+		body := minorReleaseMap[version]
+		fmt.Printf("### v%s.%s\n\n", version.MajorRelease, version.MinorRelease)
 		fmt.Printf("%v", body)
 	}
 	return nil
@@ -212,20 +242,33 @@ func parseVersionTag(versionTag string) (*Version, error) {
 	return version, nil
 }
 
-type Release struct {
-	Version         *Version
-	Fixes           string
-	DependencyBumps string
-	NewFeatures     string
-	HelmChanges     string
-	BreakingChanges string
-	CVEs            string
-}
-
 type Version struct {
 	Tag               string
 	MajorRelease      string
 	MinorRelease      string
 	Patch             string
 	PreReleaseVersion string
+}
+
+func (v Version) LessThan(version Version) bool {
+	if v.MinorRelease >= version.MinorRelease {
+		if v.MajorRelease >= version.MajorRelease {
+			return true
+		}
+	}
+	return false
+}
+
+type Versions []Version
+
+func (s Versions) Len() int {
+	return len(s)
+}
+
+func (s Versions) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s Versions) Less(i, j int) bool {
+	return s[i].LessThan(s[j])
 }
