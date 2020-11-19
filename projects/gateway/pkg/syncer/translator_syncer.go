@@ -333,7 +333,6 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		if status, ok := localInputResourceLastStatus[inputResource]; ok {
 			clonedInputResource.SetStatus(status)
 		}
-		// todo can we get away with removing the following:
 		if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
 			errs = multierror.Append(errs, err)
 		} else {

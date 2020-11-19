@@ -29,9 +29,14 @@ func (p *Ingress) Clone() *Ingress {
 	return &newIng
 }
 
-// todo verify that this is the correct way to reproduce the bahavior of
-// IsPublic() from https://github.com/knative/serving/blob/release-0.9/pkg/apis/networking/v1alpha1/ingress_lifecycle.go
-// since it doesn't seem have been carried over to the networking package is later versions.
 func (p *Ingress) IsPublic() bool {
-	return p.Spec.DeprecatedVisibility == "" || p.Spec.DeprecatedVisibility == v1alpha1.IngressVisibilityExternalIP
+	// if this ingress has any private rules, then consider it private, otherwise it's public.
+	var res = true
+	for _, rule := range p.Spec.Rules {
+		if rule.Visibility == v1alpha1.IngressVisibilityClusterLocal {
+			res = false
+			break
+		}
+	}
+	return res
 }

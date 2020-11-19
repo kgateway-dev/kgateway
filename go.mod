@@ -129,8 +129,6 @@ replace (
 
 	//the following block of replacements are needed to have locked these packages to before versions they switched to using proto4
 	go.opencensus.io => go.opencensus.io v0.22.1
-	//github.com/lithammer/dedent => github.com/renstrom/dedent v1.0.0
-	// https://github.com/ory/dockertest/issues/208#issuecomment-686820414
 	golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
 	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20200513103714-09dca8ec2884
 

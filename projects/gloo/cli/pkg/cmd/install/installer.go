@@ -189,7 +189,7 @@ func (i *installer) createNamespace(ctx context.Context, namespace string) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: namespace,
 			},
-		}, metav1.CreateOptions{ // todo what defaults should this have, or should i input these form somewhere?
+		}, metav1.CreateOptions{
 			TypeMeta:     metav1.TypeMeta{},
 			DryRun:       nil,
 			FieldManager: "",
