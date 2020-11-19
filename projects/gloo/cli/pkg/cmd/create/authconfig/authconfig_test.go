@@ -62,7 +62,7 @@ var _ = Describe("AuthConfig", func() {
 			oidc := getOIDCConfig(ctx)
 			Expect(*oidc).To(Equal(expected))
 		},
-		Entry("with oid config",  ctx, "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
+		Entry("with oid config", ctx, "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
 			"1 --oidc-auth-app-url http://app.example.com --oidc-auth-client-secret-name fake "+
 			"--oidc-auth-client-secret-namespace fakens --oidc-auth-issuer-url http://issuer.example.com "+
 			"--oidc-auth-callback-path /cb",
@@ -76,7 +76,7 @@ var _ = Describe("AuthConfig", func() {
 				IssuerUrl:    "http://issuer.example.com",
 				AppUrl:       "http://app.example.com",
 			}),
-		Entry("with default callback",  ctx, "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
+		Entry("with default callback", ctx, "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
 			"1 --oidc-auth-app-url http://app.example.com --oidc-auth-client-secret-name fake "+
 			"--oidc-auth-client-secret-namespace fakens --oidc-auth-issuer-url http://issuer.example.com",
 			extauthpb.OAuth{
@@ -89,7 +89,7 @@ var _ = Describe("AuthConfig", func() {
 				IssuerUrl:    "http://issuer.example.com",
 				AppUrl:       "http://app.example.com",
 			}),
-		Entry("with default scopes",  ctx, "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
+		Entry("with default scopes", ctx, "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
 			"1 --oidc-auth-app-url http://app.example.com --oidc-auth-client-secret-name fake "+
 			"--oidc-auth-client-secret-namespace fakens --oidc-auth-issuer-url http://issuer.example.com "+
 			"--oidc-scope=scope1 --oidc-scope=scope2",
@@ -113,13 +113,13 @@ var _ = Describe("AuthConfig", func() {
 			apiKey := getApiKeyConfig(ctx)
 			Expect(*apiKey).To(Equal(expected))
 		},
-		Entry("with apikey config -- label selector",  ctx, "create ac --name ac1 --enable-apikey-auth "+
+		Entry("with apikey config -- label selector", ctx, "create ac --name ac1 --enable-apikey-auth "+
 			"--apikey-label-selector k1=v1",
 			extauthpb.ApiKeyAuth{
 				LabelSelector: map[string]string{"k1": "v1"},
 			}),
 
-		Entry("with apikey config -- secret refs",  ctx, "create ac --name ac1 --enable-apikey-auth "+
+		Entry("with apikey config -- secret refs", ctx, "create ac --name ac1 --enable-apikey-auth "+
 			"--apikey-secret-namespace ns1 --apikey-secret-name s1 ",
 			extauthpb.ApiKeyAuth{
 				LabelSelector: nil,
@@ -130,7 +130,7 @@ var _ = Describe("AuthConfig", func() {
 					},
 				},
 			}),
-		Entry("with apikey config -- both groups & secret refs",  ctx, "create ac --name ac1 --enable-apikey-auth "+
+		Entry("with apikey config -- both groups & secret refs", ctx, "create ac --name ac1 --enable-apikey-auth "+
 			"--apikey-label-selector k1=v1 --apikey-secret-namespace ns1 --apikey-secret-name s1 ",
 			extauthpb.ApiKeyAuth{
 				LabelSelector: map[string]string{"k1": "v1"},
@@ -165,12 +165,12 @@ var _ = Describe("AuthConfig", func() {
 			opa := getOpaConfig(ctx)
 			Expect(*opa).To(Equal(expected))
 		},
-		Entry("with opa query and no modules",  ctx, "create ac --name ac1 --enable-opa-auth "+
+		Entry("with opa query and no modules", ctx, "create ac --name ac1 --enable-opa-auth "+
 			"--opa-query test",
 			extauthpb.OpaAuth{
 				Query: "test",
 			}),
-		Entry("with opa query and some modules",  ctx, "create ac --name ac1 --enable-opa-auth "+
+		Entry("with opa query and some modules", ctx, "create ac --name ac1 --enable-opa-auth "+
 			"--opa-query test --opa-module-ref ns1.name1 --opa-module-ref ns2.name2",
 			extauthpb.OpaAuth{
 				Query:   "test",
