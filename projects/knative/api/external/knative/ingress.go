@@ -29,14 +29,7 @@ func (p *Ingress) Clone() *Ingress {
 	return &newIng
 }
 
+// todo (mholland) we should eventually update this, and any of our dependant logic, to use non-deprecated values
 func (p *Ingress) IsPublic() bool {
-	// if this ingress has any private rules, then consider it private, otherwise it's public.
-	var res = true
-	for _, rule := range p.Spec.Rules {
-		if rule.Visibility == v1alpha1.IngressVisibilityClusterLocal {
-			res = false
-			break
-		}
-	}
-	return res
+	return p.Spec.DeprecatedVisibility == "" || p.Spec.DeprecatedVisibility == v1alpha1.IngressVisibilityExternalIP
 }
