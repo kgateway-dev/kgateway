@@ -29,4 +29,3 @@ const render = function (template) {
 <div id="changelogdiv">
 {{< readfile file="static/content/gloo-minor-release-changelog.docgen" markdown="true" >}}
 </div>
-
