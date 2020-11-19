@@ -317,6 +317,7 @@ github.com/emirpasic/gods v1.12.0 h1:QAUIPSaCu4G+POclxeqb3F+WPpdKqFGlw36+yOzGlrg
 github.com/emirpasic/gods v1.12.0/go.mod h1:YfzfFFoVP/catgzJb4IKIqXjX78Ha8FMSDh3ymbK86o=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
+github.com/envoyproxy/go-control-plane v0.9.1/go.mod h1:G1fbsNGAFpC1aaERrShZQVdUV2ZuZuv6FCl2v9JNSxQ=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
 github.com/envoyproxy/go-control-plane v0.9.5/go.mod h1:OXl5to++W0ctG+EHWTFUjiypVxC/Y4VLc/KFU+al13s=
 github.com/envoyproxy/go-control-plane v0.9.6-0.20200529035633-fc42e08917e9 h1:AM3AYZI9udpliFfjJTM4E2G9pR+HS5ilXrJGJTvWTJM=
@@ -1063,6 +1064,7 @@ github.com/solo-io/envoy-operator v0.1.4 h1:haffsWSfiDtQrOHVaAuTL48LUVBvSYsv9nqJ
 github.com/solo-io/envoy-operator v0.1.4/go.mod h1:RX7+5zmyZs0SM4K9q9bkaqPMx4XzoQJVi/zBl3NNsG0=
 github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f h1:CHgAq6eqV0JkJJifAEQ3f80YYmsxqTmhJfg6UnGVrCA=
 github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f/go.mod h1:lojsKFoQQH0O/ElLmagtWINB9zAaq04E8z0xIVS/gLU=
+github.com/solo-io/go-utils v0.13.0/go.mod h1:pA8kwWDNlJueffTcC1BYddTerO8zpUUGl5/7JGeC5iU=
 github.com/solo-io/go-utils v0.15.2/go.mod h1:pA8kwWDNlJueffTcC1BYddTerO8zpUUGl5/7JGeC5iU=
 github.com/solo-io/go-utils v0.16.4/go.mod h1:uIPAgEuwiEwpBaFv1uI7j4CUVaFYR5iHmTYuIUlLY2Q=
 github.com/solo-io/go-utils v0.16.5/go.mod h1:uIPAgEuwiEwpBaFv1uI7j4CUVaFYR5iHmTYuIUlLY2Q=
@@ -1078,6 +1080,10 @@ github.com/solo-io/skv2 v0.8.1 h1:M45iMM97a3z5pSRYxcw8hScmqYcP6+oFxrtjauos8Ms=
 github.com/solo-io/skv2 v0.8.1/go.mod h1:Da9SOUuIlb61Fxi3E/aFFXjxzRAAvx34qglWrNg3wEQ=
 github.com/solo-io/solo-apis v0.0.0-20201103221621-bbe4f60f466d h1:vYHs1At/VRlQfbnp3agZweAhx8ycUbPx4cTI6lozdJo=
 github.com/solo-io/solo-apis v0.0.0-20201103221621-bbe4f60f466d/go.mod h1:wyrnIh/q2p7wCWq8ZSvIw5zJ3jpAp/dtWatk+SULCqk=
+github.com/solo-io/solo-kit v0.13.8/go.mod h1:1cSoxO1Cgzn++03nnp5V1iGf0S45OLDTUmj70rD/+hY=
+github.com/solo-io/solo-kit v0.13.9/go.mod h1:1cSoxO1Cgzn++03nnp5V1iGf0S45OLDTUmj70rD/+hY=
+github.com/solo-io/solo-kit v0.13.15-0.20201119001236-adeb9e06405c h1:u0uFRCKV5vVjQf/3ksvv/jnN+0dE87LVXlAlnDRyhDY=
+github.com/solo-io/solo-kit v0.13.15-0.20201119001236-adeb9e06405c/go.mod h1:nZxDL/KczYhEpYM2cA6mdPjkoZek61AjSpoBg6JDwS0=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20200922223809-7fff932e9e9a h1:cGPy01C3GXZyuq8s6pkRCjBA+NkLv4FbcP0Toa/7ung=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20200922223809-7fff932e9e9a/go.mod h1:3lckq1wF8I6I2a1Jx5IsEG+PQArE57Jp3wBE2rQnKmw=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
@@ -1299,6 +1305,7 @@ golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7/go.mod h1:z5CRVTTTmAJ677TzLL
 golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
 golang.org/x/net v0.0.0-20191004110552-13f9640d40b9/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
 golang.org/x/net v0.0.0-20191028085509-fe3aa8a45271/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
+golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
 golang.org/x/net v0.0.0-20200114155413-6afb5195e5aa/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
 golang.org/x/net v0.0.0-20200202094626-16171245cfb2/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
 golang.org/x/net v0.0.0-20200226121028-0de0cce0169b h1:0mm1VjtFUOIlE1SbDlwjYaDxZVDP2S5ou6y0gSgXHu8=
