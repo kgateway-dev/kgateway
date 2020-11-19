@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"regexp"
 	"sort"
 
 	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/go-utils/versionutils"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -201,15 +201,15 @@ func parseReleases(releases []*github.RepositoryRelease) error {
 	var minorReleaseMap = make(map[Version]string)
 	for _, release := range releases {
 		var releaseTag = release.GetTagName()
-		version, err := parseVersionTag(releaseTag)
+		version, err := versionutils.ParseVersion(releaseTag)
 		if err != nil {
 			return err
 		}
 		minorVersion := Version{
-			MajorRelease: version.MajorRelease,
-			MinorRelease: version.MinorRelease,
+			Major: version.Major,
+			Minor: version.Minor,
 		}
-		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("##### %v\n", version.Tag) + release.GetBody()
+		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("##### %v\n", version.String()) + release.GetBody()
 	}
 
 	var versions Versions
@@ -219,47 +219,20 @@ func parseReleases(releases []*github.RepositoryRelease) error {
 	sort.Sort(versions)
 	for _, version := range versions {
 		body := minorReleaseMap[version]
-		fmt.Printf("### v%s.%s\n\n", version.MajorRelease, version.MinorRelease)
+		fmt.Printf("### v%v.%v\n\n", version.Major, version.Minor)
 		fmt.Printf("%v", body)
 	}
 	return nil
 }
 
-func parseVersionTag(versionTag string) (*Version, error) {
-	var version *Version
-	versionRegexp := regexp.MustCompile("^v([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$")
-	matches := versionRegexp.FindStringSubmatch(versionTag)
-	if len(matches) < 5 {
-		return nil, fmt.Errorf("tag %s is not formatted correctly, %+v", versionTag, matches)
-	}
-	version = &Version{
-		Tag:               matches[0],
-		MajorRelease:      matches[1],
-		MinorRelease:      matches[2],
-		Patch:             matches[3],
-		PreReleaseVersion: matches[4],
-	}
-	return version, nil
-}
-
-type Version struct {
-	Tag               string
-	MajorRelease      string
-	MinorRelease      string
-	Patch             string
-	PreReleaseVersion string
-}
-
-func (v Version) LessThan(version Version) bool {
-	if v.MinorRelease >= version.MinorRelease {
-		if v.MajorRelease >= version.MajorRelease {
-			return true
-		}
-	}
-	return false
-}
-
+type Version versionutils.Version
 type Versions []Version
+
+// The following functions are used to display the releases in order of release version
+func (v Version) LessThan(version Version) bool {
+	result, _ := versionutils.Version(v).IsGreaterThanOrEqualTo(versionutils.Version(version))
+	return result
+}
 
 func (s Versions) Len() int {
 	return len(s)
