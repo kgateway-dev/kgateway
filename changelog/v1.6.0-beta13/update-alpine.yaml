@@ -1,0 +1,6 @@
+changelog:
+  - dependencyOwner: linux
+    dependencyRepo: alpine
+    dependencyTag: v3.12.1
+    description: Update alpine base image
+    type: DEPENDENCY_BUMP
