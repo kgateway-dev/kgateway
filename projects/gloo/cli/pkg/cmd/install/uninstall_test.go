@@ -56,7 +56,6 @@ spec:
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 
-		// todo is this the right way to make a context when none is available?
 		ctx, cancel = context.WithCancel(context.Background())
 		mockHelmClient = mocks.NewMockHelmClient(ctrl)
 		mockHelmUninstallation = mocks.NewMockHelmUninstallation(ctrl)

@@ -122,13 +122,11 @@ var _ = Describe("TranslatorSyncer", func() {
 		err := syncer.propagateProxyStatus(context.TODO(), proxy, v1alpha1.IngressList{ingress})
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = knativeClient.Ingresses(ingress.Namespace).Get(ctx, ingress.Name, v12.GetOptions{})
+		// _ formally used as 'ci'
+		ci, err := knativeClient.Ingresses(ingress.Namespace).Get(ctx, ingress.Name, v12.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		// todo figure out how to reintroduce IsReady test without having to rip open our test architecture
-		// in order to incorporate the zaptest logic that k8s.networking forces into their recording structure.
-		//Expect(err).NotTo(HaveOccurred())
-		//Expect(ok).To(BeTrue())
+		Expect(ci.IsReady()).To(BeTrue())
 	})
 
 	It("puts all ingresses on the internal proxy", func() {

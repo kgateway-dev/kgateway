@@ -132,7 +132,7 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 
 		for _, tls := range spec.TLS {
 
-			// todo use non-peprecated solutions
+			// todo (mholland) use non-peprecated solutions now that we're using k8s 18.
 			if tls.DeprecatedServerCertificate != "" && tls.DeprecatedServerCertificate != v1.TLSCertKey {
 				contextutils.LoggerFrom(ctx).Warn("Custom ServerCertificate filenames are not currently supported by Gloo")
 				continue

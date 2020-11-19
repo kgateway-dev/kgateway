@@ -685,7 +685,7 @@ func getIpThatsNotLocalhost(instance *services.EnvoyInstance) string {
 				}},
 			}
 
-			errs := validation.ValidateEndpoints(endpoints, false) //todo should this be true or false?
+			errs := validation.ValidateEndpoints(endpoints, false)
 			if len(errs) != 0 {
 				continue
 			}
