@@ -68,21 +68,25 @@ func downgradeFitlerChain(filter *envoy_config_listener_v3.FilterChain) *envoy_a
 		UseProxyProto:    filter.GetUseProxyProto(),
 		Metadata:         downgradeMetadata(filter.GetMetadata()),
 		Name:             filter.GetName(),
+		TransportSocket: downgradeTransportSocket(filter.GetTransportSocket()),
 	}
 
 	for _, v := range filter.GetFilters() {
 		downgradedFilterChain.Filters = append(downgradedFilterChain.Filters, downgradeFilter(v))
 	}
-
-	if filter.GetTransportSocket() != nil {
-		downgradedFilterChain.TransportSocket = &envoycore.TransportSocket{
-			Name: filter.GetTransportSocket().GetName(),
-			ConfigType: &envoycore.TransportSocket_TypedConfig{
-				TypedConfig: filter.GetTransportSocket().GetTypedConfig(),
-			},
-		}
-	}
 	return downgradedFilterChain
+}
+
+func downgradeTransportSocket(ts *envoy_config_core_v3.TransportSocket) *envoycore.TransportSocket {
+	if ts == nil {
+		return nil
+	}
+	return &envoycore.TransportSocket{
+		Name: ts.GetName(),
+		ConfigType: &envoycore.TransportSocket_TypedConfig{
+			TypedConfig: ts.GetTypedConfig(),
+		},
+	}
 }
 
 func downgradeFilterChainMatch(match *envoy_config_listener_v3.FilterChainMatch) *envoy_api_v2_listener.FilterChainMatch {
@@ -198,27 +202,9 @@ func downgradeAddress(address *envoy_config_core_v3.Address) *envoycore.Address 
 
 	switch typed := address.GetAddress().(type) {
 	case *envoy_config_core_v3.Address_SocketAddress:
-		socketAddress := &envoycore.SocketAddress{
-			Protocol: envoycore.SocketAddress_Protocol(
-				envoycore.SocketAddress_Protocol_value[typed.SocketAddress.GetProtocol().String()],
-			),
-			Address:      typed.SocketAddress.GetAddress(),
-			ResolverName: typed.SocketAddress.GetResolverName(),
-			Ipv4Compat:   typed.SocketAddress.GetIpv4Compat(),
-		}
-		switch typed.SocketAddress.GetPortSpecifier().(type) {
-		case *envoy_config_core_v3.SocketAddress_PortValue:
-			socketAddress.PortSpecifier = &envoycore.SocketAddress_PortValue{
-				PortValue: typed.SocketAddress.GetPortValue(),
-			}
-		case *envoy_config_core_v3.SocketAddress_NamedPort:
-			socketAddress.PortSpecifier = &envoycore.SocketAddress_NamedPort{
-				NamedPort: typed.SocketAddress.GetNamedPort(),
-			}
-		}
 		downgradedAddress = &envoycore.Address{
 			Address: &envoycore.Address_SocketAddress{
-				SocketAddress: socketAddress,
+				SocketAddress: downgradeSocketAddress(typed.SocketAddress),
 			},
 		}
 	case *envoy_config_core_v3.Address_Pipe:
@@ -233,4 +219,30 @@ func downgradeAddress(address *envoy_config_core_v3.Address) *envoycore.Address 
 	}
 
 	return downgradedAddress
+}
+
+func downgradeSocketAddress(address *envoy_config_core_v3.SocketAddress) *envoycore.SocketAddress {
+	if address == nil {
+		return nil
+	}
+
+	socketAddress := &envoycore.SocketAddress{
+		Protocol: envoycore.SocketAddress_Protocol(
+			envoycore.SocketAddress_Protocol_value[address.GetProtocol().String()],
+		),
+		Address:      address.GetAddress(),
+		ResolverName: address.GetResolverName(),
+		Ipv4Compat:   address.GetIpv4Compat(),
+	}
+	switch address.GetPortSpecifier().(type) {
+	case *envoy_config_core_v3.SocketAddress_PortValue:
+		socketAddress.PortSpecifier = &envoycore.SocketAddress_PortValue{
+			PortValue: address.GetPortValue(),
+		}
+	case *envoy_config_core_v3.SocketAddress_NamedPort:
+		socketAddress.PortSpecifier = &envoycore.SocketAddress_NamedPort{
+			NamedPort: address.GetNamedPort(),
+		}
+	}
+	return socketAddress
 }
