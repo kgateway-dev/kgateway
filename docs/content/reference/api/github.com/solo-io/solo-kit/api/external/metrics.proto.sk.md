@@ -64,10 +64,10 @@ limitations under the License.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` |  |  |
-| `value` | `string` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` |  |
+| `value` | `string` |  |
 
 
 
@@ -82,9 +82,9 @@ limitations under the License.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `value` | `float` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `value` | `float` |  |
 
 
 
@@ -99,9 +99,9 @@ limitations under the License.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `value` | `float` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `value` | `float` |  |
 
 
 
@@ -117,10 +117,10 @@ limitations under the License.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `quantile` | `float` |  |  |
-| `value` | `float` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `quantile` | `float` |  |
+| `value` | `float` |  |
 
 
 
@@ -137,11 +137,11 @@ limitations under the License.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `sampleCount` | `int` |  |  |
-| `sampleSum` | `float` |  |  |
-| `quantile` | [[]io.prometheus.client.Quantile](../metrics.proto.sk/#quantile) |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `sampleCount` | `int` |  |
+| `sampleSum` | `float` |  |
+| `quantile` | [[]io.prometheus.client.Quantile](../metrics.proto.sk/#quantile) |  |
 
 
 
@@ -156,9 +156,9 @@ limitations under the License.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `value` | `float` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `value` | `float` |  |
 
 
 
@@ -175,11 +175,11 @@ limitations under the License.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `sampleCount` | `int` |  |  |
-| `sampleSum` | `float` |  |  |
-| `bucket` | [[]io.prometheus.client.Bucket](../metrics.proto.sk/#bucket) |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `sampleCount` | `int` |  |
+| `sampleSum` | `float` |  |
+| `bucket` | [[]io.prometheus.client.Bucket](../metrics.proto.sk/#bucket) |  |
 
 
 
@@ -195,10 +195,10 @@ limitations under the License.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `cumulativeCount` | `int` |  |  |
-| `upperBound` | `float` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `cumulativeCount` | `int` |  |
+| `upperBound` | `float` |  |
 
 
 
@@ -219,15 +219,15 @@ limitations under the License.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `label` | [[]io.prometheus.client.LabelPair](../metrics.proto.sk/#labelpair) |  |  |
-| `gauge` | [.io.prometheus.client.Gauge](../metrics.proto.sk/#gauge) |  |  |
-| `counter` | [.io.prometheus.client.Counter](../metrics.proto.sk/#counter) |  |  |
-| `summary` | [.io.prometheus.client.Summary](../metrics.proto.sk/#summary) |  |  |
-| `untyped` | [.io.prometheus.client.Untyped](../metrics.proto.sk/#untyped) |  |  |
-| `histogram` | [.io.prometheus.client.Histogram](../metrics.proto.sk/#histogram) |  |  |
-| `timestampMs` | `int` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `label` | [[]io.prometheus.client.LabelPair](../metrics.proto.sk/#labelpair) |  |
+| `gauge` | [.io.prometheus.client.Gauge](../metrics.proto.sk/#gauge) |  |
+| `counter` | [.io.prometheus.client.Counter](../metrics.proto.sk/#counter) |  |
+| `summary` | [.io.prometheus.client.Summary](../metrics.proto.sk/#summary) |  |
+| `untyped` | [.io.prometheus.client.Untyped](../metrics.proto.sk/#untyped) |  |
+| `histogram` | [.io.prometheus.client.Histogram](../metrics.proto.sk/#histogram) |  |
+| `timestampMs` | `int` |  |
 
 
 
@@ -245,12 +245,12 @@ limitations under the License.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` |  |  |
-| `help` | `string` |  |  |
-| `type` | [.io.prometheus.client.MetricType](../metrics.proto.sk/#metrictype) |  |  |
-| `metric` | [[]io.prometheus.client.Metric](../metrics.proto.sk/#metric) |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` |  |
+| `help` | `string` |  |
+| `type` | [.io.prometheus.client.MetricType](../metrics.proto.sk/#metrictype) |  |
+| `metric` | [[]io.prometheus.client.Metric](../metrics.proto.sk/#metric) |  |
 
 
 

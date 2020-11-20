@@ -346,7 +346,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		Cache: memory.NewInMemoryResourceCache(),
 	}
 
-	upstreamClient, err := v1.NewUpstreamClient(opts.Upstreams)
+	upstreamClient, err := v1.NewUpstreamClient(watchOpts.Ctx, opts.Upstreams)
 	if err != nil {
 		return err
 	}
@@ -363,7 +363,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	proxyClient, err := v1.NewProxyClient(opts.Proxies)
+	proxyClient, err := v1.NewProxyClient(watchOpts.Ctx, opts.Proxies)
 	if err != nil {
 		return err
 	}
@@ -371,7 +371,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	upstreamGroupClient, err := v1.NewUpstreamGroupClient(opts.UpstreamGroups)
+	upstreamGroupClient, err := v1.NewUpstreamGroupClient(watchOpts.Ctx, opts.UpstreamGroups)
 	if err != nil {
 		return err
 	}
@@ -379,22 +379,22 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	endpointClient, err := v1.NewEndpointClient(endpointsFactory)
+	endpointClient, err := v1.NewEndpointClient(watchOpts.Ctx, endpointsFactory)
 	if err != nil {
 		return err
 	}
 
-	secretClient, err := v1.NewSecretClient(opts.Secrets)
+	secretClient, err := v1.NewSecretClient(watchOpts.Ctx, opts.Secrets)
 	if err != nil {
 		return err
 	}
 
-	artifactClient, err := v1.NewArtifactClient(opts.Artifacts)
+	artifactClient, err := v1.NewArtifactClient(watchOpts.Ctx, opts.Artifacts)
 	if err != nil {
 		return err
 	}
 
-	authConfigClient, err := extauth.NewAuthConfigClient(opts.AuthConfigs)
+	authConfigClient, err := extauth.NewAuthConfigClient(watchOpts.Ctx, opts.AuthConfigs)
 	if err != nil {
 		return err
 	}
@@ -402,7 +402,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	rlClient, rlReporterClient, err := rlv1alpha1.NewRateLimitClients(opts.RateLimitConfigs)
+	rlClient, rlReporterClient, err := rlv1alpha1.NewRateLimitClients(watchOpts.Ctx, opts.RateLimitConfigs)
 	if err != nil {
 		return err
 	}

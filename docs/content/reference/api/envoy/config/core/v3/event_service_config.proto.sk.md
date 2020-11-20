@@ -34,9 +34,9 @@ Configuration of the event reporting service endpoint.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `grpcService` | [.envoy.config.core.v3.GrpcService](../grpc_service.proto.sk/#grpcservice) | Specifies the gRPC service that hosts the event reporting service. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `grpcService` | [.envoy.config.core.v3.GrpcService](../grpc_service.proto.sk/#grpcservice) | Specifies the gRPC service that hosts the event reporting service. |
 
 
 

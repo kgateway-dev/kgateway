@@ -40,16 +40,16 @@ CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `allowOrigin` | `[]string` | Specifies the origins that will be allowed to make CORS requests. An origin is allowed if either allow_origin or allow_origin_regex match. |  |
-| `allowOriginRegex` | `[]string` | Specifies regex patterns that match origins that will be allowed to make CORS requests. An origin is allowed if either allow_origin or allow_origin_regex match. |  |
-| `allowMethods` | `[]string` | Specifies the content for the *access-control-allow-methods* header. |  |
-| `allowHeaders` | `[]string` | Specifies the content for the *access-control-allow-headers* header. |  |
-| `exposeHeaders` | `[]string` | Specifies the content for the *access-control-expose-headers* header. |  |
-| `maxAge` | `string` | Specifies the content for the *access-control-max-age* header. |  |
-| `allowCredentials` | `bool` | Specifies whether the resource allows credentials. |  |
-| `disableForRoute` | `bool` | Optional, only applies to route-specific CORS Policies, defaults to false. If set, the CORS Policy (specified on the virtual host) will be disabled for this route. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `allowOrigin` | `[]string` | Specifies the origins that will be allowed to make CORS requests. An origin is allowed if either allow_origin or allow_origin_regex match. |
+| `allowOriginRegex` | `[]string` | Specifies regex patterns that match origins that will be allowed to make CORS requests. An origin is allowed if either allow_origin or allow_origin_regex match. |
+| `allowMethods` | `[]string` | Specifies the content for the *access-control-allow-methods* header. |
+| `allowHeaders` | `[]string` | Specifies the content for the *access-control-allow-headers* header. |
+| `exposeHeaders` | `[]string` | Specifies the content for the *access-control-expose-headers* header. |
+| `maxAge` | `string` | Specifies the content for the *access-control-max-age* header. |
+| `allowCredentials` | `bool` | Specifies whether the resource allows credentials. |
+| `disableForRoute` | `bool` | Optional, only applies to route-specific CORS Policies, defaults to false. If set, the CORS Policy (specified on the virtual host) will be disabled for this route. |
 
 
 

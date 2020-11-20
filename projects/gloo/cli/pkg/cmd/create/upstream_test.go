@@ -1,6 +1,8 @@
 package create_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
@@ -14,12 +16,22 @@ import (
 
 var _ = Describe("Upstream", func() {
 
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
 	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
 		helpers.UseMemoryClients()
 	})
 
+	AfterEach(func() {
+		cancel()
+	})
+
 	getUpstream := func(name string) *v1.Upstream {
-		up, err := helpers.MustUpstreamClient().Read("gloo-system", name, clients.ReadOpts{})
+		up, err := helpers.MustUpstreamClient(ctx).Read("gloo-system", name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		return up
 	}

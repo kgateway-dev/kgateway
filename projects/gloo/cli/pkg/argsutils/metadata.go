@@ -17,7 +17,7 @@ func MetadataArgsParse(opts *options.Options, args []string) error {
 
 	// if interactive mode, get any missing fields interactively
 	if opts.Top.Interactive {
-		return surveyutils.EnsureMetadataSurvey(&opts.Metadata)
+		return surveyutils.EnsureMetadataSurvey(opts.Top.Ctx, &opts.Metadata)
 	}
 
 	// if not interactive mode, ensure that the required fields were provided

@@ -33,9 +33,9 @@ Add this config to a Listener/Gateway to Enable Envoy Health Checks on that port
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `path` | `string` | match health check requests using this exact path. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `path` | `string` | match health check requests using this exact path. |
 
 
 

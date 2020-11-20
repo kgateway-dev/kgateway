@@ -33,6 +33,7 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 				ExtraValues:    extraValues,
 				Mode:           mode, // mode will be overwritten in Install to Gloo if the helm chart doesn't have gloo subchart
 				Verbose:        opts.Top.Verbose,
+				Ctx:            opts.Top.Ctx,
 			}); err != nil {
 				return eris.Wrapf(err, "installing Gloo Edge Enterprise in gateway mode")
 			}

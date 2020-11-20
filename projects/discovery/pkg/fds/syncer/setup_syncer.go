@@ -29,14 +29,14 @@ func RunFDS(opts bootstrap.Opts) error {
 	watchOpts := opts.WatchOpts.WithDefaults()
 	watchOpts.Ctx = contextutils.WithLogger(watchOpts.Ctx, "fds")
 
-	upstreamClient, err := v1.NewUpstreamClient(opts.Upstreams)
+	upstreamClient, err := v1.NewUpstreamClient(watchOpts.Ctx, opts.Upstreams)
 	if err != nil {
 		return err
 	}
 	if err := upstreamClient.Register(); err != nil {
 		return err
 	}
-	secretClient, err := v1.NewSecretClient(opts.Secrets)
+	secretClient, err := v1.NewSecretClient(watchOpts.Ctx, opts.Secrets)
 	if err != nil {
 		return err
 	}

@@ -71,10 +71,10 @@ namespace: two
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `primary` | [.core.skv2.solo.io.ClusterObjectRef](../../../../../../skv2/api/core/v1/core.proto.sk/#clusterobjectref) | The upstream which will be configured for failover. |  |
-| `failoverGroups` | [[]fed.solo.io.FailoverSchemeSpec.FailoverEndpoints](../failover.proto.sk/#failoverendpoints) |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `primary` | [.core.skv2.solo.io.ClusterObjectRef](../../../../../../skv2/api/core/v1/core.proto.sk/#clusterobjectref) | The upstream which will be configured for failover. |
+| `failoverGroups` | [[]fed.solo.io.FailoverSchemeSpec.FailoverEndpoints](../failover.proto.sk/#failoverendpoints) |  |
 
 
 
@@ -89,9 +89,9 @@ namespace: two
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `priorityGroup` | [[]fed.solo.io.FailoverSchemeSpec.FailoverEndpoints.LocalityLbTargets](../failover.proto.sk/#localitylbtargets) |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `priorityGroup` | [[]fed.solo.io.FailoverSchemeSpec.FailoverEndpoints.LocalityLbTargets](../failover.proto.sk/#localitylbtargets) |  |
 
 
 
@@ -108,11 +108,11 @@ namespace: two
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `cluster` | `string` | (REQUIRED) Cluster on which the endpoints for this Group can be found. |  |
-| `upstreams` | [[]core.skv2.solo.io.ObjectRef](../../../../../../skv2/api/core/v1/core.proto.sk/#objectref) | A list of Upstream targets, each of these targets must exist on the cluster specified in this message. |  |
-| `localityWeight` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | (optional) locality load balancing weight assigned to the specified upstreams. Locality load balancing will add a special load balancing weight among all targets within a given priority, who are located in the zame zone. See envoy Locality Weighted Load Balancing for more information: https://www.envoyproxy.io/docs/envoy/v1.14.1/intro/arch_overview/upstream/load_balancing/locality_weight#arch-overview-load-balancing-locality-weighted-lb. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `cluster` | `string` | (REQUIRED) Cluster on which the endpoints for this Group can be found. |
+| `upstreams` | [[]core.skv2.solo.io.ObjectRef](../../../../../../skv2/api/core/v1/core.proto.sk/#objectref) | A list of Upstream targets, each of these targets must exist on the cluster specified in this message. |
+| `localityWeight` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | (optional) locality load balancing weight assigned to the specified upstreams. Locality load balancing will add a special load balancing weight among all targets within a given priority, who are located in the zame zone. See envoy Locality Weighted Load Balancing for more information: https://www.envoyproxy.io/docs/envoy/v1.14.1/intro/arch_overview/upstream/load_balancing/locality_weight#arch-overview-load-balancing-locality-weighted-lb. |
 
 
 
@@ -130,12 +130,12 @@ namespace: two
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `state` | [.fed.solo.io.FailoverSchemeStatus.State](../failover.proto.sk/#state) | The current state of the resource. |  |
-| `message` | `string` | A human readable message about the current state of the object. |  |
-| `observedGeneration` | `int` | The most recently observed generation of the resource. This value corresponds to the `metadata.generation` of a kubernetes resource. |  |
-| `processingTime` | [.google.protobuf.Timestamp](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/timestamp) | The time at which this status was recorded. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `state` | [.fed.solo.io.FailoverSchemeStatus.State](../failover.proto.sk/#state) | The current state of the resource. |
+| `message` | `string` | A human readable message about the current state of the object. |
+| `observedGeneration` | `int` | The most recently observed generation of the resource. This value corresponds to the `metadata.generation` of a kubernetes resource. |
+| `processingTime` | [.google.protobuf.Timestamp](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/timestamp) | The time at which this status was recorded. |
 
 
 

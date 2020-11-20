@@ -1,6 +1,7 @@
 package printers
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -21,13 +22,13 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-func PrintVirtualServices(virtualServices v1.VirtualServiceList, outputType OutputType, namespace string) error {
+func PrintVirtualServices(ctx context.Context, virtualServices v1.VirtualServiceList, outputType OutputType, namespace string) error {
 	if outputType == KUBE_YAML {
 		return PrintKubeCrdList(virtualServices.AsInputResources(), v1.VirtualServiceCrd)
 	}
 	return cliutils.PrintList(outputType.String(), "", virtualServices,
 		func(data interface{}, w io.Writer) error {
-			VirtualServiceTable(data.(v1.VirtualServiceList), w, namespace)
+			VirtualServiceTable(ctx, data.(v1.VirtualServiceList), w, namespace)
 			return nil
 		}, os.Stdout)
 }
@@ -44,7 +45,7 @@ func PrintRouteTables(routeTables v1.RouteTableList, outputType OutputType) erro
 }
 
 // PrintTable prints virtual services using tables to io.Writer
-func VirtualServiceTable(list []*v1.VirtualService, w io.Writer, namespace string) {
+func VirtualServiceTable(ctx context.Context, list []*v1.VirtualService, w io.Writer, namespace string) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Virtual Service", "Display Name", "Domains", "SSL", "Status", "ListenerPlugins", "Routes"})
 
@@ -53,7 +54,7 @@ func VirtualServiceTable(list []*v1.VirtualService, w io.Writer, namespace strin
 		displayName := v.GetDisplayName()
 		domains := domains(v)
 		ssl := sslConfig(v)
-		status := getStatus(v, namespace)
+		status := getStatus(ctx, v, namespace)
 		routes := routeList(v.GetVirtualHost().GetRoutes())
 		plugins := vhPlugins(v)
 
@@ -133,7 +134,7 @@ func getRouteTableStatus(vs *v1.RouteTable) string {
 	}
 }
 
-func getStatus(res resources.InputResource, namespace string) string {
+func getStatus(ctx context.Context, res resources.InputResource, namespace string) string {
 
 	// If the virtual service is still pending and may yet be accepted, don't clutter the status with other errors.
 	resourceStatus := res.GetStatus().State
@@ -150,7 +151,7 @@ func getStatus(res resources.InputResource, namespace string) string {
 	// If the virtual service was accepted, don't include confusing errors on subresources but note if there's another resource potentially blocking config updates.
 	if resourceStatus == core.Status_Accepted {
 		// if route replacement is turned on, don't say that updates to this resource may be blocked
-		settingsClient, err := helpers.SettingsClient([]string{namespace})
+		settingsClient, err := helpers.SettingsClient(ctx, []string{namespace})
 		// if we get any errors, ignore and default to more verbose error message
 		if err == nil {
 			settings, err := settingsClient.Read(namespace, defaults.SettingsName, clients.ReadOpts{})

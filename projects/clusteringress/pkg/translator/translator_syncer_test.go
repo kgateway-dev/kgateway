@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	alpha1 "knative.dev/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
+	alpha1 "knative.dev/networking/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,17 +18,21 @@ import (
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
-	v1alpha12 "knative.dev/serving/pkg/apis/networking/v1alpha1"
+	v1alpha12 "knative.dev/networking/pkg/apis/networking/v1alpha1"
 )
 
 var _ = Describe("TranslatorSyncer", func() {
 	It("propagates successful proxy status to the clusteringresses it was created from", func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer func() { cancel() }()
+
 		proxyAddress := "proxy-address"
 		namespace := "write-namespace"
-		proxyClient, _ := v1.NewProxyClient(&factory.MemoryResourceClientFactory{Cache: memory.NewInMemoryResourceCache()})
+		proxyClient, _ := v1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{Cache: memory.NewInMemoryResourceCache()})
 		clusterIngress := &v1alpha1.ClusterIngress{ClusterIngress: knative.ClusterIngress{
 			ObjectMeta: v12.ObjectMeta{Generation: 1},
 		}}
+
 		knativeClient := &mockIngressesGetter{
 			ciClient: &mockCiClient{ci: toKube(clusterIngress)}}
 
@@ -49,10 +53,10 @@ var _ = Describe("TranslatorSyncer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		var ci *v1alpha12.Ingress
-		ci, err = knativeClient.ciClient.Get(clusterIngress.Name, v12.GetOptions{})
+		ci, err = knativeClient.ciClient.Get(ctx, clusterIngress.Name, v12.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(ci.Status.IsReady()).To(BeTrue())
+		Expect(ci.IsReady()).To(BeTrue())
 	})
 })
 
@@ -69,39 +73,39 @@ func toKube(ci *v1alpha1.ClusterIngress) *v1alpha12.Ingress {
 
 type mockCiClient struct{ ci *v1alpha12.Ingress }
 
-func (c *mockCiClient) UpdateStatus(ci *v1alpha12.Ingress) (*v1alpha12.Ingress, error) {
-	c.ci.Status = ci.Status
-	return ci, nil
+func (c *mockCiClient) UpdateStatus(ctx context.Context, ingress *v1alpha12.Ingress, opts v12.UpdateOptions) (*v1alpha12.Ingress, error) {
+	c.ci.Status = ingress.Status
+	return ingress, nil
 }
 
-func (*mockCiClient) Create(*v1alpha12.Ingress) (*v1alpha12.Ingress, error) {
+func (*mockCiClient) Create(ctx context.Context, ingress *v1alpha12.Ingress, opts v12.CreateOptions) (*v1alpha12.Ingress, error) {
 	panic("implement me")
 }
 
-func (*mockCiClient) Update(*v1alpha12.Ingress) (*v1alpha12.Ingress, error) {
+func (*mockCiClient) Update(ctx context.Context, ingress *v1alpha12.Ingress, opts v12.UpdateOptions) (*v1alpha12.Ingress, error) {
 	panic("implement me")
 }
 
-func (*mockCiClient) Delete(name string, options *v12.DeleteOptions) error {
+func (*mockCiClient) Delete(ctx context.Context, name string, opts v12.DeleteOptions) error {
 	panic("implement me")
 }
 
-func (*mockCiClient) DeleteCollection(options *v12.DeleteOptions, listOptions v12.ListOptions) error {
+func (*mockCiClient) DeleteCollection(ctx context.Context, opts v12.DeleteOptions, listOpts v12.ListOptions) error {
 	panic("implement me")
 }
 
-func (c *mockCiClient) Get(name string, options v12.GetOptions) (*v1alpha12.Ingress, error) {
+func (c *mockCiClient) Get(ctx context.Context, name string, opts v12.GetOptions) (*v1alpha12.Ingress, error) {
 	return c.ci, nil
 }
 
-func (*mockCiClient) List(opts v12.ListOptions) (*v1alpha12.IngressList, error) {
+func (*mockCiClient) List(ctx context.Context, opts v12.ListOptions) (*v1alpha12.IngressList, error) {
 	panic("implement me")
 }
 
-func (*mockCiClient) Watch(opts v12.ListOptions) (watch.Interface, error) {
+func (*mockCiClient) Watch(ctx context.Context, opts v12.ListOptions) (watch.Interface, error) {
 	panic("implement me")
 }
 
-func (*mockCiClient) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha12.Ingress, err error) {
+func (*mockCiClient) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v12.PatchOptions, subresources ...string) (result *v1alpha12.Ingress, err error) {
 	panic("implement me")
 }

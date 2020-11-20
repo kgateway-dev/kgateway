@@ -55,10 +55,10 @@ var _ = Describe("Installing gloo edge in mtls mode", func() {
 			SharedCache: cache,
 		}
 
-		gatewayClient, err = gatewayv1.NewGatewayClient(gatewayClientFactory)
+		gatewayClient, err = gatewayv1.NewGatewayClient(ctx, gatewayClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		virtualServiceClient, err = gatewayv1.NewVirtualServiceClient(virtualServiceClientFactory)
+		virtualServiceClient, err = gatewayv1.NewVirtualServiceClient(ctx, virtualServiceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 	})

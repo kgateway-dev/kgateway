@@ -18,7 +18,7 @@ func RunUDS(opts bootstrap.Opts) error {
 	watchOpts := opts.WatchOpts.WithDefaults()
 	watchOpts.Ctx = contextutils.WithLogger(watchOpts.Ctx, "uds")
 
-	upstreamClient, err := v1.NewUpstreamClient(opts.Upstreams)
+	upstreamClient, err := v1.NewUpstreamClient(watchOpts.Ctx, opts.Upstreams)
 	if err != nil {
 		return err
 	}
@@ -26,7 +26,7 @@ func RunUDS(opts bootstrap.Opts) error {
 		return err
 	}
 
-	secretClient, err := v1.NewSecretClient(opts.Secrets)
+	secretClient, err := v1.NewSecretClient(watchOpts.Ctx, opts.Secrets)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func RunUDS(opts bootstrap.Opts) error {
 		// initialize an empty namespace client
 		// in the future we can extend the concept of namespaces to
 		// its own resource type which users can manage via another storage backend
-		nsClient, err = kubernetes.NewKubeNamespaceClient(&factory.MemoryResourceClientFactory{
+		nsClient, err = kubernetes.NewKubeNamespaceClient(watchOpts.Ctx, &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		})
 		if err != nil {

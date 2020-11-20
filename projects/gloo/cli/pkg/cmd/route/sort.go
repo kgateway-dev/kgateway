@@ -49,7 +49,7 @@ func sortRoutes(opts *options.Options) error {
 		return errors.Errorf("name of the target virtual service cannot be empty")
 	}
 
-	vs, err := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace()).Read(opts.Metadata.Namespace, opts.Metadata.Name,
+	vs, err := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace()).Read(opts.Metadata.Namespace, opts.Metadata.Name,
 		clients.ReadOpts{Ctx: opts.Top.Ctx})
 	if err != nil {
 		return errors.Wrapf(err, "reading vs %v", opts.Metadata.Ref())
@@ -61,7 +61,7 @@ func sortRoutes(opts *options.Options) error {
 		"...\n", len(vs.VirtualHost.Routes))
 	utils.SortGatewayRoutesByPath(vs.VirtualHost.Routes)
 
-	out, err := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace()).Write(vs, clients.WriteOpts{
+	out, err := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace()).Write(vs, clients.WriteOpts{
 		Ctx:               opts.Top.Ctx,
 		OverwriteExisting: true,
 	})
@@ -69,6 +69,6 @@ func sortRoutes(opts *options.Options) error {
 		return errors.Wrapf(err, "writing updated vs")
 	}
 
-	_ = printers.PrintVirtualServices(gatewayv1.VirtualServiceList{out}, opts.Top.Output, opts.Metadata.Namespace)
+	_ = printers.PrintVirtualServices(opts.Top.Ctx, gatewayv1.VirtualServiceList{out}, opts.Top.Output, opts.Metadata.Namespace)
 	return nil
 }

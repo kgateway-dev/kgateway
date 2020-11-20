@@ -26,17 +26,17 @@ func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg T
 
 	contextutils.LoggerFrom(ctx).Infow("creating TLS secret", zap.String("secret", secret.Name))
 
-	if _, err := secretClient.Create(secret); err != nil {
+	if _, err := secretClient.Create(ctx, secret, metav1.CreateOptions{}); err != nil {
 		if apierrors.IsAlreadyExists(err) {
 			contextutils.LoggerFrom(ctx).Infow("existing TLS secret found, attempting to update", zap.String("secret", secret.Name))
 
-			existing, err := secretClient.Get(secret.Name, metav1.GetOptions{})
+			existing, err := secretClient.Get(ctx, secret.Name, metav1.GetOptions{})
 			if err != nil {
 				return errors.Wrapf(err, "failed to retrieve existing secret after receiving AlreadyExists error on Create")
 			}
 			secret.ResourceVersion = existing.ResourceVersion
 
-			if _, err := secretClient.Update(secret); err != nil {
+			if _, err := secretClient.Update(ctx, secret, metav1.UpdateOptions{}); err != nil {
 				return errors.Wrapf(err, "failed updating existing secret")
 			}
 			return nil

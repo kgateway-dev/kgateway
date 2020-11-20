@@ -3,6 +3,8 @@
 package v1alpha1
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type clusterIngressClient struct {
 	rc clients.ResourceClient
 }
 
-func NewClusterIngressClient(rcFactory factory.ResourceClientFactory) (ClusterIngressClient, error) {
-	return NewClusterIngressClientWithToken(rcFactory, "")
+func NewClusterIngressClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (ClusterIngressClient, error) {
+	return NewClusterIngressClientWithToken(ctx, rcFactory, "")
 }
 
-func NewClusterIngressClientWithToken(rcFactory factory.ResourceClientFactory, token string) (ClusterIngressClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewClusterIngressClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (ClusterIngressClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &ClusterIngress{},
 		Token:        token,
 	})

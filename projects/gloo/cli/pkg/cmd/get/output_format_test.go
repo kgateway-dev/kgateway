@@ -1,6 +1,8 @@
 package get_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -15,18 +17,26 @@ import (
 
 var _ = Describe("Upstream", func() {
 
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
-		_, err := helpers.MustKubeClient().CoreV1().Namespaces().Create(&corev1.Namespace{
+		ctx, cancel = context.WithCancel(context.Background())
+		_, err := helpers.MustKubeClient().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: defaults.GlooSystem,
 			},
-		})
+		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	AfterEach(func() { cancel() })
+
 	getUpstream := func(name string) *v1.Upstream {
-		up, err := helpers.MustUpstreamClient().Read("gloo-system", name, clients.ReadOpts{})
+		up, err := helpers.MustUpstreamClient(ctx).Read("gloo-system", name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
 		return up
