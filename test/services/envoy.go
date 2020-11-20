@@ -2,8 +2,12 @@ package services
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/envoyinit/cmd/utils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -14,12 +18,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"text/template"
-
-	"github.com/solo-io/gloo/projects/envoyinit/cmd/utils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-
-	"bytes"
-	"io"
+	"time"
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
@@ -447,6 +446,12 @@ func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32, configFil
 		if err != nil {
 			return err
 		}
+
+		// Default to run envoy with panic_mode disabled
+		err = ei.DisablePanicMode()
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -482,6 +487,10 @@ func (ei *EnvoyInstance) Binary() string {
 
 func (ei *EnvoyInstance) LocalAddr() string {
 	return ei.GlooAddr
+}
+
+func (ei *EnvoyInstance) EnablePanicMode() error {
+	return ei.setRuntimeConfiguration(fmt.Sprintf("upstream.healthy_panic_threshold=%d", 100))
 }
 
 func (ei *EnvoyInstance) DisablePanicMode() error {
@@ -547,7 +556,32 @@ func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
 		return errors.Wrap(err, "Unable to start envoy container")
 	}
 
-	return nil
+	// cmd.Run() is entering an infinite loop here (not sure why).
+	// This is a temporary workaround to poll the container until the admin port to be ready for traffic
+	return ei.waitForContainer()
+}
+
+func (ei *EnvoyInstance) waitForContainer() error {
+	pingInterval := time.Tick(time.Second / 1)
+	pingDuration := time.Second * 5
+
+	ctx, cancel := context.WithTimeout(context.Background(), pingDuration)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.Errorf("timed out waiting for envoy container")
+
+		case <-pingInterval:
+			conn, _ := net.Dial("tcp", fmt.Sprintf("localhost:%d", ei.AdminPort))
+			if conn != nil {
+				conn.Close()
+				return nil
+			}
+			continue
+		}
+	}
 }
 
 func stopContainer() error {
