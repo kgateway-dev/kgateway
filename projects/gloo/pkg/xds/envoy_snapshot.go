@@ -65,11 +65,11 @@ func NewSnapshot(
 		Endpoints:                 cache.NewResources(version, endpoints),
 		hiddenDeprecatedEndpoints: cache.NewResources(version, nil),
 		Clusters:                  cache.NewResources(version, clusters),
-		hiddenDeprecatedClusters:  cache.NewResources(version, nil),
+		hiddenDeprecatedClusters:  downgradeCacheResourceList(version, clusters),
 		Routes:                    cache.NewResources(version, routes),
 		hiddenDeprecatedRoutes:    cache.NewResources(version, nil),
 		Listeners:                 cache.NewResources(version, listeners),
-		hiddenDeprecatedListeners: cache.NewResources(version, nil),
+		hiddenDeprecatedListeners: downgradeCacheResourceList(version, clusters),
 	}
 }
 
@@ -81,11 +81,35 @@ func NewSnapshotFromResources(
 ) cache.Snapshot {
 	// TODO: Copy resources and downgrade, maybe maintain hash to not do it too many times
 	return &EnvoySnapshot{
-		Endpoints: endpoints,
-		Clusters:  clusters,
-		Routes:    routes,
-		Listeners: listeners,
+		Endpoints:                 endpoints,
+		Clusters:                  clusters,
+		hiddenDeprecatedClusters:  downgradeCacheResources(clusters),
+		Routes:                    routes,
+		Listeners:                 listeners,
+		hiddenDeprecatedListeners: downgradeCacheResources(listeners),
 	}
+}
+
+func downgradeCacheResources(resources cache.Resources) cache.Resources {
+	newResources := make([]cache.Resource, 0, len(resources.Items))
+	for _, v := range resources.Items {
+		downgradedResource := downgradeResource(v)
+		if downgradedResource != nil {
+			newResources = append(newResources, downgradedResource)
+		}
+	}
+	return cache.NewResources(resources.Version, newResources)
+}
+
+func downgradeCacheResourceList(version string, resources []cache.Resource) cache.Resources {
+	newResources := make([]cache.Resource, 0, len(resources))
+	for _, v := range resources {
+		downgradedResource := downgradeResource(v)
+		if downgradedResource != nil {
+			newResources = append(newResources, downgradedResource)
+		}
+	}
+	return cache.NewResources(version, newResources)
 }
 
 // Consistent check verifies that the dependent resources are exactly listed in the

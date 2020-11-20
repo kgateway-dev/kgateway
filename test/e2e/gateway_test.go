@@ -310,7 +310,7 @@ var _ = Describe("Gateway", func() {
 			}
 		})
 
-		Context("traffic", func() {
+		FContext("traffic", func() {
 
 			var (
 				envoyInstance *services.EnvoyInstance
@@ -331,7 +331,7 @@ var _ = Describe("Gateway", func() {
 
 				_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
-
+				envoyInstance.ApiVersion = "V2"
 				err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 				// Check that the new instance of envoy is running
@@ -361,7 +361,7 @@ var _ = Describe("Gateway", func() {
 				}, 5*time.Second, 1*time.Second).Should(HaveOccurred())
 			})
 
-			It("works when rapid virtual service creation and deletion causes no race conditions", func() {
+			FIt("works when rapid virtual service creation and deletion causes no race conditions", func() {
 				up := tu.Upstream
 				vs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
 

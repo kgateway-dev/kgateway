@@ -9,20 +9,23 @@ import (
 )
 
 func DowngradeCluster(cluster *envoy_config_cluster_v3.Cluster) *envoyapi.Cluster {
+	if cluster == nil {
+		return nil
+	}
+
 	downgradedCluster := &envoyapi.Cluster{
 		TransportSocketMatches: make(
 			[]*envoyapi.Cluster_TransportSocketMatch, 0, len(cluster.GetTransportSocketMatches()),
 		),
 		Name:                          cluster.GetName(),
 		AltStatName:                   cluster.GetAltStatName(),
-		ClusterDiscoveryType:          nil,
 		EdsClusterConfig:              downgradeEdsClusterConfig(cluster.GetEdsClusterConfig()),
 		ConnectTimeout:                cluster.GetConnectTimeout(),
 		PerConnectionBufferLimitBytes: cluster.GetPerConnectionBufferLimitBytes(),
 		LbPolicy: envoyapi.Cluster_LbPolicy(
 			envoyapi.Cluster_LbPolicy_value[cluster.GetLbPolicy().String()],
 		),
-		LoadAssignment:                nil,
+		LoadAssignment:                DowngradeEndpoint(cluster.GetLoadAssignment()),
 		HealthChecks:                  nil,
 		MaxRequestsPerConnection:      cluster.GetMaxRequestsPerConnection(),
 		CircuitBreakers:               nil,
@@ -36,21 +39,23 @@ func DowngradeCluster(cluster *envoy_config_cluster_v3.Cluster) *envoyapi.Cluste
 		DnsLookupFamily: envoyapi.Cluster_DnsLookupFamily(
 			envoyapi.Cluster_DnsLookupFamily_value[cluster.GetDnsLookupFamily().String()],
 		),
-		DnsResolvers:                        make([]*envoy_api_v2_core.Address, 0, len(cluster.GetDnsResolvers())),
-		UseTcpForDnsLookups:                 cluster.GetUseTcpForDnsLookups(),
-		OutlierDetection:                    downgradeOutlierDetection(cluster.GetOutlierDetection()),
-		CleanupInterval:                     cluster.GetCleanupInterval(),
-		UpstreamBindConfig:                  nil,
-		LbSubsetConfig:                      nil,
-		LbConfig:                            nil,
-		CommonLbConfig:                      nil,
-		TransportSocket:                     downgradeTransportSocket(cluster.GetTransportSocket()),
-		Metadata:                            downgradeMetadata(cluster.GetMetadata()),
-		ProtocolSelection:                   0,
+		DnsResolvers:        make([]*envoy_api_v2_core.Address, 0, len(cluster.GetDnsResolvers())),
+		UseTcpForDnsLookups: cluster.GetUseTcpForDnsLookups(),
+		OutlierDetection:    downgradeOutlierDetection(cluster.GetOutlierDetection()),
+		CleanupInterval:     cluster.GetCleanupInterval(),
+		UpstreamBindConfig:  downgradeBindConfig(cluster.GetUpstreamBindConfig()),
+		LbSubsetConfig:      nil,
+		LbConfig:            nil,
+		CommonLbConfig:      nil,
+		TransportSocket:     downgradeTransportSocket(cluster.GetTransportSocket()),
+		Metadata:            downgradeMetadata(cluster.GetMetadata()),
+		ProtocolSelection: envoyapi.Cluster_ClusterProtocolSelection(
+			envoyapi.Cluster_ClusterProtocolSelection_value[cluster.GetProtocolSelection().String()],
+		),
 		UpstreamConnectionOptions:           nil,
 		CloseConnectionsOnHostHealthFailure: cluster.GetCloseConnectionsOnHostHealthFailure(),
 		Filters:                             make([]*envoy_api_v2_cluster.Filter, 0, len(cluster.GetFilters())),
-		LoadBalancingPolicy:                 nil,
+		LoadBalancingPolicy:                 downgradeLoadBalancingPolicy(cluster.GetLoadBalancingPolicy()),
 		LrsServer:                           downgradeConfigSource(cluster.GetLrsServer()),
 		TrackTimeoutBudgets:                 cluster.GetTrackTimeoutBudgets(),
 		// Not present in v2
@@ -59,6 +64,20 @@ func DowngradeCluster(cluster *envoy_config_cluster_v3.Cluster) *envoyapi.Cluste
 		ExtensionProtocolOptions: cluster.GetHiddenEnvoyDeprecatedExtensionProtocolOptions(),
 		TlsContext:               nil,
 		Hosts:                    nil,
+	}
+
+	switch typed := cluster.GetClusterDiscoveryType().(type) {
+	case *envoy_config_cluster_v3.Cluster_Type:
+		downgradedCluster.ClusterDiscoveryType = &envoyapi.Cluster_Type{
+			Type: envoyapi.Cluster_DiscoveryType(envoyapi.Cluster_DiscoveryType_value[typed.Type.String()]),
+		}
+	case *envoy_config_cluster_v3.Cluster_ClusterType:
+		downgradedCluster.ClusterDiscoveryType = &envoyapi.Cluster_ClusterType{
+			ClusterType: &envoyapi.Cluster_CustomClusterType{
+				Name:        typed.ClusterType.GetName(),
+				TypedConfig: typed.ClusterType.GetTypedConfig(),
+			},
+		}
 	}
 
 	for _, v := range cluster.GetDnsResolvers() {
@@ -84,6 +103,27 @@ func DowngradeCluster(cluster *envoy_config_cluster_v3.Cluster) *envoyapi.Cluste
 	return downgradedCluster
 }
 
+func downgradeLoadBalancingPolicy(
+	policy *envoy_config_cluster_v3.LoadBalancingPolicy,
+) *envoyapi.LoadBalancingPolicy {
+	if policy == nil {
+		return nil
+	}
+
+	downgraded := &envoyapi.LoadBalancingPolicy{
+		Policies: make([]*envoyapi.LoadBalancingPolicy_Policy, 0, len(policy.GetPolicies())),
+	}
+
+	for _, v := range policy.GetPolicies() {
+		downgraded.Policies = append(downgraded.Policies, &envoyapi.LoadBalancingPolicy_Policy{
+			Name:        v.GetName(),
+			TypedConfig: v.GetTypedConfig(),
+		})
+	}
+
+	return downgraded
+}
+
 func downgradeBindConfig(cfg *envoy_config_core_v3.BindConfig) *envoy_api_v2_core.BindConfig {
 	if cfg == nil {
 		return nil
@@ -92,6 +132,11 @@ func downgradeBindConfig(cfg *envoy_config_core_v3.BindConfig) *envoy_api_v2_cor
 	downgraded := &envoy_api_v2_core.BindConfig{
 		Freebind:      cfg.GetFreebind(),
 		SourceAddress: downgradeSocketAddress(cfg.GetSourceAddress()),
+		SocketOptions: make([]*envoy_api_v2_core.SocketOption, 0, len(cfg.GetSocketOptions())),
+	}
+
+	for _, v := range cfg.GetSocketOptions() {
+		downgraded.SocketOptions = append(downgraded.SocketOptions, downgradeSocketOption(v))
 	}
 
 	return &envoy_api_v2_core.BindConfig{
@@ -99,30 +144,6 @@ func downgradeBindConfig(cfg *envoy_config_core_v3.BindConfig) *envoy_api_v2_cor
 		Freebind:      nil,
 		SocketOptions: nil,
 	}
-}
-
-func downgradeSocketOption(opt *envoy_config_core_v3.SocketOption) *envoy_api_v2_core.SocketOption {
-	if opt == nil {
-		return nil
-	}
-
-	downgraded := &envoy_api_v2_core.SocketOption{
-		Description: opt.GetDescription(),
-		Level:       opt.GetLevel(),
-		Name:        opt.GetName(),
-		State: envoy_api_v2_core.SocketOption_SocketState(
-			envoy_api_v2_core.SocketOption_SocketState_value[opt.GetState().String()],
-		),
-	}
-
-	switch typed := opt.GetValue().(type) {
-	case *envoy_config_core_v3.SocketOption_IntValue:
-
-	case *envoy_config_core_v3.SocketOption_BufValue:
-	}
-
-	return downgraded
-
 }
 
 func downgradeOutlierDetection(od *envoy_config_cluster_v3.OutlierDetection) *envoy_api_v2_cluster.OutlierDetection {

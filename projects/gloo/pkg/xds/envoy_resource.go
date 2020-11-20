@@ -25,6 +25,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/xds/internal"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
 
@@ -257,6 +258,25 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 		references = append(references, k)
 	}
 	return references
+}
+
+func downgradeResource(e cache.Resource) *EnvoyResource {
+	var downgradedResource cache.ResourceProto
+	res := e.ResourceProto()
+	if res == nil {
+		return nil
+	}
+	switch v := res.(type) {
+	case *envoy_config_endpoint_v3.ClusterLoadAssignment:
+		// No downgrade necessary
+	case *envoy_config_cluster_v3.Cluster:
+		downgradedResource = internal.DowngradeCluster(v)
+	case *envoy_config_route_v3.RouteConfiguration:
+		// No downgrade necessary
+	case *envoy_config_listener_v3.Listener:
+		downgradedResource = internal.DowngradeListener(v)
+	}
+	return &EnvoyResource{ProtoMessage: downgradedResource}
 }
 
 // GetResourceReferences returns the names for dependent resources (EDS cluster

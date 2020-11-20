@@ -143,15 +143,15 @@ static_resources:
         sni: sts.amazonaws.com
 dynamic_resources:
   ads_config:
-    transport_api_version: V3
+    transport_api_version: {{ .ApiVersion }}
     api_type: GRPC
     grpc_services:
     - envoy_grpc: {cluster_name: xds_cluster}
   cds_config:
-    resource_api_version: V3
+    resource_api_version: {{ .ApiVersion }}
     ads: {}
   lds_config:
-    resource_api_version: V3
+    resource_api_version: {{ .ApiVersion }}
     ads: {}
 
 admin:
@@ -316,6 +316,9 @@ type EnvoyInstance struct {
 	// Path to access logs for binary run
 	AccessLogs string
 
+	// Envoy API Version to use, default to V3
+	ApiVersion string
+
 	DockerOptions
 }
 
@@ -352,6 +355,7 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 		GlooAddr:      gloo,
 		AccessLogAddr: gloo,
 		AdminPort:     atomic.AddUint32(&adminPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000),
+		ApiVersion:    "V3",
 	}
 	ef.instances = append(ef.instances, ei)
 	return ei, nil
