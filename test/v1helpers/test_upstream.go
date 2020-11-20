@@ -114,12 +114,6 @@ func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequ
 				Hosts: hosts,
 			},
 		},
-		LoadBalancerConfig: &gloov1.LoadBalancerConfig{
-			// Default test upstreams to disable panic mode
-			HealthyPanicThreshold: &types.DoubleValue{
-				Value: 0.0,
-			},
-		},
 	}
 
 	return &TestUpstream{
