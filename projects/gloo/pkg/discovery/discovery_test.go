@@ -18,6 +18,20 @@ import (
 )
 
 var _ = Describe("Discovery", func() {
+
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
+	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
+	})
+
+	AfterEach(func() {
+		cancel()
+	})
+
 	It("preserves cached EDS results across calls to StartEDS", func() {
 		// in this test we will run 2 plugins in EDS.
 		// we will write endpoints for 2 plugins
@@ -26,7 +40,7 @@ var _ = Describe("Discovery", func() {
 		// for the eds plugin that didn't get updated after the restart
 		ns := ""
 		ctl := gomock.NewController(GinkgoT())
-		endpointClient, _ := v1.NewEndpointClient(&factory.MemoryResourceClientFactory{
+		endpointClient, _ := v1.NewEndpointClient(ctx, &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		})
 

@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	gloosoloiov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var settingsesResource = schema.GroupVersionResource{Group: "gloo.solo.io", Vers
 var settingsesKind = schema.GroupVersionKind{Group: "gloo.solo.io", Version: "v1", Kind: "Settings"}
 
 // Get takes name of the settings, and returns the corresponding settings object, and an error if there is any.
-func (c *FakeSettingses) Get(name string, options v1.GetOptions) (result *gloosoloiov1.Settings, err error) {
+func (c *FakeSettingses) Get(ctx context.Context, name string, options v1.GetOptions) (result *gloosoloiov1.Settings, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(settingsesResource, c.ns, name), &gloosoloiov1.Settings{})
 
@@ -50,7 +52,7 @@ func (c *FakeSettingses) Get(name string, options v1.GetOptions) (result *glooso
 }
 
 // List takes label and field selectors, and returns the list of Settingses that match those selectors.
-func (c *FakeSettingses) List(opts v1.ListOptions) (result *gloosoloiov1.SettingsList, err error) {
+func (c *FakeSettingses) List(ctx context.Context, opts v1.ListOptions) (result *gloosoloiov1.SettingsList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(settingsesResource, settingsesKind, c.ns, opts), &gloosoloiov1.SettingsList{})
 
@@ -72,14 +74,14 @@ func (c *FakeSettingses) List(opts v1.ListOptions) (result *gloosoloiov1.Setting
 }
 
 // Watch returns a watch.Interface that watches the requested settingses.
-func (c *FakeSettingses) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeSettingses) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(settingsesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a settings and creates it.  Returns the server's representation of the settings, and an error, if there is any.
-func (c *FakeSettingses) Create(settings *gloosoloiov1.Settings) (result *gloosoloiov1.Settings, err error) {
+func (c *FakeSettingses) Create(ctx context.Context, settings *gloosoloiov1.Settings, opts v1.CreateOptions) (result *gloosoloiov1.Settings, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(settingsesResource, c.ns, settings), &gloosoloiov1.Settings{})
 
@@ -90,7 +92,7 @@ func (c *FakeSettingses) Create(settings *gloosoloiov1.Settings) (result *glooso
 }
 
 // Update takes the representation of a settings and updates it. Returns the server's representation of the settings, and an error, if there is any.
-func (c *FakeSettingses) Update(settings *gloosoloiov1.Settings) (result *gloosoloiov1.Settings, err error) {
+func (c *FakeSettingses) Update(ctx context.Context, settings *gloosoloiov1.Settings, opts v1.UpdateOptions) (result *gloosoloiov1.Settings, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(settingsesResource, c.ns, settings), &gloosoloiov1.Settings{})
 
@@ -102,7 +104,7 @@ func (c *FakeSettingses) Update(settings *gloosoloiov1.Settings) (result *glooso
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeSettingses) UpdateStatus(settings *gloosoloiov1.Settings) (*gloosoloiov1.Settings, error) {
+func (c *FakeSettingses) UpdateStatus(ctx context.Context, settings *gloosoloiov1.Settings, opts v1.UpdateOptions) (*gloosoloiov1.Settings, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(settingsesResource, "status", c.ns, settings), &gloosoloiov1.Settings{})
 
@@ -113,7 +115,7 @@ func (c *FakeSettingses) UpdateStatus(settings *gloosoloiov1.Settings) (*gloosol
 }
 
 // Delete takes name of the settings and deletes it. Returns an error if one occurs.
-func (c *FakeSettingses) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeSettingses) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(settingsesResource, c.ns, name), &gloosoloiov1.Settings{})
 
@@ -121,15 +123,15 @@ func (c *FakeSettingses) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeSettingses) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(settingsesResource, c.ns, listOptions)
+func (c *FakeSettingses) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(settingsesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &gloosoloiov1.SettingsList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched settings.
-func (c *FakeSettingses) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *gloosoloiov1.Settings, err error) {
+func (c *FakeSettingses) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *gloosoloiov1.Settings, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(settingsesResource, c.ns, name, pt, data, subresources...), &gloosoloiov1.Settings{})
 

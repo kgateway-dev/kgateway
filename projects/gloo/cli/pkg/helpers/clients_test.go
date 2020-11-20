@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"context"
+
 	"github.com/hashicorp/consul/api"
 	api2 "github.com/hashicorp/vault/api"
 	. "github.com/onsi/ginkgo"
@@ -12,6 +14,18 @@ import (
 )
 
 var _ = Describe("Clients", func() {
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
+	})
+
+	AfterEach(func() {
+		cancel()
+	})
+
 	Describe("UseMemoryClients", func() {
 		BeforeEach(func() {
 			UseMemoryClients()
@@ -25,12 +39,12 @@ var _ = Describe("Clients", func() {
 				BaseClient() clients.ResourceClient
 			}
 			for _, client := range []BaseClientGetter{
-				MustProxyClient(),
-				MustSecretClient(),
-				MustSettingsClient(),
-				MustUpstreamClient(),
-				MustUpstreamGroupClient(),
-				MustVirtualServiceClient(),
+				MustProxyClient(ctx),
+				MustSecretClient(ctx),
+				MustSettingsClient(ctx),
+				MustUpstreamClient(ctx),
+				MustUpstreamGroupClient(ctx),
+				MustVirtualServiceClient(ctx),
 			} {
 				Expect(client.BaseClient()).To(BeAssignableToTypeOf(&memory.ResourceClient{}))
 			}
@@ -49,11 +63,11 @@ var _ = Describe("Clients", func() {
 				BaseClient() clients.ResourceClient
 			}
 			for _, client := range []BaseClientGetter{
-				MustProxyClient(),
-				MustSettingsClient(),
-				MustUpstreamClient(),
-				MustUpstreamGroupClient(),
-				MustVirtualServiceClient(),
+				MustProxyClient(ctx),
+				MustSettingsClient(ctx),
+				MustUpstreamClient(ctx),
+				MustUpstreamGroupClient(ctx),
+				MustVirtualServiceClient(ctx),
 			} {
 				Expect(client.BaseClient()).To(BeAssignableToTypeOf(&consul.ResourceClient{}))
 			}
@@ -72,9 +86,10 @@ var _ = Describe("Clients", func() {
 				BaseClient() clients.ResourceClient
 			}
 			for _, client := range []BaseClientGetter{
-				MustSecretClient(),
+				MustSecretClient(ctx),
 			} {
-				Expect(client.BaseClient()).To(BeAssignableToTypeOf(&vault.ResourceClient{}))
+				baseClient := client.BaseClient()
+				Expect(baseClient).To(BeAssignableToTypeOf(&vault.ResourceClient{}))
 			}
 		})
 	})

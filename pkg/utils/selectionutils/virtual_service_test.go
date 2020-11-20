@@ -118,7 +118,7 @@ var _ = Describe("SelectorTest", func() {
 				}
 
 				nsLister.EXPECT().
-					List().
+					List(context.Background()).
 					Return([]string{podNamespace, otherNs}, nil)
 				vsClient.EXPECT().
 					List(podNamespace, clients.ListOpts{Ctx: context.Background()}).
@@ -136,7 +136,7 @@ var _ = Describe("SelectorTest", func() {
 				expected := getDefault(podNamespace, "default")
 
 				nsLister.EXPECT().
-					List().
+					List(context.Background()).
 					Return([]string{podNamespace}, nil)
 				vsClient.EXPECT().
 					List(podNamespace, clients.ListOpts{Ctx: context.Background()}).
@@ -149,7 +149,7 @@ var _ = Describe("SelectorTest", func() {
 
 			It("errors when the namespaceLister errors on list", func() {
 				nsLister.EXPECT().
-					List().
+					List(context.Background()).
 					Return(nil, testErr)
 
 				_, err := selector.SelectOrBuildVirtualService(context.Background(), nil)
@@ -159,7 +159,7 @@ var _ = Describe("SelectorTest", func() {
 
 			It("errors when the client errors on list", func() {
 				nsLister.EXPECT().
-					List().
+					List(context.Background()).
 					Return([]string{otherNs}, nil)
 				vsClient.EXPECT().
 					List(otherNs, clients.ListOpts{Ctx: context.Background()}).

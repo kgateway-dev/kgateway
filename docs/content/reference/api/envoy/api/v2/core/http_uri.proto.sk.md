@@ -35,11 +35,11 @@ Envoy external URI descriptor
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `uri` | `string` | The HTTP server URI. It should be a full FQDN with protocol, host and path. Example: .. code-block:: yaml uri: https://www.googleapis.com/oauth2/v1/certs. |  |
-| `cluster` | `string` | A cluster is created in the Envoy "cluster_manager" config section. This field specifies the cluster name. Example: .. code-block:: yaml cluster: jwks_cluster. |  |
-| `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Sets the maximum duration in milliseconds that a response can take to arrive upon request. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `uri` | `string` | The HTTP server URI. It should be a full FQDN with protocol, host and path. Example: .. code-block:: yaml uri: https://www.googleapis.com/oauth2/v1/certs. |
+| `cluster` | `string` | A cluster is created in the Envoy "cluster_manager" config section. This field specifies the cluster name. Example: .. code-block:: yaml cluster: jwks_cluster. |
+| `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Sets the maximum duration in milliseconds that a response can take to arrive upon request. |
 
 
 

@@ -1,6 +1,7 @@
 package secret_test
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -17,15 +18,23 @@ import (
 
 var _ = Describe("ExtauthOauth", func() {
 
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
+		ctx, cancel = context.WithCancel(context.Background())
 	})
+
+	AfterEach(func() { cancel() })
 
 	It("should create secret", func() {
 		err := testutils.Glooctl("create secret oauth --name oauth --namespace gloo-system --client-secret 123")
 		Expect(err).NotTo(HaveOccurred())
 
-		secret, err := helpers.MustSecretClient().Read("gloo-system", "oauth", clients.ReadOpts{})
+		secret, err := helpers.MustSecretClient(ctx).Read("gloo-system", "oauth", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(secret.GetOauth()).To(Equal(&extauthpb.OauthSecret{ClientSecret: "123"}))

@@ -35,10 +35,10 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `transformations` | `map<string, .envoy.api.v2.filter.http.TransformationTemplate>` |  |  |
-| `swaggerInfo` | [.rest.options.gloo.solo.io.ServiceSpec.SwaggerInfo](../rest.proto.sk/#swaggerinfo) |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `transformations` | `map<string, .envoy.api.v2.filter.http.TransformationTemplate>` |  |
+| `swaggerInfo` | [.rest.options.gloo.solo.io.ServiceSpec.SwaggerInfo](../rest.proto.sk/#swaggerinfo) |  |
 
 
 
@@ -54,10 +54,10 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `url` | `string` |  Only one of `url` or `inline` can be set. |  |
-| `inline` | `string` |  Only one of `inline` or `url` can be set. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `url` | `string` |  Only one of `url` or `inline` can be set. |
+| `inline` | `string` |  Only one of `inline` or `url` can be set. |
 
 
 
@@ -75,11 +75,11 @@ This is only for upstream with REST service spec
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `functionName` | `string` |  |  |
-| `parameters` | [.transformation.options.gloo.solo.io.Parameters](../../transformation/parameters.proto.sk/#parameters) |  |  |
-| `responseTransformation` | [.envoy.api.v2.filter.http.TransformationTemplate](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformationtemplate) |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `functionName` | `string` |  |
+| `parameters` | [.transformation.options.gloo.solo.io.Parameters](../../transformation/parameters.proto.sk/#parameters) |  |
+| `responseTransformation` | [.envoy.api.v2.filter.http.TransformationTemplate](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformationtemplate) |  |
 
 
 

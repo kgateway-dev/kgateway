@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
@@ -37,15 +38,15 @@ type GatewaysGetter interface {
 
 // GatewayInterface has methods to work with Gateway resources.
 type GatewayInterface interface {
-	Create(*v1.Gateway) (*v1.Gateway, error)
-	Update(*v1.Gateway) (*v1.Gateway, error)
-	UpdateStatus(*v1.Gateway) (*v1.Gateway, error)
-	Delete(name string, options *metav1.DeleteOptions) error
-	DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error
-	Get(name string, options metav1.GetOptions) (*v1.Gateway, error)
-	List(opts metav1.ListOptions) (*v1.GatewayList, error)
-	Watch(opts metav1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.Gateway, err error)
+	Create(ctx context.Context, gateway *v1.Gateway, opts metav1.CreateOptions) (*v1.Gateway, error)
+	Update(ctx context.Context, gateway *v1.Gateway, opts metav1.UpdateOptions) (*v1.Gateway, error)
+	UpdateStatus(ctx context.Context, gateway *v1.Gateway, opts metav1.UpdateOptions) (*v1.Gateway, error)
+	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.Gateway, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*v1.GatewayList, error)
+	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Gateway, err error)
 	GatewayExpansion
 }
 
@@ -64,20 +65,20 @@ func newGateways(c *GatewayV1Client, namespace string) *gateways {
 }
 
 // Get takes name of the gateway, and returns the corresponding gateway object, and an error if there is any.
-func (c *gateways) Get(name string, options metav1.GetOptions) (result *v1.Gateway, err error) {
+func (c *gateways) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.Gateway, err error) {
 	result = &v1.Gateway{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("gateways").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of Gateways that match those selectors.
-func (c *gateways) List(opts metav1.ListOptions) (result *v1.GatewayList, err error) {
+func (c *gateways) List(ctx context.Context, opts metav1.ListOptions) (result *v1.GatewayList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -88,13 +89,13 @@ func (c *gateways) List(opts metav1.ListOptions) (result *v1.GatewayList, err er
 		Resource("gateways").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested gateways.
-func (c *gateways) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+func (c *gateways) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -105,87 +106,90 @@ func (c *gateways) Watch(opts metav1.ListOptions) (watch.Interface, error) {
 		Resource("gateways").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a gateway and creates it.  Returns the server's representation of the gateway, and an error, if there is any.
-func (c *gateways) Create(gateway *v1.Gateway) (result *v1.Gateway, err error) {
+func (c *gateways) Create(ctx context.Context, gateway *v1.Gateway, opts metav1.CreateOptions) (result *v1.Gateway, err error) {
 	result = &v1.Gateway{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("gateways").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(gateway).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a gateway and updates it. Returns the server's representation of the gateway, and an error, if there is any.
-func (c *gateways) Update(gateway *v1.Gateway) (result *v1.Gateway, err error) {
+func (c *gateways) Update(ctx context.Context, gateway *v1.Gateway, opts metav1.UpdateOptions) (result *v1.Gateway, err error) {
 	result = &v1.Gateway{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("gateways").
 		Name(gateway.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(gateway).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *gateways) UpdateStatus(gateway *v1.Gateway) (result *v1.Gateway, err error) {
+func (c *gateways) UpdateStatus(ctx context.Context, gateway *v1.Gateway, opts metav1.UpdateOptions) (result *v1.Gateway, err error) {
 	result = &v1.Gateway{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("gateways").
 		Name(gateway.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(gateway).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the gateway and deletes it. Returns an error if one occurs.
-func (c *gateways) Delete(name string, options *metav1.DeleteOptions) error {
+func (c *gateways) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("gateways").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *gateways) DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error {
+func (c *gateways) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("gateways").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched gateway.
-func (c *gateways) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.Gateway, err error) {
+func (c *gateways) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Gateway, err error) {
 	result = &v1.Gateway{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("gateways").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

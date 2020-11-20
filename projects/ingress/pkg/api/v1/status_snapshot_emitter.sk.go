@@ -199,13 +199,19 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 				select {
 				case <-ctx.Done():
 					return
-				case kubeServiceList := <-kubeServiceNamespacesChan:
+				case kubeServiceList, ok := <-kubeServiceNamespacesChan:
+					if !ok {
+						return
+					}
 					select {
 					case <-ctx.Done():
 						return
 					case kubeServiceChan <- kubeServiceListWithNamespace{list: kubeServiceList, namespace: namespace}:
 					}
-				case ingressList := <-ingressNamespacesChan:
+				case ingressList, ok := <-ingressNamespacesChan:
+					if !ok {
+						return
+					}
 					select {
 					case <-ctx.Done():
 						return
@@ -252,7 +258,13 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 		}
 		servicesByNamespace := make(map[string]KubeServiceList)
 		ingressesByNamespace := make(map[string]IngressList)
-
+		defer func() {
+			close(snapshots)
+			// we must wait for done before closing the error chan,
+			// to avoid sending on close channel.
+			done.Wait()
+			close(errs)
+		}()
 		for {
 			record := func() { stats.Record(ctx, mStatusSnapshotIn.M(1)) }
 
@@ -260,14 +272,14 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 			case <-timer.C:
 				sync()
 			case <-ctx.Done():
-				close(snapshots)
-				done.Wait()
-				close(errs)
 				return
 			case <-c.forceEmit:
 				sentSnapshot := currentSnapshot.Clone()
 				snapshots <- &sentSnapshot
-			case kubeServiceNamespacedList := <-kubeServiceChan:
+			case kubeServiceNamespacedList, ok := <-kubeServiceChan:
+				if !ok {
+					return
+				}
 				record()
 
 				namespace := kubeServiceNamespacedList.namespace
@@ -286,7 +298,10 @@ func (c *statusEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOp
 					kubeServiceList = append(kubeServiceList, services...)
 				}
 				currentSnapshot.Services = kubeServiceList.Sort()
-			case ingressNamespacedList := <-ingressChan:
+			case ingressNamespacedList, ok := <-ingressChan:
+				if !ok {
+					return
+				}
 				record()
 
 				namespace := ingressNamespacedList.namespace

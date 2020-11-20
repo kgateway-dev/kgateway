@@ -5,7 +5,7 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
-	"knative.dev/serving/pkg/apis/networking/v1alpha1"
+	"knative.dev/networking/pkg/apis/networking/v1alpha1"
 )
 
 type Ingress v1alpha1.Ingress
@@ -29,7 +29,7 @@ func (p *Ingress) Clone() *Ingress {
 	return &newIng
 }
 
+// todo (mholland) we should eventually update this, and any of our dependant logic, to use non-deprecated values
 func (p *Ingress) IsPublic() bool {
-	ing := v1alpha1.Ingress(*p)
-	return ing.IsPublic()
+	return p.Spec.DeprecatedVisibility == "" || p.Spec.DeprecatedVisibility == v1alpha1.IngressVisibilityExternalIP
 }

@@ -96,7 +96,7 @@ func Main(opts SetupOpts) error {
 func kubeOrFileSettingsClient(ctx context.Context, setupNamespace, settingsDir string) (v1.SettingsClient, error) {
 	if settingsDir != "" {
 		contextutils.LoggerFrom(ctx).Infow("using filesystem for settings", zap.String("directory", settingsDir))
-		return v1.NewSettingsClient(&factory.FileResourceClientFactory{
+		return v1.NewSettingsClient(ctx, &factory.FileResourceClientFactory{
 			RootDir: settingsDir,
 		})
 	}
@@ -104,7 +104,7 @@ func kubeOrFileSettingsClient(ctx context.Context, setupNamespace, settingsDir s
 	if err != nil {
 		return nil, err
 	}
-	return v1.NewSettingsClient(&factory.KubeResourceClientFactory{
+	return v1.NewSettingsClient(ctx, &factory.KubeResourceClientFactory{
 		Crd:                v1.SettingsCrd,
 		Cfg:                cfg,
 		SharedCache:        kube.NewKubeCache(ctx),

@@ -33,9 +33,9 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `version` | [.envoy.config.core.v3.ProxyProtocolConfig.Version](../proxy_protocol.proto.sk/#version) | The PROXY protocol version to use. See https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt for details. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `version` | [.envoy.config.core.v3.ProxyProtocolConfig.Version](../proxy_protocol.proto.sk/#version) | The PROXY protocol version to use. See https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt for details. |
 
 
 

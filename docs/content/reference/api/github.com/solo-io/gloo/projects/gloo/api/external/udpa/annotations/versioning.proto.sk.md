@@ -32,9 +32,9 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `previousMessageType` | `string` | Track the previous message type. E.g. this message might be udpa.foo.v3alpha.Foo and it was previously udpa.bar.v2.Bar. This information is consumed by UDPA via proto descriptors. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `previousMessageType` | `string` | Track the previous message type. E.g. this message might be udpa.foo.v3alpha.Foo and it was previously udpa.bar.v2.Bar. This information is consumed by UDPA via proto descriptors. |
 
 
 

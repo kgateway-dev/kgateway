@@ -40,7 +40,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		ns           = "namespace"
 		us           = core.ResourceRef{"upstream-name", ns}
 
-		proxyClient, _ = gloov1.NewProxyClient(&factory.MemoryResourceClientFactory{
+		proxyClient, _ = gloov1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		})
 

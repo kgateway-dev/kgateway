@@ -2,6 +2,7 @@ package install_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 
@@ -26,6 +27,8 @@ var _ = Describe("Uninstall", func() {
 		mockReleaseListRunner  *mocks.MockHelmReleaseListRunner
 		crdDeleteCmd           string
 		crdName                = "authconfigs.enterprise.gloo.solo.io"
+		ctx                    context.Context
+		cancel                 context.CancelFunc
 
 		testCRD = `
 apiVersion: apiextensions.k8s.io/v1beta1
@@ -53,6 +56,7 @@ spec:
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 
+		ctx, cancel = context.WithCancel(context.Background())
 		mockHelmClient = mocks.NewMockHelmClient(ctrl)
 		mockHelmUninstallation = mocks.NewMockHelmUninstallation(ctrl)
 		mockReleaseListRunner = mocks.NewMockHelmReleaseListRunner(ctrl)
@@ -62,6 +66,7 @@ spec:
 
 	AfterEach(func() {
 		ctrl.Finish()
+		cancel()
 	})
 
 	When("a Gloo release object exists", func() {
@@ -84,7 +89,7 @@ spec:
 
 		It("can uninstall", func() {
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, installutil.NewMockKubectl([]string{}, []string{}), new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.HelmUninstall{
+			err := uninstaller.Uninstall(ctx, &options.HelmUninstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
 			}, install.Gloo)
@@ -96,7 +101,7 @@ spec:
 			mockKubectl := installutil.NewMockKubectl([]string{"delete crd " + crdName}, []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.HelmUninstall{
+			err := uninstaller.Uninstall(ctx, &options.HelmUninstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
 				DeleteCrds:      true,
@@ -111,7 +116,7 @@ spec:
 			}, []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.HelmUninstall{
+			err := uninstaller.Uninstall(ctx, &options.HelmUninstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
 				DeleteNamespace: true,
@@ -127,7 +132,7 @@ spec:
 			}, []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.HelmUninstall{
+			err := uninstaller.Uninstall(ctx, &options.HelmUninstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
 				DeleteAll:       true,
@@ -164,7 +169,7 @@ spec:
 			mockKubectl := installutil.NewMockKubectl(namespacedDeleteCmds, []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.HelmUninstall{
+			err := uninstaller.Uninstall(ctx, &options.HelmUninstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
 			}, install.Gloo)
@@ -176,7 +181,7 @@ spec:
 			mockKubectl := installutil.NewMockKubectl(append(namespacedDeleteCmds, crdDeleteCmd), []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.HelmUninstall{
+			err := uninstaller.Uninstall(ctx, &options.HelmUninstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
 				DeleteCrds:      true,
@@ -189,7 +194,7 @@ spec:
 			mockKubectl := installutil.NewMockKubectl(append(namespacedDeleteCmds, "delete namespace "+defaults.GlooSystem), []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.HelmUninstall{
+			err := uninstaller.Uninstall(ctx, &options.HelmUninstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
 				DeleteNamespace: true,
@@ -205,7 +210,7 @@ spec:
 			mockKubectl := installutil.NewMockKubectl(commands, []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.HelmUninstall{
+			err := uninstaller.Uninstall(ctx, &options.HelmUninstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
 				DeleteAll:       true,
@@ -236,7 +241,7 @@ spec:
 
 		It("can uninstall", func() {
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, installutil.NewMockKubectl([]string{}, []string{}), new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.HelmUninstall{Namespace: defaults.GlooFed, HelmReleaseName: constants.GlooFedReleaseName}, install.Federation)
+			err := uninstaller.Uninstall(ctx, &options.HelmUninstall{Namespace: defaults.GlooFed, HelmReleaseName: constants.GlooFedReleaseName}, install.Federation)
 
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -245,7 +250,7 @@ spec:
 			mockKubectl := installutil.NewMockKubectl([]string{"delete crd " + strings.Join(install.GlooFedCrdNames, " ")}, []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.HelmUninstall{
+			err := uninstaller.Uninstall(ctx, &options.HelmUninstall{
 				Namespace:       defaults.GlooFed,
 				HelmReleaseName: constants.GlooFedReleaseName,
 				DeleteCrds:      true,
@@ -260,7 +265,7 @@ spec:
 			}, []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.HelmUninstall{
+			err := uninstaller.Uninstall(ctx, &options.HelmUninstall{
 				Namespace:       defaults.GlooFed,
 				HelmReleaseName: constants.GlooFedReleaseName,
 				DeleteNamespace: true,
@@ -276,7 +281,7 @@ spec:
 			}, []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.HelmUninstall{
+			err := uninstaller.Uninstall(ctx, &options.HelmUninstall{
 				Namespace:       defaults.GlooFed,
 				HelmReleaseName: constants.GlooFedReleaseName,
 				DeleteAll:       true,

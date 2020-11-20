@@ -79,14 +79,14 @@ func createVirtualService(opts *options.Options, args []string) error {
 	}
 
 	if !opts.Create.DryRun {
-		virtualServiceClient := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace())
+		virtualServiceClient := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 		vs, err = virtualServiceClient.Write(vs, clients.WriteOpts{})
 		if err != nil {
 			return err
 		}
 	}
 
-	printers.PrintVirtualServices(v1.VirtualServiceList{vs}, opts.Top.Output, opts.Metadata.Namespace)
+	printers.PrintVirtualServices(opts.Top.Ctx, v1.VirtualServiceList{vs}, opts.Top.Output, opts.Metadata.Namespace)
 
 	return nil
 }

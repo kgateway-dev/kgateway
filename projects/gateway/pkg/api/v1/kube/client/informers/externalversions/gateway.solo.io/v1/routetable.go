@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	time "time"
 
 	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
@@ -61,13 +62,13 @@ func NewFilteredRouteTableInformer(client versioned.Interface, namespace string,
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.GatewayV1().RouteTables(namespace).List(options)
+				return client.GatewayV1().RouteTables(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.GatewayV1().RouteTables(namespace).Watch(options)
+				return client.GatewayV1().RouteTables(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&gatewaysoloiov1.RouteTable{},

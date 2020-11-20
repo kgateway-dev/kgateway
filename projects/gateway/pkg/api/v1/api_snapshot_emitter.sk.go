@@ -235,19 +235,28 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				select {
 				case <-ctx.Done():
 					return
-				case virtualServiceList := <-virtualServiceNamespacesChan:
+				case virtualServiceList, ok := <-virtualServiceNamespacesChan:
+					if !ok {
+						return
+					}
 					select {
 					case <-ctx.Done():
 						return
 					case virtualServiceChan <- virtualServiceListWithNamespace{list: virtualServiceList, namespace: namespace}:
 					}
-				case routeTableList := <-routeTableNamespacesChan:
+				case routeTableList, ok := <-routeTableNamespacesChan:
+					if !ok {
+						return
+					}
 					select {
 					case <-ctx.Done():
 						return
 					case routeTableChan <- routeTableListWithNamespace{list: routeTableList, namespace: namespace}:
 					}
-				case gatewayList := <-gatewayNamespacesChan:
+				case gatewayList, ok := <-gatewayNamespacesChan:
+					if !ok {
+						return
+					}
 					select {
 					case <-ctx.Done():
 						return
@@ -297,7 +306,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		virtualServicesByNamespace := make(map[string]VirtualServiceList)
 		routeTablesByNamespace := make(map[string]RouteTableList)
 		gatewaysByNamespace := make(map[string]GatewayList)
-
+		defer func() {
+			close(snapshots)
+			// we must wait for done before closing the error chan,
+			// to avoid sending on close channel.
+			done.Wait()
+			close(errs)
+		}()
 		for {
 			record := func() { stats.Record(ctx, mApiSnapshotIn.M(1)) }
 
@@ -305,14 +320,14 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			case <-timer.C:
 				sync()
 			case <-ctx.Done():
-				close(snapshots)
-				done.Wait()
-				close(errs)
 				return
 			case <-c.forceEmit:
 				sentSnapshot := currentSnapshot.Clone()
 				snapshots <- &sentSnapshot
-			case virtualServiceNamespacedList := <-virtualServiceChan:
+			case virtualServiceNamespacedList, ok := <-virtualServiceChan:
+				if !ok {
+					return
+				}
 				record()
 
 				namespace := virtualServiceNamespacedList.namespace
@@ -331,7 +346,10 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 					virtualServiceList = append(virtualServiceList, virtualServices...)
 				}
 				currentSnapshot.VirtualServices = virtualServiceList.Sort()
-			case routeTableNamespacedList := <-routeTableChan:
+			case routeTableNamespacedList, ok := <-routeTableChan:
+				if !ok {
+					return
+				}
 				record()
 
 				namespace := routeTableNamespacedList.namespace
@@ -350,7 +368,10 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 					routeTableList = append(routeTableList, routeTables...)
 				}
 				currentSnapshot.RouteTables = routeTableList.Sort()
-			case gatewayNamespacedList := <-gatewayChan:
+			case gatewayNamespacedList, ok := <-gatewayChan:
+				if !ok {
+					return
+				}
 				record()
 
 				namespace := gatewayNamespacedList.namespace

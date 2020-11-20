@@ -31,7 +31,7 @@ import (
 
 type translatorSyncer struct {
 	writeNamespace     string
-	reporter           reporter.StatusReporter
+	reporter           reporter.Reporter
 	proxyWatcher       gloov1.ProxyWatcher
 	proxyReconciler    reconciler.ProxyReconciler
 	translator         translator.Translator

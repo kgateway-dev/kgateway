@@ -102,7 +102,7 @@ func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsS
 
 	if !dryRun {
 		var err error
-		secretClient := helpers.MustSecretClient()
+		secretClient := helpers.MustSecretClient(ctx)
 		if secret, err = secretClient.Write(secret, clients.WriteOpts{Ctx: ctx}); err != nil {
 			return err
 		}

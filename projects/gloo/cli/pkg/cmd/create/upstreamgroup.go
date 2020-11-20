@@ -1,6 +1,7 @@
 package create
 
 import (
+	"context"
 	"strconv"
 	"strings"
 
@@ -47,7 +48,7 @@ func UpstreamGroup(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *
 				return errors.Errorf(EmptyUpstreamGroupCreateError)
 			}
 			if len(opts.Create.InputUpstreamGroup.WeightedDestinations.Entries) == 0 {
-				if err := surveyutils.AddUpstreamGroupFlagsInteractive(&opts.Create.InputUpstreamGroup); err != nil {
+				if err := surveyutils.AddUpstreamGroupFlagsInteractive(opts.Top.Ctx, &opts.Create.InputUpstreamGroup); err != nil {
 					return err
 				}
 			}
@@ -75,7 +76,7 @@ func createUpstreamGroup(opts *options.Options) error {
 	}
 
 	if !opts.Create.DryRun {
-		ug, err = helpers.MustNamespacedUpstreamGroupClient(opts.Metadata.GetNamespace()).Write(ug, clients.WriteOpts{})
+		ug, err = helpers.MustNamespacedUpstreamGroupClient(opts.Top.Ctx, opts.Metadata.GetNamespace()).Write(ug, clients.WriteOpts{})
 		if err != nil {
 			return err
 		}
@@ -87,7 +88,7 @@ func createUpstreamGroup(opts *options.Options) error {
 }
 
 func upstreamGroupFromOpts(opts *options.Options) (*v1.UpstreamGroup, error) {
-	dest, err := upstreamGroupDestinationsFromOpts(opts.Create.InputUpstreamGroup)
+	dest, err := upstreamGroupDestinationsFromOpts(opts.Top.Ctx, opts.Create.InputUpstreamGroup)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid upstream spec")
 	}
@@ -97,12 +98,12 @@ func upstreamGroupFromOpts(opts *options.Options) (*v1.UpstreamGroup, error) {
 	}, nil
 }
 
-func upstreamGroupDestinationsFromOpts(input options.InputUpstreamGroup) ([]*v1.WeightedDestination, error) {
+func upstreamGroupDestinationsFromOpts(ctx context.Context, input options.InputUpstreamGroup) ([]*v1.WeightedDestination, error) {
 	// collect upstreams list
 	ussByKey := make(map[string]*v1.Upstream)
 	var usKeys []string
-	for _, ns := range helpers.MustGetNamespaces() {
-		usList, err := helpers.MustNamespacedUpstreamClient(ns).List(ns, clients.ListOpts{})
+	for _, ns := range helpers.MustGetNamespaces(ctx) {
+		usList, err := helpers.MustNamespacedUpstreamClient(ctx, ns).List(ns, clients.ListOpts{})
 		if err != nil {
 			return nil, err
 		}

@@ -19,8 +19,8 @@ import (
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
-	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
-	v1alpha13 "knative.dev/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
+	knativev1alpha1 "knative.dev/networking/pkg/apis/networking/v1alpha1"
+	v1alpha13 "knative.dev/networking/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 )
 
 var _ = Describe("TranslatorSyncer", func() {
@@ -32,9 +32,12 @@ var _ = Describe("TranslatorSyncer", func() {
 		knativeClient        v1alpha13.IngressesGetter
 		ingress              *v1alpha1.Ingress
 		proxy                *v1.Proxy
+		ctx                  context.Context
+		cancel               context.CancelFunc
 	)
 	BeforeEach(func() {
-		proxyClient, _ = v1.NewProxyClient(&factory.MemoryResourceClientFactory{Cache: memory.NewInMemoryResourceCache()})
+		ctx, cancel = context.WithCancel(context.Background())
+		proxyClient, _ = v1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{Cache: memory.NewInMemoryResourceCache()})
 		ingress = &v1alpha1.Ingress{Ingress: knative.Ingress{ObjectMeta: v12.ObjectMeta{Generation: 1},
 			Spec: knativev1alpha1.IngressSpec{
 				Rules: []knativev1alpha1.IngressRule{{
@@ -64,6 +67,11 @@ var _ = Describe("TranslatorSyncer", func() {
 		proxy = &v1.Proxy{Metadata: core.Metadata{Name: "hi", Namespace: "howareyou"}}
 		proxy, _ = proxyClient.Write(proxy, clients.WriteOpts{})
 	})
+
+	AfterEach(func() {
+		cancel()
+	})
+
 	It("only processes annotated proxies when requireIngressClass is set to true successful proxy status to the ingresses it was created from", func() {
 		syncer := NewSyncer(proxyAddressExternal, proxyAddressInternal, namespace, proxyClient, knativeClient, make(chan error), true).(*translatorSyncer)
 
@@ -114,10 +122,11 @@ var _ = Describe("TranslatorSyncer", func() {
 		err := syncer.propagateProxyStatus(context.TODO(), proxy, v1alpha1.IngressList{ingress})
 		Expect(err).NotTo(HaveOccurred())
 
-		ci, err := knativeClient.Ingresses(ingress.Namespace).Get(ingress.Name, v12.GetOptions{})
+		// _ formally used as 'ci'
+		ci, err := knativeClient.Ingresses(ingress.Namespace).Get(ctx, ingress.Name, v12.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(ci.Status.IsReady()).To(BeTrue())
+		Expect(ci.IsReady()).To(BeTrue())
 	})
 
 	It("puts all ingresses on the internal proxy", func() {
@@ -139,7 +148,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		internalIngress := &v1alpha1.Ingress{
 			Ingress: knative.Ingress{
 				ObjectMeta: v12.ObjectMeta{Generation: 1},
-				Spec:       knativev1alpha1.IngressSpec{Visibility: knativev1alpha1.IngressVisibilityClusterLocal},
+				Spec:       knativev1alpha1.IngressSpec{DeprecatedVisibility: knativev1alpha1.IngressVisibilityClusterLocal},
 			},
 		}
 
@@ -169,39 +178,39 @@ func (c *mockCiClient) Ingresses(namespace string) v1alpha13.IngressInterface {
 	return c
 }
 
-func (c *mockCiClient) UpdateStatus(ci *knativev1alpha1.Ingress) (*knativev1alpha1.Ingress, error) {
+func (c *mockCiClient) UpdateStatus(ctx context.Context, ci *knativev1alpha1.Ingress, opts v12.UpdateOptions) (*knativev1alpha1.Ingress, error) {
 	c.ci.Status = ci.Status
 	return ci, nil
 }
 
-func (*mockCiClient) Create(*knativev1alpha1.Ingress) (*knativev1alpha1.Ingress, error) {
+func (*mockCiClient) Create(ctx context.Context, ci *knativev1alpha1.Ingress, opts v12.CreateOptions) (*knativev1alpha1.Ingress, error) {
 	panic("implement me")
 }
 
-func (*mockCiClient) Update(*knativev1alpha1.Ingress) (*knativev1alpha1.Ingress, error) {
+func (*mockCiClient) Update(ctx context.Context, ci *knativev1alpha1.Ingress, opts v12.UpdateOptions) (*knativev1alpha1.Ingress, error) {
 	panic("implement me")
 }
 
-func (*mockCiClient) Delete(name string, options *v12.DeleteOptions) error {
+func (*mockCiClient) Delete(ctx context.Context, name string, options v12.DeleteOptions) error {
 	panic("implement me")
 }
 
-func (*mockCiClient) DeleteCollection(options *v12.DeleteOptions, listOptions v12.ListOptions) error {
+func (*mockCiClient) DeleteCollection(ctx context.Context, options v12.DeleteOptions, listOptions v12.ListOptions) error {
 	panic("implement me")
 }
 
-func (c *mockCiClient) Get(name string, options v12.GetOptions) (*knativev1alpha1.Ingress, error) {
+func (c *mockCiClient) Get(ctx context.Context, name string, options v12.GetOptions) (*knativev1alpha1.Ingress, error) {
 	return c.ci, nil
 }
 
-func (*mockCiClient) List(opts v12.ListOptions) (*knativev1alpha1.IngressList, error) {
+func (*mockCiClient) List(ctx context.Context, opts v12.ListOptions) (*knativev1alpha1.IngressList, error) {
 	panic("implement me")
 }
 
-func (*mockCiClient) Watch(opts v12.ListOptions) (watch.Interface, error) {
+func (*mockCiClient) Watch(ctx context.Context, opts v12.ListOptions) (watch.Interface, error) {
 	panic("implement me")
 }
 
-func (*mockCiClient) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *knativev1alpha1.Ingress, err error) {
+func (*mockCiClient) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v12.PatchOptions, subresources ...string) (result *knativev1alpha1.Ingress, err error) {
 	panic("implement me")
 }

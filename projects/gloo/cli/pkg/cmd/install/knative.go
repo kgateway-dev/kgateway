@@ -76,7 +76,7 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 
 			if opts.Install.Knative.InstallKnative {
 				if !opts.Install.DryRun {
-					installed, _, err := checkKnativeInstallation()
+					installed, _, err := checkKnativeInstallation(opts.Top.Ctx)
 					if err != nil {
 						return eris.Wrapf(err, "checking for existing knative installation")
 					}
@@ -115,6 +115,7 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 					InstallCliArgs: &opts.Install,
 					ExtraValues:    knativeOverrides,
 					Verbose:        opts.Top.Verbose,
+					Ctx:            opts.Top.Ctx,
 				}); err != nil {
 					return eris.Wrapf(err, "installing gloo edge in knative mode")
 				}
@@ -185,14 +186,14 @@ func installKnativeServing(opts *options.Options) error {
 }
 
 // if knative is present but was not installed by us, the return values will be true, nil, nil
-func checkKnativeInstallation(kubeclient ...kubernetes.Interface) (bool, *options.Knative, error) {
+func checkKnativeInstallation(ctx context.Context, kubeclient ...kubernetes.Interface) (bool, *options.Knative, error) {
 	var kc kubernetes.Interface
 	if len(kubeclient) > 0 {
 		kc = kubeclient[0]
 	} else {
 		kc = helpers.MustKubeClient()
 	}
-	namespaces, err := kc.CoreV1().Namespaces().List(v1.ListOptions{})
+	namespaces, err := kc.CoreV1().Namespaces().List(ctx, v1.ListOptions{})
 	if err != nil {
 		return false, nil, err
 	}
@@ -405,7 +406,7 @@ func waitForCrdsToBeRegistered(ctx context.Context, crds []string) error {
 	logger := contextutils.LoggerFrom(ctx)
 	for _, crdName := range crds {
 		logger.Debugw("waiting for crd to be registered", zap.String("crd", crdName))
-		if err := kubeutils.WaitForCrdActive(apiExts, crdName); err != nil {
+		if err := kubeutils.WaitForCrdActive(ctx, apiExts, crdName); err != nil {
 			return eris.Wrapf(err, "waiting for crd %v to become registered", crdName)
 		}
 	}

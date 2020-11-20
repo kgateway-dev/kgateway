@@ -139,31 +139,37 @@ var _ = Describe("Health Checks", func() {
 			},
 		}
 
-		for _, v := range tests {
-			v := v
-			It(v.Name, func() {
+		for _, envoyHealthCheckTest := range tests {
+			envoyHealthCheckTest := envoyHealthCheckTest
+
+			It(envoyHealthCheckTest.Name, func() {
+				// by default we disable panic mode
+				// this purpose of this test is to verify panic modes behavior so we need to enable it
+				envoyInstance.EnablePanicMode()
+
+				// get the upstream
 				us, err := testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
-				v.Check.Timeout = gogoutils.DurationStdToProto(&translator.DefaultHealthCheckTimeout)
-				v.Check.Interval = gogoutils.DurationStdToProto(&translator.DefaultHealthCheckInterval)
-				v.Check.HealthyThreshold = gogoutils.UInt32GogoToProto(translator.DefaultThreshold)
-				v.Check.UnhealthyThreshold = gogoutils.UInt32GogoToProto(translator.DefaultThreshold)
-				us.HealthChecks, err = gogoutils.ToGlooHealthCheckList([]*envoycore.HealthCheck{v.Check})
+
+				// update the health check configuration
+				envoyHealthCheckTest.Check.Timeout = gogoutils.DurationStdToProto(&translator.DefaultHealthCheckTimeout)
+				envoyHealthCheckTest.Check.Interval = gogoutils.DurationStdToProto(&translator.DefaultHealthCheckInterval)
+				envoyHealthCheckTest.Check.HealthyThreshold = gogoutils.UInt32GogoToProto(translator.DefaultThreshold)
+				envoyHealthCheckTest.Check.UnhealthyThreshold = gogoutils.UInt32GogoToProto(translator.DefaultThreshold)
+
+				// persist the health check configuration
+				us.HealthChecks, err = gogoutils.ToGlooHealthCheckList([]*envoycore.HealthCheck{envoyHealthCheckTest.Check})
 				Expect(err).NotTo(HaveOccurred())
 
-				_, err = testClients.UpstreamClient.Write(us, clients.WriteOpts{
-					OverwriteExisting: true,
-				})
+				_, err = testClients.UpstreamClient.Write(us, clients.WriteOpts{OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 
 				vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
 				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
-				body := []byte(`{"str": "foo"}`)
-
-				testRequest := basicReq(body)
-
+				// ensure that a request fails the health check but is handled by the upstream anyway
+				testRequest := basicReq([]byte(`{"str": "foo"}`))
 				Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
 				Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
@@ -207,7 +213,7 @@ var _ = Describe("Health Checks", func() {
 			_, err := testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(func() error { return envoyInstance.SetPanicThreshold() }, time.Second*5, time.Second/4).Should(BeNil())
+			Eventually(func() error { return envoyInstance.DisablePanicMode() }, time.Second*5, time.Second/4).Should(BeNil())
 
 			tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 5)
 			_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})

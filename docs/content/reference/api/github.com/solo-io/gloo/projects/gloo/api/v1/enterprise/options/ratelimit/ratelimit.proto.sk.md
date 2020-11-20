@@ -40,10 +40,10 @@ Basic rate-limiting API
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `authorizedLimits` | [.ratelimit.api.solo.io.RateLimit](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimit) |  |  |
-| `anonymousLimits` | [.ratelimit.api.solo.io.RateLimit](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimit) |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `authorizedLimits` | [.ratelimit.api.solo.io.RateLimit](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimit) |  |
+| `anonymousLimits` | [.ratelimit.api.solo.io.RateLimit](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimit) |  |
 
 
 
@@ -61,12 +61,12 @@ Basic rate-limiting API
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `ratelimitServerRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |  |
-| `requestTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
-| `denyOnFail` | `bool` |  |  |
-| `rateLimitBeforeAuth` | `bool` | Set this is set to true if you would like to rate limit traffic before applying external auth to it. *Note*: When this is true, you will lose some features like being able to rate limit a request based on its auth state. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `ratelimitServerRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
+| `requestTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |
+| `denyOnFail` | `bool` |  |
+| `rateLimitBeforeAuth` | `bool` | Set this is set to true if you would like to rate limit traffic before applying external auth to it. *Note*: When this is true, you will lose some features like being able to rate limit a request based on its auth state. |
 
 
 
@@ -98,10 +98,10 @@ descriptors:
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `descriptors` | [[]ratelimit.api.solo.io.Descriptor](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#descriptor) |  |  |
-| `setDescriptors` | [[]ratelimit.api.solo.io.SetDescriptor](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#setdescriptor) |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `descriptors` | [[]ratelimit.api.solo.io.Descriptor](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#descriptor) |  |
+| `setDescriptors` | [[]ratelimit.api.solo.io.SetDescriptor](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#setdescriptor) |  |
 
 
 
@@ -118,9 +118,9 @@ Each resource represents a rate limit policy that will be independently enforced
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `refs` | [[]ratelimit.options.gloo.solo.io.RateLimitConfigRef](../ratelimit.proto.sk/#ratelimitconfigref) |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `refs` | [[]ratelimit.options.gloo.solo.io.RateLimitConfigRef](../ratelimit.proto.sk/#ratelimitconfigref) |  |
 
 
 
@@ -137,10 +137,10 @@ A reference to a `RateLimitConfig` resource.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` |  |  |
-| `namespace` | `string` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` |  |
+| `namespace` | `string` |  |
 
 
 
@@ -159,9 +159,9 @@ running a custom rate limit server you need to configure it yourself.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `rateLimits` | [[]ratelimit.api.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `rateLimits` | [[]ratelimit.api.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |
 
 
 
@@ -181,10 +181,10 @@ running a custom rate limit server you need to configure it yourself.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `includeVhRateLimits` | `bool` | Whether or not to include rate limits as defined on the VirtualHost in addition to rate limits on the Route. |  |
-| `rateLimits` | [[]ratelimit.api.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `includeVhRateLimits` | `bool` | Whether or not to include rate limits as defined on the VirtualHost in addition to rate limits on the Route. |
+| `rateLimits` | [[]ratelimit.api.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |
 
 
 

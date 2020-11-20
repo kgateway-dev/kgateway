@@ -42,13 +42,13 @@ Describes custom tags for the active span.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `tag` | `string` | Used to populate the tag name. |  |
-| `literal` | [.envoy.type.tracing.v3.CustomTag.Literal](../custom_tag.proto.sk/#literal) | A literal custom tag. Only one of `literal`, `environment`, or `metadata` can be set. |  |
-| `environment` | [.envoy.type.tracing.v3.CustomTag.Environment](../custom_tag.proto.sk/#environment) | An environment custom tag. Only one of `environment`, `literal`, or `metadata` can be set. |  |
-| `requestHeader` | [.envoy.type.tracing.v3.CustomTag.Header](../custom_tag.proto.sk/#header) | A request header custom tag. Only one of `requestHeader`, `literal`, or `metadata` can be set. |  |
-| `metadata` | [.envoy.type.tracing.v3.CustomTag.Metadata](../custom_tag.proto.sk/#metadata) | A custom tag to obtain tag value from the metadata. Only one of `metadata`, `literal`, or `requestHeader` can be set. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `tag` | `string` | Used to populate the tag name. |
+| `literal` | [.envoy.type.tracing.v3.CustomTag.Literal](../custom_tag.proto.sk/#literal) | A literal custom tag. Only one of `literal`, `environment`, or `metadata` can be set. |
+| `environment` | [.envoy.type.tracing.v3.CustomTag.Environment](../custom_tag.proto.sk/#environment) | An environment custom tag. Only one of `environment`, `literal`, or `metadata` can be set. |
+| `requestHeader` | [.envoy.type.tracing.v3.CustomTag.Header](../custom_tag.proto.sk/#header) | A request header custom tag. Only one of `requestHeader`, `literal`, or `metadata` can be set. |
+| `metadata` | [.envoy.type.tracing.v3.CustomTag.Metadata](../custom_tag.proto.sk/#metadata) | A custom tag to obtain tag value from the metadata. Only one of `metadata`, `literal`, or `requestHeader` can be set. |
 
 
 
@@ -64,9 +64,9 @@ Literal type custom tag with static value for the tag value.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `value` | `string` | Static literal value to populate the tag value. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `value` | `string` | Static literal value to populate the tag value. |
 
 
 
@@ -83,10 +83,10 @@ Environment type custom tag with environment name and default value.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` | Environment variable name to obtain the value to populate the tag value. |  |
-| `defaultValue` | `string` | When the environment variable is not found, the tag value will be populated with this default value if specified, otherwise no tag will be populated. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | Environment variable name to obtain the value to populate the tag value. |
+| `defaultValue` | `string` | When the environment variable is not found, the tag value will be populated with this default value if specified, otherwise no tag will be populated. |
 
 
 
@@ -103,10 +103,10 @@ Header type custom tag with header name and default value.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` | Header name to obtain the value to populate the tag value. |  |
-| `defaultValue` | `string` | When the header does not exist, the tag value will be populated with this default value if specified, otherwise no tag will be populated. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | Header name to obtain the value to populate the tag value. |
+| `defaultValue` | `string` | When the header does not exist, the tag value will be populated with this default value if specified, otherwise no tag will be populated. |
 
 
 
@@ -128,11 +128,11 @@ representation of it.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `kind` | [.envoy.type.metadata.v3.MetadataKind](../../../metadata/v3/metadata.proto.sk/#metadatakind) | Specify what kind of metadata to obtain tag value from. |  |
-| `metadataKey` | [.envoy.type.metadata.v3.MetadataKey](../../../metadata/v3/metadata.proto.sk/#metadatakey) | Metadata key to define the path to retrieve the tag value. |  |
-| `defaultValue` | `string` | When no valid metadata is found, the tag value would be populated with this default value if specified, otherwise no tag would be populated. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `kind` | [.envoy.type.metadata.v3.MetadataKind](../../../metadata/v3/metadata.proto.sk/#metadatakind) | Specify what kind of metadata to obtain tag value from. |
+| `metadataKey` | [.envoy.type.metadata.v3.MetadataKey](../../../metadata/v3/metadata.proto.sk/#metadatakey) | Metadata key to define the path to retrieve the tag value. |
+| `defaultValue` | `string` | When no valid metadata is found, the tag value would be populated with this default value if specified, otherwise no tag would be populated. |
 
 
 

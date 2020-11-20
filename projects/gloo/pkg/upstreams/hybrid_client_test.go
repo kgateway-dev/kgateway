@@ -64,10 +64,10 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 
-		baseUsClient, err = v1.NewUpstreamClient(inMemoryFactory)
+		baseUsClient, err = v1.NewUpstreamClient(ctx, inMemoryFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		svcClient, err = skkube.NewServiceClient(inMemoryFactory)
+		svcClient, err = skkube.NewServiceClient(ctx, inMemoryFactory)
 		Expect(err).NotTo(HaveOccurred())
 
 		mockConsulClient = mock_consul.NewMockConsulClient(ctrl)
