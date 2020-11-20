@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"text/template"
@@ -68,6 +69,10 @@ func (ei *EnvoyInstance) buildBootstrapFromConfig(configFile string) (string, er
 	if addr != "" && addr != "127.0.0.1" {
 		config = strings.ReplaceAll(config, "127.0.0.1", addr)
 	}
+
+	// The AdminPort is created dynamically. Ensure that the config matches the proper AdminPort
+	config = strings.ReplaceAll(config, "21001", strconv.Itoa(int(ei.AdminPort)))
+
 	return config, nil
 }
 
