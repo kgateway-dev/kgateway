@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3747
+    resolvesIssue: true
+    description: >
+      Panic mode allows Envoy load balancing to disregard host's health status.
+      With panic mode disabled, we can be more certain that our tests are validating healthy hosts properly.

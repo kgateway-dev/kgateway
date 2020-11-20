@@ -2,8 +2,10 @@ package services
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -11,15 +13,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"text/template"
+	"time"
 
 	"github.com/solo-io/gloo/projects/envoyinit/cmd/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-
-	"bytes"
-	"io"
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
@@ -68,6 +69,10 @@ func (ei *EnvoyInstance) buildBootstrapFromConfig(configFile string) (string, er
 	if addr != "" && addr != "127.0.0.1" {
 		config = strings.ReplaceAll(config, "127.0.0.1", addr)
 	}
+
+	// The AdminPort is created dynamically. Ensure that the config matches the proper AdminPort
+	config = strings.ReplaceAll(config, "21001", strconv.Itoa(int(ei.AdminPort)))
+
 	return config, nil
 }
 
@@ -447,6 +452,12 @@ func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32, configFil
 		if err != nil {
 			return err
 		}
+
+		// Default to run envoy with panic_mode disabled
+		err = ei.DisablePanicMode()
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -467,6 +478,16 @@ func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32, configFil
 		return err
 	}
 	ei.cmd = cmd
+
+	err = ei.waitForEnvoyToBeRunning()
+	if err != nil {
+		return err
+	}
+	// Default to run envoy with panic_mode disabled
+	err = ei.DisablePanicMode()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -478,8 +499,16 @@ func (ei *EnvoyInstance) LocalAddr() string {
 	return ei.GlooAddr
 }
 
-func (ei *EnvoyInstance) SetPanicThreshold() error {
-	_, err := http.Post(fmt.Sprintf("http://localhost:%d/runtime_modify?upstream.healthy_panic_threshold=%d", ei.AdminPort, 0), "", nil)
+func (ei *EnvoyInstance) EnablePanicMode() error {
+	return ei.setRuntimeConfiguration(fmt.Sprintf("upstream.healthy_panic_threshold=%d", 100))
+}
+
+func (ei *EnvoyInstance) DisablePanicMode() error {
+	return ei.setRuntimeConfiguration(fmt.Sprintf("upstream.healthy_panic_threshold=%d", 0))
+}
+
+func (ei *EnvoyInstance) setRuntimeConfiguration(queryParameters string) error {
+	_, err := http.Post(fmt.Sprintf("http://localhost:%d/runtime_modify?%s", ei.AdminPort, queryParameters), "", nil)
 	return err
 }
 
@@ -537,7 +566,33 @@ func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
 		return errors.Wrap(err, "Unable to start envoy container")
 	}
 
-	return nil
+	// cmd.Run() is entering an infinite loop here (not sure why).
+	// This is a temporary workaround to poll the container until the admin port is ready for traffic
+	return ei.waitForEnvoyToBeRunning()
+}
+
+func (ei *EnvoyInstance) waitForEnvoyToBeRunning() error {
+	pingInterval := time.Tick(time.Second)
+	pingDuration := time.Second * 5
+	pingEndpoint := fmt.Sprintf("localhost:%d", ei.AdminPort)
+
+	ctx, cancel := context.WithTimeout(context.Background(), pingDuration)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.Errorf("timed out waiting for envoy on %s", pingEndpoint)
+
+		case <-pingInterval:
+			conn, _ := net.Dial("tcp", pingEndpoint)
+			if conn != nil {
+				conn.Close()
+				return nil
+			}
+			continue
+		}
+	}
 }
 
 func stopContainer() error {
