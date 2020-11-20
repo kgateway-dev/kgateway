@@ -3,8 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
+	"regexp"
 	"sort"
+	"strings"
 
 	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
@@ -148,37 +152,55 @@ func generateMinorReleaseChangelog(args []string) error {
 	if len(args) != 1 {
 		return InvalidInputError(fmt.Sprintf("%v", len(args)-1))
 	}
-	client := github.NewClient(nil)
 	target := args[0]
-	var repo string
+	var (
+		err error
+	)
 	switch target {
 	case glooDocGen:
-		repo = "gloo"
+		err = generateGlooChangelog()
 	case glooEDocGen:
-		repo = "solo-projects"
-		ctx := context.Background()
-		if os.Getenv("GITHUB_TOKEN") == "" {
-			return MissingGithubTokenError()
-		}
-		ts := oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
-		)
-		tc := oauth2.NewClient(ctx, ts)
-		client = github.NewClient(tc)
+		err = generateGlooEChangelog()
 	default:
 		return InvalidInputError(target)
 	}
-	allReleases, err := getAllReleases(client, repo)
+
+	return err
+}
+
+func generateGlooChangelog() error {
+	client := github.NewClient(nil)
+	allReleases, err := getAllReleases(client, "gloo")
 	if err != nil {
 		return err
 	}
 
-	var releaseList []*github.RepositoryRelease
-	for _, release := range allReleases {
-		releaseList = append(releaseList, release)
+	err = parseReleases(allReleases)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func generateGlooEChangelog() error {
+	// Initialize Auth
+	ctx := context.Background()
+	if os.Getenv("GITHUB_TOKEN") == "" {
+		return MissingGithubTokenError()
+	}
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	client := github.NewClient(tc)
+
+	// Get all Gloo OSS release changelogs
+	allGlooEReleases, err := getAllReleases(client, "solo-projects")
+	if err != nil {
+		return err
 	}
 
-	err = parseReleases(releaseList)
+	err = parseGlooEReleases(allGlooEReleases)
 	if err != nil {
 		return err
 	}
@@ -195,6 +217,71 @@ func getAllReleases(client *github.Client, repo string) ([]*github.RepositoryRel
 		return nil, err
 	}
 	return allReleases, nil
+}
+
+func parseGlooEReleases(allGlooEReleases []*github.RepositoryRelease) error {
+	var minorReleaseMap = make(map[Version]string)
+	for _, release := range allGlooEReleases {
+		var releaseTag = release.GetTagName()
+		version, err := versionutils.ParseVersion(releaseTag)
+		if err != nil {
+			return err
+		}
+		minorVersion := Version{
+			Major: version.Major,
+			Minor: version.Minor,
+		}
+		depVersion, err := getGlooDependencyForGlooEVersion(version.String())
+		var glooOSSDescription string
+		if err == nil {
+			// Intended output:  {{enterprise version}} (Uses Gloo OSS [v1.6.x](...)
+			glooOssLink := strings.ReplaceAll(depVersion.String(), ".", "")
+			glooOSSDescription = fmt.Sprintf("(Uses Gloo OSS [%s](/reference/changelog/open_source/#%s))", depVersion.String(), glooOssLink)
+		}
+		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("##### %s %s\n ", version.String(), glooOSSDescription) + release.GetBody()
+	}
+
+	var versions Versions
+	for minorVersion, _ := range minorReleaseMap {
+		versions = append(versions, minorVersion)
+	}
+	sort.Sort(versions)
+	for _, version := range versions {
+		body := minorReleaseMap[version]
+		fmt.Printf("### v%v.%v\n\n", version.Major, version.Minor)
+		fmt.Printf("%v", body)
+	}
+	return nil
+}
+
+func getGlooDependencyForGlooEVersion(versionTag string) (*versionutils.Version, error) {
+	dependencyUrl := fmt.Sprintf("https://storage.googleapis.com/gloo-ee-dependencies/%s/dependencies", versionTag[1:])
+	request, err := http.NewRequest("GET", dependencyUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+	re, err := regexp.Compile(`.*gloo.*(v.*)`)
+	if err != nil {
+		return nil, err
+	}
+	matches := re.FindStringSubmatch(string(body))
+	if len(matches) != 2 {
+		return nil, eris.Errorf("unable to get gloo dependency for gloo enterprise version %s\n response from google storage API: %s", versionTag, string(body))
+	}
+	glooVersionTag := matches[1]
+	version, err := versionutils.ParseVersion(glooVersionTag)
+	if err != nil {
+		return nil, err
+	}
+	return version, nil
 }
 
 func parseReleases(releases []*github.RepositoryRelease) error {
