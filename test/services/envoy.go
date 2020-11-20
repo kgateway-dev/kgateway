@@ -569,6 +569,7 @@ func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
 func (ei *EnvoyInstance) waitForEnvoyToBeRunning() error {
 	pingInterval := time.Tick(time.Second / 1)
 	pingDuration := time.Second * 5
+	pingEndpoint := fmt.Sprintf("localhost:%d", ei.AdminPort)
 
 	ctx, cancel := context.WithTimeout(context.Background(), pingDuration)
 	defer cancel()
@@ -576,10 +577,10 @@ func (ei *EnvoyInstance) waitForEnvoyToBeRunning() error {
 	for {
 		select {
 		case <-ctx.Done():
-			return errors.Errorf("timed out waiting for envoy")
+			return errors.Errorf("timed out waiting for envoy on %s", pingEndpoint)
 
 		case <-pingInterval:
-			conn, _ := net.Dial("tcp", fmt.Sprintf("localhost:%d", ei.AdminPort))
+			conn, _ := net.Dial("tcp", pingEndpoint)
 			if conn != nil {
 				conn.Close()
 				return nil
