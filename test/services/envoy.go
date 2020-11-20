@@ -474,6 +474,10 @@ func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32, configFil
 	}
 	ei.cmd = cmd
 
+	err = ei.waitForEnvoyToBeRunning()
+	if err != nil {
+		return err
+	}
 	// Default to run envoy with panic_mode disabled
 	err = ei.DisablePanicMode()
 	if err != nil {
@@ -559,10 +563,10 @@ func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
 
 	// cmd.Run() is entering an infinite loop here (not sure why).
 	// This is a temporary workaround to poll the container until the admin port to be ready for traffic
-	return ei.waitForContainer()
+	return ei.waitForEnvoyToBeRunning()
 }
 
-func (ei *EnvoyInstance) waitForContainer() error {
+func (ei *EnvoyInstance) waitForEnvoyToBeRunning() error {
 	pingInterval := time.Tick(time.Second / 1)
 	pingDuration := time.Second * 5
 
@@ -572,7 +576,7 @@ func (ei *EnvoyInstance) waitForContainer() error {
 	for {
 		select {
 		case <-ctx.Done():
-			return errors.Errorf("timed out waiting for envoy container")
+			return errors.Errorf("timed out waiting for envoy")
 
 		case <-pingInterval:
 			conn, _ := net.Dial("tcp", fmt.Sprintf("localhost:%d", ei.AdminPort))
