@@ -354,7 +354,6 @@ type GatewayProxyService struct {
 }
 
 type Tracing struct {
-	Provider string `json:"provider,omitempty"`
 	Cluster  string `json:"cluster,omitempty"`
 }
 
