@@ -38,9 +38,9 @@ Options config for WASM filters
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `filters` | [[]wasm.options.gloo.solo.io.WasmFilter](../wasm.proto.sk/#wasmfilter) | list of WASM filters to be added into the filter chain. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `filters` | [[]wasm.options.gloo.solo.io.WasmFilter](../wasm.proto.sk/#wasmfilter) | list of WASM filters to be added into the filter chain. |
 
 
 
@@ -61,14 +61,14 @@ This message defines a single Envoy WASM filter to be placed into the filter cha
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `image` | `string` | name of image which houses the compiled wasm filter. |  |
-| `config` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | Filter/service configuration used to configure or reconfigure a plugin (proxy_on_configuration). `google.protobuf.Struct` is serialized as JSON before passing it to the plugin. `google.protobuf.BytesValue` and `google.protobuf.StringValue` are passed directly without the wrapper. |  |
-| `filterStage` | [.wasm.options.gloo.solo.io.FilterStage](../wasm.proto.sk/#filterstage) | the stage in the filter chain where this filter should be placed. |  |
-| `name` | `string` | the name of the filter, used for logging. |  |
-| `rootId` | `string` | the root_id of the filter which should be run, if this value is incorrect, or empty the filter will crash. |  |
-| `vmType` | [.wasm.options.gloo.solo.io.WasmFilter.VmType](../wasm.proto.sk/#vmtype) | selected VM type. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `image` | `string` | name of image which houses the compiled wasm filter. |
+| `config` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | Filter/service configuration used to configure or reconfigure a plugin (proxy_on_configuration). `google.protobuf.Struct` is serialized as JSON before passing it to the plugin. `google.protobuf.BytesValue` and `google.protobuf.StringValue` are passed directly without the wrapper. |
+| `filterStage` | [.wasm.options.gloo.solo.io.FilterStage](../wasm.proto.sk/#filterstage) | the stage in the filter chain where this filter should be placed. |
+| `name` | `string` | the name of the filter, used for logging. |
+| `rootId` | `string` | the root_id of the filter which should be run, if this value is incorrect, or empty the filter will crash. |
+| `vmType` | [.wasm.options.gloo.solo.io.WasmFilter.VmType](../wasm.proto.sk/#vmtype) | selected VM type. |
 
 
 
@@ -99,10 +99,10 @@ the WASM filter module
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `stage` | [.wasm.options.gloo.solo.io.FilterStage.Stage](../wasm.proto.sk/#stage) | stage of the filter chain in which the selected filter should be added. |  |
-| `predicate` | [.wasm.options.gloo.solo.io.FilterStage.Predicate](../wasm.proto.sk/#predicate) | How this filter should be placed relative to the stage. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `stage` | [.wasm.options.gloo.solo.io.FilterStage.Stage](../wasm.proto.sk/#stage) | stage of the filter chain in which the selected filter should be added. |
+| `predicate` | [.wasm.options.gloo.solo.io.FilterStage.Predicate](../wasm.proto.sk/#predicate) | How this filter should be placed relative to the stage. |
 
 
 

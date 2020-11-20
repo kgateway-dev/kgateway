@@ -79,9 +79,9 @@ The JSON representation for `DoubleValue` is JSON number.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `value` | `float` | The double value. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `value` | `float` | The double value. |
 
 
 
@@ -99,9 +99,9 @@ The JSON representation for `FloatValue` is JSON number.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `value` | `float` | The float value. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `value` | `float` | The float value. |
 
 
 
@@ -119,9 +119,9 @@ The JSON representation for `Int64Value` is JSON string.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `value` | `int` | The int64 value. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `value` | `int` | The int64 value. |
 
 
 
@@ -139,9 +139,9 @@ The JSON representation for `UInt64Value` is JSON string.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `value` | `int` | The uint64 value. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `value` | `int` | The uint64 value. |
 
 
 
@@ -159,9 +159,9 @@ The JSON representation for `Int32Value` is JSON number.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `value` | `int` | The int32 value. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `value` | `int` | The int32 value. |
 
 
 
@@ -179,9 +179,9 @@ The JSON representation for `UInt32Value` is JSON number.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `value` | `int` | The uint32 value. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `value` | `int` | The uint32 value. |
 
 
 
@@ -199,9 +199,9 @@ The JSON representation for `BoolValue` is JSON `true` and `false`.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `value` | `bool` | The bool value. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `value` | `bool` | The bool value. |
 
 
 
@@ -219,9 +219,9 @@ The JSON representation for `StringValue` is JSON string.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `value` | `string` | The string value. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `value` | `string` | The string value. |
 
 
 
@@ -239,9 +239,9 @@ The JSON representation for `BytesValue` is JSON string.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `value` | `bytes` | The bytes value. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `value` | `bytes` | The bytes value. |
 
 
 

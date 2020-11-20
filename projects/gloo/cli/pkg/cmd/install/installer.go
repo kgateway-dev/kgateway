@@ -1,6 +1,7 @@
 package install
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -46,6 +47,7 @@ type InstallerConfig struct {
 	ExtraValues    map[string]interface{}
 	Mode           Mode
 	Verbose        bool
+	Ctx            context.Context
 }
 
 type Mode int
@@ -85,7 +87,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		}
 		if installerConfig.InstallCliArgs.CreateNamespace {
 			// Create the namespace if it doesn't exist. Helm3 no longer does this.
-			i.createNamespace(namespace)
+			i.createNamespace(installerConfig.Ctx, namespace)
 		}
 	}
 
@@ -179,14 +181,18 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 	return nil
 }
 
-func (i *installer) createNamespace(namespace string) {
-	_, err := i.kubeNsClient.Get(namespace, metav1.GetOptions{})
+func (i *installer) createNamespace(ctx context.Context, namespace string) {
+	_, err := i.kubeNsClient.Get(ctx, namespace, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		fmt.Printf("Creating namespace %s... ", namespace)
-		if _, err := i.kubeNsClient.Create(&corev1.Namespace{
+		if _, err := i.kubeNsClient.Create(ctx, &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: namespace,
 			},
+		}, metav1.CreateOptions{
+			TypeMeta:     metav1.TypeMeta{},
+			DryRun:       nil,
+			FieldManager: "",
 		}); err != nil {
 			fmt.Printf("\nUnable to create namespace %s. Continuing...\n", namespace)
 		} else {

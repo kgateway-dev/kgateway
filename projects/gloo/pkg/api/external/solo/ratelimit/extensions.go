@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"context"
 	"log"
 
 	"github.com/rotisserie/eris"
@@ -48,8 +49,8 @@ type kubeReporterClient struct {
 	skv2Client rlv1alpha1.RateLimitConfigClient
 }
 
-func NewRateLimitClients(rcFactory factory.ResourceClientFactory) (RateLimitConfigClient, reporter.ReporterResourceClient, error) {
-	rlClient, err := NewRateLimitConfigClient(rcFactory)
+func NewRateLimitClients(ctx context.Context, rcFactory factory.ResourceClientFactory) (RateLimitConfigClient, reporter.ReporterResourceClient, error) {
+	rlClient, err := NewRateLimitConfigClient(ctx, rcFactory)
 	if err != nil {
 		return nil, nil, err
 	}

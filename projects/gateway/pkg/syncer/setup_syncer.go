@@ -157,7 +157,7 @@ func RunGateway(opts translator.Opts) error {
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gateway")
 	ctx := opts.WatchOpts.Ctx
 
-	gatewayClient, err := v1.NewGatewayClient(opts.Gateways)
+	gatewayClient, err := v1.NewGatewayClient(ctx, opts.Gateways)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func RunGateway(opts translator.Opts) error {
 		return err
 	}
 
-	virtualServiceClient, err := v1.NewVirtualServiceClient(opts.VirtualServices)
+	virtualServiceClient, err := v1.NewVirtualServiceClient(ctx, opts.VirtualServices)
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func RunGateway(opts translator.Opts) error {
 		return err
 	}
 
-	routeTableClient, err := v1.NewRouteTableClient(opts.RouteTables)
+	routeTableClient, err := v1.NewRouteTableClient(ctx, opts.RouteTables)
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func RunGateway(opts translator.Opts) error {
 		return err
 	}
 
-	proxyClient, err := gloov1.NewProxyClient(opts.Proxies)
+	proxyClient, err := gloov1.NewProxyClient(ctx, opts.Proxies)
 	if err != nil {
 		return err
 	}

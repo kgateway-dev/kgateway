@@ -3,6 +3,8 @@
 package v1
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type routeTableClient struct {
 	rc clients.ResourceClient
 }
 
-func NewRouteTableClient(rcFactory factory.ResourceClientFactory) (RouteTableClient, error) {
-	return NewRouteTableClientWithToken(rcFactory, "")
+func NewRouteTableClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (RouteTableClient, error) {
+	return NewRouteTableClientWithToken(ctx, rcFactory, "")
 }
 
-func NewRouteTableClientWithToken(rcFactory factory.ResourceClientFactory, token string) (RouteTableClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewRouteTableClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (RouteTableClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &RouteTable{},
 		Token:        token,
 	})

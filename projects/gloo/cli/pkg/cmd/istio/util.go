@@ -2,6 +2,7 @@ package istio
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 
@@ -29,14 +30,14 @@ func envoyConfigFromString(config string) (envoy_config_bootstrap.Bootstrap, err
 	return bootstrapConfig, err
 }
 
-func getIstiodContainer(namespace string) (corev1.Container, error) {
+func getIstiodContainer(ctx context.Context, namespace string) (corev1.Container, error) {
 	var c corev1.Container
 	client := helpers.MustKubeClient()
-	_, err := client.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+	_, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		return c, err
 	}
-	deployments, err := client.AppsV1().Deployments(namespace).List(metav1.ListOptions{})
+	deployments, err := client.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return c, err
 	}
@@ -79,13 +80,13 @@ func getJWTPolicy(pilotContainer corev1.Container) string {
 
 // getGlooVersion gets the version of gloo currently running
 // in the given namespace, by checking the gloo deployment.
-func getGlooVersion(namespace string) (string, error) {
+func getGlooVersion(ctx context.Context, namespace string) (string, error) {
 	client := helpers.MustKubeClient()
-	_, err := client.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+	_, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
-	deployments, err := client.AppsV1().Deployments(namespace).List(metav1.ListOptions{})
+	deployments, err := client.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return "", err
 	}

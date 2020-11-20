@@ -1,6 +1,7 @@
 package install
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -20,7 +21,7 @@ func Uninstall(opts *options.Options, cli install.KubeCli, mode Mode) error {
 	if mode == Federation {
 		uninstallArgs = &opts.Uninstall.FedUninstall
 	}
-	if err := uninstaller.Uninstall(uninstallArgs, mode); err != nil {
+	if err := uninstaller.Uninstall(opts.Top.Ctx, uninstallArgs, mode); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Uninstall failed. Detailed logs available at %s.\n", cliutil.GetLogsPath())
 		return err
 	}
@@ -28,7 +29,7 @@ func Uninstall(opts *options.Options, cli install.KubeCli, mode Mode) error {
 }
 
 type Uninstaller interface {
-	Uninstall(cliArgs *options.HelmUninstall, mode Mode) error
+	Uninstall(ctx context.Context, cliArgs *options.HelmUninstall, mode Mode) error
 }
 
 type uninstaller struct {
@@ -50,7 +51,7 @@ func NewUninstallerWithOutput(helmClient HelmClient, kubeCli install.KubeCli, ou
 	}
 }
 
-func (u *uninstaller) Uninstall(cliArgs *options.HelmUninstall, mode Mode) error {
+func (u *uninstaller) Uninstall(ctx context.Context, cliArgs *options.HelmUninstall, mode Mode) error {
 	namespace := cliArgs.Namespace
 	releaseName := cliArgs.HelmReleaseName
 
@@ -108,7 +109,7 @@ func (u *uninstaller) Uninstall(cliArgs *options.HelmUninstall, mode Mode) error
 	}
 
 	if mode != Federation {
-		u.uninstallKnativeIfNecessary()
+		u.uninstallKnativeIfNecessary(ctx)
 	}
 
 	// may need to delete hard-coded crd names even if releaseExists because helm chart for glooe doesn't show gloo dependency (https://github.com/helm/helm/issues/7847)
@@ -196,8 +197,8 @@ func makeUnstructured(manifest string) (*unstructured.Unstructured, error) {
 	return runtimeObj.(*unstructured.Unstructured), nil
 }
 
-func (u *uninstaller) uninstallKnativeIfNecessary() {
-	_, installOpts, err := checkKnativeInstallation()
+func (u *uninstaller) uninstallKnativeIfNecessary(ctx context.Context) {
+	_, installOpts, err := checkKnativeInstallation(ctx)
 	if err != nil {
 		_, _ = fmt.Fprintf(u.output, "Finding knative installation\n")
 		return

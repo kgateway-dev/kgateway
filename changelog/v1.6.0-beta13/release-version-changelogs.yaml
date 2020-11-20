@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Changelogs are currently not sorted / aggregated in anyway between different versions. They are displayed in chronological order (as github displays them). The goal is to sort them to make them more user friendly to figure out what changed between consecutive versions.
+    issueLink: https://github.com/solo-io/gloo/issues/3227
+    resolvesIssue: false

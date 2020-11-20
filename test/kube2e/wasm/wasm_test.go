@@ -62,12 +62,12 @@ var _ = Describe("Kube2e: wasm", func() {
 			SharedCache: cache,
 		}
 
-		gatewayClient, err = gatewayv1.NewGatewayClient(gatewayClientFactory)
+		gatewayClient, err = gatewayv1.NewGatewayClient(ctx, gatewayClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		err = gatewayClient.Register()
 		Expect(err).NotTo(HaveOccurred())
 
-		virtualServiceClient, err = gatewayv1.NewVirtualServiceClient(virtualServiceClientFactory)
+		virtualServiceClient, err = gatewayv1.NewVirtualServiceClient(ctx, virtualServiceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		err = virtualServiceClient.Register()
 		Expect(err).NotTo(HaveOccurred())

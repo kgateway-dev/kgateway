@@ -1,6 +1,7 @@
 package ec2
 
 import (
+	"context"
 	"reflect"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -40,14 +41,14 @@ var _ plugins.Plugin = new(plugin)
 var _ plugins.UpstreamPlugin = new(plugin)
 var _ discovery.DiscoveryPlugin = new(plugin)
 
-func NewPlugin(secretFactory factory.ResourceClientFactory) *plugin {
+func NewPlugin(ctx context.Context, secretFactory factory.ResourceClientFactory) *plugin {
 	p := &plugin{}
 	var err error
 	if secretFactory == nil {
 		p.constructorErr = ConstructorInputError("secret")
 		return p
 	}
-	p.secretClient, err = v1.NewSecretClient(secretFactory)
+	p.secretClient, err = v1.NewSecretClient(ctx, secretFactory)
 	if err != nil {
 		p.constructorErr = ConstructorGetClientError("secret", err)
 		return p

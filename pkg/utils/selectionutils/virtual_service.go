@@ -52,7 +52,7 @@ func (s *virtualServiceSelector) SelectOrBuildVirtualService(ctx context.Context
 	}
 
 	// Look for an existing virtual service with * domain
-	namespaces, err := s.namespaceLister.List()
+	namespaces, err := s.namespaceLister.List(ctx)
 	if err != nil {
 		return nil, err
 	}

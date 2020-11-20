@@ -33,9 +33,9 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `selectors` | [[]options.gloo.solo.io.Selector](../subset_spec.proto.sk/#selector) |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `selectors` | [[]options.gloo.solo.io.Selector](../subset_spec.proto.sk/#selector) |  |
 
 
 
@@ -50,9 +50,9 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `keys` | `[]string` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `keys` | `[]string` |  |
 
 
 

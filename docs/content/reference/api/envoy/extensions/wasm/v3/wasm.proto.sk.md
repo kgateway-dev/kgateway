@@ -45,14 +45,14 @@ Configuration for a Wasm VM.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `vmId` | `string` | An ID which will be used along with a hash of the wasm code (or the name of the registered Null VM plugin) to determine which VM will be used for the plugin. All plugins which use the same *vm_id* and code will use the same VM. May be left blank. Sharing a VM between plugins can reduce memory utilization and make sharing of data easier which may have security implications. See ref: "TODO: add ref" for details. |  |
-| `runtime` | `string` | The Wasm runtime type (either "v8" or "null" for code compiled into Envoy). |  |
-| `code` | [.envoy.config.core.v3.AsyncDataSource](../../../../config/core/v3/base.proto.sk/#asyncdatasource) | The Wasm code that Envoy will execute. |  |
-| `configuration` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | The Wasm configuration used in initialization of a new VM (proxy_on_start). `google.protobuf.Struct` is serialized as JSON before passing it to the plugin. `google.protobuf.BytesValue` and `google.protobuf.StringValue` are passed directly without the wrapper. |  |
-| `allowPrecompiled` | `bool` | Allow the wasm file to include pre-compiled code on VMs which support it. Warning: this should only be enable for trusted sources as the precompiled code is not verified. |  |
-| `nackOnCodeCacheMiss` | `bool` | If true and the code needs to be remotely fetched and it is not in the cache then NACK the configuration update and do a background fetch to fill the cache, otherwise fetch the code asynchronously and enter warming state. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `vmId` | `string` | An ID which will be used along with a hash of the wasm code (or the name of the registered Null VM plugin) to determine which VM will be used for the plugin. All plugins which use the same *vm_id* and code will use the same VM. May be left blank. Sharing a VM between plugins can reduce memory utilization and make sharing of data easier which may have security implications. See ref: "TODO: add ref" for details. |
+| `runtime` | `string` | The Wasm runtime type (either "v8" or "null" for code compiled into Envoy). |
+| `code` | [.envoy.config.core.v3.AsyncDataSource](../../../../config/core/v3/base.proto.sk/#asyncdatasource) | The Wasm code that Envoy will execute. |
+| `configuration` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | The Wasm configuration used in initialization of a new VM (proxy_on_start). `google.protobuf.Struct` is serialized as JSON before passing it to the plugin. `google.protobuf.BytesValue` and `google.protobuf.StringValue` are passed directly without the wrapper. |
+| `allowPrecompiled` | `bool` | Allow the wasm file to include pre-compiled code on VMs which support it. Warning: this should only be enable for trusted sources as the precompiled code is not verified. |
+| `nackOnCodeCacheMiss` | `bool` | If true and the code needs to be remotely fetched and it is not in the cache then NACK the configuration update and do a background fetch to fill the cache, otherwise fetch the code asynchronously and enter warming state. |
 
 
 
@@ -73,13 +73,13 @@ Base Configuration for Wasm Plugins e.g. filters and services.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` | A unique name for a filters/services in a VM for use in identifying the filter/service if multiple filters/services are handled by the same *vm_id* and *root_id* and for logging/debugging. |  |
-| `rootId` | `string` | A unique ID for a set of filters/services in a VM which will share a RootContext and Contexts if applicable (e.g. an Wasm HttpFilter and an Wasm AccessLog). If left blank, all filters/services with a blank root_id with the same *vm_id* will share Context(s). |  |
-| `vmConfig` | [.envoy.extensions.wasm.v3.VmConfig](../wasm.proto.sk/#vmconfig) |  |  |
-| `configuration` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | Filter/service configuration used to configure or reconfigure a plugin (proxy_on_configuration). `google.protobuf.Struct` is serialized as JSON before passing it to the plugin. `google.protobuf.BytesValue` and `google.protobuf.StringValue` are passed directly without the wrapper. |  |
-| `failOpen` | `bool` | If there is a fatal error on the VM (e.g. exception, abort(), on_start or on_configure return false), then all plugins associated with the VM will either fail closed (by default), e.g. by returning an HTTP 503 error, or fail open (if 'fail_open' is set to true) by bypassing the filter. Note: when on_start or on_configure return false during xDS updates the xDS configuration will be rejected and when on_start or on_configuration return false on initial startup the proxy will not start. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | A unique name for a filters/services in a VM for use in identifying the filter/service if multiple filters/services are handled by the same *vm_id* and *root_id* and for logging/debugging. |
+| `rootId` | `string` | A unique ID for a set of filters/services in a VM which will share a RootContext and Contexts if applicable (e.g. an Wasm HttpFilter and an Wasm AccessLog). If left blank, all filters/services with a blank root_id with the same *vm_id* will share Context(s). |
+| `vmConfig` | [.envoy.extensions.wasm.v3.VmConfig](../wasm.proto.sk/#vmconfig) |  |
+| `configuration` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | Filter/service configuration used to configure or reconfigure a plugin (proxy_on_configuration). `google.protobuf.Struct` is serialized as JSON before passing it to the plugin. `google.protobuf.BytesValue` and `google.protobuf.StringValue` are passed directly without the wrapper. |
+| `failOpen` | `bool` | If there is a fatal error on the VM (e.g. exception, abort(), on_start or on_configure return false), then all plugins associated with the VM will either fail closed (by default), e.g. by returning an HTTP 503 error, or fail open (if 'fail_open' is set to true) by bypassing the filter. Note: when on_start or on_configure return false during xDS updates the xDS configuration will be rejected and when on_start or on_configuration return false on initial startup the proxy will not start. |
 
 
 
@@ -97,10 +97,10 @@ WasmService is configured as a built-in *envoy.wasm_service* :ref:`WasmService
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `config` | [.envoy.extensions.wasm.v3.PluginConfig](../wasm.proto.sk/#pluginconfig) | General plugin configuration. |  |
-| `singleton` | `bool` | If true, create a single VM rather than creating one VM per worker. Such a singleton can not be used with filters. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `config` | [.envoy.extensions.wasm.v3.PluginConfig](../wasm.proto.sk/#pluginconfig) | General plugin configuration. |
+| `singleton` | `bool` | If true, create a single VM rather than creating one VM per worker. Such a singleton can not be used with filters. |
 
 
 

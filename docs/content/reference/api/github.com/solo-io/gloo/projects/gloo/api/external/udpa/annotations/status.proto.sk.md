@@ -40,10 +40,10 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `workInProgress` | `bool` | The entity is work-in-progress and subject to breaking changes. |  |
-| `packageVersionStatus` | [.udpa.annotations.PackageVersionStatus](../status.proto.sk/#packageversionstatus) | The entity belongs to a package with the given version status. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `workInProgress` | `bool` | The entity is work-in-progress and subject to breaking changes. |
+| `packageVersionStatus` | [.udpa.annotations.PackageVersionStatus](../status.proto.sk/#packageversionstatus) | The entity belongs to a package with the given version status. |
 
 
 

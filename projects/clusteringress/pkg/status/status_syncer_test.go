@@ -33,25 +33,29 @@ var _ = Describe("StatusSyncer", func() {
 	var (
 		namespace string
 		cfg       *rest.Config
+		ctx       context.Context
+		cancel    context.CancelFunc
 	)
 
 	BeforeEach(func() {
 		namespace = helpers.RandString(8)
+		ctx, cancel = context.WithCancel(context.Background())
 		var err error
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
 		kube, err := kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		_, err = kube.CoreV1().Namespaces().Create(&kubev1.Namespace{
+		_, err = kube.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: namespace,
 			},
-		})
+		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
 		setup.TeardownKube(namespace)
+		cancel()
 	})
 
 	It("updates kube ingresses with endpoints from the service", func() {
@@ -82,7 +86,7 @@ var _ = Describe("StatusSyncer", func() {
 				IntVal: 8080,
 			},
 		}
-		kubeIng, err := kubeIngressClient.Create(&v1beta1.Ingress{
+		kubeIng, err := kubeIngressClient.Create(ctx, &v1beta1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "rusty",
 				Namespace: namespace,
@@ -113,10 +117,10 @@ var _ = Describe("StatusSyncer", func() {
 					},
 				},
 			},
-		})
+		}, metav1.CreateOptions{})
 
 		kubeSvcClient := kube.CoreV1().Services(namespace)
-		svc, err := kubeSvcClient.Create(&kubev1.Service{
+		svc, err := kubeSvcClient.Create(ctx, &kubev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "dusty",
 				Namespace: namespace,
@@ -136,10 +140,10 @@ var _ = Describe("StatusSyncer", func() {
 				},
 				Type: kubev1.ServiceTypeLoadBalancer,
 			},
-		})
+		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = kube.CoreV1().Pods(namespace).Create(&kubev1.Pod{
+		_, err = kube.CoreV1().Pods(namespace).Create(ctx, &kubev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "musty",
 				Namespace: namespace,
@@ -155,17 +159,17 @@ var _ = Describe("StatusSyncer", func() {
 					},
 				},
 			},
-		})
+		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		time.Sleep(time.Second) // give the kube service time to update lb endpoints
-		svc, err = kubeSvcClient.Get(svc.Name, metav1.GetOptions{})
+		svc, err = kubeSvcClient.Get(ctx, svc.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		// note (ilackarms): unless running on a cloud provider that supports
 		// kube lb ingress, the status ips for the service and ingress will be empty
 		Eventually(func() ([]kubev1.LoadBalancerIngress, error) {
-			ing, err := kubeIngressClient.Get(kubeIng.Name, metav1.GetOptions{})
+			ing, err := kubeIngressClient.Get(ctx, kubeIng.Name, metav1.GetOptions{})
 			if err != nil {
 				return nil, err
 			}

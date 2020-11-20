@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	v1machinery "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap/zapcore"
@@ -16,8 +18,8 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
-	knativeclient "knative.dev/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
+	knativev1alpha1 "knative.dev/networking/pkg/apis/networking/v1alpha1"
+	knativeclient "knative.dev/networking/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 )
 
 type translatorSyncer struct {
@@ -135,12 +137,12 @@ func (s *translatorSyncer) markClusterIngressesReady(ctx context.Context, cluste
 		lb := []knativev1alpha1.LoadBalancerIngressStatus{
 			{DomainInternal: s.proxyAddress},
 		}
-		ci.Status.MarkLoadBalancerReady(lb, lb, lb)
+		ci.Status.MarkLoadBalancerReady(lb, lb)
 		ci.Status.ObservedGeneration = ci.Generation
 		updatedClusterIngresses = append(updatedClusterIngresses, &ci)
 	}
 	for _, ci := range updatedClusterIngresses {
-		if _, err := s.ingressClient.Ingresses(ci.Namespace).UpdateStatus(ci); err != nil {
+		if _, err := s.ingressClient.Ingresses(ci.Namespace).UpdateStatus(ctx, ci, v1machinery.UpdateOptions{}); err != nil {
 			contextutils.LoggerFrom(ctx).Errorf("failed to update ClusterIngress %v status with error %v", ci.Name, err)
 		}
 	}

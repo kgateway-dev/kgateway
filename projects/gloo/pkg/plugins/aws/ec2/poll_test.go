@@ -26,6 +26,7 @@ var _ = Describe("polling", func() {
 	var (
 		epw            *edsWatcher
 		ctx            context.Context
+		cancel         context.CancelFunc
 		writeNamespace string
 		secretClient   v1.SecretClient
 		refreshRate    time.Duration
@@ -33,7 +34,7 @@ var _ = Describe("polling", func() {
 	)
 
 	BeforeEach(func() {
-		ctx = context.Background()
+		ctx, cancel = context.WithCancel(context.Background())
 		writeNamespace = "default"
 		secretClient = getSecretClient(ctx)
 		refreshRate = time.Second
@@ -41,6 +42,8 @@ var _ = Describe("polling", func() {
 		err := primeSecretClient(secretClient, []*core.ResourceRef{testSecretRef1, testSecretRef2})
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	AfterEach(func() { cancel() })
 
 	It("should poll, one key filter upstream", func() {
 		upstreams := v1.UpstreamList{&testUpstream1}
@@ -151,7 +154,7 @@ func getSecretClient(ctx context.Context) v1.SecretClient {
 	settings := &v1.Settings{}
 	secretFactory, err := bootstrap.SecretFactoryForSettings(ctx, settings, mc, &config, nil, &kubeCoreCache, nil, v1.SecretCrd.Plural)
 	Expect(err).NotTo(HaveOccurred())
-	secretClient, err := v1.NewSecretClient(secretFactory)
+	secretClient, err := v1.NewSecretClient(ctx, secretFactory)
 	Expect(err).NotTo(HaveOccurred())
 	return secretClient
 

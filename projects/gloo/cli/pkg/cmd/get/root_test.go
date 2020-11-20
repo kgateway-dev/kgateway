@@ -1,6 +1,7 @@
 package get_test
 
 import (
+	"context"
 	"fmt"
 
 	. "github.com/onsi/ginkgo"
@@ -17,15 +18,23 @@ var _ = Describe("Root", func() {
 
 	emptyFlagsMsg := fmt.Sprintf("Error: %s", get.EmptyGetError.Error())
 
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
-		_, err := helpers.MustKubeClient().CoreV1().Namespaces().Create(&corev1.Namespace{
+		ctx, cancel = context.WithCancel(context.Background())
+		_, err := helpers.MustKubeClient().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: defaults.GlooSystem,
 			},
-		})
+		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	AfterEach(func() { cancel() })
 
 	Context("Empty args and flags", func() {
 		It("should give clear error message", func() {
@@ -38,7 +47,7 @@ var _ = Describe("Root", func() {
 
 	Context("Unset Gloo namespace", func() {
 		It("should give clear error message", func() {
-			err := helpers.MustKubeClient().CoreV1().Namespaces().Delete(defaults.GlooSystem, &metav1.DeleteOptions{})
+			err := helpers.MustKubeClient().CoreV1().Namespaces().Delete(ctx, defaults.GlooSystem, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			_, err = testutils.GlooctlOut("get upstreams")
 			Expect(err).To(HaveOccurred())

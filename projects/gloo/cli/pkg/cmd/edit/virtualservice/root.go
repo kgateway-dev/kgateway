@@ -73,7 +73,7 @@ func addEditVirtualServiceInteractiveFlags(opts *EditVirtualService) error {
 }
 
 func editVirtualService(opts *options.EditOptions, optsExt *EditVirtualService, args []string) error {
-	vsClient := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace())
+	vsClient := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	vs, err := vsClient.Read(opts.Metadata.Namespace, opts.Metadata.Name, clients.ReadOpts{})
 	if err != nil {
 		return errors.Wrapf(err, "Error reading virtual service")
