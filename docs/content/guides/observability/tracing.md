@@ -83,7 +83,7 @@ data:
   envoy.yaml:
     tracing:
       http:
-        name: envoy.zipkin
+        name: envoy.tracers.zipkin
         typed_config:
           "@type": "type.googleapis.com/envoy.config.trace.v2.ZipkinConfig"
           collector_cluster: zipkin
