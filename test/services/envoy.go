@@ -5,8 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/envoyinit/cmd/utils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"io"
 	"io/ioutil"
 	"net"
@@ -19,6 +17,9 @@ import (
 	"sync/atomic"
 	"text/template"
 	"time"
+
+	"github.com/solo-io/gloo/projects/envoyinit/cmd/utils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
