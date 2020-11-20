@@ -76,7 +76,7 @@ kubectl edit configmap -n gloo-system gateway-proxy-envoy-config
 ```
 Apply the tracing provider changes. A sample Zipkin configuration is shown below.
 
-{{< highlight yaml "hl_lines=27-34 49-60">}}
+{{< highlight yaml "hl_lines=5-12 46-57">}}
 apiVersion: v1
 kind: ConfigMap
 data:

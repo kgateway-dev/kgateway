@@ -414,12 +414,12 @@ static_resources:
                   cluster: admin_port_cluster
                   prefix_rewrite: /stats/prometheus
           stat_prefix: prometheus
-          tracing:
-            provider:
-              another: line
-              trace: spec
         name: envoy.filters.network.http_connection_manager
     name: prometheus_listener
+tracing:
+  http:
+    another: line
+    trace: spec
 `
 
 var confWithTracingProviderCluster = `
@@ -565,14 +565,14 @@ static_resources:
                   cluster: admin_port_cluster
                   prefix_rewrite: /stats/prometheus
           stat_prefix: prometheus
-          tracing:
-            provider:
-              typed_config:
-                '@type': type.googleapis.com/envoy.config.trace.v2.ZipkinConfig
-                collector_cluster: zipkin
-                collector_endpoint: /api/v2/spans
         name: envoy.filters.network.http_connection_manager
     name: prometheus_listener
+tracing:
+  http:
+    typed_config:
+      '@type': type.googleapis.com/envoy.config.trace.v2.ZipkinConfig
+      collector_cluster: zipkin
+      collector_endpoint: /api/v2/spans
 `
 
 var confWithReadConfig = `
