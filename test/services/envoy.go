@@ -567,12 +567,12 @@ func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
 	}
 
 	// cmd.Run() is entering an infinite loop here (not sure why).
-	// This is a temporary workaround to poll the container until the admin port to be ready for traffic
+	// This is a temporary workaround to poll the container until the admin port is ready for traffic
 	return ei.waitForEnvoyToBeRunning()
 }
 
 func (ei *EnvoyInstance) waitForEnvoyToBeRunning() error {
-	pingInterval := time.Tick(time.Second / 1)
+	pingInterval := time.Tick(time.Second)
 	pingDuration := time.Second * 5
 	pingEndpoint := fmt.Sprintf("localhost:%d", ei.AdminPort)
 
