@@ -167,3 +167,14 @@ func downgradeFractionalPercent(pct *envoy_type_v3.FractionalPercent) *envoy_typ
 		),
 	}
 }
+
+
+func downgradePercent(pct *envoy_type_v3.Percent) *envoy_type.Percent {
+	if pct == nil {
+		return nil
+	}
+
+	return &envoy_type.Percent{
+		Value:                pct.GetValue(),
+	}
+}

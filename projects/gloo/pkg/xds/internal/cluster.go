@@ -31,7 +31,7 @@ func DowngradeCluster(cluster *envoy_config_cluster_v3.Cluster) *envoyapi.Cluste
 		),
 		LoadAssignment:                DowngradeEndpoint(cluster.GetLoadAssignment()),
 		MaxRequestsPerConnection:      cluster.GetMaxRequestsPerConnection(),
-		CircuitBreakers:               nil,
+		CircuitBreakers:               downgradeCircuitBreakers(cluster.GetCircuitBreakers()),
 		UpstreamHttpProtocolOptions:   downgradeUpstreamHttpProtocolOptions(cluster.GetUpstreamHttpProtocolOptions()),
 		CommonHttpProtocolOptions:     downgradeHttpProtocolOptions(cluster.GetCommonHttpProtocolOptions()),
 		HttpProtocolOptions:           downgradeHttp1ProtocolOptions(cluster.GetHttpProtocolOptions()),
@@ -47,15 +47,14 @@ func DowngradeCluster(cluster *envoy_config_cluster_v3.Cluster) *envoyapi.Cluste
 		OutlierDetection:    downgradeOutlierDetection(cluster.GetOutlierDetection()),
 		CleanupInterval:     cluster.GetCleanupInterval(),
 		UpstreamBindConfig:  downgradeBindConfig(cluster.GetUpstreamBindConfig()),
-		LbSubsetConfig:      nil,
-		LbConfig:            nil,
-		CommonLbConfig:      nil,
+		CommonLbConfig:      downgradeCommonLbConfig(cluster.GetCommonLbConfig()),
+		LbSubsetConfig:      downgradeLbSubsetConfig(cluster.GetLbSubsetConfig()),
 		TransportSocket:     downgradeTransportSocket(cluster.GetTransportSocket()),
 		Metadata:            downgradeMetadata(cluster.GetMetadata()),
 		ProtocolSelection: envoyapi.Cluster_ClusterProtocolSelection(
 			envoyapi.Cluster_ClusterProtocolSelection_value[cluster.GetProtocolSelection().String()],
 		),
-		UpstreamConnectionOptions:           nil,
+		UpstreamConnectionOptions:           downgradeUpstreamConnectionOptions(cluster.GetUpstreamConnectionOptions()),
 		CloseConnectionsOnHostHealthFailure: cluster.GetCloseConnectionsOnHostHealthFailure(),
 		Filters:                             make([]*envoy_api_v2_cluster.Filter, 0, len(cluster.GetFilters())),
 		LoadBalancingPolicy:                 downgradeLoadBalancingPolicy(cluster.GetLoadBalancingPolicy()),
@@ -79,6 +78,31 @@ func DowngradeCluster(cluster *envoy_config_cluster_v3.Cluster) *envoyapi.Cluste
 			ClusterType: &envoyapi.Cluster_CustomClusterType{
 				Name:        typed.ClusterType.GetName(),
 				TypedConfig: typed.ClusterType.GetTypedConfig(),
+			},
+		}
+	}
+
+	switch typed := cluster.GetLbConfig().(type) {
+	case *envoy_config_cluster_v3.Cluster_RingHashLbConfig_:
+		downgradedCluster.LbConfig = &envoyapi.Cluster_RingHashLbConfig_{
+			RingHashLbConfig: &envoyapi.Cluster_RingHashLbConfig{
+				MinimumRingSize: typed.RingHashLbConfig.GetMinimumRingSize(),
+				HashFunction: envoyapi.Cluster_RingHashLbConfig_HashFunction(
+					envoyapi.Cluster_RingHashLbConfig_HashFunction_value[typed.RingHashLbConfig.GetHashFunction().String()],
+				),
+				MaximumRingSize: typed.RingHashLbConfig.GetMaximumRingSize(),
+			},
+		}
+	case *envoy_config_cluster_v3.Cluster_OriginalDstLbConfig_:
+		downgradedCluster.LbConfig = &envoyapi.Cluster_OriginalDstLbConfig_{
+			OriginalDstLbConfig: &envoyapi.Cluster_OriginalDstLbConfig{
+				UseHttpHeader: typed.OriginalDstLbConfig.GetUseHttpHeader(),
+			},
+		}
+	case *envoy_config_cluster_v3.Cluster_LeastRequestLbConfig_:
+		downgradedCluster.LbConfig = &envoyapi.Cluster_LeastRequestLbConfig_{
+			LeastRequestLbConfig: &envoyapi.Cluster_LeastRequestLbConfig{
+				ChoiceCount: typed.LeastRequestLbConfig.GetChoiceCount(),
 			},
 		}
 	}
@@ -108,6 +132,156 @@ func DowngradeCluster(cluster *envoy_config_cluster_v3.Cluster) *envoyapi.Cluste
 		}
 	}
 	return downgradedCluster
+}
+
+func downgradeLbSubsetConfig(cfg *envoy_config_cluster_v3.Cluster_LbSubsetConfig) *envoyapi.Cluster_LbSubsetConfig {
+	if cfg == nil {
+		return nil
+	}
+
+	downgraded := &envoyapi.Cluster_LbSubsetConfig{
+		FallbackPolicy: envoyapi.Cluster_LbSubsetConfig_LbSubsetFallbackPolicy(
+			envoyapi.Cluster_LbSubsetConfig_LbSubsetFallbackPolicy_value[cfg.GetFallbackPolicy().String()],
+		),
+		DefaultSubset:       cfg.GetDefaultSubset(),
+		SubsetSelectors:     make([]*envoyapi.Cluster_LbSubsetConfig_LbSubsetSelector, 0, len(cfg.GetSubsetSelectors())),
+		LocalityWeightAware: cfg.GetLocalityWeightAware(),
+		ScaleLocalityWeight: cfg.GetScaleLocalityWeight(),
+		PanicModeAny:        cfg.GetPanicModeAny(),
+		ListAsAny:           cfg.GetListAsAny(),
+	}
+
+	for _, v := range cfg.GetSubsetSelectors() {
+		downgraded.SubsetSelectors = append(downgraded.SubsetSelectors, downgradeLbSubsetSelector(v))
+	}
+
+	return downgraded
+}
+
+func downgradeLbSubsetSelector(
+	sel *envoy_config_cluster_v3.Cluster_LbSubsetConfig_LbSubsetSelector,
+) *envoyapi.Cluster_LbSubsetConfig_LbSubsetSelector {
+	if sel == nil {
+		return nil
+	}
+
+	return &envoyapi.Cluster_LbSubsetConfig_LbSubsetSelector{
+		Keys: sel.GetKeys(),
+		FallbackPolicy: envoyapi.Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy(
+			envoyapi.Cluster_LbSubsetConfig_LbSubsetSelector_LbSubsetSelectorFallbackPolicy_value[sel.GetFallbackPolicy().String()],
+		),
+		FallbackKeysSubset: sel.GetFallbackKeysSubset(),
+	}
+}
+
+func downgradeUpstreamConnectionOptions(
+	u *envoy_config_cluster_v3.UpstreamConnectionOptions,
+) *envoyapi.UpstreamConnectionOptions {
+	if u == nil {
+		return nil
+	}
+
+	return &envoyapi.UpstreamConnectionOptions{
+		TcpKeepalive: downgradeTcpKeepalive(u.GetTcpKeepalive()),
+	}
+}
+
+func downgradeTcpKeepalive(t *envoy_config_core_v3.TcpKeepalive) *envoy_api_v2_core.TcpKeepalive {
+	if t == nil {
+		return nil
+	}
+
+	return &envoy_api_v2_core.TcpKeepalive{
+		KeepaliveProbes:   t.GetKeepaliveProbes(),
+		KeepaliveTime:     t.GetKeepaliveTime(),
+		KeepaliveInterval: t.GetKeepaliveInterval(),
+	}
+}
+
+func downgradeCommonLbConfig(cfg *envoy_config_cluster_v3.Cluster_CommonLbConfig) *envoyapi.Cluster_CommonLbConfig {
+	if cfg == nil {
+		return nil
+	}
+
+	downgraded := &envoyapi.Cluster_CommonLbConfig{
+		HealthyPanicThreshold:           downgradePercent(cfg.GetHealthyPanicThreshold()),
+		UpdateMergeWindow:               cfg.GetUpdateMergeWindow(),
+		IgnoreNewHostsUntilFirstHc:      cfg.GetIgnoreNewHostsUntilFirstHc(),
+		CloseConnectionsOnHostSetChange: cfg.GetCloseConnectionsOnHostSetChange(),
+	}
+
+	if cfg.GetConsistentHashingLbConfig() != nil {
+		downgraded.ConsistentHashingLbConfig = &envoyapi.Cluster_CommonLbConfig_ConsistentHashingLbConfig{
+			UseHostnameForHashing: cfg.GetConsistentHashingLbConfig().GetUseHostnameForHashing(),
+		}
+	}
+
+	switch typed := cfg.GetLocalityConfigSpecifier().(type) {
+	case *envoy_config_cluster_v3.Cluster_CommonLbConfig_ZoneAwareLbConfig_:
+		downgraded.LocalityConfigSpecifier = &envoyapi.Cluster_CommonLbConfig_ZoneAwareLbConfig_{
+			ZoneAwareLbConfig: &envoyapi.Cluster_CommonLbConfig_ZoneAwareLbConfig{
+				RoutingEnabled:     downgradePercent(typed.ZoneAwareLbConfig.GetRoutingEnabled()),
+				MinClusterSize:     typed.ZoneAwareLbConfig.GetMinClusterSize(),
+				FailTrafficOnPanic: typed.ZoneAwareLbConfig.GetFailTrafficOnPanic(),
+			},
+		}
+	case *envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_:
+		downgraded.LocalityConfigSpecifier = &envoyapi.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+			LocalityWeightedLbConfig: &envoyapi.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
+		}
+	}
+
+	return downgraded
+}
+
+func downgradeCircuitBreakers(cb *envoy_config_cluster_v3.CircuitBreakers) *envoy_api_v2_cluster.CircuitBreakers {
+	if cb == nil {
+		return nil
+	}
+
+	downgraded := &envoy_api_v2_cluster.CircuitBreakers{
+		Thresholds: make([]*envoy_api_v2_cluster.CircuitBreakers_Thresholds, 0, len(cb.GetThresholds())),
+	}
+
+	for _, v := range cb.GetThresholds() {
+		downgraded.Thresholds = append(downgraded.Thresholds, downgradeCircuitBreakerThreshold(v))
+	}
+
+	return downgraded
+}
+
+func downgradeCircuitBreakerThreshold(
+	t *envoy_config_cluster_v3.CircuitBreakers_Thresholds,
+) *envoy_api_v2_cluster.CircuitBreakers_Thresholds {
+	if t == nil {
+		return nil
+	}
+
+	return &envoy_api_v2_cluster.CircuitBreakers_Thresholds{
+		Priority: envoy_api_v2_core.RoutingPriority(
+			envoy_api_v2_core.RoutingPriority_value[t.GetPriority().String()],
+		),
+		MaxConnections:     t.GetMaxConnections(),
+		MaxPendingRequests: t.GetMaxPendingRequests(),
+		MaxRequests:        t.GetMaxRequests(),
+		MaxRetries:         t.GetMaxRetries(),
+		RetryBudget:        downgradeRetryBudget(t.GetRetryBudget()),
+		TrackRemaining:     t.GetTrackRemaining(),
+		MaxConnectionPools: t.GetMaxConnectionPools(),
+	}
+}
+
+func downgradeRetryBudget(
+	b *envoy_config_cluster_v3.CircuitBreakers_Thresholds_RetryBudget,
+) *envoy_api_v2_cluster.CircuitBreakers_Thresholds_RetryBudget {
+	if b == nil {
+		return nil
+	}
+
+	return &envoy_api_v2_cluster.CircuitBreakers_Thresholds_RetryBudget{
+		BudgetPercent:       downgradePercent(b.GetBudgetPercent()),
+		MinRetryConcurrency: b.GetMinRetryConcurrency(),
+	}
 }
 
 func downgradeHealthCheck(hc *envoy_config_core_v3.HealthCheck) *envoy_api_v2_core.HealthCheck {
