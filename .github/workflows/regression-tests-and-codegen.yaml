@@ -32,6 +32,9 @@ jobs:
     - name: Generate Code
       run: |
         ./ci/check-code-and-docs-gen.sh
+    - name: Build docs
+      run: |
+        ./docs/build-docs.sh
   regression_tests:
     name: k8s regression tests
     runs-on: ubuntu-18.04
