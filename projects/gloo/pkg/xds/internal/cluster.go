@@ -6,6 +6,10 @@ import (
 	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 )
 
 func DowngradeCluster(cluster *envoy_config_cluster_v3.Cluster) *envoyapi.Cluster {
@@ -26,7 +30,6 @@ func DowngradeCluster(cluster *envoy_config_cluster_v3.Cluster) *envoyapi.Cluste
 			envoyapi.Cluster_LbPolicy_value[cluster.GetLbPolicy().String()],
 		),
 		LoadAssignment:                DowngradeEndpoint(cluster.GetLoadAssignment()),
-		HealthChecks:                  nil,
 		MaxRequestsPerConnection:      cluster.GetMaxRequestsPerConnection(),
 		CircuitBreakers:               nil,
 		UpstreamHttpProtocolOptions:   downgradeUpstreamHttpProtocolOptions(cluster.GetUpstreamHttpProtocolOptions()),
@@ -94,6 +97,10 @@ func DowngradeCluster(cluster *envoy_config_cluster_v3.Cluster) *envoyapi.Cluste
 		downgradedCluster.Filters = append(downgradedCluster.Filters, downgradeClusterFilters(v))
 	}
 
+	for _, v := range cluster.GetHealthChecks() {
+		downgradedCluster.HealthChecks = append(downgradedCluster.HealthChecks, downgradeHealthCheck(v))
+	}
+
 	if cluster.GetDnsFailureRefreshRate() != nil {
 		downgradedCluster.DnsFailureRefreshRate = &envoyapi.Cluster_RefreshRate{
 			BaseInterval: cluster.GetDnsFailureRefreshRate().GetBaseInterval(),
@@ -101,6 +108,221 @@ func DowngradeCluster(cluster *envoy_config_cluster_v3.Cluster) *envoyapi.Cluste
 		}
 	}
 	return downgradedCluster
+}
+
+func downgradeHealthCheck(hc *envoy_config_core_v3.HealthCheck) *envoy_api_v2_core.HealthCheck {
+	if hc == nil {
+		return nil
+	}
+
+	downgraded := &envoy_api_v2_core.HealthCheck{
+		Timeout:                      hc.GetTimeout(),
+		Interval:                     hc.GetInterval(),
+		InitialJitter:                hc.GetInitialJitter(),
+		IntervalJitter:               hc.GetIntervalJitter(),
+		IntervalJitterPercent:        hc.GetIntervalJitterPercent(),
+		UnhealthyThreshold:           hc.GetUnhealthyThreshold(),
+		HealthyThreshold:             hc.GetHealthyThreshold(),
+		AltPort:                      hc.GetAltPort(),
+		ReuseConnection:              hc.GetReuseConnection(),
+		NoTrafficInterval:            hc.GetNoTrafficInterval(),
+		UnhealthyInterval:            hc.GetUnhealthyInterval(),
+		UnhealthyEdgeInterval:        hc.GetUnhealthyEdgeInterval(),
+		HealthyEdgeInterval:          hc.GetHealthyEdgeInterval(),
+		EventLogPath:                 hc.GetEventLogPath(),
+		TlsOptions:                   downgradeHealthCheckTlsOptions(hc.GetTlsOptions()),
+		AlwaysLogHealthCheckFailures: hc.GetAlwaysLogHealthCheckFailures(),
+		// Unused By Gloo
+		// EventService:                 hc.GetEventService(),
+	}
+
+	switch hc.GetHealthChecker().(type) {
+	case *envoy_config_core_v3.HealthCheck_HttpHealthCheck_:
+		downgraded.HealthChecker = &envoy_api_v2_core.HealthCheck_HttpHealthCheck_{
+			HttpHealthCheck: downgradeHttpHealthCheck(hc.GetHttpHealthCheck()),
+		}
+	case *envoy_config_core_v3.HealthCheck_TcpHealthCheck_:
+		downgraded.HealthChecker = &envoy_api_v2_core.HealthCheck_TcpHealthCheck_{
+			TcpHealthCheck: downgradeTcpHealthCheck(hc.GetTcpHealthCheck()),
+		}
+	case *envoy_config_core_v3.HealthCheck_GrpcHealthCheck_:
+		downgraded.HealthChecker = &envoy_api_v2_core.HealthCheck_GrpcHealthCheck_{
+			GrpcHealthCheck: downgradeGrpcHealthCheck(hc.GetGrpcHealthCheck()),
+		}
+	case *envoy_config_core_v3.HealthCheck_CustomHealthCheck_:
+		downgraded.HealthChecker = &envoy_api_v2_core.HealthCheck_CustomHealthCheck_{
+			CustomHealthCheck: &envoy_api_v2_core.HealthCheck_CustomHealthCheck{
+				Name: hc.GetCustomHealthCheck().GetName(),
+				ConfigType: &envoy_api_v2_core.HealthCheck_CustomHealthCheck_TypedConfig{
+					TypedConfig: hc.GetCustomHealthCheck().GetTypedConfig(),
+				},
+			},
+		}
+	}
+
+	return downgraded
+}
+
+func downgradeGrpcHealthCheck(
+	hc *envoy_config_core_v3.HealthCheck_GrpcHealthCheck,
+) *envoy_api_v2_core.HealthCheck_GrpcHealthCheck {
+	if hc == nil {
+		return nil
+	}
+
+	return &envoy_api_v2_core.HealthCheck_GrpcHealthCheck{
+		ServiceName: hc.GetServiceName(),
+		Authority:   hc.GetAuthority(),
+	}
+}
+
+func downgradeTcpHealthCheck(
+	hc *envoy_config_core_v3.HealthCheck_TcpHealthCheck,
+) *envoy_api_v2_core.HealthCheck_TcpHealthCheck {
+	if hc == nil {
+		return nil
+	}
+
+	downgraded := &envoy_api_v2_core.HealthCheck_TcpHealthCheck{
+		Send:    downgradeHealthCheckPayload(hc.GetSend()),
+		Receive: make([]*envoy_api_v2_core.HealthCheck_Payload, 0, len(hc.GetReceive())),
+	}
+
+	for _, v := range hc.GetReceive() {
+		downgraded.Receive = append(downgraded.Receive, downgradeHealthCheckPayload(v))
+	}
+
+	return downgraded
+}
+
+func downgradeHttpHealthCheck(
+	hc *envoy_config_core_v3.HealthCheck_HttpHealthCheck,
+) *envoy_api_v2_core.HealthCheck_HttpHealthCheck {
+	if hc == nil {
+		return nil
+	}
+
+	downgraded := &envoy_api_v2_core.HealthCheck_HttpHealthCheck{
+		Host:                   hc.GetHost(),
+		Path:                   hc.GetPath(),
+		Send:                   downgradeHealthCheckPayload(hc.GetSend()),
+		Receive:                downgradeHealthCheckPayload(hc.GetReceive()),
+		ServiceName:            hc.GetHiddenEnvoyDeprecatedServiceName(),
+		RequestHeadersToAdd:    make([]*envoy_api_v2_core.HeaderValueOption, 0, len(hc.GetRequestHeadersToAdd())),
+		RequestHeadersToRemove: hc.GetRequestHeadersToRemove(),
+		UseHttp2:               hc.GetHiddenEnvoyDeprecatedUseHttp2(),
+		ExpectedStatuses:       make([]*envoy_type.Int64Range, 0, len(hc.GetExpectedStatuses())),
+		CodecClientType: envoy_type.CodecClientType(
+			envoy_type.CodecClientType_value[hc.GetCodecClientType().String()],
+		),
+		ServiceNameMatcher: downgradeStringMatcher(hc.GetServiceNameMatcher()),
+	}
+
+	for _, v := range hc.GetExpectedStatuses() {
+		downgraded.ExpectedStatuses = append(downgraded.ExpectedStatuses, downgradeInt64Range(v))
+	}
+
+	for _, v := range hc.GetRequestHeadersToAdd() {
+		downgraded.RequestHeadersToAdd = append(downgraded.RequestHeadersToAdd, downgradeHeaderValueOption(v))
+	}
+
+	return downgraded
+}
+
+func downgradeHeaderValueOption(opt *envoy_config_core_v3.HeaderValueOption) *envoy_api_v2_core.HeaderValueOption {
+	if opt == nil {
+		return nil
+	}
+
+	return &envoy_api_v2_core.HeaderValueOption{
+		Header: downgradeHeaderValue(opt.GetHeader()),
+		Append: opt.GetAppend(),
+	}
+}
+
+func downgradeHealthCheckPayload(
+	pl *envoy_config_core_v3.HealthCheck_Payload,
+) (downgraded *envoy_api_v2_core.HealthCheck_Payload) {
+	if pl == nil {
+		return
+	}
+
+	switch pl.GetPayload().(type) {
+	case *envoy_config_core_v3.HealthCheck_Payload_Text:
+		downgraded = &envoy_api_v2_core.HealthCheck_Payload{
+			Payload: &envoy_api_v2_core.HealthCheck_Payload_Text{
+				Text: pl.GetText(),
+			},
+		}
+	case *envoy_config_core_v3.HealthCheck_Payload_Binary:
+		downgraded = &envoy_api_v2_core.HealthCheck_Payload{
+			Payload: &envoy_api_v2_core.HealthCheck_Payload_Binary{
+				Binary: pl.GetBinary(),
+			},
+		}
+	}
+
+	return
+}
+
+func downgradeInt64Range(rng *envoy_type_v3.Int64Range) *envoy_type.Int64Range {
+	if rng == nil {
+		return nil
+	}
+	return &envoy_type.Int64Range{
+		Start: rng.GetStart(),
+		End:   rng.GetEnd(),
+	}
+}
+
+func downgradeStringMatcher(sm *envoy_type_matcher_v3.StringMatcher) *envoy_type_matcher.StringMatcher {
+	if sm == nil {
+		return nil
+	}
+
+	downgraded := &envoy_type_matcher.StringMatcher{
+		IgnoreCase: sm.GetIgnoreCase(),
+	}
+
+	switch typed := sm.GetMatchPattern().(type) {
+	case *envoy_type_matcher_v3.StringMatcher_Exact:
+		downgraded.MatchPattern = &envoy_type_matcher.StringMatcher_Exact{
+			Exact: typed.Exact,
+		}
+	case *envoy_type_matcher_v3.StringMatcher_Prefix:
+		downgraded.MatchPattern = &envoy_type_matcher.StringMatcher_Prefix{
+			Prefix: typed.Prefix,
+		}
+	case *envoy_type_matcher_v3.StringMatcher_SafeRegex:
+		downgraded.MatchPattern = &envoy_type_matcher.StringMatcher_SafeRegex{
+			SafeRegex: &envoy_type_matcher.RegexMatcher{
+				EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
+					GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{
+						MaxProgramSize: typed.SafeRegex.GetGoogleRe2().GetMaxProgramSize(),
+					},
+				},
+				Regex: typed.SafeRegex.GetRegex(),
+			},
+		}
+	case *envoy_type_matcher_v3.StringMatcher_Suffix:
+		downgraded.MatchPattern = &envoy_type_matcher.StringMatcher_Suffix{
+			Suffix: typed.Suffix,
+		}
+	}
+
+	return downgraded
+}
+
+func downgradeHealthCheckTlsOptions(
+	opt *envoy_config_core_v3.HealthCheck_TlsOptions,
+) *envoy_api_v2_core.HealthCheck_TlsOptions {
+	if opt == nil {
+		return nil
+	}
+
+	return &envoy_api_v2_core.HealthCheck_TlsOptions{
+		AlpnProtocols: opt.GetAlpnProtocols(),
+	}
 }
 
 func downgradeLoadBalancingPolicy(
