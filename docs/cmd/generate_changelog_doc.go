@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/text"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -10,6 +14,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Kunde21/markdownfmt/v2/markdown"
 	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/versionutils"
@@ -99,6 +104,11 @@ const (
 	skipChangelogGeneration = "SKIP_CHANGELOG_GENERATION"
 )
 
+const (
+	glooOpenSourceRepo = "gloo"
+	glooEnterpriseRepo = "solo-projects"
+)
+
 var (
 	InvalidInputError = func(arg string) error {
 		return eris.Errorf("invalid input, must provide exactly one argument, either '%v' or '%v', (provided %v)",
@@ -120,9 +130,9 @@ func generateChangelogMd(args []string) error {
 	var repo string
 	switch target {
 	case glooDocGen:
-		repo = "gloo"
+		repo = glooOpenSourceRepo
 	case glooEDocGen:
-		repo = "solo-projects"
+		repo = glooEnterpriseRepo
 		ctx := context.Background()
 		if os.Getenv("GITHUB_TOKEN") == "" {
 			return MissingGithubTokenError()
@@ -170,15 +180,16 @@ func generateMinorReleaseChangelog(args []string) error {
 
 func generateGlooChangelog() error {
 	client := github.NewClient(nil)
-	allReleases, err := getAllReleases(client, "gloo")
+	allReleases, err := getAllReleases(client, glooOpenSourceRepo)
 	if err != nil {
 		return err
 	}
 
-	err = parseReleases(allReleases)
+	minorReleaseMap, err := parseGlooReleases(allReleases, false)
 	if err != nil {
 		return err
 	}
+	printVersionOrderReleases(minorReleaseMap)
 	return nil
 }
 
@@ -195,15 +206,20 @@ func generateGlooEChangelog() error {
 	client := github.NewClient(tc)
 
 	// Get all Gloo OSS release changelogs
-	allGlooEReleases, err := getAllReleases(client, "solo-projects")
+	enterpriseReleases, err := getAllReleases(client, glooEnterpriseRepo)
+	if err != nil {
+		return err
+	}
+	openSourceReleases, err := getAllReleases(client, glooOpenSourceRepo)
+	if err != nil {
+		return err
+	}
+	minorReleaseMap, err := parseGlooEReleases(enterpriseReleases, openSourceReleases)
 	if err != nil {
 		return err
 	}
 
-	err = parseGlooEReleases(allGlooEReleases)
-	if err != nil {
-		return err
-	}
+	printVersionOrderReleases(minorReleaseMap)
 	return nil
 }
 
@@ -219,13 +235,14 @@ func getAllReleases(client *github.Client, repo string) ([]*github.RepositoryRel
 	return allReleases, nil
 }
 
-func parseGlooEReleases(allGlooEReleases []*github.RepositoryRelease) error {
+func parseGlooEReleases(enterpriseReleases, osReleases []*github.RepositoryRelease) (map[Version]string, error) {
 	var minorReleaseMap = make(map[Version]string)
-	for _, release := range allGlooEReleases {
+
+	for _, release := range enterpriseReleases {
 		var releaseTag = release.GetTagName()
 		version, err := versionutils.ParseVersion(releaseTag)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		minorVersion := Version{
 			Major: version.Major,
@@ -237,21 +254,120 @@ func parseGlooEReleases(allGlooEReleases []*github.RepositoryRelease) error {
 			// Intended output:  {{enterprise version}} (Uses Gloo OSS [v1.6.x](...)
 			glooOssLink := strings.ReplaceAll(depVersion.String(), ".", "")
 			glooOSSDescription = fmt.Sprintf("(Uses Gloo OSS [%s](/reference/changelog/open_source/#%s))", depVersion.String(), glooOssLink)
+		} else {
+			continue
 		}
-		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("##### %s %s\n ", version.String(), glooOSSDescription) + release.GetBody()
+		openSourceReleases, err := parseGlooReleases(osReleases, true)
+		if err != nil {
+			return nil, err
+		}
+		// Get release notes of the dependent open source gloo release version
+		osReleaseNotes := openSourceReleases[Version(*depVersion)]
+		body, err := parseEnterpriseNotes(release.GetBody(), osReleaseNotes)
+		if err != nil {
+			return nil, err
+		}
+
+		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("##### %s %s\n ", version.String(), glooOSSDescription) + body
+
 	}
 
-	var versions Versions
-	for minorVersion, _ := range minorReleaseMap {
-		versions = append(versions, minorVersion)
+	return minorReleaseMap, nil
+}
+
+func parseEnterpriseNotes(enterpriseReleaseNotes, osReleaseNotes string) (string, error) {
+	node := goldmark.DefaultParser().Parse(text.NewReader([]byte(enterpriseReleaseNotes)))
+	buf := new(bytes.Buffer)
+	//println(enterpriseReleaseNotes)
+	//recursivelyPrintNode(node, "", enterpriseReleaseNotes)
+
+	releaseNotes := make(map[string][]string)
+	osReleaseMap, err := parseOSNotes(osReleaseNotes)
+	if err != nil {
+		return "", err
 	}
-	sort.Sort(versions)
-	for _, version := range versions {
-		body := minorReleaseMap[version]
-		fmt.Printf("### v%v.%v\n\n", version.Major, version.Minor)
-		fmt.Printf("%v", body)
+
+	for n, currentHeader := node.FirstChild(), ""; n != nil; n = n.NextSibling() {
+		switch typedNode := n.(type) {
+		case *ast.Paragraph:
+			{
+				switch typedNode.FirstChild().(type) {
+				case *ast.Emphasis:
+					currentHeader = string(typedNode.Text([]byte(enterpriseReleaseNotes)))
+				default:
+					continue
+				}
+			}
+		case *ast.List:
+			{
+				switch typedNode.FirstChild().(type) {
+				case *ast.ListItem:
+					for l := n.FirstChild(); l != nil; l = l.NextSibling() {
+						releaseNotes[currentHeader] = append(releaseNotes[currentHeader], string(l.Text([]byte(enterpriseReleaseNotes))))
+					}
+					if items := osReleaseMap[currentHeader]; len(items) != 0 {
+						for i := 0; i < len(items); i++ {
+							//typedNode.AppendChild(typedNode, items[i])
+						}
+					}
+				}
+
+			}
+		}
 	}
-	return nil
+
+	//fmt.Printf("Notes: %+v\n", releaseNotes)
+
+	err = markdown.NewRenderer().Render(buf, []byte(enterpriseReleaseNotes), node)
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func parseOSNotes(osReleaseNotes string) (map[string][]*ast.ListItem, error) {
+	node := goldmark.DefaultParser().Parse(text.NewReader([]byte(osReleaseNotes)))
+
+	releaseNotes := make(map[string][]*ast.ListItem)
+
+	for n, currentHeader := node.FirstChild(), ""; n != nil; n = n.NextSibling() {
+		switch typedNode := n.(type) {
+		case *ast.Paragraph:
+			{
+				switch typedNode.FirstChild().(type) {
+				case *ast.Emphasis:
+					currentHeader = string(typedNode.Text([]byte(osReleaseNotes)))
+				default:
+					continue
+				}
+			}
+		case *ast.List:
+			{
+				switch child := typedNode.FirstChild().(type) {
+				case *ast.ListItem:
+					for l := n.FirstChild(); l != nil; l = l.NextSibling() {
+						releaseNotes[currentHeader] = append(releaseNotes[currentHeader], child)
+					}
+				}
+			}
+		}
+	}
+
+	return releaseNotes, nil
+}
+
+func recursivelyPrintNode(n ast.Node, prefix, source string) {
+	//buf := new(bytes.Buffer)
+	//
+	//markdown.NewRenderer().RenderSingle(buf, []byte(source), n, false)
+	t := n.Text([]byte(source))
+	fmt.Printf("%vNode type: %v | Content: %s\n", prefix, n.Kind().String(), t)
+	child := n.FirstChild()
+	for i := 0; i < n.ChildCount(); i++ {
+		recursivelyPrintNode(child, "\t"+prefix, source)
+		child = child.NextSibling()
+	}
 }
 
 func getGlooDependencyForGlooEVersion(versionTag string) (*versionutils.Version, error) {
@@ -284,21 +400,30 @@ func getGlooDependencyForGlooEVersion(versionTag string) (*versionutils.Version,
 	return version, nil
 }
 
-func parseReleases(releases []*github.RepositoryRelease) error {
+func parseGlooReleases(releases []*github.RepositoryRelease, bodyOnly bool) (map[Version]string, error) {
 	var minorReleaseMap = make(map[Version]string)
 	for _, release := range releases {
 		var releaseTag = release.GetTagName()
 		version, err := versionutils.ParseVersion(releaseTag)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		minorVersion := Version{
 			Major: version.Major,
 			Minor: version.Minor,
 		}
-		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("##### %v\n", version.String()) + release.GetBody()
+		var header string
+		// If bodyOnly, we only want to include the release notes in the string and not the release header
+		if !bodyOnly {
+			header = fmt.Sprintf("##### %v\n", version.String())
+		}
+		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + header + release.GetBody()
 	}
 
+	return minorReleaseMap, nil
+}
+
+func printVersionOrderReleases(minorReleaseMap map[Version]string) {
 	var versions Versions
 	for minorVersion, _ := range minorReleaseMap {
 		versions = append(versions, minorVersion)
@@ -309,7 +434,6 @@ func parseReleases(releases []*github.RepositoryRelease) error {
 		fmt.Printf("### v%v.%v\n\n", version.Major, version.Minor)
 		fmt.Printf("%v", body)
 	}
-	return nil
 }
 
 type Version versionutils.Version
