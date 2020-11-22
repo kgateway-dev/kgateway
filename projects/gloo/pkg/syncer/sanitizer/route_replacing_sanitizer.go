@@ -295,7 +295,7 @@ func (s *RouteReplacingSanitizer) insertFallbackListener(listeners *envoycache.R
 		listeners.Items = map[string]envoycache.Resource{}
 	}
 
-	listener := xds.NewEnvoyResource(s.fallbackListener)
+	listener := resource.NewEnvoyResource(s.fallbackListener)
 
 	listeners.Items[listener.Self().Name] = listener
 	listeners.Version += "-with-fallback-listener"
@@ -306,7 +306,7 @@ func (s *RouteReplacingSanitizer) insertFallbackCluster(clusters *envoycache.Res
 		clusters.Items = map[string]envoycache.Resource{}
 	}
 
-	cluster := xds.NewEnvoyResource(s.fallbackCluster)
+	cluster := resource.NewEnvoyResource(s.fallbackCluster)
 
 	clusters.Items[cluster.Self().Name] = cluster
 	clusters.Version += "-with-fallback-cluster"

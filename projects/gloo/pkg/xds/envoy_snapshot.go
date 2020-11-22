@@ -18,8 +18,14 @@ import (
 	"errors"
 	"fmt"
 
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/proto"
+	"github.com/solo-io/gloo/projects/gloo/pkg/xds/internal"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 )
 
 // Snapshot is an internally consistent snapshot of xDS resources.
@@ -90,6 +96,27 @@ func NewSnapshotFromResources(
 	}
 }
 
+
+func downgradeResource(e cache.Resource) *resource.EnvoyResource {
+	var downgradedResource cache.ResourceProto
+	res := e.ResourceProto()
+	if res == nil {
+		return nil
+	}
+	switch v := res.(type) {
+	case *envoy_config_endpoint_v3.ClusterLoadAssignment:
+		// No downgrade necessary
+	case *envoy_config_cluster_v3.Cluster:
+		downgradedResource = internal.DowngradeCluster(v)
+	case *envoy_config_route_v3.RouteConfiguration:
+		// No downgrade necessary
+	case *envoy_config_listener_v3.Listener:
+		downgradedResource = internal.DowngradeListener(v)
+	}
+	return &resource.EnvoyResource{ProtoMessage: downgradedResource}
+}
+
+
 func downgradeCacheResources(resources cache.Resources) cache.Resources {
 	newResources := make([]cache.Resource, 0, len(resources.Items))
 	for _, v := range resources.Items {
@@ -124,7 +151,7 @@ func (s *EnvoySnapshot) Consistent() error {
 	if s == nil {
 		return errors.New("nil snapshot")
 	}
-	endpoints := GetResourceReferences(s.Clusters.Items)
+	endpoints := resource.GetResourceReferences(s.Clusters.Items)
 	if len(endpoints) != len(s.Endpoints.Items) {
 		return fmt.Errorf("mismatched endpoint reference and resource lengths: length of %v does not equal length of %v", endpoints, s.Endpoints.Items)
 	}
@@ -132,7 +159,7 @@ func (s *EnvoySnapshot) Consistent() error {
 		return err
 	}
 
-	routes := GetResourceReferences(s.Listeners.Items)
+	routes := resource.GetResourceReferences(s.Listeners.Items)
 	if len(routes) != len(s.Routes.Items) {
 		return fmt.Errorf("mismatched route reference and resource lengths: length of %v does not equal length of %v", routes, s.Routes.Items)
 	}
@@ -145,21 +172,21 @@ func (s *EnvoySnapshot) GetResources(typ string) cache.Resources {
 		return cache.Resources{}
 	}
 	switch typ {
-	case EndpointType:
+	case resource.EndpointTypeV3:
 		return s.Endpoints
-	case ClusterType:
+	case resource.ClusterTypeV3:
 		return s.Clusters
-	case RouteType:
+	case resource.RouteTypeV3:
 		return s.Routes
-	case ListenerType:
+	case resource.ListenerTypeV3:
 		return s.Listeners
-	case EndpointTypeV2:
+	case resource.EndpointTypeV2:
 		return s.hiddenDeprecatedEndpoints
-	case ClusterTypeV2:
+	case resource.ClusterTypeV2:
 		return s.hiddenDeprecatedClusters
-	case RouteTypeV2:
+	case resource.RouteTypeV2:
 		return s.hiddenDeprecatedRoutes
-	case ListenerTypeV2:
+	case resource.ListenerTypeV2:
 		return s.hiddenDeprecatedListeners
 	}
 	return cache.Resources{}
@@ -218,7 +245,7 @@ func cloneItems(items map[string]cache.Resource) map[string]cache.Resource {
 		// NOTE(marco): we have to use `github.com/golang/protobuf/proto.Clone()` to clone here,
 		// `github.com/gogo/protobuf/proto.Clone()` will panic!
 		resClone := proto.Clone(resProto)
-		clonedItems[k] = NewEnvoyResource(resClone)
+		clonedItems[k] = resource.NewEnvoyResource(resClone)
 	}
 	return clonedItems
 }

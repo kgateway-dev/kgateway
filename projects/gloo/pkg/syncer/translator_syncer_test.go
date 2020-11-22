@@ -130,7 +130,7 @@ var _ = Describe("Translate Proxy", func() {
 			envoycache.NewResources("", nil),
 			envoycache.NewResources("", nil),
 			envoycache.NewResources("old listeners from before the war", []envoycache.Resource{
-				xds.NewEnvoyResource(&envoy_config_listener_v3.Listener{}),
+				resource.NewEnvoyResource(&envoy_config_listener_v3.Listener{}),
 			}),
 		)
 

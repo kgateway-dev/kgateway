@@ -8,6 +8,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 )
 
 func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) cache.Snapshot {
@@ -18,7 +19,7 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 		clusters  []cache.Resource
 	)
 	routes := []cache.Resource{
-		NewEnvoyResource(&envoy_config_route_v3.RouteConfiguration{
+		resource.NewEnvoyResource(&envoy_config_route_v3.RouteConfiguration{
 			Name: routeConfigName,
 			VirtualHosts: []*envoy_config_route_v3.VirtualHost{
 				{
@@ -98,7 +99,7 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 	}
 
 	listeners := []cache.Resource{
-		NewEnvoyResource(listener),
+		resource.NewEnvoyResource(listener),
 	}
 	return NewSnapshot("unversioned", endpoints, clusters, routes, listeners)
 }

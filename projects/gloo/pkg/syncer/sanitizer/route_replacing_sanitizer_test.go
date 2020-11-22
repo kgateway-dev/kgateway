@@ -190,10 +190,10 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			envoycache.NewResources("", nil),
 			envoycache.NewResources("", nil),
 			envoycache.NewResources("routes", []envoycache.Resource{
-				xds.NewEnvoyResource(routeCfg),
+				resource.NewEnvoyResource(routeCfg),
 			}),
 			envoycache.NewResources("listeners", []envoycache.Resource{
-				xds.NewEnvoyResource(listener),
+				resource.NewEnvoyResource(listener),
 			}),
 		)
 

@@ -20,7 +20,7 @@ import (
 	"errors"
 
 	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -49,30 +49,30 @@ func NewEnvoyServerV2(genericServer server.Server) EnvoyServerV2 {
 func (s *envoyServerV2) StreamAggregatedResources(
 	stream envoy_service_discovery_v2.AggregatedDiscoveryService_StreamAggregatedResourcesServer,
 ) error {
-	return s.Server.StreamV2(stream, cache.AnyType)
+	return s.Server.StreamV2(stream, resource.AnyType)
 }
 
 func (s *envoyServerV2) StreamEndpoints(stream v2.EndpointDiscoveryService_StreamEndpointsServer) error {
-	return s.Server.StreamV2(stream, EndpointTypeV2)
+	return s.Server.StreamV2(stream, resource.EndpointTypeV2)
 }
 
 func (s *envoyServerV2) StreamClusters(stream v2.ClusterDiscoveryService_StreamClustersServer) error {
-	return s.Server.StreamV2(stream, ClusterTypeV2)
+	return s.Server.StreamV2(stream, resource.ClusterTypeV2)
 }
 
 func (s *envoyServerV2) StreamRoutes(stream v2.RouteDiscoveryService_StreamRoutesServer) error {
-	return s.Server.StreamV2(stream, RouteTypeV2)
+	return s.Server.StreamV2(stream, resource.RouteTypeV2)
 }
 
 func (s *envoyServerV2) StreamListeners(stream v2.ListenerDiscoveryService_StreamListenersServer) error {
-	return s.Server.StreamV2(stream, ListenerTypeV2)
+	return s.Server.StreamV2(stream, resource.ListenerTypeV2)
 }
 
 func (s *envoyServerV2) FetchEndpoints(ctx context.Context, req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = EndpointTypeV2
+	req.TypeUrl = resource.EndpointTypeV2
 	return s.Server.FetchV2(ctx, req)
 }
 
@@ -80,7 +80,7 @@ func (s *envoyServerV2) FetchClusters(ctx context.Context, req *v2.DiscoveryRequ
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = ClusterTypeV2
+	req.TypeUrl = resource.ClusterTypeV2
 	return s.Server.FetchV2(ctx, req)
 }
 
@@ -88,7 +88,7 @@ func (s *envoyServerV2) FetchRoutes(ctx context.Context, req *v2.DiscoveryReques
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = RouteTypeV2
+	req.TypeUrl = resource.RouteTypeV2
 	return s.Server.FetchV2(ctx, req)
 }
 
@@ -96,7 +96,7 @@ func (s *envoyServerV2) FetchListeners(ctx context.Context, req *v2.DiscoveryReq
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = ListenerTypeV2
+	req.TypeUrl = resource.ListenerTypeV2
 	return s.Server.FetchV2(ctx, req)
 }
 

@@ -46,8 +46,8 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 		xdsSnapshot := xds.NewSnapshotFromResources(
 			envoycache.NewResources("", nil),
 			envoycache.NewResources("clusters", []envoycache.Resource{
-				xds.NewEnvoyResource(goodCluster),
-				xds.NewEnvoyResource(badCluster),
+				resource.NewEnvoyResource(goodCluster),
+				resource.NewEnvoyResource(badCluster),
 			}),
 			envoycache.NewResources("", nil),
 			envoycache.NewResources("", nil),

@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 )
 
 var _ = Describe("EnvoySnapshot", func() {
@@ -15,18 +16,18 @@ var _ = Describe("EnvoySnapshot", func() {
 	It("clones correctly", func() {
 
 		toBeCloned := xds.NewSnapshot("1234",
-			[]cache.Resource{xds.NewEnvoyResource(&any.Any{Value: []byte("endpoint")})},
-			[]cache.Resource{xds.NewEnvoyResource(&any.Any{Value: []byte("cluster")})},
-			[]cache.Resource{xds.NewEnvoyResource(&any.Any{Value: []byte("route")})},
-			[]cache.Resource{xds.NewEnvoyResource(&any.Any{Value: []byte("listener")})},
+			[]cache.Resource{resource.NewEnvoyResource(&any.Any{Value: []byte("endpoint")})},
+			[]cache.Resource{resource.NewEnvoyResource(&any.Any{Value: []byte("cluster")})},
+			[]cache.Resource{resource.NewEnvoyResource(&any.Any{Value: []byte("route")})},
+			[]cache.Resource{resource.NewEnvoyResource(&any.Any{Value: []byte("listener")})},
 		)
 
 		// Create an identical struct which is guaranteed not to have been touched to compare against
 		untouched := xds.NewSnapshot("1234",
-			[]cache.Resource{xds.NewEnvoyResource(&any.Any{Value: []byte("endpoint")})},
-			[]cache.Resource{xds.NewEnvoyResource(&any.Any{Value: []byte("cluster")})},
-			[]cache.Resource{xds.NewEnvoyResource(&any.Any{Value: []byte("route")})},
-			[]cache.Resource{xds.NewEnvoyResource(&any.Any{Value: []byte("listener")})},
+			[]cache.Resource{resource.NewEnvoyResource(&any.Any{Value: []byte("endpoint")})},
+			[]cache.Resource{resource.NewEnvoyResource(&any.Any{Value: []byte("cluster")})},
+			[]cache.Resource{resource.NewEnvoyResource(&any.Any{Value: []byte("route")})},
+			[]cache.Resource{resource.NewEnvoyResource(&any.Any{Value: []byte("listener")})},
 		)
 
 		clone := toBeCloned.Clone()
@@ -36,7 +37,9 @@ var _ = Describe("EnvoySnapshot", func() {
 		Expect(reflect.DeepEqual(untouched, clone)).To(BeTrue())
 
 		// Mutate the clone
-		clone.GetResources(xds.EndpointType).Items[""].(*xds.EnvoyResource).ResourceProto().(*any.Any).Value = []byte("new_endpoint")
+		clone.GetResources(
+			resource.EndpointTypeV3,
+		).Items[""].(*resource.EnvoyResource).ResourceProto().(*any.Any).Value = []byte("new_endpoint")
 
 		// Verify that original snapshot was not mutated
 		Expect(reflect.DeepEqual(toBeCloned, clone)).To(BeFalse())
