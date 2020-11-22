@@ -14,12 +14,13 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/client"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
 // Type Definitions:
 
-const RateLimitConfigType = cache.TypePrefix + "/glooe.solo.io.RateLimitConfig"
+const RateLimitConfigType = resource.TypePrefix + "/glooe.solo.io.RateLimitConfig"
 
 /* Defined a resource - to be used by snapshot */
 type RateLimitConfigXdsResourceWrapper struct {

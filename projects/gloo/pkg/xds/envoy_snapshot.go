@@ -96,7 +96,6 @@ func NewSnapshotFromResources(
 	}
 }
 
-
 func downgradeResource(e cache.Resource) *resource.EnvoyResource {
 	var downgradedResource cache.ResourceProto
 	res := e.ResourceProto()
@@ -115,7 +114,6 @@ func downgradeResource(e cache.Resource) *resource.EnvoyResource {
 	}
 	return &resource.EnvoyResource{ProtoMessage: downgradedResource}
 }
-
 
 func downgradeCacheResources(resources cache.Resources) cache.Resources {
 	newResources := make([]cache.Resource, 0, len(resources.Items))
