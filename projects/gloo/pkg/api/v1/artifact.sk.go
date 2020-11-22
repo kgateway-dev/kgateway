@@ -16,14 +16,14 @@ import (
 
 func NewArtifact(namespace, name string) *Artifact {
 	artifact := &Artifact{}
-	artifact.SetMetadata(core.Metadata{
+	artifact.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
 	return artifact
 }
 
-func (r *Artifact) SetMetadata(meta core.Metadata) {
+func (r *Artifact) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 

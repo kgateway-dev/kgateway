@@ -3,8 +3,7 @@ package gce.plugins.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/gce";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+option (extproto.equal_all) = true;
 
 // Upstream Spec for Google Compute Engine Upstreams
 // GCE Upstreams represent a set of one or more addressable VM instances with

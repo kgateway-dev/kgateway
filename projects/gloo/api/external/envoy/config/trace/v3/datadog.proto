@@ -30,5 +30,6 @@ message DatadogConfig {
   string service_name = 2 [(validate.rules).string = {min_len: 1}];
 }
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3";
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;

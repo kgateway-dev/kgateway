@@ -51,8 +51,7 @@ package gce.options.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/gce";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+option (extproto.equal_all) = true;
 
 // Upstream Spec for Google Compute Engine Upstreams
 // GCE Upstreams represent a set of one or more addressable VM instances with
@@ -84,8 +83,7 @@ package gce.options.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/gce";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+option (extproto.equal_all) = true;
 
 // Upstream Spec for Google Compute Engine Upstreams
 // GCE Upstreams represent a set of one or more addressable VM instances with
@@ -120,8 +118,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
 import "google/protobuf/struct.proto";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+option (extproto.equal_all) = true;
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";

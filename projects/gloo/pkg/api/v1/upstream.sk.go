@@ -16,18 +16,18 @@ import (
 
 func NewUpstream(namespace, name string) *Upstream {
 	upstream := &Upstream{}
-	upstream.SetMetadata(core.Metadata{
+	upstream.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
 	return upstream
 }
 
-func (r *Upstream) SetMetadata(meta core.Metadata) {
+func (r *Upstream) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 
-func (r *Upstream) SetStatus(status core.Status) {
+func (r *Upstream) SetStatus(status *core.Status) {
 	r.Status = status
 }
 

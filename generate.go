@@ -36,6 +36,9 @@ func main() {
 			"test",
 			"projects/gloo/api/grpc",
 		},
+		CustomImports: []string{
+			"/Users/eitanya/src/solo-io/gloo/vendor_any/github.com/solo-io/protoc-gen-ext",
+		},
 		RelativeRoot:  ".",
 		CompileProtos: true,
 		GenDocs: &cmd.DocsOptions{

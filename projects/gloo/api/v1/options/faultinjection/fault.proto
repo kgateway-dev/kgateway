@@ -7,11 +7,10 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/fa
 import "google/protobuf/duration.proto";
 
 import "validate/validate.proto";
-import "gogoproto/gogo.proto";
+
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
-
-option (gogoproto.equal_all) = true;
+option (extproto.equal_all) = true;
 
 message RouteAbort {
     // Percentage of requests that should be aborted, defaulting to 0.
@@ -27,7 +26,7 @@ message RouteDelay {
     float percentage = 1;
     // Fixed delay, defaulting to 0.
     google.protobuf.Duration fixed_delay = 2
-        [(validate.rules).duration.gt = {}, (gogoproto.stdduration) = true];
+        [(validate.rules).duration.gt = {}];
 }
 
 message RouteFaults {

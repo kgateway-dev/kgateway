@@ -4,7 +4,7 @@ package v1
 
 import (
 	"context"
-	fmt "fmt"
+	"fmt"
 	"time"
 
 	"go.opencensus.io/stats"

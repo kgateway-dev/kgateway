@@ -4,9 +4,8 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
 import "google/protobuf/struct.proto";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
+option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
 import "gloo/projects/gloo/api/v1/extensions.proto";
@@ -225,7 +224,7 @@ message RouteOptions {
     // Specifies the upstream timeout for the route. If not specified, the default is 15s. This spans between the point
     // at which the entire downstream request (i.e. end-of-stream) has been processed and when the upstream response has
     // been completely processed. A value of 0 will disable the route’s timeout.
-    google.protobuf.Duration timeout = 4 [(gogoproto.stdduration) = true];
+    google.protobuf.Duration timeout = 4 ;
     retries.options.gloo.solo.io.RetryPolicy retries = 5;
     // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
     // underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.

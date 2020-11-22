@@ -73,7 +73,7 @@ var _ = Describe("Translator", func() {
 		settings          *v1.Settings
 		translator        Translator
 		upstream          *v1.Upstream
-		upName            core.Metadata
+		upName            *core.Metadata
 		proxy             *v1.Proxy
 		params            plugins.Params
 		registeredPlugins []plugins.Plugin
@@ -107,7 +107,7 @@ var _ = Describe("Translator", func() {
 		}
 		registeredPlugins = registry.Plugins(opts)
 
-		upName = core.Metadata{
+		upName = &core.Metadata{
 			Name:      "test",
 			Namespace: "gloo-system",
 		}
@@ -130,10 +130,10 @@ var _ = Describe("Translator", func() {
 			Snapshot: &v1.ApiSnapshot{
 				Endpoints: v1.EndpointList{
 					{
-						Upstreams: []*core.ResourceRef{utils.ResourceRefPtr(upName.Ref())},
+						Upstreams: []*core.ResourceRef{upName.Ref()},
 						Address:   "1.2.3.4",
 						Port:      32,
-						Metadata: core.Metadata{
+						Metadata: &core.Metadata{
 							Name:      "test-ep",
 							Namespace: "gloo-system",
 						},
@@ -157,7 +157,7 @@ var _ = Describe("Translator", func() {
 					Destination: &v1.RouteAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
-								Upstream: utils.ResourceRefPtr(upName.Ref()),
+								Upstream: upName.Ref(),
 							},
 						},
 					},
@@ -212,7 +212,7 @@ var _ = Describe("Translator", func() {
 			},
 		}
 		proxy = &v1.Proxy{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "test",
 				Namespace: "gloo-system",
 			},
@@ -286,7 +286,7 @@ var _ = Describe("Translator", func() {
 	It("translates listener options", func() {
 		proxyClone := proto.Clone(proxy).(*v1.Proxy)
 
-		proxyClone.GetListeners()[0].Options = &v1.ListenerOptions{PerConnectionBufferLimitBytes: &types.UInt32Value{Value: 4096}}
+		proxyClone.GetListeners()[0].Options = &v1.ListenerOptions{PerConnectionBufferLimitBytes: &wrappers.UInt32Value{Value: 4096}}
 
 		snap, errs, report, err := translator.Translate(params, proxyClone)
 
@@ -449,7 +449,7 @@ var _ = Describe("Translator", func() {
 
 			settings := &v1.Settings{
 				Gloo: &v1.GlooOptions{
-					RegexMaxProgramSize: &types.UInt32Value{Value: 200},
+					RegexMaxProgramSize: &wrappers.UInt32Value{Value: 200},
 				},
 			}
 			params.Ctx = settingsutil.WithSettings(params.Ctx, settings)

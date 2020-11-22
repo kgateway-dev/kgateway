@@ -73,7 +73,7 @@ require (
 	github.com/solo-io/envoy-operator v0.1.4
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.17.0
-	github.com/solo-io/protoc-gen-ext v0.0.9
+	github.com/solo-io/protoc-gen-ext v0.0.10-0.20200904232101-c8cfa2d72872
 	github.com/solo-io/reporting-client v0.2.0
 	github.com/solo-io/skv2 v0.8.1
 	github.com/solo-io/solo-apis v0.0.0-20201103221621-bbe4f60f466d
@@ -94,6 +94,7 @@ require (
 	golang.org/x/tools v0.0.0-20201027213030-631220838841
 	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d
 	google.golang.org/grpc v1.33.1
+	google.golang.org/protobuf v1.25.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/ini.v1 v1.56.0 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
@@ -124,13 +125,13 @@ replace (
 	github.com/census-instrumentation/opencensus-proto => github.com/census-instrumentation/opencensus-proto v0.2.0 // indirect
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 	// Required for proper serialization of CRDs
-	github.com/golang/protobuf => github.com/golang/protobuf v1.3.5
+	//github.com/golang/protobuf => github.com/golang/protobuf v1.3.5
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
 
 	//the following block of replacements are needed to have locked these packages to before versions they switched to using proto4
-	go.opencensus.io => go.opencensus.io v0.22.1
+	//go.opencensus.io => go.opencensus.io v0.22.1
 	golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
-	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20200513103714-09dca8ec2884
+	//google.golang.org/genproto => google.golang.org/genproto v0.0.0-20200513103714-09dca8ec2884
 
 	// kube 0.18: redirects needed for most k8s.io dependencies because
 	// k8s.io/kubernetes tries to import v0.0.0 of everything.
@@ -165,3 +166,7 @@ replace (
 	k8s.io/sample-controller => k8s.io/sample-controller v0.18.6
 	k8s.io/utils => k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 )
+
+replace github.com/solo-io/solo-kit => ../solo-kit
+
+replace github.com/solo-io/protoc-gen-ext => ../protoc-gen-ext

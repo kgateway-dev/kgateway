@@ -16,18 +16,18 @@ import (
 
 func NewUpstreamGroup(namespace, name string) *UpstreamGroup {
 	upstreamgroup := &UpstreamGroup{}
-	upstreamgroup.SetMetadata(core.Metadata{
+	upstreamgroup.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
 	return upstreamgroup
 }
 
-func (r *UpstreamGroup) SetMetadata(meta core.Metadata) {
+func (r *UpstreamGroup) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 
-func (r *UpstreamGroup) SetStatus(status core.Status) {
+func (r *UpstreamGroup) SetStatus(status *core.Status) {
 	r.Status = status
 }
 

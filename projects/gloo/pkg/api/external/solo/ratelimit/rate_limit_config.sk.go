@@ -20,7 +20,7 @@ import (
 
 func NewRateLimitConfig(namespace, name string) *RateLimitConfig {
 	ratelimitconfig := &RateLimitConfig{}
-	ratelimitconfig.RateLimitConfig.SetMetadata(core.Metadata{
+	ratelimitconfig.RateLimitConfig.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})

@@ -144,5 +144,7 @@ message CidrRange {
   google.protobuf.UInt32Value prefix_len = 2 [(validate.rules).uint32 = {lte: 128}];
 }
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3";
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
+

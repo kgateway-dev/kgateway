@@ -44,8 +44,9 @@ def import_and_copy(f):
             dest = basedir +i
             f('cp '+path+' ' + dest)
             f("echo '" + option + "' >> " + dest)
-            f("echo 'import \"gogoproto/gogo.proto\";' >> " + dest)
-            f("echo 'option (gogoproto.equal_all) = true;' >> " + dest)
+            f("echo 'import \"extproto/ext.proto\";' >> " + dest)
+            f("echo 'option (extproto.hash_all) = true;' >> " + dest)
+            f("echo 'option (extproto.equal_all) = true;' >> " + dest)
 
 def main():
     if len(sys.argv) != 2:

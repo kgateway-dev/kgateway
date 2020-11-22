@@ -6,14 +6,13 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tr
 import "gloo/projects/gloo/api/external/envoy/config/trace/v3/zipkin.proto";
 import "gloo/projects/gloo/api/external/envoy/config/trace/v3/datadog.proto";
 
-import "gogoproto/gogo.proto";
+
 import "google/protobuf/wrappers.proto";
-import "google/protobuf/duration.proto";
 import "google/protobuf/any.proto";
 
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 import "solo-kit/api/v1/ref.proto";
 

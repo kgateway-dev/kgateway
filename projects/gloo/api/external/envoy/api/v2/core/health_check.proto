@@ -16,10 +16,8 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
 
 import "validate/validate.proto";
-import "gogoproto/gogo.proto";
-
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
+option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
 // [#protodoc-title: Health check]
@@ -34,8 +32,7 @@ message HealthCheck {
         (validate.rules).duration = {
           required: true,
           gt: {seconds: 0}
-        },
-        (gogoproto.stdduration) = true
+        }
     ];
 
     // The interval between health checks.
@@ -43,8 +40,7 @@ message HealthCheck {
         (validate.rules).duration = {
             required: true,
             gt: {seconds: 0}
-        },
-        (gogoproto.stdduration) = true
+        }
     ];
 
     // An optional jitter amount in milliseconds. If specified, Envoy will start health
