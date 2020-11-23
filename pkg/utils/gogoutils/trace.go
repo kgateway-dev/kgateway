@@ -26,7 +26,7 @@ func ToEnvoyZipkinConfiguration(glooZipkinConfig *envoytrace_gloo.ZipkinConfig, 
 		CollectorEndpoint:        glooZipkinConfig.GetCollectorEndpoint(),
 		CollectorEndpointVersion: ToEnvoyZipkinCollectorEndpointVersion(glooZipkinConfig.GetCollectorEndpointVersion()),
 		TraceId_128Bit:           glooZipkinConfig.GetTraceId_128Bit(),
-		SharedSpanContext:        BoolGogoToProto(glooZipkinConfig.GetSharedSpanContext()),
+		SharedSpanContext:        glooZipkinConfig.GetSharedSpanContext(),
 	}
 	return envoyZipkinConfig, nil
 }

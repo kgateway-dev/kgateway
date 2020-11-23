@@ -3,7 +3,6 @@ package gogoutils
 import (
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	envoycluster_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
 	envoycore_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -32,21 +31,21 @@ func ToGlooOutlierDetection(detection *envoycluster.OutlierDetection) *envoyclus
 		return nil
 	}
 	return &envoycluster_gloo.OutlierDetection{
-		Consecutive_5Xx:                        UInt32ProtoToGogo(detection.GetConsecutive_5Xx()),
-		Interval:                               DurationProtoToGogo(detection.GetInterval()),
-		BaseEjectionTime:                       DurationProtoToGogo(detection.GetBaseEjectionTime()),
-		MaxEjectionPercent:                     UInt32ProtoToGogo(detection.GetMaxEjectionPercent()),
-		EnforcingConsecutive_5Xx:               UInt32ProtoToGogo(detection.GetEnforcingConsecutive_5Xx()),
-		EnforcingSuccessRate:                   UInt32ProtoToGogo(detection.GetEnforcingSuccessRate()),
-		SuccessRateMinimumHosts:                UInt32ProtoToGogo(detection.GetSuccessRateMinimumHosts()),
-		SuccessRateRequestVolume:               UInt32ProtoToGogo(detection.GetSuccessRateRequestVolume()),
-		SuccessRateStdevFactor:                 UInt32ProtoToGogo(detection.GetSuccessRateStdevFactor()),
-		ConsecutiveGatewayFailure:              UInt32ProtoToGogo(detection.GetConsecutiveGatewayFailure()),
-		EnforcingConsecutiveGatewayFailure:     UInt32ProtoToGogo(detection.GetEnforcingConsecutiveGatewayFailure()),
+		Consecutive_5Xx:                        detection.GetConsecutive_5Xx(),
+		Interval:                               detection.GetInterval(),
+		BaseEjectionTime:                       detection.GetBaseEjectionTime(),
+		MaxEjectionPercent:                     detection.GetMaxEjectionPercent(),
+		EnforcingConsecutive_5Xx:               detection.GetEnforcingConsecutive_5Xx(),
+		EnforcingSuccessRate:                   detection.GetEnforcingSuccessRate(),
+		SuccessRateMinimumHosts:                detection.GetSuccessRateMinimumHosts(),
+		SuccessRateRequestVolume:               detection.GetSuccessRateRequestVolume(),
+		SuccessRateStdevFactor:                 detection.GetSuccessRateStdevFactor(),
+		ConsecutiveGatewayFailure:              detection.GetConsecutiveGatewayFailure(),
+		EnforcingConsecutiveGatewayFailure:     detection.GetEnforcingConsecutiveGatewayFailure(),
 		SplitExternalLocalOriginErrors:         detection.GetSplitExternalLocalOriginErrors(),
-		ConsecutiveLocalOriginFailure:          UInt32ProtoToGogo(detection.GetConsecutiveLocalOriginFailure()),
-		EnforcingConsecutiveLocalOriginFailure: UInt32ProtoToGogo(detection.GetEnforcingConsecutiveLocalOriginFailure()),
-		EnforcingLocalOriginSuccessRate:        UInt32ProtoToGogo(detection.GetEnforcingLocalOriginSuccessRate()),
+		ConsecutiveLocalOriginFailure:          detection.GetConsecutiveLocalOriginFailure(),
+		EnforcingConsecutiveLocalOriginFailure: detection.GetEnforcingConsecutiveLocalOriginFailure(),
+		EnforcingLocalOriginSuccessRate:        detection.GetEnforcingLocalOriginSuccessRate(),
 	}
 }
 
@@ -66,21 +65,21 @@ func ToEnvoyOutlierDetection(detection *envoycluster_gloo.OutlierDetection) *env
 		return nil
 	}
 	return &envoycluster.OutlierDetection{
-		Consecutive_5Xx:                        UInt32GogoToProto(detection.GetConsecutive_5Xx()),
-		Interval:                               DurationGogoToProto(detection.GetInterval()),
-		BaseEjectionTime:                       DurationGogoToProto(detection.GetBaseEjectionTime()),
-		MaxEjectionPercent:                     UInt32GogoToProto(detection.GetMaxEjectionPercent()),
-		EnforcingConsecutive_5Xx:               UInt32GogoToProto(detection.GetEnforcingConsecutive_5Xx()),
-		EnforcingSuccessRate:                   UInt32GogoToProto(detection.GetEnforcingSuccessRate()),
-		SuccessRateMinimumHosts:                UInt32GogoToProto(detection.GetSuccessRateMinimumHosts()),
-		SuccessRateRequestVolume:               UInt32GogoToProto(detection.GetSuccessRateRequestVolume()),
-		SuccessRateStdevFactor:                 UInt32GogoToProto(detection.GetSuccessRateStdevFactor()),
-		ConsecutiveGatewayFailure:              UInt32GogoToProto(detection.GetConsecutiveGatewayFailure()),
-		EnforcingConsecutiveGatewayFailure:     UInt32GogoToProto(detection.GetEnforcingConsecutiveGatewayFailure()),
+		Consecutive_5Xx:                        detection.GetConsecutive_5Xx(),
+		Interval:                               detection.GetInterval(),
+		BaseEjectionTime:                       detection.GetBaseEjectionTime(),
+		MaxEjectionPercent:                     detection.GetMaxEjectionPercent(),
+		EnforcingConsecutive_5Xx:               detection.GetEnforcingConsecutive_5Xx(),
+		EnforcingSuccessRate:                   detection.GetEnforcingSuccessRate(),
+		SuccessRateMinimumHosts:                detection.GetSuccessRateMinimumHosts(),
+		SuccessRateRequestVolume:               detection.GetSuccessRateRequestVolume(),
+		SuccessRateStdevFactor:                 detection.GetSuccessRateStdevFactor(),
+		ConsecutiveGatewayFailure:              detection.GetConsecutiveGatewayFailure(),
+		EnforcingConsecutiveGatewayFailure:     detection.GetEnforcingConsecutiveGatewayFailure(),
 		SplitExternalLocalOriginErrors:         detection.GetSplitExternalLocalOriginErrors(),
-		ConsecutiveLocalOriginFailure:          UInt32GogoToProto(detection.GetConsecutiveLocalOriginFailure()),
-		EnforcingConsecutiveLocalOriginFailure: UInt32GogoToProto(detection.GetEnforcingConsecutiveLocalOriginFailure()),
-		EnforcingLocalOriginSuccessRate:        UInt32GogoToProto(detection.GetEnforcingLocalOriginSuccessRate()),
+		ConsecutiveLocalOriginFailure:          detection.GetConsecutiveLocalOriginFailure(),
+		EnforcingConsecutiveLocalOriginFailure: detection.GetEnforcingConsecutiveLocalOriginFailure(),
+		EnforcingLocalOriginSuccessRate:        detection.GetEnforcingLocalOriginSuccessRate(),
 	}
 }
 
@@ -104,18 +103,18 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretLis
 		return nil, nil
 	}
 	hc := &envoycore.HealthCheck{
-		Timeout:                      DurationStdToProto(check.GetTimeout()),
-		Interval:                     DurationStdToProto(check.GetInterval()),
-		InitialJitter:                DurationGogoToProto(check.GetInitialJitter()),
-		IntervalJitter:               DurationGogoToProto(check.GetIntervalJitter()),
+		Timeout:                      check.GetTimeout(),
+		Interval:                     check.GetInterval(),
+		InitialJitter:                check.GetInitialJitter(),
+		IntervalJitter:               check.GetIntervalJitter(),
 		IntervalJitterPercent:        check.GetIntervalJitterPercent(),
-		UnhealthyThreshold:           UInt32GogoToProto(check.GetUnhealthyThreshold()),
-		HealthyThreshold:             UInt32GogoToProto(check.GetHealthyThreshold()),
-		ReuseConnection:              BoolGogoToProto(check.GetReuseConnection()),
-		NoTrafficInterval:            DurationGogoToProto(check.GetNoTrafficInterval()),
-		UnhealthyInterval:            DurationGogoToProto(check.GetUnhealthyInterval()),
-		UnhealthyEdgeInterval:        DurationGogoToProto(check.GetUnhealthyEdgeInterval()),
-		HealthyEdgeInterval:          DurationGogoToProto(check.GetHealthyEdgeInterval()),
+		UnhealthyThreshold:           check.GetUnhealthyThreshold(),
+		HealthyThreshold:             check.GetHealthyThreshold(),
+		ReuseConnection:              check.GetReuseConnection(),
+		NoTrafficInterval:            check.GetNoTrafficInterval(),
+		UnhealthyInterval:            check.GetUnhealthyInterval(),
+		UnhealthyEdgeInterval:        check.GetUnhealthyEdgeInterval(),
+		HealthyEdgeInterval:          check.GetHealthyEdgeInterval(),
 		EventLogPath:                 check.GetEventLogPath(),
 		AlwaysLogHealthCheckFailures: check.GetAlwaysLogHealthCheckFailures(),
 	}
@@ -153,28 +152,20 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretLis
 	case *envoycore_gloo.HealthCheck_CustomHealthCheck_:
 		switch typedConfig := typed.CustomHealthCheck.GetConfigType().(type) {
 		case *envoycore_gloo.HealthCheck_CustomHealthCheck_Config:
-			converted, err := protoutils.StructGogoToPb(typedConfig.Config)
-			if err != nil {
-				return nil, err
-			}
 			hc.HealthChecker = &envoycore.HealthCheck_CustomHealthCheck_{
 				CustomHealthCheck: &envoycore.HealthCheck_CustomHealthCheck{
 					Name: typed.CustomHealthCheck.GetName(),
 					ConfigType: &envoycore.HealthCheck_CustomHealthCheck_Config{
-						Config: converted,
+						Config: typedConfig.Config,
 					},
 				},
 			}
 		case *envoycore_gloo.HealthCheck_CustomHealthCheck_TypedConfig:
-			converted, err := protoutils.AnyGogoToPb(typedConfig.TypedConfig)
-			if err != nil {
-				return nil, err
-			}
 			hc.HealthChecker = &envoycore.HealthCheck_CustomHealthCheck_{
 				CustomHealthCheck: &envoycore.HealthCheck_CustomHealthCheck{
 					Name: typed.CustomHealthCheck.GetName(),
 					ConfigType: &envoycore.HealthCheck_CustomHealthCheck_TypedConfig{
-						TypedConfig: converted,
+						TypedConfig: typedConfig.TypedConfig,
 					},
 				},
 			}
@@ -203,18 +194,18 @@ func ToGlooHealthCheck(check *envoycore.HealthCheck) (*envoycore_gloo.HealthChec
 		return nil, nil
 	}
 	hc := &envoycore_gloo.HealthCheck{
-		Timeout:                      DurationProtoToStd(check.GetTimeout()),
-		Interval:                     DurationProtoToStd(check.GetInterval()),
-		InitialJitter:                DurationProtoToGogo(check.GetInitialJitter()),
-		IntervalJitter:               DurationProtoToGogo(check.GetIntervalJitter()),
+		Timeout:                      check.GetTimeout(),
+		Interval:                     check.GetInterval(),
+		InitialJitter:                check.GetInitialJitter(),
+		IntervalJitter:               check.GetIntervalJitter(),
 		IntervalJitterPercent:        check.GetIntervalJitterPercent(),
-		UnhealthyThreshold:           UInt32ProtoToGogo(check.GetUnhealthyThreshold()),
-		HealthyThreshold:             UInt32ProtoToGogo(check.GetHealthyThreshold()),
-		ReuseConnection:              BoolProtoToGogo(check.GetReuseConnection()),
-		NoTrafficInterval:            DurationProtoToGogo(check.GetNoTrafficInterval()),
-		UnhealthyInterval:            DurationProtoToGogo(check.GetUnhealthyInterval()),
-		UnhealthyEdgeInterval:        DurationProtoToGogo(check.GetUnhealthyEdgeInterval()),
-		HealthyEdgeInterval:          DurationProtoToGogo(check.GetHealthyEdgeInterval()),
+		UnhealthyThreshold:           check.GetUnhealthyThreshold(),
+		HealthyThreshold:             check.GetHealthyThreshold(),
+		ReuseConnection:              check.GetReuseConnection(),
+		NoTrafficInterval:            check.GetNoTrafficInterval(),
+		UnhealthyInterval:            check.GetUnhealthyInterval(),
+		UnhealthyEdgeInterval:        check.GetUnhealthyEdgeInterval(),
+		HealthyEdgeInterval:          check.GetHealthyEdgeInterval(),
 		EventLogPath:                 check.GetEventLogPath(),
 		AlwaysLogHealthCheckFailures: check.GetAlwaysLogHealthCheckFailures(),
 	}
@@ -248,28 +239,20 @@ func ToGlooHealthCheck(check *envoycore.HealthCheck) (*envoycore_gloo.HealthChec
 	case *envoycore.HealthCheck_CustomHealthCheck_:
 		switch typedConfig := typed.CustomHealthCheck.GetConfigType().(type) {
 		case *envoycore.HealthCheck_CustomHealthCheck_Config:
-			converted, err := protoutils.StructPbToGogo(typedConfig.Config)
-			if err != nil {
-				return nil, err
-			}
 			hc.HealthChecker = &envoycore_gloo.HealthCheck_CustomHealthCheck_{
 				CustomHealthCheck: &envoycore_gloo.HealthCheck_CustomHealthCheck{
 					Name: typed.CustomHealthCheck.GetName(),
 					ConfigType: &envoycore_gloo.HealthCheck_CustomHealthCheck_Config{
-						Config: converted,
+						Config: typedConfig.Config,
 					},
 				},
 			}
 		case *envoycore.HealthCheck_CustomHealthCheck_TypedConfig:
-			converted, err := protoutils.AnyPbToGogo(typedConfig.TypedConfig)
-			if err != nil {
-				return nil, err
-			}
 			hc.HealthChecker = &envoycore_gloo.HealthCheck_CustomHealthCheck_{
 				CustomHealthCheck: &envoycore_gloo.HealthCheck_CustomHealthCheck{
 					Name: typed.CustomHealthCheck.GetName(),
 					ConfigType: &envoycore_gloo.HealthCheck_CustomHealthCheck_TypedConfig{
-						TypedConfig: converted,
+						TypedConfig: typedConfig.TypedConfig,
 					},
 				},
 			}

@@ -168,5 +168,5 @@ message CustomAction {
     // The percent of the string which will be masked by the mask_char
     // default value: 75%
     // rounds ratio (percent/100) by std::round http://www.cplusplus.com/reference/cmath/round/
-    envoy.type.Percent percent = 4;
+    .solo.io.envoy.type.Percent percent = 4;
 }

@@ -100,7 +100,7 @@ ClusterLoop:
 		}
 		// make sure to call EndpointPlugin with empty endpoint
 		for _, upstream := range params.Snapshot.Upstreams {
-			if UpstreamToClusterName(core.ResourceRef{
+			if UpstreamToClusterName(&core.ResourceRef{
 				Name:      upstream.Metadata.Name,
 				Namespace: upstream.Metadata.Namespace,
 			}) == c.Name {

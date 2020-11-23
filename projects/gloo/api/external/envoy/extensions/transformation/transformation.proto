@@ -36,7 +36,7 @@ message TransformationRule {
   //    match:
   //      prefix: /
   //
-  envoy.config.route.v3.RouteMatch match = 1
+  solo.io.envoy.config.route.v3.RouteMatch match = 1
       [ (validate.rules).message = {required : true} ];
 
   message Transformations {
@@ -68,7 +68,7 @@ message RouteTransformations {
 
     message RequestMatch {
       // if no match is specified, will match all
-      envoy.config.route.v3.RouteMatch match = 1;
+      solo.io.envoy.config.route.v3.RouteMatch match = 1;
       // transformation to perform
       Transformation request_transformation = 2;
       Transformation response_transformation = 3;
@@ -98,11 +98,11 @@ message ResponseMatcher {
   // config. A match will happen if all the headers in the route are present in
   // the request with the same values (or based on presence if the value field
   // is not in the config).
-  repeated envoy.config.route.v3.HeaderMatcher headers = 1;
+  repeated solo.io.envoy.config.route.v3.HeaderMatcher headers = 1;
 
   // Only match responses with non empty response code details (this usually
   // implies a local reply).
-  envoy.type.matcher.v3.StringMatcher response_code_details = 2;
+  solo.io.envoy.type.matcher.v3.StringMatcher response_code_details = 2;
 }
 
 message ResponseTransformationRule {

@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes/duration"
+	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -20,7 +22,6 @@ const (
 	requestType        = "both"
 
 	CustomStage    = 1
-	DefaultTimeout = 100 * time.Millisecond
 )
 
 var (
@@ -30,11 +31,13 @@ var (
 	// we may want to rate limit before executing the AuthN and AuthZ stages
 	// notably, AuthZ still needs to occur after AuthN
 	beforeAuthStage = plugins.BeforeStage(plugins.AuthNStage)
+
+	DefaultTimeout = prototime.DurationToProto(100 * time.Millisecond)
 )
 
 type Plugin struct {
 	upstreamRef         *core.ResourceRef
-	timeout             *time.Duration
+	timeout             *duration.Duration
 	denyOnFail          bool
 	rateLimitBeforeAuth bool
 }
@@ -76,7 +79,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	var upstreamRef *core.ResourceRef
-	var timeout *time.Duration
+	var timeout *duration.Duration
 	var denyOnFail bool
 	var rateLimitBeforeAuth bool
 
@@ -96,7 +99,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 		return nil, nil
 	}
 
-	customConf := generateEnvoyConfigForCustomFilter(*upstreamRef, timeout, denyOnFail)
+	customConf := generateEnvoyConfigForCustomFilter(upstreamRef, timeout, denyOnFail)
 
 	customStagedFilter, err := plugins.NewStagedFilterWithConfig(wellknown.HTTPRateLimit, customConf, DetermineFilterStage(rateLimitBeforeAuth))
 	if err != nil {

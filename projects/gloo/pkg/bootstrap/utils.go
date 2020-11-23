@@ -5,7 +5,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/duration"
+	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	consulapi "github.com/hashicorp/consul/api"
@@ -252,7 +253,9 @@ func initializeForKube(ctx context.Context,
 	cfg **rest.Config,
 	clientset *kubernetes.Interface,
 	kubeCoreCache *cache.KubeCoreCache,
-	refreshRate *types.Duration, nsToWatch []string) error {
+	refreshRate *duration.Duration,
+	nsToWatch []string,
+) error {
 	if cfg == nil {
 		c, err := kubeutils.GetConfig("", "")
 		if err != nil {
@@ -272,9 +275,7 @@ func initializeForKube(ctx context.Context,
 	if *kubeCoreCache == nil {
 		duration := 12 * time.Hour
 		if refreshRate != nil {
-			if parsedDuration, err := types.DurationFromProto(refreshRate); err == nil {
-				duration = parsedDuration
-			}
+			duration = prototime.DurationFromProto(refreshRate)
 		}
 		coreCache, err := cache.NewKubeCoreCacheWithOptions(ctx, *clientset, duration, nsToWatch)
 		if err != nil {

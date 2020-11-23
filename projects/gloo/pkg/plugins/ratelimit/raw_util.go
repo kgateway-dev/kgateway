@@ -2,8 +2,8 @@ package ratelimit
 
 import (
 	"context"
-	"time"
 
+	"github.com/golang/protobuf/ptypes/duration"
 	gloorl "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
 	envoyvhostratelimit "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -16,7 +16,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-func generateEnvoyConfigForCustomFilter(ref core.ResourceRef, timeout *time.Duration, denyOnFail bool) *envoyratelimit.RateLimit {
+func generateEnvoyConfigForCustomFilter(ref *core.ResourceRef, timeout *duration.Duration, denyOnFail bool) *envoyratelimit.RateLimit {
 	return GenerateEnvoyConfigForFilterWith(ref, CustomDomain, CustomStage, timeout, denyOnFail)
 }
 

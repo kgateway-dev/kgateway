@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"strings"
 
-	proto2 "github.com/gogo/protobuf/proto"
+	proto2 "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/proto"
 	"github.com/rotisserie/eris"
 )

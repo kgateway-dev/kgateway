@@ -2,7 +2,7 @@ syntax = "proto3";
 package glooe.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise";
 
-import "envoy/api/v2/discovery.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
 import "google/api/annotations.proto";
 import "solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto";
 

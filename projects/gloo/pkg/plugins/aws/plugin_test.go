@@ -3,7 +3,7 @@ package aws_test
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	gogoproto "github.com/gogo/protobuf/proto"
+	gogoproto "github.com/golang/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

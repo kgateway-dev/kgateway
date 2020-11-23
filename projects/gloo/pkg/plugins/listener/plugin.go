@@ -2,7 +2,6 @@ package listener
 
 import (
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
@@ -28,6 +27,6 @@ func (p *Plugin) ProcessListener(_ plugins.Params, in *v1.Listener, out *envoy_a
 		return nil
 	}
 
-	out.PerConnectionBufferLimitBytes = gogoutils.UInt32GogoToProto(in.GetOptions().PerConnectionBufferLimitBytes)
+	out.PerConnectionBufferLimitBytes = in.GetOptions().GetPerConnectionBufferLimitBytes()
 	return nil
 }

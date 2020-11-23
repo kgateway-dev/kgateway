@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/gogo/protobuf/jsonpb"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/gogo/protobuf/types"
 	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/ratelimit"

@@ -69,7 +69,7 @@ func ToEnvoyHeaderValueOptions(option *envoycore_sk.HeaderValueOption, secrets *
 					Key:   typedOption.Header.GetKey(),
 					Value: typedOption.Header.GetValue(),
 				},
-				Append: BoolGogoToProto(option.GetAppend()),
+				Append: option.GetAppend(),
 			},
 		}, nil
 	case *envoycore_sk.HeaderValueOption_HeaderSecretRef:
@@ -90,7 +90,7 @@ func ToEnvoyHeaderValueOptions(option *envoycore_sk.HeaderValueOption, secrets *
 					Key:   key,
 					Value: value,
 				},
-				Append: BoolGogoToProto(option.GetAppend()),
+				Append: option.GetAppend(),
 			})
 		}
 		return result, nil
@@ -115,6 +115,6 @@ func ToGlooHeaderValueOption(option *envoycore.HeaderValueOption) *envoycore_sk.
 				Value: option.GetHeader().GetValue(),
 			},
 		},
-		Append: BoolProtoToGogo(option.GetAppend()),
+		Append: option.GetAppend(),
 	}
 }

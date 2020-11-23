@@ -58,8 +58,8 @@ message Upstream {
     CircuitBreakerConfig circuit_breakers = 5;
     LoadBalancerConfig load_balancer_config = 6;
     ConnectionConfig connection_config = 7;
-    repeated envoy.api.v2.core.HealthCheck health_checks = 8;
-    envoy.api.v2.cluster.OutlierDetection outlier_detection = 9;
+    repeated .solo.io.envoy.api.v2.core.HealthCheck health_checks = 8;
+    .solo.io.envoy.api.v2.cluster.OutlierDetection outlier_detection = 9;
 
     // Use http2 when communicating with this upstream
     // this field is evaluated `true` for upstreams

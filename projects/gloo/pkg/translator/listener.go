@@ -5,18 +5,17 @@ import (
 	"reflect"
 	"sort"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -148,7 +147,7 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(snap *v1.ApiSnapsh
 	if len(listener.SslConfigurations) == 0 {
 		return []*envoylistener.FilterChain{{
 			Filters:       listenerFilters,
-			UseProxyProto: gogoutils.BoolGogoToProto(listener.UseProxyProto),
+			UseProxyProto: listener.GetUseProxyProto(),
 		}}
 	}
 
@@ -239,7 +238,7 @@ func validateListenerPorts(proxy *v1.Proxy, listenerReport *validationapi.Listen
 	}
 }
 
-func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDomains []string, useProxyProto *types.BoolValue, listenerFilters []*envoylistener.Filter) *envoylistener.FilterChain {
+func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDomains []string, useProxyProto *wrappers.BoolValue, listenerFilters []*envoylistener.Filter) *envoylistener.FilterChain {
 
 	// copy listenerFilter so we can modify filter chain later without changing the filters on all of them!
 	listenerFiltersCopy := make([]*envoylistener.Filter, len(listenerFilters))
@@ -258,7 +257,7 @@ func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDoma
 			ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(downstreamConfig)},
 		},
 
-		UseProxyProto: gogoutils.BoolGogoToProto(useProxyProto),
+		UseProxyProto: useProxyProto,
 	}
 }
 

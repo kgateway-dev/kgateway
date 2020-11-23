@@ -86,7 +86,7 @@ func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, 
 			return err
 		}
 
-		clusterName := translator.UpstreamToClusterName(*usRef)
+		clusterName := translator.UpstreamToClusterName(usRef)
 		correspondentCluster := clusterMap[clusterName]
 
 		correspondentCluster.MetadataMatch = metadataMatch

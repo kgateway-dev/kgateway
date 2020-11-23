@@ -7,11 +7,10 @@ import (
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
@@ -124,8 +123,8 @@ func (p *Plugin) tcpProxyFilters(
 
 	if plugins != nil {
 		if tcpSettings := plugins.GetTcpProxySettings(); tcpSettings != nil {
-			cfg.MaxConnectAttempts = gogoutils.UInt32GogoToProto(tcpSettings.GetMaxConnectAttempts())
-			cfg.IdleTimeout = gogoutils.DurationStdToProto(tcpSettings.GetIdleTimeout())
+			cfg.MaxConnectAttempts = tcpSettings.GetMaxConnectAttempts()
+			cfg.IdleTimeout = tcpSettings.GetIdleTimeout()
 		}
 	}
 
@@ -140,7 +139,7 @@ func (p *Plugin) tcpProxyFilters(
 			return nil, err
 		}
 		cfg.ClusterSpecifier = &envoytcp.TcpProxy_Cluster{
-			Cluster: translatorutil.UpstreamToClusterName(*usRef),
+			Cluster: translatorutil.UpstreamToClusterName(usRef),
 		}
 	case *v1.TcpHost_TcpAction_Multi:
 		wc, err := p.convertToWeightedCluster(dest.Multi)
@@ -203,7 +202,7 @@ func (p *Plugin) convertToWeightedCluster(multiDest *v1.MultiDestination) (*envo
 		}
 
 		wc[i] = &envoytcp.TcpProxy_WeightedCluster_ClusterWeight{
-			Name:   translatorutil.UpstreamToClusterName(*usRef),
+			Name:   translatorutil.UpstreamToClusterName(usRef),
 			Weight: weightedDest.GetWeight(),
 		}
 	}
@@ -222,7 +221,7 @@ func (p *Plugin) computerTcpFilterChain(
 	if sslConfig == nil {
 		return &envoylistener.FilterChain{
 			Filters:       listenerFilters,
-			UseProxyProto: gogoutils.BoolGogoToProto(listener.GetUseProxyProto()),
+			UseProxyProto: listener.GetUseProxyProto(),
 		}, nil
 	}
 
@@ -240,7 +239,7 @@ func (p *Plugin) computerTcpFilterChain(
 func (p *Plugin) newSslFilterChain(
 	downstreamConfig *envoyauth.DownstreamTlsContext,
 	sniDomains []string,
-	useProxyProto *types.BoolValue,
+	useProxyProto *wrappers.BoolValue,
 	listenerFilters []*envoylistener.Filter,
 ) *envoylistener.FilterChain {
 
@@ -259,6 +258,6 @@ func (p *Plugin) newSslFilterChain(
 			Name:       wellknown.TransportSocketTls,
 			ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(downstreamConfig)},
 		},
-		UseProxyProto: gogoutils.BoolGogoToProto(useProxyProto),
+		UseProxyProto: useProxyProto,
 	}
 }

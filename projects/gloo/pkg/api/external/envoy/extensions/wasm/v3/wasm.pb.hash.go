@@ -34,7 +34,7 @@ func (m *VmConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.extensions.wasm.v3.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3.VmConfig")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.extensions.wasm.v3.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3.VmConfig")); err != nil {
 		return 0, err
 	}
 
@@ -96,7 +96,7 @@ func (m *PluginConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.extensions.wasm.v3.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3.PluginConfig")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.extensions.wasm.v3.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3.PluginConfig")); err != nil {
 		return 0, err
 	}
 
@@ -159,7 +159,7 @@ func (m *WasmService) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.extensions.wasm.v3.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3.WasmService")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.extensions.wasm.v3.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3.WasmService")); err != nil {
 		return 0, err
 	}
 

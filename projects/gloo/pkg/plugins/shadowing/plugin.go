@@ -63,7 +63,7 @@ func applyShadowSpec(out *envoyroute.RouteAction, spec *shadowing.RouteShadowing
 		return InvalidNumeratorError(spec.Percentage)
 	}
 	out.RequestMirrorPolicy = &envoyroute.RouteAction_RequestMirrorPolicy{
-		Cluster:         translator.UpstreamToClusterName(*spec.Upstream),
+		Cluster:         translator.UpstreamToClusterName(spec.Upstream),
 		RuntimeFraction: getFractionalPercent(spec.Percentage),
 	}
 	return nil

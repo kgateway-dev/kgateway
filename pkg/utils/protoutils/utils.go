@@ -3,7 +3,7 @@ package protoutils
 import (
 	"bytes"
 
-	gogojson "github.com/gogo/protobuf/jsonpb"
+	gogojson "github.com/golang/protobuf/jsonpb"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"

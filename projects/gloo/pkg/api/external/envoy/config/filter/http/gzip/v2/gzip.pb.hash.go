@@ -34,7 +34,7 @@ func (m *Gzip) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.config.filter.http.gzip.v2.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2.Gzip")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.filter.http.gzip.v2.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2.Gzip")); err != nil {
 		return 0, err
 	}
 
@@ -120,7 +120,7 @@ func (m *Gzip_CompressionLevel) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.config.filter.http.gzip.v2.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2.Gzip_CompressionLevel")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.filter.http.gzip.v2.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2.Gzip_CompressionLevel")); err != nil {
 		return 0, err
 	}
 

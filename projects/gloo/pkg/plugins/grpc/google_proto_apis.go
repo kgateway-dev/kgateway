@@ -1,7 +1,7 @@
 package grpc
 
 import (
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 )
 

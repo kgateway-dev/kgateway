@@ -4,7 +4,7 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
-	types "github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	envoyroute_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/route"
 	envoytype_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
@@ -25,7 +25,7 @@ func ToGlooRouteMatch(routeMatch *envoyroute.RouteMatch) *envoyroute_gloo.RouteM
 	}
 	rm := &envoyroute_gloo.RouteMatch{
 		PathSpecifier:   nil, // gets set later in function
-		CaseSensitive:   BoolProtoToGogo(routeMatch.GetCaseSensitive()),
+		CaseSensitive:   routeMatch.GetCaseSensitive(),
 		RuntimeFraction: ToGlooRuntimeFractionalPercent(routeMatch.GetRuntimeFraction()),
 		Headers:         ToGlooHeaders(routeMatch.GetHeaders()),
 		QueryParameters: ToGlooQueryParameterMatchers(routeMatch.GetQueryParameters()),
@@ -168,7 +168,7 @@ func ToGlooQueryParameterMatcher(queryParamMatcher *envoyroute.QueryParameterMat
 		Value: value,
 	}
 	if regex {
-		qpm.Regex = &types.BoolValue{
+		qpm.Regex = &wrappers.BoolValue{
 			Value: true,
 		}
 	}

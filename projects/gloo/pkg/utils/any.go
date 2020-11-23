@@ -6,7 +6,7 @@ import (
 	udpa_type_v1 "github.com/cncf/udpa/go/udpa/type/v1"
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 
-	gogoproto "github.com/gogo/protobuf/proto"
+	gogoproto "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/proto"
 	goproto "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"

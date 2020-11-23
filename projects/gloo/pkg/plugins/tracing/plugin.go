@@ -6,8 +6,8 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -163,7 +163,7 @@ func getEnvoyTracingCollectorClusterName(snapshot *v1.ApiSnapshot, collectorUpst
 		return "", errors.Errorf("Invalid CollectorUpstreamRef (no upstream found for ref %v)", collectorUpstreamRef)
 	}
 
-	return translatorutil.UpstreamToClusterName(*collectorUpstreamRef), nil
+	return translatorutil.UpstreamToClusterName(collectorUpstreamRef), nil
 }
 
 func envoySimplePercent(numerator float32) *envoy_type.Percent {
@@ -171,7 +171,7 @@ func envoySimplePercent(numerator float32) *envoy_type.Percent {
 }
 
 // use FloatValue to detect when nil (avoids error-prone float comparisons)
-func envoySimplePercentWithDefault(numerator *types.FloatValue, defaultValue float32) *envoy_type.Percent {
+func envoySimplePercentWithDefault(numerator *wrappers.FloatValue, defaultValue float32) *envoy_type.Percent {
 	if numerator == nil {
 		return envoySimplePercent(defaultValue)
 	}

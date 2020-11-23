@@ -9,7 +9,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/errors"
 
@@ -33,7 +33,7 @@ type UpstreamWithServiceSpec interface {
 
 type plugin struct {
 	transformsAdded   *bool
-	recordedUpstreams map[core.ResourceRef]*glooplugins.ServiceSpec_Rest
+	recordedUpstreams map[*core.ResourceRef]*glooplugins.ServiceSpec_Rest
 	ctx               context.Context
 }
 
@@ -43,7 +43,7 @@ func NewPlugin(transformsAdded *bool) plugins.Plugin {
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.ctx = params.Ctx
-	p.recordedUpstreams = make(map[core.ResourceRef]*glooplugins.ServiceSpec_Rest)
+	p.recordedUpstreams = make(map[*core.ResourceRef]*glooplugins.ServiceSpec_Rest)
 	return nil
 }
 
@@ -87,7 +87,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			contextutils.LoggerFrom(p.ctx).Error(err)
 			return nil, err
 		}
-		restServiceSpec, ok := p.recordedUpstreams[*upstreamRef]
+		restServiceSpec, ok := p.recordedUpstreams[upstreamRef]
 		if !ok {
 			return nil, errors.Errorf("%v does not have a rest service spec", *upstreamRef)
 		}

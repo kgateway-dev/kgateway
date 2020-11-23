@@ -8,7 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/any"
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/wasm/tools/wasme/pkg/defaults"
@@ -97,7 +98,7 @@ func (p *Plugin) ensureFilter(wasmFilter *wasm.WasmFilter) (*plugins.StagedHttpF
 									HttpUpstreamType: &configcore.HttpUri_Cluster{
 										Cluster: WasmCacheCluster,
 									},
-									Timeout: &types.Duration{
+									Timeout: &duration.Duration{
 										Seconds: 5, // TODO: customize
 									},
 								},
@@ -130,7 +131,7 @@ func (p *Plugin) ensurePluginInCache(filter *wasm.WasmFilter) (*CachedPlugin, er
 	}, nil
 }
 
-func (p *Plugin) verifyConfiguration(schema Schema, config *types.Any) error {
+func (p *Plugin) verifyConfiguration(schema Schema, config *any.Any) error {
 	// everything goes now-a-days
 	return nil
 }

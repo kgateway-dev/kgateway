@@ -40,8 +40,8 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 "circuitBreakers": .gloo.solo.io.CircuitBreakerConfig
 "loadBalancerConfig": .gloo.solo.io.LoadBalancerConfig
 "connectionConfig": .gloo.solo.io.ConnectionConfig
-"healthChecks": []envoy.api.v2.core.HealthCheck
-"outlierDetection": .envoy.api.v2.cluster.OutlierDetection
+"healthChecks": []solo.io.envoy.api.v2.core.HealthCheck
+"outlierDetection": .solo.io.envoy.api.v2.cluster.OutlierDetection
 "useHttp2": .google.protobuf.BoolValue
 "kube": .kubernetes.options.gloo.solo.io.UpstreamSpec
 "static": .static.options.gloo.solo.io.UpstreamSpec
@@ -65,8 +65,8 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk/#circuitbreakerconfig) | Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used. if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers) will be used. |
 | `loadBalancerConfig` | [.gloo.solo.io.LoadBalancerConfig](../load_balancer.proto.sk/#loadbalancerconfig) |  |
 | `connectionConfig` | [.gloo.solo.io.ConnectionConfig](../connection.proto.sk/#connectionconfig) |  |
-| `healthChecks` | [[]envoy.api.v2.core.HealthCheck](../../external/envoy/api/v2/core/health_check.proto.sk/#healthcheck) |  |
-| `outlierDetection` | [.envoy.api.v2.cluster.OutlierDetection](../../external/envoy/api/v2/cluster/outlier_detection.proto.sk/#outlierdetection) |  |
+| `healthChecks` | [[]solo.io.envoy.api.v2.core.HealthCheck](../../external/envoy/api/v2/core/health_check.proto.sk/#healthcheck) |  |
+| `outlierDetection` | [.solo.io.envoy.api.v2.cluster.OutlierDetection](../../external/envoy/api/v2/cluster/outlier_detection.proto.sk/#outlierdetection) |  |
 | `useHttp2` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Use http2 when communicating with this upstream this field is evaluated `true` for upstreams with a grpc service spec. otherwise defaults to `false`. |
 | `kube` | [.kubernetes.options.gloo.solo.io.UpstreamSpec](../options/kubernetes/kubernetes.proto.sk/#upstreamspec) |  Only one of `kube`, `static`, `pipe`, `aws`, `azure`, or `awsEc2` can be set. |
 | `static` | [.static.options.gloo.solo.io.UpstreamSpec](../options/static/static.proto.sk/#upstreamspec) |  Only one of `static`, `kube`, `pipe`, `aws`, `azure`, or `awsEc2` can be set. |

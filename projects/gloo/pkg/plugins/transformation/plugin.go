@@ -6,9 +6,6 @@ import (
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
-	"github.com/gogo/protobuf/types"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	envoyroutev3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
@@ -273,14 +270,6 @@ func envoyQueryMatcher(ctx context.Context, in []*matchers.QueryParameterMatcher
 	}
 	return out
 }
-func convertUint32(i *wrappers.UInt32Value) *types.UInt32Value {
-	if i == nil {
-		return nil
-	}
-	return &types.UInt32Value{
-		Value: i.Value,
-	}
-}
 
 func envoyHeaderMatcher(ctx context.Context, in []*matchers.HeaderMatcher) []*envoyroutev3.HeaderMatcher {
 	var out []*envoyroutev3.HeaderMatcher
@@ -318,7 +307,7 @@ func convertRegex(regex *envoy_type_matcher.RegexMatcher) *v3.RegexMatcher {
 		return nil
 	}
 	return &v3.RegexMatcher{
-		EngineType: &v3.RegexMatcher_GoogleRe2{GoogleRe2: &v3.RegexMatcher_GoogleRE2{MaxProgramSize: convertUint32(regex.GetGoogleRe2().GetMaxProgramSize())}},
+		EngineType: &v3.RegexMatcher_GoogleRe2{GoogleRe2: &v3.RegexMatcher_GoogleRE2{MaxProgramSize: regex.GetGoogleRe2().GetMaxProgramSize()}},
 		Regex:      regex.GetRegex(),
 	}
 }

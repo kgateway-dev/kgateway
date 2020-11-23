@@ -3,8 +3,8 @@ package bootstrap
 import (
 	"context"
 
-	"github.com/gogo/protobuf/types"
 	"github.com/hashicorp/consul/api"
+	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 )
@@ -55,10 +55,7 @@ func ConsulClientForSettings(ctx context.Context, settings *v1.Settings) (*api.C
 			cfg.TLSConfig.InsecureSkipVerify = insecureSkipVerify.GetValue()
 		}
 		if waitTime := consulSettings.GetWaitTime(); waitTime != nil {
-			duration, err := types.DurationFromProto(waitTime)
-			if err != nil {
-				return nil, err
-			}
+			duration := prototime.DurationFromProto(waitTime)
 			cfg.WaitTime = duration
 		}
 	}

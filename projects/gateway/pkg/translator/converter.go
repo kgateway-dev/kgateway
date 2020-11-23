@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/gogo/protobuf/types"
-
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	errors "github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -49,7 +48,7 @@ var (
 	InvalidRouteTableForDelegateMethodsErr = func(delegateMethods, childMethods []string) error {
 		return errors.Wrapf(InvalidMethodErr, "required methods: %v, methods: %v", delegateMethods, childMethods)
 	}
-	TopLevelVirtualResourceErr = func(rtRef core.Metadata, err error) error {
+	TopLevelVirtualResourceErr = func(rtRef *core.Metadata, err error) error {
 		return errors.Wrapf(err, "on sub route table %s", rtRef.Ref().Key())
 	}
 )
@@ -201,7 +200,7 @@ func (rv *routeVisitor) visit(
 			// Default missing weights to 0
 			for _, routeTable := range routeTables {
 				if routeTable.GetWeight() == nil {
-					routeTable.Weight = &types.Int32Value{Value: defaultTableWeight}
+					routeTable.Weight = &wrappers.Int32Value{Value: defaultTableWeight}
 				}
 			}
 
@@ -401,7 +400,7 @@ func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*ga
 
 	// inherit inheritance config from parent if unset
 	if child.InheritableMatchers == nil {
-		child.InheritableMatchers = &types.BoolValue{
+		child.InheritableMatchers = &wrappers.BoolValue{
 			Value: parent.inheritableMatchers,
 		}
 	}

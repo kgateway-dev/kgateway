@@ -134,7 +134,7 @@ func (t *AwsSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 	sessionToken, hasSessionToken := secret.Data[AwsSessionTokenName]
 	if hasAccessKey && hasSecretKey {
 		skSecret := &v1.Secret{
-			Metadata: skcore.Metadata{
+			Metadata: &skcore.Metadata{
 				Name:        secret.Name,
 				Namespace:   secret.Namespace,
 				Cluster:     secret.ClusterName,

@@ -3,7 +3,7 @@ package common
 import (
 	envoytypev2 "github.com/envoyproxy/go-control-plane/envoy/type"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 )
 
 func ToEnvoyPercentage(percentage float32) *envoytype.FractionalPercent {
@@ -21,7 +21,7 @@ func ToEnvoyv2Percentage(percentage float32) *envoytypev2.FractionalPercent {
 }
 
 // use FloatValue to detect when nil (avoids error-prone float comparisons)
-func ToEnvoyPercentageWithDefault(percentage *types.FloatValue, defaultValue float32) *envoytypev2.FractionalPercent {
+func ToEnvoyPercentageWithDefault(percentage *wrappers.FloatValue, defaultValue float32) *envoytypev2.FractionalPercent {
 	if percentage == nil {
 		return ToEnvoyv2Percentage(defaultValue)
 	}

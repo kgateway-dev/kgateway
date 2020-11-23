@@ -2,7 +2,7 @@
 
 syntax = "proto3";
 
-package envoy.extensions.filters.http.buffer.v3;
+package solo.io.envoy.extensions.filters.http.buffer.v3;
 
 // manually updated this line:
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3";

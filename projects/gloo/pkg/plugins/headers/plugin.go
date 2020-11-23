@@ -135,10 +135,10 @@ func convertResponseHeaderValueOption(in []*headers.HeaderValueOption) ([]*envoy
 		}
 		out = append(out, &envoycore.HeaderValueOption{
 			Header: &envoycore.HeaderValue{
-				Key:   h.Header.Key,
-				Value: h.Header.Value,
+				Key:   h.GetHeader().GetKey(),
+				Value: h.GetHeader().GetValue(),
 			},
-			Append: gogoutils.BoolGogoToProto(h.Append),
+			Append: h.GetAppend(),
 		})
 	}
 	return out, nil

@@ -18,7 +18,7 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/ghodss/yaml"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/k0kubun/pp"
 	"github.com/solo-io/go-utils/protoutils"
 	"google.golang.org/grpc"

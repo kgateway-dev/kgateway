@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/go-utils/manifesttestutils"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/reporting-client/pkg/client"
 	"helm.sh/helm/v3/pkg/releaseutil"
 	"k8s.io/utils/pointer"

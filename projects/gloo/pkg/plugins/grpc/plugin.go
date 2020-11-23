@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/genproto/googleapis/api/annotations"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
@@ -16,13 +18,11 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoytranscoder "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_json_transcoder/v3"
-	"github.com/gogo/googleapis/google/api"
-	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/golang/protobuf/proto"
 
 	"encoding/base64"
 
-	"github.com/gogo/protobuf/types"
 	errors "github.com/rotisserie/eris"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -44,14 +44,14 @@ type ServicesAndDescriptor struct {
 
 func NewPlugin(transformsAdded *bool) *plugin {
 	return &plugin{
-		recordedUpstreams: make(map[core.ResourceRef]*v1.Upstream),
+		recordedUpstreams: make(map[*core.ResourceRef]*v1.Upstream),
 		transformsAdded:   transformsAdded,
 	}
 }
 
 type plugin struct {
 	transformsAdded   *bool
-	recordedUpstreams map[core.ResourceRef]*v1.Upstream
+	recordedUpstreams map[*core.ResourceRef]*v1.Upstream
 	upstreamServices  []ServicesAndDescriptor
 
 	ctx context.Context
@@ -157,7 +157,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			path := utils.EnvoyPathAsString(out.Match) + "?{query_string}"
 
 			grpcDestinationSpec.Parameters = &transformapi.Parameters{
-				Path: &types.StringValue{Value: path},
+				Path: &wrappers.StringValue{Value: path},
 			}
 		}
 
@@ -171,7 +171,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			return nil, err
 		}
 
-		upstream := p.recordedUpstreams[*upstreamRef]
+		upstream := p.recordedUpstreams[upstreamRef]
 		if upstream == nil {
 			return nil, errors.New("upstream was not recorded for grpc route")
 		}
@@ -228,8 +228,8 @@ func addHttpRulesToProto(upstream *v1.Upstream, currentsvc *grpcapi.ServiceSpec_
 				if method.Options == nil {
 					method.Options = &descriptor.MethodOptions{}
 				}
-				if err := proto.SetExtension(method.Options, api.E_Http, &api.HttpRule{
-					Pattern: &api.HttpRule_Post{
+				if err := proto.SetExtension(method.Options, annotations.E_Http, &annotations.HttpRule{
+					Pattern: &annotations.HttpRule_Post{
 						Post: httpPath(upstream, fullServiceName, *method.Name),
 					},
 					Body: "*",

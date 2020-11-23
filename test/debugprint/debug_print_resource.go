@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/onsi/ginkgo"
 	"github.com/solo-io/go-utils/protoutils"
 	"sigs.k8s.io/yaml"

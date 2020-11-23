@@ -2,16 +2,14 @@ package upstreamconn
 
 import (
 	"math"
-	"time"
 
+	"github.com/golang/protobuf/ptypes/duration"
+	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
 	"github.com/rotisserie/eris"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
-
-	types "github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
@@ -43,7 +41,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	if cfg.ConnectTimeout != nil {
-		out.ConnectTimeout = gogoutils.DurationStdToProto(cfg.ConnectTimeout)
+		out.ConnectTimeout = cfg.ConnectTimeout
 	}
 
 	if cfg.TcpKeepalive != nil {
@@ -53,7 +51,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	if cfg.PerConnectionBufferLimitBytes != nil {
-		out.PerConnectionBufferLimitBytes = gogoutils.UInt32GogoToProto(cfg.PerConnectionBufferLimitBytes)
+		out.PerConnectionBufferLimitBytes = cfg.PerConnectionBufferLimitBytes
 	}
 
 	if cfg.CommonHttpProtocolOptions != nil {
@@ -68,16 +66,16 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 }
 
 func convertTcpKeepAlive(tcp *v1.ConnectionConfig_TcpKeepAlive) *envoycore.TcpKeepalive {
-	var probes *types.UInt32Value
+	var probes *wrappers.UInt32Value
 	if tcp.KeepaliveProbes > 0 {
-		probes = &types.UInt32Value{
+		probes = &wrappers.UInt32Value{
 			Value: tcp.KeepaliveProbes,
 		}
 	}
 	return &envoycore.TcpKeepalive{
-		KeepaliveInterval: gogoutils.UInt32GogoToProto(roundToSecond(tcp.KeepaliveInterval)),
-		KeepaliveTime:     gogoutils.UInt32GogoToProto(roundToSecond(tcp.KeepaliveTime)),
-		KeepaliveProbes:   gogoutils.UInt32GogoToProto(probes),
+		KeepaliveInterval: roundToSecond(tcp.KeepaliveInterval),
+		KeepaliveTime:     roundToSecond(tcp.KeepaliveTime),
+		KeepaliveProbes:   probes,
 	}
 }
 
@@ -85,7 +83,7 @@ func convertHttpProtocolOptions(hpo *v1.ConnectionConfig_HttpProtocolOptions) (*
 	out := &envoycore.HttpProtocolOptions{}
 
 	if hpo.IdleTimeout != nil {
-		out.IdleTimeout = gogoutils.DurationStdToProto(hpo.IdleTimeout)
+		out.IdleTimeout = hpo.IdleTimeout
 	}
 
 	if hpo.MaxHeadersCount > 0 { // Envoy requires this to be >= 1
@@ -93,7 +91,7 @@ func convertHttpProtocolOptions(hpo *v1.ConnectionConfig_HttpProtocolOptions) (*
 	}
 
 	if hpo.MaxStreamDuration != nil {
-		out.MaxStreamDuration = gogoutils.DurationStdToProto(hpo.MaxStreamDuration)
+		out.MaxStreamDuration = hpo.MaxStreamDuration
 	}
 
 	switch hpo.HeadersWithUnderscoresAction {
@@ -111,14 +109,14 @@ func convertHttpProtocolOptions(hpo *v1.ConnectionConfig_HttpProtocolOptions) (*
 	return out, nil
 }
 
-func roundToSecond(d *time.Duration) *types.UInt32Value {
+func roundToSecond(d *duration.Duration) *wrappers.UInt32Value {
 	if d == nil {
 		return nil
 	}
 
 	// round up
-	seconds := math.Round(d.Seconds() + 0.4999)
-	return &types.UInt32Value{
+	seconds := math.Round(prototime.DurationFromProto(d).Seconds() + 0.4999)
+	return &wrappers.UInt32Value{
 		Value: uint32(seconds),
 	}
 

@@ -8,7 +8,7 @@ As part of configuring an Upstream, Gloo Edge provides the option of adding *hea
 
 ## Configuration
 
-Descriptions of the options available for configuring health checks can be found {{< protobuf name="envoy.api.v2.core.HealthCheck" display="here" >}}.
+Descriptions of the options available for configuring health checks can be found {{< protobuf name="solo.io.envoy.api.v2.core.HealthCheck" display="here" >}}.
 
 ### Custom Headers for HttpHealthChecks
 

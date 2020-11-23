@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package envoy.annotations;
+package solo.io.envoy.annotations;
 
 import "google/protobuf/descriptor.proto";
 

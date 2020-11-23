@@ -29,7 +29,7 @@ var (
 		return eris.Wrapf(err, "SSL secret not found")
 	}
 
-	NotTlsSecretError = func(ref core.ResourceRef) error {
+	NotTlsSecretError = func(ref *core.ResourceRef) error {
 		return eris.Errorf("%v is not a TLS secret", ref)
 	}
 

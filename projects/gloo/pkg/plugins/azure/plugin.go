@@ -15,7 +15,7 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	transformationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
@@ -31,7 +31,7 @@ const (
 )
 
 type plugin struct {
-	recordedUpstreams map[core.ResourceRef]*azure.UpstreamSpec
+	recordedUpstreams map[*core.ResourceRef]*azure.UpstreamSpec
 	apiKeys           map[string]string
 	ctx               context.Context
 	transformsAdded   *bool
@@ -43,7 +43,7 @@ func NewPlugin(transformsAdded *bool) plugins.Plugin {
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.ctx = params.Ctx
-	p.recordedUpstreams = make(map[core.ResourceRef]*azure.UpstreamSpec)
+	p.recordedUpstreams = make(map[*core.ResourceRef]*azure.UpstreamSpec)
 	return nil
 }
 
@@ -106,7 +106,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			contextutils.LoggerFrom(p.ctx).Error(err)
 			return nil, err
 		}
-		upstreamSpec, ok := p.recordedUpstreams[*upstreamRef]
+		upstreamSpec, ok := p.recordedUpstreams[upstreamRef]
 		if !ok {
 			// TODO(yuval-k): panic in debug
 			return nil, errors.Errorf("%v is not an Azure upstream", *upstreamRef)

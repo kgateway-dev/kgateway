@@ -8,7 +8,9 @@ import (
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -103,8 +105,8 @@ func (t *translatorInstance) initializeCluster(upstream *v1.Upstream, endpoints 
 }
 
 var (
-	DefaultHealthCheckTimeout  = time.Second * 5
-	DefaultHealthCheckInterval = time.Millisecond * 100
+	DefaultHealthCheckTimeout  = &duration.Duration{Seconds: 5}
+	DefaultHealthCheckInterval = prototime.DurationToProto(time.Millisecond * 100)
 	DefaultThreshold           = &wrappers.UInt32Value{
 		Value: 5,
 	}

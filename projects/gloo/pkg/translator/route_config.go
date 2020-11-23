@@ -11,7 +11,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 
@@ -326,7 +326,7 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 			return err
 		}
 		out.ClusterSpecifier = &envoyroute.RouteAction_Cluster{
-			Cluster: UpstreamToClusterName(*usRef),
+			Cluster: UpstreamToClusterName(usRef),
 		}
 
 		out.MetadataMatch = getSubsetMatch(dest.Single)
@@ -378,7 +378,7 @@ func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, mul
 		totalWeight += weightedDest.Weight
 
 		weightedCluster := &envoyroute.WeightedCluster_ClusterWeight{
-			Name:          UpstreamToClusterName(*usRef),
+			Name:          UpstreamToClusterName(usRef),
 			Weight:        &wrappers.UInt32Value{Value: weightedDest.Weight},
 			MetadataMatch: getSubsetMatch(weightedDest.Destination),
 		}

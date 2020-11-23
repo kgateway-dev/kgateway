@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"unicode/utf8"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -20,8 +21,7 @@ import (
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 
-	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/proto"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -50,7 +50,7 @@ func NewPlugin(transformsAdded *bool) plugins.Plugin {
 }
 
 type plugin struct {
-	recordedUpstreams map[core.ResourceRef]*aws.UpstreamSpec
+	recordedUpstreams map[*core.ResourceRef]*aws.UpstreamSpec
 	ctx               context.Context
 	transformsAdded   *bool
 	settings          *v1.GlooOptions_AWSOptions
@@ -58,7 +58,7 @@ type plugin struct {
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.ctx = params.Ctx
-	p.recordedUpstreams = make(map[core.ResourceRef]*aws.UpstreamSpec)
+	p.recordedUpstreams = make(map[*core.ResourceRef]*aws.UpstreamSpec)
 	p.settings = params.Settings.GetGloo().GetAwsOptions()
 	return nil
 }
@@ -164,7 +164,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			contextutils.LoggerFrom(p.ctx).Error(err)
 			return nil, err
 		}
-		lambdaSpec, ok := p.recordedUpstreams[*upstreamRef]
+		lambdaSpec, ok := p.recordedUpstreams[upstreamRef]
 		if !ok {
 			err := errors.Errorf("%v is not an AWS upstream", *upstreamRef)
 			contextutils.LoggerFrom(p.ctx).Error(err)
@@ -239,7 +239,7 @@ func (p *plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 	switch typedFetcher := p.settings.GetCredentialsFetcher().(type) {
 	case *v1.GlooOptions_AWSOptions_EnableCredentialsDiscovey:
 		filterconfig.CredentialsFetcher = &AWSLambdaConfig_UseDefaultCredentials{
-			UseDefaultCredentials: &types.BoolValue{
+			UseDefaultCredentials: &wrappers.BoolValue{
 				Value: typedFetcher.EnableCredentialsDiscovey,
 			},
 		}

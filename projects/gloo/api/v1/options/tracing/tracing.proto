@@ -31,8 +31,8 @@ message ListenerTracingSettings {
     // Optional. If not specified, no tracing will be performed
     // ProviderConfig defines the configuration for an external tracing provider.
     oneof provider_config {
-        envoy.config.trace.v3.ZipkinConfig zipkin_config = 4;
-        envoy.config.trace.v3.DatadogConfig datadog_config = 5;
+        .solo.io.envoy.config.trace.v3.ZipkinConfig zipkin_config = 4;
+        .solo.io.envoy.config.trace.v3.DatadogConfig datadog_config = 5;
     }
 }
 
