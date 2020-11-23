@@ -47,16 +47,16 @@ copied from https://raw.githubusercontent.com/envoyproxy/envoy/bd637fc7aab5de067
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `memoryLevel` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Value from 1 to 9 that controls the amount of internal memory used by zlib. Higher values use more memory, but are faster and produce better compression results. The default value is 5. |  |
-| `contentLength` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Minimum response length, in bytes, which will trigger compression. The default value is 30. |  |
-| `compressionLevel` | [.envoy.config.filter.http.gzip.v2.Gzip.CompressionLevel.Enum](../gzip.proto.sk/#enum) | A value used for selecting the zlib compression level. This setting will affect speed and amount of compression applied to the content. "BEST" provides higher compression at the cost of higher latency, "SPEED" provides lower compression with minimum impact on response time. "DEFAULT" provides an optimal result between speed and compression. This field will be set to "DEFAULT" if not specified. |  |
-| `compressionStrategy` | [.envoy.config.filter.http.gzip.v2.Gzip.CompressionStrategy](../gzip.proto.sk/#compressionstrategy) | A value used for selecting the zlib compression strategy which is directly related to the characteristics of the content. Most of the time "DEFAULT" will be the best choice, though there are situations which changing this parameter might produce better results. For example, run-length encoding (RLE) is typically used when the content is known for having sequences which same data occurs many consecutive times. For more information about each strategy, please refer to zlib manual. |  |
-| `contentType` | `[]string` | Set of strings that allows specifying which mime-types yield compression; e.g., application/json, text/html, etc. When this field is not defined, compression will be applied to the following mime-types: "application/javascript", "application/json", "application/xhtml+xml", "image/svg+xml", "text/css", "text/html", "text/plain", "text/xml". |  |
-| `disableOnEtagHeader` | `bool` | If true, disables compression when the response contains an etag header. When it is false, the filter will preserve weak etags and remove the ones that require strong validation. |  |
-| `removeAcceptEncodingHeader` | `bool` | If true, removes accept-encoding from the request headers before dispatching it to the upstream so that responses do not get compressed before reaching the filter. |  |
-| `windowBits` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Value from 9 to 15 that represents the base two logarithmic of the compressor's window size. Larger window results in better compression at the expense of memory usage. The default is 12 which will produce a 4096 bytes window. For more details about this parameter, please refer to zlib manual > deflateInit2. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `memoryLevel` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Value from 1 to 9 that controls the amount of internal memory used by zlib. Higher values use more memory, but are faster and produce better compression results. The default value is 5. |
+| `contentLength` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Minimum response length, in bytes, which will trigger compression. The default value is 30. |
+| `compressionLevel` | [.envoy.config.filter.http.gzip.v2.Gzip.CompressionLevel.Enum](../gzip.proto.sk/#enum) | A value used for selecting the zlib compression level. This setting will affect speed and amount of compression applied to the content. "BEST" provides higher compression at the cost of higher latency, "SPEED" provides lower compression with minimum impact on response time. "DEFAULT" provides an optimal result between speed and compression. This field will be set to "DEFAULT" if not specified. |
+| `compressionStrategy` | [.envoy.config.filter.http.gzip.v2.Gzip.CompressionStrategy](../gzip.proto.sk/#compressionstrategy) | A value used for selecting the zlib compression strategy which is directly related to the characteristics of the content. Most of the time "DEFAULT" will be the best choice, though there are situations which changing this parameter might produce better results. For example, run-length encoding (RLE) is typically used when the content is known for having sequences which same data occurs many consecutive times. For more information about each strategy, please refer to zlib manual. |
+| `contentType` | `[]string` | Set of strings that allows specifying which mime-types yield compression; e.g., application/json, text/html, etc. When this field is not defined, compression will be applied to the following mime-types: "application/javascript", "application/json", "application/xhtml+xml", "image/svg+xml", "text/css", "text/html", "text/plain", "text/xml". |
+| `disableOnEtagHeader` | `bool` | If true, disables compression when the response contains an etag header. When it is false, the filter will preserve weak etags and remove the ones that require strong validation. |
+| `removeAcceptEncodingHeader` | `bool` | If true, removes accept-encoding from the request headers before dispatching it to the upstream so that responses do not get compressed before reaching the filter. |
+| `windowBits` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Value from 9 to 15 that represents the base two logarithmic of the compressor's window size. Larger window results in better compression at the expense of memory usage. The default is 12 which will produce a 4096 bytes window. For more details about this parameter, please refer to zlib manual > deflateInit2. |
 
 
 
@@ -70,8 +70,8 @@ copied from https://raw.githubusercontent.com/envoyproxy/envoy/bd637fc7aab5de067
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 

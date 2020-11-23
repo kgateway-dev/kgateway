@@ -37,11 +37,11 @@ for security fixes and can be generally ignored.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `majorNumber` | `int` |  |  |
-| `minorNumber` | `int` |  |  |
-| `patch` | `int` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `majorNumber` | `int` |  |
+| `minorNumber` | `int` |  |
+| `patch` | `int` |  |
 
 
 

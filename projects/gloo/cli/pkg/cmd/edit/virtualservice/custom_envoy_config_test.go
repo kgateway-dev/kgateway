@@ -1,6 +1,7 @@
 package virtualservice_test
 
 import (
+	"context"
 	"io"
 
 	. "github.com/onsi/ginkgo"
@@ -20,11 +21,14 @@ var _ = Describe("CustomEnvoyConfig", func() {
 	var (
 		vsvc     *gatewayv1.VirtualService
 		vsClient gatewayv1.VirtualServiceClient
+		ctx      context.Context
+		cancel   context.CancelFunc
 	)
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
+		ctx, cancel = context.WithCancel(context.Background())
 		// create a settings object
-		vsClient = helpers.MustVirtualServiceClient()
+		vsClient = helpers.MustVirtualServiceClient(ctx)
 		vsvc = &gatewayv1.VirtualService{
 			Metadata: core.Metadata{
 				Name:      "vs",
@@ -39,6 +43,8 @@ var _ = Describe("CustomEnvoyConfig", func() {
 		vsvc, err = vsClient.Write(vsvc, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	AfterEach(func() { cancel() })
 
 	rateLimitExtension := func() *ratelimitpb.RateLimitVhostExtension {
 		var err error

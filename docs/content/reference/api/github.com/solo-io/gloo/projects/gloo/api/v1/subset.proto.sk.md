@@ -32,9 +32,9 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `values` | `map<string, string>` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `values` | `map<string, string>` |  |
 
 
 

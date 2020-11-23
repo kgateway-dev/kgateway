@@ -1,6 +1,8 @@
 package add_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -15,8 +17,13 @@ import (
 
 var _ = Describe("Routes", func() {
 
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
+		ctx, cancel = context.WithCancel(context.Background())
 	})
 
 	BeforeEach(func() {
@@ -24,11 +31,13 @@ var _ = Describe("Routes", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	AfterEach(func() { cancel() })
+
 	It("should create static upstream", func() {
 		err := testutils.Glooctl("add route --path-exact /sample-route-1 --dest-name default-petstore-8080 --prefix-rewrite /api/pets")
 		Expect(err).NotTo(HaveOccurred())
 
-		vs, err := helpers.MustVirtualServiceClient().Read("gloo-system", "default", clients.ReadOpts{})
+		vs, err := helpers.MustVirtualServiceClient(ctx).Read("gloo-system", "default", clients.ReadOpts{})
 		Expect(vs.Metadata.Name).To(Equal("default"))
 	})
 
@@ -36,7 +45,7 @@ var _ = Describe("Routes", func() {
 		err := testutils.Glooctl("add route --path-exact /sample-route-1 --upstream-group-name petstore --upstream-group-namespace default --prefix-rewrite /api/pets")
 		Expect(err).NotTo(HaveOccurred())
 
-		vs, err := helpers.MustVirtualServiceClient().Read("gloo-system", "default", clients.ReadOpts{})
+		vs, err := helpers.MustVirtualServiceClient(ctx).Read("gloo-system", "default", clients.ReadOpts{})
 		Expect(vs.Metadata.Name).To(Equal("default"))
 		ug := vs.VirtualHost.Routes[0].GetRouteAction().GetUpstreamGroup()
 		Expect(ug.GetName()).To(Equal("petstore"))
@@ -47,7 +56,7 @@ var _ = Describe("Routes", func() {
 		err := testutils.Glooctl("add route --path-exact /sample-route-a --dest-name default-petstore-8080 --header param1=value1,param2=,param3=")
 		Expect(err).NotTo(HaveOccurred())
 
-		vs, err := helpers.MustVirtualServiceClient().Read("gloo-system", "default", clients.ReadOpts{})
+		vs, err := helpers.MustVirtualServiceClient(ctx).Read("gloo-system", "default", clients.ReadOpts{})
 		Expect(vs.Metadata.Name).To(Equal("default"))
 		parameters := vs.VirtualHost.Routes[0].Matchers[0].Headers
 		Expect(parameters[0].Name).To(Equal("param1"))
@@ -62,7 +71,7 @@ var _ = Describe("Routes", func() {
 		err := testutils.Glooctl("add route --path-exact /sample-route-a --dest-name default-petstore-8080 --queryParameter param1=value1,param2=,param3=")
 		Expect(err).NotTo(HaveOccurred())
 
-		vs, err := helpers.MustVirtualServiceClient().Read("gloo-system", "default", clients.ReadOpts{})
+		vs, err := helpers.MustVirtualServiceClient(ctx).Read("gloo-system", "default", clients.ReadOpts{})
 		Expect(vs.Metadata.Name).To(Equal("default"))
 		parameters := vs.VirtualHost.Routes[0].Matchers[0].QueryParameters
 		Expect(parameters[0].Name).To(Equal("param1"))
@@ -77,7 +86,7 @@ var _ = Describe("Routes", func() {
 		err := testutils.Glooctl("add route --path-exact /sample-route-a --dest-name default-petstore-8080 --name=my-routes --to-route-table")
 		Expect(err).NotTo(HaveOccurred())
 
-		rt, err := helpers.MustRouteTableClient().Read("gloo-system", "my-routes", clients.ReadOpts{})
+		rt, err := helpers.MustRouteTableClient(ctx).Read("gloo-system", "my-routes", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(rt.Routes[0]).To(Equal(&v1.Route{
 			Matchers: []*matchers.Matcher{{
@@ -106,7 +115,7 @@ var _ = Describe("Routes", func() {
 		err := testutils.Glooctl("add route --path-prefix /a --delegate-name my-delegate")
 		Expect(err).NotTo(HaveOccurred())
 
-		vs, err := helpers.MustVirtualServiceClient().Read("gloo-system", "default", clients.ReadOpts{})
+		vs, err := helpers.MustVirtualServiceClient(ctx).Read("gloo-system", "default", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(vs.GetVirtualHost().GetRoutes()).To(Equal([]*v1.Route{
 			{

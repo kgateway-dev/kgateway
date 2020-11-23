@@ -3,6 +3,8 @@
 package v1alpha1
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type rateLimitConfigClient struct {
 	rc clients.ResourceClient
 }
 
-func NewRateLimitConfigClient(rcFactory factory.ResourceClientFactory) (RateLimitConfigClient, error) {
-	return NewRateLimitConfigClientWithToken(rcFactory, "")
+func NewRateLimitConfigClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (RateLimitConfigClient, error) {
+	return NewRateLimitConfigClientWithToken(ctx, rcFactory, "")
 }
 
-func NewRateLimitConfigClientWithToken(rcFactory factory.ResourceClientFactory, token string) (RateLimitConfigClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewRateLimitConfigClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (RateLimitConfigClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &RateLimitConfig{},
 		Token:        token,
 	})

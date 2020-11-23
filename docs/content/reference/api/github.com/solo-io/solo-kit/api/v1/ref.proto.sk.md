@@ -34,10 +34,10 @@ A way to reference resources across namespaces
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` |  |  |
-| `namespace` | `string` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` |  |
+| `namespace` | `string` |  |
 
 
 

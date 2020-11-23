@@ -68,7 +68,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 		cors.NewPlugin(),
 		linkerd.NewPlugin(),
 		stats.NewPlugin(),
-		ec2.NewPlugin(opts.Secrets),
+		ec2.NewPlugin(opts.WatchOpts.Ctx, opts.Secrets),
 		tracing.NewPlugin(),
 		shadowing.NewPlugin(),
 		headers.NewPlugin(),

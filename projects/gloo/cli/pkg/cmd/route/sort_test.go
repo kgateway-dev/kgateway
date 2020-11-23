@@ -17,9 +17,17 @@ import (
 
 var _ = Describe("Sort", func() {
 
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
+		ctx, cancel = context.WithCancel(context.Background())
 	})
+
+	AfterEach(func() { cancel() })
 
 	It("should sort the routes on a virtual service", func() {
 		sortedRoutes := func() []*gatewayv1.Route {
@@ -42,7 +50,7 @@ var _ = Describe("Sort", func() {
 			return routes
 		}
 
-		vs, err := helpers.MustVirtualServiceClient().Write(&gatewayv1.VirtualService{
+		vs, err := helpers.MustVirtualServiceClient(ctx).Write(&gatewayv1.VirtualService{
 			Metadata: core.Metadata{Namespace: "gloo-system", Name: "tacos"},
 			VirtualHost: &gatewayv1.VirtualHost{
 				Routes: unsortedRoutes(),
@@ -53,7 +61,7 @@ var _ = Describe("Sort", func() {
 		err = testutils.Glooctl(fmt.Sprintf("route sort --name %v --namespace %v", vs.Metadata.Name, vs.Metadata.Namespace))
 		Expect(err).NotTo(HaveOccurred())
 
-		vs, err = helpers.MustVirtualServiceClient().Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
+		vs, err = helpers.MustVirtualServiceClient(ctx).Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(vs.VirtualHost.Routes).To(Equal(sortedRoutes()))
 	})

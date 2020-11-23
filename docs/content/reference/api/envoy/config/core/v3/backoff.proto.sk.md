@@ -34,10 +34,10 @@ Configuration defining a jittered exponential back off strategy.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `baseInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The base interval to be used for the next back off computation. It should be greater than zero and less than or equal to :ref:`max_interval <envoy_api_field_config.core.v3.BackoffStrategy.max_interval>`. |  |
-| `maxInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies the maximum interval between retries. This parameter is optional, but must be greater than or equal to the :ref:`base_interval <envoy_api_field_config.core.v3.BackoffStrategy.base_interval>` if set. The default is 10 times the :ref:`base_interval <envoy_api_field_config.core.v3.BackoffStrategy.base_interval>`. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `baseInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The base interval to be used for the next back off computation. It should be greater than zero and less than or equal to :ref:`max_interval <envoy_api_field_config.core.v3.BackoffStrategy.max_interval>`. |
+| `maxInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies the maximum interval between retries. This parameter is optional, but must be greater than or equal to the :ref:`base_interval <envoy_api_field_config.core.v3.BackoffStrategy.base_interval>` if set. The default is 10 times the :ref:`base_interval <envoy_api_field_config.core.v3.BackoffStrategy.base_interval>`. |
 
 
 

@@ -99,7 +99,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			Consul:  consulClient,
 		}
 
-		gatewayClient, err := v1.NewGatewayClient(consulResources)
+		gatewayClient, err := v1.NewGatewayClient(ctx, consulResources)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to build the gateway client")
 		err = helpers.WriteDefaultGateways(writeNamespace, gatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
@@ -201,16 +201,16 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			},
 		}
 
-		secretClient, err := gloov1.NewSecretClient(vaultResources)
+		secretClient, err := gloov1.NewSecretClient(ctx, vaultResources)
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = secretClient.Write(secret, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		vsClient, err := v1.NewVirtualServiceClient(consulResources)
+		vsClient, err := v1.NewVirtualServiceClient(ctx, consulResources)
 		Expect(err).NotTo(HaveOccurred())
 
-		proxyClient, err := gloov1.NewProxyClient(consulResources)
+		proxyClient, err := gloov1.NewProxyClient(ctx, consulResources)
 		Expect(err).NotTo(HaveOccurred())
 
 		vs := makeSslVirtualService(writeNamespace, secret.Metadata.Ref())
@@ -241,10 +241,10 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 	})
 	It("can do function routing with consul services", func() {
 
-		vsClient, err := v1.NewVirtualServiceClient(consulResources)
+		vsClient, err := v1.NewVirtualServiceClient(ctx, consulResources)
 		Expect(err).NotTo(HaveOccurred())
 
-		proxyClient, err := gloov1.NewProxyClient(consulResources)
+		proxyClient, err := gloov1.NewProxyClient(ctx, consulResources)
 		Expect(err).NotTo(HaveOccurred())
 
 		us := core.ResourceRef{Namespace: "gloo-system", Name: "petstore"}

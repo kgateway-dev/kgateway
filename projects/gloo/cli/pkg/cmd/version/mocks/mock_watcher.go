@@ -5,6 +5,7 @@
 package mock_version
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -35,16 +36,16 @@ func (m *MockServerVersion) EXPECT() *MockServerVersionMockRecorder {
 }
 
 // Get mocks base method
-func (m *MockServerVersion) Get() ([]*version.ServerVersion, error) {
+func (m *MockServerVersion) Get(ctx context.Context) ([]*version.ServerVersion, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get")
+	ret := m.ctrl.Call(m, "Get", ctx)
 	ret0, _ := ret[0].([]*version.ServerVersion)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get
-func (mr *MockServerVersionMockRecorder) Get() *gomock.Call {
+func (mr *MockServerVersionMockRecorder) Get(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockServerVersion)(nil).Get))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockServerVersion)(nil).Get), ctx)
 }

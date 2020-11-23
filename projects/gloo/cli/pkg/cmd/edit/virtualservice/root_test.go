@@ -1,6 +1,8 @@
 package virtualservice_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -17,11 +19,13 @@ var _ = Describe("Root", func() {
 	var (
 		vs       *gatewayv1.VirtualService
 		vsClient gatewayv1.VirtualServiceClient
+		ctx      context.Context
 	)
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
+		ctx, _ = context.WithCancel(context.Background())
 		// create a settings object
-		vsClient = helpers.MustVirtualServiceClient()
+		vsClient = helpers.MustVirtualServiceClient(ctx)
 		vs = &gatewayv1.VirtualService{
 			Metadata: core.Metadata{
 				Name:      "vs",

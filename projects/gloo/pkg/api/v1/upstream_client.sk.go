@@ -3,6 +3,8 @@
 package v1
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type upstreamClient struct {
 	rc clients.ResourceClient
 }
 
-func NewUpstreamClient(rcFactory factory.ResourceClientFactory) (UpstreamClient, error) {
-	return NewUpstreamClientWithToken(rcFactory, "")
+func NewUpstreamClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (UpstreamClient, error) {
+	return NewUpstreamClientWithToken(ctx, rcFactory, "")
 }
 
-func NewUpstreamClientWithToken(rcFactory factory.ResourceClientFactory, token string) (UpstreamClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewUpstreamClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (UpstreamClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &Upstream{},
 		Token:        token,
 	})

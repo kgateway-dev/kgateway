@@ -73,7 +73,7 @@ func createHeaderSecret(ctx context.Context, meta core.Metadata, input options.H
 
 	if !dryRun {
 		var err error
-		secretClient := helpers.MustSecretClientWithOptions(0, []string{meta.Namespace})
+		secretClient := helpers.MustSecretClientWithOptions(ctx, 0, []string{meta.Namespace})
 		if secret, err = secretClient.Write(secret, clients.WriteOpts{Ctx: ctx}); err != nil {
 			return err
 		}

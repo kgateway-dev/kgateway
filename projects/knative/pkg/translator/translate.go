@@ -10,8 +10,8 @@ import (
 
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 
+	"knative.dev/networking/pkg/apis/networking"
 	"knative.dev/pkg/network"
-	"knative.dev/serving/pkg/apis/networking"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	v1 "k8s.io/api/core/v1"
@@ -27,7 +27,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
+	knativev1alpha1 "knative.dev/networking/pkg/apis/networking/v1alpha1"
 )
 
 const (
@@ -132,12 +132,13 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 
 		for _, tls := range spec.TLS {
 
-			if tls.ServerCertificate != "" && tls.ServerCertificate != v1.TLSCertKey {
+			// todo (mholland) use non-peprecated solutions now that we're using k8s 18.
+			if tls.DeprecatedServerCertificate != "" && tls.DeprecatedServerCertificate != v1.TLSCertKey {
 				contextutils.LoggerFrom(ctx).Warn("Custom ServerCertificate filenames are not currently supported by Gloo")
 				continue
 			}
 
-			if tls.PrivateKey != "" && tls.PrivateKey != v1.TLSPrivateKeyKey {
+			if tls.DeprecatedPrivateKey != "" && tls.DeprecatedPrivateKey != v1.TLSPrivateKeyKey {
 				contextutils.LoggerFrom(ctx).Warn("Custom PrivateKey filenames are not currently supported by Gloo")
 				continue
 			}
@@ -182,17 +183,17 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 				}
 
 				var timeout *time.Duration
-				if route.Timeout != nil {
-					timeout = &route.Timeout.Duration
+				if route.DeprecatedTimeout != nil {
+					timeout = &route.DeprecatedTimeout.Duration
 				}
 				var retryPolicy *retries.RetryPolicy
-				if route.Retries != nil {
+				if route.DeprecatedRetries != nil {
 					var perTryTimeout *time.Duration
-					if route.Retries.PerTryTimeout != nil {
-						perTryTimeout = &route.Retries.PerTryTimeout.Duration
+					if route.DeprecatedRetries.PerTryTimeout != nil {
+						perTryTimeout = &route.DeprecatedRetries.PerTryTimeout.Duration
 					}
 					retryPolicy = &retries.RetryPolicy{
-						NumRetries:    uint32(route.Retries.Attempts),
+						NumRetries:    uint32(route.DeprecatedRetries.Attempts),
 						PerTryTimeout: perTryTimeout,
 					}
 				}

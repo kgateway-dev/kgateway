@@ -39,15 +39,15 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `disabled` | `bool` | Disable waf on this resource (if omitted defaults to false). If a route/virtual host is configured with WAF, you must explicitly disable its WAF, i.e., it will not inherit the disabled status of its parent. |  |
-| `customInterventionMessage` | `string` | Custom massage to display if an intervention occurs. |  |
-| `coreRuleSet` | [.waf.options.gloo.solo.io.CoreRuleSet](../waf.proto.sk/#coreruleset) | Add OWASP core rule set if nil will not be added. |  |
-| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk/#ruleset) | Custom rule sets rules to add. |  |
-| `auditLogging` | [.envoy.config.filter.http.modsecurity.v2.AuditLogging](../../../../../external/envoy/extensions/waf/waf.proto.sk/#auditlogging) | Audit Log settings. |  |
-| `requestHeadersOnly` | `bool` | Only process request headers, not buffering the request body. |  |
-| `responseHeadersOnly` | `bool` | Only process response headers, not buffering the response body. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `disabled` | `bool` | Disable waf on this resource (if omitted defaults to false). If a route/virtual host is configured with WAF, you must explicitly disable its WAF, i.e., it will not inherit the disabled status of its parent. |
+| `customInterventionMessage` | `string` | Custom massage to display if an intervention occurs. |
+| `coreRuleSet` | [.waf.options.gloo.solo.io.CoreRuleSet](../waf.proto.sk/#coreruleset) | Add OWASP core rule set if nil will not be added. |
+| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk/#ruleset) | Custom rule sets rules to add. |
+| `auditLogging` | [.envoy.config.filter.http.modsecurity.v2.AuditLogging](../../../../../external/envoy/extensions/waf/waf.proto.sk/#auditlogging) | Audit Log settings. |
+| `requestHeadersOnly` | `bool` | Only process request headers, not buffering the request body. |
+| `responseHeadersOnly` | `bool` | Only process response headers, not buffering the response body. |
 
 
 
@@ -63,10 +63,10 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `customSettingsString` | `string` | String representing the core rule set custom config options. Only one of `customSettingsString` or `customSettingsFile` can be set. |  |
-| `customSettingsFile` | `string` | String representing the core rule set custom config options. Only one of `customSettingsFile` or `customSettingsString` can be set. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `customSettingsString` | `string` | String representing the core rule set custom config options. Only one of `customSettingsString` or `customSettingsFile` can be set. |
+| `customSettingsFile` | `string` | String representing the core rule set custom config options. Only one of `customSettingsFile` or `customSettingsString` can be set. |
 
 
 

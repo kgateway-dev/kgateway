@@ -1,6 +1,7 @@
 package glooctl_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -33,6 +34,7 @@ func TestGlooctl(t *testing.T) {
 
 var testHelper *helper.SoloTestHelper
 
+var ctx, _ = context.WithCancel(context.Background())
 var _ = BeforeSuite(StartTestHelper)
 var _ = AfterSuite(TearDownTestHelper)
 
@@ -54,7 +56,7 @@ func StartTestHelper() {
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "istio-system", testHelper.InstallNamespace))
 
 	// Install Gloo
-	err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute)
+	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute)
 	Expect(err).NotTo(HaveOccurred())
 
 	// Check that everything is OK
@@ -66,7 +68,7 @@ func TearDownTestHelper() {
 		Expect(testHelper).ToNot(BeNil())
 		err := testHelper.UninstallGloo()
 		Expect(err).NotTo(HaveOccurred())
-		_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(testHelper.InstallNamespace, metav1.GetOptions{})
+		_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 		Expect(apierrors.IsNotFound(err)).To(BeTrue())
 	}
 }

@@ -34,9 +34,9 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `rename` | `string` | Rename the message/enum/enum value in next version. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `rename` | `string` | Rename the message/enum/enum value in next version. |
 
 
 
@@ -52,10 +52,10 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `rename` | `string` | Rename the field in next version. |  |
-| `oneofPromotion` | `string` | Add the field to a named oneof in next version. If this already exists, the field will join its siblings under the oneof, otherwise a new oneof will be created with the given name. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `rename` | `string` | Rename the field in next version. |
+| `oneofPromotion` | `string` | Add the field to a named oneof in next version. If this already exists, the field will join its siblings under the oneof, otherwise a new oneof will be created with the given name. |
 
 
 
@@ -70,9 +70,9 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `moveToPackage` | `string` | Move all types in the file to another package, this implies changing proto file path. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `moveToPackage` | `string` | Move all types in the file to another package, this implies changing proto file path. |
 
 
 

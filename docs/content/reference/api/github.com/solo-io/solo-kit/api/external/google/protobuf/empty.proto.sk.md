@@ -72,8 +72,8 @@ The JSON representation for `Empty` is empty JSON object `{}`.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 

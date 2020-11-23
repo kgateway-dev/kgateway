@@ -1,6 +1,7 @@
 package usage
 
 import (
+	"context"
 	"os"
 	"strings"
 	"time"
@@ -25,7 +26,10 @@ type DefaultUsageReader struct {
 
 var _ client.UsagePayloadReader = &DefaultUsageReader{}
 
-func (d *DefaultUsageReader) GetPayload() (map[string]string, error) {
+// Now that this implementation of GetPayload no longer requires a context,
+// the context isn't used by any GetPayload implementation. However, we opted to leave it as an input,
+// since there's a chance we might need it in the future.
+func (d *DefaultUsageReader) GetPayload(ctx context.Context) (map[string]string, error) {
 	return map[string]string{}, nil
 }
 
@@ -35,7 +39,7 @@ type CliUsageReader struct {
 var _ client.UsagePayloadReader = &CliUsageReader{}
 
 // when reporting usage, also include the args that glooctl was invoked with
-func (c *CliUsageReader) GetPayload() (map[string]string, error) {
+func (c *CliUsageReader) GetPayload(ctx context.Context) (map[string]string, error) {
 	argsMap := map[string]string{}
 
 	if len(os.Args) > 1 {

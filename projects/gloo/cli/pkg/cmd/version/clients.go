@@ -1,6 +1,7 @@
 package version
 
 import (
+	"context"
 	"strings"
 
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
@@ -15,7 +16,7 @@ import (
 //go:generate mockgen -destination ./mocks/mock_watcher.go -source clients.go
 
 type ServerVersion interface {
-	Get() ([]*version.ServerVersion, error)
+	Get(ctx context.Context) ([]*version.ServerVersion, error)
 }
 
 type kube struct {
@@ -34,7 +35,7 @@ func NewKube(namespace string) *kube {
 	}
 }
 
-func (k *kube) Get() ([]*version.ServerVersion, error) {
+func (k *kube) Get(ctx context.Context) ([]*version.ServerVersion, error) {
 	cfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		// kubecfg is missing, therefore no cluster is present, only print client version
@@ -45,7 +46,7 @@ func (k *kube) Get() ([]*version.ServerVersion, error) {
 		return nil, err
 	}
 
-	deployments, err := client.AppsV1().Deployments(k.namespace).List(metav1.ListOptions{
+	deployments, err := client.AppsV1().Deployments(k.namespace).List(ctx, metav1.ListOptions{
 		// search only for gloo deployments based on labels
 		LabelSelector: "app=gloo",
 	})

@@ -1,6 +1,7 @@
 package surveyutils
 
 import (
+	"context"
 	"fmt"
 
 	errors "github.com/rotisserie/eris"
@@ -11,13 +12,13 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-func AddUpstreamGroupFlagsInteractive(upstreamGroup *options.InputUpstreamGroup) error {
+func AddUpstreamGroupFlagsInteractive(ctx context.Context, upstreamGroup *options.InputUpstreamGroup) error {
 
 	// collect upstreams list
 	ussByKey := make(map[string]*v1.Upstream)
 	var usKeys []string
-	for _, ns := range helpers.MustGetNamespaces() {
-		usList, err := helpers.MustNamespacedUpstreamClient(ns).List(ns, clients.ListOpts{})
+	for _, ns := range helpers.MustGetNamespaces(ctx) {
+		usList, err := helpers.MustNamespacedUpstreamClient(ctx, ns).List(ns, clients.ListOpts{})
 		if err != nil {
 			return err
 		}

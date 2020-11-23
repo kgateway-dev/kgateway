@@ -3,6 +3,8 @@
 package v1
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type kubeServiceClient struct {
 	rc clients.ResourceClient
 }
 
-func NewKubeServiceClient(rcFactory factory.ResourceClientFactory) (KubeServiceClient, error) {
-	return NewKubeServiceClientWithToken(rcFactory, "")
+func NewKubeServiceClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (KubeServiceClient, error) {
+	return NewKubeServiceClientWithToken(ctx, rcFactory, "")
 }
 
-func NewKubeServiceClientWithToken(rcFactory factory.ResourceClientFactory, token string) (KubeServiceClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewKubeServiceClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (KubeServiceClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &KubeService{},
 		Token:        token,
 	})
