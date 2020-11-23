@@ -3,13 +3,20 @@ package tracing.options.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing";
 
+import "gloo/projects/gloo/api/external/envoy/config/trace/v3/zipkin.proto";
+import "gloo/projects/gloo/api/external/envoy/config/trace/v3/datadog.proto";
+
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/any.proto";
 
 option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+
+import "solo-kit/api/v1/ref.proto";
+
 
 // Contains settings for configuring Envoy's tracing capabilities at the listener level.
 // See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
@@ -22,6 +29,12 @@ message ListenerTracingSettings {
     // Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided.
     // TracePercentages defines the limits for random, forced, and overall tracing percentages.
     TracePercentages trace_percentages = 3;
+    // Optional. If not specified, no tracing will be performed
+    // ProviderConfig defines the configuration for an external tracing provider.
+    oneof provider_config {
+        envoy.config.trace.v3.ZipkinConfig zipkin_config = 4;
+        envoy.config.trace.v3.DatadogConfig datadog_config = 5;
+    }
 }
 
 // Contains settings for configuring Envoy's tracing capabilities at the route level.

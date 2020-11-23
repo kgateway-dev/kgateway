@@ -97,6 +97,27 @@ The descriptors field above was truncated for brevity.
 
 As you can see Gloo Edge's function discovery detected the gRPC functions on that service.
 
+### Enable HTTP/2 for the service (optional)
+
+If you would like to configure the Envoy proxy to use HTTP/2 for its communications protocol, there are two ways to accomplish this. 
+
+1. Add an annotation to the gRPC service with the field: `gloo.solo.io/h2_service` set to `true`
+1. Name the port for the gRPC service one of the following: `grpc`, `http2`, or `h2`
+
+For example the port information of the `grpcstore-demo` would look like this:
+
+```yaml
+spec:
+  clusterIP: 10.101.199.96
+  ports:
+  - name: grpc
+    port: 80
+    protocol: TCP
+    targetPort: 8080
+```
+
+Following one of these approaches will set the Upstream value `useHttp2` to `true`.
+
 ---
 
 ## Adding a Virtual Service
@@ -340,4 +361,4 @@ Nice! If you happen to be using a certificate that has the correct domain listed
 
 ## Summary
 
-In this guide we saw how to present a gRPC Upstream through Gloo Edge and connect to it using a gRPC client. We also saw how to add a domain filter and enable TLS. For more information on gRPC, check out the guide for presenting a [gRPC service as a REST API]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) through Gloo Edge. You can find out more about using TLS with Gloo Edge in the [Network Encryption]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}) section of our guides. 
+In this guide we saw how to present a gRPC Upstream through Gloo Edge and connect to it using a gRPC client. We also saw how to add a domain filter and enable TLS. For more information on gRPC, check out the guide for presenting a [gRPC service as a REST API]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest/" %}}) through Gloo Edge. You can find out more about using TLS with Gloo Edge in the [Network Encryption]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}) section of our guides. 

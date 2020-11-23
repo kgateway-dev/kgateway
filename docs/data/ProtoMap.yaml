@@ -506,6 +506,12 @@ apis:
   envoy.config.route.v3.WeightedCluster:
     relativepath: reference/api/envoy/config/route/v3/route_components.proto.sk/#WeightedCluster
     package: envoy.config.route.v3
+  envoy.config.trace.v3.DatadogConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/datadog.proto.sk/#DatadogConfig
+    package: envoy.config.trace.v3
+  envoy.config.trace.v3.ZipkinConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/zipkin.proto.sk/#ZipkinConfig
+    package: envoy.config.trace.v3
   envoy.extensions.filters.http.buffer.v3.Buffer:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto.sk/#Buffer
     package: envoy.extensions.filters.http.buffer.v3

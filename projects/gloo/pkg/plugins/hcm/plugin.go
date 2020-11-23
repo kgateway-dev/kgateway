@@ -71,7 +71,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 
 				// then allow any HCM plugins to make their changes, with respect to any changes the core plugin made
 				for _, hp := range p.hcmPlugins {
-					if err := hp.ProcessHcmSettings(&cfg, hcmSettings); err != nil {
+					if err := hp.ProcessHcmSettings(params.Snapshot, &cfg, hcmSettings); err != nil {
 						return hcmPluginError(err)
 					}
 				}

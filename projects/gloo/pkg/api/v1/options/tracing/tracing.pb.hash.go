@@ -65,6 +65,42 @@ func (m *ListenerTracingSettings) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	switch m.ProviderConfig.(type) {
+
+	case *ListenerTracingSettings_ZipkinConfig:
+
+		if h, ok := interface{}(m.GetZipkinConfig()).(safe_hasher.SafeHasher); ok {
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if val, err := hashstructure.Hash(m.GetZipkinConfig(), nil); err != nil {
+				return 0, err
+			} else {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *ListenerTracingSettings_DatadogConfig:
+
+		if h, ok := interface{}(m.GetDatadogConfig()).(safe_hasher.SafeHasher); ok {
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if val, err := hashstructure.Hash(m.GetDatadogConfig(), nil); err != nil {
+				return 0, err
+			} else {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
 	return hasher.Sum64(), nil
 }
 
