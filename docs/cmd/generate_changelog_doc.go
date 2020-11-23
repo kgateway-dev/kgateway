@@ -265,9 +265,9 @@ func parseGlooEReleases(enterpriseReleases, osReleases []*github.RepositoryRelea
 
 	for index, release := range enterpriseReleases {
 		var releaseTag = release.GetTagName()
-		if releaseTag != "v1.6.0-beta9" {
-			continue
-		}
+		//if releaseTag != "v1.6.0-beta8" {
+		//	continue
+		//}
 
 		version, err := versionutils.ParseVersion(releaseTag)
 		var previousVersion *versionutils.Version
@@ -297,7 +297,7 @@ func parseGlooEReleases(enterpriseReleases, osReleases []*github.RepositoryRelea
 
 			previousDepVersion, err := getGlooDependencyForGlooEVersion(previousVersion)
 			var depVersions []Version
-			if err != nil {
+			if err == nil {
 				depVersions = getAllDependencyDiffsForGlooEVersion(version, depVersion, previousDepVersion, osReleases)
 			}
 			// Get release notes of the dependent open source gloo release version
@@ -322,7 +322,10 @@ func parseEnterpriseNotes(enterpriseReleaseNotes string, openSourceReleases map[
 	eReleaseBuf := []byte(enterpriseReleaseNotes)
 	source := []byte(enterpriseReleaseNotes)
 
-	var stop, pStop int
+	headersParsed := make(map[string]int)
+	var eBufEndOfCurrentSection int
+	var endOfCurrentSectionIdx int
+	var offset int
 	for n, currentHeader := node.FirstChild(), ""; n != nil; n = n.NextSibling() {
 		switch typedNode := n.(type) {
 		case *ast.Paragraph:
@@ -335,52 +338,58 @@ func parseEnterpriseNotes(enterpriseReleaseNotes string, openSourceReleases map[
 			}
 		case *ast.List:
 			{
-				if typedNode.FirstChild().Kind() == ast.KindListItem {
-					vLast := n.LastChild().FirstChild().Lines().At(0)
-					pStop = vLast.Stop
-
-					for _, depVersion := range depVersions {
-						osReleaseBuf := []byte(openSourceReleases[depVersion])
-						osReleaseMap, err := parseOSNotes(openSourceReleases[depVersion])
-						if err != nil {
-							return "", err
-						}
-						if stop == 0 {
-							stop = pStop
-						} else {
-							stop = len(source)
-						}
-						if items := osReleaseMap[currentHeader]; len(items) != 0 {
-							for i := 0; i < len(items); i++ {
-								listItem := items[i]
-								vToInsert := listItem.FirstChild().Lines().At(0)
-								//fmt.Printf("INSERTING %s\n", osReleaseBuf[vToInsert.Start:vToInsert.Stop])
-								osReleaseId := strings.ReplaceAll(depVersion.String(), ".", "")
-								osRefLink := fmt.Sprintf("(From [OSS %s](/reference/changelog/open_source/#%s)) ", depVersion.String(), osReleaseId)
-								step1 := append(source[:stop], []byte("\n- "+osRefLink)...)
-								step2 := append(step1, osReleaseBuf[vToInsert.Start:vToInsert.Stop]...)
-								source = append(step2, eReleaseBuf[pStop:]...)
-								stop = len(step2)
-							}
-							delete(osReleaseMap, currentHeader)
-						} else {
-							stop = 0
-						}
+				vLast := n.LastChild().FirstChild().Lines().At(0)
+				eBufEndOfCurrentSection = vLast.Stop
+				endOfCurrentSectionIdx = eBufEndOfCurrentSection + offset
+				var changesFromPreviousVersion []byte
+				for _, depVersion := range depVersions {
+					osReleaseBuf := []byte(openSourceReleases[depVersion])
+					osReleaseMap, err := parseOSNotes(openSourceReleases[depVersion])
+					if err != nil {
+						return "", err
 					}
+					if items := osReleaseMap[currentHeader]; len(items) != 0 {
+						for i := 0; i < len(items); i++ {
+							listItem := items[i]
+							n := listItem.FirstChild().Lines().At(0)
+							noteToAppend := osReleaseBuf[n.Start:n.Stop]
+							//fmt.Printf("INSERTING %s\n", osReleaseBuf[noteFromPreviousVersion.Start:noteFromPreviousVersion.Stop])
+							osReleaseId := strings.ReplaceAll(depVersion.String(), ".", "")
+							osRefLink := fmt.Sprintf("(From [OSS %s](/reference/changelog/open_source/#%s)) ", depVersion.String(), osReleaseId)
+							changesFromPreviousVersion = append(changesFromPreviousVersion, []byte("\n- "+osRefLink)...)
+							changesFromPreviousVersion = append(changesFromPreviousVersion, noteToAppend...)
 
+						}
+						//delete(osReleaseMap, currentHeader)
+						headersParsed[currentHeader] = 1
+					}
 				}
+				source = append(source[:endOfCurrentSectionIdx], changesFromPreviousVersion...)
+				source = append(source, eReleaseBuf[eBufEndOfCurrentSection:]...)
+				offset = offset + len(changesFromPreviousVersion)
 			}
 		}
 	}
+	endOfCurrentSectionIdx = eBufEndOfCurrentSection + offset
+	step1 := source[:endOfCurrentSectionIdx]
+
 	for _, depVersion := range depVersions {
 		osReleaseBuf := []byte(openSourceReleases[depVersion])
 		osReleaseMap, err := parseOSNotes(openSourceReleases[depVersion])
 		if err != nil {
 			return "", err
 		}
+
+		//endOfCurrentSectionIdx = len(source)
 		for header, items := range osReleaseMap {
-			sectionName := fmt.Sprintf("\n\n**%s**\n\n", header)
-			step1 := append(source[:stop], []byte(sectionName)...)
+			if headersParsed[header] == 1 {
+				continue
+			}
+			if headersParsed[header] != 2 {
+				sectionName := fmt.Sprintf("\n**%s**\n", header)
+				step1 = append(step1, []byte(sectionName)...)
+				headersParsed[header] = 2
+			}
 			for i := 0; i < len(items); i++ {
 				listItem := items[i]
 				vToInsert := listItem.FirstChild().Lines().At(0)
@@ -388,9 +397,8 @@ func parseEnterpriseNotes(enterpriseReleaseNotes string, openSourceReleases map[
 				osRefLink := fmt.Sprintf("(From [OSS %s](/reference/changelog/open_source/#%s)) ", depVersion.String(), osReleaseId)
 				step2 := append(step1, []byte("\n- "+osRefLink)...)
 				step3 := append(step2, osReleaseBuf[vToInsert.Start:vToInsert.Stop]...)
-				source = append(step3, eReleaseBuf[pStop:]...)
+				source = append(step3, eReleaseBuf[eBufEndOfCurrentSection:]...)
 				step1 = step3
-				//fmt.Printf("adding - %s \n after \n %+v\n", osReleaseBuf[vToInsert.Start:vToInsert.Stop], enterpriseReleaseNotes[vLast.Start:vLast.Stop])
 			}
 		}
 	}
