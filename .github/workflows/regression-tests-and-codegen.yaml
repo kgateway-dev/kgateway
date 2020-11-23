@@ -34,8 +34,6 @@ jobs:
         ./ci/check-code-and-docs-gen.sh
     - name: Generate versioned docs site
       run: make -C docs build-site
-      env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
   regression_tests:
     name: k8s regression tests
     runs-on: ubuntu-18.04
