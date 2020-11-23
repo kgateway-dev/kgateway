@@ -42,19 +42,23 @@ func SecretIsValidTlsSecret(ctx context.Context, kube kubernetes.Interface, secr
 	}
 
 	certPemBytes := existing.Data["tls.crt"]
-	decoded, _ := pem.Decode(certPemBytes)
-	if decoded == nil {
-		return false, errors.New("no PEM data found")
-	}
-
-	cert, err := x509.ParseCertificate(decoded.Bytes)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to decode pem encoded ca cert")
-	}
-
 	now := time.Now().UTC()
-	if now.Before(cert.NotBefore) || now.After(cert.NotAfter) {
-		return false, nil
+
+	rest := certPemBytes
+	for len(rest) > 0 {
+		var decoded *pem.Block
+		decoded, rest = pem.Decode(rest)
+		if decoded == nil {
+			return false, errors.New("no PEM data found")
+		}
+		cert, err := x509.ParseCertificate(decoded.Bytes)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to decode pem encoded ca cert")
+		}
+
+		if now.Before(cert.NotBefore) || now.After(cert.NotAfter) {
+			return false, nil
+		}
 	}
 
 	// cert is still valid!
