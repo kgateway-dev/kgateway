@@ -272,6 +272,7 @@ type GatewayProxy struct {
 	PodTemplate                    *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
 	ConfigMap                      *GatewayProxyConfigMap       `json:"configMap,omitempty"`
 	GlobalDownstreamMaxConnections uint32                       `json:"globalDownstreamMaxConnections,omitempty" desc:"the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine"`
+	HealthyPanicThreshold          int8                         `json:"healthyPanicThreshold,omitempty" desc:"the percentage of healthy hosts required to load balance based on health status of hosts"`
 	Service                        *GatewayProxyService         `json:"service,omitempty"`
 	AntiAffinity                   bool                         `json:"antiAffinity" desc:"configure anti affinity such that pods are preferably not co-located"`
 	Tracing                        *Tracing                     `json:"tracing,omitempty"`
