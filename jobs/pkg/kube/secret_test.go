@@ -12,6 +12,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/certutils"
@@ -81,10 +83,10 @@ var _ = Describe("Secret", func() {
 			return certBytes
 		}
 
-		It("recognizes a tls secret that is still valid", func() {
+		FIt("recognizes a tls secret that is still valid", func() {
 			data := []byte{1, 2, 3}
 
-			kube := fake.NewSimpleClientset()
+			kube := helpers.MustKubeClient()
 			secretCfg := TlsSecret{
 				SecretName:         "mysecret",
 				SecretNamespace:    "mynamespace",
@@ -96,8 +98,8 @@ var _ = Describe("Secret", func() {
 				CaBundle:           data,
 			}
 
-			err := CreateTlsSecret(context.TODO(), kube, secretCfg)
-			Expect(err).NotTo(HaveOccurred())
+			//err := CreateTlsSecret(context.TODO(), kube, secretCfg)
+			//Expect(err).NotTo(HaveOccurred())
 
 			valid, err := SecretIsValidTlsSecret(context.TODO(), kube, secretCfg)
 			Expect(err).NotTo(HaveOccurred())
