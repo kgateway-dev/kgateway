@@ -42,18 +42,14 @@ Note: some tracing providers, such as Zipkin, require a `collector_cluster` (the
 {{< highlight yaml "hl_lines=3-23" >}}
 gatewayProxies:
   gatewayProxy:
-    gatewaySettings:
-      customHttpGateway:
-        options:
-          httpConnectionManagerSettings:
-            tracing:
-              zipkinConfig:
-                collectorEndpoint: /api/v2/spans
-                collectorEndpointVersion: HTTP_JSON
-                collectorUpstreamRef:
-                  name: zipkin
-                  namespace: default
     tracing:
+      provider:
+        name: envoy.tracers.zipkin
+        typed_config:
+          "@type": "type.googleapis.com/envoy.config.trace.v2.ZipkinConfig"
+          collector_cluster: zipkin
+          collector_endpoint: "/api/v2/spans"
+          collector_endpoint_version: HTTP_JSON
       cluster:
         - name: zipkin
           connect_timeout: 1s
