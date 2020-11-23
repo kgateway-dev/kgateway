@@ -12,6 +12,7 @@ require (
 	github.com/aws/aws-sdk-go v1.34.9
 	github.com/cncf/udpa/go v0.0.0-20200629203442-efcf912fb354
 	github.com/containerd/containerd v1.3.3 // indirect
+	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/docker/cli v0.0.0-20200210162036-a4bedce16568 // indirect

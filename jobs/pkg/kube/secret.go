@@ -2,6 +2,9 @@ package kube
 
 import (
 	"context"
+	"time"
+
+	k8stlsutil "github.com/coreos/pkg/k8s-tlsutil"
 
 	errors "github.com/rotisserie/eris"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -34,6 +37,23 @@ func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg T
 			if err != nil {
 				return errors.Wrapf(err, "failed to retrieve existing secret after receiving AlreadyExists error on Create")
 			}
+
+			if existing.Type != v1.SecretTypeTLS {
+				return errors.Errorf("unexpected secret type, expected %s and got %s", v1.SecretTypeTLS, existing.Type)
+			}
+
+			certBytes := existing.Data["tls.crt"]
+			cert, err := k8stlsutil.ParsePEMEncodedCACert(certBytes)
+			if err != nil {
+				return errors.Wrapf(err, "failed to decode pem encoded ca cert")
+			}
+
+			now := time.Now().UTC()
+			if now.After(cert.NotBefore) && now.Before(cert.NotAfter) {
+				contextutils.LoggerFrom(ctx).Infow("existing TLS secret found, skipping update as old TLS secret is still valid", zap.String("secret", secret.Name))
+				return nil
+			}
+
 			secret.ResourceVersion = existing.ResourceVersion
 
 			if _, err := secretClient.Update(ctx, secret, metav1.UpdateOptions{}); err != nil {
