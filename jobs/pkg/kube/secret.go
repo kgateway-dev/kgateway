@@ -27,7 +27,11 @@ func SecretIsValidTlsSecret(ctx context.Context, kube kubernetes.Interface, secr
 
 	existing, err := secretClient.Get(ctx, secretCfg.SecretName, metav1.GetOptions{})
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to retrieve existing secret")
+		contextutils.LoggerFrom(ctx).Warnw("failed to retrieve existing secret",
+			zap.String("secretName", secretCfg.SecretName),
+			zap.String("secretNamespace", secretCfg.SecretNamespace))
+		// necessary to return no errors in this case so we don't short circuit certgen on the first run
+		return false, nil
 	}
 
 	if existing.Type != v1.SecretTypeTLS {
@@ -63,7 +67,9 @@ func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg T
 
 	if _, err := secretClient.Create(ctx, secret, metav1.CreateOptions{}); err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			contextutils.LoggerFrom(ctx).Infow("existing TLS secret found, attempting to update", zap.String("secret", secret.Name))
+			contextutils.LoggerFrom(ctx).Infow("existing TLS secret found, attempting to update",
+				zap.String("secretName", secret.Name),
+				zap.String("secretNamespace", secret.Namespace))
 
 			existing, err := secretClient.Get(ctx, secret.Name, metav1.GetOptions{})
 			if err != nil {
