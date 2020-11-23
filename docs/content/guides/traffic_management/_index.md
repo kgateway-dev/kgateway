@@ -14,7 +14,7 @@ There are many types of **matchers**, including **Path Matching**, **Header Matc
 
 Gloo Edge is capable of sending matching requests to many different types of *Upstreams*, including **Single Upstream**, **Multiple Upstream**, **Upstream Groups**, Kubernetes services, and Consul services. The ability to route a request to multiple *Upstreams* or *Upstream Groups* allows Gloo Edge to load balance requests and perform Canary Releases.
 
-Gloo Edge can also alter requests before sending them to a destination, including **Transformation**, **Fault Injection**, response header editing, and **Prefix Rewrite**. The ability to edit requests on the fly gives Gloo Edge the power specify the proper parameters for a function or transform and error check incoming requests before passing them along.
+Gloo Edge can also alter requests before sending them to a destination, including **Transformation**, **Fault Injection**, response header editing, and **Prefix Rewrite**. The ability to edit requests on the fly gives Gloo Edge the power to specify the proper parameters for a function or transform and error check incoming requests before passing them along.
 
 ---
 
