@@ -18,6 +18,11 @@ import (
 var (
 	_ = errors.New("")
 	_ = fmt.Print
+	_ = binary.LittleEndian
+	_ = bytes.Compare
+	_ = strings.Compare
+	_ = equality.Equalizer(nil)
+	_ = proto.Message(nil)
 )
 
 // Equal function
@@ -1138,8 +1143,15 @@ func (m *RetryPolicy) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetRetriableStatusCodes() != target.GetRetriableStatusCodes() {
+	if len(m.GetRetriableStatusCodes()) != len(target.GetRetriableStatusCodes()) {
 		return false
+	}
+	for idx, v := range m.GetRetriableStatusCodes() {
+
+		if v != target.GetRetriableStatusCodes()[idx] {
+			return false
+		}
+
 	}
 
 	if h, ok := interface{}(m.GetRetryBackOff()).(equality.Equalizer); ok {
@@ -1731,8 +1743,15 @@ func (m *InternalRedirectPolicy) Equal(that interface{}) bool {
 		}
 	}
 
-	if m.GetRedirectResponseCodes() != target.GetRedirectResponseCodes() {
+	if len(m.GetRedirectResponseCodes()) != len(target.GetRedirectResponseCodes()) {
 		return false
+	}
+	for idx, v := range m.GetRedirectResponseCodes() {
+
+		if v != target.GetRedirectResponseCodes()[idx] {
+			return false
+		}
+
 	}
 
 	if len(m.GetPredicates()) != len(target.GetPredicates()) {

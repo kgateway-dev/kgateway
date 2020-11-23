@@ -487,8 +487,7 @@ message ExtAuthConfig {
     string client_id = 1 [deprecated=true];
 
     // your client secret as registered with the issuer
-    // TODO: Reenable sensitive logging
-    string client_secret = 2 [deprecated=true];
+    string client_secret = 2 [deprecated=true, (extproto.sensitive)=true];
 
     // The url of the issuer. We will look for OIDC information in issuerUrl+
     // ".well-known/openid-configuration"
@@ -516,8 +515,7 @@ message ExtAuthConfig {
     string client_id = 1;
 
     // your client secret as registered with the issuer
-    // TODO: Reenable sensitive logging
-    string client_secret = 2 ;
+    string client_secret = 2 [(extproto.sensitive)=true];
 
     // The url of the issuer. We will look for OIDC information in issuerUrl+
     // ".well-known/openid-configuration"
@@ -581,8 +579,7 @@ message ExtAuthConfig {
 
     // A mapping of valid API keys to their associated metadata.
     // This map is automatically populated with the information from the relevant `ApiKeySecret`s.
-    // TODO: Reenable sensitive logging
-    map<string, KeyMetadata> valid_api_keys = 1;
+    map<string, KeyMetadata> valid_api_keys = 1 [(extproto.sensitive)=true];
 
     // (Optional) When receiving a request, the Gloo Enterprise external auth server will look for an API key
     // in a header with this name. This field is optional; if not provided it defaults to `api-key`.

@@ -20,6 +20,11 @@ import (
 var (
 	_ = errors.New("")
 	_ = fmt.Print
+	_ = binary.LittleEndian
+	_ = bytes.Compare
+	_ = strings.Compare
+	_ = equality.Equalizer(nil)
+	_ = proto.Message(nil)
 
 	_ = core.RoutingPriority(0)
 
@@ -1040,8 +1045,15 @@ func (m *RetryPolicy) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetRetriableStatusCodes() != target.GetRetriableStatusCodes() {
+	if len(m.GetRetriableStatusCodes()) != len(target.GetRetriableStatusCodes()) {
 		return false
+	}
+	for idx, v := range m.GetRetriableStatusCodes() {
+
+		if v != target.GetRetriableStatusCodes()[idx] {
+			return false
+		}
+
 	}
 
 	if h, ok := interface{}(m.GetRetryBackOff()).(equality.Equalizer); ok {
