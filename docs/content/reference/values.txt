@@ -298,6 +298,7 @@
 |gatewayProxies.NAME.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.globalDownstreamMaxConnections|uint32||the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine|
+|gatewayProxies.NAME.healthyPanicThreshold|int8||the percentage of healthy hosts required to load balance based on health status of hosts|
 |gatewayProxies.NAME.service.type|string||gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
 |gatewayProxies.NAME.service.httpPort|int||HTTP port for the gateway service|
 |gatewayProxies.NAME.service.httpsPort|int||HTTPS port for the gateway service|
@@ -424,6 +425,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.globalDownstreamMaxConnections|uint32|250000|the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine|
+|gatewayProxies.gatewayProxy.healthyPanicThreshold|int8|50|the percentage of healthy hosts required to load balance based on health status of hosts|
 |gatewayProxies.gatewayProxy.service.type|string|LoadBalancer|gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
 |gatewayProxies.gatewayProxy.service.httpPort|int|80|HTTP port for the gateway service|
 |gatewayProxies.gatewayProxy.service.httpsPort|int|443|HTTPS port for the gateway service|
