@@ -456,8 +456,8 @@ layered_runtime:
       overload:
         global_downstream_max_connections: 250000
       upstream:
-        health_panic_threshold:
-          value: 0
+        healthy_panic_threshold:
+          value: 50
   - name: admin_layer
     admin_layer: {}
 node:
