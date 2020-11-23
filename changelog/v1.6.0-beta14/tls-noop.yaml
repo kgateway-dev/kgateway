@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3790
+    description: >
+      Turn the certgen job into a no-op if the previously generated certs still exist, and are still valid.
+    resolvesIssue: false
