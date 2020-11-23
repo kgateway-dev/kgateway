@@ -241,9 +241,9 @@ func parseGlooEReleases(enterpriseReleases, osReleases []*github.RepositoryRelea
 		var releaseTag = release.GetTagName()
 		version, err := versionutils.ParseVersion(releaseTag)
 
-		//if version.Minor != 0 || version.Patch != 10 {
-		//	continue
-		//}
+		if version.Minor != 4 || version.Patch != 5 {
+			continue
+		}
 
 		if err != nil {
 			return nil, err
