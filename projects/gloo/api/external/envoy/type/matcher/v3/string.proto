@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package envoy.type.matcher.v3;
 
-import "envoy/type/matcher/v3/regex.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/regex.proto";
 
 import "envoy/annotations/deprecation.proto";
 import "udpa/annotations/status.proto";

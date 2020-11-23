@@ -2,15 +2,15 @@ syntax = "proto3";
 
 package envoy.config.route.v3;
 
-import "envoy/config/core/v3/base.proto";
-import "envoy/config/core/v3/extension.proto";
-import "envoy/config/core/v3/proxy_protocol.proto";
-import "envoy/type/matcher/v3/regex.proto";
-import "envoy/type/matcher/v3/string.proto";
-import "envoy/type/metadata/v3/metadata.proto";
-import "envoy/type/tracing/v3/custom_tag.proto";
-import "envoy/type/v3/percent.proto";
-import "envoy/type/v3/range.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/extension.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/proxy_protocol.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/regex.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/metadata/v3/metadata.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/tracing/v3/custom_tag.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/percent.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/range.proto";
 
 import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";

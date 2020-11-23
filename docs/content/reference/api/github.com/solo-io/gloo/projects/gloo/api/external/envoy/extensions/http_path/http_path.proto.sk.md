@@ -37,7 +37,7 @@ be in the "io.solo.health_checkers.http_path" namespace, under a string value na
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `httpHealthCheck` | [.envoy.config.core.v3.HealthCheck.HttpHealthCheck](../../../../../../../../../../../envoy/config/core/v3/health_check.proto.sk/#httphealthcheck) | Http health check. |
+| `httpHealthCheck` | [.envoy.config.core.v3.HealthCheck.HttpHealthCheck](../../../config/core/v3/health_check.proto.sk/#httphealthcheck) | Http health check. |
 
 
 

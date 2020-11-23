@@ -4,6 +4,8 @@
 package jwt
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"strings"

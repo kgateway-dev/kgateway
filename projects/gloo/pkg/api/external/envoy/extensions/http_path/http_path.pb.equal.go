@@ -4,8 +4,11 @@
 package http_path
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 	equality "github.com/solo-io/protoc-gen-ext/pkg/equality"

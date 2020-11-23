@@ -3,7 +3,7 @@ syntax = "proto3";
 package envoy.config.health_checker.http_path.v2;
 
 import "udpa/annotations/status.proto";
-import "envoy/config/core/v3/health_check.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/health_check.proto";
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/http_path";
 import "extproto/ext.proto";

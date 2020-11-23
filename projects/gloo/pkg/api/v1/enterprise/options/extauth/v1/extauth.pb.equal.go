@@ -4,6 +4,8 @@
 package v1
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"strings"

@@ -5,9 +5,13 @@ package v3
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/golang/protobuf/proto"
+	equality "github.com/solo-io/protoc-gen-ext/pkg/equality"
 )
 
 // ensure the imports are used

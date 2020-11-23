@@ -5,6 +5,7 @@ package grpc_json
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"strings"

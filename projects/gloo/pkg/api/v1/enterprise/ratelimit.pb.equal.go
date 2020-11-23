@@ -4,6 +4,8 @@
 package enterprise
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"strings"

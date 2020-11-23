@@ -126,10 +126,10 @@ Describes the encoding of the payload bytes in the payload.
 | `host` | `string` | The value of the host header in the HTTP health check request. If left empty (default value), the name of the cluster this health check is associated with will be used. |
 | `path` | `string` | Specifies the HTTP path that will be requested during health checking. For example */healthcheck*. |
 | `serviceName` | `string` | An optional service name parameter which is used to validate the identity of the health checked cluster. See the `architecture overview (arch_overview_health_checking_identity)` for more information. |
-| `requestHeadersToAdd` | [[]envoy.api.v2.core.HeaderValueOption](../../../../../../../../../../../../envoy/api/v2/core/base.proto.sk/#headervalueoption) | Specifies a list of HTTP headers that should be added to each request that is sent to the health checked cluster. For more information, including details on header value syntax, see the documentation on `custom request headers (config_http_conn_man_headers_custom_request_headers)`. |
+| `requestHeadersToAdd` | [[]envoy.api.v2.core.HeaderValueOption](../../../../../../../../../../solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#headervalueoption) | Specifies a list of HTTP headers that should be added to each request that is sent to the health checked cluster. For more information, including details on header value syntax, see the documentation on `custom request headers (config_http_conn_man_headers_custom_request_headers)`. |
 | `requestHeadersToRemove` | `[]string` | Specifies a list of HTTP headers that should be removed from each request that is sent to the health checked cluster. |
 | `useHttp2` | `bool` | If set, health checks will be made using http/2. |
-| `expectedStatuses` | [[]envoy.type.Int64Range](../../../../../../../../../../../../envoy/type/range.proto.sk/#int64range) | Specifies a list of HTTP response statuses considered healthy. If provided, replaces default 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open semantics of `Int64Range (envoy_api_msg_type.Int64Range)`. |
+| `expectedStatuses` | [[]envoy.type.Int64Range](../../../../type/range.proto.sk/#int64range) | Specifies a list of HTTP response statuses considered healthy. If provided, replaces default 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open semantics of `Int64Range (envoy_api_msg_type.Int64Range)`. |
 
 
 

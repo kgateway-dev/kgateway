@@ -4,6 +4,8 @@
 package azure
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"strings"

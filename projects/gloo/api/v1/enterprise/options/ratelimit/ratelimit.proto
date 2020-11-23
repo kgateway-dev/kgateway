@@ -4,7 +4,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise
 
 import "solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto";
 
-import "solo-kit/api/v1/ref.proto";
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
 import "extproto/ext.proto";

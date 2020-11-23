@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package envoy.type.tracing.v3;
 
-import "envoy/type/metadata/v3/metadata.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/metadata/v3/metadata.proto";
 
 import "udpa/annotations/status.proto";
 import "udpa/annotations/versioning.proto";

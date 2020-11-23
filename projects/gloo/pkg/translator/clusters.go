@@ -8,7 +8,6 @@ import (
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
@@ -196,10 +195,10 @@ func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoycluster.CircuitB
 		if cfg != nil {
 			envoyCfg := &envoycluster.CircuitBreakers{}
 			envoyCfg.Thresholds = []*envoycluster.CircuitBreakers_Thresholds{{
-				MaxConnections:     gogoutils.UInt32GogoToProto(cfg.MaxConnections),
-				MaxPendingRequests: gogoutils.UInt32GogoToProto(cfg.MaxPendingRequests),
-				MaxRequests:        gogoutils.UInt32GogoToProto(cfg.MaxRequests),
-				MaxRetries:         gogoutils.UInt32GogoToProto(cfg.MaxRetries),
+				MaxConnections:     cfg.GetMaxConnections(),
+				MaxPendingRequests: cfg.GetMaxPendingRequests(),
+				MaxRequests:        cfg.GetMaxRequests(),
+				MaxRetries:         cfg.GetMaxRetries(),
 			}}
 			return envoyCfg
 		}

@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package envoy.config.core.v3;
 
-import "envoy/config/core/v3/base.proto";
-import "envoy/config/core/v3/event_service_config.proto";
-import "envoy/type/matcher/v3/string.proto";
-import "envoy/type/v3/http.proto";
-import "envoy/type/v3/range.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/event_service_config.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/http.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/range.proto";
 
 import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";

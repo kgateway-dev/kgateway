@@ -11,8 +11,8 @@ option (extproto.equal_all) = true;
 import "google/protobuf/empty.proto";
 import "validate/validate.proto";
 
-import "envoy/config/route/v3/route_components.proto";
-import "envoy/type/matcher/v3/string.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/route/v3/route_components.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto";
 
 message FilterTransformations {
   // Specifies transformations based on the route matches. The first matched

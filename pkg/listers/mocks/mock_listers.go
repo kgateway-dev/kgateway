@@ -6,9 +6,8 @@ package mocks
 
 import (
 	context "context"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
 )
 
 // MockNamespaceLister is a mock of NamespaceLister interface

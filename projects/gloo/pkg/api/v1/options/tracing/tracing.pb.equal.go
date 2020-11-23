@@ -4,6 +4,8 @@
 package tracing
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"strings"

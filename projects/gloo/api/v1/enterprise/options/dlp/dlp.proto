@@ -2,9 +2,9 @@ syntax = "proto3";
 package dlp.options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/dlp";
 
-import "gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 
-import "envoy/type/percent.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/type/percent.proto";
 import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;

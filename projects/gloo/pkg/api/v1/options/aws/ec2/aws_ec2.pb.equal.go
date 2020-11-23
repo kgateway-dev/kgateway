@@ -4,6 +4,8 @@
 package ec2
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"strings"

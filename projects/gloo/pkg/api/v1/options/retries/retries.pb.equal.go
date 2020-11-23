@@ -4,6 +4,8 @@
 package retries
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"strings"
