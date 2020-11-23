@@ -7,6 +7,9 @@ layered_runtime:
     static_layer:
       overload:
         global_downstream_max_connections: 250000
+      upstream:
+        healthy_panic_threshold:
+          value: 50
   - name: admin_layer
     admin_layer: {}
 node:
@@ -176,6 +179,9 @@ layered_runtime:
     static_layer:
       overload:
         global_downstream_max_connections: 250000
+      upstream:
+        healthy_panic_threshold:
+          value: 50
   - name: admin_layer
     admin_layer: {}
 node:
@@ -309,6 +315,9 @@ layered_runtime:
     static_layer:
       overload:
         global_downstream_max_connections: 250000
+      upstream:
+        healthy_panic_threshold:
+          value: 50
   - name: admin_layer
     admin_layer: {}
 node:
@@ -446,6 +455,9 @@ layered_runtime:
     static_layer:
       overload:
         global_downstream_max_connections: 250000
+      upstream:
+        healthy_panic_threshold:
+          value: 50
   - name: admin_layer
     admin_layer: {}
 node:
@@ -599,6 +611,9 @@ layered_runtime:
     static_layer:
       overload:
         global_downstream_max_connections: 250000
+      upstream:
+        healthy_panic_threshold:
+          value: 50
   - name: admin_layer
     admin_layer: {}
 node:
@@ -774,6 +789,9 @@ layered_runtime:
     static_layer:
       overload:
         global_downstream_max_connections: 250000
+      upstream:
+        healthy_panic_threshold:
+          value: 50
   - name: admin_layer
     admin_layer: {}
 node:
