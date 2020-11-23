@@ -265,9 +265,9 @@ func parseGlooEReleases(enterpriseReleases, osReleases []*github.RepositoryRelea
 
 	for index, release := range enterpriseReleases {
 		var releaseTag = release.GetTagName()
-		//if releaseTag != "v1.6.0-beta9" {
-		//	continue
-		//}
+		if releaseTag != "v1.6.0-beta9" {
+			continue
+		}
 
 		version, err := versionutils.ParseVersion(releaseTag)
 		var previousVersion *versionutils.Version
@@ -296,13 +296,13 @@ func parseGlooEReleases(enterpriseReleases, osReleases []*github.RepositoryRelea
 			glooOSSDescription = fmt.Sprintf("(Uses Gloo OSS [%s](/reference/changelog/open_source/#%s))", depVersion.String(), glooOssLink)
 
 			previousDepVersion, err := getGlooDependencyForGlooEVersion(previousVersion)
+			var depVersions []Version
 			if err != nil {
-				depVersions := getAllDependencyDiffsForGlooEVersion(version, depVersion, previousDepVersion, osReleases)
-				println(depVersions)
+				depVersions = getAllDependencyDiffsForGlooEVersion(version, depVersion, previousDepVersion, osReleases)
 			}
 			// Get release notes of the dependent open source gloo release version
-			osReleaseNotes := openSourceReleases[Version(*depVersion)]
-			body, err = parseEnterpriseNotes(release.GetBody(), osReleaseNotes, *depVersion)
+			//osReleaseNotes := openSourceReleases[Version(*depVersion)]
+			body, err = parseEnterpriseNotes(release.GetBody(), openSourceReleases, depVersions)
 			if err != nil {
 				return nil, err
 			}
@@ -316,16 +316,12 @@ func parseGlooEReleases(enterpriseReleases, osReleases []*github.RepositoryRelea
 	return minorReleaseMap, nil
 }
 
-func parseEnterpriseNotes(enterpriseReleaseNotes, osReleaseNotes string, osVersion versionutils.Version) (string, error) {
+func parseEnterpriseNotes(enterpriseReleaseNotes string, openSourceReleases map[Version]string, depVersions []Version) (string, error) {
 	node := goldmark.DefaultParser().Parse(text.NewReader([]byte(enterpriseReleaseNotes)))
 
-	osReleaseBuf := []byte(osReleaseNotes)
 	eReleaseBuf := []byte(enterpriseReleaseNotes)
 	source := []byte(enterpriseReleaseNotes)
-	osReleaseMap, err := parseOSNotes(osReleaseNotes)
-	if err != nil {
-		return "", err
-	}
+
 	var stop, pStop int
 	for n, currentHeader := node.FirstChild(), ""; n != nil; n = n.NextSibling() {
 		switch typedNode := n.(type) {
@@ -342,45 +338,60 @@ func parseEnterpriseNotes(enterpriseReleaseNotes, osReleaseNotes string, osVersi
 				if typedNode.FirstChild().Kind() == ast.KindListItem {
 					vLast := n.LastChild().FirstChild().Lines().At(0)
 					pStop = vLast.Stop
-					if stop == 0 {
-						stop = pStop
-					} else {
-						stop = len(source)
+
+					for _, depVersion := range depVersions {
+						osReleaseBuf := []byte(openSourceReleases[depVersion])
+						osReleaseMap, err := parseOSNotes(openSourceReleases[depVersion])
+						if err != nil {
+							return "", err
+						}
+						if stop == 0 {
+							stop = pStop
+						} else {
+							stop = len(source)
+						}
+						if items := osReleaseMap[currentHeader]; len(items) != 0 {
+							for i := 0; i < len(items); i++ {
+								listItem := items[i]
+								vToInsert := listItem.FirstChild().Lines().At(0)
+								//fmt.Printf("INSERTING %s\n", osReleaseBuf[vToInsert.Start:vToInsert.Stop])
+								osReleaseId := strings.ReplaceAll(depVersion.String(), ".", "")
+								osRefLink := fmt.Sprintf("(From [OSS %s](/reference/changelog/open_source/#%s)) ", depVersion.String(), osReleaseId)
+								step1 := append(source[:stop], []byte("\n- "+osRefLink)...)
+								step2 := append(step1, osReleaseBuf[vToInsert.Start:vToInsert.Stop]...)
+								source = append(step2, eReleaseBuf[pStop:]...)
+								stop = len(step2)
+							}
+							delete(osReleaseMap, currentHeader)
+						} else {
+							stop = 0
+						}
 					}
 
-					if items := osReleaseMap[currentHeader]; len(items) != 0 {
-						for i := 0; i < len(items); i++ {
-							listItem := items[i]
-							vToInsert := listItem.FirstChild().Lines().At(0)
-							//fmt.Printf("INSERTING %s\n", osReleaseBuf[vToInsert.Start:vToInsert.Stop])
-							osReleaseId := strings.ReplaceAll(osVersion.String(), ".", "")
-							osRefLink := fmt.Sprintf("(From [OSS %s](/reference/changelog/open_source/#%s)) ", osVersion.String(), osReleaseId)
-							step1 := append(source[:stop], []byte("\n- "+osRefLink)...)
-							step2 := append(step1, osReleaseBuf[vToInsert.Start:vToInsert.Stop]...)
-							source = append(step2, eReleaseBuf[pStop:]...)
-							stop = len(step2)
-						}
-						delete(osReleaseMap, currentHeader)
-					} else {
-						stop = 0
-					}
 				}
 			}
 		}
 	}
-	for header, items := range osReleaseMap {
-		sectionName := fmt.Sprintf("\n\n**%s**\n\n", header)
-		step1 := append(source[:stop], []byte(sectionName)...)
-		for i := 0; i < len(items); i++ {
-			listItem := items[i]
-			vToInsert := listItem.FirstChild().Lines().At(0)
-			osReleaseId := strings.ReplaceAll(osVersion.String(), ".", "")
-			osRefLink := fmt.Sprintf("(From [OSS %s](/reference/changelog/open_source/#%s)) ", osVersion.String(), osReleaseId)
-			step2 := append(step1, []byte("\n- "+osRefLink)...)
-			step3 := append(step2, osReleaseBuf[vToInsert.Start:vToInsert.Stop]...)
-			source = append(step3, eReleaseBuf[pStop:]...)
-			step1 = step3
-			//fmt.Printf("adding - %s \n after \n %+v\n", osReleaseBuf[vToInsert.Start:vToInsert.Stop], enterpriseReleaseNotes[vLast.Start:vLast.Stop])
+	for _, depVersion := range depVersions {
+		osReleaseBuf := []byte(openSourceReleases[depVersion])
+		osReleaseMap, err := parseOSNotes(openSourceReleases[depVersion])
+		if err != nil {
+			return "", err
+		}
+		for header, items := range osReleaseMap {
+			sectionName := fmt.Sprintf("\n\n**%s**\n\n", header)
+			step1 := append(source[:stop], []byte(sectionName)...)
+			for i := 0; i < len(items); i++ {
+				listItem := items[i]
+				vToInsert := listItem.FirstChild().Lines().At(0)
+				osReleaseId := strings.ReplaceAll(depVersion.String(), ".", "")
+				osRefLink := fmt.Sprintf("(From [OSS %s](/reference/changelog/open_source/#%s)) ", depVersion.String(), osReleaseId)
+				step2 := append(step1, []byte("\n- "+osRefLink)...)
+				step3 := append(step2, osReleaseBuf[vToInsert.Start:vToInsert.Stop]...)
+				source = append(step3, eReleaseBuf[pStop:]...)
+				step1 = step3
+				//fmt.Printf("adding - %s \n after \n %+v\n", osReleaseBuf[vToInsert.Start:vToInsert.Stop], enterpriseReleaseNotes[vLast.Start:vLast.Stop])
+			}
 		}
 	}
 	return fmt.Sprintf("%s", source), nil
@@ -525,6 +536,11 @@ type Versions []Version
 func (v Version) LessThan(version Version) bool {
 	result, _ := versionutils.Version(v).IsGreaterThanOrEqualTo(versionutils.Version(version))
 	return result
+}
+
+func (v Version) String() string {
+	version := versionutils.Version(v)
+	return version.String()
 }
 
 func (s Versions) Len() int {
