@@ -58,7 +58,7 @@ require (
 	github.com/miekg/dns v1.1.29 // indirect
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/mitchellh/mapstructure v1.3.1 // indirect
-	github.com/mitchellh/reflectwalk v1.0.1
+	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/onsi/ginkgo v1.12.1
 	github.com/onsi/gomega v1.10.1

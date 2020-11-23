@@ -7,6 +7,7 @@ import (
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"google.golang.org/genproto/googleapis/api/annotations"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -34,7 +35,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	transformutils "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/transformation"
 	"github.com/solo-io/go-utils/log"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 type ServicesAndDescriptor struct {
@@ -44,14 +44,14 @@ type ServicesAndDescriptor struct {
 
 func NewPlugin(transformsAdded *bool) *plugin {
 	return &plugin{
-		recordedUpstreams: make(map[*core.ResourceRef]*v1.Upstream),
+		recordedUpstreams: make(map[string]*v1.Upstream),
 		transformsAdded:   transformsAdded,
 	}
 }
 
 type plugin struct {
 	transformsAdded   *bool
-	recordedUpstreams map[*core.ResourceRef]*v1.Upstream
+	recordedUpstreams map[string]*v1.Upstream
 	upstreamServices  []ServicesAndDescriptor
 
 	ctx context.Context
@@ -104,7 +104,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	addWellKnownProtos(descriptors)
 
-	p.recordedUpstreams[in.Metadata.Ref()] = in
+	p.recordedUpstreams[translator.UpstreamToClusterName(in.Metadata.Ref())] = in
 	p.upstreamServices = append(p.upstreamServices, ServicesAndDescriptor{
 		Descriptors: descriptors,
 		Spec:        grpcSpec,
@@ -171,7 +171,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			return nil, err
 		}
 
-		upstream := p.recordedUpstreams[upstreamRef]
+		upstream := p.recordedUpstreams[translator.UpstreamToClusterName(upstreamRef)]
 		if upstream == nil {
 			return nil, errors.New("upstream was not recorded for grpc route")
 		}

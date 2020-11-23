@@ -1071,7 +1071,7 @@ var _ = Describe("Translator", func() {
 			expectedReport.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[0].RouteReports[0].Warnings = []*validation.RouteReport_Warning{
 				{
 					Type:   validation.RouteReport_Warning_InvalidDestinationWarning,
-					Reason: "invalid destination in weighted destination list: *v1.Upstream {notexist gloo-system} not found",
+					Reason: "invalid destination in weighted destination list: *v1.Upstream { gloo-system.notexist } not found",
 				},
 			}
 			Expect(report).To(Equal(expectedReport))
