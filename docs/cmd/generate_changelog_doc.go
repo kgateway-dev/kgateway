@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/yuin/goldmark"
@@ -14,7 +13,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Kunde21/markdownfmt/v2/markdown"
 	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/versionutils"
@@ -185,7 +183,7 @@ func generateGlooChangelog() error {
 		return err
 	}
 
-	minorReleaseMap, err := parseGlooReleases(allReleases, false)
+	minorReleaseMap, err := parseGlooReleases(allReleases, true)
 	if err != nil {
 		return err
 	}
@@ -237,10 +235,16 @@ func getAllReleases(client *github.Client, repo string) ([]*github.RepositoryRel
 
 func parseGlooEReleases(enterpriseReleases, osReleases []*github.RepositoryRelease) (map[Version]string, error) {
 	var minorReleaseMap = make(map[Version]string)
-
+	i := 0
 	for _, release := range enterpriseReleases {
+
 		var releaseTag = release.GetTagName()
 		version, err := versionutils.ParseVersion(releaseTag)
+
+		//if version.Minor != 0 || version.Patch != 10 {
+		//	continue
+		//}
+
 		if err != nil {
 			return nil, err
 		}
@@ -257,78 +261,106 @@ func parseGlooEReleases(enterpriseReleases, osReleases []*github.RepositoryRelea
 		} else {
 			continue
 		}
-		openSourceReleases, err := parseGlooReleases(osReleases, true)
+		openSourceReleases, err := parseGlooReleases(osReleases, false)
 		if err != nil {
 			return nil, err
 		}
 		// Get release notes of the dependent open source gloo release version
 		osReleaseNotes := openSourceReleases[Version(*depVersion)]
-		body, err := parseEnterpriseNotes(release.GetBody(), osReleaseNotes)
+		body, err := parseEnterpriseNotes(release.GetBody(), osReleaseNotes, *depVersion)
 		if err != nil {
 			return nil, err
 		}
 
 		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("##### %s %s\n ", version.String(), glooOSSDescription) + body
-
+		i++
 	}
 
 	return minorReleaseMap, nil
 }
 
-func parseEnterpriseNotes(enterpriseReleaseNotes, osReleaseNotes string) (string, error) {
+func parseEnterpriseNotes(enterpriseReleaseNotes, osReleaseNotes string, osVersion versionutils.Version) (string, error) {
 	node := goldmark.DefaultParser().Parse(text.NewReader([]byte(enterpriseReleaseNotes)))
-	buf := new(bytes.Buffer)
+	//node.Dump([]byte(enterpriseReleaseNotes), 0)
+	//buf := new(bytes.Buffer)
 	//println(enterpriseReleaseNotes)
 	//recursivelyPrintNode(node, "", enterpriseReleaseNotes)
-
-	releaseNotes := make(map[string][]string)
+	osReleaseBuf := []byte(osReleaseNotes)
+	eReleaseBuf := []byte(enterpriseReleaseNotes)
+	source := []byte(enterpriseReleaseNotes)
 	osReleaseMap, err := parseOSNotes(osReleaseNotes)
 	if err != nil {
 		return "", err
 	}
-
+	var stop, pStop int
 	for n, currentHeader := node.FirstChild(), ""; n != nil; n = n.NextSibling() {
 		switch typedNode := n.(type) {
 		case *ast.Paragraph:
 			{
-				switch typedNode.FirstChild().(type) {
-				case *ast.Emphasis:
+				if typedNode.FirstChild().Kind() == ast.KindEmphasis {
 					currentHeader = string(typedNode.Text([]byte(enterpriseReleaseNotes)))
-				default:
+				} else {
 					continue
 				}
 			}
 		case *ast.List:
 			{
-				switch typedNode.FirstChild().(type) {
-				case *ast.ListItem:
-					for l := n.FirstChild(); l != nil; l = l.NextSibling() {
-						releaseNotes[currentHeader] = append(releaseNotes[currentHeader], string(l.Text([]byte(enterpriseReleaseNotes))))
-					}
+				if typedNode.FirstChild().Kind() == ast.KindListItem {
+					vLast := n.LastChild().FirstChild().Lines().At(0)
+					pStop = vLast.Stop
+					stop = pStop
+
 					if items := osReleaseMap[currentHeader]; len(items) != 0 {
 						for i := 0; i < len(items); i++ {
-							//typedNode.AppendChild(typedNode, items[i])
+							listItem := items[i]
+							vToInsert := listItem.FirstChild().Lines().At(0)
+							//fmt.Printf("INSERTING %s\n", osReleaseBuf[vToInsert.Start:vToInsert.Stop])
+							osReleaseId := strings.ReplaceAll(osVersion.String(), ".", "")
+							osRefLink := fmt.Sprintf("(From [OSS %s](/reference/changelog/open_source/#%s)) ", osVersion.String(), osReleaseId)
+							step1 := append(source[:stop], []byte("\n- "+osRefLink)...)
+							step2 := append(step1, osReleaseBuf[vToInsert.Start:vToInsert.Stop]...)
+							source = append(step2, eReleaseBuf[pStop:]...)
+							stop = len(step2)
+							//fmt.Printf("adding - %s \n after \n %+v\n", osReleaseBuf[vToInsert.Start:vToInsert.Stop], enterpriseReleaseNotes[vLast.Start:vLast.Stop])
+							typedNode.AppendChild(typedNode, items[i])
 						}
+						delete(osReleaseMap, currentHeader)
+						//fmt.Printf("(Result) %s###########\n", source)
 					}
 				}
-
 			}
 		}
 	}
-
-	//fmt.Printf("Notes: %+v\n", releaseNotes)
-
-	err = markdown.NewRenderer().Render(buf, []byte(enterpriseReleaseNotes), node)
-	if err != nil {
-		return "", err
+	//pStop = stop
+	for header, items := range osReleaseMap {
+		sectionName := fmt.Sprintf("\n\n**%s**\n\n", header)
+		step1 := append(source[:stop], []byte(sectionName)...)
+		for i := 0; i < len(items); i++ {
+			listItem := items[i]
+			vToInsert := listItem.FirstChild().Lines().At(0)
+			//fmt.Printf("INSERTING %s\n", osReleaseBuf[vToInsert.Start:vToInsert.Stop])
+			osReleaseId := strings.ReplaceAll(osVersion.String(), ".", "")
+			osRefLink := fmt.Sprintf("(From [OSS %s](/reference/changelog/open_source/#%s)) ", osVersion.String(), osReleaseId)
+			step2 := append(step1, []byte("\n- "+osRefLink)...)
+			step3 := append(step2, osReleaseBuf[vToInsert.Start:vToInsert.Stop]...)
+			source = append(step3, eReleaseBuf[pStop:]...)
+			step1 = step3
+			//fmt.Printf("adding - %s \n after \n %+v\n", osReleaseBuf[vToInsert.Start:vToInsert.Stop], enterpriseReleaseNotes[vLast.Start:vLast.Stop])
+		}
 	}
-
-	return buf.String(), nil
+	//fmt.Printf("Notes: %+v\n", releaseNotes)
+	return fmt.Sprintf("%s", source), nil
+	//err = markdown.NewRenderer().Render(buf, source, node)
+	//if err != nil {
+	//	return "", err
+	//}
+	//fmt.Printf("(Result) %s-----------------------------------\n", buf.String())
+	//
+	//return buf.String(), nil
 }
 
 func parseOSNotes(osReleaseNotes string) (map[string][]*ast.ListItem, error) {
 	node := goldmark.DefaultParser().Parse(text.NewReader([]byte(osReleaseNotes)))
-
 	releaseNotes := make(map[string][]*ast.ListItem)
 
 	for n, currentHeader := node.FirstChild(), ""; n != nil; n = n.NextSibling() {
@@ -344,30 +376,17 @@ func parseOSNotes(osReleaseNotes string) (map[string][]*ast.ListItem, error) {
 			}
 		case *ast.List:
 			{
-				switch child := typedNode.FirstChild().(type) {
+				switch typedNode.FirstChild().(type) {
 				case *ast.ListItem:
-					for l := n.FirstChild(); l != nil; l = l.NextSibling() {
-						releaseNotes[currentHeader] = append(releaseNotes[currentHeader], child)
+					for l := typedNode.FirstChild(); l != nil; l = l.NextSibling() {
+						releaseNotes[currentHeader] = append(releaseNotes[currentHeader], l.(*ast.ListItem))
 					}
 				}
 			}
 		}
 	}
-
+	//fmt.Printf("returning %+v\n", releaseNotes)
 	return releaseNotes, nil
-}
-
-func recursivelyPrintNode(n ast.Node, prefix, source string) {
-	//buf := new(bytes.Buffer)
-	//
-	//markdown.NewRenderer().RenderSingle(buf, []byte(source), n, false)
-	t := n.Text([]byte(source))
-	fmt.Printf("%vNode type: %v | Content: %s\n", prefix, n.Kind().String(), t)
-	child := n.FirstChild()
-	for i := 0; i < n.ChildCount(); i++ {
-		recursivelyPrintNode(child, "\t"+prefix, source)
-		child = child.NextSibling()
-	}
 }
 
 func getGlooDependencyForGlooEVersion(versionTag string) (*versionutils.Version, error) {
@@ -400,7 +419,7 @@ func getGlooDependencyForGlooEVersion(versionTag string) (*versionutils.Version,
 	return version, nil
 }
 
-func parseGlooReleases(releases []*github.RepositoryRelease, bodyOnly bool) (map[Version]string, error) {
+func parseGlooReleases(releases []*github.RepositoryRelease, byMinorVersion bool) (map[Version]string, error) {
 	var minorReleaseMap = make(map[Version]string)
 	for _, release := range releases {
 		var releaseTag = release.GetTagName()
@@ -408,14 +427,12 @@ func parseGlooReleases(releases []*github.RepositoryRelease, bodyOnly bool) (map
 		if err != nil {
 			return nil, err
 		}
-		minorVersion := Version{
-			Major: version.Major,
-			Minor: version.Minor,
-		}
+		minorVersion := Version(*version)
 		var header string
 		// If bodyOnly, we only want to include the release notes in the string and not the release header
-		if !bodyOnly {
+		if byMinorVersion {
 			header = fmt.Sprintf("##### %v\n", version.String())
+			minorVersion.LabelVersion, minorVersion.Patch, minorVersion.Label = 0, 0, ""
 		}
 		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + header + release.GetBody()
 	}
