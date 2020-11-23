@@ -76,11 +76,19 @@ kubectl edit configmap -n gloo-system gateway-proxy-envoy-config
 ```
 Apply the tracing provider changes. A sample Zipkin configuration is shown below.
 
-{{< highlight yaml "hl_lines=27-34 49-60">}}
+{{< highlight yaml "hl_lines=5-12 46-57">}}
 apiVersion: v1
 kind: ConfigMap
 data:
   envoy.yaml:
+    tracing:
+      http:
+        name: envoy.tracers.zipkin
+        typed_config:
+          "@type": "type.googleapis.com/envoy.config.trace.v2.ZipkinConfig"
+          collector_cluster: zipkin
+          collector_endpoint: "/api/v2/spans"
+          collector_endpoint_version: HTTP_JSON
     node:
       cluster: gateway
       id: "{{.PodName}}{{.PodNamespace}}"
@@ -103,14 +111,6 @@ data:
                     route_config: # collapsed for brevity
                     http_filters:
                       - name: envoy.filters.http.router
-                    tracing:
-                      provider:
-                        name: envoy.tracers.zipkin
-                        typed_config:
-                          "@type": "type.googleapis.com/envoy.config.trace.v2.ZipkinConfig"
-                          collector_cluster: zipkin
-                          collector_endpoint: "/api/v2/spans"
-                          collector_endpoint_version: HTTP_JSON
       clusters:
         - name: xds_cluster
           connect_timeout: 5.000s
