@@ -126,6 +126,7 @@ gatewayProxies:
       data:
     loopBackAddress: 127.0.0.1
     globalDownstreamMaxConnections: 250000
+    healthyPanicThreshold: 50
 accessLogger:
   enabled: false
   port: 8083
