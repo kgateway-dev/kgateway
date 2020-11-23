@@ -76,7 +76,7 @@ layered_runtime:
   layers:
   - name: static_layer
     static_layer:
-      cluster:
+      upstream:
         healthy_panic_threshold:
           value: 0
   - name: admin_layer

@@ -26,7 +26,7 @@ data:
         static_layer:
           overload:
             global_downstream_max_connections: {{ $spec.globalDownstreamMaxConnections }}
-          cluster:
+          upstream:
             healthy_panic_threshold:
               value: {{ $spec.healthyPanicThreshold }}
       - name: admin_layer
