@@ -17,12 +17,12 @@ import (
 )
 
 var _ = Describe("SecretConverter", func() {
-	FIt("should convert kube secret to gloo secret", func() {
+	It("should convert kube secret to gloo secret", func() {
 		secret := &kubev1.Secret{
 			Type: kubev1.SecretTypeTLS,
 			Data: map[string][]byte{
-				kubev1.TLSCertKey:       		[]byte("cert"),
-				kubev1.TLSPrivateKeyKey: 		[]byte("key"),
+				kubev1.TLSCertKey:              []byte("cert"),
+				kubev1.TLSPrivateKeyKey:        []byte("key"),
 				kubev1.ServiceAccountRootCAKey: []byte("ca"),
 			},
 			ObjectMeta: metav1.ObjectMeta{
@@ -43,12 +43,12 @@ var _ = Describe("SecretConverter", func() {
 		Expect(glooSecret.RootCa).To(BeEquivalentTo(secret.Data[kubev1.ServiceAccountRootCAKey]))
 	})
 
-	FIt("should convert kube secret to gloo secret without optional root ca", func() {
+	It("should convert kube secret to gloo secret without optional root ca", func() {
 		secret := &kubev1.Secret{
 			Type: kubev1.SecretTypeTLS,
 			Data: map[string][]byte{
-				kubev1.TLSCertKey:       		[]byte("cert"),
-				kubev1.TLSPrivateKeyKey: 		[]byte("key"),
+				kubev1.TLSCertKey:       []byte("cert"),
+				kubev1.TLSPrivateKeyKey: []byte("key"),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "s1",
@@ -68,13 +68,13 @@ var _ = Describe("SecretConverter", func() {
 		Expect(glooSecret.RootCa).To(BeEquivalentTo(""))
 	})
 
-	FIt("should convert to gloo secret kube in gloo format", func() {
+	It("should convert to gloo secret kube in gloo format", func() {
 		secret := &v1.Secret{
 			Kind: &v1.Secret_Tls{
 				Tls: &v1.TlsSecret{
 					PrivateKey: "key",
 					CertChain:  "cert",
-					RootCa: 	"ca",
+					RootCa:     "ca",
 				},
 			},
 			Metadata: core.Metadata{
@@ -90,12 +90,12 @@ var _ = Describe("SecretConverter", func() {
 		Expect(kubeSecret).To(BeNil())
 	})
 
-	FIt("should round trip kube ssl secret back to kube ssl secret", func() {
+	It("should round trip kube ssl secret back to kube ssl secret", func() {
 		secret := &kubev1.Secret{
 			Type: kubev1.SecretTypeTLS,
 			Data: map[string][]byte{
-				kubev1.TLSCertKey:       		[]byte("cert"),
-				kubev1.TLSPrivateKeyKey: 		[]byte("key"),
+				kubev1.TLSCertKey:              []byte("cert"),
+				kubev1.TLSPrivateKeyKey:        []byte("key"),
 				kubev1.ServiceAccountRootCAKey: []byte("ca"),
 			},
 			ObjectMeta: metav1.ObjectMeta{
@@ -115,12 +115,12 @@ var _ = Describe("SecretConverter", func() {
 
 	})
 
-	FIt("should round trip kube ssl secret back to kube ssl secret without optional root ca", func() {
+	It("should round trip kube ssl secret back to kube ssl secret without optional root ca", func() {
 		secret := &kubev1.Secret{
 			Type: kubev1.SecretTypeTLS,
 			Data: map[string][]byte{
-				kubev1.TLSCertKey:       		[]byte("cert"),
-				kubev1.TLSPrivateKeyKey: 		[]byte("key"),
+				kubev1.TLSCertKey:              []byte("cert"),
+				kubev1.TLSPrivateKeyKey:        []byte("key"),
 				kubev1.ServiceAccountRootCAKey: []byte(""),
 			},
 			ObjectMeta: metav1.ObjectMeta{
@@ -140,7 +140,7 @@ var _ = Describe("SecretConverter", func() {
 
 	})
 
-	FIt("should round trip kube aws secret to gloo aws secret and back to kube aws secret", func() {
+	It("should round trip kube aws secret to gloo aws secret and back to kube aws secret", func() {
 		awsSecret := &v1.AwsSecret{
 			AccessKey:    "access",
 			SecretKey:    "secret",
@@ -171,7 +171,7 @@ var _ = Describe("SecretConverter", func() {
 		Expect(derivedSecret).To(Equal(kubeSecret))
 	})
 
-	FIt("converter chain should exit in expected order", func() {
+	It("converter chain should exit in expected order", func() {
 		secret := &kubev1.Secret{
 			Data: map[string][]byte{
 				AwsAccessKeyName: []byte("access"),

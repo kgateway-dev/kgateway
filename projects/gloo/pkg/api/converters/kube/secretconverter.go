@@ -74,7 +74,7 @@ func (t *TLSSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 				Tls: &v1.TlsSecret{
 					PrivateKey: string(secret.Data[kubev1.TLSPrivateKeyKey]),
 					CertChain:  string(secret.Data[kubev1.TLSCertKey]),
-					RootCa: 	string(secret.Data[kubev1.ServiceAccountRootCAKey]),
+					RootCa:     string(secret.Data[kubev1.ServiceAccountRootCAKey]),
 				},
 			},
 			Metadata: kubeutils.FromKubeMeta(secret.ObjectMeta),
@@ -103,8 +103,8 @@ func (t *TLSSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Resou
 						ObjectMeta: objectMeta,
 						Type:       kubev1.SecretTypeTLS,
 						Data: map[string][]byte{
-							kubev1.TLSPrivateKeyKey:		[]byte(tlsGlooSecret.Tls.PrivateKey),
-							kubev1.TLSCertKey:     			[]byte(tlsGlooSecret.Tls.CertChain),
+							kubev1.TLSPrivateKeyKey:        []byte(tlsGlooSecret.Tls.PrivateKey),
+							kubev1.TLSCertKey:              []byte(tlsGlooSecret.Tls.CertChain),
 							kubev1.ServiceAccountRootCAKey: []byte(tlsGlooSecret.Tls.RootCa),
 						},
 					}
