@@ -241,10 +241,6 @@ func parseGlooEReleases(enterpriseReleases, osReleases []*github.RepositoryRelea
 		var releaseTag = release.GetTagName()
 		version, err := versionutils.ParseVersion(releaseTag)
 
-		if version.Minor != 4 || version.Patch != 5 {
-			continue
-		}
-
 		if err != nil {
 			return nil, err
 		}
@@ -308,7 +304,11 @@ func parseEnterpriseNotes(enterpriseReleaseNotes, osReleaseNotes string, osVersi
 				if typedNode.FirstChild().Kind() == ast.KindListItem {
 					vLast := n.LastChild().FirstChild().Lines().At(0)
 					pStop = vLast.Stop
-					stop = pStop
+					if stop == 0 {
+						stop = pStop
+					} else {
+						stop = len(source)
+					}
 
 					if items := osReleaseMap[currentHeader]; len(items) != 0 {
 						for i := 0; i < len(items); i++ {
