@@ -74,6 +74,9 @@ settings:
 gloo:
   deployment:
     disableUsageStatistics: true
+gatewayProxies:
+  gatewayProxy:
+    healthyPanicThreshold: 0
 `))
 	Expect(err).NotTo(HaveOccurred())
 

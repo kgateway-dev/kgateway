@@ -13,7 +13,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync/atomic"
 	"text/template"
@@ -69,14 +68,19 @@ func (ei *EnvoyInstance) buildBootstrapFromConfig(configFile string) (string, er
 	if addr != "" && addr != "127.0.0.1" {
 		config = strings.ReplaceAll(config, "127.0.0.1", addr)
 	}
-
-	// The AdminPort is created dynamically. Ensure that the config matches the proper AdminPort
-	config = strings.ReplaceAll(config, "21001", strconv.Itoa(int(ei.AdminPort)))
-
 	return config, nil
 }
 
 const envoyConfigTemplate = `
+layered_runtime:
+  layers:
+  - name: static_layer
+    static_layer:
+      cluster:
+        healthy_panic_threshold:
+          value: 0
+  - name: admin_layer
+    admin_layer: {}
 node:
  cluster: ingress
  id: {{.ID}}
@@ -452,13 +456,6 @@ func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32, configFil
 		if err != nil {
 			return err
 		}
-
-		// Default to run envoy with panic_mode disabled
-		err = ei.DisablePanicMode()
-		if err != nil {
-			return err
-		}
-		return nil
 	}
 
 	args := []string{"--config-yaml", ei.envoycfg, "--disable-hot-restart", "--log-level", "debug"}
@@ -480,11 +477,6 @@ func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32, configFil
 	ei.cmd = cmd
 
 	err = ei.waitForEnvoyToBeRunning()
-	if err != nil {
-		return err
-	}
-	// Default to run envoy with panic_mode disabled
-	err = ei.DisablePanicMode()
 	if err != nil {
 		return err
 	}
