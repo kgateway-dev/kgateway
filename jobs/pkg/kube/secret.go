@@ -2,9 +2,9 @@ package kube
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"time"
-
-	k8stlsutil "github.com/coreos/pkg/k8s-tlsutil"
 
 	errors "github.com/rotisserie/eris"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -34,8 +34,13 @@ func SecretIsValidTlsSecret(ctx context.Context, kube kubernetes.Interface, secr
 		return false, errors.Errorf("unexpected secret type, expected %s and got %s", v1.SecretTypeTLS, existing.Type)
 	}
 
-	certBytes := existing.Data["tls.crt"]
-	cert, err := k8stlsutil.ParsePEMEncodedCACert(certBytes)
+	certPemBytes := existing.Data["tls.crt"]
+	decoded, _ := pem.Decode(certPemBytes)
+	if decoded == nil {
+		return false, errors.New("no PEM data found")
+	}
+
+	cert, err := x509.ParseCertificate(decoded.Bytes)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to decode pem encoded ca cert")
 	}
