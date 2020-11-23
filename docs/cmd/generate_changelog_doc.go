@@ -119,6 +119,8 @@ var (
 	}
 )
 
+// Generates changelog for releases as fetched from Github
+// Github defaults to a chronological order
 func generateChangelogMd(args []string) error {
 	if len(args) != 1 {
 		return InvalidInputError(fmt.Sprintf("%v", len(args)-1))
@@ -156,6 +158,7 @@ func generateChangelogMd(args []string) error {
 	return nil
 }
 
+// Performs additional processing to generate changelog grouped and ordered by release version
 func generateMinorReleaseChangelog(args []string) error {
 	if len(args) != 1 {
 		return InvalidInputError(fmt.Sprintf("%v", len(args)-1))
@@ -176,6 +179,7 @@ func generateMinorReleaseChangelog(args []string) error {
 	return err
 }
 
+// Fetches Gloo Open Source releases and orders them by version
 func generateGlooChangelog() error {
 	client := github.NewClient(nil)
 	allReleases, err := getAllReleases(client, glooOpenSourceRepo)
@@ -191,6 +195,7 @@ func generateGlooChangelog() error {
 	return nil
 }
 
+// Fetches Gloo Enterprise releases and orders them by version
 func generateGlooEChangelog() error {
 	// Initialize Auth
 	ctx := context.Background()
@@ -221,6 +226,7 @@ func generateGlooEChangelog() error {
 	return nil
 }
 
+// Fetches releases for repo from github
 func getAllReleases(client *github.Client, repo string) ([]*github.RepositoryRelease, error) {
 	allReleases, _, err := client.Repositories.ListReleases(context.Background(), "solo-io", repo,
 		&github.ListOptions{
@@ -233,9 +239,10 @@ func getAllReleases(client *github.Client, repo string) ([]*github.RepositoryRel
 	return allReleases, nil
 }
 
+// Performs processing to generate a map of release version to the release notes
+// This also pulls in open source gloo edge release notes and merges them with enterprise release notes
 func parseGlooEReleases(enterpriseReleases, osReleases []*github.RepositoryRelease) (map[Version]string, error) {
 	var minorReleaseMap = make(map[Version]string)
-	i := 0
 	for _, release := range enterpriseReleases {
 
 		var releaseTag = release.GetTagName()
@@ -269,7 +276,6 @@ func parseGlooEReleases(enterpriseReleases, osReleases []*github.RepositoryRelea
 		}
 
 		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("##### %s %s\n ", version.String(), glooOSSDescription) + body
-		i++
 	}
 
 	return minorReleaseMap, nil
@@ -321,24 +327,19 @@ func parseEnterpriseNotes(enterpriseReleaseNotes, osReleaseNotes string, osVersi
 							step2 := append(step1, osReleaseBuf[vToInsert.Start:vToInsert.Stop]...)
 							source = append(step2, eReleaseBuf[pStop:]...)
 							stop = len(step2)
-							//fmt.Printf("adding - %s \n after \n %+v\n", osReleaseBuf[vToInsert.Start:vToInsert.Stop], enterpriseReleaseNotes[vLast.Start:vLast.Stop])
-							typedNode.AppendChild(typedNode, items[i])
 						}
 						delete(osReleaseMap, currentHeader)
-						//fmt.Printf("(Result) %s###########\n", source)
 					}
 				}
 			}
 		}
 	}
-	//pStop = stop
 	for header, items := range osReleaseMap {
 		sectionName := fmt.Sprintf("\n\n**%s**\n\n", header)
 		step1 := append(source[:stop], []byte(sectionName)...)
 		for i := 0; i < len(items); i++ {
 			listItem := items[i]
 			vToInsert := listItem.FirstChild().Lines().At(0)
-			//fmt.Printf("INSERTING %s\n", osReleaseBuf[vToInsert.Start:vToInsert.Stop])
 			osReleaseId := strings.ReplaceAll(osVersion.String(), ".", "")
 			osRefLink := fmt.Sprintf("(From [OSS %s](/reference/changelog/open_source/#%s)) ", osVersion.String(), osReleaseId)
 			step2 := append(step1, []byte("\n- "+osRefLink)...)
@@ -348,15 +349,7 @@ func parseEnterpriseNotes(enterpriseReleaseNotes, osReleaseNotes string, osVersi
 			//fmt.Printf("adding - %s \n after \n %+v\n", osReleaseBuf[vToInsert.Start:vToInsert.Stop], enterpriseReleaseNotes[vLast.Start:vLast.Stop])
 		}
 	}
-	//fmt.Printf("Notes: %+v\n", releaseNotes)
 	return fmt.Sprintf("%s", source), nil
-	//err = markdown.NewRenderer().Render(buf, source, node)
-	//if err != nil {
-	//	return "", err
-	//}
-	//fmt.Printf("(Result) %s-----------------------------------\n", buf.String())
-	//
-	//return buf.String(), nil
 }
 
 func parseOSNotes(osReleaseNotes string) (map[string][]*ast.ListItem, error) {
@@ -385,7 +378,6 @@ func parseOSNotes(osReleaseNotes string) (map[string][]*ast.ListItem, error) {
 			}
 		}
 	}
-	//fmt.Printf("returning %+v\n", releaseNotes)
 	return releaseNotes, nil
 }
 
@@ -419,6 +411,8 @@ func getGlooDependencyForGlooEVersion(versionTag string) (*versionutils.Version,
 	return version, nil
 }
 
+// Parses OSS Gloo Edge releases into correct format for printing
+// If byMinorVersion is true, the version header (e.g. v1.5.9-beta8) is not included in the release notes body
 func parseGlooReleases(releases []*github.RepositoryRelease, byMinorVersion bool) (map[Version]string, error) {
 	var minorReleaseMap = make(map[Version]string)
 	for _, release := range releases {
@@ -429,7 +423,7 @@ func parseGlooReleases(releases []*github.RepositoryRelease, byMinorVersion bool
 		}
 		minorVersion := Version(*version)
 		var header string
-		// If bodyOnly, we only want to include the release notes in the string and not the release header
+		// If byMinorVersion, we only want to include the release notes in the string and not the release header
 		if byMinorVersion {
 			header = fmt.Sprintf("##### %v\n", version.String())
 			minorVersion.LabelVersion, minorVersion.Patch, minorVersion.Label = 0, 0, ""
@@ -440,6 +434,7 @@ func parseGlooReleases(releases []*github.RepositoryRelease, byMinorVersion bool
 	return minorReleaseMap, nil
 }
 
+// Outputs changelogs in markdown format
 func printVersionOrderReleases(minorReleaseMap map[Version]string) {
 	var versions Versions
 	for minorVersion, _ := range minorReleaseMap {
