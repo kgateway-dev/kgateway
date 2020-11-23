@@ -56,7 +56,7 @@ func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 			if !opts.Top.Interactive {
 				return errors.Errorf(EmptyUpstreamCreateError)
 			}
-			if err := surveyutils.AddUpstreamFlagsInteractive(&opts.Create.InputUpstream); err != nil {
+			if err := surveyutils.AddUpstreamFlagsInteractive(opts.Top.Ctx, &opts.Create.InputUpstream); err != nil {
 				return err
 			}
 			if err := argsutils.MetadataArgsParse(opts, args); err != nil {
@@ -135,7 +135,7 @@ func createUpstreamSubcommand(opts *options.Options, upstreamType, short, long s
 			}
 			opts.Create.InputUpstream.UpstreamType = upstreamType
 			if opts.Top.Interactive {
-				if err := surveyutils.AddUpstreamFlagsInteractive(&opts.Create.InputUpstream); err != nil {
+				if err := surveyutils.AddUpstreamFlagsInteractive(opts.Top.Ctx, &opts.Create.InputUpstream); err != nil {
 					return err
 				}
 			}
@@ -156,7 +156,7 @@ func createUpstream(opts *options.Options) error {
 	}
 
 	if !opts.Create.DryRun {
-		us, err = helpers.MustNamespacedUpstreamClient(opts.Metadata.GetNamespace()).Write(us, clients.WriteOpts{})
+		us, err = helpers.MustNamespacedUpstreamClient(opts.Top.Ctx, opts.Metadata.GetNamespace()).Write(us, clients.WriteOpts{})
 		if err != nil {
 			return err
 		}

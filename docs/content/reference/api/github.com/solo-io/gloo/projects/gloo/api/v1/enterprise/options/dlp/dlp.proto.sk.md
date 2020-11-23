@@ -38,9 +38,9 @@ Listener level config for dlp filter
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `dlpRules` | [[]dlp.options.gloo.solo.io.DlpRule](../dlp.proto.sk/#dlprule) | The list of transformation, matcher pairs. The first rule which matches will be applied. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `dlpRules` | [[]dlp.options.gloo.solo.io.DlpRule](../dlp.proto.sk/#dlprule) | The list of transformation, matcher pairs. The first rule which matches will be applied. |
 
 
 
@@ -58,10 +58,10 @@ The route matching functions exactly the same as the envoy routes in the virtual
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `matcher` | [.matchers.core.gloo.solo.io.Matcher](../../../../core/matchers/matchers.proto.sk/#matcher) | Matcher by which to determine if the given transformation should be applied if omitted, will it match all (i.e., default to / prefix matcher). |  |
-| `actions` | [[]dlp.options.gloo.solo.io.Action](../dlp.proto.sk/#action) | List of data loss prevention actions to be applied. These actions will be applied in order, one at a time. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `matcher` | [.matchers.core.gloo.solo.io.Matcher](../../../../core/matchers/matchers.proto.sk/#matcher) | Matcher by which to determine if the given transformation should be applied if omitted, will it match all (i.e., default to / prefix matcher). |
+| `actions` | [[]dlp.options.gloo.solo.io.Action](../dlp.proto.sk/#action) | List of data loss prevention actions to be applied. These actions will be applied in order, one at a time. |
 
 
 
@@ -80,9 +80,9 @@ listener level config.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `actions` | [[]dlp.options.gloo.solo.io.Action](../dlp.proto.sk/#action) | List of data loss prevention actions to be applied. These actions will be applied in order, one at a time. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `actions` | [[]dlp.options.gloo.solo.io.Action](../dlp.proto.sk/#action) | List of data loss prevention actions to be applied. These actions will be applied in order, one at a time. |
 
 
 
@@ -123,11 +123,11 @@ percent: 60
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `actionType` | [.dlp.options.gloo.solo.io.Action.ActionType](../dlp.proto.sk/#actiontype) | The action type to implement. |  |
-| `customAction` | [.dlp.options.gloo.solo.io.CustomAction](../dlp.proto.sk/#customaction) | The custom user action to be applied. This field will only be used if the custom action type is specified above. |  |
-| `shadow` | `bool` | Shadow represents whether the action should be taken, or just recorded. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `actionType` | [.dlp.options.gloo.solo.io.Action.ActionType](../dlp.proto.sk/#actiontype) | The action type to implement. |
+| `customAction` | [.dlp.options.gloo.solo.io.CustomAction](../dlp.proto.sk/#customaction) | The custom user action to be applied. This field will only be used if the custom action type is specified above. |
+| `shadow` | `bool` | Shadow represents whether the action should be taken, or just recorded. |
 
 
 
@@ -221,12 +221,12 @@ If the mask_char, and percent were left to default, the result would be:
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` | The name of the custom action. This name is used for logging and debugging purposes. |  |
-| `regex` | `[]string` | The list of regex strings which will be applied in order. |  |
-| `maskChar` | `string` | The masking character for the sensitive data. default value: X. |  |
-| `percent` | [.envoy.type.Percent](../../../../../../../../../../../envoy/type/percent.proto.sk/#percent) | The percent of the string which will be masked by the mask_char default value: 75% rounds ratio (percent/100) by std::round http://www.cplusplus.com/reference/cmath/round/. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | The name of the custom action. This name is used for logging and debugging purposes. |
+| `regex` | `[]string` | The list of regex strings which will be applied in order. |
+| `maskChar` | `string` | The masking character for the sensitive data. default value: X. |
+| `percent` | [.envoy.type.Percent](../../../../../../../../../../../envoy/type/percent.proto.sk/#percent) | The percent of the string which will be masked by the mask_char default value: 75% rounds ratio (percent/100) by std::round http://www.cplusplus.com/reference/cmath/round/. |
 
 
 

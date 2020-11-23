@@ -46,15 +46,15 @@ endpoints.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `healthyPanicThreshold` | [.google.protobuf.DoubleValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/double-value) | Configures envoy's panic threshold Percent between 0-100. Once the number of non health hosts reaches this percentage, envoy disregards health information. see more info [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html). |  |
-| `updateMergeWindow` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | This allows batch updates of endpoints health/weight/metadata that happen during a time window. this help lower cpu usage when endpoint change rate is high. defaults to 1 second. Set to 0 to disable and have changes applied immediately. |  |
-| `roundRobin` | [.gloo.solo.io.LoadBalancerConfig.RoundRobin](../load_balancer.proto.sk/#roundrobin) | Use round robin for load balancing. Only one of `roundRobin`, `leastRequest`, `random`, or `maglev` can be set. |  |
-| `leastRequest` | [.gloo.solo.io.LoadBalancerConfig.LeastRequest](../load_balancer.proto.sk/#leastrequest) | Use least request for load balancing. Only one of `leastRequest`, `roundRobin`, `random`, or `maglev` can be set. |  |
-| `random` | [.gloo.solo.io.LoadBalancerConfig.Random](../load_balancer.proto.sk/#random) | Use random for load balancing. Only one of `random`, `roundRobin`, `leastRequest`, or `maglev` can be set. |  |
-| `ringHash` | [.gloo.solo.io.LoadBalancerConfig.RingHash](../load_balancer.proto.sk/#ringhash) | Use ring hash for load balancing. Only one of `ringHash`, `roundRobin`, `leastRequest`, or `maglev` can be set. |  |
-| `maglev` | [.gloo.solo.io.LoadBalancerConfig.Maglev](../load_balancer.proto.sk/#maglev) | Use maglev for load balancing. Only one of `maglev`, `roundRobin`, `leastRequest`, or `ringHash` can be set. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `healthyPanicThreshold` | [.google.protobuf.DoubleValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/double-value) | Configures envoy's panic threshold Percent between 0-100. Once the number of non health hosts reaches this percentage, envoy disregards health information. see more info [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html). |
+| `updateMergeWindow` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | This allows batch updates of endpoints health/weight/metadata that happen during a time window. this help lower cpu usage when endpoint change rate is high. defaults to 1 second. Set to 0 to disable and have changes applied immediately. |
+| `roundRobin` | [.gloo.solo.io.LoadBalancerConfig.RoundRobin](../load_balancer.proto.sk/#roundrobin) | Use round robin for load balancing. Only one of `roundRobin`, `leastRequest`, `random`, or `maglev` can be set. |
+| `leastRequest` | [.gloo.solo.io.LoadBalancerConfig.LeastRequest](../load_balancer.proto.sk/#leastrequest) | Use least request for load balancing. Only one of `leastRequest`, `roundRobin`, `random`, or `maglev` can be set. |
+| `random` | [.gloo.solo.io.LoadBalancerConfig.Random](../load_balancer.proto.sk/#random) | Use random for load balancing. Only one of `random`, `roundRobin`, `leastRequest`, or `maglev` can be set. |
+| `ringHash` | [.gloo.solo.io.LoadBalancerConfig.RingHash](../load_balancer.proto.sk/#ringhash) | Use ring hash for load balancing. Only one of `ringHash`, `roundRobin`, `leastRequest`, or `maglev` can be set. |
+| `maglev` | [.gloo.solo.io.LoadBalancerConfig.Maglev](../load_balancer.proto.sk/#maglev) | Use maglev for load balancing. Only one of `maglev`, `roundRobin`, `leastRequest`, or `ringHash` can be set. |
 
 
 
@@ -68,8 +68,8 @@ endpoints.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 
@@ -84,9 +84,9 @@ endpoints.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `choiceCount` | `int` | How many choices to take into account. defaults to 2. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `choiceCount` | `int` | How many choices to take into account. defaults to 2. |
 
 
 
@@ -100,8 +100,8 @@ endpoints.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 
@@ -118,10 +118,10 @@ Customizes the parameters used in the hashing algorithm to refine performance or
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `minimumRingSize` | `int` | Minimum hash ring size. The larger the ring is (that is, the more hashes there are for each provided host) the better the request distribution will reflect the desired weights. Defaults to 1024 entries, and limited to 8M entries. |  |
-| `maximumRingSize` | `int` | Maximum hash ring size. Defaults to 8M entries, and limited to 8M entries, but can be lowered to further constrain resource use. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `minimumRingSize` | `int` | Minimum hash ring size. The larger the ring is (that is, the more hashes there are for each provided host) the better the request distribution will reflect the desired weights. Defaults to 1024 entries, and limited to 8M entries. |
+| `maximumRingSize` | `int` | Maximum hash ring size. Defaults to 8M entries, and limited to 8M entries, but can be lowered to further constrain resource use. |
 
 
 
@@ -136,9 +136,9 @@ Customizes the parameters used in the hashing algorithm to refine performance or
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `ringHashConfig` | [.gloo.solo.io.LoadBalancerConfig.RingHashConfig](../load_balancer.proto.sk/#ringhashconfig) | Optional, customizes the parameters used in the hashing algorithm. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `ringHashConfig` | [.gloo.solo.io.LoadBalancerConfig.RingHashConfig](../load_balancer.proto.sk/#ringhashconfig) | Optional, customizes the parameters used in the hashing algorithm. |
 
 
 
@@ -152,8 +152,8 @@ Customizes the parameters used in the hashing algorithm to refine performance or
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 

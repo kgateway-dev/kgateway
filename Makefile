@@ -190,10 +190,10 @@ generate-client-mocks:
 	@$(foreach INFO, $(MOCK_RESOURCE_INFO), \
 		echo Generating mock for $(word 3,$(subst :, , $(INFO)))...; \
 		GOBIN=$(DEPSGOBIN) mockgen -destination=projects/$(word 1,$(subst :, , $(INFO)))/pkg/mocks/mock_$(word 2,$(subst :, , $(INFO)))_client.go \
-     		-package=mocks \
-     		github.com/solo-io/gloo/projects/$(word 1,$(subst :, , $(INFO)))/pkg/api/v1 \
-     		$(word 3,$(subst :, , $(INFO))) \
-     	;)
+		-package=mocks \
+		github.com/solo-io/gloo/projects/$(word 1,$(subst :, , $(INFO)))/pkg/api/v1 \
+		$(word 3,$(subst :, , $(INFO))) \
+	;)
 
 #----------------------------------------------------------------------------------
 # glooctl
@@ -539,7 +539,7 @@ endif
 
 .PHONY: docker docker-push
 docker: discovery-docker gateway-docker gloo-docker \
- 		gloo-envoy-wrapper-docker certgen-docker sds-docker \
+		gloo-envoy-wrapper-docker certgen-docker sds-docker \
 		ingress-docker access-logger-docker
 
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
@@ -592,8 +592,7 @@ push-kind-images: docker
 
 .PHONY: build-test-assets
 build-test-assets: build-test-chart $(OUTPUT_DIR)/glooctl-linux-$(GOARCH) \
- 	$(OUTPUT_DIR)/glooctl-darwin-$(GOARCH)
-
+	$(OUTPUT_DIR)/glooctl-darwin-$(GOARCH)
 .PHONY: build-test-chart
 build-test-chart:
 	mkdir -p $(TEST_ASSET_DIR)

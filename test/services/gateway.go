@@ -152,27 +152,27 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		}()
 	}
 
-	testClients := getTestClients(runOptions.Cache, glooOpts.KubeServiceClient)
+	testClients := getTestClients(ctx, runOptions.Cache, glooOpts.KubeServiceClient)
 	testClients.GlooPort = int(runOptions.GlooPort)
 	return testClients
 }
 
-func getTestClients(cache memory.InMemoryResourceCache, serviceClient skkube.ServiceClient) TestClients {
+func getTestClients(ctx context.Context, cache memory.InMemoryResourceCache, serviceClient skkube.ServiceClient) TestClients {
 
 	// construct our own resources:
 	memFactory := &factory.MemoryResourceClientFactory{
 		Cache: cache,
 	}
 
-	gatewayClient, err := gatewayv1.NewGatewayClient(memFactory)
+	gatewayClient, err := gatewayv1.NewGatewayClient(ctx, memFactory)
 	Expect(err).NotTo(HaveOccurred())
-	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(memFactory)
+	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(ctx, memFactory)
 	Expect(err).NotTo(HaveOccurred())
-	upstreamClient, err := gloov1.NewUpstreamClient(memFactory)
+	upstreamClient, err := gloov1.NewUpstreamClient(ctx, memFactory)
 	Expect(err).NotTo(HaveOccurred())
-	secretClient, err := gloov1.NewSecretClient(memFactory)
+	secretClient, err := gloov1.NewSecretClient(ctx, memFactory)
 	Expect(err).NotTo(HaveOccurred())
-	proxyClient, err := gloov1.NewProxyClient(memFactory)
+	proxyClient, err := gloov1.NewProxyClient(ctx, memFactory)
 	Expect(err).NotTo(HaveOccurred())
 
 	return TestClients{
@@ -307,7 +307,7 @@ func newServiceClient(ctx context.Context, memFactory *factory.MemoryResourceCli
 	}
 
 	// Else return in-memory client
-	client, err := skkube.NewServiceClient(memFactory)
+	client, err := skkube.NewServiceClient(ctx, memFactory)
 	if err != nil {
 		panic(err)
 	}

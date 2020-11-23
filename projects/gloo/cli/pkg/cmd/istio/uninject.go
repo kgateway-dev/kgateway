@@ -53,13 +53,13 @@ func istioUninject(args []string, opts *options.Options) error {
 	glooNS := opts.Metadata.Namespace
 
 	client := helpers.MustKubeClient()
-	_, err := client.CoreV1().Namespaces().Get(glooNS, metav1.GetOptions{})
+	_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, glooNS, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	// Remove gateway_proxy_sds cluster from the gateway-proxy configmap
-	configMaps, err := client.CoreV1().ConfigMaps(glooNS).List(metav1.ListOptions{})
+	configMaps, err := client.CoreV1().ConfigMaps(glooNS).List(opts.Top.Ctx, metav1.ListOptions{})
 	for _, configMap := range configMaps.Items {
 		if configMap.Name == gatewayProxyConfigMap {
 			// Make sure we don't already have the gateway_proxy_sds cluster set up
@@ -67,14 +67,14 @@ func istioUninject(args []string, opts *options.Options) error {
 			if err != nil {
 				return err
 			}
-			_, err = client.CoreV1().ConfigMaps(glooNS).Update(&configMap)
+			_, err = client.CoreV1().ConfigMaps(glooNS).Update(opts.Top.Ctx, &configMap, metav1.UpdateOptions{})
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	deployments, err := client.AppsV1().Deployments(glooNS).List(metav1.ListOptions{})
+	deployments, err := client.AppsV1().Deployments(glooNS).List(opts.Top.Ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func istioUninject(args []string, opts *options.Options) error {
 			deployment.Spec.Template.Spec.Containers = containers
 
 			removeIstioVolumes(&deployment)
-			_, err = client.AppsV1().Deployments(glooNS).Update(&deployment)
+			_, err = client.AppsV1().Deployments(glooNS).Update(opts.Top.Ctx, &deployment, metav1.UpdateOptions{})
 			if err != nil {
 				return err
 			}

@@ -37,13 +37,13 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 
-		gatewayClient, err := v1.NewGatewayClient(memFactory)
+		gatewayClient, err := v1.NewGatewayClient(ctx, memFactory)
 		Expect(err).NotTo(HaveOccurred())
 		if err := gatewayClient.Register(); err != nil {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		baseVirtualServiceClient, err = v1.NewVirtualServiceClient(memFactory)
+		baseVirtualServiceClient, err = v1.NewVirtualServiceClient(ctx, memFactory)
 		virtualServiceClient := &delayingVsClient{
 			VirtualServiceClient: baseVirtualServiceClient,
 			// delay vs write, to induce the bug
@@ -53,14 +53,14 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		if err := virtualServiceClient.Register(); err != nil {
 			Expect(err).NotTo(HaveOccurred())
 		}
-		routeTableClient, err := v1.NewRouteTableClient(memFactory)
+		routeTableClient, err := v1.NewRouteTableClient(ctx, memFactory)
 		Expect(err).NotTo(HaveOccurred())
 		if err := routeTableClient.Register(); err != nil {
 
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		proxyClient, err = gloov1.NewProxyClient(memFactory)
+		proxyClient, err = gloov1.NewProxyClient(ctx, memFactory)
 		Expect(err).NotTo(HaveOccurred())
 		proxyReconciler := reconciler.NewProxyReconciler(nil, proxyClient)
 		rpt := reporter.NewReporter("gateway", gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())

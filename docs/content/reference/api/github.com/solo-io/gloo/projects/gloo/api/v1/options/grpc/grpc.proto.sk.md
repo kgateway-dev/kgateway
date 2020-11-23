@@ -39,10 +39,10 @@ spec is fine), to make sure that traffic to it is routed with http2.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `descriptors` | `bytes` | Descriptors that contain information of the services listed below. this is a serialized google.protobuf.FileDescriptorSet. |  |
-| `grpcServices` | [[]grpc.options.gloo.solo.io.ServiceSpec.GrpcService](../grpc.proto.sk/#grpcservice) | List of services used by this upstream. For a grpc upstream where you don't need to use Gloo's function routing, this can be an empty list. These services must be present in the descriptors. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `descriptors` | `bytes` | Descriptors that contain information of the services listed below. this is a serialized google.protobuf.FileDescriptorSet. |
+| `grpcServices` | [[]grpc.options.gloo.solo.io.ServiceSpec.GrpcService](../grpc.proto.sk/#grpcservice) | List of services used by this upstream. For a grpc upstream where you don't need to use Gloo's function routing, this can be an empty list. These services must be present in the descriptors. |
 
 
 
@@ -60,11 +60,11 @@ Describes a grpc service
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `packageName` | `string` | The package of this service. |  |
-| `serviceName` | `string` | The service name of this service. |  |
-| `functionNames` | `[]string` | The functions available in this service. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `packageName` | `string` | The package of this service. |
+| `serviceName` | `string` | The service name of this service. |
+| `functionNames` | `[]string` | The functions available in this service. |
 
 
 
@@ -83,12 +83,12 @@ This is only for upstream with Grpc service spec.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `package` | `string` | The proto package of the function. |  |
-| `service` | `string` | The name of the service of the function. |  |
-| `function` | `string` | The name of the function. |  |
-| `parameters` | [.transformation.options.gloo.solo.io.Parameters](../../transformation/parameters.proto.sk/#parameters) | Parameters describe how to extract the function parameters from the request. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `package` | `string` | The proto package of the function. |
+| `service` | `string` | The name of the service of the function. |
+| `function` | `string` | The name of the function. |
+| `parameters` | [.transformation.options.gloo.solo.io.Parameters](../../transformation/parameters.proto.sk/#parameters) | Parameters describe how to extract the function parameters from the request. |
 
 
 

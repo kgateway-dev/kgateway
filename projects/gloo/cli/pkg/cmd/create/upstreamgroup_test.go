@@ -1,6 +1,7 @@
 package create_test
 
 import (
+	"context"
 	"sort"
 
 	. "github.com/onsi/ginkgo"
@@ -18,10 +19,13 @@ var _ = Describe("UpstreamGroup", func() {
 
 	var (
 		expectedDest []*v1.WeightedDestination
+		ctx          context.Context
+		cancel       context.CancelFunc
 	)
 
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
+		ctx, cancel = context.WithCancel(context.Background())
 		us := &v1.Upstream{
 			UpstreamType: &v1.Upstream_Aws{
 				Aws: &aws.UpstreamSpec{
@@ -37,10 +41,10 @@ var _ = Describe("UpstreamGroup", func() {
 				Name:      "us1",
 			},
 		}
-		_, err := helpers.MustUpstreamClient().Write(us, clients.WriteOpts{})
+		_, err := helpers.MustUpstreamClient(ctx).Write(us, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		us.Metadata.Name = "us2"
-		_, err = helpers.MustUpstreamClient().Write(us, clients.WriteOpts{})
+		_, err = helpers.MustUpstreamClient(ctx).Write(us, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
 		expectedDest = []*v1.WeightedDestination{
@@ -70,10 +74,12 @@ var _ = Describe("UpstreamGroup", func() {
 	})
 
 	getUpstreamGroup := func(name string) *v1.UpstreamGroup {
-		ug, err := helpers.MustUpstreamGroupClient().Read("gloo-system", name, clients.ReadOpts{})
+		ug, err := helpers.MustUpstreamGroupClient(ctx).Read("gloo-system", name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		return ug
 	}
+
+	AfterEach(func() { cancel() })
 
 	Context("Empty args and flags", func() {
 		It("should give clear error message", func() {

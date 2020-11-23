@@ -71,7 +71,7 @@ func addEditUpstreamInteractiveFlags(opts *EditUpstream) error {
 }
 
 func editUpstream(opts *options.EditOptions, optsExt *EditUpstream, args []string) error {
-	upClient := helpers.MustNamespacedUpstreamClient(opts.Metadata.GetNamespace())
+	upClient := helpers.MustNamespacedUpstreamClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	up, err := upClient.Read(opts.Metadata.Namespace, opts.Metadata.Name, clients.ReadOpts{})
 	if err != nil {
 		return errors.Wrapf(err, "Error reading upstream")

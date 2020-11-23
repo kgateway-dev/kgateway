@@ -1,6 +1,8 @@
 package settings_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -18,16 +20,21 @@ var _ = Describe("Extauth", func() {
 	var (
 		settings       *gloov1.Settings
 		settingsClient gloov1.SettingsClient
+		ctx            context.Context
+		cancel         context.CancelFunc
 	)
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
+		ctx, cancel = context.WithCancel(context.Background())
 		// create a settings object
 		settings = testutils.GetTestSettings()
-		settingsClient = helpers.MustSettingsClient()
+		settingsClient = helpers.MustSettingsClient(ctx)
 
 		_, err := settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	AfterEach(func() { cancel() })
 
 	extAuthExtension := func() *extauthpb.Settings {
 		var err error
@@ -79,7 +86,7 @@ var _ = Describe("Extauth", func() {
 	Context("Interactive tests", func() {
 
 		BeforeEach(func() {
-			upstreamClient := helpers.MustUpstreamClient()
+			upstreamClient := helpers.MustUpstreamClient(ctx)
 			upstream := &gloov1.Upstream{
 				Metadata: core.Metadata{
 					Name:      "extauth",

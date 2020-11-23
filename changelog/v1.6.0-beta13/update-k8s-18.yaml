@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update to k8s 0.18. This involved a lot of minor function changes to input contexts everywhere.
+    issueLink: https://github.com/solo-io/gloo/issues/3579

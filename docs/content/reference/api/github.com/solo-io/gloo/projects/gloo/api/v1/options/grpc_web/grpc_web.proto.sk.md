@@ -33,9 +33,9 @@ GrpcWeb support is enabled be default. Use this extension to disable it.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `disable` | `bool` | Disable grpc web support. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `disable` | `bool` | Disable grpc web support. |
 
 
 

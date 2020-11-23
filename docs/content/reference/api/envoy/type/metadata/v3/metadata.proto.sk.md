@@ -61,10 +61,10 @@ The following MetadataKey will retrieve a string value "bar" from the Metadata.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `key` | `string` | The key name of Metadata to retrieve the Struct from the metadata. Typically, it represents a builtin subsystem or custom extension. |  |
-| `path` | [[]envoy.type.metadata.v3.MetadataKey.PathSegment](../metadata.proto.sk/#pathsegment) | The path to retrieve the Value from the Struct. It can be a prefix or a full path, e.g. ``[prop, xyz]`` for a struct or ``[prop, foo]`` for a string in the example, which depends on the particular scenario. Note: Due to that only the key type segment is supported, the path can not specify a list unless the list is the last segment. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `key` | `string` | The key name of Metadata to retrieve the Struct from the metadata. Typically, it represents a builtin subsystem or custom extension. |
+| `path` | [[]envoy.type.metadata.v3.MetadataKey.PathSegment](../metadata.proto.sk/#pathsegment) | The path to retrieve the Value from the Struct. It can be a prefix or a full path, e.g. ``[prop, xyz]`` for a struct or ``[prop, foo]`` for a string in the example, which depends on the particular scenario. Note: Due to that only the key type segment is supported, the path can not specify a list unless the list is the last segment. |
 
 
 
@@ -81,9 +81,9 @@ Currently it is only supported to specify the key, i.e. field name, as one segme
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `key` | `string` | If specified, use the key to retrieve the value in a Struct. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `key` | `string` | If specified, use the key to retrieve the value in a Struct. |
 
 
 
@@ -102,12 +102,12 @@ Describes what kind of metadata.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `request` | [.envoy.type.metadata.v3.MetadataKind.Request](../metadata.proto.sk/#request) | Request kind of metadata. Only one of `request`, `route`, or `host` can be set. |  |
-| `route` | [.envoy.type.metadata.v3.MetadataKind.Route](../metadata.proto.sk/#route) | Route kind of metadata. Only one of `route`, `request`, or `host` can be set. |  |
-| `cluster` | [.envoy.type.metadata.v3.MetadataKind.Cluster](../metadata.proto.sk/#cluster) | Cluster kind of metadata. Only one of `cluster`, `request`, or `host` can be set. |  |
-| `host` | [.envoy.type.metadata.v3.MetadataKind.Host](../metadata.proto.sk/#host) | Host kind of metadata. Only one of `host`, `request`, or `cluster` can be set. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `request` | [.envoy.type.metadata.v3.MetadataKind.Request](../metadata.proto.sk/#request) | Request kind of metadata. Only one of `request`, `route`, or `host` can be set. |
+| `route` | [.envoy.type.metadata.v3.MetadataKind.Route](../metadata.proto.sk/#route) | Route kind of metadata. Only one of `route`, `request`, or `host` can be set. |
+| `cluster` | [.envoy.type.metadata.v3.MetadataKind.Cluster](../metadata.proto.sk/#cluster) | Cluster kind of metadata. Only one of `cluster`, `request`, or `host` can be set. |
+| `host` | [.envoy.type.metadata.v3.MetadataKind.Host](../metadata.proto.sk/#host) | Host kind of metadata. Only one of `host`, `request`, or `cluster` can be set. |
 
 
 
@@ -122,8 +122,8 @@ Represents dynamic metadata associated with the request.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 
@@ -138,8 +138,8 @@ Represents metadata from :ref:`the route<envoy_api_field_config.route.v3.Route.m
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 
@@ -154,8 +154,8 @@ Represents metadata from :ref:`the upstream cluster<envoy_api_field_config.clust
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 
@@ -171,8 +171,8 @@ host<envoy_api_field_config.endpoint.v3.LbEndpoint.metadata>`.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 

@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
@@ -37,14 +38,14 @@ type ArtifactsGetter interface {
 
 // ArtifactInterface has methods to work with Artifact resources.
 type ArtifactInterface interface {
-	Create(*v1.Artifact) (*v1.Artifact, error)
-	Update(*v1.Artifact) (*v1.Artifact, error)
-	Delete(name string, options *metav1.DeleteOptions) error
-	DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error
-	Get(name string, options metav1.GetOptions) (*v1.Artifact, error)
-	List(opts metav1.ListOptions) (*v1.ArtifactList, error)
-	Watch(opts metav1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.Artifact, err error)
+	Create(ctx context.Context, artifact *v1.Artifact, opts metav1.CreateOptions) (*v1.Artifact, error)
+	Update(ctx context.Context, artifact *v1.Artifact, opts metav1.UpdateOptions) (*v1.Artifact, error)
+	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.Artifact, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*v1.ArtifactList, error)
+	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Artifact, err error)
 	ArtifactExpansion
 }
 
@@ -63,20 +64,20 @@ func newArtifacts(c *GlooV1Client, namespace string) *artifacts {
 }
 
 // Get takes name of the artifact, and returns the corresponding artifact object, and an error if there is any.
-func (c *artifacts) Get(name string, options metav1.GetOptions) (result *v1.Artifact, err error) {
+func (c *artifacts) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.Artifact, err error) {
 	result = &v1.Artifact{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("artifacts").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of Artifacts that match those selectors.
-func (c *artifacts) List(opts metav1.ListOptions) (result *v1.ArtifactList, err error) {
+func (c *artifacts) List(ctx context.Context, opts metav1.ListOptions) (result *v1.ArtifactList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -87,13 +88,13 @@ func (c *artifacts) List(opts metav1.ListOptions) (result *v1.ArtifactList, err 
 		Resource("artifacts").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested artifacts.
-func (c *artifacts) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+func (c *artifacts) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -104,71 +105,74 @@ func (c *artifacts) Watch(opts metav1.ListOptions) (watch.Interface, error) {
 		Resource("artifacts").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a artifact and creates it.  Returns the server's representation of the artifact, and an error, if there is any.
-func (c *artifacts) Create(artifact *v1.Artifact) (result *v1.Artifact, err error) {
+func (c *artifacts) Create(ctx context.Context, artifact *v1.Artifact, opts metav1.CreateOptions) (result *v1.Artifact, err error) {
 	result = &v1.Artifact{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("artifacts").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(artifact).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a artifact and updates it. Returns the server's representation of the artifact, and an error, if there is any.
-func (c *artifacts) Update(artifact *v1.Artifact) (result *v1.Artifact, err error) {
+func (c *artifacts) Update(ctx context.Context, artifact *v1.Artifact, opts metav1.UpdateOptions) (result *v1.Artifact, err error) {
 	result = &v1.Artifact{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("artifacts").
 		Name(artifact.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(artifact).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the artifact and deletes it. Returns an error if one occurs.
-func (c *artifacts) Delete(name string, options *metav1.DeleteOptions) error {
+func (c *artifacts) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("artifacts").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *artifacts) DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error {
+func (c *artifacts) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("artifacts").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched artifact.
-func (c *artifacts) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.Artifact, err error) {
+func (c *artifacts) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.Artifact, err error) {
 	result = &v1.Artifact{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("artifacts").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

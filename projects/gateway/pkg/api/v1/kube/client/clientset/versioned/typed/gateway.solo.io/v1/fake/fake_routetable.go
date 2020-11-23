@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var routetablesResource = schema.GroupVersionResource{Group: "gateway.solo.io", 
 var routetablesKind = schema.GroupVersionKind{Group: "gateway.solo.io", Version: "v1", Kind: "RouteTable"}
 
 // Get takes name of the routeTable, and returns the corresponding routeTable object, and an error if there is any.
-func (c *FakeRouteTables) Get(name string, options v1.GetOptions) (result *gatewaysoloiov1.RouteTable, err error) {
+func (c *FakeRouteTables) Get(ctx context.Context, name string, options v1.GetOptions) (result *gatewaysoloiov1.RouteTable, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(routetablesResource, c.ns, name), &gatewaysoloiov1.RouteTable{})
 
@@ -50,7 +52,7 @@ func (c *FakeRouteTables) Get(name string, options v1.GetOptions) (result *gatew
 }
 
 // List takes label and field selectors, and returns the list of RouteTables that match those selectors.
-func (c *FakeRouteTables) List(opts v1.ListOptions) (result *gatewaysoloiov1.RouteTableList, err error) {
+func (c *FakeRouteTables) List(ctx context.Context, opts v1.ListOptions) (result *gatewaysoloiov1.RouteTableList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(routetablesResource, routetablesKind, c.ns, opts), &gatewaysoloiov1.RouteTableList{})
 
@@ -72,14 +74,14 @@ func (c *FakeRouteTables) List(opts v1.ListOptions) (result *gatewaysoloiov1.Rou
 }
 
 // Watch returns a watch.Interface that watches the requested routeTables.
-func (c *FakeRouteTables) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeRouteTables) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(routetablesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a routeTable and creates it.  Returns the server's representation of the routeTable, and an error, if there is any.
-func (c *FakeRouteTables) Create(routeTable *gatewaysoloiov1.RouteTable) (result *gatewaysoloiov1.RouteTable, err error) {
+func (c *FakeRouteTables) Create(ctx context.Context, routeTable *gatewaysoloiov1.RouteTable, opts v1.CreateOptions) (result *gatewaysoloiov1.RouteTable, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(routetablesResource, c.ns, routeTable), &gatewaysoloiov1.RouteTable{})
 
@@ -90,7 +92,7 @@ func (c *FakeRouteTables) Create(routeTable *gatewaysoloiov1.RouteTable) (result
 }
 
 // Update takes the representation of a routeTable and updates it. Returns the server's representation of the routeTable, and an error, if there is any.
-func (c *FakeRouteTables) Update(routeTable *gatewaysoloiov1.RouteTable) (result *gatewaysoloiov1.RouteTable, err error) {
+func (c *FakeRouteTables) Update(ctx context.Context, routeTable *gatewaysoloiov1.RouteTable, opts v1.UpdateOptions) (result *gatewaysoloiov1.RouteTable, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(routetablesResource, c.ns, routeTable), &gatewaysoloiov1.RouteTable{})
 
@@ -102,7 +104,7 @@ func (c *FakeRouteTables) Update(routeTable *gatewaysoloiov1.RouteTable) (result
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeRouteTables) UpdateStatus(routeTable *gatewaysoloiov1.RouteTable) (*gatewaysoloiov1.RouteTable, error) {
+func (c *FakeRouteTables) UpdateStatus(ctx context.Context, routeTable *gatewaysoloiov1.RouteTable, opts v1.UpdateOptions) (*gatewaysoloiov1.RouteTable, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(routetablesResource, "status", c.ns, routeTable), &gatewaysoloiov1.RouteTable{})
 
@@ -113,7 +115,7 @@ func (c *FakeRouteTables) UpdateStatus(routeTable *gatewaysoloiov1.RouteTable) (
 }
 
 // Delete takes name of the routeTable and deletes it. Returns an error if one occurs.
-func (c *FakeRouteTables) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeRouteTables) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(routetablesResource, c.ns, name), &gatewaysoloiov1.RouteTable{})
 
@@ -121,15 +123,15 @@ func (c *FakeRouteTables) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeRouteTables) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(routetablesResource, c.ns, listOptions)
+func (c *FakeRouteTables) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(routetablesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &gatewaysoloiov1.RouteTableList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched routeTable.
-func (c *FakeRouteTables) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *gatewaysoloiov1.RouteTable, err error) {
+func (c *FakeRouteTables) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *gatewaysoloiov1.RouteTable, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(routetablesResource, c.ns, name, pt, data, subresources...), &gatewaysoloiov1.RouteTable{})
 

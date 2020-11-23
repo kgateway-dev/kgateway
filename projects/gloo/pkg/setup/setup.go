@@ -3,9 +3,10 @@ package setup
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/version"
+
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	"github.com/solo-io/gloo/pkg/utils/usage"
-	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/reporting-client/pkg/client"
 )

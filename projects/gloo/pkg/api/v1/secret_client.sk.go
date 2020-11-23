@@ -3,6 +3,8 @@
 package v1
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type secretClient struct {
 	rc clients.ResourceClient
 }
 
-func NewSecretClient(rcFactory factory.ResourceClientFactory) (SecretClient, error) {
-	return NewSecretClientWithToken(rcFactory, "")
+func NewSecretClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (SecretClient, error) {
+	return NewSecretClientWithToken(ctx, rcFactory, "")
 }
 
-func NewSecretClientWithToken(rcFactory factory.ResourceClientFactory, token string) (SecretClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewSecretClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (SecretClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &Secret{},
 		Token:        token,
 	})

@@ -1,6 +1,7 @@
 package aws_credentials
 
 import (
+	"context"
 	"os"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -30,6 +31,8 @@ var _ = Describe("", func() {
 		secret       *v1.Secret
 		secretClient v1.SecretClient
 		roleArn      string
+		ctx          context.Context
+		cancel       context.CancelFunc
 	)
 
 	addCredentials := func() {
@@ -68,11 +71,16 @@ var _ = Describe("", func() {
 
 	BeforeEach(func() {
 		var err error
-		secretClient, err = getSecretClient()
+		ctx, cancel = context.WithCancel(context.Background())
+		secretClient, err = getSecretClient(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(os.Setenv("AWS_ARN_ROLE_1", "arn:aws:iam::410461945957:role/describe-all-ec2-poc")).NotTo(HaveOccurred())
 
 		addCredentials()
+	})
+
+	AfterEach(func() {
+		cancel()
 	})
 
 	It("should assume role correctly", func() {
@@ -142,11 +150,11 @@ var _ = Describe("", func() {
 
 })
 
-func getSecretClient() (v1.SecretClient, error) {
+func getSecretClient(ctx context.Context) (v1.SecretClient, error) {
 	secretClientFactory := &factory.MemoryResourceClientFactory{
 		Cache: memory.NewInMemoryResourceCache(),
 	}
-	secretClient, err := v1.NewSecretClient(secretClientFactory)
+	secretClient, err := v1.NewSecretClient(ctx, secretClientFactory)
 	if err != nil {
 		return nil, eris.Wrapf(err, "creating Secrets client")
 	}

@@ -38,11 +38,11 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `annotations` | `map<string, string>` |  |  |
-| `labels` | `map<string, string>` |  |  |
-| `name` | `string` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `annotations` | `map<string, string>` |  |
+| `labels` | `map<string, string>` |  |
+| `name` | `string` |  |
 
 
 
@@ -61,13 +61,13 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `clusters` | `map<string, .core.fed.solo.io.PlacementStatus.Cluster>` |  |  |
-| `state` | [.core.fed.solo.io.PlacementStatus.State](../placement.proto.sk/#state) |  |  |
-| `message` | `string` |  |  |
-| `observedGeneration` | `int` | metadata.Generation of the resource which has been processed. |  |
-| `writtenBy` | `string` | A field indicating the entity responsible for writing this status. This is useful for determining if the pod has been restarted since the resource was processed. Typically this value will be set to metadata.name of the pod. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `clusters` | `map<string, .core.fed.solo.io.PlacementStatus.Cluster>` |  |
+| `state` | [.core.fed.solo.io.PlacementStatus.State](../placement.proto.sk/#state) |  |
+| `message` | `string` |  |
+| `observedGeneration` | `int` | metadata.Generation of the resource which has been processed. |
+| `writtenBy` | `string` | A field indicating the entity responsible for writing this status. This is useful for determining if the pod has been restarted since the resource was processed. Typically this value will be set to metadata.name of the pod. |
 
 
 
@@ -83,10 +83,10 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `state` | [.core.fed.solo.io.PlacementStatus.State](../placement.proto.sk/#state) |  |  |
-| `message` | `string` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `state` | [.core.fed.solo.io.PlacementStatus.State](../placement.proto.sk/#state) |  |
+| `message` | `string` |  |
 
 
 
@@ -101,9 +101,9 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `namespaces` | `map<string, .core.fed.solo.io.PlacementStatus.Namespace>` | map containing the name of the namespace, with the associated status. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `namespaces` | `map<string, .core.fed.solo.io.PlacementStatus.Namespace>` | map containing the name of the namespace, with the associated status. |
 
 
 

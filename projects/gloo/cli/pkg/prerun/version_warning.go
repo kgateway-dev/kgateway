@@ -1,6 +1,7 @@
 package prerun
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -35,7 +36,7 @@ func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {
 		nsToCheck = opts.Install.Namespace
 	}
 
-	return WarnOnMismatch(os.Args[0], versioncmd.NewKube(nsToCheck), &defaultLogger{})
+	return WarnOnMismatch(opts.Top.Ctx, os.Args[0], versioncmd.NewKube(nsToCheck), &defaultLogger{})
 }
 
 // use this logger interface, so that in the unit test we can accumulate lines that were output
@@ -58,8 +59,8 @@ func (d *defaultLogger) Println(str string) {
 }
 
 // visible for testing
-func WarnOnMismatch(binaryName string, sv versioncmd.ServerVersion, logger Logger) error {
-	clientServerVersions, err := versioncmd.GetClientServerVersions(sv)
+func WarnOnMismatch(ctx context.Context, binaryName string, sv versioncmd.ServerVersion, logger Logger) error {
+	clientServerVersions, err := versioncmd.GetClientServerVersions(ctx, sv)
 	if err != nil {
 		warnOnError(err, logger)
 		return nil

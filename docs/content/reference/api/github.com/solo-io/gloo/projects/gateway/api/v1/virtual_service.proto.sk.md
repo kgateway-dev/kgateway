@@ -132,13 +132,13 @@ constraints:
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `virtualHost` | [.gateway.solo.io.VirtualHost](../virtual_service.proto.sk/#virtualhost) | The VirtualHost contains the The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |  |
-| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk/#sslconfig) | If provided, the Gateway will serve TLS/SSL traffic for this set of routes. |  |
-| `displayName` | `string` | Display only, optional descriptive name. Unlike metadata.name, DisplayName can be any string and can be changed after creating the resource. |  |
-| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `virtualHost` | [.gateway.solo.io.VirtualHost](../virtual_service.proto.sk/#virtualhost) | The VirtualHost contains the The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |
+| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk/#sslconfig) | If provided, the Gateway will serve TLS/SSL traffic for this set of routes. |
+| `displayName` | `string` | Display only, optional descriptive name. Unlike metadata.name, DisplayName can be any string and can be changed after creating the resource. |
+| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 
 
 
@@ -163,11 +163,11 @@ Gateway* Virtual Hosts can **delegate** their routes to `RouteTables`.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `domains` | `[]string` | The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host. Note that the wildcard will not match the empty string. e.g. “*-bar.foo.com” will match “baz-bar.foo.com” but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header. Only a single virtual host on a gateway can match on “*”. A domain must be unique across all virtual hosts on a gateway or the config will be invalidated by Gloo Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto). |  |
-| `routes` | [[]gateway.solo.io.Route](../virtual_service.proto.sk/#route) | The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |  |
-| `options` | [.gloo.solo.io.VirtualHostOptions](../../../../gloo/api/v1/options.proto.sk/#virtualhostoptions) | Virtual host options contain additional configuration to be applied to all traffic served by the Virtual Host. Some configuration here can be overridden by Route Options. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `domains` | `[]string` | The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host. Note that the wildcard will not match the empty string. e.g. “*-bar.foo.com” will match “baz-bar.foo.com” but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header. Only a single virtual host on a gateway can match on “*”. A domain must be unique across all virtual hosts on a gateway or the config will be invalidated by Gloo Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto). |
+| `routes` | [[]gateway.solo.io.Route](../virtual_service.proto.sk/#route) | The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |
+| `options` | [.gloo.solo.io.VirtualHostOptions](../../../../gloo/api/v1/options.proto.sk/#virtualhostoptions) | Virtual host options contain additional configuration to be applied to all traffic served by the Virtual Host. Some configuration here can be overridden by Route Options. |
 
 
 
@@ -198,16 +198,16 @@ top-level `RouteTable` resources.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `matchers` | [[]matchers.core.gloo.solo.io.Matcher](../../../../gloo/api/v1/core/matchers/matchers.proto.sk/#matcher) | Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.) If empty, the route will match all requests (i.e, a single "/" path prefix matcher) For delegated routes, the matcher must contain only a `prefix` path matcher and no other config. |  |
-| `inheritableMatchers` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether any child route objects should inherit headers, methods, and query parameter matchers from the parent. Defaults to value of parent; for virtual services (no parent) defaults to false. |  |
-| `routeAction` | [.gloo.solo.io.RouteAction](../../../../gloo/api/v1/proxy.proto.sk/#routeaction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. Only one of `routeAction`, `redirectAction`, or `delegateAction` can be set. |  |
-| `redirectAction` | [.gloo.solo.io.RedirectAction](../../../../gloo/api/v1/proxy.proto.sk/#redirectaction) | Redirect actions tell the proxy to return a redirect response to the downstream client. Only one of `redirectAction`, `routeAction`, or `delegateAction` can be set. |  |
-| `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../../../../gloo/api/v1/proxy.proto.sk/#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. Only one of `directResponseAction`, `routeAction`, or `delegateAction` can be set. |  |
-| `delegateAction` | [.gateway.solo.io.DelegateAction](../virtual_service.proto.sk/#delegateaction) | Delegate routing actions for the given matcher to one or more RouteTables. Only one of `delegateAction`, `routeAction`, or `directResponseAction` can be set. |  |
-| `options` | [.gloo.solo.io.RouteOptions](../../../../gloo/api/v1/options.proto.sk/#routeoptions) | Route Options extend the behavior of routes. Route options include configuration such as retries, rate limiting, and request/response transformation. RouteOption behavior will be inherited by delegated routes which do not specify their own `options`. |  |
-| `name` | `string` | The name provides a convenience for users to be able to refer to a route by name. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `matchers` | [[]matchers.core.gloo.solo.io.Matcher](../../../../gloo/api/v1/core/matchers/matchers.proto.sk/#matcher) | Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.) If empty, the route will match all requests (i.e, a single "/" path prefix matcher) For delegated routes, the matcher must contain only a `prefix` path matcher and no other config. |
+| `inheritableMatchers` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether any child route objects should inherit headers, methods, and query parameter matchers from the parent. Defaults to value of parent; for virtual services (no parent) defaults to false. |
+| `routeAction` | [.gloo.solo.io.RouteAction](../../../../gloo/api/v1/proxy.proto.sk/#routeaction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. Only one of `routeAction`, `redirectAction`, or `delegateAction` can be set. |
+| `redirectAction` | [.gloo.solo.io.RedirectAction](../../../../gloo/api/v1/proxy.proto.sk/#redirectaction) | Redirect actions tell the proxy to return a redirect response to the downstream client. Only one of `redirectAction`, `routeAction`, or `delegateAction` can be set. |
+| `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../../../../gloo/api/v1/proxy.proto.sk/#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. Only one of `directResponseAction`, `routeAction`, or `delegateAction` can be set. |
+| `delegateAction` | [.gateway.solo.io.DelegateAction](../virtual_service.proto.sk/#delegateaction) | Delegate routing actions for the given matcher to one or more RouteTables. Only one of `delegateAction`, `routeAction`, or `directResponseAction` can be set. |
+| `options` | [.gloo.solo.io.RouteOptions](../../../../gloo/api/v1/options.proto.sk/#routeoptions) | Route Options extend the behavior of routes. Route options include configuration such as retries, rate limiting, and request/response transformation. RouteOption behavior will be inherited by delegated routes which do not specify their own `options`. |
+| `name` | `string` | The name provides a convenience for users to be able to refer to a route by name. |
 
 
 
@@ -226,12 +226,12 @@ DelegateActions are used to delegate routing decisions to Route Tables.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` | The name of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |  |
-| `namespace` | `string` | The namespace of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |  |
-| `ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Delegate to the Route Table resource with the given `name` and `namespace. Only one of `ref` or `selector` can be set. |  |
-| `selector` | [.gateway.solo.io.RouteTableSelector](../virtual_service.proto.sk/#routetableselector) | Delegate to the Route Tables that match the given selector. Only one of `selector` or `ref` can be set. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | The name of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |
+| `namespace` | `string` | The namespace of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |
+| `ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Delegate to the Route Table resource with the given `name` and `namespace. Only one of `ref` or `selector` can be set. |
+| `selector` | [.gateway.solo.io.RouteTableSelector](../virtual_service.proto.sk/#routetableselector) | Delegate to the Route Tables that match the given selector. Only one of `selector` or `ref` can be set. |
 
 
 
@@ -249,11 +249,11 @@ Select route tables for delegation by namespace, labels, or both.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `namespaces` | `[]string` | Delegate to Route Tables in these namespaces. If omitted, Gloo will only select Route Tables in the same namespace as the resource (Virtual Service or Route Table) that owns this selector. The reserved value "*" can be used to select Route Tables in all namespaces watched by Gloo. |  |
-| `labels` | `map<string, string>` | Delegate to Route Tables whose labels match the ones specified here. |  |
-| `expressions` | [[]gateway.solo.io.RouteTableSelector.Expression](../virtual_service.proto.sk/#expression) | Expressions allow for more flexible Route Tables label matching, such as equality-based requirements, set-based requirements, or a combination of both. https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `namespaces` | `[]string` | Delegate to Route Tables in these namespaces. If omitted, Gloo will only select Route Tables in the same namespace as the resource (Virtual Service or Route Table) that owns this selector. The reserved value "*" can be used to select Route Tables in all namespaces watched by Gloo. |
+| `labels` | `map<string, string>` | Delegate to Route Tables whose labels match the ones specified here. |
+| `expressions` | [[]gateway.solo.io.RouteTableSelector.Expression](../virtual_service.proto.sk/#expression) | Expressions allow for more flexible Route Tables label matching, such as equality-based requirements, set-based requirements, or a combination of both. https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement. |
 
 
 
@@ -270,11 +270,11 @@ Select route tables for delegation by namespace, labels, or both.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `key` | `string` | Kubernetes label key, must conform to Kubernetes syntax requirements https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set. |  |
-| `operator` | [.gateway.solo.io.RouteTableSelector.Expression.Operator](../virtual_service.proto.sk/#operator) | The operator can only be in, notin, =, ==, !=, exists, ! (DoesNotExist), gt (GreaterThan), lt (LessThan). |  |
-| `values` | `[]string` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `key` | `string` | Kubernetes label key, must conform to Kubernetes syntax requirements https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set. |
+| `operator` | [.gateway.solo.io.RouteTableSelector.Expression.Operator](../virtual_service.proto.sk/#operator) | The operator can only be in, notin, =, ==, !=, exists, ! (DoesNotExist), gt (GreaterThan), lt (LessThan). |
+| `values` | `[]string` |  |
 
 
 

@@ -41,14 +41,14 @@ might not exist in upstream kernels or precompiled Envoy binaries.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `description` | `string` | An optional name to give this socket option for debugging, etc. Uniqueness is not required and no special meaning is assumed. |  |
-| `level` | `int` | Corresponding to the level value passed to setsockopt, such as IPPROTO_TCP. |  |
-| `name` | `int` | The numeric name as passed to setsockopt. |  |
-| `intValue` | `int` | Because many sockopts take an int value. Only one of `intValue` or `bufValue` can be set. |  |
-| `bufValue` | `bytes` | Otherwise it's a byte buffer. Only one of `bufValue` or `intValue` can be set. |  |
-| `state` | [.envoy.config.core.v3.SocketOption.SocketState](../socket_option.proto.sk/#socketstate) | The state in which the option will be applied. When used in BindConfig STATE_PREBIND is currently the only valid value. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `description` | `string` | An optional name to give this socket option for debugging, etc. Uniqueness is not required and no special meaning is assumed. |
+| `level` | `int` | Corresponding to the level value passed to setsockopt, such as IPPROTO_TCP. |
+| `name` | `int` | The numeric name as passed to setsockopt. |
+| `intValue` | `int` | Because many sockopts take an int value. Only one of `intValue` or `bufValue` can be set. |
+| `bufValue` | `bytes` | Otherwise it's a byte buffer. Only one of `bufValue` or `intValue` can be set. |
+| `state` | [.envoy.config.core.v3.SocketOption.SocketState](../socket_option.proto.sk/#socketstate) | The state in which the option will be applied. When used in BindConfig STATE_PREBIND is currently the only valid value. |
 
 
 

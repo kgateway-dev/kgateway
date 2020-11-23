@@ -11,7 +11,7 @@ import (
 
 func GetVirtualServices(name string, opts *options.Options) (v1.VirtualServiceList, error) {
 	var virtualServiceList v1.VirtualServiceList
-	virtualServiceClient := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace())
+	virtualServiceClient := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if name == "" {
 		virtualServices, err := virtualServiceClient.List(opts.Metadata.Namespace,
 			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
@@ -34,7 +34,7 @@ func GetVirtualServices(name string, opts *options.Options) (v1.VirtualServiceLi
 func GetRouteTables(name string, opts *options.Options) (v1.RouteTableList, error) {
 	var routeTableList v1.RouteTableList
 
-	routeTableClient := helpers.MustNamespacedRouteTableClient(opts.Metadata.GetNamespace())
+	routeTableClient := helpers.MustNamespacedRouteTableClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if name == "" {
 		routeTables, err := routeTableClient.List(opts.Metadata.Namespace,
 			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
@@ -57,7 +57,7 @@ func GetRouteTables(name string, opts *options.Options) (v1.RouteTableList, erro
 func GetUpstreams(name string, opts *options.Options) (gloov1.UpstreamList, error) {
 	var list gloov1.UpstreamList
 
-	usClient := helpers.MustNamespacedUpstreamClient(opts.Metadata.GetNamespace())
+	usClient := helpers.MustNamespacedUpstreamClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if name == "" {
 		uss, err := usClient.List(opts.Metadata.Namespace,
 			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
@@ -80,7 +80,7 @@ func GetUpstreams(name string, opts *options.Options) (gloov1.UpstreamList, erro
 func GetUpstreamGroups(name string, opts *options.Options) (gloov1.UpstreamGroupList, error) {
 	var list gloov1.UpstreamGroupList
 
-	ugsClient := helpers.MustNamespacedUpstreamGroupClient(opts.Metadata.GetNamespace())
+	ugsClient := helpers.MustNamespacedUpstreamGroupClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if name == "" {
 		ugs, err := ugsClient.List(opts.Metadata.Namespace,
 			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
@@ -103,7 +103,7 @@ func GetUpstreamGroups(name string, opts *options.Options) (gloov1.UpstreamGroup
 func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	var list gloov1.ProxyList
 
-	pxClient := helpers.MustNamespacedProxyClient(opts.Metadata.GetNamespace())
+	pxClient := helpers.MustNamespacedProxyClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if name == "" {
 		uss, err := pxClient.List(opts.Metadata.Namespace,
 			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
@@ -126,7 +126,7 @@ func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 func GetAuthConfigs(name string, opts *options.Options) (extauthv1.AuthConfigList, error) {
 	var authConfigList extauthv1.AuthConfigList
 
-	authConfigClient := helpers.MustNamespacedAuthConfigClient(opts.Metadata.GetNamespace())
+	authConfigClient := helpers.MustNamespacedAuthConfigClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if name == "" {
 		authConfigs, err := authConfigClient.List(opts.Metadata.Namespace,
 			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})

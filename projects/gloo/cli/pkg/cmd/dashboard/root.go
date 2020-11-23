@@ -42,7 +42,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				return err
 			}
 
-			deployment, err := client.AppsV1().Deployments(opts.Metadata.Namespace).Get("api-server", metav1.GetOptions{})
+			deployment, err := client.AppsV1().Deployments(opts.Metadata.Namespace).Get(opts.Top.Ctx, "api-server", metav1.GetOptions{})
 			if err != nil {
 				if apierrors.IsNotFound(err) {
 					fmt.Printf("No Gloo dashboard found as part of the installation in namespace %s. The full dashboard is part of Gloo Enterprise by default. "+

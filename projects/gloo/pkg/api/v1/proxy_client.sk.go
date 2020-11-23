@@ -3,6 +3,8 @@
 package v1
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type proxyClient struct {
 	rc clients.ResourceClient
 }
 
-func NewProxyClient(rcFactory factory.ResourceClientFactory) (ProxyClient, error) {
-	return NewProxyClientWithToken(rcFactory, "")
+func NewProxyClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (ProxyClient, error) {
+	return NewProxyClientWithToken(ctx, rcFactory, "")
 }
 
-func NewProxyClientWithToken(rcFactory factory.ResourceClientFactory, token string) (ProxyClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewProxyClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (ProxyClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &Proxy{},
 		Token:        token,
 	})

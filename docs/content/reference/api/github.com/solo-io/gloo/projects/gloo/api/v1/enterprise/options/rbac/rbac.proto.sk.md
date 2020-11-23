@@ -38,9 +38,9 @@ Global RBAC settings
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `requireRbac` | `bool` | Require RBAC for all virtual hosts. A vhost without an RBAC policy set will fallback to a deny-all policy. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `requireRbac` | `bool` | Require RBAC for all virtual hosts. A vhost without an RBAC policy set will fallback to a deny-all policy. |
 
 
 
@@ -57,10 +57,10 @@ RBAC settings for Virtual Hosts and Routes
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `disable` | `bool` | Disable RBAC checks on this resource (default false). This is useful to allow access to static resources/login page without RBAC checks. If provided on a route, all route settings override any vhost settings. |  |
-| `policies` | `map<string, .rbac.options.gloo.solo.io.Policy>` | Named policies to apply. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `disable` | `bool` | Disable RBAC checks on this resource (default false). This is useful to allow access to static resources/login page without RBAC checks. If provided on a route, all route settings override any vhost settings. |
+| `policies` | `map<string, .rbac.options.gloo.solo.io.Policy>` | Named policies to apply. |
 
 
 
@@ -76,10 +76,10 @@ RBAC settings for Virtual Hosts and Routes
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `principals` | [[]rbac.options.gloo.solo.io.Principal](../rbac.proto.sk/#principal) | Principals in this policy. |  |
-| `permissions` | [.rbac.options.gloo.solo.io.Permissions](../rbac.proto.sk/#permissions) | Permissions granted to the principals. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `principals` | [[]rbac.options.gloo.solo.io.Principal](../rbac.proto.sk/#principal) | Principals in this policy. |
+| `permissions` | [.rbac.options.gloo.solo.io.Permissions](../rbac.proto.sk/#permissions) | Permissions granted to the principals. |
 
 
 
@@ -95,9 +95,9 @@ An RBAC principal - the identity entity (usually a user or a service account).
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `jwtPrincipal` | [.rbac.options.gloo.solo.io.JWTPrincipal](../rbac.proto.sk/#jwtprincipal) |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `jwtPrincipal` | [.rbac.options.gloo.solo.io.JWTPrincipal](../rbac.proto.sk/#jwtprincipal) |  |
 
 
 
@@ -114,10 +114,10 @@ A JWT principal. To use this, JWT option MUST be enabled.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `claims` | `map<string, string>` | Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used. all claims must be present on the JWT. |  |
-| `provider` | `string` | Verify that the JWT came from a specific provider. This usually can be left empty and a provider will be chosen automatically. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `claims` | `map<string, string>` | Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used. all claims must be present on the JWT. |
+| `provider` | `string` | Verify that the JWT came from a specific provider. This usually can be left empty and a provider will be chosen automatically. |
 
 
 
@@ -135,10 +135,10 @@ If more than one field is added, all of them need to match.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `pathPrefix` | `string` | Paths that have this prefix will be allowed. |  |
-| `methods` | `[]string` | What http methods (GET, POST, ...) are allowed. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `pathPrefix` | `string` | Paths that have this prefix will be allowed. |
+| `methods` | `[]string` | What http methods (GET, POST, ...) are allowed. |
 
 
 

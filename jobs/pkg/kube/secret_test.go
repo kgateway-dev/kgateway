@@ -30,7 +30,9 @@ var _ = Describe("Secret", func() {
 		err := CreateTlsSecret(context.TODO(), kube, secretCfg)
 		Expect(err).NotTo(HaveOccurred())
 
-		secret, err := kube.CoreV1().Secrets(secretCfg.SecretNamespace).Get(secretCfg.SecretName, metav1.GetOptions{})
+		ctx, cancel := context.WithCancel(context.Background())
+		defer func() { cancel() }()
+		secret, err := kube.CoreV1().Secrets(secretCfg.SecretNamespace).Get(ctx, secretCfg.SecretName, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(secret).To(Equal(&v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
