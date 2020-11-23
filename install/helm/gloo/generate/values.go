@@ -354,6 +354,7 @@ type GatewayProxyService struct {
 }
 
 type Tracing struct {
+	Provider string `json:"provider,omitempty" desc:"This field is deprecated"`
 	Cluster  string `json:"cluster,omitempty"`
 }
 
