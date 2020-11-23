@@ -242,6 +242,11 @@ message RouteAction {
 
         // Use a reference to an upstream group for routing.
         core.solo.io.ResourceRef upstream_group = 3;
+
+        // Envoy will determine the cluster to route to by reading the value of the HTTP header named by cluster_header from the request headers.
+        // If the header is not found or the referenced cluster does not exist, Envoy will return a 404 response.
+        // Avoid using this whenever possible, it does not allow for custom filter configuration based on Virtual Host.
+        string cluster_header = 4;
     };
 }
 
