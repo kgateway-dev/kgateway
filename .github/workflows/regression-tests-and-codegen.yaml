@@ -32,6 +32,14 @@ jobs:
     - name: Generate Code
       run: |
         ./ci/check-code-and-docs-gen.sh
+    - name: Setup Hugo
+      uses: peaceiris/actions-hugo@v2
+      with:
+        hugo-version: '0.69.2'
+    - name: Generate versioned docs site
+      run: make -C docs build-site
+      env:
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
   regression_tests:
     name: k8s regression tests
     runs-on: ubuntu-18.04
