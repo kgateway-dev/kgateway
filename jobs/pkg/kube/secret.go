@@ -41,7 +41,7 @@ func SecretIsValidTlsSecret(ctx context.Context, kube kubernetes.Interface, secr
 		return false, errors.Errorf("unexpected secret type, expected %s and got %s", v1.SecretTypeTLS, existing.Type)
 	}
 
-	certPemBytes := existing.Data["tls.crt"]
+	certPemBytes := existing.Data[v1.TLSCertKey]
 	now := time.Now().UTC()
 
 	rest := certPemBytes
