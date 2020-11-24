@@ -78,7 +78,7 @@ var _ = Describe("Secret", func() {
 			caCert, _ := x509.ParseCertificate(rawCACert)
 
 			certBytes := certutils.EncodeCertPEM(caCert)
-			return certBytes
+			return append(certBytes, certBytes...)
 		}
 
 		It("doesn't error on non-existing secret", func() {
@@ -136,6 +136,33 @@ var _ = Describe("Secret", func() {
 				CaBundleFileName:   "ca.crt",
 				PrivateKey:         data,
 				Cert:               generateCaCertBytes(time.Now().Add(1*time.Minute), time.Now().Add(2*time.Minute)),
+				CaBundle:           data,
+			}
+
+			err := CreateTlsSecret(context.TODO(), kube, secretCfg)
+			Expect(err).NotTo(HaveOccurred())
+
+			valid, err := SecretExistsAndIsValidTlsSecret(context.TODO(), kube, secretCfg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(valid).To(BeFalse())
+		})
+
+		It("recognizes a tls secret that is invalid relative to now, not first cert in chain", func() {
+			data := []byte{1, 2, 3}
+
+			goodCert := generateCaCertBytes(time.Now(), time.Now().Add(2*time.Minute))
+			badCert := generateCaCertBytes(time.Now().Add(1*time.Minute), time.Now().Add(2*time.Minute))
+			combinedCert := append(goodCert, badCert...)
+
+			kube := fake.NewSimpleClientset()
+			secretCfg := TlsSecret{
+				SecretName:         "mysecret",
+				SecretNamespace:    "mynamespace",
+				PrivateKeyFileName: "tls.key",
+				CertFileName:       "tls.crt",
+				CaBundleFileName:   "ca.crt",
+				PrivateKey:         data,
+				Cert:               combinedCert,
 				CaBundle:           data,
 			}
 
