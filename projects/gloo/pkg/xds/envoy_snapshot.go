@@ -35,9 +35,6 @@ type EnvoySnapshot struct {
 	// Endpoints are items in the EDS V3 response payload.
 	Endpoints cache.Resources
 
-	// hiddenDeprecatedEndpoints are items in the EDS V2 response payload.
-	hiddenDeprecatedEndpoints cache.Resources
-
 	// Clusters are items in the CDS response payload.
 	Clusters cache.Resources
 
@@ -46,9 +43,6 @@ type EnvoySnapshot struct {
 
 	// Routes are items in the RDS response payload.
 	Routes cache.Resources
-
-	// hiddenDeprecatedRoutes are items in the EDS V2 response payload.
-	hiddenDeprecatedRoutes cache.Resources
 
 	// Listeners are items in the LDS response payload.
 	Listeners cache.Resources
@@ -69,13 +63,11 @@ func NewSnapshot(
 	// TODO: Copy resources
 	return &EnvoySnapshot{
 		Endpoints:                 cache.NewResources(version, endpoints),
-		hiddenDeprecatedEndpoints: cache.NewResources(version, nil),
 		Clusters:                  cache.NewResources(version, clusters),
 		hiddenDeprecatedClusters:  downgradeCacheResourceList(version, clusters),
 		Routes:                    cache.NewResources(version, routes),
-		hiddenDeprecatedRoutes:    cache.NewResources(version, nil),
 		Listeners:                 cache.NewResources(version, listeners),
-		hiddenDeprecatedListeners: downgradeCacheResourceList(version, clusters),
+		hiddenDeprecatedListeners: downgradeCacheResourceList(version, listeners),
 	}
 }
 
@@ -97,7 +89,6 @@ func NewSnapshotFromResources(
 }
 
 func downgradeResource(e cache.Resource) *resource.EnvoyResource {
-	var downgradedResource cache.ResourceProto
 	res := e.ResourceProto()
 	if res == nil {
 		return nil
@@ -106,13 +97,13 @@ func downgradeResource(e cache.Resource) *resource.EnvoyResource {
 	case *envoy_config_endpoint_v3.ClusterLoadAssignment:
 		// No downgrade necessary
 	case *envoy_config_cluster_v3.Cluster:
-		downgradedResource = internal.DowngradeCluster(v)
+		return &resource.EnvoyResource{ProtoMessage: internal.DowngradeCluster(v)}
 	case *envoy_config_route_v3.RouteConfiguration:
 		// No downgrade necessary
 	case *envoy_config_listener_v3.Listener:
-		downgradedResource = internal.DowngradeListener(v)
+		return &resource.EnvoyResource{ProtoMessage: internal.DowngradeListener(v)}
 	}
-	return &resource.EnvoyResource{ProtoMessage: downgradedResource}
+	return nil
 }
 
 func downgradeCacheResources(resources cache.Resources) cache.Resources {
@@ -178,12 +169,8 @@ func (s *EnvoySnapshot) GetResources(typ string) cache.Resources {
 		return s.Routes
 	case resource.ListenerTypeV3:
 		return s.Listeners
-	case resource.EndpointTypeV2:
-		return s.hiddenDeprecatedEndpoints
 	case resource.ClusterTypeV2:
 		return s.hiddenDeprecatedClusters
-	case resource.RouteTypeV2:
-		return s.hiddenDeprecatedRoutes
 	case resource.ListenerTypeV2:
 		return s.hiddenDeprecatedListeners
 	}
@@ -213,19 +200,9 @@ func (s *EnvoySnapshot) Clone() cache.Snapshot {
 		Items:   cloneItems(s.Listeners.Items),
 	}
 
-	snapshotClone.hiddenDeprecatedEndpoints = cache.Resources{
-		Version: s.hiddenDeprecatedEndpoints.Version,
-		Items:   cloneItems(s.hiddenDeprecatedEndpoints.Items),
-	}
-
 	snapshotClone.hiddenDeprecatedClusters = cache.Resources{
 		Version: s.hiddenDeprecatedClusters.Version,
 		Items:   cloneItems(s.hiddenDeprecatedClusters.Items),
-	}
-
-	snapshotClone.hiddenDeprecatedRoutes = cache.Resources{
-		Version: s.hiddenDeprecatedRoutes.Version,
-		Items:   cloneItems(s.hiddenDeprecatedRoutes.Items),
 	}
 
 	snapshotClone.hiddenDeprecatedListeners = cache.Resources{

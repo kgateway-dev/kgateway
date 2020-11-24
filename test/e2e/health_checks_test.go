@@ -156,7 +156,7 @@ var _ = Describe("Health Checks", func() {
 				envoyHealthCheckTest.Check.UnhealthyThreshold = gogoutils.UInt32GogoToProto(translator.DefaultThreshold)
 
 				// persist the health check configuration
-				us.HealthChecks, err = gogoutils.ToGlooHealthCheckList([]*envoycore.HealthCheck{envoyHealthCheckTest.Check})
+				us.HealthChecks, err = gogoutils.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{envoyHealthCheckTest.Check})
 				Expect(err).NotTo(HaveOccurred())
 
 				_, err = testClients.UpstreamClient.Write(us, clients.WriteOpts{OverwriteExisting: true})

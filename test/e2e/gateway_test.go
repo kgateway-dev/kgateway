@@ -310,7 +310,7 @@ var _ = Describe("Gateway", func() {
 			}
 		})
 
-		FContext("traffic", func() {
+		Context("traffic", func() {
 
 			var (
 				envoyInstance *services.EnvoyInstance
@@ -361,7 +361,7 @@ var _ = Describe("Gateway", func() {
 				}, 5*time.Second, 1*time.Second).Should(HaveOccurred())
 			})
 
-			FIt("works when rapid virtual service creation and deletion causes no race conditions", func() {
+			It("works when rapid virtual service creation and deletion causes no race conditions", func() {
 				up := tu.Upstream
 				vs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
 

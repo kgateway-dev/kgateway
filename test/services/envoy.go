@@ -436,10 +436,7 @@ func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32, configFil
 	}
 
 	if ei.UseDocker {
-		err := ei.runContainer(ctx)
-		if err != nil {
-			return err
-		}
+		return ei.runContainer(ctx)
 	}
 
 	args := []string{"--config-yaml", ei.envoycfg, "--disable-hot-restart", "--log-level", "debug"}
