@@ -362,7 +362,7 @@ func parseEnterpriseNotes(enterpriseReleaseNotes string, openSourceReleases map[
 							n := listItem.FirstChild().Lines().At(0)
 							noteToAppend := osReleaseBuf[n.Start:n.Stop]
 							prefix := getOSDependentVersionPrefix(depVersion)
-							previousVersionNotesForCurrentHeader = append(previousVersionNotesForCurrentHeader, []byte("\n- "+prefix)...)
+							previousVersionNotesForCurrentHeader = append(previousVersionNotesForCurrentHeader, []byte(prefix)...)
 							previousVersionNotesForCurrentHeader = append(previousVersionNotesForCurrentHeader, noteToAppend...)
 
 						}
@@ -377,8 +377,8 @@ func parseEnterpriseNotes(enterpriseReleaseNotes string, openSourceReleases map[
 		}
 	}
 	endOfCurrentSectionIdx = eBufEndOfCurrentSection + offset
-	step1 := source[:endOfCurrentSectionIdx]
-	// This section handles any headers from previous releases that aren't already in the current release version
+	accumulator := source[:endOfCurrentSectionIdx]
+	// This section handles any headers from previous releases that aren't in the current release version
 	for _, depVersion := range depVersions {
 		osReleaseBuf := []byte(openSourceReleases[depVersion])
 		osReleaseMap, err := parseOSNotes(openSourceReleases[depVersion])
@@ -393,17 +393,16 @@ func parseEnterpriseNotes(enterpriseReleaseNotes string, openSourceReleases map[
 			}
 			if headersParsed[header] != 2 {
 				sectionName := fmt.Sprintf("\n\n**%s**\n", header)
-				step1 = append(step1, []byte(sectionName)...)
+				accumulator = append(accumulator, []byte(sectionName)...)
 				headersParsed[header] = 2
 			}
 			for i := 0; i < len(items); i++ {
 				listItem := items[i]
 				vToInsert := listItem.FirstChild().Lines().At(0)
 				prefix := getOSDependentVersionPrefix(depVersion)
-				step2 := append(step1, []byte("\n- "+prefix)...)
-				step3 := append(step2, osReleaseBuf[vToInsert.Start:vToInsert.Stop]...)
-				source = append(step3, enterpriseReleaseNotes[eBufEndOfCurrentSection:]...)
-				step1 = step3
+				accumulator = append(accumulator, []byte(prefix)...)
+				accumulator = append(accumulator, osReleaseBuf[vToInsert.Start:vToInsert.Stop]...)
+				source = append(accumulator, enterpriseReleaseNotes[eBufEndOfCurrentSection:]...)
 			}
 		}
 	}
@@ -412,7 +411,7 @@ func parseEnterpriseNotes(enterpriseReleaseNotes string, openSourceReleases map[
 
 func getOSDependentVersionPrefix(osVersionTag Version) string {
 	osReleaseId := strings.ReplaceAll(osVersionTag.String(), ".", "")
-	osPrefix := fmt.Sprintf("(From [OSS %s](/reference/changelog/open_source/#%s)) ", osVersionTag.String(), osReleaseId)
+	osPrefix := fmt.Sprintf("\n- (From [OSS %s](/reference/changelog/open_source/#%s)) ", osVersionTag.String(), osReleaseId)
 	return osPrefix
 }
 
