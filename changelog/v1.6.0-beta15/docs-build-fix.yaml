@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3910
+    description: A recent commit changed the make target for building the docs site and is causing the docs build to fail. This PR addresses this issue by copying over the generate_changelog_doc.go to the CI directory. Also add docs build to CI.
+    resolvesIssue: true
