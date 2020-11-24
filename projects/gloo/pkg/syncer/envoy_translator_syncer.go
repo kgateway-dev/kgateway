@@ -7,6 +7,7 @@ import (
 
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 
 	"github.com/gorilla/mux"
 	"github.com/rotisserie/eris"
@@ -160,10 +161,10 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 		}
 
 		// Record some metrics
-		clustersLen := len(xdsSnapshot.GetResources(xds.ClusterType).Items)
-		listenersLen := len(xdsSnapshot.GetResources(xds.ListenerType).Items)
-		routesLen := len(xdsSnapshot.GetResources(xds.RouteType).Items)
-		endpointsLen := len(xdsSnapshot.GetResources(xds.EndpointType).Items)
+		clustersLen := len(xdsSnapshot.GetResources(resource.ClusterTypeV3).Items)
+		listenersLen := len(xdsSnapshot.GetResources(resource.ListenerTypeV3).Items)
+		routesLen := len(xdsSnapshot.GetResources(resource.RouteTypeV3).Items)
+		endpointsLen := len(xdsSnapshot.GetResources(resource.EndpointTypeV3).Items)
 
 		measureResource(proxyCtx, "clusters", clustersLen)
 		measureResource(proxyCtx, "listeners", listenersLen)
@@ -214,11 +215,11 @@ func (s *translatorSyncer) updateEndpointsOnly(snapshotKey string, current envoy
 
 	newSnapshot := xds.NewSnapshotFromResources(
 		// Set endpoints and clusters calculated during this sync
-		current.GetResources(xds.EndpointType),
-		current.GetResources(xds.ClusterType),
+		current.GetResources(resource.EndpointTypeV3),
+		current.GetResources(resource.ClusterTypeV3),
 		// Keep other resources from previous snapshot
-		previous.GetResources(xds.RouteType),
-		previous.GetResources(xds.ListenerType),
+		previous.GetResources(resource.RouteTypeV3),
+		previous.GetResources(resource.ListenerTypeV3),
 	)
 
 	if err := newSnapshot.Consistent(); err != nil {

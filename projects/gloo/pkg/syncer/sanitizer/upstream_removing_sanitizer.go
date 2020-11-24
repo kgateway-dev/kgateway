@@ -5,6 +5,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -43,8 +44,8 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 
 	contextutils.LoggerFrom(ctx).Debug("removing errored upstreams and checking consistency")
 
-	clusters := xdsSnapshot.GetResources(xds.ClusterType)
-	endpoints := xdsSnapshot.GetResources(xds.EndpointType)
+	clusters := xdsSnapshot.GetResources(resource.ClusterTypeV3)
+	endpoints := xdsSnapshot.GetResources(resource.EndpointTypeV3)
 
 	var removed int64
 
@@ -67,8 +68,8 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 	xdsSnapshot = xds.NewSnapshotFromResources(
 		endpoints,
 		clusters,
-		xdsSnapshot.GetResources(xds.RouteType),
-		xdsSnapshot.GetResources(xds.ListenerType),
+		xdsSnapshot.GetResources(resource.RouteTypeV3),
+		xdsSnapshot.GetResources(resource.ListenerTypeV3),
 	)
 
 	// If the snapshot is not consistent,

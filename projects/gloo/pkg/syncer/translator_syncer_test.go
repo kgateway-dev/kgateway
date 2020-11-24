@@ -143,13 +143,13 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(sanitizer.called).To(BeTrue())
 		Expect(xdsCache.called).To(BeTrue())
 
-		oldListeners := oldXdsSnap.GetResources(xds.ListenerType)
-		newListeners := xdsCache.setSnap.GetResources(xds.ListenerType)
+		oldListeners := oldXdsSnap.GetResources(resource.ListenerTypeV3)
+		newListeners := xdsCache.setSnap.GetResources(resource.ListenerTypeV3)
 
 		Expect(oldListeners).To(Equal(newListeners))
 
-		oldRoutes := oldXdsSnap.GetResources(xds.RouteType)
-		newRoutes := xdsCache.setSnap.GetResources(xds.RouteType)
+		oldRoutes := oldXdsSnap.GetResources(resource.RouteTypeV3)
+		newRoutes := xdsCache.setSnap.GetResources(resource.RouteTypeV3)
 
 		Expect(oldRoutes).To(Equal(newRoutes))
 	})

@@ -215,9 +215,9 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		snap, err := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
 		Expect(err).NotTo(HaveOccurred())
 
-		routeCfgs := snap.GetResources(xds.RouteType)
-		listeners := snap.GetResources(xds.ListenerType)
-		clusters := snap.GetResources(xds.ClusterType)
+		routeCfgs := snap.GetResources(resource.RouteTypeV3)
+		listeners := snap.GetResources(resource.ListenerTypeV3)
+		clusters := snap.GetResources(resource.ClusterTypeV3)
 
 		sanitizedRoutes := routeCfgs.Items[routeCfg.GetName()]
 		listenersWithFallback := listeners.Items[fallbackListenerName]

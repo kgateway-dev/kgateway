@@ -114,7 +114,7 @@ type setupSyncer struct {
 func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, callbacks xdsserver.Callbacks, start bool) bootstrap.ControlPlane {
 	hasher := &xds.ProxyKeyHasher{}
 	snapshotCache := cache.NewSnapshotCache(true, hasher, contextutils.LoggerFrom(ctx))
-	xdsServer := server.NewServer(snapshotCache, callbacks)
+	xdsServer := server.NewServer(ctx, snapshotCache, callbacks)
 	reflection.Register(grpcServer)
 
 	return bootstrap.ControlPlane{
