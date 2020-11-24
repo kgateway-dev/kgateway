@@ -105,8 +105,11 @@ func (t *TLSSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Resou
 						Data: map[string][]byte{
 							kubev1.TLSPrivateKeyKey:        []byte(tlsGlooSecret.Tls.PrivateKey),
 							kubev1.TLSCertKey:              []byte(tlsGlooSecret.Tls.CertChain),
-							kubev1.ServiceAccountRootCAKey: []byte(tlsGlooSecret.Tls.RootCa),
 						},
+					}
+
+					if tlsGlooSecret.Tls.RootCa != "" {
+						kubeSecret.Data[kubev1.ServiceAccountRootCAKey] = []byte(tlsGlooSecret.Tls.RootCa)
 					}
 
 					return kubeSecret, nil

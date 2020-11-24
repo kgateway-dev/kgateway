@@ -121,7 +121,6 @@ var _ = Describe("SecretConverter", func() {
 			Data: map[string][]byte{
 				kubev1.TLSCertKey:              []byte("cert"),
 				kubev1.TLSPrivateKeyKey:        []byte("key"),
-				kubev1.ServiceAccountRootCAKey: []byte(""),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "s1",
