@@ -25,7 +25,6 @@ apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata: # collapsed for brevity
 spec:
-spec:
   bindAddress: '::'
   bindPort: 8080
   httpGateway:
@@ -36,6 +35,12 @@ spec:
           requestHeadersForTags:
             - path
             - origin
+          zipkinConfig:
+            collectorEndpoint: /api/v2/spans
+            collectorEndpointVersion: HTTP_JSON
+            collectorUpstreamRef:
+              name: zipkin
+              namespace: default
 status: # collapsed for brevity
 {{< /highlight >}}
 
