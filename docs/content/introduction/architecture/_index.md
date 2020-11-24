@@ -100,7 +100,6 @@ The following discovery methods are currently supported:
 * AWS Lambda-Based Function Discovery
 * Google Cloud Function-Based Function Discovery
 * OpenAPI-Based Function Discovery
-* Istio-Based Route Rule Discovery (Experimental)
 
 ---
 
