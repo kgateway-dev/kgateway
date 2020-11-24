@@ -16,7 +16,7 @@ import (
 
 	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/go-utils/versionutils"
+	. "github.com/solo-io/go-utils/versionutils"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -241,15 +241,15 @@ func getAllReleases(client *github.Client, repo string, sortedByVersion bool) ([
 	if sortedByVersion {
 		sort.Slice(allReleases, func(i, j int) bool {
 			releaseA, releaseB := allReleases[i], allReleases[j]
-			versionA, err := versionutils.ParseVersion(releaseA.GetTagName())
+			versionA, err := ParseVersion(releaseA.GetTagName())
 			if err != nil {
 				return false
 			}
-			versionB, err := versionutils.ParseVersion(releaseB.GetTagName())
+			versionB, err := ParseVersion(releaseB.GetTagName())
 			if err != nil {
 				return false
 			}
-			return Version(*versionA).LessThan(Version(*versionB))
+			return versionA.MustIsGreaterThan(*versionB)
 		})
 	}
 	return allReleases, nil
@@ -257,7 +257,9 @@ func getAllReleases(client *github.Client, repo string, sortedByVersion bool) ([
 
 // Performs processing to generate a map of release version to the release notes
 // This also pulls in open source gloo edge release notes and merges them with enterprise release notes
-func parseGlooEReleases(enterpriseReleases, osReleases []*github.RepositoryRelease) (map[Version]string, error) {
+// The returned map will be a mapping of minor releases (v1.5, v1.6) to their body, which will contain the release notes
+// for all the patches under the minor releases
+func parseGlooEReleases(enterpriseReleasesSorted, osReleases []*github.RepositoryRelease) (map[Version]string, error) {
 	var minorReleaseMap = make(map[Version]string)
 
 	openSourceReleases, err := parseGlooReleases(osReleases, false)
@@ -265,37 +267,33 @@ func parseGlooEReleases(enterpriseReleases, osReleases []*github.RepositoryRelea
 		return nil, err
 	}
 
-	for index, release := range enterpriseReleases {
+	for index, release := range enterpriseReleasesSorted {
 		var releaseTag = release.GetTagName()
 
-		version, err := versionutils.ParseVersion(releaseTag)
-		var previousVersion *versionutils.Version
-		// Get the Gloo OSS version that the Gloo enterprise version relied on
-		if index+1 != len(enterpriseReleases) {
-			previousRelease := enterpriseReleases[index+1]
-			previousVersion, err = versionutils.ParseVersion(previousRelease.GetTagName())
-			if previousVersion.Major != version.Major || previousVersion.Minor != version.Minor {
-				previousVersion = nil
+		version, err := ParseVersion(releaseTag)
+		var previousEnterpriseVersion *Version
+		if index+1 != len(enterpriseReleasesSorted) {
+			previousRelease := enterpriseReleasesSorted[index+1]
+			previousEnterpriseVersion, err = ParseVersion(previousRelease.GetTagName())
+			// The previous enterprise version only concerns us if it was a patch of the same major and minor version
+			if previousEnterpriseVersion.Major != version.Major || previousEnterpriseVersion.Minor != version.Minor {
+				previousEnterpriseVersion = nil
 			}
 		}
-
 		if err != nil {
 			return nil, err
 		}
-		minorVersion := Version{
-			Major: version.Major,
-			Minor: version.Minor,
-		}
 
+		// Get the Gloo OSS version that the Gloo enterprise version relies on
 		depVersion, err := getGlooDependencyForGlooEVersion(version)
 		var glooOSSDescription string
 		body := release.GetBody()
-		if err == nil && previousVersion != nil {
-			// Intended output:  {{enterprise version}} (Uses Gloo OSS [v1.6.x](...)
+		if err == nil && previousEnterpriseVersion != nil {
+			// Intended output:  {{enterprise version}} (Uses Gloo OSS [v1.6.x](...))
 			glooOssLink := strings.ReplaceAll(depVersion.String(), ".", "")
 			glooOSSDescription = fmt.Sprintf("(Uses Gloo Edge OSS [%s](/reference/changelog/open_source/#%s))", depVersion.String(), glooOssLink)
 
-			previousDepVersion, err := getGlooDependencyForGlooEVersion(previousVersion)
+			previousDepVersion, err := getGlooDependencyForGlooEVersion(previousEnterpriseVersion)
 			var depVersions []Version
 			// Get all intermediate versions of Gloo OSS that this Gloo enterprise relies on
 			if err == nil {
@@ -307,24 +305,30 @@ func parseGlooEReleases(enterpriseReleases, osReleases []*github.RepositoryRelea
 				return nil, err
 			}
 		}
-
+		// We only want the minor version (not patch number or label) for the resulting map
+		minorVersion := Version{
+			Major: version.Major,
+			Minor: version.Minor,
+		}
 		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("##### %s %s\n ", version.String(), glooOSSDescription) + body
 	}
 	return minorReleaseMap, nil
 }
 
+// Parses the enterprise release notes, then inserts open source release notes for each of the dependent versions
+// of gloo Open source between the current release and the previous release
 func parseEnterpriseNotes(enterpriseReleaseNotes string, openSourceReleases map[Version]string, depVersions []Version) (string, error) {
 	node := goldmark.DefaultParser().Parse(text.NewReader([]byte(enterpriseReleaseNotes)))
 
 	source := []byte(enterpriseReleaseNotes)
 
-	// Headers : New Features, Fixes, Helm Changes, Dependency Bumps, CVEs
+	// Examples of headers are : New Features, Fixes, Helm Changes, Dependency Bumps, CVEs
 	headersParsed := make(map[string]int)
 	var eBufEndOfCurrentSection int
 	var endOfCurrentSectionIdx int
 	var offset int
 
-	// Releaes notes are not nested under the headers in the AST, hence we must keep track of the currentHeader
+	// Release notes are not nested under the headers in the AST, hence we must keep track of the currentHeader
 	for n, currentHeader := node.FirstChild(), ""; n != nil; n = n.NextSibling() {
 		switch typedNode := n.(type) {
 		// In this case, it is a header block
@@ -343,7 +347,7 @@ func parseEnterpriseNotes(enterpriseReleaseNotes string, openSourceReleases map[
 				vLast := n.LastChild().FirstChild().Lines().At(0)
 				eBufEndOfCurrentSection = vLast.Stop
 				endOfCurrentSectionIdx = eBufEndOfCurrentSection + offset
-				var changesFromPreviousVersion []byte
+				var previousVersionNotesForCurrentHeader []byte
 				// Iterate through all dependent versions of Gloo that we need to show changes for
 				for _, depVersion := range depVersions {
 					osReleaseBuf := openSourceReleases[depVersion]
@@ -357,19 +361,18 @@ func parseEnterpriseNotes(enterpriseReleaseNotes string, openSourceReleases map[
 							listItem := items[i]
 							n := listItem.FirstChild().Lines().At(0)
 							noteToAppend := osReleaseBuf[n.Start:n.Stop]
-							osReleaseId := strings.ReplaceAll(depVersion.String(), ".", "")
-							osRefLink := fmt.Sprintf("(From [OSS %s](/reference/changelog/open_source/#%s)) ", depVersion.String(), osReleaseId)
-							changesFromPreviousVersion = append(changesFromPreviousVersion, []byte("\n- "+osRefLink)...)
-							changesFromPreviousVersion = append(changesFromPreviousVersion, noteToAppend...)
+							prefix := getOSDependentVersionPrefix(depVersion)
+							previousVersionNotesForCurrentHeader = append(previousVersionNotesForCurrentHeader, []byte("\n- "+prefix)...)
+							previousVersionNotesForCurrentHeader = append(previousVersionNotesForCurrentHeader, noteToAppend...)
 
 						}
 						headersParsed[currentHeader] = 1
 					}
 				}
 				// Append accumulated changes to the current release notes under the current header
-				source = append(source[:endOfCurrentSectionIdx], changesFromPreviousVersion...)
+				source = append(source[:endOfCurrentSectionIdx], previousVersionNotesForCurrentHeader...)
 				source = append(source, enterpriseReleaseNotes[eBufEndOfCurrentSection:]...)
-				offset = offset + len(changesFromPreviousVersion)
+				offset = offset + len(previousVersionNotesForCurrentHeader)
 			}
 		}
 	}
@@ -396,9 +399,8 @@ func parseEnterpriseNotes(enterpriseReleaseNotes string, openSourceReleases map[
 			for i := 0; i < len(items); i++ {
 				listItem := items[i]
 				vToInsert := listItem.FirstChild().Lines().At(0)
-				osReleaseId := strings.ReplaceAll(depVersion.String(), ".", "")
-				osRefLink := fmt.Sprintf("(From [OSS %s](/reference/changelog/open_source/#%s)) ", depVersion.String(), osReleaseId)
-				step2 := append(step1, []byte("\n- "+osRefLink)...)
+				prefix := getOSDependentVersionPrefix(depVersion)
+				step2 := append(step1, []byte("\n- "+prefix)...)
 				step3 := append(step2, osReleaseBuf[vToInsert.Start:vToInsert.Stop]...)
 				source = append(step3, enterpriseReleaseNotes[eBufEndOfCurrentSection:]...)
 				step1 = step3
@@ -406,6 +408,12 @@ func parseEnterpriseNotes(enterpriseReleaseNotes string, openSourceReleases map[
 		}
 	}
 	return string(source), nil
+}
+
+func getOSDependentVersionPrefix(osVersionTag Version) string {
+	osReleaseId := strings.ReplaceAll(osVersionTag.String(), ".", "")
+	osPrefix := fmt.Sprintf("(From [OSS %s](/reference/changelog/open_source/#%s)) ", osVersionTag.String(), osReleaseId)
+	return osPrefix
 }
 
 // parse notes from string to a map of header (e.g. Fixes, New Features, Helm Changes, etc.) to the release notes
@@ -438,8 +446,8 @@ func parseOSNotes(osReleaseNotes string) (map[string][]*ast.ListItem, error) {
 	return releaseNotes, nil
 }
 
-// Get the dependency diff for the gloo enterprise version
-func getAllDependencyDiffsForGlooEVersion(currentVersion, currentVersionDep, previousVersionDep *versionutils.Version, osReleaseList []*github.RepositoryRelease) []Version {
+// Get the list of open source versions between open source version that the previous enterprise version used and the current enterprise version uses
+func getAllDependencyDiffsForGlooEVersion(currentVersion, currentVersionDep, previousVersionDep *Version, osReleaseList []*github.RepositoryRelease) []Version {
 	var dependentVersions []Version
 
 	if previousVersionDep == nil {
@@ -447,7 +455,7 @@ func getAllDependencyDiffsForGlooEVersion(currentVersion, currentVersionDep, pre
 	}
 	var adding bool
 	for _, release := range osReleaseList {
-		tag, _ := versionutils.ParseVersion(release.GetTagName())
+		tag, _ := ParseVersion(release.GetTagName())
 		version := *tag
 		if version == *currentVersionDep {
 			adding = true
@@ -465,7 +473,7 @@ func getAllDependencyDiffsForGlooEVersion(currentVersion, currentVersionDep, pre
 	return dependentVersions
 }
 
-func getGlooDependencyForGlooEVersion(enterpriseVersion *versionutils.Version) (*versionutils.Version, error) {
+func getGlooDependencyForGlooEVersion(enterpriseVersion *Version) (*Version, error) {
 	if enterpriseVersion == nil {
 		return nil, nil
 	}
@@ -492,7 +500,7 @@ func getGlooDependencyForGlooEVersion(enterpriseVersion *versionutils.Version) (
 		return nil, eris.Errorf("unable to get gloo dependency for gloo enterprise version %s\n response from google storage API: %s", versionTag, string(body))
 	}
 	glooVersionTag := matches[1]
-	version, err := versionutils.ParseVersion(glooVersionTag)
+	version, err := ParseVersion(glooVersionTag)
 	if err != nil {
 		return nil, err
 	}
@@ -505,7 +513,7 @@ func parseGlooReleases(releases []*github.RepositoryRelease, byMinorVersion bool
 	var minorReleaseMap = make(map[Version]string)
 	for _, release := range releases {
 		var releaseTag = release.GetTagName()
-		version, err := versionutils.ParseVersion(releaseTag)
+		version, err := ParseVersion(releaseTag)
 		if err != nil {
 			return nil, err
 		}
@@ -524,11 +532,11 @@ func parseGlooReleases(releases []*github.RepositoryRelease, byMinorVersion bool
 
 // Outputs changelogs in markdown format
 func printVersionOrderReleases(minorReleaseMap map[Version]string) {
-	var versions Versions
+	var versions []Version
 	for minorVersion, _ := range minorReleaseMap {
 		versions = append(versions, minorVersion)
 	}
-	sort.Sort(versions)
+	sortVersions(versions)
 	for _, version := range versions {
 		body := minorReleaseMap[version]
 		fmt.Printf("### v%v.%v\n\n", version.Major, version.Minor)
@@ -536,28 +544,9 @@ func printVersionOrderReleases(minorReleaseMap map[Version]string) {
 	}
 }
 
-type Version versionutils.Version
-type Versions []Version
-
-// The following functions are used to display the releases in order of release version
-func (v Version) LessThan(version Version) bool {
-	result, _ := versionutils.Version(v).IsGreaterThanOrEqualTo(versionutils.Version(version))
-	return result
-}
-
-func (v Version) String() string {
-	version := versionutils.Version(v)
-	return version.String()
-}
-
-func (s Versions) Len() int {
-	return len(s)
-}
-
-func (s Versions) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (s Versions) Less(i, j int) bool {
-	return s[i].LessThan(s[j])
+func sortVersions(versions []Version) {
+	sort.Slice(versions, func(i, j int) bool {
+		isGreaterThanOrEqualTo := versions[i].MustIsGreaterThanOrEqualTo(versions[j])
+		return isGreaterThanOrEqualTo
+	})
 }
