@@ -28,7 +28,7 @@ There are a few steps to make tracing available through Gloo Edge:
 
 Tracing requires a cluster that will collect the traces. For example, Zipkin requires a `collector_cluster` to be specified in the bootstrap config. If your provider requires a cluster to be specified, you can provide it in the config, as shown below.
 
-The bootstrap config is the portion of Envoy's config that is applied when an Envoy process in initialized.
+The bootstrap config is the portion of Envoy's config that is applied when an Envoy process is initialized.
 That means that you must either apply this configuration through Helm values during installation or that you must edit the proxy's config map and restart the pod.
 We describe both methods below.
 
@@ -103,10 +103,10 @@ data:
                       port_value: 1234
 {{< /highlight >}}
 
-To apply the bootstrap config to Envoy we need to restart the process. An easy way to do this is with `kubectl delete pod`.
+To apply the bootstrap config to Envoy we need to restart the process. An easy way to do this is with `kubectl rollout restart`.
 
 ```bash
-kubectl delete pod -n gloo-system gateway-proxy-[suffix]
+kubectl rollout restart deployment [deployment_name]
 ```
 
 When the `gateway-proxy` pod restarts it should have the new trace cluster config.
@@ -118,7 +118,7 @@ For demonstration purposes, we show how to configure a *zipkin* trace provider b
 
 **Option 1 (Preferred): Set the tracing provider on a dynamic listener:**
 
-You can enable tracing on a listener-by-listener basis. Gloo Edge exposes this feature through a listener plugin. Please see [the tracing listener plugin docs]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/http_connection_manager/#tracing" %}}) for details on how to enable tracing on a listener.
+You can enable tracing on a listener-by-listener basis. Please see [the tracing listener docs]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/http_connection_manager/#tracing" %}}) for details on how to enable tracing on a listener.
 
 **Option 2: Set the tracing provider by editing the config map:**
 
@@ -167,10 +167,10 @@ data:
 {{< /highlight >}}
 
 
-To apply the bootstrap config to Envoy we need to restart the process. An easy way to do this is with `kubectl delete pod`.
+To apply the bootstrap config to Envoy we need to restart the process. An easy way to do this is with `kubectl rollout restart`.
 
 ```bash
-kubectl delete pod -n gloo-system gateway-proxy-[suffix]
+kubectl rollout restart deployment [deployment_name]
 ```
 
 When the `gateway-proxy` pod restarts it should have the new trace provider config.
