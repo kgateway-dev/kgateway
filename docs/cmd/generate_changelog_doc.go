@@ -95,7 +95,6 @@ func minorReleaseChangelogMdFromGithubCmd(opts *options) *cobra.Command {
 
 const (
 	latestVersionPath = "latest"
-	DONTPRINT         = false
 )
 
 const (
@@ -148,7 +147,7 @@ func generateChangelogMd(args []string) error {
 		return InvalidInputError(target)
 	}
 
-	allReleases, err := getAllReleases(client, repo)
+	allReleases, err := getAllReleases(client, repo, false)
 	if err != nil {
 		return err
 	}
@@ -184,7 +183,7 @@ func generateMinorReleaseChangelog(args []string) error {
 // Fetches Gloo Open Source releases and orders them by version
 func generateGlooChangelog() error {
 	client := github.NewClient(nil)
-	allReleases, err := getAllReleases(client, glooOpenSourceRepo)
+	allReleases, err := getAllReleases(client, glooOpenSourceRepo, true)
 	if err != nil {
 		return err
 	}
@@ -211,11 +210,11 @@ func generateGlooEChangelog() error {
 	client := github.NewClient(tc)
 
 	// Get all Gloo OSS release changelogs
-	enterpriseReleases, err := getAllReleases(client, glooEnterpriseRepo)
+	enterpriseReleases, err := getAllReleases(client, glooEnterpriseRepo, true)
 	if err != nil {
 		return err
 	}
-	openSourceReleases, err := getAllReleases(client, glooOpenSourceRepo)
+	openSourceReleases, err := getAllReleases(client, glooOpenSourceRepo, true)
 	if err != nil {
 		return err
 	}
@@ -229,7 +228,7 @@ func generateGlooEChangelog() error {
 }
 
 // Fetches releases for repo from github
-func getAllReleases(client *github.Client, repo string) ([]*github.RepositoryRelease, error) {
+func getAllReleases(client *github.Client, repo string, sortedByVersion bool) ([]*github.RepositoryRelease, error) {
 	allReleases, _, err := client.Repositories.ListReleases(context.Background(), "solo-io", repo,
 		&github.ListOptions{
 			Page:    0,
@@ -239,18 +238,20 @@ func getAllReleases(client *github.Client, repo string) ([]*github.RepositoryRel
 		return nil, err
 	}
 
-	sort.Slice(allReleases, func(i, j int) bool {
-		releaseA, releaseB := allReleases[i], allReleases[j]
-		versionA, err := versionutils.ParseVersion(releaseA.GetTagName())
-		if err != nil {
-			return false
-		}
-		versionB, err := versionutils.ParseVersion(releaseB.GetTagName())
-		if err != nil {
-			return false
-		}
-		return Version(*versionA).LessThan(Version(*versionB))
-	})
+	if sortedByVersion {
+		sort.Slice(allReleases, func(i, j int) bool {
+			releaseA, releaseB := allReleases[i], allReleases[j]
+			versionA, err := versionutils.ParseVersion(releaseA.GetTagName())
+			if err != nil {
+				return false
+			}
+			versionB, err := versionutils.ParseVersion(releaseB.GetTagName())
+			if err != nil {
+				return false
+			}
+			return Version(*versionA).LessThan(Version(*versionB))
+		})
+	}
 	return allReleases, nil
 }
 
@@ -528,12 +529,10 @@ func printVersionOrderReleases(minorReleaseMap map[Version]string) {
 		versions = append(versions, minorVersion)
 	}
 	sort.Sort(versions)
-	if !DONTPRINT {
-		for _, version := range versions {
-			body := minorReleaseMap[version]
-			fmt.Printf("### v%v.%v\n\n", version.Major, version.Minor)
-			fmt.Printf("%v", body)
-		}
+	for _, version := range versions {
+		body := minorReleaseMap[version]
+		fmt.Printf("### v%v.%v\n\n", version.Major, version.Minor)
+		fmt.Printf("%v", body)
 	}
 }
 
