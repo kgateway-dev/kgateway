@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/3881
+    description: >
+      When doing a helm install where `istioSDS.enabled` is set to `true`, the `ISTIO_META_CLUSTER_ID` environment variable is now initialized to "Kubernetes".
