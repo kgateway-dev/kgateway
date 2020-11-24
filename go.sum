@@ -406,6 +406,7 @@ github.com/emirpasic/gods v1.12.0/go.mod h1:YfzfFFoVP/catgzJb4IKIqXjX78Ha8FMSDh3
 github.com/envoyproxy/go-control-plane v0.6.9/go.mod h1:SBwIajubJHhxtWwsL9s8ss4safvEdbitLhGGK48rN6g=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
+github.com/envoyproxy/go-control-plane v0.9.1/go.mod h1:G1fbsNGAFpC1aaERrShZQVdUV2ZuZuv6FCl2v9JNSxQ=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
 github.com/envoyproxy/go-control-plane v0.9.5/go.mod h1:OXl5to++W0ctG+EHWTFUjiypVxC/Y4VLc/KFU+al13s=
 github.com/envoyproxy/go-control-plane v0.9.6-0.20200529035633-fc42e08917e9 h1:AM3AYZI9udpliFfjJTM4E2G9pR+HS5ilXrJGJTvWTJM=
@@ -1339,6 +1340,7 @@ github.com/solo-io/envoy-operator v0.1.4 h1:haffsWSfiDtQrOHVaAuTL48LUVBvSYsv9nqJ
 github.com/solo-io/envoy-operator v0.1.4/go.mod h1:RX7+5zmyZs0SM4K9q9bkaqPMx4XzoQJVi/zBl3NNsG0=
 github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f h1:CHgAq6eqV0JkJJifAEQ3f80YYmsxqTmhJfg6UnGVrCA=
 github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f/go.mod h1:lojsKFoQQH0O/ElLmagtWINB9zAaq04E8z0xIVS/gLU=
+github.com/solo-io/go-utils v0.13.0/go.mod h1:pA8kwWDNlJueffTcC1BYddTerO8zpUUGl5/7JGeC5iU=
 github.com/solo-io/go-utils v0.15.2/go.mod h1:pA8kwWDNlJueffTcC1BYddTerO8zpUUGl5/7JGeC5iU=
 github.com/solo-io/go-utils v0.16.4/go.mod h1:uIPAgEuwiEwpBaFv1uI7j4CUVaFYR5iHmTYuIUlLY2Q=
 github.com/solo-io/go-utils v0.16.5/go.mod h1:uIPAgEuwiEwpBaFv1uI7j4CUVaFYR5iHmTYuIUlLY2Q=
@@ -1356,6 +1358,10 @@ github.com/solo-io/skv2 v0.8.1 h1:M45iMM97a3z5pSRYxcw8hScmqYcP6+oFxrtjauos8Ms=
 github.com/solo-io/skv2 v0.8.1/go.mod h1:Da9SOUuIlb61Fxi3E/aFFXjxzRAAvx34qglWrNg3wEQ=
 github.com/solo-io/solo-apis v0.0.0-20201103221621-bbe4f60f466d h1:vYHs1At/VRlQfbnp3agZweAhx8ycUbPx4cTI6lozdJo=
 github.com/solo-io/solo-apis v0.0.0-20201103221621-bbe4f60f466d/go.mod h1:wyrnIh/q2p7wCWq8ZSvIw5zJ3jpAp/dtWatk+SULCqk=
+github.com/solo-io/solo-kit v0.13.8/go.mod h1:1cSoxO1Cgzn++03nnp5V1iGf0S45OLDTUmj70rD/+hY=
+github.com/solo-io/solo-kit v0.13.9/go.mod h1:1cSoxO1Cgzn++03nnp5V1iGf0S45OLDTUmj70rD/+hY=
+github.com/solo-io/solo-kit v0.15.0 h1:K9FeP7f4RRW0KUyoNPxutWeWRrrjBBtdTNhz7xou6d4=
+github.com/solo-io/solo-kit v0.15.0/go.mod h1:sngiqnloPgfS2eks/yJSLhpyQhZbO3RSTogMt5tQcvk=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3 h1:Am1RMaWH7jOug0ys4gUeBCgwR/94NSfZqu90j9u8eTA=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3/go.mod h1:3lckq1wF8I6I2a1Jx5IsEG+PQArE57Jp3wBE2rQnKmw=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
