@@ -3,6 +3,8 @@ package gogoutils
 import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	envoycluster_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
 	envoycore_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
@@ -132,17 +134,27 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretLis
 		if err != nil {
 			return nil, err
 		}
-		hc.HealthChecker = &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
-			HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
-				Host:                             typed.HttpHealthCheck.GetHost(),
-				Path:                             typed.HttpHealthCheck.GetPath(),
-				HiddenEnvoyDeprecatedUseHttp2:    typed.HttpHealthCheck.GetUseHttp2(),
-				HiddenEnvoyDeprecatedServiceName: typed.HttpHealthCheck.GetServiceName(),
-				RequestHeadersToAdd:              requestHeadersToAdd,
-				RequestHeadersToRemove:           typed.HttpHealthCheck.GetRequestHeadersToRemove(),
-				ExpectedStatuses:                 ToEnvoyInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
-			},
+		httpHealthChecker := &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+			Host:                   typed.HttpHealthCheck.GetHost(),
+			Path:                   typed.HttpHealthCheck.GetPath(),
+			RequestHeadersToAdd:    requestHeadersToAdd,
+			RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
+			ExpectedStatuses:       ToEnvoyInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
 		}
+		if typed.HttpHealthCheck.GetUseHttp2() {
+			httpHealthChecker.CodecClientType = envoy_type_v3.CodecClientType_HTTP2
+		}
+		if typed.HttpHealthCheck.GetServiceName() != "" {
+			httpHealthChecker.ServiceNameMatcher = &envoy_type_matcher_v3.StringMatcher{
+				MatchPattern: &envoy_type_matcher_v3.StringMatcher_Prefix{
+					Prefix: typed.HttpHealthCheck.GetServiceName(),
+				},
+			}
+		}
+		hc.HealthChecker = &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
+			HttpHealthCheck: httpHealthChecker,
+		}
+
 	case *envoycore_gloo.HealthCheck_GrpcHealthCheck_:
 		hc.HealthChecker = &envoy_config_core_v3.HealthCheck_GrpcHealthCheck_{
 			GrpcHealthCheck: &envoy_config_core_v3.HealthCheck_GrpcHealthCheck{
@@ -214,16 +226,29 @@ func ToGlooHealthCheck(check *envoy_config_core_v3.HealthCheck) (*envoycore_gloo
 			},
 		}
 	case *envoy_config_core_v3.HealthCheck_HttpHealthCheck_:
+		httpHealthChecker := &envoycore_gloo.HealthCheck_HttpHealthCheck{
+			Host:                   typed.HttpHealthCheck.GetHost(),
+			Path:                   typed.HttpHealthCheck.GetPath(),
+			UseHttp2:               typed.HttpHealthCheck.GetHiddenEnvoyDeprecatedUseHttp2(),
+			ServiceName:            typed.HttpHealthCheck.GetHiddenEnvoyDeprecatedServiceName(),
+			RequestHeadersToAdd:    ToGlooHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd()),
+			RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
+			ExpectedStatuses:       ToGlooInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
+		}
+
+		if typed.HttpHealthCheck.GetCodecClientType() == envoy_type_v3.CodecClientType_HTTP2 {
+			httpHealthChecker.UseHttp2 = true
+		}
+
+		switch typed.HttpHealthCheck.GetServiceNameMatcher().GetMatchPattern().(type) {
+		case *envoy_type_matcher_v3.StringMatcher_Prefix:
+			httpHealthChecker.ServiceName = typed.HttpHealthCheck.GetServiceNameMatcher().GetPrefix()
+		case *envoy_type_matcher_v3.StringMatcher_Exact:
+			httpHealthChecker.ServiceName = typed.HttpHealthCheck.GetServiceNameMatcher().GetExact()
+		}
+
 		hc.HealthChecker = &envoycore_gloo.HealthCheck_HttpHealthCheck_{
-			HttpHealthCheck: &envoycore_gloo.HealthCheck_HttpHealthCheck{
-				Host:                   typed.HttpHealthCheck.GetHost(),
-				Path:                   typed.HttpHealthCheck.GetPath(),
-				UseHttp2:               typed.HttpHealthCheck.GetHiddenEnvoyDeprecatedUseHttp2(),
-				ServiceName:            typed.HttpHealthCheck.GetHiddenEnvoyDeprecatedServiceName(),
-				RequestHeadersToAdd:    ToGlooHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd()),
-				RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
-				ExpectedStatuses:       ToGlooInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
-			},
+			HttpHealthCheck: httpHealthChecker,
 		}
 	case *envoy_config_core_v3.HealthCheck_GrpcHealthCheck_:
 		hc.HealthChecker = &envoycore_gloo.HealthCheck_GrpcHealthCheck_{
