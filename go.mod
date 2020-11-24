@@ -5,8 +5,6 @@ go 1.14
 require (
 	github.com/Azure/go-autorest/autorest v0.10.2 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.5 // indirect
-	github.com/Kunde21/markdownfmt v0.1.6 // indirect
-	github.com/Kunde21/markdownfmt/v2 v2.0.3 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/semver/v3 v3.1.0
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
