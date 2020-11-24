@@ -12,6 +12,7 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -561,13 +562,17 @@ var _ = Describe("Translator", func() {
 					UnhealthyThreshold: gogoutils.UInt32GogoToProto(DefaultThreshold),
 					HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
 						HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
-							Host:                             "host",
-							Path:                             "path",
-							HiddenEnvoyDeprecatedServiceName: "svc",
-							RequestHeadersToAdd:              []*envoy_config_core_v3.HeaderValueOption{},
-							RequestHeadersToRemove:           []string{},
-							HiddenEnvoyDeprecatedUseHttp2:    true,
-							ExpectedStatuses:                 []*envoy_type_v3.Int64Range{},
+							Host: "host",
+							Path: "path",
+							ServiceNameMatcher: &envoy_type_matcher_v3.StringMatcher{
+								MatchPattern: &envoy_type_matcher_v3.StringMatcher_Prefix{
+									Prefix: "svc",
+								},
+							},
+							RequestHeadersToAdd:    []*envoy_config_core_v3.HeaderValueOption{},
+							RequestHeadersToRemove: []string{},
+							CodecClientType:        envoy_type_v3.CodecClientType_HTTP2,
+							ExpectedStatuses:       []*envoy_type_v3.Int64Range{},
 						},
 					},
 				},
@@ -657,13 +662,17 @@ var _ = Describe("Translator", func() {
 					UnhealthyThreshold: gogoutils.UInt32GogoToProto(DefaultThreshold),
 					HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
 						HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
-							Host:                             "host",
-							Path:                             "path",
-							HiddenEnvoyDeprecatedServiceName: "svc",
-							RequestHeadersToAdd:              []*envoy_config_core_v3.HeaderValueOption{},
-							RequestHeadersToRemove:           []string{},
-							HiddenEnvoyDeprecatedUseHttp2:    true,
-							ExpectedStatuses:                 []*envoy_type_v3.Int64Range{},
+							Host: "host",
+							Path: "path",
+							ServiceNameMatcher: &envoy_type_matcher_v3.StringMatcher{
+								MatchPattern: &envoy_type_matcher_v3.StringMatcher_Prefix{
+									Prefix: "svc",
+								},
+							},
+							RequestHeadersToAdd:    []*envoy_config_core_v3.HeaderValueOption{},
+							RequestHeadersToRemove: []string{},
+							CodecClientType:        envoy_type_v3.CodecClientType_HTTP2,
+							ExpectedStatuses:       []*envoy_type_v3.Int64Range{},
 						},
 					},
 				},
