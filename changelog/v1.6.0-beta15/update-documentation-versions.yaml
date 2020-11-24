@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3896
+    description: >
+      The tracing documentation was incorrect in v1.5.x.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3900
+    description: >
+      The tracing documentation was incorrect in v1.6.x.
