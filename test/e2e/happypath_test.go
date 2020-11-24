@@ -44,7 +44,7 @@ import (
 	"k8s.io/kubernetes/pkg/apis/core/validation"
 )
 
-var _ = Describe("Happy path", func() {
+var _ = FDescribe("Happy path", func() {
 
 	var (
 		ctx           context.Context
@@ -130,7 +130,7 @@ var _ = Describe("Happy path", func() {
 					Expect(err).NotTo(HaveOccurred())
 				})
 
-				It("should not crash", func() {
+				FIt("should not crash", func() {
 					proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
 					_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())

@@ -35,6 +35,9 @@ type EnvoySnapshot struct {
 	// Endpoints are items in the EDS V3 response payload.
 	Endpoints cache.Resources
 
+	// hiddenDeprecatedClusters are items in the EDS V2 response payload.
+	hiddenDeprecatedEndpoints cache.Resources
+
 	// Clusters are items in the CDS response payload.
 	Clusters cache.Resources
 
@@ -63,6 +66,7 @@ func NewSnapshot(
 	// TODO: Copy resources
 	return &EnvoySnapshot{
 		Endpoints:                 cache.NewResources(version, endpoints),
+		hiddenDeprecatedEndpoints: downgradeCacheResourceList(version, endpoints),
 		Clusters:                  cache.NewResources(version, clusters),
 		hiddenDeprecatedClusters:  downgradeCacheResourceList(version, clusters),
 		Routes:                    cache.NewResources(version, routes),
@@ -80,6 +84,7 @@ func NewSnapshotFromResources(
 	// TODO: Copy resources and downgrade, maybe maintain hash to not do it too many times
 	return &EnvoySnapshot{
 		Endpoints:                 endpoints,
+		hiddenDeprecatedEndpoints: downgradeCacheResources(endpoints),
 		Clusters:                  clusters,
 		hiddenDeprecatedClusters:  downgradeCacheResources(clusters),
 		Routes:                    routes,
@@ -95,7 +100,7 @@ func downgradeResource(e cache.Resource) *resource.EnvoyResource {
 	}
 	switch v := res.(type) {
 	case *envoy_config_endpoint_v3.ClusterLoadAssignment:
-		// No downgrade necessary
+		return &resource.EnvoyResource{ProtoMessage: internal.DowngradeEndpoint(v)}
 	case *envoy_config_cluster_v3.Cluster:
 		return &resource.EnvoyResource{ProtoMessage: internal.DowngradeCluster(v)}
 	case *envoy_config_route_v3.RouteConfiguration:
@@ -203,6 +208,11 @@ func (s *EnvoySnapshot) Clone() cache.Snapshot {
 	snapshotClone.hiddenDeprecatedClusters = cache.Resources{
 		Version: s.hiddenDeprecatedClusters.Version,
 		Items:   cloneItems(s.hiddenDeprecatedClusters.Items),
+	}
+
+	snapshotClone.hiddenDeprecatedEndpoints = cache.Resources{
+		Version: s.hiddenDeprecatedEndpoints.Version,
+		Items:   cloneItems(s.hiddenDeprecatedEndpoints.Items),
 	}
 
 	snapshotClone.hiddenDeprecatedListeners = cache.Resources{

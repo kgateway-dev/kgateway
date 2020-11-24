@@ -60,7 +60,7 @@ var _ = Describe("RawUtil", func() {
 			}}
 			ExpectActionsSame(inactions)
 		})
-		XIt("should convert headermatch", func() {
+		FIt("should convert headermatch", func() {
 			m := []*gloorl.Action_HeaderValueMatch_HeaderMatcher{{
 				HeaderMatchSpecifier: &gloorl.Action_HeaderValueMatch_HeaderMatcher_ExactMatch{
 					ExactMatch: "e",

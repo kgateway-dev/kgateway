@@ -1,8 +1,6 @@
 package xds_test
 
 import (
-	"reflect"
-
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -36,8 +34,8 @@ var _ = Describe("EnvoySnapshot", func() {
 		clone := toBeCloned.Clone()
 
 		// Verify that original snapshot and clone are identical
-		Expect(reflect.DeepEqual(toBeCloned, clone)).To(BeTrue())
-		Expect(reflect.DeepEqual(untouched, clone)).To(BeTrue())
+		Expect(toBeCloned).To(Equal(clone))
+		Expect(untouched).To(Equal(clone))
 
 		// Mutate the clone
 		clone.GetResources(
@@ -45,7 +43,7 @@ var _ = Describe("EnvoySnapshot", func() {
 		).Items[""].(*resource.EnvoyResource).ResourceProto().(*envoy_config_endpoint_v3.ClusterLoadAssignment).ClusterName = "new_endpoint"
 
 		// Verify that original snapshot was not mutated
-		Expect(reflect.DeepEqual(toBeCloned, clone)).To(BeFalse())
-		Expect(reflect.DeepEqual(toBeCloned, untouched)).To(BeTrue())
+		Expect(toBeCloned).NotTo(Equal(clone))
+		Expect(toBeCloned).To(Equal(untouched))
 	})
 })

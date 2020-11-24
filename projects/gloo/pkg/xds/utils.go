@@ -31,10 +31,11 @@ func SetEdsOnCluster(out *envoy_config_cluster_v3.Cluster, settings *v1.Settings
 				ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
 				ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_ApiConfigSource{
 					ApiConfigSource: &envoy_config_core_v3.ApiConfigSource{
-						ApiType:        envoy_config_core_v3.ApiConfigSource_REST,
-						ClusterNames:   []string{defaults.GlooRestXdsName},
-						RefreshDelay:   ptypes.DurationProto(time.Second * 5),
-						RequestTimeout: ptypes.DurationProto(time.Second * 5),
+						ApiType:             envoy_config_core_v3.ApiConfigSource_REST,
+						TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
+						ClusterNames:        []string{defaults.GlooRestXdsName},
+						RefreshDelay:        ptypes.DurationProto(time.Second * 5),
+						RequestTimeout:      ptypes.DurationProto(time.Second * 5),
 					},
 				},
 			},

@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	"github.com/gogo/protobuf/types"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -44,6 +43,7 @@ import (
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -601,7 +601,8 @@ func startRestXdsServer(opts bootstrap.Opts) {
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx),
 		opts.ControlPlane.XDSServer,
 		map[string]string{
-			resource.FetchEndpoints: resource.EndpointType,
+			resource.FetchEndpointsV2: resource.EndpointTypeV2,
+			resource.FetchEndpointsV3: resource.EndpointTypeV3,
 		},
 	)
 	restXdsAddr := opts.Settings.GetGloo().GetRestXdsBindAddr()

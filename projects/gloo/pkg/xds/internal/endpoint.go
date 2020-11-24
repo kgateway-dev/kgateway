@@ -18,10 +18,13 @@ func DowngradeEndpoint(cla *envoy_config_endpoint_v3.ClusterLoadAssignment) *env
 	downgraded := &envoy_api_v2.ClusterLoadAssignment{
 		ClusterName:    cla.GetClusterName(),
 		Endpoints:      make([]*envoy_api_v2_endpoint.LocalityLbEndpoints, 0, len(cla.GetEndpoints())),
-		NamedEndpoints: make(map[string]*envoy_api_v2_endpoint.Endpoint),
+		NamedEndpoints: nil,
 		Policy:         downgradePolicy(cla.GetPolicy()),
 	}
 
+	if cla.GetNamedEndpoints() != nil {
+		downgraded.NamedEndpoints = make(map[string]*envoy_api_v2_endpoint.Endpoint)
+	}
 	for name, v := range cla.GetNamedEndpoints() {
 		downgraded.NamedEndpoints[name] = downgradeEndpoint(v)
 	}
