@@ -1,7 +1,7 @@
 ---
 title: Set-Style API (Enterprise)
 description: Set-style rate limiting API to better limit on descriptor subsets
-weight: 20
+weight: 15
 ---
 
 {{% notice note %}}
@@ -12,7 +12,7 @@ If you are using an earlier version, this feature will not be available.
 As we saw in the [Envoy API guide]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/envoy/" %}}), 
 Gloo Edge Enterprise exposes a fine-grained API that allows you to configure a vast number of rate limiting use cases
 by defining [`actions`]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/envoy//#actions" %}})
-on a `Route` or `VirtualHost` that specify an ordered tuple of descriptor keys to attach to a request and
+that specify an ordered tuple of descriptor keys to attach to a request and
 [`descriptors`]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/envoy//#descriptors" %}}) that match
 an ordered tuple of descriptor keys and apply an associated rate limit.
   
@@ -28,7 +28,7 @@ To address these shortcomings, we introduced a new API.
 Starting with Gloo Edge Enterprise `v1.6.0-beta9` you can define rate limits using set-style descriptors.
 These are treated as an unordered set such that a given rule will apply if all the specified descriptors match,
 regardless of the presence and value of the other descriptors and regardless of descriptor order.
-For example, the rule may require `type: a` and `number: one` but the `color` descriptor can have any value. 
+For example, a rule may match `type: a` and `number: one` but the `color` descriptor can have any value.
 This can also be understood as `color: *` where * is a wildcard.
 
 Set-style rate-limiting can be used alongside the prior implementation and is supported by both
@@ -57,7 +57,7 @@ Let's also deploy a simple application called petstore:
 kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
-Now let's create a simple Virtual Service routing to this application.
+Now let's create a simple Virtual Service routing to this application. (It may take a few seconds to be Accepted.)
 
 ```bash
 glooctl add route --name petstore --path-prefix / --dest-name default-petstore-8080
@@ -75,13 +75,13 @@ It should return the expected response:
 ```
 
 #### Add rate limit configuration
-Now, let's edit the `Settings` resource to include a `setDescriptor` rate limiting rule.
+Now, let's edit the `Settings` resource to include a `setDescriptor` rate limiting rule:
 
 ```bash
 kubectl edit settings -n gloo-system
 ```
 
-and add a rate-limiting section that limits requests with `type: a` and `number: one` to 1 per minute:
+and add a ratelimit section that limits requests with `type: a` and `number: one` to 1 per minute:
 
 {{< highlight yaml "hl_lines=8-17" >}}
 apiVersion: gloo.solo.io/v1
@@ -104,13 +104,13 @@ spec:
   # etc...
 {{< /highlight >}}
 
-Now edit the Virtual Service to include `setActions`.
+Now edit the Virtual Service to include `setActions`:
 
 ```bash
 kubectl edit vs petstore -n gloo-system
 ```
 
-and add `setActions` on the virtualHost:
+and add `setActions` capturing the `x-number` and `x-type` headers on the virtualHost:
 
 {{< highlight yaml "hl_lines=9-18" >}}
 apiVersion: gateway.solo.io/v1
@@ -208,7 +208,7 @@ However, if only the type is present on a request, we want the limit to be 5 per
 You can also specify the `alwaysApply` flag. This tells the server to consider a rule even if an earlier rule has already matched.
 
 For example, if we have the same configuration as above but with the `alwaysApply` flag set to true,
-a request with both type and number present will be limited after just 5 requests per minute.
+a request with both type and number present will be limited after just 5 requests per minute, as both rules below are now considered.
 
 ```yaml
 spec:
@@ -227,3 +227,26 @@ spec:
         unit: MINUTE
       alwaysApply: true
 ```
+
+### All-Encompassing Rules
+
+We can also create rules that match all requests by omitting `simpleDescriptors` altogether.
+Any `setDescriptor` rule should match requests whose descriptors contain the rule's `simpleDescriptors` as a subset.
+If `simpleDescriptors` is omitted from the rule, requests whose descriptors contain the empty set as a subset should match,
+i.e., all requests.
+
+These rules should be listed after all other rules without `alwaysApply` set to true, or later rules will not be considered
+due to rule priority, as explained above.
+
+An all-encompassing rule without `simpleDescriptors` would look like this:
+
+```yaml
+spec:
+  ratelimit:
+    setDescriptors:
+    - rateLimit:
+        requestsPerUnit: 10
+        unit: MINUTE
+```
+
+This rule will limit all requests to at most 10 per minute.
