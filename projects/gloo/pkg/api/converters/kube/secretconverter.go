@@ -103,8 +103,8 @@ func (t *TLSSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Resou
 						ObjectMeta: objectMeta,
 						Type:       kubev1.SecretTypeTLS,
 						Data: map[string][]byte{
-							kubev1.TLSPrivateKeyKey:        []byte(tlsGlooSecret.Tls.PrivateKey),
-							kubev1.TLSCertKey:              []byte(tlsGlooSecret.Tls.CertChain),
+							kubev1.TLSPrivateKeyKey: []byte(tlsGlooSecret.Tls.PrivateKey),
+							kubev1.TLSCertKey:       []byte(tlsGlooSecret.Tls.CertChain),
 						},
 					}
 
