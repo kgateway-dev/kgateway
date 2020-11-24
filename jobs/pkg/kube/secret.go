@@ -22,7 +22,7 @@ type TlsSecret struct {
 	PrivateKey, Cert, CaBundle                         []byte
 }
 
-func SecretIsValidTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg TlsSecret) (bool, error) {
+func SecretExistsAndIsValidTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg TlsSecret) (bool, error) {
 	secretClient := kube.CoreV1().Secrets(secretCfg.SecretNamespace)
 
 	existing, err := secretClient.Get(ctx, secretCfg.SecretName, metav1.GetOptions{})

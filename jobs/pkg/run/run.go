@@ -66,7 +66,7 @@ func Run(ctx context.Context, opts Options) error {
 		CaBundle:           certs.CaCertificate,
 	}
 
-	valid, err := kube.SecretIsValidTlsSecret(ctx, kubeClient, secretConfig)
+	valid, err := kube.SecretExistsAndIsValidTlsSecret(ctx, kubeClient, secretConfig)
 	if err != nil {
 		return eris.Wrapf(err, "failed validating existing secret")
 	}
