@@ -72,24 +72,24 @@ func (ei *EnvoyInstance) buildBootstrapFromConfig(configFile string) (string, er
 
 	// The AdminPort is created dynamically. Ensure that the config matches the proper AdminPort
 	config = strings.ReplaceAll(config, "21001", strconv.Itoa(int(ei.AdminPort)))
-
 	return config, nil
 }
 
 const envoyConfigTemplate = `
+layered_runtime:
+  layers:
+  - name: static_layer
+    static_layer:
+      upstream:
+        healthy_panic_threshold:
+          value: 0
+  - name: admin_layer
+    admin_layer: {}
 node:
  cluster: ingress
  id: {{.ID}}
  metadata:
   role: {{.Role}}
-{{if .MetricsAddr}}
-stats_sinks:
-  - name: envoy.stat_sinks.metrics_service
-    typed_config:
-      "@type": type.googleapis.com/envoy.config.metrics.v3.MetricsServiceConfig
-      grpc_service:
-        envoy_grpc: {cluster_name: metrics_cluster}
-{{end}}
 
 static_resources:
   clusters:
@@ -154,30 +154,17 @@ static_resources:
       typed_config:
         "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         sni: sts.amazonaws.com
-{{if .MetricsAddr}}
-  - name: metrics_cluster
-    connect_timeout: 5.000s
-    load_assignment:
-      cluster_name: metrics_cluster
-      endpoints:
-        - lb_endpoints:
-            - endpoint:
-                address:
-                  socket_address:
-                    address: {{.MetricsAddr}}
-                    port_value: {{.MetricsPort}}
-    http2_protocol_options: {}
-    type: STATIC
-{{end}}
-
 dynamic_resources:
   ads_config:
+    transport_api_version: {{ .ApiVersion }}
     api_type: GRPC
     grpc_services:
     - envoy_grpc: {cluster_name: xds_cluster}
   cds_config:
+    resource_api_version: {{ .ApiVersion }}
     ads: {}
   lds_config:
+    resource_api_version: {{ .ApiVersion }}
     ads: {}
 
 admin:
@@ -325,8 +312,6 @@ func (ef *EnvoyFactory) Clean() error {
 }
 
 type EnvoyInstance struct {
-	MetricsAddr   string
-	MetricsPort   uint32
 	AccessLogAddr string
 	AccessLogPort uint32
 	RatelimitAddr string
@@ -343,6 +328,9 @@ type EnvoyInstance struct {
 	AdminPort     uint32
 	// Path to access logs for binary run
 	AccessLogs string
+
+	// Envoy API Version to use, default to V3
+	ApiVersion string
 
 	DockerOptions
 }
@@ -379,8 +367,8 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 		UseDocker:     ef.useDocker,
 		GlooAddr:      gloo,
 		AccessLogAddr: gloo,
-		MetricsAddr:   gloo,
 		AdminPort:     atomic.AddUint32(&adminPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000),
+		ApiVersion:    "V3",
 	}
 	ef.instances = append(ef.instances, ei)
 	return ei, nil
@@ -448,17 +436,7 @@ func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32, configFil
 	}
 
 	if ei.UseDocker {
-		err := ei.runContainer(ctx)
-		if err != nil {
-			return err
-		}
-
-		// Default to run envoy with panic_mode disabled
-		err = ei.DisablePanicMode()
-		if err != nil {
-			return err
-		}
-		return nil
+		return ei.runContainer(ctx)
 	}
 
 	args := []string{"--config-yaml", ei.envoycfg, "--disable-hot-restart", "--log-level", "debug"}
@@ -480,11 +458,6 @@ func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32, configFil
 	ei.cmd = cmd
 
 	err = ei.waitForEnvoyToBeRunning()
-	if err != nil {
-		return err
-	}
-	// Default to run envoy with panic_mode disabled
-	err = ei.DisablePanicMode()
 	if err != nil {
 		return err
 	}

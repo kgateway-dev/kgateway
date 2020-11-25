@@ -4,17 +4,15 @@ import (
 	"context"
 	"strings"
 
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	envoyroutev3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
-
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
@@ -29,6 +27,12 @@ var (
 	earlyPluginStage = plugins.AfterStage(plugins.FaultStage)
 	pluginStage      = plugins.AfterStage(plugins.AuthZStage)
 )
+
+var _ plugins.Plugin = new(Plugin)
+var _ plugins.VirtualHostPlugin = new(Plugin)
+var _ plugins.WeightedDestinationPlugin = new(Plugin)
+var _ plugins.RoutePlugin = new(Plugin)
+var _ plugins.HttpFilterPlugin = new(Plugin)
 
 type Plugin struct {
 	RequireTransformationFilter bool
@@ -46,8 +50,16 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 // TODO(yuval-k): We need to figure out what\if to do in edge cases where there is cluster weight transform
-func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
-	envoyTransformation := p.convertTransformation(params.Ctx, in.GetOptions().GetTransformations(), in.GetOptions().GetStagedTransformations())
+func (p *Plugin) ProcessVirtualHost(
+	params plugins.VirtualHostParams,
+	in *v1.VirtualHost,
+	out *envoy_config_route_v3.VirtualHost,
+) error {
+	envoyTransformation := p.convertTransformation(
+		params.Ctx,
+		in.GetOptions().GetTransformations(),
+		in.GetOptions().GetStagedTransformations(),
+	)
 	if envoyTransformation == nil {
 		return nil
 	}
@@ -61,8 +73,12 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 	return pluginutils.SetVhostPerFilterConfig(out, FilterName, envoyTransformation)
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	envoyTransformation := p.convertTransformation(params.Ctx, in.GetOptions().GetTransformations(), in.GetOptions().GetStagedTransformations())
+func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+	envoyTransformation := p.convertTransformation(
+		params.Ctx,
+		in.GetOptions().GetTransformations(),
+		in.GetOptions().GetStagedTransformations(),
+	)
 	if envoyTransformation == nil {
 		return nil
 	}
@@ -76,8 +92,16 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	return pluginutils.SetRoutePerFilterConfig(out, FilterName, envoyTransformation)
 }
 
-func (p *Plugin) ProcessWeightedDestination(params plugins.RouteParams, in *v1.WeightedDestination, out *envoyroute.WeightedCluster_ClusterWeight) error {
-	envoyTransformation := p.convertTransformation(params.Ctx, in.GetOptions().GetTransformations(), in.GetOptions().GetStagedTransformations())
+func (p *Plugin) ProcessWeightedDestination(
+	params plugins.RouteParams,
+	in *v1.WeightedDestination,
+	out *envoy_config_route_v3.WeightedCluster_ClusterWeight,
+) error {
+	envoyTransformation := p.convertTransformation(
+		params.Ctx,
+		in.GetOptions().GetTransformations(),
+		in.GetOptions().GetStagedTransformations(),
+	)
 	if envoyTransformation == nil {
 		return nil
 	}
@@ -109,7 +133,11 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	return filters, nil
 }
 
-func (p *Plugin) convertTransformation(ctx context.Context, t *transformation.Transformations, stagedTransformations *transformation.TransformationStages) *envoytransformation.RouteTransformations {
+func (p *Plugin) convertTransformation(
+	ctx context.Context,
+	t *transformation.Transformations,
+	stagedTransformations *transformation.TransformationStages,
+) *envoytransformation.RouteTransformations {
 	if t == nil && stagedTransformations == nil {
 		return nil
 	}
@@ -302,7 +330,7 @@ func envoyHeaderMatcher(ctx context.Context, in []*matchers.HeaderMatcher) []*en
 	return out
 }
 
-func convertRegex(regex *envoy_type_matcher.RegexMatcher) *v3.RegexMatcher {
+func convertRegex(regex *envoy_type_matcher_v3.RegexMatcher) *v3.RegexMatcher {
 	if regex == nil {
 		return nil
 	}

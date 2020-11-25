@@ -3,6 +3,8 @@ package run
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/jobs/pkg/certgen"
 	"github.com/solo-io/gloo/jobs/pkg/kube"
@@ -62,6 +64,18 @@ func Run(ctx context.Context, opts Options) error {
 		PrivateKey:         certs.ServerCertKey,
 		Cert:               caCert,
 		CaBundle:           certs.CaCertificate,
+	}
+
+	existAndValid, err := kube.SecretExistsAndIsValidTlsSecret(ctx, kubeClient, secretConfig)
+	if err != nil {
+		return eris.Wrapf(err, "failed validating existing secret")
+	}
+
+	if existAndValid {
+		contextutils.LoggerFrom(ctx).Infow("existing TLS secret found, skipping update to TLS secret and ValidatingWebhookConfiguration since the old TLS secret is still existAndValid",
+			zap.String("secretName", secretConfig.SecretName),
+			zap.String("secretNamespace", secretConfig.SecretNamespace))
+		return nil
 	}
 
 	if err := kube.CreateTlsSecret(ctx, kubeClient, secretConfig); err != nil {

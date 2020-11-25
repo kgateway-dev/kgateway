@@ -1,13 +1,12 @@
 package upgradeconfig_test
 
 import (
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upgradeconfig"
-
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upgradeconfig"
 )
 
 var _ = Describe("Upgradeconfig", func() {
@@ -39,14 +38,14 @@ var _ = Describe("Upgradeconfig", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 		It("should allow websocket upgrade", func() {
-			configs := []*envoyroute.RouteAction_UpgradeConfig{{
+			configs := []*envoy_config_route_v3.RouteAction_UpgradeConfig{{
 				UpgradeType: WebSocketUpgradeType,
 			}}
 			err := ValidateRouteUpgradeConfigs(configs)
 			Expect(err).NotTo(HaveOccurred())
 		})
 		It("should not allow double websocket upgrade", func() {
-			configs := []*envoyroute.RouteAction_UpgradeConfig{{
+			configs := []*envoy_config_route_v3.RouteAction_UpgradeConfig{{
 				UpgradeType: WebSocketUpgradeType,
 			}, {
 				UpgradeType: WebSocketUpgradeType,

@@ -3,6 +3,7 @@ package glooctl_test
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -55,12 +56,35 @@ func StartTestHelper() {
 	// Register additional fail handlers
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "istio-system", testHelper.InstallNamespace))
 
+	// Define helm overrides
+	valuesOverrideFile, cleanupFunc := getHelmValuesOverrideFile()
+	defer cleanupFunc()
+
 	// Install Gloo
-	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute)
+	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", valuesOverrideFile))
 	Expect(err).NotTo(HaveOccurred())
 
 	// Check that everything is OK
 	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+}
+
+func getHelmValuesOverrideFile() (filename string, cleanup func()) {
+	values, err := ioutil.TempFile("", "values-*.yaml")
+	Expect(err).NotTo(HaveOccurred())
+
+	// disabling panic threshold
+	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html
+	_, err = values.Write([]byte(`
+gatewayProxies:
+  gatewayProxy:
+    healthyPanicThreshold: 0
+`))
+	Expect(err).NotTo(HaveOccurred())
+
+	err = values.Close()
+	Expect(err).NotTo(HaveOccurred())
+
+	return values.Name(), func() { _ = os.Remove(values.Name()) }
 }
 
 func TearDownTestHelper() {

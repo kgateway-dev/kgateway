@@ -3,9 +3,9 @@ package azure_test
 import (
 	"context"
 
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
@@ -20,7 +20,7 @@ import (
 var _ = Describe("Plugin", func() {
 	var (
 		p      plugins.Plugin
-		out    *envoyapi.Cluster
+		out    *envoy_config_cluster_v3.Cluster
 		params plugins.Params
 	)
 
@@ -28,7 +28,7 @@ var _ = Describe("Plugin", func() {
 		var b bool
 		p = azureplugin.NewPlugin(&b)
 		p.Init(plugins.InitParams{Ctx: context.TODO()})
-		out = &envoyapi.Cluster{}
+		out = &envoy_config_cluster_v3.Cluster{}
 		params = plugins.Params{}
 	})
 
@@ -83,13 +83,11 @@ var _ = Describe("Plugin", func() {
 
 			It("should have the correct output", func() {
 				Expect(out.LoadAssignment.Endpoints).Should(HaveLen(1))
-				// Expect(out.Hosts[0].GetSocketAddress().Address).To(Equal("my-appwhos.azurewebsites.net"))
-				// Expect(out.Hosts[0].GetSocketAddress().PortSpecifier.(*envoycore.SocketAddress_PortValue).PortValue).To(BeEquivalentTo(443))
 
 				tlsContext := utils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
 				Expect(tlsContext.Sni).To(Equal("my-appwhos.azurewebsites.net"))
-				Expect(out.GetType()).To(Equal(envoyapi.Cluster_LOGICAL_DNS))
-				Expect(out.DnsLookupFamily).To(Equal(envoyapi.Cluster_V4_ONLY))
+				Expect(out.GetType()).To(Equal(envoy_config_cluster_v3.Cluster_LOGICAL_DNS))
+				Expect(out.DnsLookupFamily).To(Equal(envoy_config_cluster_v3.Cluster_V4_ONLY))
 			})
 
 		})
@@ -102,12 +100,10 @@ var _ = Describe("Plugin", func() {
 			})
 			It("should have the correct output", func() {
 				Expect(out.LoadAssignment.Endpoints).Should(HaveLen(1))
-				// Expect(out.Hosts[0].GetSocketAddress().Address).To(Equal("my-appwhos.azurewebsites.net"))
-				// Expect(out.Hosts[0].GetSocketAddress().PortSpecifier.(*envoycore.SocketAddress_PortValue).PortValue).To(BeEquivalentTo(443))
 				tlsContext := utils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
 				Expect(tlsContext.Sni).To(Equal("my-appwhos.azurewebsites.net"))
-				Expect(out.GetType()).To(Equal(envoyapi.Cluster_LOGICAL_DNS))
-				Expect(out.DnsLookupFamily).To(Equal(envoyapi.Cluster_V4_ONLY))
+				Expect(out.GetType()).To(Equal(envoy_config_cluster_v3.Cluster_LOGICAL_DNS))
+				Expect(out.DnsLookupFamily).To(Equal(envoy_config_cluster_v3.Cluster_V4_ONLY))
 			})
 		})
 	})

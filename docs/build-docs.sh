@@ -110,6 +110,7 @@ function generateSiteForVersion() {
   mkdir -p layouts/partials
   cp -a $workingDir/layouts/partials/. layouts/partials/
   cp -f $workingDir/Makefile Makefile
+  cp -f $workingDir/cmd/generate_changelog_doc.go cmd/generate_changelog_doc.go
   # Generate the versioned static site.
   make site-release
 

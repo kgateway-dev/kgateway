@@ -7,6 +7,9 @@ layered_runtime:
     static_layer:
       overload:
         global_downstream_max_connections: 250000
+      upstream:
+        healthy_panic_threshold:
+          value: 50
   - name: admin_layer
     admin_layer: {}
 node:
@@ -136,13 +139,16 @@ static_resources:
 
 dynamic_resources:
   ads_config:
+    transport_api_version: V3
     api_type: GRPC
     rate_limit_settings: {}
     grpc_services:
     - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
+    resource_api_version: V3
     ads: {}
 admin:
   access_log_path: /dev/null
@@ -161,14 +167,16 @@ admin:
       port_value: 19000
 dynamic_resources:
   ads_config:
+    transport_api_version: V3
     api_type: GRPC
-    grpc_services:
-    - envoy_grpc:
-        cluster_name: gloo.gloo-system.svc.cluster.local:9977
     rate_limit_settings: {}
+    grpc_services:
+    - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
+    resource_api_version: V3
     ads: {}
 layered_runtime:
   layers:
@@ -176,6 +184,9 @@ layered_runtime:
     static_layer:
       overload:
         global_downstream_max_connections: 250000
+      upstream:
+        healthy_panic_threshold:
+          value: 50
   - name: admin_layer
     admin_layer: {}
 node:
@@ -294,14 +305,16 @@ admin:
       port_value: 19000
 dynamic_resources:
   ads_config:
+    transport_api_version: V3
     api_type: GRPC
-    grpc_services:
-    - envoy_grpc:
-        cluster_name: gloo.gloo-system.svc.cluster.local:9977
     rate_limit_settings: {}
+    grpc_services:
+    - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
+    resource_api_version: V3
     ads: {}
 layered_runtime:
   layers:
@@ -309,6 +322,9 @@ layered_runtime:
     static_layer:
       overload:
         global_downstream_max_connections: 250000
+      upstream:
+        healthy_panic_threshold:
+          value: 50
   - name: admin_layer
     admin_layer: {}
 node:
@@ -422,7 +438,7 @@ static_resources:
     name: prometheus_listener
 `
 
-var confWithTracingProviderCluster = `
+var confWithTracingCluster = `
 admin:
   access_log_path: /dev/null
   address:
@@ -431,14 +447,16 @@ admin:
       port_value: 19000
 dynamic_resources:
   ads_config:
+    transport_api_version: V3
     api_type: GRPC
-    grpc_services:
-    - envoy_grpc:
-        cluster_name: gloo.gloo-system.svc.cluster.local:9977
     rate_limit_settings: {}
+    grpc_services:
+    - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
+    resource_api_version: V3
     ads: {}
 layered_runtime:
   layers:
@@ -446,6 +464,9 @@ layered_runtime:
     static_layer:
       overload:
         global_downstream_max_connections: 250000
+      upstream:
+        healthy_panic_threshold:
+          value: 50
   - name: admin_layer
     admin_layer: {}
 node:
@@ -565,12 +586,6 @@ static_resources:
                   cluster: admin_port_cluster
                   prefix_rewrite: /stats/prometheus
           stat_prefix: prometheus
-          tracing:
-            provider:
-              typed_config:
-                '@type': type.googleapis.com/envoy.config.trace.v2.ZipkinConfig
-                collector_cluster: zipkin
-                collector_endpoint: /api/v2/spans
         name: envoy.filters.network.http_connection_manager
     name: prometheus_listener
 `
@@ -584,14 +599,16 @@ admin:
       port_value: 19000
 dynamic_resources:
   ads_config:
+    transport_api_version: V3
     api_type: GRPC
-    grpc_services:
-    - envoy_grpc:
-        cluster_name: gloo.gloo-system.svc.cluster.local:9977
     rate_limit_settings: {}
+    grpc_services:
+    - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
+    resource_api_version: V3
     ads: {}
 layered_runtime:
   layers:
@@ -599,6 +616,9 @@ layered_runtime:
     static_layer:
       overload:
         global_downstream_max_connections: 250000
+      upstream:
+        healthy_panic_threshold:
+          value: 50
   - name: admin_layer
     admin_layer: {}
 node:
@@ -759,14 +779,16 @@ admin:
       port_value: 19000
 dynamic_resources:
   ads_config:
+    transport_api_version: V3
     api_type: GRPC
-    grpc_services:
-    - envoy_grpc:
-        cluster_name: gloo.gloo-system.svc.cluster.local:9977
     rate_limit_settings: {}
+    grpc_services:
+    - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
+    resource_api_version: V3
     ads: {}
 layered_runtime:
   layers:
@@ -774,6 +796,9 @@ layered_runtime:
     static_layer:
       overload:
         global_downstream_max_connections: 250000
+      upstream:
+        healthy_panic_threshold:
+          value: 50
   - name: admin_layer
     admin_layer: {}
 node:

@@ -3,27 +3,22 @@ package grpc
 import (
 	"context"
 	"crypto/sha1"
+	"encoding/base64"
 	"fmt"
 
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"google.golang.org/genproto/googleapis/api/annotations"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/go-utils/contextutils"
-
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoytranscoder "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_json_transcoder/v3"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/golang/protobuf/proto"
-
-	"encoding/base64"
-
 	errors "github.com/rotisserie/eris"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -41,6 +36,11 @@ type ServicesAndDescriptor struct {
 	Spec        *grpcapi.ServiceSpec
 	Descriptors *descriptor.FileDescriptorSet
 }
+
+var _ plugins.Plugin = &plugin{}
+var _ plugins.UpstreamPlugin = &plugin{}
+var _ plugins.RoutePlugin = &plugin{}
+var _ plugins.HttpFilterPlugin = &plugin{}
 
 func NewPlugin(transformsAdded *bool) *plugin {
 	return &plugin{
@@ -64,7 +64,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
+func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 	upstreamType, ok := in.UpstreamType.(v1.ServiceSpecGetter)
 	if !ok {
 		return nil
@@ -81,7 +81,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	grpcSpec := grpcWrapper.Grpc
 
 	if out.Http2ProtocolOptions == nil {
-		out.Http2ProtocolOptions = &envoycore.Http2ProtocolOptions{}
+		out.Http2ProtocolOptions = &envoy_config_core_v3.Http2ProtocolOptions{}
 	}
 
 	if grpcSpec == nil || len(grpcSpec.GrpcServices) == 0 {
@@ -137,80 +137,82 @@ func convertProto(encodedBytes []byte) (*descriptor.FileDescriptorSet, error) {
 // envoy needs the protobuf descriptors to convert from json to gRPC
 // gloo creates these descriptors automatically (if gRPC reflection is enabled),
 // uses its transformation filter to provide the context for the json-grpc translation.
-func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName, func(spec *v1.Destination) (proto.Message, error) {
-		// check if it's grpc destination
-		if spec.DestinationSpec == nil {
-			return nil, nil
-		}
-		grpcDestinationSpecWrapper, ok := spec.DestinationSpec.DestinationType.(*v1.DestinationSpec_Grpc)
-		if !ok {
-			return nil, nil
-		}
-		// copy as it might be modified
-		grpcDestinationSpec := *grpcDestinationSpecWrapper.Grpc
-
-		if grpcDestinationSpec.Parameters == nil {
-			if out.Match.PathSpecifier == nil {
-				return nil, errors.New("missing path for grpc route")
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName,
+		func(spec *v1.Destination) (proto.Message, error) {
+			// check if it's grpc destination
+			if spec.DestinationSpec == nil {
+				return nil, nil
 			}
-			path := utils.EnvoyPathAsString(out.Match) + "?{query_string}"
-
-			grpcDestinationSpec.Parameters = &transformapi.Parameters{
-				Path: &wrappers.StringValue{Value: path},
+			grpcDestinationSpecWrapper, ok := spec.DestinationSpec.DestinationType.(*v1.DestinationSpec_Grpc)
+			if !ok {
+				return nil, nil
 			}
+			// copy as it might be modified
+			grpcDestinationSpec := *grpcDestinationSpecWrapper.Grpc
+
+			if grpcDestinationSpec.Parameters == nil {
+				if out.Match.PathSpecifier == nil {
+					return nil, errors.New("missing path for grpc route")
+				}
+				path := utils.EnvoyPathAsString(out.Match) + "?{query_string}"
+
+				grpcDestinationSpec.Parameters = &transformapi.Parameters{
+					Path: &wrappers.StringValue{Value: path},
+				}
 		}
 
-		// get the package_name.service_name to generate the path that envoy wants
-		fullServiceName := genFullServiceName(grpcDestinationSpec.Package, grpcDestinationSpec.Service)
-		methodName := grpcDestinationSpec.Function
+			// get the package_name.service_name to generate the path that envoy wants
+			fullServiceName := genFullServiceName(grpcDestinationSpec.Package, grpcDestinationSpec.Service)
+			methodName := grpcDestinationSpec.Function
 
-		upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
-		if err != nil {
-			contextutils.LoggerFrom(p.ctx).Error(err)
-			return nil, err
-		}
-
-		upstream := p.recordedUpstreams[translator.UpstreamToClusterName(upstreamRef)]
-		if upstream == nil {
-			return nil, errors.New("upstream was not recorded for grpc route")
-		}
-
-		// create the transformation for the route
-		outPath := httpPath(upstream, fullServiceName, methodName)
-
-		// add query matcher to out path. kombina for now
-		// TODO: support query for matching
-		outPath += `?{{ default(query_string, "")}}`
-
-		// Add param extractors back
-		var extractors map[string]*envoy_transform.Extraction
-		if grpcDestinationSpec.Parameters != nil {
-			extractors, err = transformutils.CreateRequestExtractors(params.Ctx, grpcDestinationSpec.Parameters)
+			upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
 			if err != nil {
+				contextutils.LoggerFrom(p.ctx).Error(err)
 				return nil, err
 			}
-		}
 
-		// we always choose post
-		httpMethod := "POST"
-		return &envoy_transform.RouteTransformations{
-			RequestTransformation: &envoy_transform.Transformation{
-				TransformationType: &envoy_transform.Transformation_TransformationTemplate{
-					TransformationTemplate: &envoy_transform.TransformationTemplate{
-						Extractors: extractors,
-						Headers: map[string]*envoy_transform.InjaTemplate{
-							":method": {Text: httpMethod},
-							":path":   {Text: outPath},
-						},
-						BodyTransformation: &envoy_transform.TransformationTemplate_MergeExtractorsToBody{
-							MergeExtractorsToBody: &envoy_transform.MergeExtractorsToBody{},
+			upstream := p.recordedUpstreams[translator.UpstreamToClusterName(upstreamRef)]
+			if upstream == nil {
+				return nil, errors.New("upstream was not recorded for grpc route")
+			}
+
+			// create the transformation for the route
+			outPath := httpPath(upstream, fullServiceName, methodName)
+
+			// add query matcher to out path. kombina for now
+			// TODO: support query for matching
+			outPath += `?{{ default(query_string, "")}}`
+
+			// Add param extractors back
+			var extractors map[string]*envoy_transform.Extraction
+			if grpcDestinationSpec.Parameters != nil {
+				extractors, err = transformutils.CreateRequestExtractors(params.Ctx, grpcDestinationSpec.Parameters)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			// we always choose post
+			httpMethod := "POST"
+			return &envoy_transform.RouteTransformations{
+				RequestTransformation: &envoy_transform.Transformation{
+					TransformationType: &envoy_transform.Transformation_TransformationTemplate{
+						TransformationTemplate: &envoy_transform.TransformationTemplate{
+							Extractors: extractors,
+							Headers: map[string]*envoy_transform.InjaTemplate{
+								":method": {Text: httpMethod},
+								":path":   {Text: outPath},
+							},
+							BodyTransformation: &envoy_transform.TransformationTemplate_MergeExtractorsToBody{
+								MergeExtractorsToBody: &envoy_transform.MergeExtractorsToBody{},
+							},
 						},
 					},
 				},
-			},
-		}, nil
-	})
+			}, nil
+		},
+	)
 }
 
 // returns package name
@@ -270,8 +272,8 @@ func addWellKnownProtos(descriptors *descriptor.FileDescriptorSet) {
 	}
 
 	if !googleApiAnnotationsFound {
-		//TODO: investigate if we need this
-		//addGoogleApisAnnotations(packageName, set)
+		// TODO: investigate if we need this
+		// addGoogleApisAnnotations(packageName, set)
 	}
 }
 

@@ -3,6 +3,10 @@ package translator
 import (
 	"fmt"
 
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -11,20 +15,27 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/mitchellh/hashstructure"
 	errors "github.com/rotisserie/eris"
 	"go.opencensus.io/trace"
 )
 
 type Translator interface {
-	Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error)
+	Translate(
+		params plugins.Params,
+		proxy *v1.Proxy,
+	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error)
 }
 
-func NewTranslator(sslConfigTranslator utils.SslConfigTranslator, settings *v1.Settings, getPlugins func() []plugins.Plugin) Translator {
+func NewTranslator(
+	sslConfigTranslator utils.SslConfigTranslator,
+	settings *v1.Settings,
+	getPlugins func() []plugins.Plugin,
+) Translator {
 	return &translatorFactory{
 		getPlugins:          getPlugins,
 		settings:            settings,
@@ -38,7 +49,10 @@ type translatorFactory struct {
 	sslConfigTranslator utils.SslConfigTranslator
 }
 
-func (t *translatorFactory) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
+func (t *translatorFactory) Translate(
+	params plugins.Params,
+	proxy *v1.Proxy,
+) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
 	instance := &translatorInstance{
 		plugins:             t.getPlugins(),
 		settings:            t.settings,
@@ -54,7 +68,10 @@ type translatorInstance struct {
 	sslConfigTranslator utils.SslConfigTranslator
 }
 
-func (t *translatorInstance) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
+func (t *translatorInstance) Translate(
+	params plugins.Params,
+	proxy *v1.Proxy,
+) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	params.Ctx = ctx
@@ -87,7 +104,7 @@ func (t *translatorInstance) Translate(params plugins.Params, proxy *v1.Proxy) (
 	// this is important as otherwise envoy will wait for them forever wondering their fate and not doing much else.
 ClusterLoop:
 	for _, c := range clusters {
-		if c.GetType() != envoyapi.Cluster_EDS {
+		if c.GetType() != envoy_config_cluster_v3.Cluster_EDS {
 			continue
 		}
 		for _, ep := range endpoints {
@@ -95,7 +112,7 @@ ClusterLoop:
 				continue ClusterLoop
 			}
 		}
-		emptyendpointlist := &envoyapi.ClusterLoadAssignment{
+		emptyendpointlist := &envoy_config_endpoint_v3.ClusterLoadAssignment{
 			ClusterName: c.Name,
 		}
 		// make sure to call EndpointPlugin with empty endpoint
@@ -119,8 +136,8 @@ ClusterLoop:
 	}
 
 	var (
-		routeConfigs []*envoyapi.RouteConfiguration
-		listeners    []*envoyapi.Listener
+		routeConfigs []*envoy_config_route_v3.RouteConfiguration
+		listeners    []*envoy_config_listener_v3.Listener
 	)
 
 	proxyRpt := validation.MakeReport(proxy)
@@ -171,11 +188,16 @@ ClusterLoop:
 // the set of resources returned by one iteration for a single v1.Listener
 // the top level Translate function should aggregate these into a finished snapshot
 type listenerResources struct {
-	routeConfig *envoyapi.RouteConfiguration
-	listener    *envoyapi.Listener
+	routeConfig *envoy_config_route_v3.RouteConfiguration
+	listener    *envoy_config_listener_v3.Listener
 }
 
-func (t *translatorInstance) computeListenerResources(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, listenerReport *validationapi.ListenerReport) *listenerResources {
+func (t *translatorInstance) computeListenerResources(
+	params plugins.Params,
+	proxy *v1.Proxy,
+	listener *v1.Listener,
+	listenerReport *validationapi.ListenerReport,
+) *listenerResources {
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	params.Ctx = ctx
 	defer span.End()
@@ -196,25 +218,27 @@ func (t *translatorInstance) computeListenerResources(params plugins.Params, pro
 	}
 }
 
-func generateXDSSnapshot(clusters []*envoyapi.Cluster,
-	endpoints []*envoyapi.ClusterLoadAssignment,
-	routeConfigs []*envoyapi.RouteConfiguration,
-	listeners []*envoyapi.Listener) envoycache.Snapshot {
+func generateXDSSnapshot(
+	clusters []*envoy_config_cluster_v3.Cluster,
+	endpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment,
+	routeConfigs []*envoy_config_route_v3.RouteConfiguration,
+	listeners []*envoy_config_listener_v3.Listener,
+) envoycache.Snapshot {
 
 	var endpointsProto, clustersProto, listenersProto []envoycache.Resource
 
 	for _, ep := range endpoints {
-		endpointsProto = append(endpointsProto, xds.NewEnvoyResource(ep))
+		endpointsProto = append(endpointsProto, resource.NewEnvoyResource(ep))
 	}
 	for _, cluster := range clusters {
-		clustersProto = append(clustersProto, xds.NewEnvoyResource(cluster))
+		clustersProto = append(clustersProto, resource.NewEnvoyResource(cluster))
 	}
 	for _, listener := range listeners {
 		// don't add empty listeners, envoy will complain
 		if len(listener.FilterChains) < 1 {
 			continue
 		}
-		listenersProto = append(listenersProto, xds.NewEnvoyResource(listener))
+		listenersProto = append(listenersProto, resource.NewEnvoyResource(listener))
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
@@ -243,7 +267,7 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 
 }
 
-func MakeRdsResources(routeConfigs []*envoyapi.RouteConfiguration) envoycache.Resources {
+func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) envoycache.Resources {
 	var routesProto []envoycache.Resource
 
 	for _, routeCfg := range routeConfigs {
@@ -251,7 +275,7 @@ func MakeRdsResources(routeConfigs []*envoyapi.RouteConfiguration) envoycache.Re
 		if len(routeCfg.VirtualHosts) < 1 {
 			continue
 		}
-		routesProto = append(routesProto, xds.NewEnvoyResource(routeCfg))
+		routesProto = append(routesProto, resource.NewEnvoyResource(routeCfg))
 	}
 
 	routesVersion, err := hashstructure.Hash(routesProto, nil)

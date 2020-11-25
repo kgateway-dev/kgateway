@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
@@ -46,8 +47,8 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 		xdsSnapshot := xds.NewSnapshotFromResources(
 			envoycache.NewResources("", nil),
 			envoycache.NewResources("clusters", []envoycache.Resource{
-				xds.NewEnvoyResource(goodCluster),
-				xds.NewEnvoyResource(badCluster),
+				resource.NewEnvoyResource(goodCluster),
+				resource.NewEnvoyResource(badCluster),
 			}),
 			envoycache.NewResources("", nil),
 			envoycache.NewResources("", nil),
@@ -72,7 +73,7 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 		snap, err := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
 		Expect(err).NotTo(HaveOccurred())
 
-		clusters := snap.GetResources(xds.ClusterType)
+		clusters := snap.GetResources(resource.ClusterTypeV3)
 
 		Expect(clusters.Items).To(HaveLen(1))
 		Expect(clusters.Items[goodClusterName].ResourceProto()).To(Equal(goodCluster))

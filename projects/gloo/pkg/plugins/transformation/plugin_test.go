@@ -1,7 +1,7 @@
 package transformation_test
 
 import (
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/ptypes/any"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -51,7 +51,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("sets transformation config for weighted destinations", func() {
-			out := &envoyroute.WeightedCluster_ClusterWeight{}
+			out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
 			err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
 				Options: &v1.WeightedDestinationOptions{
 					Transformations: inputTransform,
@@ -61,7 +61,7 @@ var _ = Describe("Plugin", func() {
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 		})
 		It("sets transformation config for virtual hosts", func() {
-			out := &envoyroute.VirtualHost{}
+			out := &envoy_config_route_v3.VirtualHost{}
 			err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 				Options: &v1.VirtualHostOptions{
 					Transformations: inputTransform,
@@ -71,7 +71,7 @@ var _ = Describe("Plugin", func() {
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 		})
 		It("sets transformation config for routes", func() {
-			out := &envoyroute.Route{}
+			out := &envoy_config_route_v3.Route{}
 			err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 				Options: &v1.RouteOptions{
 					Transformations: inputTransform,
@@ -257,7 +257,7 @@ var _ = Describe("Plugin", func() {
 			expected = configStruct
 		})
 		It("sets transformation config for vhosts", func() {
-			out := &envoyroute.VirtualHost{}
+			out := &envoy_config_route_v3.VirtualHost{}
 			err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 				Options: &v1.VirtualHostOptions{
 					StagedTransformations: inputTransform,
@@ -267,7 +267,7 @@ var _ = Describe("Plugin", func() {
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 		})
 		It("sets transformation config for routes", func() {
-			out := &envoyroute.Route{}
+			out := &envoy_config_route_v3.Route{}
 			err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 				Options: &v1.RouteOptions{
 					StagedTransformations: inputTransform,
@@ -277,7 +277,7 @@ var _ = Describe("Plugin", func() {
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 		})
 		It("sets transformation config for weighted dest", func() {
-			out := &envoyroute.WeightedCluster_ClusterWeight{}
+			out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
 			err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
 				Options: &v1.WeightedDestinationOptions{
 					StagedTransformations: inputTransform,
@@ -287,7 +287,7 @@ var _ = Describe("Plugin", func() {
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 		})
 		It("should add both filter to the chain when early transformations exist", func() {
-			out := &envoyroute.Route{}
+			out := &envoy_config_route_v3.Route{}
 			err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 				Options: &v1.RouteOptions{
 					StagedTransformations: inputTransform,

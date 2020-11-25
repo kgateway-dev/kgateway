@@ -1,7 +1,7 @@
 package listener_test
 
 import (
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,10 +14,10 @@ var _ = Describe("Plugin", func() {
 
 	var (
 		plugin *Plugin
-		out    *envoyapi.Listener
+		out    *envoy_config_listener_v3.Listener
 	)
 	BeforeEach(func() {
-		out = new(envoyapi.Listener)
+		out = new(envoy_config_listener_v3.Listener)
 		plugin = NewPlugin()
 	})
 

@@ -2833,24 +2833,10 @@ metadata:
 						testManifest.ExpectConfigMapWithYamlData(proxy)
 					})
 
-					It("has a proxy with tracing provider", func() {
-						prepareMakefileFromValuesFile("val_tracing_provider.yaml")
-						proxySpec := make(map[string]string)
-						proxySpec["envoy.yaml"] = confWithTracingProvider
-						cmRb := ResourceBuilder{
-							Namespace: namespace,
-							Name:      gatewayProxyConfigMapName,
-							Labels:    labels,
-							Data:      proxySpec,
-						}
-						proxy := cmRb.GetConfigMap()
-						testManifest.ExpectConfigMapWithYamlData(proxy)
-					})
-
-					It("has a proxy with tracing provider and cluster", func() {
+					It("has a proxy with tracing cluster", func() {
 						prepareMakefileFromValuesFile("val_tracing_provider_cluster.yaml")
 						proxySpec := make(map[string]string)
-						proxySpec["envoy.yaml"] = confWithTracingProviderCluster
+						proxySpec["envoy.yaml"] = confWithTracingCluster
 						cmRb := ResourceBuilder{
 							Namespace: namespace,
 							Name:      gatewayProxyConfigMapName,

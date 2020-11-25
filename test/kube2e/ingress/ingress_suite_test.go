@@ -3,6 +3,7 @@ package ingress_test
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -55,10 +56,33 @@ var _ = BeforeSuite(func() {
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 	testHelper.Verbose = true
 
+	// Define helm overrides
+	valuesOverrideFile, cleanupFunc := getHelmValuesOverrideFile()
+	defer cleanupFunc()
+
 	// Install Gloo
-	err = testHelper.InstallGloo(ctx, helper.INGRESS, 5*time.Minute)
+	err = testHelper.InstallGloo(ctx, helper.INGRESS, 5*time.Minute, helper.ExtraArgs("--values", valuesOverrideFile))
 	Expect(err).NotTo(HaveOccurred())
 })
+
+func getHelmValuesOverrideFile() (filename string, cleanup func()) {
+	values, err := ioutil.TempFile("", "values-*.yaml")
+	Expect(err).NotTo(HaveOccurred())
+
+	// disabling panic threshold
+	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html
+	_, err = values.Write([]byte(`
+gatewayProxies:
+  gatewayProxy:
+    healthyPanicThreshold: 0
+`))
+	Expect(err).NotTo(HaveOccurred())
+
+	err = values.Close()
+	Expect(err).NotTo(HaveOccurred())
+
+	return values.Name(), func() { _ = os.Remove(values.Name()) }
+}
 
 var _ = AfterSuite(func() {
 	if os.Getenv("TEAR_DOWN") == "true" {

@@ -1,7 +1,7 @@
 package extauth
 
 import (
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -20,6 +20,10 @@ const (
 var FilterStage = plugins.DuringStage(plugins.AuthNStage)
 
 var _ plugins.Plugin = &Plugin{}
+var _ plugins.HttpFilterPlugin = &Plugin{}
+var _ plugins.VirtualHostPlugin = &Plugin{}
+var _ plugins.RoutePlugin = &Plugin{}
+var _ plugins.WeightedDestinationPlugin = &Plugin{}
 
 func NewCustomAuthPlugin() *Plugin {
 	return &Plugin{}
@@ -44,7 +48,11 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 // an extauth configuration OR explicitly disables extauth, we disable the ext_authz filter.
 // This is done to disable authentication by default on a virtual host and its child resources (routes, weighted
 // destinations). Extauth is currently opt-in.
-func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
+func (p *Plugin) ProcessVirtualHost(
+	params plugins.VirtualHostParams,
+	in *v1.VirtualHost,
+	out *envoy_config_route_v3.VirtualHost,
+) error {
 
 	// Ext_authz filter is not configured on listener, do nothing
 	if !p.isExtAuthzFilterConfigured(params.Listener.GetHttpListener(), params.Snapshot.Upstreams) {
@@ -78,7 +86,7 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 // - if the route defines custom auth configuration, set the filter correspondingly;
 // - if auth is explicitly disabled, disable the filter (will apply by default also to WeightedDestinations);
 // - else, do nothing (will inherit config from parent virtual host).
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
+func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 
 	// Ext_authz filter is not configured on listener, do nothing
 	if !p.isExtAuthzFilterConfigured(params.Listener.GetHttpListener(), params.Snapshot.Upstreams) {
@@ -112,7 +120,11 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 // - if the weightedDestination defines custom auth configuration, set the filter correspondingly;
 // - if auth is explicitly disabled, disable the filter;
 // - else, do nothing (will inherit config from parent virtual host and/or route).
-func (p *Plugin) ProcessWeightedDestination(params plugins.RouteParams, in *v1.WeightedDestination, out *envoyroute.WeightedCluster_ClusterWeight) error {
+func (p *Plugin) ProcessWeightedDestination(
+	params plugins.RouteParams,
+	in *v1.WeightedDestination,
+	out *envoy_config_route_v3.WeightedCluster_ClusterWeight,
+) error {
 
 	// Ext_authz filter is not configured on listener, do nothing
 	if !p.isExtAuthzFilterConfigured(params.Listener.GetHttpListener(), params.Snapshot.Upstreams) {
@@ -161,15 +173,15 @@ func (p *Plugin) isExtAuthzFilterConfigured(listener *v1.HttpListener, upstreams
 	return false
 }
 
-func markVirtualHostNoAuth(out *envoyroute.VirtualHost) error {
+func markVirtualHostNoAuth(out *envoy_config_route_v3.VirtualHost) error {
 	return pluginutils.SetVhostPerFilterConfig(out, wellknown.HTTPExternalAuthorization, getNoAuthConfig())
 }
 
-func markWeightedClusterNoAuth(out *envoyroute.WeightedCluster_ClusterWeight) error {
+func markWeightedClusterNoAuth(out *envoy_config_route_v3.WeightedCluster_ClusterWeight) error {
 	return pluginutils.SetWeightedClusterPerFilterConfig(out, wellknown.HTTPExternalAuthorization, getNoAuthConfig())
 }
 
-func markRouteNoAuth(out *envoyroute.Route) error {
+func markRouteNoAuth(out *envoy_config_route_v3.Route) error {
 	return pluginutils.SetRoutePerFilterConfig(out, wellknown.HTTPExternalAuthorization, getNoAuthConfig())
 }
 

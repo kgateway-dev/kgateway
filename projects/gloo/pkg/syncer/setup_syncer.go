@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	envoyv2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	"github.com/gogo/protobuf/types"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -45,6 +43,7 @@ import (
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -115,8 +114,7 @@ type setupSyncer struct {
 func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, callbacks xdsserver.Callbacks, start bool) bootstrap.ControlPlane {
 	hasher := &xds.ProxyKeyHasher{}
 	snapshotCache := cache.NewSnapshotCache(true, hasher, contextutils.LoggerFrom(ctx))
-	xdsServer := server.NewServer(snapshotCache, callbacks)
-	envoyv2.RegisterAggregatedDiscoveryServiceServer(grpcServer, xdsServer)
+	xdsServer := server.NewServer(ctx, snapshotCache, callbacks)
 	reflection.Register(grpcServer)
 
 	return bootstrap.ControlPlane{
@@ -603,7 +601,8 @@ func startRestXdsServer(opts bootstrap.Opts) {
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx),
 		opts.ControlPlane.XDSServer,
 		map[string]string{
-			resource.FetchEndpoints: resource.EndpointType,
+			resource.FetchEndpointsV2: resource.EndpointTypeV2,
+			resource.FetchEndpointsV3: resource.EndpointTypeV3,
 		},
 	)
 	restXdsAddr := opts.Settings.GetGloo().GetRestXdsBindAddr()

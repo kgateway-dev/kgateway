@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3900
+    description: >
+      Recent changes were made to the tracing configuration. Updates the documentation so users
+      can utilize the new functionality.

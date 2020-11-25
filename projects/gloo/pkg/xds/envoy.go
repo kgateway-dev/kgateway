@@ -3,8 +3,14 @@ package xds
 import (
 	"fmt"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_service_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/service/cluster/v3"
+	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	envoy_service_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/service/endpoint/v3"
+	envoy_service_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/service/listener/v3"
+	envoy_service_route_v3 "github.com/envoyproxy/go-control-plane/envoy/service/route/v3"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -22,9 +28,9 @@ func NewNodeHasher() *ProxyKeyHasher {
 	return &ProxyKeyHasher{}
 }
 
-func (h *ProxyKeyHasher) ID(node *core.Node) string {
-	if node.Metadata != nil {
-		roleValue := node.Metadata.Fields["role"]
+func (h *ProxyKeyHasher) ID(node *envoy_config_core_v3.Node) string {
+	if node.GetMetadata() != nil {
+		roleValue := node.GetMetadata().GetFields()["role"]
 		if roleValue != nil {
 			return roleValue.GetStringValue()
 		}
@@ -73,12 +79,21 @@ func SetupEnvoyXds(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyC
 	if _, ok := grpcServer.GetServiceInfo()["envoy.api.v2.EndpointDiscoveryService"]; ok {
 		return
 	}
-	envoyServer := NewEnvoyServer(xdsServer)
 
-	v2.RegisterEndpointDiscoveryServiceServer(grpcServer, envoyServer)
-	v2.RegisterClusterDiscoveryServiceServer(grpcServer, envoyServer)
-	v2.RegisterRouteDiscoveryServiceServer(grpcServer, envoyServer)
-	v2.RegisterListenerDiscoveryServiceServer(grpcServer, envoyServer)
+	serverV2 := NewEnvoyServerV2(xdsServer)
+	envoy_api_v2.RegisterEndpointDiscoveryServiceServer(grpcServer, serverV2)
+	envoy_api_v2.RegisterClusterDiscoveryServiceServer(grpcServer, serverV2)
+	envoy_api_v2.RegisterRouteDiscoveryServiceServer(grpcServer, serverV2)
+	envoy_api_v2.RegisterListenerDiscoveryServiceServer(grpcServer, serverV2)
+	envoy_service_discovery_v2.RegisterAggregatedDiscoveryServiceServer(grpcServer, serverV2)
+
+	serverV3 := NewEnvoyServerV3(xdsServer)
+	envoy_service_endpoint_v3.RegisterEndpointDiscoveryServiceServer(grpcServer, serverV3)
+	envoy_service_cluster_v3.RegisterClusterDiscoveryServiceServer(grpcServer, serverV3)
+	envoy_service_route_v3.RegisterRouteDiscoveryServiceServer(grpcServer, serverV3)
+	envoy_service_listener_v3.RegisterListenerDiscoveryServiceServer(grpcServer, serverV3)
+	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(grpcServer, serverV3)
+
 	_ = envoyCache.SetSnapshot(FallbackNodeKey, fallbackSnapshot(fallbackBindAddr, fallbackBindPort, fallbackStatusCode))
 
 }

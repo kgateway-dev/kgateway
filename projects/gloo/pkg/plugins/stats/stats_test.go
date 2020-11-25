@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -27,11 +27,11 @@ var _ = Describe("Virtual Clusters", func() {
 				},
 			},
 		}
-		outputVh = envoyroute.VirtualHost{
+		outputVh = envoy_config_route_v3.VirtualHost{
 			Name:    "my-vh",
 			Domains: []string{"a.com", "b.com"},
 		}
-		referenceVh = envoyroute.VirtualHost{
+		referenceVh = envoy_config_route_v3.VirtualHost{
 			Name:    "my-vh",
 			Domains: []string{"a.com", "b.com"},
 		}
@@ -48,10 +48,10 @@ var _ = Describe("Virtual Clusters", func() {
 		Expect(outputVh).To(Equal(referenceVh))
 	})
 
-	getPattern := func(vc *envoyroute.VirtualCluster) string {
+	getPattern := func(vc *envoy_config_route_v3.VirtualCluster) string {
 		return vc.GetHeaders()[0].GetSafeRegexMatch().GetRegex()
 	}
-	getMethod := func(vc *envoyroute.VirtualCluster) string {
+	getMethod := func(vc *envoy_config_route_v3.VirtualCluster) string {
 		if len(vc.GetHeaders()) < 2 {
 			return ""
 		}

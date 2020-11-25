@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Add docs for set-style rate limiting.
+  issueLink: https://github.com/solo-io/gloo/issues/2695

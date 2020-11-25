@@ -1,8 +1,8 @@
 package consul
 
 import (
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -13,7 +13,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-func (p *plugin) ProcessRouteAction(params plugins.RouteActionParams, inAction *v1.RouteAction, out *envoyroute.RouteAction) error {
+func (p *plugin) ProcessRouteAction(
+	params plugins.RouteActionParams,
+	inAction *v1.RouteAction,
+	out *envoy_config_route_v3.RouteAction,
+) error {
 	switch dest := inAction.Destination.(type) {
 	case *v1.RouteAction_Single:
 
@@ -45,7 +49,7 @@ func (p *plugin) ProcessRouteAction(params plugins.RouteActionParams, inAction *
 
 	case *v1.RouteAction_ClusterHeader:
 		// ClusterHeader must use the naming convention {{clustername}}_{{namespace}}
-		out.ClusterSpecifier = &envoyroute.RouteAction_ClusterHeader{
+		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_ClusterHeader{
 			ClusterHeader: inAction.GetClusterHeader(),
 		}
 		return nil
@@ -53,7 +57,10 @@ func (p *plugin) ProcessRouteAction(params plugins.RouteActionParams, inAction *
 	return eris.Errorf("unknown upstream destination type")
 }
 
-func getMetadataMatch(dest *v1.Destination, allUpstreams v1.UpstreamList) (*envoycore.Metadata, *core.ResourceRef, error) {
+func getMetadataMatch(
+	dest *v1.Destination,
+	allUpstreams v1.UpstreamList,
+) (*envoy_config_core_v3.Metadata, *core.ResourceRef, error) {
 	usRef, err := upstreams.DestinationToUpstreamRef(dest)
 	if err != nil {
 		return nil, nil, err
@@ -67,10 +74,10 @@ func getMetadataMatch(dest *v1.Destination, allUpstreams v1.UpstreamList) (*envo
 	return getSubsetMatch(dest, upstream), usRef, nil
 }
 
-func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, out *envoyroute.RouteAction) error {
+func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, out *envoy_config_route_v3.RouteAction) error {
 
 	// Index clusters by name so we can look it up by the destination upstream
-	clusterMap := make(map[string]*envoyroute.WeightedCluster_ClusterWeight)
+	clusterMap := make(map[string]*envoy_config_route_v3.WeightedCluster_ClusterWeight)
 	for _, weightedCluster := range out.GetWeightedClusters().Clusters {
 		clusterMap[weightedCluster.Name] = weightedCluster
 	}
@@ -95,8 +102,8 @@ func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, 
 	return nil
 }
 
-func getSubsetMatch(destination *v1.Destination, upstream *v1.Upstream) *envoycore.Metadata {
-	var routeMetadata *envoycore.Metadata
+func getSubsetMatch(destination *v1.Destination, upstream *v1.Upstream) *envoy_config_core_v3.Metadata {
+	var routeMetadata *envoy_config_core_v3.Metadata
 
 	// TODO(marco): consider cleaning up the route API so that subset information is specified on the typed destination
 	// If this is a Consul destination, add the correspondent subset information
@@ -108,7 +115,7 @@ func getSubsetMatch(destination *v1.Destination, upstream *v1.Upstream) *envoyco
 	return routeMetadata
 }
 
-func consulMetadataMatch(dest *v1.ConsulServiceDestination, upstream *v1.Upstream) *envoycore.Metadata {
+func consulMetadataMatch(dest *v1.ConsulServiceDestination, upstream *v1.Upstream) *envoy_config_core_v3.Metadata {
 	labels := make(map[string]string)
 
 	// If tag filter is provided, set the correspondent metadata.
@@ -142,7 +149,7 @@ func consulMetadataMatch(dest *v1.ConsulServiceDestination, upstream *v1.Upstrea
 		}
 	}
 
-	return &envoycore.Metadata{
+	return &envoy_config_core_v3.Metadata{
 		FilterMetadata: map[string]*structpb.Struct{
 			translator.EnvoyLb: labelsStruct,
 		},
