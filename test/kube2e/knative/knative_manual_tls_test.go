@@ -101,7 +101,12 @@ func addTLSSecret() {
 		CaBundleFileName:   opts.ServerCertAuthorityFileName,
 		Cert:               caCert,
 		PrivateKey:         certs.ServerCertKey,
-		CaBundle:           certs.CaCertificate,
+
+		// We intentionally do not provide a CaBundle here. Due to the way Gloo works, if we provide a CaBundle,
+		// we assume that we need to verify the identity of the client, and expect a client certificate to be
+		// passed in the request. By not including the CaBundle we are testing TLS and ensuring that only
+		// the client verifies the identity of the server.
+		// CaBundle:           certs.CaCertificate,
 	}
 
 	err = kube.CreateTlsSecret(context.Background(), kubeClient, secretConfig)
