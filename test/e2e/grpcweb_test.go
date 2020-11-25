@@ -22,7 +22,7 @@ import (
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Grpc Web", func() {
+var _ = FDescribe("Grpc Web", func() {
 
 	var (
 		tc                TestContext
@@ -132,7 +132,7 @@ var _ = Describe("Grpc Web", func() {
 					var bufferbase64 bytes.Buffer
 					bufferbase64.Write(dest)
 
-					req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/envoy.service.accesslog.v2.AccessLogService/StreamAccessLogs", defaults.HttpPort), &bufferbase64)
+					req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/envoy.service.accesslog.v3.AccessLogService/StreamAccessLogs", defaults.HttpPort), &bufferbase64)
 					Expect(err).NotTo(HaveOccurred())
 
 					req.Header.Set("content-type", "application/grpc-web-text")
