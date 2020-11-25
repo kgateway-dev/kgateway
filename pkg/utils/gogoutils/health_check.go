@@ -229,8 +229,6 @@ func ToGlooHealthCheck(check *envoy_config_core_v3.HealthCheck) (*envoycore_gloo
 		httpHealthChecker := &envoycore_gloo.HealthCheck_HttpHealthCheck{
 			Host:                   typed.HttpHealthCheck.GetHost(),
 			Path:                   typed.HttpHealthCheck.GetPath(),
-			UseHttp2:               typed.HttpHealthCheck.GetHiddenEnvoyDeprecatedUseHttp2(),
-			ServiceName:            typed.HttpHealthCheck.GetHiddenEnvoyDeprecatedServiceName(),
 			RequestHeadersToAdd:    ToGlooHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd()),
 			RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
 			ExpectedStatuses:       ToGlooInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
