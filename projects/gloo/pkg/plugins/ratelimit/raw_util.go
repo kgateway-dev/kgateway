@@ -4,27 +4,32 @@ import (
 	"context"
 	"time"
 
-	gloorl "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
-
-	envoyvhostratelimit "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
-	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
+	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
-
-	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
+	"github.com/solo-io/gloo/pkg/utils/regexutils"
+	gloorl "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-func generateEnvoyConfigForCustomFilter(ref core.ResourceRef, timeout *time.Duration, denyOnFail bool) *envoyratelimit.RateLimit {
+func generateEnvoyConfigForCustomFilter(
+	ref core.ResourceRef,
+	timeout *time.Duration,
+	denyOnFail bool,
+) *envoyratelimit.RateLimit {
 	return GenerateEnvoyConfigForFilterWith(ref, CustomDomain, CustomStage, timeout, denyOnFail)
 }
 
-func generateCustomEnvoyConfigForVhost(ctx context.Context, rlactions []*gloorl.RateLimitActions) []*envoyvhostratelimit.RateLimit {
-	var ret []*envoyvhostratelimit.RateLimit
+func generateCustomEnvoyConfigForVhost(
+	ctx context.Context,
+	rlactions []*gloorl.RateLimitActions,
+) []*envoy_config_route_v3.RateLimit {
+	var ret []*envoy_config_route_v3.RateLimit
 	for _, rlaction := range rlactions {
 		if len(rlaction.Actions) != 0 {
-			rl := &envoyvhostratelimit.RateLimit{
+			rl := &envoy_config_route_v3.RateLimit{
 				Stage: &wrappers.UInt32Value{Value: CustomStage},
 			}
 			rl.Actions = ConvertActions(ctx, rlaction.Actions)
@@ -34,8 +39,8 @@ func generateCustomEnvoyConfigForVhost(ctx context.Context, rlactions []*gloorl.
 	return ret
 }
 
-func ConvertActions(ctx context.Context, actions []*gloorl.Action) []*envoyvhostratelimit.RateLimit_Action {
-	var retActions []*envoyvhostratelimit.RateLimit_Action
+func ConvertActions(ctx context.Context, actions []*gloorl.Action) []*envoy_config_route_v3.RateLimit_Action {
+	var retActions []*envoy_config_route_v3.RateLimit_Action
 
 	for _, action := range actions {
 		retActions = append(retActions, convertAction(ctx, action))
@@ -43,42 +48,42 @@ func ConvertActions(ctx context.Context, actions []*gloorl.Action) []*envoyvhost
 	return retActions
 }
 
-func convertAction(ctx context.Context, action *gloorl.Action) *envoyvhostratelimit.RateLimit_Action {
-	var retAction envoyvhostratelimit.RateLimit_Action
+func convertAction(ctx context.Context, action *gloorl.Action) *envoy_config_route_v3.RateLimit_Action {
+	var retAction envoy_config_route_v3.RateLimit_Action
 
 	switch specificAction := action.ActionSpecifier.(type) {
 	case *gloorl.Action_SourceCluster_:
-		retAction.ActionSpecifier = &envoyvhostratelimit.RateLimit_Action_SourceCluster_{
-			SourceCluster: &envoyvhostratelimit.RateLimit_Action_SourceCluster{},
+		retAction.ActionSpecifier = &envoy_config_route_v3.RateLimit_Action_SourceCluster_{
+			SourceCluster: &envoy_config_route_v3.RateLimit_Action_SourceCluster{},
 		}
 	case *gloorl.Action_DestinationCluster_:
-		retAction.ActionSpecifier = &envoyvhostratelimit.RateLimit_Action_DestinationCluster_{
-			DestinationCluster: &envoyvhostratelimit.RateLimit_Action_DestinationCluster{},
+		retAction.ActionSpecifier = &envoy_config_route_v3.RateLimit_Action_DestinationCluster_{
+			DestinationCluster: &envoy_config_route_v3.RateLimit_Action_DestinationCluster{},
 		}
 
 	case *gloorl.Action_RequestHeaders_:
-		retAction.ActionSpecifier = &envoyvhostratelimit.RateLimit_Action_RequestHeaders_{
-			RequestHeaders: &envoyvhostratelimit.RateLimit_Action_RequestHeaders{
+		retAction.ActionSpecifier = &envoy_config_route_v3.RateLimit_Action_RequestHeaders_{
+			RequestHeaders: &envoy_config_route_v3.RateLimit_Action_RequestHeaders{
 				HeaderName:    specificAction.RequestHeaders.GetHeaderName(),
 				DescriptorKey: specificAction.RequestHeaders.GetDescriptorKey(),
 			},
 		}
 
 	case *gloorl.Action_RemoteAddress_:
-		retAction.ActionSpecifier = &envoyvhostratelimit.RateLimit_Action_RemoteAddress_{
-			RemoteAddress: &envoyvhostratelimit.RateLimit_Action_RemoteAddress{},
+		retAction.ActionSpecifier = &envoy_config_route_v3.RateLimit_Action_RemoteAddress_{
+			RemoteAddress: &envoy_config_route_v3.RateLimit_Action_RemoteAddress{},
 		}
 
 	case *gloorl.Action_GenericKey_:
-		retAction.ActionSpecifier = &envoyvhostratelimit.RateLimit_Action_GenericKey_{
-			GenericKey: &envoyvhostratelimit.RateLimit_Action_GenericKey{
+		retAction.ActionSpecifier = &envoy_config_route_v3.RateLimit_Action_GenericKey_{
+			GenericKey: &envoy_config_route_v3.RateLimit_Action_GenericKey{
 				DescriptorValue: specificAction.GenericKey.GetDescriptorValue(),
 			},
 		}
 
 	case *gloorl.Action_HeaderValueMatch_:
-		retAction.ActionSpecifier = &envoyvhostratelimit.RateLimit_Action_HeaderValueMatch_{
-			HeaderValueMatch: &envoyvhostratelimit.RateLimit_Action_HeaderValueMatch{
+		retAction.ActionSpecifier = &envoy_config_route_v3.RateLimit_Action_HeaderValueMatch_{
+			HeaderValueMatch: &envoy_config_route_v3.RateLimit_Action_HeaderValueMatch{
 				ExpectMatch:     gogoutils.BoolGogoToProto(specificAction.HeaderValueMatch.GetExpectMatch()),
 				DescriptorValue: specificAction.HeaderValueMatch.GetDescriptorValue(),
 				Headers:         convertHeaders(ctx, specificAction.HeaderValueMatch.GetHeaders()),
@@ -90,45 +95,45 @@ func convertAction(ctx context.Context, action *gloorl.Action) *envoyvhostrateli
 	return &retAction
 }
 
-func convertHeaders(ctx context.Context, headers []*gloorl.Action_HeaderValueMatch_HeaderMatcher) []*envoyvhostratelimit.HeaderMatcher {
-	var retHeaders []*envoyvhostratelimit.HeaderMatcher
+func convertHeaders(ctx context.Context, headers []*gloorl.Action_HeaderValueMatch_HeaderMatcher) []*envoy_config_route_v3.HeaderMatcher {
+	var retHeaders []*envoy_config_route_v3.HeaderMatcher
 	for _, header := range headers {
 		retHeaders = append(retHeaders, convertHeader(ctx, header))
 	}
 	return retHeaders
 }
 
-func convertHeader(ctx context.Context, header *gloorl.Action_HeaderValueMatch_HeaderMatcher) *envoyvhostratelimit.HeaderMatcher {
-	ret := &envoyvhostratelimit.HeaderMatcher{
+func convertHeader(ctx context.Context, header *gloorl.Action_HeaderValueMatch_HeaderMatcher) *envoy_config_route_v3.HeaderMatcher {
+	ret := &envoy_config_route_v3.HeaderMatcher{
 		InvertMatch: header.InvertMatch,
 		Name:        header.Name,
 	}
 	switch specificHeaderSpecifier := header.HeaderMatchSpecifier.(type) {
 	case *gloorl.Action_HeaderValueMatch_HeaderMatcher_ExactMatch:
-		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_ExactMatch{
+		ret.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_ExactMatch{
 			ExactMatch: specificHeaderSpecifier.ExactMatch,
 		}
 	case *gloorl.Action_HeaderValueMatch_HeaderMatcher_RegexMatch:
-		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_SafeRegexMatch{
+		ret.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_SafeRegexMatch{
 			SafeRegexMatch: regexutils.NewRegex(ctx, specificHeaderSpecifier.RegexMatch),
 		}
 	case *gloorl.Action_HeaderValueMatch_HeaderMatcher_RangeMatch:
-		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_RangeMatch{
-			RangeMatch: &envoytype.Int64Range{
+		ret.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_RangeMatch{
+			RangeMatch: &envoy_type_v3.Int64Range{
 				Start: specificHeaderSpecifier.RangeMatch.Start,
 				End:   specificHeaderSpecifier.RangeMatch.End,
 			},
 		}
 	case *gloorl.Action_HeaderValueMatch_HeaderMatcher_PresentMatch:
-		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_PresentMatch{
+		ret.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_PresentMatch{
 			PresentMatch: specificHeaderSpecifier.PresentMatch,
 		}
 	case *gloorl.Action_HeaderValueMatch_HeaderMatcher_PrefixMatch:
-		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_PrefixMatch{
+		ret.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_PrefixMatch{
 			PrefixMatch: specificHeaderSpecifier.PrefixMatch,
 		}
 	case *gloorl.Action_HeaderValueMatch_HeaderMatcher_SuffixMatch:
-		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_SuffixMatch{
+		ret.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_SuffixMatch{
 			SuffixMatch: specificHeaderSpecifier.SuffixMatch,
 		}
 	}

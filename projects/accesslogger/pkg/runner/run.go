@@ -6,7 +6,6 @@ import (
 	"net"
 
 	envoy_data_accesslog_v2 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
-
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/solo-io/gloo/pkg/utils"

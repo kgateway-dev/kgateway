@@ -3,9 +3,9 @@ package translator
 import (
 	"fmt"
 
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
-	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -26,9 +26,9 @@ func UpstreamToClusterName(upstream core.ResourceRef) string {
 	return fmt.Sprintf("%s_%s", upstream.Name, upstream.Namespace)
 }
 
-func NewFilterWithTypedConfig(name string, config proto.Message) (*envoylistener.Filter, error) {
+func NewFilterWithTypedConfig(name string, config proto.Message) (*envoy_config_listener_v3.Filter, error) {
 
-	s := &envoylistener.Filter{
+	s := &envoy_config_listener_v3.Filter{
 		Name: name,
 	}
 
@@ -36,10 +36,10 @@ func NewFilterWithTypedConfig(name string, config proto.Message) (*envoylistener
 		marshalledConf, err := utils.MessageToAny(config)
 		if err != nil {
 			// this should NEVER HAPPEN!
-			return &envoylistener.Filter{}, err
+			return &envoy_config_listener_v3.Filter{}, err
 		}
 
-		s.ConfigType = &envoylistener.Filter_TypedConfig{
+		s.ConfigType = &envoy_config_listener_v3.Filter_TypedConfig{
 			TypedConfig: marshalledConf,
 		}
 	}

@@ -3,22 +3,22 @@ package utils
 import (
 	"errors"
 
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 )
 
 var (
 	InvalidRouteActionError = errors.New("cannot use this plugin on non-Route_Route route actions")
 )
 
-func EnsureRouteAction(out *envoyroute.Route) error {
+func EnsureRouteAction(out *envoy_config_route_v3.Route) error {
 	if out.Action != nil && out.GetRoute() == nil {
 		return InvalidRouteActionError
 	}
 	// we have already ensured that the output route action is either nil or of the proper type
 	// if it is nil, we initialize it prior to transforming it
 	if out.GetRoute() == nil {
-		out.Action = &envoyroute.Route_Route{
-			Route: &envoyroute.RouteAction{},
+		out.Action = &envoy_config_route_v3.Route_Route{
+			Route: &envoy_config_route_v3.RouteAction{},
 		}
 	}
 	return nil

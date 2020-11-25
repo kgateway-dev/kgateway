@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/types"
 	"github.com/rotisserie/eris"
@@ -20,17 +19,18 @@ import (
 	"go.opencensus.io/trace"
 )
 
-func (t *translatorInstance) computeClusters(params plugins.Params, reports reporter.ResourceReports) []*envoyapi.Cluster {
+func (t *translatorInstance) computeClusters(
+	params plugins.Params,
+	reports reporter.ResourceReports,
+) []*envoy_config_cluster_v3.Cluster {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.computeClusters")
 	params.Ctx = ctx
 	defer span.End()
 
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_clusters")
-	var (
-		clusters []*envoyapi.Cluster
-	)
 
+	clusters := make([]*envoy_config_cluster_v3.Cluster, 0, len(params.Snapshot.Upstreams))
 	// snapshot contains both real and service-derived upstreams
 	for _, upstream := range params.Snapshot.Upstreams {
 		cluster := t.computeCluster(params, upstream, reports)
@@ -39,7 +39,11 @@ func (t *translatorInstance) computeClusters(params plugins.Params, reports repo
 	return clusters
 }
 
-func (t *translatorInstance) computeCluster(params plugins.Params, upstream *v1.Upstream, reports reporter.ResourceReports) *envoyapi.Cluster {
+func (t *translatorInstance) computeCluster(
+	params plugins.Params,
+	upstream *v1.Upstream,
+	reports reporter.ResourceReports,
+) *envoy_config_cluster_v3.Cluster {
 	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.Metadata.Name)
 	out := t.initializeCluster(upstream, params.Snapshot.Endpoints, reports, &params.Snapshot.Secrets)
 
@@ -60,7 +64,12 @@ func (t *translatorInstance) computeCluster(params plugins.Params, upstream *v1.
 	return out
 }
 
-func (t *translatorInstance) initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint, reports reporter.ResourceReports, secrets *v1.SecretList) *envoyapi.Cluster {
+func (t *translatorInstance) initializeCluster(
+	upstream *v1.Upstream,
+	endpoints []*v1.Endpoint,
+	reports reporter.ResourceReports,
+	secrets *v1.SecretList,
+) *envoy_config_cluster_v3.Cluster {
 	hcConfig, err := createHealthCheckConfig(upstream, secrets)
 	if err != nil {
 		reports.AddError(upstream, err)
@@ -71,9 +80,9 @@ func (t *translatorInstance) initializeCluster(upstream *v1.Upstream, endpoints 
 	}
 
 	circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()
-	out := &envoyapi.Cluster{
+	out := &envoy_config_cluster_v3.Cluster{
 		Name:             UpstreamToClusterName(upstream.Metadata.Ref()),
-		Metadata:         new(envoycore.Metadata),
+		Metadata:         new(envoy_config_core_v3.Metadata),
 		CircuitBreakers:  getCircuitBreakers(upstream.CircuitBreakers, circuitBreakers),
 		LbSubsetConfig:   createLbConfig(upstream),
 		HealthChecks:     hcConfig,
@@ -88,9 +97,9 @@ func (t *translatorInstance) initializeCluster(upstream *v1.Upstream, endpoints 
 		if err != nil {
 			reports.AddError(upstream, err)
 		} else {
-			out.TransportSocket = &envoycore.TransportSocket{
+			out.TransportSocket = &envoy_config_core_v3.TransportSocket{
 				Name:       wellknown.TransportSocketTls,
-				ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(cfg)},
+				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(cfg)},
 			}
 		}
 	}
@@ -114,11 +123,11 @@ var (
 	}
 )
 
-func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*envoycore.HealthCheck, error) {
+func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*envoy_config_core_v3.HealthCheck, error) {
 	if upstream == nil {
 		return nil, nil
 	}
-	result := make([]*envoycore.HealthCheck, 0, len(upstream.GetHealthChecks()))
+	result := make([]*envoy_config_core_v3.HealthCheck, 0, len(upstream.GetHealthChecks()))
 	for i, hc := range upstream.GetHealthChecks() {
 		// These values are required by envoy, but not explicitly
 		if hc.HealthyThreshold == nil {
@@ -139,7 +148,7 @@ func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*
 	return result, nil
 }
 
-func createOutlierDetectionConfig(upstream *v1.Upstream) (*envoycluster.OutlierDetection, error) {
+func createOutlierDetectionConfig(upstream *v1.Upstream) (*envoy_config_cluster_v3.OutlierDetection, error) {
 	if upstream == nil {
 		return nil, nil
 	}
@@ -152,8 +161,8 @@ func createOutlierDetectionConfig(upstream *v1.Upstream) (*envoycluster.OutlierD
 	return gogoutils.ToEnvoyOutlierDetection(upstream.GetOutlierDetection()), nil
 }
 
-func createLbConfig(upstream *v1.Upstream) *envoyapi.Cluster_LbSubsetConfig {
-	specGetter, ok := upstream.UpstreamType.(v1.SubsetSpecGetter)
+func createLbConfig(upstream *v1.Upstream) *envoy_config_cluster_v3.Cluster_LbSubsetConfig {
+	specGetter, ok := upstream.GetUpstreamType().(v1.SubsetSpecGetter)
 	if !ok {
 		return nil
 	}
@@ -162,12 +171,12 @@ func createLbConfig(upstream *v1.Upstream) *envoyapi.Cluster_LbSubsetConfig {
 		return nil
 	}
 
-	subsetConfig := &envoyapi.Cluster_LbSubsetConfig{
-		FallbackPolicy: envoyapi.Cluster_LbSubsetConfig_ANY_ENDPOINT,
+	subsetConfig := &envoy_config_cluster_v3.Cluster_LbSubsetConfig{
+		FallbackPolicy: envoy_config_cluster_v3.Cluster_LbSubsetConfig_ANY_ENDPOINT,
 	}
-	for _, keys := range glooSubsetConfig.Selectors {
-		subsetConfig.SubsetSelectors = append(subsetConfig.SubsetSelectors, &envoyapi.Cluster_LbSubsetConfig_LbSubsetSelector{
-			Keys: keys.Keys,
+	for _, keys := range glooSubsetConfig.GetSelectors() {
+		subsetConfig.SubsetSelectors = append(subsetConfig.GetSubsetSelectors(), &envoy_config_cluster_v3.Cluster_LbSubsetConfig_LbSubsetSelector{
+			Keys: keys.GetKeys(),
 		})
 	}
 
@@ -175,14 +184,16 @@ func createLbConfig(upstream *v1.Upstream) *envoyapi.Cluster_LbSubsetConfig {
 }
 
 // TODO: add more validation here
-func validateCluster(c *envoyapi.Cluster) error {
+func validateCluster(c *envoy_config_cluster_v3.Cluster) error {
 	if c.GetClusterType() != nil {
 		// TODO(yuval-k): this is a custom cluster, we cant validate it for now.
 		return nil
 	}
 	clusterType := c.GetType()
-	if clusterType == envoyapi.Cluster_STATIC || clusterType == envoyapi.Cluster_STRICT_DNS || clusterType == envoyapi.Cluster_LOGICAL_DNS {
-		if len(c.Hosts) == 0 && (c.LoadAssignment == nil || len(c.LoadAssignment.Endpoints) == 0) {
+	if clusterType == envoy_config_cluster_v3.Cluster_STATIC ||
+		clusterType == envoy_config_cluster_v3.Cluster_STRICT_DNS ||
+		clusterType == envoy_config_cluster_v3.Cluster_LOGICAL_DNS {
+		if len(c.GetLoadAssignment().GetEndpoints()) == 0 {
 			return eris.Errorf("cluster type %v specified but LoadAssignment was empty", clusterType.String())
 		}
 	}
@@ -190,15 +201,15 @@ func validateCluster(c *envoyapi.Cluster) error {
 }
 
 // Convert the first non nil circuit breaker.
-func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoycluster.CircuitBreakers {
+func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoy_config_cluster_v3.CircuitBreakers {
 	for _, cfg := range cfgs {
 		if cfg != nil {
-			envoyCfg := &envoycluster.CircuitBreakers{}
-			envoyCfg.Thresholds = []*envoycluster.CircuitBreakers_Thresholds{{
-				MaxConnections:     gogoutils.UInt32GogoToProto(cfg.MaxConnections),
-				MaxPendingRequests: gogoutils.UInt32GogoToProto(cfg.MaxPendingRequests),
-				MaxRequests:        gogoutils.UInt32GogoToProto(cfg.MaxRequests),
-				MaxRetries:         gogoutils.UInt32GogoToProto(cfg.MaxRetries),
+			envoyCfg := &envoy_config_cluster_v3.CircuitBreakers{}
+			envoyCfg.Thresholds = []*envoy_config_cluster_v3.CircuitBreakers_Thresholds{{
+				MaxConnections:     gogoutils.UInt32GogoToProto(cfg.GetMaxConnections()),
+				MaxPendingRequests: gogoutils.UInt32GogoToProto(cfg.GetMaxPendingRequests()),
+				MaxRequests:        gogoutils.UInt32GogoToProto(cfg.GetMaxRequests()),
+				MaxRetries:         gogoutils.UInt32GogoToProto(cfg.GetMaxRetries()),
 			}}
 			return envoyCfg
 		}
@@ -206,9 +217,9 @@ func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoycluster.CircuitB
 	return nil
 }
 
-func getHttp2ptions(us *v1.Upstream) *envoycore.Http2ProtocolOptions {
+func getHttp2ptions(us *v1.Upstream) *envoy_config_core_v3.Http2ProtocolOptions {
 	if us.GetUseHttp2().GetValue() {
-		return &envoycore.Http2ProtocolOptions{}
+		return &envoy_config_core_v3.Http2ProtocolOptions{}
 	}
 	return nil
 }

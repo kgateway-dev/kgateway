@@ -1,8 +1,10 @@
 package gogoutils
 
 import (
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	envoycluster_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
 	envoycore_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
@@ -16,7 +18,7 @@ import (
 // we should work to remove that assumption from solokit and delete this code:
 // https://github.com/solo-io/gloo/issues/1793
 
-func ToGlooOutlierDetectionList(list []*envoycluster.OutlierDetection) []*envoycluster_gloo.OutlierDetection {
+func ToGlooOutlierDetectionList(list []*envoy_config_cluster_v3.OutlierDetection) []*envoycluster_gloo.OutlierDetection {
 	if list == nil {
 		return nil
 	}
@@ -27,7 +29,7 @@ func ToGlooOutlierDetectionList(list []*envoycluster.OutlierDetection) []*envoyc
 	return result
 }
 
-func ToGlooOutlierDetection(detection *envoycluster.OutlierDetection) *envoycluster_gloo.OutlierDetection {
+func ToGlooOutlierDetection(detection *envoy_config_cluster_v3.OutlierDetection) *envoycluster_gloo.OutlierDetection {
 	if detection == nil {
 		return nil
 	}
@@ -50,22 +52,22 @@ func ToGlooOutlierDetection(detection *envoycluster.OutlierDetection) *envoyclus
 	}
 }
 
-func ToEnvoyOutlierDetectionList(list []*envoycluster_gloo.OutlierDetection) []*envoycluster.OutlierDetection {
+func ToEnvoyOutlierDetectionList(list []*envoycluster_gloo.OutlierDetection) []*envoy_config_cluster_v3.OutlierDetection {
 	if list == nil {
 		return nil
 	}
-	result := make([]*envoycluster.OutlierDetection, len(list))
+	result := make([]*envoy_config_cluster_v3.OutlierDetection, len(list))
 	for i, v := range list {
 		result[i] = ToEnvoyOutlierDetection(v)
 	}
 	return result
 }
 
-func ToEnvoyOutlierDetection(detection *envoycluster_gloo.OutlierDetection) *envoycluster.OutlierDetection {
+func ToEnvoyOutlierDetection(detection *envoycluster_gloo.OutlierDetection) *envoy_config_cluster_v3.OutlierDetection {
 	if detection == nil {
 		return nil
 	}
-	return &envoycluster.OutlierDetection{
+	return &envoy_config_cluster_v3.OutlierDetection{
 		Consecutive_5Xx:                        UInt32GogoToProto(detection.GetConsecutive_5Xx()),
 		Interval:                               DurationGogoToProto(detection.GetInterval()),
 		BaseEjectionTime:                       DurationGogoToProto(detection.GetBaseEjectionTime()),
@@ -84,11 +86,11 @@ func ToEnvoyOutlierDetection(detection *envoycluster_gloo.OutlierDetection) *env
 	}
 }
 
-func ToEnvoyHealthCheckList(check []*envoycore_gloo.HealthCheck, secrets *v1.SecretList) ([]*envoycore.HealthCheck, error) {
+func ToEnvoyHealthCheckList(check []*envoycore_gloo.HealthCheck, secrets *v1.SecretList) ([]*envoy_config_core_v3.HealthCheck, error) {
 	if check == nil {
 		return nil, nil
 	}
-	result := make([]*envoycore.HealthCheck, len(check))
+	result := make([]*envoy_config_core_v3.HealthCheck, len(check))
 	for i, v := range check {
 		var err error
 		result[i], err = ToEnvoyHealthCheck(v, secrets)
@@ -99,11 +101,11 @@ func ToEnvoyHealthCheckList(check []*envoycore_gloo.HealthCheck, secrets *v1.Sec
 	return result, nil
 }
 
-func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretList) (*envoycore.HealthCheck, error) {
+func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretList) (*envoy_config_core_v3.HealthCheck, error) {
 	if check == nil {
 		return nil, nil
 	}
-	hc := &envoycore.HealthCheck{
+	hc := &envoy_config_core_v3.HealthCheck{
 		Timeout:                      DurationStdToProto(check.GetTimeout()),
 		Interval:                     DurationStdToProto(check.GetInterval()),
 		InitialJitter:                DurationGogoToProto(check.GetInitialJitter()),
@@ -121,8 +123,8 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretLis
 	}
 	switch typed := check.GetHealthChecker().(type) {
 	case *envoycore_gloo.HealthCheck_TcpHealthCheck_:
-		hc.HealthChecker = &envoycore.HealthCheck_TcpHealthCheck_{
-			TcpHealthCheck: &envoycore.HealthCheck_TcpHealthCheck{
+		hc.HealthChecker = &envoy_config_core_v3.HealthCheck_TcpHealthCheck_{
+			TcpHealthCheck: &envoy_config_core_v3.HealthCheck_TcpHealthCheck{
 				Send:    ToEnvoyPayload(typed.TcpHealthCheck.GetSend()),
 				Receive: ToEnvoyPayloadList(typed.TcpHealthCheck.GetReceive()),
 			},
@@ -132,48 +134,45 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretLis
 		if err != nil {
 			return nil, err
 		}
-		hc.HealthChecker = &envoycore.HealthCheck_HttpHealthCheck_{
-			HttpHealthCheck: &envoycore.HealthCheck_HttpHealthCheck{
-				Host:                   typed.HttpHealthCheck.GetHost(),
-				Path:                   typed.HttpHealthCheck.GetPath(),
-				UseHttp2:               typed.HttpHealthCheck.GetUseHttp2(),
-				ServiceName:            typed.HttpHealthCheck.GetServiceName(),
-				RequestHeadersToAdd:    requestHeadersToAdd,
-				RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
-				ExpectedStatuses:       ToEnvoyInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
-			},
+		httpHealthChecker := &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+			Host:                   typed.HttpHealthCheck.GetHost(),
+			Path:                   typed.HttpHealthCheck.GetPath(),
+			RequestHeadersToAdd:    requestHeadersToAdd,
+			RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
+			ExpectedStatuses:       ToEnvoyInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
 		}
+		if typed.HttpHealthCheck.GetUseHttp2() {
+			httpHealthChecker.CodecClientType = envoy_type_v3.CodecClientType_HTTP2
+		}
+		if typed.HttpHealthCheck.GetServiceName() != "" {
+			httpHealthChecker.ServiceNameMatcher = &envoy_type_matcher_v3.StringMatcher{
+				MatchPattern: &envoy_type_matcher_v3.StringMatcher_Prefix{
+					Prefix: typed.HttpHealthCheck.GetServiceName(),
+				},
+			}
+		}
+		hc.HealthChecker = &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
+			HttpHealthCheck: httpHealthChecker,
+		}
+
 	case *envoycore_gloo.HealthCheck_GrpcHealthCheck_:
-		hc.HealthChecker = &envoycore.HealthCheck_GrpcHealthCheck_{
-			GrpcHealthCheck: &envoycore.HealthCheck_GrpcHealthCheck{
-				ServiceName: typed.GrpcHealthCheck.ServiceName,
-				Authority:   typed.GrpcHealthCheck.Authority,
+		hc.HealthChecker = &envoy_config_core_v3.HealthCheck_GrpcHealthCheck_{
+			GrpcHealthCheck: &envoy_config_core_v3.HealthCheck_GrpcHealthCheck{
+				ServiceName: typed.GrpcHealthCheck.GetServiceName(),
+				Authority:   typed.GrpcHealthCheck.GetAuthority(),
 			},
 		}
 	case *envoycore_gloo.HealthCheck_CustomHealthCheck_:
 		switch typedConfig := typed.CustomHealthCheck.GetConfigType().(type) {
-		case *envoycore_gloo.HealthCheck_CustomHealthCheck_Config:
-			converted, err := protoutils.StructGogoToPb(typedConfig.Config)
-			if err != nil {
-				return nil, err
-			}
-			hc.HealthChecker = &envoycore.HealthCheck_CustomHealthCheck_{
-				CustomHealthCheck: &envoycore.HealthCheck_CustomHealthCheck{
-					Name: typed.CustomHealthCheck.GetName(),
-					ConfigType: &envoycore.HealthCheck_CustomHealthCheck_Config{
-						Config: converted,
-					},
-				},
-			}
 		case *envoycore_gloo.HealthCheck_CustomHealthCheck_TypedConfig:
 			converted, err := protoutils.AnyGogoToPb(typedConfig.TypedConfig)
 			if err != nil {
 				return nil, err
 			}
-			hc.HealthChecker = &envoycore.HealthCheck_CustomHealthCheck_{
-				CustomHealthCheck: &envoycore.HealthCheck_CustomHealthCheck{
+			hc.HealthChecker = &envoy_config_core_v3.HealthCheck_CustomHealthCheck_{
+				CustomHealthCheck: &envoy_config_core_v3.HealthCheck_CustomHealthCheck{
 					Name: typed.CustomHealthCheck.GetName(),
-					ConfigType: &envoycore.HealthCheck_CustomHealthCheck_TypedConfig{
+					ConfigType: &envoy_config_core_v3.HealthCheck_CustomHealthCheck_TypedConfig{
 						TypedConfig: converted,
 					},
 				},
@@ -183,7 +182,7 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretLis
 	return hc, nil
 }
 
-func ToGlooHealthCheckList(check []*envoycore.HealthCheck) ([]*envoycore_gloo.HealthCheck, error) {
+func ToGlooHealthCheckList(check []*envoy_config_core_v3.HealthCheck) ([]*envoycore_gloo.HealthCheck, error) {
 	if check == nil {
 		return nil, nil
 	}
@@ -198,7 +197,7 @@ func ToGlooHealthCheckList(check []*envoycore.HealthCheck) ([]*envoycore_gloo.He
 	return result, nil
 }
 
-func ToGlooHealthCheck(check *envoycore.HealthCheck) (*envoycore_gloo.HealthCheck, error) {
+func ToGlooHealthCheck(check *envoy_config_core_v3.HealthCheck) (*envoycore_gloo.HealthCheck, error) {
 	if check == nil {
 		return nil, nil
 	}
@@ -219,48 +218,46 @@ func ToGlooHealthCheck(check *envoycore.HealthCheck) (*envoycore_gloo.HealthChec
 		AlwaysLogHealthCheckFailures: check.GetAlwaysLogHealthCheckFailures(),
 	}
 	switch typed := check.GetHealthChecker().(type) {
-	case *envoycore.HealthCheck_TcpHealthCheck_:
+	case *envoy_config_core_v3.HealthCheck_TcpHealthCheck_:
 		hc.HealthChecker = &envoycore_gloo.HealthCheck_TcpHealthCheck_{
 			TcpHealthCheck: &envoycore_gloo.HealthCheck_TcpHealthCheck{
 				Send:    ToGlooPayload(typed.TcpHealthCheck.GetSend()),
 				Receive: ToGlooPayloadList(typed.TcpHealthCheck.GetReceive()),
 			},
 		}
-	case *envoycore.HealthCheck_HttpHealthCheck_:
-		hc.HealthChecker = &envoycore_gloo.HealthCheck_HttpHealthCheck_{
-			HttpHealthCheck: &envoycore_gloo.HealthCheck_HttpHealthCheck{
-				Host:                   typed.HttpHealthCheck.GetHost(),
-				Path:                   typed.HttpHealthCheck.GetPath(),
-				UseHttp2:               typed.HttpHealthCheck.GetUseHttp2(),
-				ServiceName:            typed.HttpHealthCheck.GetServiceName(),
-				RequestHeadersToAdd:    ToGlooHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd()),
-				RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
-				ExpectedStatuses:       ToGlooInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
-			},
+	case *envoy_config_core_v3.HealthCheck_HttpHealthCheck_:
+		httpHealthChecker := &envoycore_gloo.HealthCheck_HttpHealthCheck{
+			Host:                   typed.HttpHealthCheck.GetHost(),
+			Path:                   typed.HttpHealthCheck.GetPath(),
+			RequestHeadersToAdd:    ToGlooHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd()),
+			RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
+			ExpectedStatuses:       ToGlooInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
 		}
-	case *envoycore.HealthCheck_GrpcHealthCheck_:
+
+		if typed.HttpHealthCheck.GetCodecClientType() == envoy_type_v3.CodecClientType_HTTP2 {
+			httpHealthChecker.UseHttp2 = true
+		}
+
+		switch typed.HttpHealthCheck.GetServiceNameMatcher().GetMatchPattern().(type) {
+		case *envoy_type_matcher_v3.StringMatcher_Prefix:
+			httpHealthChecker.ServiceName = typed.HttpHealthCheck.GetServiceNameMatcher().GetPrefix()
+		case *envoy_type_matcher_v3.StringMatcher_Exact:
+			httpHealthChecker.ServiceName = typed.HttpHealthCheck.GetServiceNameMatcher().GetExact()
+		}
+
+		hc.HealthChecker = &envoycore_gloo.HealthCheck_HttpHealthCheck_{
+			HttpHealthCheck: httpHealthChecker,
+		}
+	case *envoy_config_core_v3.HealthCheck_GrpcHealthCheck_:
 		hc.HealthChecker = &envoycore_gloo.HealthCheck_GrpcHealthCheck_{
 			GrpcHealthCheck: &envoycore_gloo.HealthCheck_GrpcHealthCheck{
 				ServiceName: typed.GrpcHealthCheck.ServiceName,
 				Authority:   typed.GrpcHealthCheck.Authority,
 			},
 		}
-	case *envoycore.HealthCheck_CustomHealthCheck_:
+	case *envoy_config_core_v3.HealthCheck_CustomHealthCheck_:
 		switch typedConfig := typed.CustomHealthCheck.GetConfigType().(type) {
-		case *envoycore.HealthCheck_CustomHealthCheck_Config:
-			converted, err := protoutils.StructPbToGogo(typedConfig.Config)
-			if err != nil {
-				return nil, err
-			}
-			hc.HealthChecker = &envoycore_gloo.HealthCheck_CustomHealthCheck_{
-				CustomHealthCheck: &envoycore_gloo.HealthCheck_CustomHealthCheck{
-					Name: typed.CustomHealthCheck.GetName(),
-					ConfigType: &envoycore_gloo.HealthCheck_CustomHealthCheck_Config{
-						Config: converted,
-					},
-				},
-			}
-		case *envoycore.HealthCheck_CustomHealthCheck_TypedConfig:
+		case *envoy_config_core_v3.HealthCheck_CustomHealthCheck_TypedConfig:
 			converted, err := protoutils.AnyPbToGogo(typedConfig.TypedConfig)
 			if err != nil {
 				return nil, err
@@ -278,26 +275,26 @@ func ToGlooHealthCheck(check *envoycore.HealthCheck) (*envoycore_gloo.HealthChec
 	return hc, nil
 }
 
-func ToEnvoyPayloadList(payload []*envoycore_gloo.HealthCheck_Payload) []*envoycore.HealthCheck_Payload {
+func ToEnvoyPayloadList(payload []*envoycore_gloo.HealthCheck_Payload) []*envoy_config_core_v3.HealthCheck_Payload {
 	if payload == nil {
 		return nil
 	}
-	result := make([]*envoycore.HealthCheck_Payload, len(payload))
+	result := make([]*envoy_config_core_v3.HealthCheck_Payload, len(payload))
 	for i, v := range payload {
 		result[i] = ToEnvoyPayload(v)
 	}
 	return result
 }
 
-func ToEnvoyPayload(payload *envoycore_gloo.HealthCheck_Payload) *envoycore.HealthCheck_Payload {
+func ToEnvoyPayload(payload *envoycore_gloo.HealthCheck_Payload) *envoy_config_core_v3.HealthCheck_Payload {
 	if payload == nil {
 		return nil
 	}
-	var result *envoycore.HealthCheck_Payload
+	var result *envoy_config_core_v3.HealthCheck_Payload
 	switch typed := payload.GetPayload().(type) {
 	case *envoycore_gloo.HealthCheck_Payload_Text:
-		result = &envoycore.HealthCheck_Payload{
-			Payload: &envoycore.HealthCheck_Payload_Text{
+		result = &envoy_config_core_v3.HealthCheck_Payload{
+			Payload: &envoy_config_core_v3.HealthCheck_Payload_Text{
 				Text: typed.Text,
 			},
 		}
@@ -305,7 +302,7 @@ func ToEnvoyPayload(payload *envoycore_gloo.HealthCheck_Payload) *envoycore.Heal
 	return result
 }
 
-func ToGlooPayloadList(payload []*envoycore.HealthCheck_Payload) []*envoycore_gloo.HealthCheck_Payload {
+func ToGlooPayloadList(payload []*envoy_config_core_v3.HealthCheck_Payload) []*envoycore_gloo.HealthCheck_Payload {
 	if payload == nil {
 		return nil
 	}
@@ -316,13 +313,13 @@ func ToGlooPayloadList(payload []*envoycore.HealthCheck_Payload) []*envoycore_gl
 	return result
 }
 
-func ToGlooPayload(payload *envoycore.HealthCheck_Payload) *envoycore_gloo.HealthCheck_Payload {
+func ToGlooPayload(payload *envoy_config_core_v3.HealthCheck_Payload) *envoycore_gloo.HealthCheck_Payload {
 	if payload == nil {
 		return nil
 	}
 	var result *envoycore_gloo.HealthCheck_Payload
 	switch typed := payload.GetPayload().(type) {
-	case *envoycore.HealthCheck_Payload_Text:
+	case *envoy_config_core_v3.HealthCheck_Payload_Text:
 		result = &envoycore_gloo.HealthCheck_Payload{
 			Payload: &envoycore_gloo.HealthCheck_Payload_Text{
 				Text: typed.Text,

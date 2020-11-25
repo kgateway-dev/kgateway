@@ -35,6 +35,10 @@ var (
 	defaultPluginStage     = plugins.BeforeStage(defaultPluginPredicate)
 )
 
+// Compile-time assertion
+var _ plugins.Plugin = &Plugin{}
+var _ plugins.HttpFilterPlugin = &Plugin{}
+
 type Plugin struct{}
 
 func NewPlugin() *Plugin {

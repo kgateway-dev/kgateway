@@ -3,9 +3,9 @@ package basicroute_test
 import (
 	"time"
 
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -20,11 +20,11 @@ import (
 var _ = Describe("prefix rewrite", func() {
 	It("works", func() {
 		p := NewPlugin()
-		routeAction := &envoyroute.RouteAction{
+		routeAction := &envoy_config_route_v3.RouteAction{
 			PrefixRewrite: "/",
 		}
-		out := &envoyroute.Route{
-			Action: &envoyroute.Route_Route{
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
 				Route: routeAction,
 			},
 		}
@@ -39,11 +39,11 @@ var _ = Describe("prefix rewrite", func() {
 
 	It("distinguishes between empty string and nil", func() {
 		p := NewPlugin()
-		routeAction := &envoyroute.RouteAction{
+		routeAction := &envoy_config_route_v3.RouteAction{
 			PrefixRewrite: "/",
 		}
-		out := &envoyroute.Route{
-			Action: &envoyroute.Route_Route{
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
 				Route: routeAction,
 			},
 		}
@@ -70,9 +70,9 @@ var _ = Describe("timeout", func() {
 	It("works", func() {
 		t := time.Minute
 		p := NewPlugin()
-		routeAction := &envoyroute.RouteAction{}
-		out := &envoyroute.Route{
-			Action: &envoyroute.Route_Route{
+		routeAction := &envoy_config_route_v3.RouteAction{}
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
 				Route: routeAction,
 			},
 		}
@@ -92,7 +92,7 @@ var _ = Describe("retries", func() {
 	var (
 		plugin              *Plugin
 		retryPolicy         *retries.RetryPolicy
-		expectedRetryPolicy *envoyroute.RetryPolicy
+		expectedRetryPolicy *envoy_config_route_v3.RetryPolicy
 	)
 	BeforeEach(func() {
 		t := time.Minute
@@ -101,7 +101,7 @@ var _ = Describe("retries", func() {
 			NumRetries:    5,
 			PerTryTimeout: &t,
 		}
-		expectedRetryPolicy = &envoyroute.RetryPolicy{
+		expectedRetryPolicy = &envoy_config_route_v3.RetryPolicy{
 			RetryOn: "if at first you don't succeed",
 			NumRetries: &wrappers.UInt32Value{
 				Value: 5,
@@ -113,9 +113,9 @@ var _ = Describe("retries", func() {
 	})
 
 	It("works", func() {
-		routeAction := &envoyroute.RouteAction{}
-		out := &envoyroute.Route{
-			Action: &envoyroute.Route_Route{
+		routeAction := &envoy_config_route_v3.RouteAction{}
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
 				Route: routeAction,
 			},
 		}
@@ -128,7 +128,7 @@ var _ = Describe("retries", func() {
 		Expect(routeAction.RetryPolicy).To(Equal(expectedRetryPolicy))
 	})
 	It("works on vhost", func() {
-		out := &envoyroute.VirtualHost{}
+		out := &envoy_config_route_v3.VirtualHost{}
 		err := plugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
 				Retries: retryPolicy,
@@ -143,11 +143,11 @@ var _ = Describe("host rewrite", func() {
 	It("rewrites using provided string", func() {
 
 		p := NewPlugin()
-		routeAction := &envoyroute.RouteAction{
-			HostRewriteSpecifier: &envoyroute.RouteAction_HostRewrite{HostRewrite: "/"},
+		routeAction := &envoy_config_route_v3.RouteAction{
+			HostRewriteSpecifier: &envoy_config_route_v3.RouteAction_HostRewriteLiteral{HostRewriteLiteral: "/"},
 		}
-		out := &envoyroute.Route{
-			Action: &envoyroute.Route_Route{
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
 				Route: routeAction,
 			},
 		}
@@ -157,16 +157,16 @@ var _ = Describe("host rewrite", func() {
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(routeAction.GetHostRewrite()).To(Equal("/foo"))
+		Expect(routeAction.GetHostRewriteLiteral()).To(Equal("/foo"))
 	})
 
 	It("distinguishes between empty string and nil", func() {
 		p := NewPlugin()
-		routeAction := &envoyroute.RouteAction{
-			HostRewriteSpecifier: &envoyroute.RouteAction_HostRewrite{HostRewrite: "/"},
+		routeAction := &envoy_config_route_v3.RouteAction{
+			HostRewriteSpecifier: &envoy_config_route_v3.RouteAction_HostRewriteLiteral{HostRewriteLiteral: "/"},
 		}
-		out := &envoyroute.Route{
-			Action: &envoyroute.Route_Route{
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
 				Route: routeAction,
 			},
 		}
@@ -176,7 +176,7 @@ var _ = Describe("host rewrite", func() {
 			Options: &v1.RouteOptions{},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(routeAction.GetHostRewrite()).To(Equal("/"))
+		Expect(routeAction.GetHostRewriteLiteral()).To(Equal("/"))
 
 		// should rewrite host rewrite
 		err = p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
@@ -185,21 +185,21 @@ var _ = Describe("host rewrite", func() {
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(routeAction.GetHostRewrite()).To(BeEmpty())
+		Expect(routeAction.GetHostRewriteLiteral()).To(BeEmpty())
 	})
 
 	It("sets auto_host_rewrite", func() {
 
 		p := NewPlugin()
-		routeAction := &envoyroute.RouteAction{
-			HostRewriteSpecifier: &envoyroute.RouteAction_AutoHostRewrite{
+		routeAction := &envoy_config_route_v3.RouteAction{
+			HostRewriteSpecifier: &envoy_config_route_v3.RouteAction_AutoHostRewrite{
 				AutoHostRewrite: &wrappers.BoolValue{
 					Value: false,
 				},
 			},
 		}
-		out := &envoyroute.Route{
-			Action: &envoyroute.Route_Route{
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
 				Route: routeAction,
 			},
 		}
@@ -221,10 +221,10 @@ var _ = Describe("upgrades", func() {
 	It("works", func() {
 		p := NewPlugin()
 
-		routeAction := &envoyroute.RouteAction{}
+		routeAction := &envoy_config_route_v3.RouteAction{}
 
-		out := &envoyroute.Route{
-			Action: &envoyroute.Route_Route{
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
 				Route: routeAction,
 			},
 		}
@@ -251,10 +251,10 @@ var _ = Describe("upgrades", func() {
 	It("fails on double config", func() {
 		p := NewPlugin()
 
-		routeAction := &envoyroute.RouteAction{}
+		routeAction := &envoy_config_route_v3.RouteAction{}
 
-		out := &envoyroute.Route{
-			Action: &envoyroute.Route_Route{
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
 				Route: routeAction,
 			},
 		}

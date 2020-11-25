@@ -14,12 +14,13 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/client"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
 // Type Definitions:
 
-const RateLimitConfigType = cache.TypePrefix + "/glooe.solo.io.RateLimitConfig"
+const RateLimitConfigType = resource.TypePrefix + "/glooe.solo.io.RateLimitConfig"
 
 /* Defined a resource - to be used by snapshot */
 type RateLimitConfigXdsResourceWrapper struct {
@@ -72,7 +73,7 @@ func NewRateLimitDiscoveryServiceServer(genericServer server.Server) RateLimitDi
 }
 
 func (s *rateLimitDiscoveryServiceServer) StreamRateLimitConfig(stream RateLimitDiscoveryService_StreamRateLimitConfigServer) error {
-	return s.Server.Stream(stream, RateLimitConfigType)
+	return s.Server.StreamV2(stream, RateLimitConfigType)
 }
 
 func (s *rateLimitDiscoveryServiceServer) FetchRateLimitConfig(ctx context.Context, req *discovery.DiscoveryRequest) (*discovery.DiscoveryResponse, error) {
@@ -80,7 +81,7 @@ func (s *rateLimitDiscoveryServiceServer) FetchRateLimitConfig(ctx context.Conte
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
 	req.TypeUrl = RateLimitConfigType
-	return s.Server.Fetch(ctx, req)
+	return s.Server.FetchV2(ctx, req)
 }
 
 func (s *rateLimitDiscoveryServiceServer) DeltaRateLimitConfig(_ RateLimitDiscoveryService_DeltaRateLimitConfigServer) error {

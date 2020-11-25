@@ -1,7 +1,7 @@
 package buffer_test
 
 import (
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoybuffer "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -49,7 +49,7 @@ var _ = Describe("Plugin", func() {
 
 	It("allows route specific disabling of buffer", func() {
 		p := NewPlugin()
-		out := &envoyroute.Route{}
+		out := &envoy_config_route_v3.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			Options: &v1.RouteOptions{
 				BufferPerRoute: &v3.BufferPerRoute{
@@ -69,7 +69,7 @@ var _ = Describe("Plugin", func() {
 
 	It("allows route specific buffer config", func() {
 		p := NewPlugin()
-		out := &envoyroute.Route{}
+		out := &envoy_config_route_v3.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			Options: &v1.RouteOptions{
 				BufferPerRoute: &v3.BufferPerRoute{
@@ -93,7 +93,7 @@ var _ = Describe("Plugin", func() {
 
 	It("allows vhost specific disabling of buffer", func() {
 		p := NewPlugin()
-		out := &envoyroute.VirtualHost{}
+		out := &envoy_config_route_v3.VirtualHost{}
 		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
 				BufferPerRoute: &v3.BufferPerRoute{
@@ -113,7 +113,7 @@ var _ = Describe("Plugin", func() {
 
 	It("allows vhost specific buffer config", func() {
 		p := NewPlugin()
-		out := &envoyroute.VirtualHost{}
+		out := &envoy_config_route_v3.VirtualHost{}
 		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
 				BufferPerRoute: &v3.BufferPerRoute{
@@ -137,7 +137,7 @@ var _ = Describe("Plugin", func() {
 
 	It("allows weighted destination specific disabling of buffer", func() {
 		p := NewPlugin()
-		out := &envoyroute.WeightedCluster_ClusterWeight{}
+		out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
 		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
 			Options: &v1.WeightedDestinationOptions{
 				BufferPerRoute: &v3.BufferPerRoute{
@@ -157,7 +157,7 @@ var _ = Describe("Plugin", func() {
 
 	It("allows weighted destination specific buffer config", func() {
 		p := NewPlugin()
-		out := &envoyroute.WeightedCluster_ClusterWeight{}
+		out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
 		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
 			Options: &v1.WeightedDestinationOptions{
 				BufferPerRoute: &v3.BufferPerRoute{

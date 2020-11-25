@@ -1,8 +1,8 @@
 package aws_test
 
 import (
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
@@ -31,8 +31,8 @@ var _ = Describe("Plugin", func() {
 		awsPlugin   plugins.Plugin
 		upstream    *v1.Upstream
 		route       *v1.Route
-		out         *envoyapi.Cluster
-		outroute    *envoyroute.Route
+		out         *envoy_config_cluster_v3.Cluster
+		outroute    *envoy_config_route_v3.Route
 		lpe         *AWSLambdaProtocolExtension
 	)
 	BeforeEach(func() {
@@ -86,11 +86,11 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 
-		out = &envoyapi.Cluster{}
-		outroute = &envoyroute.Route{
-			Action: &envoyroute.Route_Route{
-				Route: &envoyroute.RouteAction{
-					ClusterSpecifier: &envoyroute.RouteAction_Cluster{
+		out = &envoy_config_cluster_v3.Cluster{}
+		outroute = &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
+				Route: &envoy_config_route_v3.RouteAction{
+					ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{
 						Cluster: clusterName,
 					},
 				},

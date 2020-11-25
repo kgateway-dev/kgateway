@@ -6,8 +6,8 @@ import (
 	"path"
 	"time"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	envoy_service_secret_v3 "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
 	"github.com/solo-io/gloo/projects/sds/pkg/run"
 	"github.com/solo-io/gloo/projects/sds/pkg/server"
 	"github.com/solo-io/gloo/projects/sds/pkg/testutils"
@@ -83,11 +83,11 @@ var _ = Describe("SDS Server E2E Test", func() {
 		conn, err := grpc.Dial(testServerAddress, grpc.WithInsecure())
 		Expect(err).To(BeNil())
 		defer conn.Close()
-		client := envoy_service_discovery_v2.NewSecretDiscoveryServiceClient(conn)
+		client := envoy_service_secret_v3.NewSecretDiscoveryServiceClient(conn)
 
 		// Check that we get a good response
 		Eventually(func() bool {
-			_, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
+			_, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
 			return err != nil
 		}, "5s", "1s").Should(BeTrue())
 
@@ -96,7 +96,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 
 		// The gRPC server should stop eventually
 		Eventually(func() bool {
-			_, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
+			_, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
 			return err != nil
 		}, "5s", "1s").Should(BeTrue())
 
@@ -114,7 +114,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 		conn, err = grpc.Dial(testServerAddress, grpc.WithInsecure())
 		Expect(err).To(BeNil())
 		defer conn.Close()
-		client := envoy_service_discovery_v2.NewSecretDiscoveryServiceClient(conn)
+		client := envoy_service_secret_v3.NewSecretDiscoveryServiceClient(conn)
 
 		// Read certs
 		certs, err := testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
@@ -124,15 +124,15 @@ var _ = Describe("SDS Server E2E Test", func() {
 		Expect(err).To(BeNil())
 		Expect(snapshotVersion).To(Equal("6730780456972595554"))
 
-		var resp *envoy_api_v2.DiscoveryResponse
+		var resp *envoy_service_discovery_v3.DiscoveryResponse
 
 		Eventually(func() bool {
-			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
+			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
 			return err == nil
 		}, "5s", "1s").Should(BeTrue())
 
 		Eventually(func() bool {
-			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
+			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
 			return resp.VersionInfo == snapshotVersion
 		}, "15s", "1s").Should(BeTrue())
 
@@ -150,7 +150,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 		Expect(err).To(BeNil())
 		Expect(snapshotVersion).To(Equal("16241649556325798095"))
 		Eventually(func() bool {
-			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
+			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
 			Expect(err).To(BeNil())
 			return resp.VersionInfo == snapshotVersion
 		}, "15s", "1s").Should(BeTrue())
@@ -169,7 +169,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 		Expect(err).To(BeNil())
 		Expect(snapshotVersion).To(Equal("7644406922477208950"))
 		Eventually(func() bool {
-			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
+			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
 			Expect(err).To(BeNil())
 			return resp.VersionInfo == snapshotVersion
 		}, "15s", "1s").Should(BeTrue())

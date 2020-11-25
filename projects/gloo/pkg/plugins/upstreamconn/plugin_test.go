@@ -3,12 +3,12 @@ package upstreamconn_test
 import (
 	"time"
 
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/duration"
 
 	"github.com/gogo/protobuf/types"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -25,10 +25,10 @@ var _ = Describe("Plugin", func() {
 		params   plugins.Params
 		plugin   *Plugin
 		upstream *v1.Upstream
-		out      *envoyapi.Cluster
+		out      *envoy_config_cluster_v3.Cluster
 	)
 	BeforeEach(func() {
-		out = new(envoyapi.Cluster)
+		out = new(envoy_config_cluster_v3.Cluster)
 
 		params = plugins.Params{}
 		upstream = &v1.Upstream{}
@@ -70,7 +70,7 @@ var _ = Describe("Plugin", func() {
 		err := plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
 		outKeepAlive := out.GetUpstreamConnectionOptions().GetTcpKeepalive()
-		expectedValue := envoycore.TcpKeepalive{
+		expectedValue := envoy_config_core_v3.TcpKeepalive{
 			KeepaliveInterval: &wrappers.UInt32Value{
 				Value: 60,
 			},
@@ -110,10 +110,10 @@ var _ = Describe("Plugin", func() {
 		err := plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
 		outChpo := out.GetCommonHttpProtocolOptions()
-		expectedValue := envoycore.HttpProtocolOptions{
+		expectedValue := envoy_config_core_v3.HttpProtocolOptions{
 			MaxHeadersCount:              &wrappers.UInt32Value{Value: 3},
 			MaxStreamDuration:            &duration.Duration{Seconds: 60 * 60},
-			HeadersWithUnderscoresAction: envoycore.HttpProtocolOptions_REJECT_REQUEST,
+			HeadersWithUnderscoresAction: envoy_config_core_v3.HttpProtocolOptions_REJECT_REQUEST,
 		}
 
 		Expect(*outChpo).To(Equal(expectedValue))

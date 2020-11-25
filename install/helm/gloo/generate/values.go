@@ -288,6 +288,7 @@ type GatewayProxy struct {
 	LoopBackAddress                string                       `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 	Failover                       Failover                     `json:"failover" desc:"(Enterprise Only): Failover configuration"`
 	Disabled                       bool                         `json:"disabled,omitempty" desc:"Skips creation of this gateway proxy. Used to turn off gateway proxies created by preceding configurations"`
+	EnvoyApiVersion                string                       `json:"envoyApiVersion" desc:"Version of the envoy API to use for the xDS transport and resources. Default is V3"`
 }
 
 type GatewayProxyGatewaySettings struct {

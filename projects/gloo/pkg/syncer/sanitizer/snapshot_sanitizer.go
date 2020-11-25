@@ -12,12 +12,22 @@ import (
 // the if the sanitizer returns an error, Gloo will not update the xds cache with the snapshot
 // else Gloo will assume the snapshot is valid to send to Envoy
 type XdsSanitizer interface {
-	SanitizeSnapshot(ctx context.Context, glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, reports reporter.ResourceReports) (envoycache.Snapshot, error)
+	SanitizeSnapshot(
+		ctx context.Context,
+		glooSnapshot *v1.ApiSnapshot,
+		xdsSnapshot envoycache.Snapshot,
+		reports reporter.ResourceReports,
+	) (envoycache.Snapshot, error)
 }
 
 type XdsSanitizers []XdsSanitizer
 
-func (s XdsSanitizers) SanitizeSnapshot(ctx context.Context, glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, reports reporter.ResourceReports) (envoycache.Snapshot, error) {
+func (s XdsSanitizers) SanitizeSnapshot(
+	ctx context.Context,
+	glooSnapshot *v1.ApiSnapshot,
+	xdsSnapshot envoycache.Snapshot,
+	reports reporter.ResourceReports,
+) (envoycache.Snapshot, error) {
 	for _, sanitizer := range s {
 		var err error
 		xdsSnapshot, err = sanitizer.SanitizeSnapshot(ctx, glooSnapshot, xdsSnapshot, reports)

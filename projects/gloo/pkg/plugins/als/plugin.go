@@ -1,9 +1,9 @@
 package als
 
 import (
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	envoygrpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -35,7 +35,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *envoyapi.Listener) error {
+func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *envoy_config_listener_v3.Listener) error {
 	if in.GetOptions() == nil {
 		return nil
 	}
@@ -48,8 +48,8 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		if listenerType.HttpListener == nil {
 			return nil
 		}
-		for _, f := range out.FilterChains {
-			for i, filter := range f.Filters {
+		for _, f := range out.GetFilterChains() {
+			for i, filter := range f.GetFilters() {
 				if filter.Name == wellknown.HTTPConnectionManager {
 					// get config
 					var hcmCfg envoyhttp.HttpConnectionManager
@@ -60,7 +60,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					}
 
 					accessLogs := hcmCfg.GetAccessLog()
-					hcmCfg.AccessLog, err = handleAccessLogPlugins(alSettings.AccessLoggingService, accessLogs, params)
+					hcmCfg.AccessLog, err = handleAccessLogPlugins(alSettings.GetAccessLoggingService(), accessLogs, params)
 					if err != nil {
 						return err
 					}
@@ -77,8 +77,8 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		if listenerType.TcpListener == nil {
 			return nil
 		}
-		for _, f := range out.FilterChains {
-			for i, filter := range f.Filters {
+		for _, f := range out.GetFilterChains() {
+			for i, filter := range f.GetFilters() {
 				if filter.Name == wellknown.TCPProxy {
 					// get config
 					var tcpCfg envoytcp.TcpProxy
@@ -89,7 +89,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					}
 
 					accessLogs := tcpCfg.GetAccessLog()
-					tcpCfg.AccessLog, err = handleAccessLogPlugins(alSettings.AccessLoggingService, accessLogs, params)
+					tcpCfg.AccessLog, err = handleAccessLogPlugins(alSettings.GetAccessLoggingService(), accessLogs, params)
 					if err != nil {
 						return err
 					}

@@ -3,9 +3,9 @@ package extauth_test
 import (
 	"context"
 
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	envoyv2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	"github.com/golang/protobuf/ptypes/any"
 	. "github.com/onsi/ginkgo"
@@ -60,7 +60,7 @@ var _ = Describe("Process Custom Extauth configuration", func() {
 			func(input, expected ConfigState) {
 				pluginContext := getPluginContext(globalSettings, input, Undefined, Undefined)
 
-				var out envoyv2.VirtualHost
+				var out envoy_config_route_v3.VirtualHost
 				err := pluginContext.PluginInstance.ProcessVirtualHost(pluginContext.VirtualHostParams, pluginContext.VirtualHost, &out)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())
@@ -74,7 +74,7 @@ var _ = Describe("Process Custom Extauth configuration", func() {
 			func(input, expected ConfigState) {
 				pluginContext := getPluginContext(globalSettings, Undefined, input, Undefined)
 
-				var out envoyv2.Route
+				var out envoy_config_route_v3.Route
 				err := pluginContext.PluginInstance.ProcessRoute(pluginContext.RouteParams, pluginContext.Route, &out)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())
@@ -88,7 +88,7 @@ var _ = Describe("Process Custom Extauth configuration", func() {
 			func(input, expected ConfigState) {
 				pluginContext := getPluginContext(globalSettings, Undefined, Undefined, input)
 
-				var out envoyv2.WeightedCluster_ClusterWeight
+				var out envoy_config_route_v3.WeightedCluster_ClusterWeight
 				err := pluginContext.PluginInstance.ProcessWeightedDestination(pluginContext.RouteParams, pluginContext.WeightedDestination, &out)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())

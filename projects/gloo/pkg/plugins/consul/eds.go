@@ -9,22 +9,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
-
-	"github.com/rotisserie/eris"
-	"github.com/solo-io/go-utils/hashutils"
-
-	"github.com/solo-io/go-utils/kubeutils"
-
-	"github.com/solo-io/gloo/projects/gloo/constants"
-
-	"github.com/solo-io/go-utils/contextutils"
-
-	"github.com/solo-io/gloo/pkg/utils"
-
 	consulapi "github.com/hashicorp/consul/api"
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
+	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"golang.org/x/sync/errgroup"

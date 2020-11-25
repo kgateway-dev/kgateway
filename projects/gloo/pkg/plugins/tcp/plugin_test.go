@@ -3,7 +3,7 @@ package tcp_test
 import (
 	"time"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -263,7 +263,6 @@ var _ = Describe("Plugin", func() {
 			Expect(filterChains).To(HaveLen(1))
 			Expect(filterChains[0].Filters).To(HaveLen(2))
 			Expect(filterChains[0].Filters[0].Name).To(Equal(SniFilter))
-			Expect(filterChains[0].Filters[0].GetConfig()).To(BeNil())
 			Expect(filterChains[0].Filters[0].GetTypedConfig()).To(BeNil())
 
 			var cfg envoytcp.TcpProxy
@@ -279,7 +278,7 @@ var _ = Describe("Plugin", func() {
 	Context("ListenerPlugin", func() {
 		It("will not prepend the TlsInspector when ServerName match present", func() {
 			snap := &v1.ApiSnapshot{}
-			out := &envoyapi.Listener{}
+			out := &envoy_config_listener_v3.Listener{}
 			tcpListener := &v1.TcpListener{
 				TcpHosts: []*v1.TcpHost{
 					{
@@ -309,7 +308,7 @@ var _ = Describe("Plugin", func() {
 
 		It("will prepend the TlsInspector when NO ServerName match present", func() {
 			snap := &v1.ApiSnapshot{}
-			out := &envoyapi.Listener{}
+			out := &envoy_config_listener_v3.Listener{}
 			tcpListener := &v1.TcpListener{
 				TcpHosts: []*v1.TcpHost{
 					{

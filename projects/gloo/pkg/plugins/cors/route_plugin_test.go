@@ -3,17 +3,16 @@ package cors
 import (
 	"strings"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
-
-	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -56,31 +55,31 @@ var _ = Describe("Route Plugin", func() {
 				AllowCredentials: allowCredentials1,
 				DisableForRoute:  true,
 			})
-			outRoute := &envoyroute.Route{
-				Action: &envoyroute.Route_Route{
-					Route: &envoyroute.RouteAction{},
+			outRoute := &envoy_config_route_v3.Route{
+				Action: &envoy_config_route_v3.Route_Route{
+					Route: &envoy_config_route_v3.RouteAction{},
 				},
 			}
-			expected := &envoyroute.CorsPolicy{
-				AllowOriginStringMatch: []*envoymatcher.StringMatcher{
-					&envoymatcher.StringMatcher{
-						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[0]},
+			expected := &envoy_config_route_v3.CorsPolicy{
+				AllowOriginStringMatch: []*envoy_type_matcher_v3.StringMatcher{
+					&envoy_type_matcher_v3.StringMatcher{
+						MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: allowOrigin1[0]},
 					},
-					&envoymatcher.StringMatcher{
-						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[1]},
+					&envoy_type_matcher_v3.StringMatcher{
+						MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: allowOrigin1[1]},
 					},
-					&envoymatcher.StringMatcher{
-						MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
-							SafeRegex: &envoymatcher.RegexMatcher{
-								EngineType: &envoymatcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoymatcher.RegexMatcher_GoogleRE2{}},
+					&envoy_type_matcher_v3.StringMatcher{
+						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
+							SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+								EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{}},
 								Regex:      allowOriginRegex1[0],
 							},
 						},
 					},
-					&envoymatcher.StringMatcher{
-						MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
-							SafeRegex: &envoymatcher.RegexMatcher{
-								EngineType: &envoymatcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoymatcher.RegexMatcher_GoogleRE2{}},
+					&envoy_type_matcher_v3.StringMatcher{
+						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
+							SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+								EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{}},
 								Regex:      allowOriginRegex1[1],
 							},
 						},
@@ -91,11 +90,11 @@ var _ = Describe("Route Plugin", func() {
 				ExposeHeaders:    strings.Join(exposeHeaders1, ","),
 				MaxAge:           maxAge1,
 				AllowCredentials: &wrappers.BoolValue{Value: allowCredentials1},
-				EnabledSpecifier: &envoyroute.CorsPolicy_FilterEnabled{
-					FilterEnabled: &envoycore.RuntimeFractionalPercent{
-						DefaultValue: &envoy_type.FractionalPercent{
+				EnabledSpecifier: &envoy_config_route_v3.CorsPolicy_FilterEnabled{
+					FilterEnabled: &envoy_config_core_v3.RuntimeFractionalPercent{
+						DefaultValue: &envoy_type_v3.FractionalPercent{
 							Numerator:   0,
-							Denominator: envoy_type.FractionalPercent_HUNDRED,
+							Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
 						},
 						RuntimeKey: runtimeKey,
 					},
@@ -104,7 +103,7 @@ var _ = Describe("Route Plugin", func() {
 
 			err := plugin.(plugins.RoutePlugin).ProcessRoute(params, inRoute, outRoute)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(outRoute.Action.(*envoyroute.Route_Route).Route.Cors).To(Equal(expected))
+			Expect(outRoute.Action.(*envoy_config_route_v3.Route_Route).Route.Cors).To(Equal(expected))
 		})
 		It("should process  minimal specification", func() {
 			inRoute := routeWithCors(&cors.CorsPolicy{
@@ -113,18 +112,18 @@ var _ = Describe("Route Plugin", func() {
 			outRoute := basicEnvoyRoute()
 			err := plugin.(plugins.RoutePlugin).ProcessRoute(params, inRoute, outRoute)
 			Expect(err).NotTo(HaveOccurred())
-			cSpec := &envoyroute.CorsPolicy{
-				AllowOriginStringMatch: []*envoymatcher.StringMatcher{
-					&envoymatcher.StringMatcher{
-						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[0]},
+			cSpec := &envoy_config_route_v3.CorsPolicy{
+				AllowOriginStringMatch: []*envoy_type_matcher_v3.StringMatcher{
+					&envoy_type_matcher_v3.StringMatcher{
+						MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: allowOrigin1[0]},
 					},
-					&envoymatcher.StringMatcher{
-						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[1]},
+					&envoy_type_matcher_v3.StringMatcher{
+						MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: allowOrigin1[1]},
 					},
 				},
 			}
 			expected := basicEnvoyRouteWithCors(cSpec)
-			Expect(outRoute.Action.(*envoyroute.Route_Route).Route.Cors).To(Equal(cSpec))
+			Expect(outRoute.Action.(*envoy_config_route_v3.Route_Route).Route.Cors).To(Equal(cSpec))
 			Expect(outRoute).To(Equal(expected))
 		})
 		It("should process empty specification", func() {
@@ -132,9 +131,9 @@ var _ = Describe("Route Plugin", func() {
 			outRoute := basicEnvoyRoute()
 			err := plugin.(plugins.RoutePlugin).ProcessRoute(params, inRoute, outRoute)
 			Expect(err).To(HaveOccurred())
-			cSpec := &envoyroute.CorsPolicy{}
+			cSpec := &envoy_config_route_v3.CorsPolicy{}
 			expected := basicEnvoyRouteWithCors(cSpec)
-			Expect(outRoute.Action.(*envoyroute.Route_Route).Route.Cors).To(Equal(cSpec))
+			Expect(outRoute.Action.(*envoy_config_route_v3.Route_Route).Route.Cors).To(Equal(cSpec))
 			Expect(outRoute.String()).To(Equal(expected.String()))
 			Expect(outRoute).To(Equal(expected))
 		})
@@ -177,18 +176,18 @@ func routeWithCors(cSpec *cors.CorsPolicy) *v1.Route {
 	return route
 }
 
-func basicEnvoyRoute() *envoyroute.Route {
-	return &envoyroute.Route{
-		Action: &envoyroute.Route_Route{
-			Route: &envoyroute.RouteAction{},
+func basicEnvoyRoute() *envoy_config_route_v3.Route {
+	return &envoy_config_route_v3.Route{
+		Action: &envoy_config_route_v3.Route_Route{
+			Route: &envoy_config_route_v3.RouteAction{},
 		},
 	}
 }
 
-func basicEnvoyRouteWithCors(cSpec *envoyroute.CorsPolicy) *envoyroute.Route {
-	return &envoyroute.Route{
-		Action: &envoyroute.Route_Route{
-			Route: &envoyroute.RouteAction{
+func basicEnvoyRouteWithCors(cSpec *envoy_config_route_v3.CorsPolicy) *envoy_config_route_v3.Route {
+	return &envoy_config_route_v3.Route{
+		Action: &envoy_config_route_v3.Route_Route{
+			Route: &envoy_config_route_v3.RouteAction{
 				Cors: cSpec,
 			},
 		},
