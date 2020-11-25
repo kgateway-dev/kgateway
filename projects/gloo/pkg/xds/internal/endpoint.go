@@ -133,9 +133,8 @@ func downgradePolicy(
 		DropOverloads: make(
 			[]*envoy_api_v2.ClusterLoadAssignment_Policy_DropOverload, 0, len(policy.GetDropOverloads()),
 		),
-		OverprovisioningFactor:  policy.GetOverprovisioningFactor(),
-		EndpointStaleAfter:      policy.GetEndpointStaleAfter(),
-		DisableOverprovisioning: policy.GetHiddenEnvoyDeprecatedDisableOverprovisioning(),
+		OverprovisioningFactor: policy.GetOverprovisioningFactor(),
+		EndpointStaleAfter:     policy.GetEndpointStaleAfter(),
 	}
 
 	for _, v := range policy.GetDropOverloads() {
