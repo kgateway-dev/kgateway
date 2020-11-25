@@ -69,18 +69,6 @@ var _ = Describe("RawUtil", func() {
 				remarshalled := new(envoy_config_route_v3.RateLimit_Action)
 				err := golangjsonpb.UnmarshalString(ins, remarshalled)
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
-				// regex api is different. fix that.
-				if headers := remarshalled.GetHeaderValueMatch().GetHeaders(); headers != nil {
-					for _, h := range headers {
-						if regex := h.GetHiddenEnvoyDeprecatedRegexMatch(); regex != "" {
-							h.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_HiddenEnvoyDeprecatedRegexMatch{
-								HiddenEnvoyDeprecatedRegexMatch: regex,
-							}
-						}
-					}
-				}
-
-				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				ExpectWithOffset(1, remarshalled).To(Equal(out[i]))
 			}
 		},
@@ -148,35 +136,3 @@ var _ = Describe("RawUtil", func() {
 	)
 
 })
-
-func ExpectActionsSame(actions []*gloorl.Action) {
-	out := ConvertActions(nil, actions)
-
-	ExpectWithOffset(1, len(actions)).To(Equal(len(out)))
-	for i := range actions {
-
-		gogojson := gogojsonpb.Marshaler{}
-		golangjson := golangjsonpb.Marshaler{}
-
-		ins, _ := gogojson.MarshalToString(actions[i])
-		outs, _ := golangjson.MarshalToString(out[i])
-		fmt.Fprintf(GinkgoWriter, "Compare \n%s\n\n%s", ins, outs)
-		remarshalled := new(envoy_config_route_v3.RateLimit_Action)
-		err := golangjsonpb.UnmarshalString(ins, remarshalled)
-		ExpectWithOffset(1, err).NotTo(HaveOccurred())
-		// regex api is different. fix that.
-		if headers := remarshalled.GetHeaderValueMatch().GetHeaders(); headers != nil {
-			for _, h := range headers {
-				if regex := h.GetHiddenEnvoyDeprecatedRegexMatch(); regex != "" {
-					h.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_HiddenEnvoyDeprecatedRegexMatch{
-						HiddenEnvoyDeprecatedRegexMatch: regex,
-					}
-				}
-			}
-		}
-
-		ExpectWithOffset(1, err).NotTo(HaveOccurred())
-		ExpectWithOffset(1, remarshalled).To(Equal(out[i]))
-	}
-
-}
