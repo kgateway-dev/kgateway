@@ -4,9 +4,11 @@ import (
 	"fmt"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	gogojsonpb "github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/types"
 	golangjsonpb "github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -134,5 +136,61 @@ var _ = Describe("RawUtil", func() {
 			},
 		),
 	)
+
+	// Needs to be separate because the yaml is no longer compatible
+	It("works with regex", func() {
+		actions := []*gloorl.Action{
+			{
+				ActionSpecifier: &gloorl.Action_HeaderValueMatch_{
+					HeaderValueMatch: &gloorl.Action_HeaderValueMatch{
+						DescriptorValue: "someothervalue",
+						ExpectMatch:     &types.BoolValue{Value: false},
+						Headers: []*gloorl.Action_HeaderValueMatch_HeaderMatcher{
+							{
+								HeaderMatchSpecifier: &gloorl.Action_HeaderValueMatch_HeaderMatcher_RegexMatch{
+									RegexMatch: "hello",
+								},
+								Name: "test",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		out := ConvertActions(nil, actions)
+
+		expected := []*envoy_config_route_v3.RateLimit_Action{
+			{
+				ActionSpecifier: &envoy_config_route_v3.RateLimit_Action_HeaderValueMatch_{
+					HeaderValueMatch: &envoy_config_route_v3.RateLimit_Action_HeaderValueMatch{
+						DescriptorValue: "someothervalue",
+						ExpectMatch: &wrappers.BoolValue{
+							Value: false,
+						},
+						Headers: []*envoy_config_route_v3.HeaderMatcher{
+							{
+								Name: "test",
+								HeaderMatchSpecifier: &envoy_config_route_v3.HeaderMatcher_SafeRegexMatch{
+									SafeRegexMatch: &envoy_type_matcher_v3.RegexMatcher{
+										EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
+											GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{
+												MaxProgramSize: nil,
+											},
+										},
+										Regex: "hello",
+									},
+								},
+								InvertMatch: false,
+							},
+						},
+					},
+				},
+			},
+		}
+
+		Expect(out).To(Equal(expected))
+
+	})
 
 })
