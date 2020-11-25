@@ -1,7 +1,7 @@
 package upgradeconfig
 
 import (
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/hashicorp/go-multierror"
 	errors "github.com/rotisserie/eris"
@@ -24,7 +24,7 @@ func ValidateHCMUpgradeConfigs(upgradeConfigs []*envoyhttp.HttpConnectionManager
 	return multiErr.ErrorOrNil()
 }
 
-func ValidateRouteUpgradeConfigs(upgradeConfigs []*envoyroute.RouteAction_UpgradeConfig) error {
+func ValidateRouteUpgradeConfigs(upgradeConfigs []*envoy_config_route_v3.RouteAction_UpgradeConfig) error {
 	uniqConfigs := map[string]bool{}
 	var multiErr *multierror.Error
 

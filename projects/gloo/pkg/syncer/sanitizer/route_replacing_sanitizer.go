@@ -4,32 +4,28 @@ import (
 	"context"
 	"sort"
 
-	endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
-	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
-	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
-	"github.com/solo-io/gloo/pkg/utils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
-	"go.opencensus.io/tag"
-
-	"go.uber.org/zap"
-
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	corev2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyroutev2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/gogo/protobuf/proto"
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"go.opencensus.io/tag"
+	"go.uber.org/zap"
 )
 
 const (
@@ -46,8 +42,8 @@ var (
 
 type RouteReplacingSanitizer struct {
 	enabled          bool
-	fallbackListener *envoyapi.Listener
-	fallbackCluster  *envoyapi.Cluster
+	fallbackListener *envoy_config_listener_v3.Listener
+	fallbackCluster  *envoy_config_cluster_v3.Cluster
 }
 
 func NewRouteReplacingSanitizer(cfg *v1.GlooOptions_InvalidConfigPolicy) (*RouteReplacingSanitizer, error) {
@@ -67,27 +63,30 @@ func NewRouteReplacingSanitizer(cfg *v1.GlooOptions_InvalidConfigPolicy) (*Route
 	}, nil
 }
 
-func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*envoyapi.Listener, *envoyapi.Cluster, error) {
+func makeFallbackListenerAndCluster(
+	responseCode uint32,
+	responseBody string,
+) (*envoy_config_listener_v3.Listener, *envoy_config_cluster_v3.Cluster, error) {
 	hcmConfig := &envoyhcm.HttpConnectionManager{
 		CodecType:  envoyhcm.HttpConnectionManager_AUTO,
 		StatPrefix: fallbackListenerName,
 		RouteSpecifier: &envoyhcm.HttpConnectionManager_RouteConfig{
-			RouteConfig: &envoyroute.RouteConfiguration{
+			RouteConfig: &envoy_config_route_v3.RouteConfiguration{
 				Name: "fallback_routes",
-				VirtualHosts: []*envoyroute.VirtualHost{{
+				VirtualHosts: []*envoy_config_route_v3.VirtualHost{{
 					Name:    "fallback_virtualhost",
 					Domains: []string{"*"},
-					Routes: []*envoyroute.Route{{
-						Match: &envoyroute.RouteMatch{
-							PathSpecifier: &envoyroute.RouteMatch_Prefix{
+					Routes: []*envoy_config_route_v3.Route{{
+						Match: &envoy_config_route_v3.RouteMatch{
+							PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{
 								Prefix: "/",
 							},
 						},
-						Action: &envoyroute.Route_DirectResponse{
-							DirectResponse: &envoyroute.DirectResponseAction{
+						Action: &envoy_config_route_v3.Route_DirectResponse{
+							DirectResponse: &envoy_config_route_v3.DirectResponseAction{
 								Status: responseCode,
-								Body: &core.DataSource{
-									Specifier: &core.DataSource_InlineString{
+								Body: &envoy_config_core_v3.DataSource{
+									Specifier: &envoy_config_core_v3.DataSource_InlineString{
 										InlineString: responseBody,
 									},
 								},
@@ -107,37 +106,37 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 		return nil, nil, err
 	}
 
-	fallbackListener := &envoyapi.Listener{
+	fallbackListener := &envoy_config_listener_v3.Listener{
 		Name: fallbackListenerName,
-		Address: &corev2.Address{
-			Address: &corev2.Address_Pipe{
-				Pipe: &corev2.Pipe{
+		Address: &envoy_config_core_v3.Address{
+			Address: &envoy_config_core_v3.Address_Pipe{
+				Pipe: &envoy_config_core_v3.Pipe{
 					Path: fallbackListenerSocket,
 				},
 			},
 		},
-		FilterChains: []*listener.FilterChain{{
-			Filters: []*listener.Filter{{
+		FilterChains: []*envoy_config_listener_v3.FilterChain{{
+			Filters: []*envoy_config_listener_v3.Filter{{
 				Name: wellknown.HTTPConnectionManager,
-				ConfigType: &listener.Filter_TypedConfig{
+				ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
 					TypedConfig: typedHcmConfig,
 				},
 			}},
 		}},
 	}
 
-	fallbackCluster := &envoyapi.Cluster{
+	fallbackCluster := &envoy_config_cluster_v3.Cluster{
 		Name:           fallbackClusterName,
 		ConnectTimeout: gogoutils.DurationStdToProto(&translator.ClusterConnectionTimeout),
-		LoadAssignment: &envoyapi.ClusterLoadAssignment{
+		LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
 			ClusterName: fallbackClusterName,
-			Endpoints: []*endpoint.LocalityLbEndpoints{{
-				LbEndpoints: []*endpoint.LbEndpoint{{
-					HostIdentifier: &endpoint.LbEndpoint_Endpoint{
-						Endpoint: &endpoint.Endpoint{
-							Address: &corev2.Address{
-								Address: &corev2.Address_Pipe{
-									Pipe: &corev2.Pipe{
+			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{{
+				LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{{
+					HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
+						Endpoint: &envoy_config_endpoint_v3.Endpoint{
+							Address: &envoy_config_core_v3.Address{
+								Address: &envoy_config_core_v3.Address_Pipe{
+									Pipe: &envoy_config_core_v3.Pipe{
 										Path: fallbackListenerSocket,
 									},
 								},
@@ -152,7 +151,12 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 	return fallbackListener, fallbackCluster, nil
 }
 
-func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, reports reporter.ResourceReports) (envoycache.Snapshot, error) {
+func (s *RouteReplacingSanitizer) SanitizeSnapshot(
+	ctx context.Context,
+	glooSnapshot *v1.ApiSnapshot,
+	xdsSnapshot envoycache.Snapshot,
+	reports reporter.ResourceReports,
+) (envoycache.Snapshot, error) {
 	if !s.enabled {
 		// if if the route sanitizer is not enabled, enforce strict validation of routes (warnings are treated as errors)
 		// this is necessary because the translator only uses Validate() which ignores warnings
@@ -173,8 +177,8 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnap
 
 	replacedRouteConfigs, needsListener := s.replaceMissingClusterRoutes(ctx, validClusters, routeConfigs)
 
-	clusters := xdsSnapshot.GetResources(xds.ClusterType)
-	listeners := xdsSnapshot.GetResources(xds.ListenerType)
+	clusters := xdsSnapshot.GetResources(resource.ClusterTypeV3)
+	listeners := xdsSnapshot.GetResources(resource.ListenerTypeV3)
 
 	if needsListener {
 		s.insertFallbackListener(&listeners)
@@ -182,7 +186,7 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnap
 	}
 
 	xdsSnapshot = xds.NewSnapshotFromResources(
-		xdsSnapshot.GetResources(xds.EndpointType),
+		xdsSnapshot.GetResources(resource.EndpointTypeV3),
 		clusters,
 		translator.MakeRdsResources(replacedRouteConfigs),
 		listeners,
@@ -196,12 +200,12 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnap
 	return xdsSnapshot, nil
 }
 
-func getRoutes(snap envoycache.Snapshot) ([]*envoyapi.RouteConfiguration, error) {
-	routeConfigProtos := snap.GetResources(xds.RouteType)
-	var routeConfigs []*envoyapi.RouteConfiguration
+func getRoutes(snap envoycache.Snapshot) ([]*envoy_config_route_v3.RouteConfiguration, error) {
+	routeConfigProtos := snap.GetResources(resource.RouteTypeV3)
+	var routeConfigs []*envoy_config_route_v3.RouteConfiguration
 
 	for _, routeConfigProto := range routeConfigProtos.Items {
-		routeConfig, ok := routeConfigProto.ResourceProto().(*envoyapi.RouteConfiguration)
+		routeConfig, ok := routeConfigProto.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
 		if !ok {
 			return nil, eris.Errorf("invalid type, expected *envoyapi.RouteConfiguration, found %T", routeConfigProto)
 		}
@@ -225,8 +229,12 @@ func getClusters(snap *v1.ApiSnapshot) map[string]struct{} {
 	return validClusters
 }
 
-func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Context, validClusters map[string]struct{}, routeConfigs []*envoyapi.RouteConfiguration) ([]*envoyapi.RouteConfiguration, bool) {
-	var sanitizedRouteConfigs []*envoyapi.RouteConfiguration
+func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(
+	ctx context.Context,
+	validClusters map[string]struct{},
+	routeConfigs []*envoy_config_route_v3.RouteConfiguration,
+) ([]*envoy_config_route_v3.RouteConfiguration, bool) {
+	var sanitizedRouteConfigs []*envoy_config_route_v3.RouteConfiguration
 
 	isInvalid := func(cluster string) bool {
 		_, ok := validClusters[cluster]
@@ -240,7 +248,7 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Contex
 	// replace any routes which do not point to a valid destination cluster
 	for _, cfg := range routeConfigs {
 		var replaced int64
-		sanitizedRouteConfig := proto.Clone(cfg).(*envoyapi.RouteConfiguration)
+		sanitizedRouteConfig := proto.Clone(cfg).(*envoy_config_route_v3.RouteConfiguration)
 
 		for i, vh := range sanitizedRouteConfig.GetVirtualHosts() {
 			for j, route := range vh.GetRoutes() {
@@ -249,7 +257,7 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Contex
 					continue
 				}
 				switch action := routeAction.GetClusterSpecifier().(type) {
-				case *envoyroutev2.RouteAction_Cluster:
+				case *envoy_config_route_v3.RouteAction_Cluster:
 					if isInvalid(action.Cluster) {
 						debugW("replacing route in virtual host with invalid cluster",
 							zap.Any("cluster", action.Cluster), zap.Any("route", j), zap.Any("virtualhost", i))
@@ -257,7 +265,7 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Contex
 						replaced++
 						anyRoutesReplaced = true
 					}
-				case *envoyroutev2.RouteAction_WeightedClusters:
+				case *envoy_config_route_v3.RouteAction_WeightedClusters:
 					for _, weightedCluster := range action.WeightedClusters.GetClusters() {
 						if isInvalid(weightedCluster.GetName()) {
 							debugW("replacing route in virtual host with invalid weighted cluster",
@@ -288,7 +296,7 @@ func (s *RouteReplacingSanitizer) insertFallbackListener(listeners *envoycache.R
 		listeners.Items = map[string]envoycache.Resource{}
 	}
 
-	listener := xds.NewEnvoyResource(s.fallbackListener)
+	listener := resource.NewEnvoyResource(s.fallbackListener)
 
 	listeners.Items[listener.Self().Name] = listener
 	listeners.Version += "-with-fallback-listener"
@@ -299,7 +307,7 @@ func (s *RouteReplacingSanitizer) insertFallbackCluster(clusters *envoycache.Res
 		clusters.Items = map[string]envoycache.Resource{}
 	}
 
-	cluster := xds.NewEnvoyResource(s.fallbackCluster)
+	cluster := resource.NewEnvoyResource(s.fallbackCluster)
 
 	clusters.Items[cluster.Self().Name] = cluster
 	clusters.Version += "-with-fallback-cluster"

@@ -1,14 +1,13 @@
 package translator
 
 import (
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/trace"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyendpoints "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -17,12 +16,15 @@ const SoloAnnotations = "io.solo.annotations"
 
 // Endpoints
 
-func (t *translatorInstance) computeClusterEndpoints(params plugins.Params, reports reporter.ResourceReports) []*envoyapi.ClusterLoadAssignment {
+func (t *translatorInstance) computeClusterEndpoints(
+	params plugins.Params,
+	reports reporter.ResourceReports,
+) []*envoy_config_endpoint_v3.ClusterLoadAssignment {
 
 	_, span := trace.StartSpan(params.Ctx, "gloo.translator.computeClusterEndpoints")
 	defer span.End()
 
-	var clusterEndpointAssignments []*envoyapi.ClusterLoadAssignment
+	var clusterEndpointAssignments []*envoy_config_endpoint_v3.ClusterLoadAssignment
 	for _, upstream := range params.Snapshot.Upstreams {
 		clusterEndpoints := endpointsForUpstream(upstream, params.Snapshot.Endpoints)
 		// if there are any endpoints for this upstream, it's using eds and we need to create a load assignment for it
@@ -43,28 +45,31 @@ func (t *translatorInstance) computeClusterEndpoints(params plugins.Params, repo
 	return clusterEndpointAssignments
 }
 
-func loadAssignmentForUpstream(upstream *v1.Upstream, clusterEndpoints []*v1.Endpoint) *envoyapi.ClusterLoadAssignment {
+func loadAssignmentForUpstream(
+	upstream *v1.Upstream,
+	clusterEndpoints []*v1.Endpoint,
+) *envoy_config_endpoint_v3.ClusterLoadAssignment {
 	clusterName := UpstreamToClusterName(upstream.Metadata.Ref())
-	var endpoints []*envoyendpoints.LbEndpoint
+	var endpoints []*envoy_config_endpoint_v3.LbEndpoint
 	for _, addr := range clusterEndpoints {
 		metadata := getLbMetadata(upstream, addr.Metadata.Labels, "")
 		metadata = addAnnotations(metadata, addr.Metadata.Annotations)
-		var healthCheckConfig *envoyendpoints.Endpoint_HealthCheckConfig
+		var healthCheckConfig *envoy_config_endpoint_v3.Endpoint_HealthCheckConfig
 		if host := addr.GetHealthCheck().GetHostname(); host != "" {
-			healthCheckConfig = &envoyendpoints.Endpoint_HealthCheckConfig{
+			healthCheckConfig = &envoy_config_endpoint_v3.Endpoint_HealthCheckConfig{
 				Hostname: host,
 			}
 		}
-		lbEndpoint := envoyendpoints.LbEndpoint{
+		lbEndpoint := envoy_config_endpoint_v3.LbEndpoint{
 			Metadata: metadata,
-			HostIdentifier: &envoyendpoints.LbEndpoint_Endpoint{
-				Endpoint: &envoyendpoints.Endpoint{
-					Address: &envoycore.Address{
-						Address: &envoycore.Address_SocketAddress{
-							SocketAddress: &envoycore.SocketAddress{
-								Protocol: envoycore.SocketAddress_TCP,
+			HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
+				Endpoint: &envoy_config_endpoint_v3.Endpoint{
+					Address: &envoy_config_core_v3.Address{
+						Address: &envoy_config_core_v3.Address_SocketAddress{
+							SocketAddress: &envoy_config_core_v3.SocketAddress{
+								Protocol: envoy_config_core_v3.SocketAddress_TCP,
 								Address:  addr.Address,
-								PortSpecifier: &envoycore.SocketAddress_PortValue{
+								PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
 									PortValue: addr.Port,
 								},
 							},
@@ -78,9 +83,9 @@ func loadAssignmentForUpstream(upstream *v1.Upstream, clusterEndpoints []*v1.End
 		endpoints = append(endpoints, &lbEndpoint)
 	}
 
-	return &envoyapi.ClusterLoadAssignment{
+	return &envoy_config_endpoint_v3.ClusterLoadAssignment{
 		ClusterName: clusterName,
-		Endpoints: []*envoyendpoints.LocalityLbEndpoints{{
+		Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{{
 			LbEndpoints: endpoints,
 		}},
 	}
@@ -98,17 +103,17 @@ func endpointsForUpstream(upstream *v1.Upstream, endpoints []*v1.Endpoint) []*v1
 	return clusterEndpoints
 }
 
-func addAnnotations(metadata *envoycore.Metadata, annotations map[string]string) *envoycore.Metadata {
+func addAnnotations(metadata *envoy_config_core_v3.Metadata, annotations map[string]string) *envoy_config_core_v3.Metadata {
 	if annotations == nil {
 		return metadata
 	}
 	if metadata == nil {
-		metadata = &envoycore.Metadata{
+		metadata = &envoy_config_core_v3.Metadata{
 			FilterMetadata: map[string]*structpb.Struct{},
 		}
 	}
 
-	if metadata.FilterMetadata == nil {
+	if metadata.GetFilterMetadata() == nil {
 		metadata.FilterMetadata = map[string]*structpb.Struct{}
 	}
 
@@ -127,9 +132,9 @@ func addAnnotations(metadata *envoycore.Metadata, annotations map[string]string)
 	return metadata
 }
 
-func getLbMetadata(upstream *v1.Upstream, labels map[string]string, zeroValue string) *envoycore.Metadata {
+func getLbMetadata(upstream *v1.Upstream, labels map[string]string, zeroValue string) *envoy_config_core_v3.Metadata {
 
-	meta := &envoycore.Metadata{
+	meta := &envoy_config_core_v3.Metadata{
 		FilterMetadata: map[string]*structpb.Struct{},
 	}
 
@@ -139,7 +144,7 @@ func getLbMetadata(upstream *v1.Upstream, labels map[string]string, zeroValue st
 
 	if upstream != nil {
 		for _, k := range allKeys(upstream) {
-			labelsStruct.Fields[k] = &structpb.Value{
+			labelsStruct.GetFields()[k] = &structpb.Value{
 				Kind: &structpb.Value_StringValue{
 					StringValue: zeroValue,
 				},
@@ -149,7 +154,7 @@ func getLbMetadata(upstream *v1.Upstream, labels map[string]string, zeroValue st
 
 	if labels != nil {
 		for k, v := range labels {
-			labelsStruct.Fields[k] = &structpb.Value{
+			labelsStruct.GetFields()[k] = &structpb.Value{
 				Kind: &structpb.Value_StringValue{
 					StringValue: v,
 				},

@@ -3,8 +3,8 @@ package hcm
 import (
 	"context"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	errors "github.com/rotisserie/eris"
@@ -44,7 +44,7 @@ func (p *Plugin) RegisterHcmPlugins(allPlugins []plugins.Plugin) {
 // ProcessListener has two responsibilities:
 // 1. apply the core HCM settings from the HCM plugin to the listener
 // 2. call each of the HCM plugins to make sure that they have a chance to apply their modifications to the listener
-func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *envoyapi.Listener) error {
+func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *envoy_config_listener_v3.Listener) error {
 	hl, ok := in.ListenerType.(*v1.Listener_HttpListener)
 	if !ok {
 		return nil

@@ -139,13 +139,16 @@ static_resources:
 
 dynamic_resources:
   ads_config:
+    transport_api_version: V3
     api_type: GRPC
     rate_limit_settings: {}
     grpc_services:
     - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
+    resource_api_version: V3
     ads: {}
 admin:
   access_log_path: /dev/null
@@ -164,14 +167,16 @@ admin:
       port_value: 19000
 dynamic_resources:
   ads_config:
+    transport_api_version: V3
     api_type: GRPC
-    grpc_services:
-    - envoy_grpc:
-        cluster_name: gloo.gloo-system.svc.cluster.local:9977
     rate_limit_settings: {}
+    grpc_services:
+    - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
+    resource_api_version: V3
     ads: {}
 layered_runtime:
   layers:
@@ -300,14 +305,16 @@ admin:
       port_value: 19000
 dynamic_resources:
   ads_config:
+    transport_api_version: V3
     api_type: GRPC
-    grpc_services:
-    - envoy_grpc:
-        cluster_name: gloo.gloo-system.svc.cluster.local:9977
     rate_limit_settings: {}
+    grpc_services:
+    - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
+    resource_api_version: V3
     ads: {}
 layered_runtime:
   layers:
@@ -440,14 +447,16 @@ admin:
       port_value: 19000
 dynamic_resources:
   ads_config:
+    transport_api_version: V3
     api_type: GRPC
-    grpc_services:
-    - envoy_grpc:
-        cluster_name: gloo.gloo-system.svc.cluster.local:9977
     rate_limit_settings: {}
+    grpc_services:
+    - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
+    resource_api_version: V3
     ads: {}
 layered_runtime:
   layers:
@@ -590,14 +599,16 @@ admin:
       port_value: 19000
 dynamic_resources:
   ads_config:
+    transport_api_version: V3
     api_type: GRPC
-    grpc_services:
-    - envoy_grpc:
-        cluster_name: gloo.gloo-system.svc.cluster.local:9977
     rate_limit_settings: {}
+    grpc_services:
+    - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
+    resource_api_version: V3
     ads: {}
 layered_runtime:
   layers:
@@ -768,14 +779,16 @@ admin:
       port_value: 19000
 dynamic_resources:
   ads_config:
+    transport_api_version: V3
     api_type: GRPC
-    grpc_services:
-    - envoy_grpc:
-        cluster_name: gloo.gloo-system.svc.cluster.local:9977
     rate_limit_settings: {}
+    grpc_services:
+    - envoy_grpc: {cluster_name: gloo.gloo-system.svc.cluster.local:9977}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
+    resource_api_version: V3
     ads: {}
 layered_runtime:
   layers:

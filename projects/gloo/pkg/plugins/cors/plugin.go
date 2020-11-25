@@ -6,16 +6,15 @@ import (
 	"fmt"
 	"strings"
 
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 
-	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
-
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
@@ -28,6 +27,7 @@ type plugin struct {
 var _ plugins.Plugin = new(plugin)
 var _ plugins.HttpFilterPlugin = new(plugin)
 var _ plugins.RoutePlugin = new(plugin)
+var _ plugins.VirtualHostPlugin = new(plugin)
 
 var (
 	InvalidRouteActionError = errors.New("cannot use cors plugin on non-Route_Route route actions")
@@ -43,20 +43,26 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
+func (p *plugin) ProcessVirtualHost(
+	params plugins.VirtualHostParams,
+	in *v1.VirtualHost,
+	out *envoy_config_route_v3.VirtualHost,
+) error {
 	corsPlugin := in.Options.GetCors()
 	if corsPlugin == nil {
 		return nil
 	}
 	if corsPlugin.DisableForRoute {
-		contextutils.LoggerFrom(params.Ctx).Warnw("invalid virtual host cors policy: DisableForRoute only pertains to cors policies on routes",
-			zap.Any("virtual host", in.Name))
+		contextutils.LoggerFrom(params.Ctx).Warnw(
+			"invalid virtual host cors policy: DisableForRoute only pertains to cors policies on routes",
+			zap.Any("virtual host", in.Name),
+		)
 	}
-	out.Cors = &envoyroute.CorsPolicy{}
+	out.Cors = &envoy_config_route_v3.CorsPolicy{}
 	return p.translateCommonUserCorsConfig(params.Ctx, corsPlugin, out.Cors)
 }
 
-func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	corsPlugin := in.Options.GetCors()
 	if corsPlugin == nil {
 		return nil
@@ -69,12 +75,12 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	// if it is nil, we initialize it prior to transforming it
 	outRa := out.GetRoute()
 	if outRa == nil {
-		out.Action = &envoyroute.Route_Route{
-			Route: &envoyroute.RouteAction{},
+		out.Action = &envoy_config_route_v3.Route_Route{
+			Route: &envoy_config_route_v3.RouteAction{},
 		}
 		outRa = out.GetRoute()
 	}
-	outRa.Cors = &envoyroute.CorsPolicy{}
+	outRa.Cors = &envoy_config_route_v3.CorsPolicy{}
 	if err := p.translateCommonUserCorsConfig(params.Ctx, in.Options.Cors, outRa.Cors); err != nil {
 		return err
 	}
@@ -82,18 +88,22 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	return nil
 }
 
-func (p *plugin) translateCommonUserCorsConfig(ctx context.Context, in *cors.CorsPolicy, out *envoyroute.CorsPolicy) error {
+func (p *plugin) translateCommonUserCorsConfig(
+	ctx context.Context,
+	in *cors.CorsPolicy,
+	out *envoy_config_route_v3.CorsPolicy,
+) error {
 	if len(in.AllowOrigin) == 0 && len(in.AllowOriginRegex) == 0 {
 		return fmt.Errorf("must provide at least one of AllowOrigin or AllowOriginRegex")
 	}
 	for _, ao := range in.AllowOrigin {
-		out.AllowOriginStringMatch = append(out.AllowOriginStringMatch, &envoymatcher.StringMatcher{
-			MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: ao},
+		out.AllowOriginStringMatch = append(out.AllowOriginStringMatch, &envoy_type_matcher_v3.StringMatcher{
+			MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: ao},
 		})
 	}
 	for _, ao := range in.AllowOriginRegex {
-		out.AllowOriginStringMatch = append(out.AllowOriginStringMatch, &envoymatcher.StringMatcher{
-			MatchPattern: &envoymatcher.StringMatcher_SafeRegex{SafeRegex: regexutils.NewRegex(ctx, ao)},
+		out.AllowOriginStringMatch = append(out.AllowOriginStringMatch, &envoy_type_matcher_v3.StringMatcher{
+			MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{SafeRegex: regexutils.NewRegex(ctx, ao)},
 		})
 	}
 	out.AllowMethods = strings.Join(in.AllowMethods, ",")
@@ -109,13 +119,13 @@ func (p *plugin) translateCommonUserCorsConfig(ctx context.Context, in *cors.Cor
 // not expecting this to be used
 const runtimeKey = "gloo.routeplugin.cors"
 
-func (p *plugin) translateRouteSpecificCorsConfig(in *cors.CorsPolicy, out *envoyroute.CorsPolicy) {
+func (p *plugin) translateRouteSpecificCorsConfig(in *cors.CorsPolicy, out *envoy_config_route_v3.CorsPolicy) {
 	if in.DisableForRoute {
-		out.EnabledSpecifier = &envoyroute.CorsPolicy_FilterEnabled{
-			FilterEnabled: &core.RuntimeFractionalPercent{
-				DefaultValue: &envoy_type.FractionalPercent{
+		out.EnabledSpecifier = &envoy_config_route_v3.CorsPolicy_FilterEnabled{
+			FilterEnabled: &envoy_config_core_v3.RuntimeFractionalPercent{
+				DefaultValue: &envoy_type_v3.FractionalPercent{
 					Numerator:   0,
-					Denominator: envoy_type.FractionalPercent_HUNDRED,
+					Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
 				},
 				RuntimeKey: runtimeKey,
 			},

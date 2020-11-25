@@ -3,24 +3,22 @@ package pluginutils_test
 import (
 	"context"
 
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var _ = Describe("TypedPerFilterConfig", func() {
 	var (
 		in      *v1.Route
-		out     *envoyroute.Route
+		out     *envoy_config_route_v3.Route
 		msg     *structpb.Struct
 		message *any.Any
 		name    string
@@ -41,7 +39,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 	})
 	Context("set typed per filter config", func() {
 		BeforeEach(func() {
-			out = &envoyroute.Route{}
+			out = &envoy_config_route_v3.Route{}
 		})
 
 		It("should add typed per filter config to route", func() {
@@ -50,13 +48,13 @@ var _ = Describe("TypedPerFilterConfig", func() {
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(name, message))
 		})
 		It("should add typed per filter config to vhost", func() {
-			out := &envoyroute.VirtualHost{}
+			out := &envoy_config_route_v3.VirtualHost{}
 			err := SetVhostPerFilterConfig(out, name, msg)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(name, message))
 		})
 		It("should add typed per filter config to cluster weight", func() {
-			out := &envoyroute.WeightedCluster_ClusterWeight{}
+			out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
 			err := SetWeightedClusterPerFilterConfig(out, name, msg)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(name, message))
@@ -82,10 +80,10 @@ var _ = Describe("TypedPerFilterConfig", func() {
 					},
 				},
 			}
-			out = &envoyroute.Route{
-				Action: &envoyroute.Route_Route{
-					Route: &envoyroute.RouteAction{
-						ClusterSpecifier: &envoyroute.RouteAction_Cluster{
+			out = &envoy_config_route_v3.Route{
+				Action: &envoy_config_route_v3.Route_Route{
+					Route: &envoy_config_route_v3.RouteAction{
+						ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{
 							Cluster: "test",
 						},
 					},
@@ -113,8 +111,8 @@ var _ = Describe("TypedPerFilterConfig", func() {
 	})
 	Context("multiple dests", func() {
 		var (
-			yescluster *envoyroute.WeightedCluster_ClusterWeight
-			nocluster  *envoyroute.WeightedCluster_ClusterWeight
+			yescluster *envoy_config_route_v3.WeightedCluster_ClusterWeight
+			nocluster  *envoy_config_route_v3.WeightedCluster_ClusterWeight
 		)
 
 		BeforeEach(func() {
@@ -148,18 +146,18 @@ var _ = Describe("TypedPerFilterConfig", func() {
 				},
 			}
 
-			yescluster = &envoyroute.WeightedCluster_ClusterWeight{
+			yescluster = &envoy_config_route_v3.WeightedCluster_ClusterWeight{
 				Name: "yes",
 			}
-			nocluster = &envoyroute.WeightedCluster_ClusterWeight{
+			nocluster = &envoy_config_route_v3.WeightedCluster_ClusterWeight{
 				Name: "no",
 			}
-			out = &envoyroute.Route{
-				Action: &envoyroute.Route_Route{
-					Route: &envoyroute.RouteAction{
-						ClusterSpecifier: &envoyroute.RouteAction_WeightedClusters{
-							WeightedClusters: &envoyroute.WeightedCluster{
-								Clusters: []*envoyroute.WeightedCluster_ClusterWeight{yescluster, nocluster},
+			out = &envoy_config_route_v3.Route{
+				Action: &envoy_config_route_v3.Route_Route{
+					Route: &envoy_config_route_v3.RouteAction{
+						ClusterSpecifier: &envoy_config_route_v3.RouteAction_WeightedClusters{
+							WeightedClusters: &envoy_config_route_v3.WeightedCluster{
+								Clusters: []*envoy_config_route_v3.WeightedCluster_ClusterWeight{yescluster, nocluster},
 							},
 						},
 					},

@@ -14,12 +14,13 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/client"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
 // Type Definitions:
 
-const ExtAuthConfigType = cache.TypePrefix + "/enterprise.gloo.solo.io.ExtAuthConfig"
+const ExtAuthConfigType = resource.TypePrefix + "/enterprise.gloo.solo.io.ExtAuthConfig"
 
 /* Defined a resource - to be used by snapshot */
 type ExtAuthConfigXdsResourceWrapper struct {
@@ -72,7 +73,7 @@ func NewExtAuthDiscoveryServiceServer(genericServer server.Server) ExtAuthDiscov
 }
 
 func (s *extAuthDiscoveryServiceServer) StreamExtAuthConfig(stream ExtAuthDiscoveryService_StreamExtAuthConfigServer) error {
-	return s.Server.Stream(stream, ExtAuthConfigType)
+	return s.Server.StreamV2(stream, ExtAuthConfigType)
 }
 
 func (s *extAuthDiscoveryServiceServer) FetchExtAuthConfig(ctx context.Context, req *discovery.DiscoveryRequest) (*discovery.DiscoveryResponse, error) {
@@ -80,7 +81,7 @@ func (s *extAuthDiscoveryServiceServer) FetchExtAuthConfig(ctx context.Context, 
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
 	req.TypeUrl = ExtAuthConfigType
-	return s.Server.Fetch(ctx, req)
+	return s.Server.FetchV2(ctx, req)
 }
 
 func (s *extAuthDiscoveryServiceServer) DeltaExtAuthConfig(_ ExtAuthDiscoveryService_DeltaExtAuthConfigServer) error {

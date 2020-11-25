@@ -3,21 +3,18 @@ package loadbalancer_test
 import (
 	"time"
 
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/lbhash"
-
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/lbhash"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/loadbalancer"
 )
 
@@ -27,10 +24,10 @@ var _ = Describe("Plugin", func() {
 		params   plugins.Params
 		plugin   *Plugin
 		upstream *v1.Upstream
-		out      *envoyapi.Cluster
+		out      *envoy_config_cluster_v3.Cluster
 	)
 	BeforeEach(func() {
-		out = new(envoyapi.Cluster)
+		out = new(envoy_config_cluster_v3.Cluster)
 
 		params = plugins.Params{}
 		upstream = &v1.Upstream{}
@@ -69,7 +66,7 @@ var _ = Describe("Plugin", func() {
 		}
 		err := plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_RANDOM))
+		Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_RANDOM))
 	})
 	Context("p2c", func() {
 		BeforeEach(func() {
@@ -82,7 +79,7 @@ var _ = Describe("Plugin", func() {
 		It("should set lb policy p2c", func() {
 			err := plugin.ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_LEAST_REQUEST))
+			Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_LEAST_REQUEST))
 			Expect(out.GetLeastRequestLbConfig().ChoiceCount.Value).To(BeEquivalentTo(5))
 		})
 		It("should set lb policy p2c with default config", func() {
@@ -95,7 +92,7 @@ var _ = Describe("Plugin", func() {
 
 			err := plugin.ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_LEAST_REQUEST))
+			Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_LEAST_REQUEST))
 			Expect(out.GetLeastRequestLbConfig()).To(BeNil())
 		})
 	})
@@ -108,7 +105,7 @@ var _ = Describe("Plugin", func() {
 		}
 		err := plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_ROUND_ROBIN))
+		Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_ROUND_ROBIN))
 	})
 
 	It("should set lb policy ring hash - basic config", func() {
@@ -119,7 +116,7 @@ var _ = Describe("Plugin", func() {
 		}
 		err := plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_RING_HASH))
+		Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_RING_HASH))
 	})
 
 	It("should set lb policy ring hash - full config", func() {
@@ -153,12 +150,12 @@ status: {}
 		Expect(yamlForm).To(Equal(sampleInputYaml))
 		err = plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_RING_HASH))
-		Expect(out.LbConfig).To(Equal(&envoyapi.Cluster_RingHashLbConfig_{
-			RingHashLbConfig: &envoyapi.Cluster_RingHashLbConfig{
+		Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_RING_HASH))
+		Expect(out.LbConfig).To(Equal(&envoy_config_cluster_v3.Cluster_RingHashLbConfig_{
+			RingHashLbConfig: &envoy_config_cluster_v3.Cluster_RingHashLbConfig{
 				MinimumRingSize: &wrappers.UInt64Value{Value: 100},
 				MaximumRingSize: &wrappers.UInt64Value{Value: 200},
-				HashFunction:    envoyapi.Cluster_RingHashLbConfig_XX_HASH,
+				HashFunction:    envoy_config_cluster_v3.Cluster_RingHashLbConfig_XX_HASH,
 			},
 		}))
 	})
@@ -171,7 +168,7 @@ status: {}
 		}
 		err := plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_MAGLEV))
+		Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_MAGLEV))
 	})
 
 	It("should set lb policy maglev - full config", func() {
@@ -197,7 +194,7 @@ status: {}
 		Expect(yamlForm).To(Equal(sampleInputYaml))
 		err = plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_MAGLEV))
+		Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_MAGLEV))
 		Expect(out.LbConfig).To(BeNil())
 	})
 
@@ -205,10 +202,10 @@ status: {}
 		var (
 			routeParams plugins.RouteParams
 			route       *v1.Route
-			outRoute    *envoyroute.Route
+			outRoute    *envoy_config_route_v3.Route
 		)
 		BeforeEach(func() {
-			outRoute = new(envoyroute.Route)
+			outRoute = new(envoy_config_route_v3.Route)
 
 			routeParams = plugins.RouteParams{}
 			route = &v1.Route{}
@@ -228,9 +225,9 @@ status: {}
 			}
 			err := plugin.ProcessRoute(routeParams, route, outRoute)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(outRoute.GetRoute().HashPolicy).To(Equal([]*envoyroute.RouteAction_HashPolicy{{
-				PolicySpecifier: &envoyroute.RouteAction_HashPolicy_Header_{
-					Header: &envoyroute.RouteAction_HashPolicy_Header{
+			Expect(outRoute.GetRoute().HashPolicy).To(Equal([]*envoy_config_route_v3.RouteAction_HashPolicy{{
+				PolicySpecifier: &envoy_config_route_v3.RouteAction_HashPolicy_Header_{
+					Header: &envoy_config_route_v3.RouteAction_HashPolicy_Header{
 						HeaderName: "origin",
 					},
 				},
@@ -298,34 +295,34 @@ status: {}
 			Expect(yamlForm).To(Equal(sampleInputYaml))
 			err = plugin.ProcessRoute(routeParams, route, outRoute)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(outRoute.GetRoute().HashPolicy).To(Equal([]*envoyroute.RouteAction_HashPolicy{
+			Expect(outRoute.GetRoute().HashPolicy).To(Equal([]*envoy_config_route_v3.RouteAction_HashPolicy{
 				{
-					PolicySpecifier: &envoyroute.RouteAction_HashPolicy_Header_{
-						Header: &envoyroute.RouteAction_HashPolicy_Header{
+					PolicySpecifier: &envoy_config_route_v3.RouteAction_HashPolicy_Header_{
+						Header: &envoy_config_route_v3.RouteAction_HashPolicy_Header{
 							HeaderName: "x-test-affinity",
 						},
 					},
 					Terminal: true,
 				},
 				{
-					PolicySpecifier: &envoyroute.RouteAction_HashPolicy_Header_{
-						Header: &envoyroute.RouteAction_HashPolicy_Header{
+					PolicySpecifier: &envoy_config_route_v3.RouteAction_HashPolicy_Header_{
+						Header: &envoy_config_route_v3.RouteAction_HashPolicy_Header{
 							HeaderName: "origin",
 						},
 					},
 					Terminal: false,
 				},
 				{
-					PolicySpecifier: &envoyroute.RouteAction_HashPolicy_ConnectionProperties_{
-						ConnectionProperties: &envoyroute.RouteAction_HashPolicy_ConnectionProperties{
+					PolicySpecifier: &envoy_config_route_v3.RouteAction_HashPolicy_ConnectionProperties_{
+						ConnectionProperties: &envoy_config_route_v3.RouteAction_HashPolicy_ConnectionProperties{
 							SourceIp: true,
 						},
 					},
 					Terminal: false,
 				},
 				{
-					PolicySpecifier: &envoyroute.RouteAction_HashPolicy_Cookie_{
-						Cookie: &envoyroute.RouteAction_HashPolicy_Cookie{
+					PolicySpecifier: &envoy_config_route_v3.RouteAction_HashPolicy_Cookie_{
+						Cookie: &envoy_config_route_v3.RouteAction_HashPolicy_Cookie{
 							Name: "gloo",
 							Ttl:  gogoutils.DurationStdToProto(&ttlDur),
 							Path: "/abc",
@@ -337,7 +334,7 @@ status: {}
 		})
 		// negative cases
 		It("skips non-route-action routes", func() {
-			outRoute.Action = &envoyroute.Route_Redirect{}
+			outRoute.Action = &envoy_config_route_v3.Route_Redirect{}
 			route.Action = &v1.Route_RedirectAction{}
 			// the following represents a misconfigured route
 			route.Options = &v1.RouteOptions{
@@ -354,8 +351,8 @@ status: {}
 			Expect(outRoute.GetRoute()).To(BeNil())
 		})
 		It("skips routes that do not feature the plugin", func() {
-			outRoute.Action = &envoyroute.Route_Route{
-				Route: &envoyroute.RouteAction{},
+			outRoute.Action = &envoy_config_route_v3.Route_Route{
+				Route: &envoy_config_route_v3.RouteAction{},
 			}
 			route.Options = &v1.RouteOptions{}
 			err := plugin.ProcessRoute(routeParams, route, outRoute)

@@ -3,11 +3,11 @@ package cors
 import (
 	"strings"
 
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -20,7 +20,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 		params plugins.VirtualHostParams
 		plugin plugins.Plugin
 		gloo1  *v1.VirtualHost
-		envoy1 *envoyroute.VirtualHost
+		envoy1 *envoy_config_route_v3.VirtualHost
 
 		// values used in first example
 		allowOrigin1      = []string{"solo.io", "github.com"}
@@ -51,27 +51,27 @@ var _ = Describe("VirtualHost Plugin", func() {
 			},
 		}
 
-		out1 := &envoyroute.CorsPolicy{
+		out1 := &envoy_config_route_v3.CorsPolicy{
 
-			AllowOriginStringMatch: []*envoymatcher.StringMatcher{
-				&envoymatcher.StringMatcher{
-					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[0]},
+			AllowOriginStringMatch: []*envoy_type_matcher_v3.StringMatcher{
+				&envoy_type_matcher_v3.StringMatcher{
+					MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: allowOrigin1[0]},
 				},
-				&envoymatcher.StringMatcher{
-					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[1]},
+				&envoy_type_matcher_v3.StringMatcher{
+					MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: allowOrigin1[1]},
 				},
-				&envoymatcher.StringMatcher{
-					MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
-						SafeRegex: &envoymatcher.RegexMatcher{
-							EngineType: &envoymatcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoymatcher.RegexMatcher_GoogleRE2{}},
+				&envoy_type_matcher_v3.StringMatcher{
+					MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
+						SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+							EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{}},
 							Regex:      allowOriginRegex1[0],
 						},
 					},
 				},
-				&envoymatcher.StringMatcher{
-					MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
-						SafeRegex: &envoymatcher.RegexMatcher{
-							EngineType: &envoymatcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoymatcher.RegexMatcher_GoogleRE2{}},
+				&envoy_type_matcher_v3.StringMatcher{
+					MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
+						SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
+							EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{}},
 							Regex:      allowOriginRegex1[1],
 						},
 					},
@@ -83,7 +83,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 			MaxAge:           maxAge1,
 			AllowCredentials: &wrappers.BoolValue{Value: allowCredentials1},
 		}
-		envoy1 = &envoyroute.VirtualHost{
+		envoy1 = &envoy_config_route_v3.VirtualHost{
 			Cors: out1,
 		}
 
@@ -93,13 +93,13 @@ var _ = Describe("VirtualHost Plugin", func() {
 
 	Context("CORS", func() {
 		It("should process virtual hosts - full specification", func() {
-			out := &envoyroute.VirtualHost{}
+			out := &envoy_config_route_v3.VirtualHost{}
 			err := plugin.(plugins.VirtualHostPlugin).ProcessVirtualHost(params, gloo1, out)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out).To(Equal(envoy1))
 		})
 		It("should process virtual hosts - minimal specification", func() {
-			out := &envoyroute.VirtualHost{}
+			out := &envoy_config_route_v3.VirtualHost{}
 			inRoute := &v1.VirtualHost{
 				Options: &v1.VirtualHostOptions{
 					Cors: &cors.CorsPolicy{
@@ -109,14 +109,14 @@ var _ = Describe("VirtualHost Plugin", func() {
 			}
 			err := plugin.(plugins.VirtualHostPlugin).ProcessVirtualHost(params, inRoute, out)
 			Expect(err).NotTo(HaveOccurred())
-			envoy1min := &envoyroute.VirtualHost{
-				Cors: &envoyroute.CorsPolicy{
-					AllowOriginStringMatch: []*envoymatcher.StringMatcher{
-						&envoymatcher.StringMatcher{
-							MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[0]},
+			envoy1min := &envoy_config_route_v3.VirtualHost{
+				Cors: &envoy_config_route_v3.CorsPolicy{
+					AllowOriginStringMatch: []*envoy_type_matcher_v3.StringMatcher{
+						&envoy_type_matcher_v3.StringMatcher{
+							MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: allowOrigin1[0]},
 						},
-						&envoymatcher.StringMatcher{
-							MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[1]},
+						&envoy_type_matcher_v3.StringMatcher{
+							MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: allowOrigin1[1]},
 						},
 					},
 				},
@@ -124,7 +124,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 			Expect(out).To(Equal(envoy1min))
 		})
 		It("should process virtual hosts - empty specification", func() {
-			out := &envoyroute.VirtualHost{}
+			out := &envoy_config_route_v3.VirtualHost{}
 			inRoute := &v1.VirtualHost{
 				Options: &v1.VirtualHostOptions{
 					Cors: &cors.CorsPolicy{},
@@ -132,13 +132,13 @@ var _ = Describe("VirtualHost Plugin", func() {
 			}
 			err := plugin.(plugins.VirtualHostPlugin).ProcessVirtualHost(params, inRoute, out)
 			Expect(err).To(HaveOccurred())
-			envoy1empty := &envoyroute.VirtualHost{
-				Cors: &envoyroute.CorsPolicy{},
+			envoy1empty := &envoy_config_route_v3.VirtualHost{
+				Cors: &envoy_config_route_v3.CorsPolicy{},
 			}
 			Expect(out).To(Equal(envoy1empty))
 		})
 		It("should process virtual hosts - ignore route filter disabled spec", func() {
-			out := &envoyroute.VirtualHost{}
+			out := &envoy_config_route_v3.VirtualHost{}
 			inRoute := &v1.VirtualHost{
 				Options: &v1.VirtualHostOptions{
 					Cors: &cors.CorsPolicy{
@@ -148,17 +148,17 @@ var _ = Describe("VirtualHost Plugin", func() {
 			}
 			err := plugin.(plugins.VirtualHostPlugin).ProcessVirtualHost(params, inRoute, out)
 			Expect(err).To(HaveOccurred())
-			envoy1empty := &envoyroute.VirtualHost{
-				Cors: &envoyroute.CorsPolicy{},
+			envoy1empty := &envoy_config_route_v3.VirtualHost{
+				Cors: &envoy_config_route_v3.CorsPolicy{},
 			}
 			Expect(out).To(Equal(envoy1empty))
 		})
 		It("should process virtual hosts - null specification", func() {
-			out := &envoyroute.VirtualHost{}
+			out := &envoy_config_route_v3.VirtualHost{}
 			gloo1null := &v1.VirtualHost{}
 			err := plugin.(plugins.VirtualHostPlugin).ProcessVirtualHost(params, gloo1null, out)
 			Expect(err).NotTo(HaveOccurred())
-			envoy1null := &envoyroute.VirtualHost{}
+			envoy1null := &envoy_config_route_v3.VirtualHost{}
 			Expect(out).To(Equal(envoy1null))
 		})
 	})

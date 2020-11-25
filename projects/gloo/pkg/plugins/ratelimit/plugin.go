@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -32,6 +31,12 @@ var (
 	beforeAuthStage = plugins.BeforeStage(plugins.AuthNStage)
 )
 
+// Compile-time assertion
+var _ plugins.Plugin = &Plugin{}
+var _ plugins.HttpFilterPlugin = &Plugin{}
+var _ plugins.VirtualHostPlugin = &Plugin{}
+var _ plugins.RoutePlugin = &Plugin{}
+
 type Plugin struct {
 	upstreamRef         *core.ResourceRef
 	timeout             *time.Duration
@@ -54,14 +59,17 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
+func (p *Plugin) ProcessVirtualHost(
+	params plugins.VirtualHostParams,
+	in *v1.VirtualHost, out *envoy_config_route_v3.VirtualHost,
+) error {
 	if newRateLimits := in.GetOptions().GetRatelimit().GetRateLimits(); len(newRateLimits) > 0 {
 		out.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, newRateLimits)
 	}
 	return nil
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
+func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if rateLimits := in.GetOptions().GetRatelimit(); rateLimits != nil {
 		if ra := out.GetRoute(); ra != nil {
 			ra.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, rateLimits.GetRateLimits())
@@ -98,7 +106,11 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 
 	customConf := generateEnvoyConfigForCustomFilter(*upstreamRef, timeout, denyOnFail)
 
-	customStagedFilter, err := plugins.NewStagedFilterWithConfig(wellknown.HTTPRateLimit, customConf, DetermineFilterStage(rateLimitBeforeAuth))
+	customStagedFilter, err := plugins.NewStagedFilterWithConfig(
+		wellknown.HTTPRateLimit,
+		customConf,
+		DetermineFilterStage(rateLimitBeforeAuth),
+	)
 	if err != nil {
 		return nil, err
 	}

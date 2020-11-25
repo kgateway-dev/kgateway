@@ -1,7 +1,7 @@
 package faultinjection
 
 import (
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyfault "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/fault/v3"
 	envoyhttpfault "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -16,6 +16,10 @@ import (
 )
 
 var pluginStage = plugins.DuringStage(plugins.FaultStage)
+
+var _ plugins.Plugin = &Plugin{}
+var _ plugins.HttpFilterPlugin = &Plugin{}
+var _ plugins.RoutePlugin = &Plugin{}
 
 type Plugin struct {
 }
@@ -35,7 +39,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	}, nil
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
+func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	markFilterConfigFunc := func(spec *v1.Destination) (proto.Message, error) {
 		if in.Options == nil {
 			return nil, nil

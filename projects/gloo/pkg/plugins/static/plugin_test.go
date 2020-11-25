@@ -1,20 +1,19 @@
 package static
 
 import (
-	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
 var _ = Describe("Plugin", func() {
@@ -24,12 +23,12 @@ var _ = Describe("Plugin", func() {
 		params       plugins.Params
 		upstream     *v1.Upstream
 		upstreamSpec *v1static.UpstreamSpec
-		out          *envoyapi.Cluster
+		out          *envoy_config_cluster_v3.Cluster
 	)
 
 	BeforeEach(func() {
 		p = new(plugin)
-		out = new(envoyapi.Cluster)
+		out = new(envoy_config_cluster_v3.Cluster)
 
 		p.Init(plugins.InitParams{})
 		upstreamSpec = &v1static.UpstreamSpec{
@@ -62,7 +61,7 @@ var _ = Describe("Plugin", func() {
 
 		It("use strict dns", func() {
 			p.ProcessUpstream(params, upstream, out)
-			Expect(out.GetType()).To(Equal(envoyapi.Cluster_STRICT_DNS))
+			Expect(out.GetType()).To(Equal(envoy_config_cluster_v3.Cluster_STRICT_DNS))
 		})
 
 		It("use static if only has ips", func() {
@@ -75,47 +74,47 @@ var _ = Describe("Plugin", func() {
 			}}
 			upstreamSpec.AutoSniRewrite = &types.BoolValue{Value: false}
 			p.ProcessUpstream(params, upstream, out)
-			Expect(out.GetType()).To(Equal(envoyapi.Cluster_STATIC))
-			expected := []*envoyendpoint.LocalityLbEndpoints{
-				&envoyendpoint.LocalityLbEndpoints{
-					LbEndpoints: []*envoyendpoint.LbEndpoint{
-						&envoyendpoint.LbEndpoint{
-							HostIdentifier: &envoyendpoint.LbEndpoint_Endpoint{
-								Endpoint: &envoyendpoint.Endpoint{
+			Expect(out.GetType()).To(Equal(envoy_config_cluster_v3.Cluster_STATIC))
+			expected := []*envoy_config_endpoint_v3.LocalityLbEndpoints{
+				&envoy_config_endpoint_v3.LocalityLbEndpoints{
+					LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
+						&envoy_config_endpoint_v3.LbEndpoint{
+							HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
+								Endpoint: &envoy_config_endpoint_v3.Endpoint{
 									Hostname: "1.2.3.4",
-									Address: &envoycore.Address{
-										Address: &envoycore.Address_SocketAddress{
-											SocketAddress: &envoycore.SocketAddress{
-												Protocol: envoycore.SocketAddress_TCP,
+									Address: &envoy_config_core_v3.Address{
+										Address: &envoy_config_core_v3.Address_SocketAddress{
+											SocketAddress: &envoy_config_core_v3.SocketAddress{
+												Protocol: envoy_config_core_v3.SocketAddress_TCP,
 												Address:  "1.2.3.4",
-												PortSpecifier: &envoycore.SocketAddress_PortValue{
+												PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
 													PortValue: 1234,
 												},
 											},
 										},
 									},
-									HealthCheckConfig: &envoyendpoint.Endpoint_HealthCheckConfig{
+									HealthCheckConfig: &envoy_config_endpoint_v3.Endpoint_HealthCheckConfig{
 										Hostname: "1.2.3.4",
 									},
 								},
 							},
 						},
-						&envoyendpoint.LbEndpoint{
-							HostIdentifier: &envoyendpoint.LbEndpoint_Endpoint{
-								Endpoint: &envoyendpoint.Endpoint{
+						&envoy_config_endpoint_v3.LbEndpoint{
+							HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
+								Endpoint: &envoy_config_endpoint_v3.Endpoint{
 									Hostname: "2603:3005:b0b:1d00::b7aa",
-									Address: &envoycore.Address{
-										Address: &envoycore.Address_SocketAddress{
-											SocketAddress: &envoycore.SocketAddress{
-												Protocol: envoycore.SocketAddress_TCP,
+									Address: &envoy_config_core_v3.Address{
+										Address: &envoy_config_core_v3.Address_SocketAddress{
+											SocketAddress: &envoy_config_core_v3.SocketAddress{
+												Protocol: envoy_config_core_v3.SocketAddress_TCP,
 												Address:  "2603:3005:b0b:1d00::b7aa",
-												PortSpecifier: &envoycore.SocketAddress_PortValue{
+												PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
 													PortValue: 1234,
 												},
 											},
 										},
 									},
-									HealthCheckConfig: &envoyendpoint.Endpoint_HealthCheckConfig{
+									HealthCheckConfig: &envoy_config_endpoint_v3.Endpoint_HealthCheckConfig{
 										Hostname: "2603:3005:b0b:1d00::b7aa",
 									},
 								},
@@ -137,7 +136,7 @@ var _ = Describe("Plugin", func() {
 			}}
 
 			p.ProcessUpstream(params, upstream, out)
-			Expect(out.GetType()).To(Equal(envoyapi.Cluster_STRICT_DNS))
+			Expect(out.GetType()).To(Equal(envoy_config_cluster_v3.Cluster_STRICT_DNS))
 		})
 	})
 
@@ -178,9 +177,9 @@ var _ = Describe("Plugin", func() {
 
 		It("should not override existing tls config", func() {
 			existing := &envoyauth.UpstreamTlsContext{}
-			out.TransportSocket = &envoycore.TransportSocket{
+			out.TransportSocket = &envoy_config_core_v3.TransportSocket{
 				Name:       wellknown.TransportSocketTls,
-				ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(existing)},
+				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(existing)},
 			}
 			upstreamSpec.UseTls = true
 			p.ProcessUpstream(params, upstream, out)

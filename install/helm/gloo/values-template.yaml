@@ -90,6 +90,7 @@ gateway:
   serviceAccount: {}
 gatewayProxies:
   gatewayProxy:
+    envoyApiVersion: V3
     gatewaySettings: {}
     failover:
       enabled: false

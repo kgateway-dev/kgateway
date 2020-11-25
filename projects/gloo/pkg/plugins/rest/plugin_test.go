@@ -3,10 +3,11 @@ package rest
 import (
 	"regexp"
 
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"github.com/solo-io/gloo/pkg/utils"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -17,9 +18,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 )
 
 var _ = Describe("Plugin", func() {
@@ -29,14 +27,14 @@ var _ = Describe("Plugin", func() {
 		params       plugins.Params
 		upstream     *v1.Upstream
 		upstreamSpec *v1static.UpstreamSpec
-		out          *envoyapi.Cluster
+		out          *envoy_config_cluster_v3.Cluster
 		restSpec     *pluginsv1.ServiceSpec_Rest
 	)
 
 	BeforeEach(func() {
 		b := false
 		p = NewPlugin(&b).(*plugin)
-		out = new(envoyapi.Cluster)
+		out = new(envoy_config_cluster_v3.Cluster)
 
 		restSpec = &pluginsv1.ServiceSpec_Rest{
 			Rest: &v1rest.ServiceSpec{
@@ -82,7 +80,7 @@ var _ = Describe("Plugin", func() {
 		var (
 			ps       *transformapi.Parameters
 			routeIn  *v1.Route
-			routeOut *envoyroute.Route
+			routeOut *envoy_config_route_v3.Route
 		)
 
 		BeforeEach(func() {
@@ -111,12 +109,12 @@ var _ = Describe("Plugin", func() {
 				},
 			}
 
-			routeOut = &envoyroute.Route{
-				Match: &envoyroute.RouteMatch{
-					PathSpecifier: &envoyroute.RouteMatch_Prefix{Prefix: "/"},
+			routeOut = &envoy_config_route_v3.Route{
+				Match: &envoy_config_route_v3.RouteMatch{
+					PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{Prefix: "/"},
 				},
-				Action: &envoyroute.Route_Route{
-					Route: &envoyroute.RouteAction{},
+				Action: &envoy_config_route_v3.Route_Route{
+					Route: &envoy_config_route_v3.RouteAction{},
 				},
 			}
 

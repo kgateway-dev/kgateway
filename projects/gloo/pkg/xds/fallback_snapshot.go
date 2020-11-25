@@ -1,15 +1,14 @@
 package xds
 
 import (
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycorev2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhttpconnectionmanager "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 )
 
 func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) cache.Snapshot {
@@ -20,24 +19,24 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 		clusters  []cache.Resource
 	)
 	routes := []cache.Resource{
-		NewEnvoyResource(&envoyapi.RouteConfiguration{
+		resource.NewEnvoyResource(&envoy_config_route_v3.RouteConfiguration{
 			Name: routeConfigName,
-			VirtualHosts: []*envoyroute.VirtualHost{
+			VirtualHosts: []*envoy_config_route_v3.VirtualHost{
 				{
 					Name:    "invalid-envoy-config-vhost",
 					Domains: []string{"*"},
-					Routes: []*envoyroute.Route{
+					Routes: []*envoy_config_route_v3.Route{
 						{
-							Match: &envoyroute.RouteMatch{
-								PathSpecifier: &envoyroute.RouteMatch_Prefix{
+							Match: &envoy_config_route_v3.RouteMatch{
+								PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{
 									Prefix: "/",
 								},
 							},
-							Action: &envoyroute.Route_DirectResponse{
-								DirectResponse: &envoyroute.DirectResponseAction{
+							Action: &envoy_config_route_v3.Route_DirectResponse{
+								DirectResponse: &envoy_config_route_v3.DirectResponseAction{
 									Status: invalidConfigStatusCode,
-									Body: &envoycorev2.DataSource{
-										Specifier: &envoycorev2.DataSource_InlineString{
+									Body: &envoy_config_core_v3.DataSource{
+										Specifier: &envoy_config_core_v3.DataSource_InlineString{
 											InlineString: "Invalid Envoy Bootstrap Configuration. " +
 												"Please refer to Gloo documentation https://gloo.solo.io/",
 										},
@@ -50,9 +49,9 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 			},
 		}),
 	}
-	adsSource := envoycore.ConfigSource{
-		ConfigSourceSpecifier: &envoycore.ConfigSource_Ads{
-			Ads: &envoycore.AggregatedConfigSource{},
+	adsSource := envoy_config_core_v3.ConfigSource{
+		ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_Ads{
+			Ads: &envoy_config_core_v3.AggregatedConfigSource{},
 		},
 	}
 	manager := &envoyhttpconnectionmanager.HttpConnectionManager{
@@ -75,32 +74,32 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 		panic(err)
 	}
 
-	listener := &envoyapi.Listener{
+	listener := &envoy_config_listener_v3.Listener{
 		Name: listenerName,
-		Address: &envoycorev2.Address{
-			Address: &envoycorev2.Address_SocketAddress{
-				SocketAddress: &envoycorev2.SocketAddress{
-					Protocol: envoycorev2.SocketAddress_TCP,
+		Address: &envoy_config_core_v3.Address{
+			Address: &envoy_config_core_v3.Address_SocketAddress{
+				SocketAddress: &envoy_config_core_v3.SocketAddress{
+					Protocol: envoy_config_core_v3.SocketAddress_TCP,
 					Address:  bindAddress,
-					PortSpecifier: &envoycorev2.SocketAddress_PortValue{
+					PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
 						PortValue: port,
 					},
 					Ipv4Compat: true,
 				},
 			},
 		},
-		FilterChains: []*envoylistener.FilterChain{{
-			Filters: []*envoylistener.Filter{
+		FilterChains: []*envoy_config_listener_v3.FilterChain{{
+			Filters: []*envoy_config_listener_v3.Filter{
 				{
 					Name:       wellknown.HTTPConnectionManager,
-					ConfigType: &envoylistener.Filter_TypedConfig{TypedConfig: pbst},
+					ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{TypedConfig: pbst},
 				},
 			},
 		}},
 	}
 
 	listeners := []cache.Resource{
-		NewEnvoyResource(listener),
+		resource.NewEnvoyResource(listener),
 	}
 	return NewSnapshot("unversioned", endpoints, clusters, routes, listeners)
 }

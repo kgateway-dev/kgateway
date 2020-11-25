@@ -3,11 +3,12 @@ package hcm_test
 import (
 	"time"
 
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/golang/mock/gomock"
+	envoy_config_tracing_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	mock_hcm "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm/mocks"
 
 	"github.com/solo-io/gloo/pkg/utils"
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
@@ -20,8 +21,6 @@ import (
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -72,9 +71,9 @@ var _ = Describe("Plugin", func() {
 				RequestHeadersForTags: []string{"path", "origin"},
 				Verbose:               true,
 				ProviderConfig: &tracingv1.ListenerTracingSettings_ZipkinConfig{
-					ZipkinConfig: &v3.ZipkinConfig{
+					ZipkinConfig: &envoy_config_tracing_v3.ZipkinConfig{
 						CollectorUpstreamRef:     utils.ResourceRefPtr(collectorUs.Metadata.Ref()),
-						CollectorEndpointVersion: v3.ZipkinConfig_HTTP_JSON,
+						CollectorEndpointVersion: envoy_config_tracing_v3.ZipkinConfig_HTTP_JSON,
 						CollectorEndpoint:        "/api/v2/spans",
 						SharedSpanContext:        nil,
 						TraceId_128Bit:           false,
@@ -117,12 +116,12 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 
-		filters := []*envoylistener.Filter{{
+		filters := []*envoy_config_listener_v3.Filter{{
 			Name: wellknown.HTTPConnectionManager,
 		}}
 
-		outl := &envoyapi.Listener{
-			FilterChains: []*envoylistener.FilterChain{{
+		outl := &envoy_config_listener_v3.Listener{
+			FilterChains: []*envoy_config_listener_v3.FilterChain{{
 				Filters: filters,
 			}},
 		}
@@ -200,12 +199,12 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 
-		filters := []*envoylistener.Filter{{
+		filters := []*envoy_config_listener_v3.Filter{{
 			Name: wellknown.HTTPConnectionManager,
 		}}
 
-		outl := &envoyapi.Listener{
-			FilterChains: []*envoylistener.FilterChain{{
+		outl := &envoy_config_listener_v3.Listener{
+			FilterChains: []*envoy_config_listener_v3.FilterChain{{
 				Filters: filters,
 			}},
 		}
@@ -230,8 +229,8 @@ var _ = Describe("Plugin", func() {
 			hcms    *hcm.HttpConnectionManagerSettings
 			hl      *v1.HttpListener
 			in      *v1.Listener
-			outl    *envoyapi.Listener
-			filters []*envoylistener.Filter
+			outl    *envoy_config_listener_v3.Listener
+			filters []*envoy_config_listener_v3.Filter
 			p       *Plugin
 		)
 
@@ -250,12 +249,12 @@ var _ = Describe("Plugin", func() {
 				},
 			}
 
-			filters = []*envoylistener.Filter{{
+			filters = []*envoy_config_listener_v3.Filter{{
 				Name: wellknown.HTTPConnectionManager,
 			}}
 
-			outl = &envoyapi.Listener{
-				FilterChains: []*envoylistener.FilterChain{{
+			outl = &envoy_config_listener_v3.Listener{
+				FilterChains: []*envoy_config_listener_v3.FilterChain{{
 					Filters: filters,
 				}},
 			}

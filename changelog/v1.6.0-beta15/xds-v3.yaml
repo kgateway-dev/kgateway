@@ -1,0 +1,5 @@
+changelog:
+- type: NEW_FEATURE
+  description: Support XDS V2/V3 APIs simultaneously from rate-limit server.
+  issueLink: https://github.com/solo-io/gloo/issues/2815
+  resolvesIssue: false

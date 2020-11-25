@@ -1,7 +1,7 @@
 package tracing
 
 import (
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_config_trace_v3 "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
@@ -39,7 +39,11 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 // Manage the tracing portion of the HCM settings
-func (p *Plugin) ProcessHcmSettings(snapshot *v1.ApiSnapshot, cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpConnectionManagerSettings) error {
+func (p *Plugin) ProcessHcmSettings(
+	snapshot *v1.ApiSnapshot,
+	cfg *envoyhttp.HttpConnectionManager,
+	hcmSettings *hcm.HttpConnectionManagerSettings,
+) error {
 
 	// only apply tracing config to the listener is using the HCM plugin
 	if hcmSettings == nil {
@@ -91,7 +95,10 @@ func (p *Plugin) ProcessHcmSettings(snapshot *v1.ApiSnapshot, cfg *envoyhttp.Htt
 	return nil
 }
 
-func processEnvoyTracingProvider(snapshot *v1.ApiSnapshot, tracingSettings *tracing.ListenerTracingSettings) (*envoy_config_trace_v3.Tracing_Http, error) {
+func processEnvoyTracingProvider(
+	snapshot *v1.ApiSnapshot,
+	tracingSettings *tracing.ListenerTracingSettings,
+) (*envoy_config_trace_v3.Tracing_Http, error) {
 	if tracingSettings.GetProviderConfig() == nil {
 		return nil, nil
 	}
@@ -178,26 +185,26 @@ func envoySimplePercentWithDefault(numerator *types.FloatValue, defaultValue flo
 	return envoySimplePercent(numerator.Value)
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
+func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if in.Options == nil || in.Options.Tracing == nil {
 		return nil
 	}
 	if percentages := in.GetOptions().GetTracing().TracePercentages; percentages != nil {
-		out.Tracing = &envoyroute.Tracing{
+		out.Tracing = &envoy_config_route_v3.Tracing{
 			ClientSampling:  common.ToEnvoyPercentageWithDefault(percentages.GetClientSamplePercentage(), oneHundredPercent),
 			RandomSampling:  common.ToEnvoyPercentageWithDefault(percentages.GetRandomSamplePercentage(), oneHundredPercent),
 			OverallSampling: common.ToEnvoyPercentageWithDefault(percentages.GetOverallSamplePercentage(), oneHundredPercent),
 		}
 	} else {
-		out.Tracing = &envoyroute.Tracing{
-			ClientSampling:  common.ToEnvoyv2Percentage(oneHundredPercent),
-			RandomSampling:  common.ToEnvoyv2Percentage(oneHundredPercent),
-			OverallSampling: common.ToEnvoyv2Percentage(oneHundredPercent),
+		out.Tracing = &envoy_config_route_v3.Tracing{
+			ClientSampling:  common.ToEnvoyPercentage(oneHundredPercent),
+			RandomSampling:  common.ToEnvoyPercentage(oneHundredPercent),
+			OverallSampling: common.ToEnvoyPercentage(oneHundredPercent),
 		}
 	}
 	descriptor := in.Options.Tracing.RouteDescriptor
 	if descriptor != "" {
-		out.Decorator = &envoyroute.Decorator{
+		out.Decorator = &envoy_config_route_v3.Decorator{
 			Operation: descriptor,
 		}
 	}
