@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
 	. "github.com/solo-io/gloo/docs/cmd/changelogutils"
 	. "github.com/solo-io/go-utils/versionutils"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
-	"os"
 )
 
 func main() {

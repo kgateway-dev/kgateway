@@ -3,17 +3,18 @@ package changelogutils
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"regexp"
+	"sort"
+	"strings"
+
 	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
 	. "github.com/solo-io/go-utils/versionutils"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
-	"io/ioutil"
-	"net/http"
-	"regexp"
-	"sort"
-	"strings"
 )
 
 // Fetches releases for repo from github
