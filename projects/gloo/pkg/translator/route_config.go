@@ -573,12 +573,11 @@ func envoyQueryMatcher(params plugins.Params, in []*matchers.QueryParameterMatch
 		} else {
 			if matcher.GetRegex() {
 				envoyMatch.QueryParameterMatchSpecifier = &envoy_config_route_v3.QueryParameterMatcher_StringMatch{
-					StringMatch: &envoy_type_matcher_v3.StringMatcher{},
-					// StringMatch: &envoy_type_matcher_v3.StringMatcher{
-					// 	MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
-					// 		SafeRegex: regexutils.NewRegex(params.Ctx, matcher.Value),
-					// 	},
-					// },
+					StringMatch: &envoy_type_matcher_v3.StringMatcher{
+						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
+							SafeRegex: regexutils.NewRegex(params.Ctx, matcher.Value),
+						},
+					},
 				}
 			} else {
 				envoyMatch.QueryParameterMatchSpecifier = &envoy_config_route_v3.QueryParameterMatcher_StringMatch{

@@ -174,6 +174,8 @@ func (s *EnvoySnapshot) GetResources(typ string) cache.Resources {
 		return s.Routes
 	case resource.ListenerTypeV3:
 		return s.Listeners
+	case resource.EndpointTypeV2:
+		return s.hiddenDeprecatedEndpoints
 	case resource.ClusterTypeV2:
 		return s.hiddenDeprecatedClusters
 	case resource.ListenerTypeV2:

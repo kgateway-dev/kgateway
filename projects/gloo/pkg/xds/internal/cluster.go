@@ -62,10 +62,6 @@ func DowngradeCluster(cluster *envoy_config_cluster_v3.Cluster) *envoyapi.Cluste
 		TrackTimeoutBudgets:                 cluster.GetTrackTimeoutBudgets(),
 		// Not present in v2
 		DrainConnectionsOnHostRemoval: false,
-		// Unused and deprecated
-		ExtensionProtocolOptions: cluster.GetHiddenEnvoyDeprecatedExtensionProtocolOptions(),
-		TlsContext:               nil,
-		Hosts:                    nil,
 	}
 
 	switch typed := cluster.GetClusterDiscoveryType().(type) {
@@ -381,10 +377,8 @@ func downgradeHttpHealthCheck(
 		Path:                   hc.GetPath(),
 		Send:                   downgradeHealthCheckPayload(hc.GetSend()),
 		Receive:                downgradeHealthCheckPayload(hc.GetReceive()),
-		ServiceName:            hc.GetHiddenEnvoyDeprecatedServiceName(),
 		RequestHeadersToAdd:    make([]*envoy_api_v2_core.HeaderValueOption, 0, len(hc.GetRequestHeadersToAdd())),
 		RequestHeadersToRemove: hc.GetRequestHeadersToRemove(),
-		UseHttp2:               hc.GetHiddenEnvoyDeprecatedUseHttp2(),
 		ExpectedStatuses:       make([]*envoy_type.Int64Range, 0, len(hc.GetExpectedStatuses())),
 		CodecClientType: envoy_type.CodecClientType(
 			envoy_type.CodecClientType_value[hc.GetCodecClientType().String()],
