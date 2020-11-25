@@ -126,8 +126,8 @@ jobs:
     - name: Setup test env
       run: |
         ./ci/kind.sh
-        curl -sSL https://github.com/istio/istio/releases/download/1.7.2/istio-1.7.2-linux-amd64.tar.gz | tar -xzf - istio-1.7.2/bin/istioctl
-        ./istio-1.7.2/bin/istioctl install --set profile=minimal
+        curl -sSL https://github.com/istio/istio/releases/download/1.7.4/istio-1.7.4-linux-amd64.tar.gz | tar -xzf - istio-1.7.4/bin/istioctl
+        ./istio-1.7.4/bin/istioctl install --set profile=minimal
     - name: Testing - kube e2e regression tests
       env:
         KUBE2E_TESTS: glooctl
