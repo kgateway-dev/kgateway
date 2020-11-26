@@ -166,10 +166,10 @@ func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProx
 	sort.SliceStable(s.currentGeneratedProxies, func(i, j int) bool {
 		refi := s.currentGeneratedProxies[i]
 		refj := s.currentGeneratedProxies[j]
-		if refi.Namespace != refj.Namespace {
-			return refi.Namespace < refj.Namespace
+		if refi.GetNamespace() != refj.GetNamespace() {
+			return refi.GetNamespace() < refj.GetNamespace()
 		}
-		return refi.Name < refj.Name
+		return refi.GetName() < refj.GetName()
 	})
 }
 

@@ -146,14 +146,14 @@ func (v *validator) deleteFromLocalSnapshot(resource resources.Resource) {
 	switch resource.(type) {
 	case *v1.VirtualService:
 		for i, rt := range v.latestSnapshot.VirtualServices {
-			if rt.Metadata.Ref() == ref {
+			if rt.Metadata.Ref().Equal(ref) {
 				v.latestSnapshot.VirtualServices = append(v.latestSnapshot.VirtualServices[:i], v.latestSnapshot.VirtualServices[i+1:]...)
 				break
 			}
 		}
 	case *v1.RouteTable:
 		for i, rt := range v.latestSnapshot.RouteTables {
-			if rt.Metadata.Ref() == ref {
+			if rt.Metadata.Ref().Equal(ref) {
 				v.latestSnapshot.RouteTables = append(v.latestSnapshot.RouteTables[:i], v.latestSnapshot.RouteTables[i+1:]...)
 				break
 			}
@@ -345,7 +345,7 @@ func (v *validator) validateVirtualServiceInternal(ctx context.Context, vs *v1.V
 		// TODO: move this to a function when generics become a thing
 		var isUpdate bool
 		for i, existingVs := range snap.VirtualServices {
-			if vsRef == existingVs.GetMetadata().Ref() {
+			if existingVs.GetMetadata().Ref().Equal(vsRef) {
 				// replace the existing virtual service in the snapshot
 				snap.VirtualServices[i] = vs
 				isUpdate = true
@@ -421,7 +421,7 @@ func (v *validator) validateRouteTableInternal(ctx context.Context, rt *v1.Route
 		// TODO: move this to a function when generics become a thing
 		var isUpdate bool
 		for i, existingRt := range snap.RouteTables {
-			if rtRef == existingRt.GetMetadata().Ref() {
+			if existingRt.GetMetadata().Ref().Equal(rtRef) {
 				// replace the existing route table in the snapshot
 				snap.RouteTables[i] = rt
 				isUpdate = true
@@ -455,7 +455,7 @@ func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef *core.Re
 		return nil
 	}
 
-	refsToDelete := refSet{"": &core.ResourceRef{}}
+	refsToDelete := refSet{gloo_translator.UpstreamToClusterName(rtRef): rtRef}
 
 	var parentVirtualServices []*core.ResourceRef
 	snap.VirtualServices.Each(func(element *v1.VirtualService) {
@@ -499,7 +499,7 @@ func (v *validator) validateGatewayInternal(ctx context.Context, gw *v1.Gateway,
 		// TODO: move this to a function when generics become a thing
 		var isUpdate bool
 		for i, existingGw := range snap.Gateways {
-			if gwRef == existingGw.GetMetadata().Ref() {
+			if existingGw.GetMetadata().Ref().Equal(gwRef) {
 				// replace the existing gateway in the snapshot
 				snap.Gateways[i] = gw
 				isUpdate = true
@@ -561,14 +561,14 @@ type refSet map[string]*core.ResourceRef
 
 func virtualServicesForRouteTable(rt *v1.RouteTable, allVirtualServices v1.VirtualServiceList, allRoutes v1.RouteTableList) v1.VirtualServiceList {
 	// this route table + its parents
-	refsContainingRouteTable := refSet{"": &core.ResourceRef{}}
+	refsContainingRouteTable := refSet{gloo_translator.UpstreamToClusterName(rt.Metadata.Ref()): rt.GetMetadata().Ref()}
 
 	// keep going until the ref list stops expanding
 	for countedRefs := 0; countedRefs != len(refsContainingRouteTable); {
 		countedRefs = len(refsContainingRouteTable)
-		for _, rt := range allRoutes {
-			if routesContainRefs(rt.GetRoutes(), refsContainingRouteTable) {
-				refsContainingRouteTable[gloo_translator.UpstreamToClusterName(rt.Metadata.Ref())] = rt.GetMetadata().Ref()
+		for _, route := range allRoutes {
+			if routesContainRefs(route.GetRoutes(), refsContainingRouteTable) {
+				refsContainingRouteTable[gloo_translator.UpstreamToClusterName(route.GetMetadata().Ref())] = route.GetMetadata().Ref()
 			}
 		}
 	}

@@ -133,7 +133,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			if err != nil {
 				return core.Status_Pending, err
 			}
-			subresouce := newvs.GetStatus().SubresourceStatuses
+			subresouce := newvs.GetStatus().GetSubresourceStatuses()
 			if subresouce == nil {
 				return core.Status_Pending, fmt.Errorf("no status")
 			}

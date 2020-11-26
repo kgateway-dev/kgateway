@@ -45,7 +45,12 @@ var _ = Describe("TranslatorSyncer", func() {
 			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
 			Status:   &core.Status{State: core.Status_Accepted},
 		}
-		vs := &gatewayv1.VirtualService{}
+		vs := &gatewayv1.VirtualService{
+			Metadata: &core.Metadata{
+				Name:      "vs",
+				Namespace: "gloo-system",
+			},
+		}
 		errs := reporter.ResourceReports{}
 		errs.Accept(vs)
 

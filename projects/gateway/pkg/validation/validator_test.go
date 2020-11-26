@@ -3,9 +3,9 @@ package validation
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8syamlutil "sigs.k8s.io/yaml"
 
@@ -13,7 +13,6 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo"
@@ -205,8 +204,9 @@ var _ = Describe("Validator", func() {
 				Expect(err).NotTo(HaveOccurred())
 				err = v.ValidateDeleteRouteTable(context.TODO(), snap.RouteTables[1].Metadata.Ref(), false)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Deletion blocked because active Routes delegate to this Route Table. " +
-					"Remove delegate actions to this route table from the virtual services: [] and the route tables: [{node-0 my-namespace}], then try again"))
+				Expect(err.Error()).To(ContainSubstring(
+					RouteTableDeleteErr(nil, []*core.ResourceRef{snap.RouteTables[0].Metadata.Ref()}).Error()),
+				)
 			})
 		})
 		Context("has no parents", func() {
@@ -412,9 +412,11 @@ var _ = Describe("Validator", func() {
 				Expect(err).NotTo(HaveOccurred())
 				err = v.ValidateDeleteVirtualService(context.TODO(), ref, false)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Deletion blocked because active Gateways reference this Virtual Service. "+
-					"Remove refs to this virtual service from the gateways: [{%s my-namespace} {%s-ssl my-namespace}], "+
-					"then try again", defaults.GatewayProxyName, defaults.GatewayProxyName)))
+				Expect(err.Error()).To(ContainSubstring(
+					VirtualServiceDeleteErr([]*core.ResourceRef{
+						{Name: defaults.GatewayProxyName, Namespace: ns},
+						{Name: defaults.GatewayProxyName + "-ssl", Namespace: ns},
+					}).Error()))
 			})
 		})
 		Context("has no parent gateways", func() {
@@ -648,7 +650,8 @@ var _ = Describe("Validator", func() {
 				Expect(merr.Errors).To(HaveLen(3))
 				Expect(merr.Errors[0]).To(MatchError(ContainSubstring("route table gloo-system.i-dont-exist-rt missing")))
 				Expect(merr.Errors[1]).To(MatchError(ContainSubstring("virtual service [gloo-system.invalid-vs-2] does not specify a virtual host")))
-				Expect(merr.Errors[2]).To(MatchError(ContainSubstring("parsing resource from crd spec testproxy1-rt in namespace gloo-system into *v1.RouteTable: unknown field \"matcherss\" in v1.Route")))
+				Expect(merr.Errors[2]).To(MatchError(ContainSubstring("parsing resource from crd spec testproxy1-rt in namespace gloo-system into *v1.RouteTable")))
+				Expect(merr.Errors[2]).To(MatchError(ContainSubstring("unknown field \"matcherss\" in gateway.solo.io.Route")))
 				Expect(proxyReports).To(HaveLen(0))
 
 			})
