@@ -14,6 +14,7 @@ import (
 	gatewaymocks "github.com/solo-io/gloo/projects/gateway/pkg/translator/mocks"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -32,7 +33,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		syncer = &curSyncer
 	})
 
-	getMapOnlyKey := func(r map[*core.ResourceRef]reporter.Report) *core.ResourceRef {
+	getMapOnlyKey := func(r map[string]reporter.Report) string {
 		Expect(r).To(HaveLen(1))
 		for k := range r {
 			return k
@@ -64,7 +65,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
-		Expect(reportedKey).To(BeEquivalentTo(vs.GetMetadata().Ref()))
+		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(vs.GetMetadata().Ref())))
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
 		m := map[string]*core.Status{
 			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
@@ -103,7 +104,7 @@ var _ = Describe("TranslatorSyncer", func() {
 
 		Eventually(mockReporter.Reports, "5s", "0.5s").ShouldNot(BeEmpty())
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
-		Expect(reportedKey).To(BeEquivalentTo(vs.GetMetadata().Ref()))
+		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(vs.GetMetadata().Ref())))
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
 		m := map[string]*core.Status{
 			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
@@ -138,7 +139,7 @@ var _ = Describe("TranslatorSyncer", func() {
 
 		Eventually(mockReporter.Reports, "5s", "0.5s").ShouldNot(BeEmpty())
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
-		Expect(reportedKey).To(BeEquivalentTo(vs.GetMetadata().Ref()))
+		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(vs.GetMetadata().Ref())))
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
 		m := map[string]*core.Status{
 			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
@@ -171,7 +172,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
-		Expect(reportedKey).To(BeEquivalentTo(vs.GetMetadata().Ref()))
+		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(vs.GetMetadata().Ref())))
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
 
 		m := map[string]*core.Status{
@@ -206,7 +207,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
-		Expect(reportedKey).To(BeEquivalentTo(vs.GetMetadata().Ref()))
+		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(vs.GetMetadata().Ref())))
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
 
 		m := map[string]*core.Status{
@@ -248,7 +249,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		mergedErrs.AddError(vs, fmt.Errorf("invalid 2"))
 
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
-		Expect(reportedKey).To(BeEquivalentTo(vs.GetMetadata().Ref()))
+		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(vs.GetMetadata().Ref())))
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(mergedErrs[vs]))
 
 		m := map[string]*core.Status{
@@ -332,18 +333,18 @@ func (f *fakeWatcher) Watch(namespace string, opts clients.WatchOpts) (<-chan gl
 }
 
 type fakeReporter struct {
-	reports  map[*core.ResourceRef]reporter.Report
-	statuses map[*core.ResourceRef]map[string]*core.Status
+	reports  map[string]reporter.Report
+	statuses map[string]map[string]*core.Status
 	lock     sync.Mutex
 	Err      error
 }
 
-func (f *fakeReporter) Reports() map[*core.ResourceRef]reporter.Report {
+func (f *fakeReporter) Reports() map[string]reporter.Report {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	return f.reports
 }
-func (f *fakeReporter) Statuses() map[*core.ResourceRef]map[string]*core.Status {
+func (f *fakeReporter) Statuses() map[string]map[string]*core.Status {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	return f.statuses
@@ -353,21 +354,21 @@ func (f *fakeReporter) WriteReports(ctx context.Context, errs reporter.ResourceR
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	fmt.Fprintf(GinkgoWriter, "WriteReports: %#v %#v", errs, subresourceStatuses)
-	newreports := map[*core.ResourceRef]reporter.Report{}
+	newreports := map[string]reporter.Report{}
 	for k, v := range f.reports {
 		newreports[k] = v
 	}
 	for k, v := range errs {
-		newreports[k.GetMetadata().Ref()] = v
+		newreports[translator.UpstreamToClusterName(k.GetMetadata().Ref())] = v
 	}
 	f.reports = newreports
 
-	newstatus := map[*core.ResourceRef]map[string]*core.Status{}
+	newstatus := map[string]map[string]*core.Status{}
 	for k, v := range f.statuses {
 		newstatus[k] = v
 	}
 	for k := range errs {
-		newstatus[k.GetMetadata().Ref()] = subresourceStatuses
+		newstatus[translator.UpstreamToClusterName(k.GetMetadata().Ref())] = subresourceStatuses
 	}
 	f.statuses = newstatus
 
