@@ -207,10 +207,6 @@ func generateGlooEChangelog() error {
 		return err
 	}
 	openSourceReleases, err := GetAllReleases(client, glooOpenSourceRepo, true)
-	for _, i := range openSourceReleases {
-		println(i.GetTagName())
-	}
-	return fmt.Errorf("some error")
 	if err != nil {
 		return err
 	}
