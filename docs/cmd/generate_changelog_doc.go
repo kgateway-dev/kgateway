@@ -180,7 +180,7 @@ func generateGlooChangelog() error {
 		return err
 	}
 
-	minorReleaseMap, err := ParseGlooReleases(allReleases, true)
+	minorReleaseMap, err := ParseReleases(allReleases, true)
 	if err != nil {
 		return err
 	}
@@ -207,10 +207,14 @@ func generateGlooEChangelog() error {
 		return err
 	}
 	openSourceReleases, err := GetAllReleases(client, glooOpenSourceRepo, true)
+	for _, i := range openSourceReleases {
+		println(i.GetTagName())
+	}
+	return fmt.Errorf("some error")
 	if err != nil {
 		return err
 	}
-	minorReleaseMap, err := MergeGlooEReleases(enterpriseReleases, openSourceReleases)
+	minorReleaseMap, err := MergeEnterpriseOSSReleases(enterpriseReleases, openSourceReleases)
 	if err != nil {
 		return err
 	}
@@ -227,8 +231,9 @@ func printVersionOrderReleases(minorReleaseMap map[Version]string) {
 	}
 	SortReleaseVersions(versions)
 	for _, version := range versions {
+		println(version.String())
 		body := minorReleaseMap[version]
-		fmt.Printf("### v%v.%v\n\n", version.Major, version.Minor)
+		fmt.Printf("\n\n### v%d.%d\n\n", version.Major, version.Minor)
 		fmt.Printf("%v", body)
 	}
 }

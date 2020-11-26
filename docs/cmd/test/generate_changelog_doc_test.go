@@ -71,7 +71,6 @@ var _ = Describe("Generate Changelog Test", func() {
 			dependencies := changelogutils.GetAllOSSDependenciesBetweenEnterpriseVersions(&v1_5_5, &v1_5_0_beta8, enterpriseReleasesSorted)
 			expectedDependencies := []Version{v1_5_5, v1_5_0, v1_5_0_beta9}
 			Expect(dependencies).To(Equal(expectedDependencies))
-			//fmt.Printf("%+v\n", dependencies)
 		})
 
 	})

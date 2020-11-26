@@ -45,9 +45,9 @@ func GetAllReleases(client *github.Client, repo string, sortedByVersion bool) ([
 	return allReleases, nil
 }
 
-// Parses OSS Gloo Edge releases into correct format for printing
+// Parses releases into correct format for printing
 // If byMinorVersion is true, the version header (e.g. v1.5.9-beta8) is not included in the release notes body
-func ParseGlooReleases(releases []*github.RepositoryRelease, byMinorVersion bool) (map[Version]string, error) {
+func ParseReleases(releases []*github.RepositoryRelease, byMinorVersion bool) (map[Version]string, error) {
 	var minorReleaseMap = make(map[Version]string)
 	for _, release := range releases {
 		var releaseTag = release.GetTagName()
@@ -71,10 +71,10 @@ func ParseGlooReleases(releases []*github.RepositoryRelease, byMinorVersion bool
 // This also pulls in open source gloo edge release notes and merges them with enterprise release notes
 // The returned map will be a mapping of minor releases (v1.5, v1.6) to their body, which will contain the release notes
 // for all the patches under the minor releases
-func MergeGlooEReleases(enterpriseReleasesSorted, osReleases []*github.RepositoryRelease) (map[Version]string, error) {
+func MergeEnterpriseOSSReleases(enterpriseReleasesSorted, osReleases []*github.RepositoryRelease) (map[Version]string, error) {
 	var minorReleaseMap = make(map[Version]string)
 
-	openSourceReleases, err := ParseGlooReleases(osReleases, false)
+	openSourceReleases, err := ParseReleases(osReleases, false)
 	if err != nil {
 		return nil, err
 	}
@@ -90,14 +90,14 @@ func MergeGlooEReleases(enterpriseReleasesSorted, osReleases []*github.Repositor
 		previousEnterprisePatch := GetPreviousEnterprisePatchVersion(enterpriseReleasesSorted, index)
 
 		// Get the Gloo OSS version that the Gloo enterprise version relies on
-		depVersion, err := GetGlooDependencyForGlooEVersion(version)
-		var glooOSSDescription string
+		depVersion, err := GetOSSDependencyForEnterpriseVersion(version)
+		var OSSDescription string
 		if err == nil && previousEnterprisePatch != nil {
-			glooOSSDescription = GetOSDependencyPrefix(*depVersion, true)
+			OSSDescription = GetOSDependencyPrefix(*depVersion, true)
 		}
 
 		//TODO: Implement a cache for gloo enterprise dependencies to reduce the amount of API calls
-		previousDepVersion, _ := GetGlooDependencyForGlooEVersion(previousEnterprisePatch)
+		previousDepVersion, _ := GetOSSDependencyForEnterpriseVersion(previousEnterprisePatch)
 		var depVersions []Version
 		// Get all intermediate versions of Gloo OSS that this Gloo enterprise relies on
 		if depVersion != nil && previousDepVersion != nil {
@@ -110,7 +110,7 @@ func MergeGlooEReleases(enterpriseReleasesSorted, osReleases []*github.Repositor
 			Major: version.Major,
 			Minor: version.Minor,
 		}
-		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("\n##### %s %s\n ", version.String(), glooOSSDescription) + body
+		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("\n##### %s %s\n ", version.String(), OSSDescription) + body
 	}
 	return minorReleaseMap, nil
 }
@@ -245,7 +245,7 @@ func GetAllOSSDependenciesBetweenEnterpriseVersions(startVersion, endVersion *Ve
 	return dependencies
 }
 
-func GetGlooDependencyForGlooEVersion(enterpriseVersion *Version) (*Version, error) {
+func GetOSSDependencyForEnterpriseVersion(enterpriseVersion *Version) (*Version, error) {
 	if enterpriseVersion == nil {
 		return nil, nil
 	}
