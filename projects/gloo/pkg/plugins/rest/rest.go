@@ -17,9 +17,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	transformutils "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
@@ -34,7 +34,7 @@ var _ plugins.RoutePlugin = &plugin{}
 
 type plugin struct {
 	transformsAdded   *bool
-	recordedUpstreams map[*core.ResourceRef]*glooplugins.ServiceSpec_Rest
+	recordedUpstreams map[string]*glooplugins.ServiceSpec_Rest
 	ctx               context.Context
 }
 
@@ -44,7 +44,7 @@ func NewPlugin(transformsAdded *bool) plugins.Plugin {
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.ctx = params.Ctx
-	p.recordedUpstreams = make(map[*core.ResourceRef]*glooplugins.ServiceSpec_Rest)
+	p.recordedUpstreams = make(map[string]*glooplugins.ServiceSpec_Rest)
 	return nil
 }
 
@@ -66,7 +66,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, _ *envo
 		if restServiceSpec.Rest == nil {
 			return errors.Errorf("%v has an empty rest service spec", in.Metadata.Ref())
 		}
-		p.recordedUpstreams[in.Metadata.Ref()] = restServiceSpec
+		p.recordedUpstreams[translator.UpstreamToClusterName(in.Metadata.Ref())] = restServiceSpec
 	}
 	return nil
 }
@@ -89,9 +89,9 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				contextutils.LoggerFrom(p.ctx).Error(err)
 				return nil, err
 			}
-			restServiceSpec, ok := p.recordedUpstreams[upstreamRef]
+			restServiceSpec, ok := p.recordedUpstreams[translator.UpstreamToClusterName(upstreamRef)]
 			if !ok {
-				return nil, errors.Errorf("%v does not have a rest service spec", *upstreamRef)
+				return nil, errors.Errorf("%s does not have a rest service spec", upstreamRef)
 			}
 			funcname := restDestinationSpec.Rest.FunctionName
 			transformationorig := restServiceSpec.Rest.Transformations[funcname]

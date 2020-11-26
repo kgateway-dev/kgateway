@@ -8,8 +8,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/solo-io/gloo/pkg/utils"
-
 	"github.com/rotisserie/eris"
 	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -88,7 +86,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		secretKey := v.SecretAccessKey
 
 		secret = &gloov1.Secret{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Namespace: "default",
 				Name:      region,
 			},
@@ -108,14 +106,14 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 	addUpstream := func() {
 		secretRef := secret.Metadata.Ref()
 		upstream = &gloov1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Namespace: "default",
 				Name:      region,
 			},
 			UpstreamType: &gloov1.Upstream_AwsEc2{
 				AwsEc2: &glooec2.UpstreamSpec{
 					Region:    region,
-					SecretRef: &secretRef,
+					SecretRef: secretRef,
 					RoleArn:   roleArn,
 					Filters: []*glooec2.TagFilter{
 						{
@@ -193,7 +191,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy := &gloov1.Proxy{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "proxy",
 				Namespace: "default",
 			},
@@ -212,7 +210,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 										Destination: &gloov1.RouteAction_Single{
 											Single: &gloov1.Destination{
 												DestinationType: &gloov1.Destination_Upstream{
-													Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+													Upstream: upstream.Metadata.Ref(),
 												},
 											},
 										},

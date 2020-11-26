@@ -21,10 +21,10 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
@@ -51,7 +51,7 @@ func NewPlugin(transformsAdded *bool) plugins.Plugin {
 }
 
 type plugin struct {
-	recordedUpstreams map[*core.ResourceRef]*aws.UpstreamSpec
+	recordedUpstreams map[string]*aws.UpstreamSpec
 	ctx               context.Context
 	transformsAdded   *bool
 	settings          *v1.GlooOptions_AWSOptions
@@ -59,7 +59,7 @@ type plugin struct {
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.ctx = params.Ctx
-	p.recordedUpstreams = make(map[*core.ResourceRef]*aws.UpstreamSpec)
+	p.recordedUpstreams = make(map[string]*aws.UpstreamSpec)
 	p.settings = params.Settings.GetGloo().GetAwsOptions()
 	return nil
 }
@@ -71,7 +71,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return nil
 	}
 	// even if it failed, route should still be valid
-	p.recordedUpstreams[in.Metadata.Ref()] = upstreamSpec.Aws
+	p.recordedUpstreams[translator.UpstreamToClusterName(in.Metadata.Ref())] = upstreamSpec.Aws
 
 	lambdaHostname := getLambdaHostname(upstreamSpec.Aws)
 
@@ -166,7 +166,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				contextutils.LoggerFrom(p.ctx).Error(err)
 				return nil, err
 			}
-			lambdaSpec, ok := p.recordedUpstreams[upstreamRef]
+			lambdaSpec, ok := p.recordedUpstreams[translator.UpstreamToClusterName(upstreamRef)]
 			if !ok {
 				err := errors.Errorf("%v is not an AWS upstream", *upstreamRef)
 				contextutils.LoggerFrom(p.ctx).Error(err)

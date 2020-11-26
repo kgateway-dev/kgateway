@@ -7,11 +7,8 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
-	"github.com/solo-io/go-utils/contextutils"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/proto"
 	transformationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -19,7 +16,10 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
@@ -32,7 +32,7 @@ var _ plugins.RoutePlugin = new(plugin)
 var _ plugins.UpstreamPlugin = new(plugin)
 
 type plugin struct {
-	recordedUpstreams map[*core.ResourceRef]*azure.UpstreamSpec
+	recordedUpstreams map[string]*azure.UpstreamSpec
 	apiKeys           map[string]string
 	ctx               context.Context
 	transformsAdded   *bool
@@ -44,7 +44,7 @@ func NewPlugin(transformsAdded *bool) plugins.Plugin {
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.ctx = params.Ctx
-	p.recordedUpstreams = make(map[*core.ResourceRef]*azure.UpstreamSpec)
+	p.recordedUpstreams = make(map[string]*azure.UpstreamSpec)
 	return nil
 }
 
@@ -55,7 +55,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return nil
 	}
 	azureUpstream := upstreamSpec.Azure
-	p.recordedUpstreams[in.Metadata.Ref()] = azureUpstream
+	p.recordedUpstreams[translator.UpstreamToClusterName(in.Metadata.Ref())] = azureUpstream
 
 	// configure Envoy cluster routing info
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
@@ -76,7 +76,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(tlsContext)},
 	}
 
-	if azureUpstream.SecretRef.Name != "" {
+	if azureUpstream.GetSecretRef().GetName() != "" {
 		secrets, err := params.Snapshot.Secrets.Find(azureUpstream.SecretRef.Strings())
 		if err != nil {
 			return errors.Wrapf(err, "azure secrets for ref %v not found", azureUpstream.SecretRef)
@@ -108,7 +108,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				contextutils.LoggerFrom(p.ctx).Error(err)
 				return nil, err
 			}
-			upstreamSpec, ok := p.recordedUpstreams[upstreamRef]
+			upstreamSpec, ok := p.recordedUpstreams[translator.UpstreamToClusterName(upstreamRef)]
 			if !ok {
 				// TODO(yuval-k): panic in debug
 				return nil, errors.Errorf("%v is not an Azure upstream", *upstreamRef)

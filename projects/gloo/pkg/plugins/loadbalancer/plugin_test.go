@@ -5,11 +5,10 @@ import (
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -37,7 +36,7 @@ var _ = Describe("Plugin", func() {
 	It("should set HealthyPanicThreshold", func() {
 
 		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
-			HealthyPanicThreshold: &types.DoubleValue{
+			HealthyPanicThreshold: &wrappers.DoubleValue{
 				Value: 50,
 			},
 		}
@@ -48,9 +47,9 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("should set UpdateMergeWindow", func() {
-		t := time.Second
+		t := prototime.DurationToProto(time.Second)
 		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
-			UpdateMergeWindow: &t,
+			UpdateMergeWindow: t,
 		}
 		err := plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
@@ -145,7 +144,7 @@ spec:
       ringHashConfig:
         maximumRingSize: "200"
         minimumRingSize: "100"
-status: {}
+status: null
 `
 		Expect(yamlForm).To(Equal(sampleInputYaml))
 		err = plugin.ProcessUpstream(params, upstream, out)
@@ -189,7 +188,7 @@ metadata:
 spec:
   loadBalancerConfig:
     maglev: {}
-status: {}
+status: null
 `
 		Expect(yamlForm).To(Equal(sampleInputYaml))
 		err = plugin.ProcessUpstream(params, upstream, out)
@@ -235,7 +234,7 @@ status: {}
 			}}))
 		})
 		It("configures routes - all types", func() {
-			ttlDur := time.Second
+			ttlDur := prototime.DurationToProto(time.Second)
 			route.Options = &v1.RouteOptions{
 				LbHash: &lbhash.RouteActionHashConfig{
 					HashPolicies: []*lbhash.HashPolicy{
@@ -255,7 +254,7 @@ status: {}
 						{
 							KeyType: &lbhash.HashPolicy_Cookie{Cookie: &lbhash.Cookie{
 								Name: "gloo",
-								Ttl:  &ttlDur,
+								Ttl:  ttlDur,
 								Path: "/abc",
 							}},
 							Terminal: false,
@@ -290,7 +289,7 @@ spec:
               name: gloo
               path: /abc
               ttl: 1s
-status: {}
+status: null
 `
 			Expect(yamlForm).To(Equal(sampleInputYaml))
 			err = plugin.ProcessRoute(routeParams, route, outRoute)
@@ -324,7 +323,7 @@ status: {}
 					PolicySpecifier: &envoy_config_route_v3.RouteAction_HashPolicy_Cookie_{
 						Cookie: &envoy_config_route_v3.RouteAction_HashPolicy_Cookie{
 							Name: "gloo",
-							Ttl:  gogoutils.DurationStdToProto(&ttlDur),
+							Ttl:  ttlDur,
 							Path: "/abc",
 						},
 					},

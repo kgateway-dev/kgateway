@@ -24,7 +24,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		},
 	}
 	pflags := cmd.PersistentFlags()
-	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
+	flagutils.AddMetadataFlags(pflags, opts.Metadata)
 
 	cmd.AddCommand(Sort(opts))
 	cliutils.ApplyOptions(cmd, optionsFunc)

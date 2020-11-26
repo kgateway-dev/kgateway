@@ -30,7 +30,7 @@ var _ = Describe("API Key Secret Converter", func() {
 		converter = &kubeconverters.APIKeySecretConverter{}
 
 		glooSecret = &v1.Secret{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:            "foo",
 				Namespace:       "bar",
 				OwnerReferences: []*core.Metadata_OwnerReference{},
@@ -114,7 +114,7 @@ var _ = Describe("API Key Secret Converter", func() {
 
 		It("ignores secret that are not API key secrets", func() {
 			actual, err := converter.ToKubeSecret(ctx, resourceClient, &v1.Secret{
-				Metadata: core.Metadata{Name: "foo"},
+				Metadata: &core.Metadata{Name: "foo"},
 				Kind:     &v1.Secret_Aws{},
 			})
 			Expect(err).NotTo(HaveOccurred())

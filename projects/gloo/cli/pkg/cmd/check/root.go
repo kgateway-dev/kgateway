@@ -629,7 +629,7 @@ func checkSecrets(ctx context.Context, namespaces []string) error {
 	return nil
 }
 
-func renderMetadata(metadata core.Metadata) string {
+func renderMetadata(metadata *core.Metadata) string {
 	return renderNamespaceName(metadata.Namespace, metadata.Name)
 }
 

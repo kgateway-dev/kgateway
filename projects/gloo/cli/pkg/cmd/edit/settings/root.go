@@ -26,7 +26,7 @@ func RootCmd(opts *editOptions.EditOptions, optionsFunc ...cliutils.OptionsFunc)
 	// to fix that we will need a significant refactor or the CLI. so i'll avoid that for now.
 	//   pflags.StringVar(&opts.Metadata.Name, "name", "default", "name of the resource to read or write")
 	//   flagutils.AddNamespaceFlag(pflags, &opts.Metadata.Namespace)
-	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
+	flagutils.AddMetadataFlags(pflags, opts.Metadata)
 
 	cmd.AddCommand(ExtAuthConfig(opts))
 	cmd.AddCommand(ratelimit.RateLimitConfig(opts))

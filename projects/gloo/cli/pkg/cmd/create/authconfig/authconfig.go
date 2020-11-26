@@ -70,7 +70,7 @@ func AuthConfigCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc
 	}
 
 	pflags := cmd.PersistentFlags()
-	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
+	flagutils.AddMetadataFlags(pflags, opts.Metadata)
 	flagutils.AddAuthConfigFlags(pflags, &opts.Create.AuthConfig)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 
@@ -96,7 +96,7 @@ func createAuthConfig(opts *options.Options, args []string) error {
 	return nil
 }
 
-func authConfigFromOpts(meta core.Metadata, input options.InputAuthConfig) (*extauth.AuthConfig, error) {
+func authConfigFromOpts(meta *core.Metadata, input options.InputAuthConfig) (*extauth.AuthConfig, error) {
 	ac := &extauth.AuthConfig{
 		Metadata: meta,
 	}

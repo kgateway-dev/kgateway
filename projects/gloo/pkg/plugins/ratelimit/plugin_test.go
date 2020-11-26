@@ -5,8 +5,9 @@ import (
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes"
+	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
+	"github.com/solo-io/gloo/test/matchers"
 
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
 
@@ -33,18 +34,18 @@ var _ = Describe("RateLimit Plugin", func() {
 		initParams plugins.InitParams
 		params     plugins.Params
 		rlPlugin   *Plugin
-		ref        core.ResourceRef
+		ref        *core.ResourceRef
 	)
 
 	BeforeEach(func() {
 		rlPlugin = NewPlugin()
-		ref = core.ResourceRef{
+		ref = &core.ResourceRef{
 			Name:      "test",
 			Namespace: "test",
 		}
 
 		rlSettings = &ratelimitpb.Settings{
-			RatelimitServerRef:  &ref,
+			RatelimitServerRef:  ref,
 			RateLimitBeforeAuth: true,
 		}
 		initParams = plugins.InitParams{
@@ -62,7 +63,7 @@ var _ = Describe("RateLimit Plugin", func() {
 	It("should get rate limit server settings first from the listener, then from the global settings", func() {
 		params.Snapshot.Upstreams = []*gloov1.Upstream{
 			{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "extauth-upstream",
 					Namespace: "ns",
 				},
@@ -102,7 +103,7 @@ var _ = Describe("RateLimit Plugin", func() {
 			Domain:          "custom",
 			FailureModeDeny: false,
 			Stage:           1,
-			Timeout:         gogoutils.DurationStdToProto(&hundredms),
+			Timeout:         hundredms,
 			RequestType:     "both",
 			RateLimitService: &rlconfig.RateLimitServiceConfig{
 				GrpcService: &envoycore.GrpcService{TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
@@ -114,7 +115,7 @@ var _ = Describe("RateLimit Plugin", func() {
 		}
 
 		cfg := getTypedConfig(filters[0].HttpFilter)
-		Expect(cfg).To(BeEquivalentTo(expectedConfig))
+		Expect(cfg).To(matchers.MatchProto(expectedConfig))
 	})
 
 	It("default timeout is 100ms", func() {
@@ -124,16 +125,16 @@ var _ = Describe("RateLimit Plugin", func() {
 		Expect(filters).To(HaveLen(1))
 		for _, f := range filters {
 			cfg := getTypedConfig(f.HttpFilter)
-			Expect(cfg.Timeout).To(Equal(gogoutils.DurationStdToProto(&timeout)))
+			Expect(cfg.Timeout).To(matchers.MatchProto(timeout))
 		}
 	})
 
 	Context("rate limit ordering", func() {
 		JustBeforeEach(func() {
-			timeout := time.Second
+			timeout := prototime.DurationToProto(time.Second)
 			params.Snapshot.Upstreams = []*gloov1.Upstream{
 				{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "extauth-upstream",
 						Namespace: "ns",
 					},
@@ -147,7 +148,7 @@ var _ = Describe("RateLimit Plugin", func() {
 						Name:      "extauth-upstream",
 						Namespace: "ns",
 					},
-					RequestTimeout: &timeout,
+					RequestTimeout: timeout,
 				},
 			}
 			err := rlPlugin.Init(initParams)
@@ -193,9 +194,10 @@ var _ = Describe("RateLimit Plugin", func() {
 
 	Context("timeout", func() {
 
+		var s = prototime.DurationToProto(time.Second)
+
 		BeforeEach(func() {
-			s := time.Second
-			rlSettings.RequestTimeout = &s
+			rlSettings.RequestTimeout = s
 		})
 
 		It("should custom timeout set", func() {
@@ -205,8 +207,7 @@ var _ = Describe("RateLimit Plugin", func() {
 			Expect(filters).To(HaveLen(1))
 			for _, f := range filters {
 				cfg := getTypedConfig(f.HttpFilter)
-				t := time.Second
-				Expect(cfg.Timeout).To(Equal(gogoutils.DurationStdToProto(&t)))
+				Expect(cfg.Timeout).To(matchers.MatchProto(s))
 			}
 		})
 	})

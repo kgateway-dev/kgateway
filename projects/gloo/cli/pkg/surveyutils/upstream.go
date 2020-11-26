@@ -24,7 +24,7 @@ func getAwsInteractive(ctx context.Context, aws *options.InputAwsSpec) error {
 
 	// collect secrets list
 	secretClient := helpers.MustSecretClient(ctx)
-	secretsByKey := make(map[string]core.ResourceRef)
+	secretsByKey := make(map[string]*core.ResourceRef)
 	var secretKeys []string
 	for _, ns := range helpers.MustGetNamespaces(ctx) {
 		secretList, err := secretClient.List(ns, clients.ListOpts{})
@@ -67,7 +67,7 @@ func getAzureInteractive(ctx context.Context, azure *options.InputAzureSpec) err
 
 	// collect secrets list
 	secretClient := helpers.MustSecretClient(ctx)
-	secretsByKey := make(map[string]core.ResourceRef)
+	secretsByKey := make(map[string]*core.ResourceRef)
 	var secretKeys []string
 	for _, ns := range helpers.MustGetNamespaces(ctx) {
 		secretList, err := secretClient.List(ns, clients.ListOpts{})

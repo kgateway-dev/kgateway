@@ -6,6 +6,7 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/golang/protobuf/ptypes"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/test/matchers"
 	. "github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -91,7 +92,7 @@ var _ = Describe("Ssl", func() {
 				Kind: &v1.Secret_Tls{
 					Tls: tlsSecret,
 				},
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "secret",
 					Namespace: "secret",
 				},
@@ -101,13 +102,13 @@ var _ = Describe("Ssl", func() {
 			upstreamCfg = &v1.UpstreamSslConfig{
 				Sni: "test.com",
 				SslSecrets: &v1.UpstreamSslConfig_SecretRef{
-					SecretRef: &ref,
+					SecretRef: ref,
 				},
 			}
 			downstreamCfg = &v1.SslConfig{
 				SniDomains: []string{"test.com", "test1.com"},
 				SslSecrets: &v1.SslConfig_SecretRef{
-					SecretRef: &ref,
+					SecretRef: ref,
 				},
 			}
 			configTranslator = NewSslConfigTranslator()
@@ -423,7 +424,7 @@ var _ = Describe("Ssl", func() {
 			var credConfig envoygrpccredential.FileBasedMetadataConfig
 			ptypes.UnmarshalAny(credPlugin.GetTypedConfig(), &credConfig)
 
-			Expect(credConfig).To(BeEquivalentTo(envoygrpccredential.FileBasedMetadataConfig{
+			Expect(&credConfig).To(matchers.MatchProto(&envoygrpccredential.FileBasedMetadataConfig{
 				SecretData: &envoycore.DataSource{
 					Specifier: &envoycore.DataSource_Filename{
 						Filename: "TokenFileName",

@@ -3,10 +3,10 @@ package add
 import (
 	"sort"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 
-	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	"github.com/solo-io/gloo/pkg/utils/selectionutils"
@@ -224,7 +224,7 @@ func routeActionFromInput(input options.InputRoute) (*gatewayv1.Route_RouteActio
 		}
 
 		a.RouteAction.Destination = &v1.RouteAction_UpstreamGroup{
-			UpstreamGroup: &input.UpstreamGroup,
+			UpstreamGroup: input.UpstreamGroup,
 		}
 		return a, nil
 	}
@@ -241,7 +241,7 @@ func routeActionFromInput(input options.InputRoute) (*gatewayv1.Route_RouteActio
 	a.RouteAction.Destination = &v1.RouteAction_Single{
 		Single: &v1.Destination{
 			DestinationType: &v1.Destination_Upstream{
-				Upstream: &dest.Upstream,
+				Upstream: dest.Upstream,
 			},
 			DestinationSpec: spec,
 		},
@@ -255,7 +255,7 @@ func pluginsFromInput(input options.RoutePlugins) (*v1.RouteOptions, error) {
 		return nil, nil
 	}
 	return &v1.RouteOptions{
-		PrefixRewrite: &types.StringValue{Value: *input.PrefixRewrite.Value},
+		PrefixRewrite: &wrappers.StringValue{Value: *input.PrefixRewrite.Value},
 	}, nil
 }
 

@@ -406,7 +406,7 @@ var _ = Describe("Validator", func() {
 					if !ok {
 						return
 					}
-					http.HttpGateway.VirtualServices = []core.ResourceRef{ref}
+					http.HttpGateway.VirtualServices = []*core.ResourceRef{ref}
 				})
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
@@ -486,7 +486,7 @@ var _ = Describe("Validator", func() {
 		})
 		Context("gw rejected", func() {
 			It("rejects the gw", func() {
-				badRef := core.ResourceRef{}
+				badRef := &core.ResourceRef{}
 
 				// validate proxy should never be called
 				vc.validateProxy = nil

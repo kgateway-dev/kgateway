@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	. "github.com/onsi/ginkgo"
@@ -53,11 +53,11 @@ var _ = Describe("Staged Transformation", func() {
 
 		// this upstream doesn't need to exist - in fact, we want ext auth to fail.
 		extauthn := &gloov1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "extauth-server",
 				Namespace: "default",
 			},
-			UseHttp2: &types.BoolValue{Value: true},
+			UseHttp2: &wrappers.BoolValue{Value: true},
 			UpstreamType: &gloov1.Upstream_Static{
 				Static: &gloov1static.UpstreamSpec{
 					Hosts: []*gloov1static.Host{{
@@ -75,7 +75,7 @@ var _ = Describe("Staged Transformation", func() {
 			NsToWatch: []string{"default", ns},
 			Settings: &gloov1.Settings{
 				Extauth: &extauthv1.Settings{
-					ExtauthzServerRef: &ref,
+					ExtauthzServerRef: ref,
 				},
 			},
 			WhatToRun: services.What{

@@ -58,7 +58,7 @@ func HeaderSecretArgsInteractive(input *options.HeaderSecret) error {
 	return nil
 }
 
-func createHeaderSecret(ctx context.Context, meta core.Metadata, input options.HeaderSecret, dryRun bool, outputType printers.OutputType) error {
+func createHeaderSecret(ctx context.Context, meta *core.Metadata, input options.HeaderSecret, dryRun bool, outputType printers.OutputType) error {
 	if input.Headers.Entries == nil {
 		return errors.Errorf("must provide headers")
 	}

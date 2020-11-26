@@ -3,7 +3,9 @@ package wasm
 import (
 	"fmt"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/any"
+	"github.com/solo-io/gloo/test/matchers"
 
 	"github.com/golang/mock/gomock"
 	"github.com/opencontainers/go-digest"
@@ -67,7 +69,7 @@ var _ = Describe("wasm plugin", func() {
 		image := "image"
 		wasmFilter := &wasm.WasmFilter{
 			Image: image,
-			Config: &types.Any{
+			Config: &any.Any{
 				TypeUrl: "type.googleapis.com/google.protobuf.StringValue",
 				Value:   []byte("test-config"),
 			},
@@ -88,12 +90,11 @@ var _ = Describe("wasm plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(f).To(HaveLen(1))
 		goTypedConfig := f[0].HttpFilter.GetTypedConfig()
-		gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
 		var pc wasmv3.Wasm
-		Expect(types.UnmarshalAny(gogoTypedConfig, &pc)).NotTo(HaveOccurred())
+		Expect(ptypes.UnmarshalAny(goTypedConfig, &pc)).NotTo(HaveOccurred())
 		Expect(pc.Config.RootId).To(Equal(wasmFilter.RootId))
 		Expect(pc.Config.Name).To(Equal(wasmFilter.Name))
-		Expect(pc.Config.Configuration).To(Equal(wasmFilter.Config))
+		Expect(pc.Config.Configuration).To(matchers.MatchProto(wasmFilter.Config))
 		Expect(pc.Config.GetVmConfig().VmId).To(Equal(VmId))
 		Expect(pc.Config.GetVmConfig().Runtime).To(Equal(V8Runtime))
 		remote := pc.Config.GetVmConfig().Code.GetRemote()

@@ -227,7 +227,7 @@ func getRestDestinationSpecInteractive(spec *options.RestDestinationSpec, restSp
 
 func AddRouteFlagsInteractive(opts *options.Options) error {
 	// collect vs list
-	vsByKey := make(map[string]core.ResourceRef)
+	vsByKey := make(map[string]*core.ResourceRef)
 	vsKeys := []string{"create a new virtualservice"}
 	var namespaces []string
 	for _, ns := range helpers.MustGetNamespaces(opts.Top.Ctx) {

@@ -12,7 +12,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
-	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	corev1 "k8s.io/api/core/v1"
@@ -101,7 +100,7 @@ var _ = Describe("Gateway", func() {
 			}
 
 			// write a virtual service so we have a proxy
-			vs := getTrivialVirtualServiceForUpstream("gloo-system", core.ResourceRef{Name: "test", Namespace: "test"})
+			vs := getTrivialVirtualServiceForUpstream("gloo-system", &core.ResourceRef{Name: "test", Namespace: "test"})
 			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -525,7 +524,7 @@ var _ = Describe("Gateway", func() {
 				It("should work with ssl", func() {
 
 					secret := &gloov1.Secret{
-						Metadata: core.Metadata{
+						Metadata: &core.Metadata{
 							Name:      "secret",
 							Namespace: "default",
 						},
@@ -561,15 +560,15 @@ var _ = Describe("Gateway", func() {
 	})
 })
 
-func getTrivialVirtualServiceForUpstream(ns string, upstream core.ResourceRef) *gatewayv1.VirtualService {
+func getTrivialVirtualServiceForUpstream(ns string, upstream *core.ResourceRef) *gatewayv1.VirtualService {
 	vs := getTrivialVirtualService(ns)
 	vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_Upstream{
-		Upstream: utils.ResourceRefPtr(upstream),
+		Upstream: upstream,
 	}
 	return vs
 }
 
-func getTrivialVirtualServiceForService(ns string, service core.ResourceRef, port uint32) *gatewayv1.VirtualService {
+func getTrivialVirtualServiceForService(ns string, service *core.ResourceRef, port uint32) *gatewayv1.VirtualService {
 	vs := getTrivialVirtualService(ns)
 	vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_Kube{
 		Kube: &gloov1.KubernetesServiceDestination{
@@ -582,7 +581,7 @@ func getTrivialVirtualServiceForService(ns string, service core.ResourceRef, por
 
 func getTrivialVirtualService(ns string) *gatewayv1.VirtualService {
 	return &gatewayv1.VirtualService{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "vs",
 			Namespace: ns,
 		},

@@ -38,7 +38,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		reports      reporter.ResourceReports
 		proxyToWrite GeneratedProxies
 		ns           = "namespace"
-		us           = core.ResourceRef{"upstream-name", ns}
+		us           = &core.ResourceRef{Name: "upstream-name", Namespace: ns}
 
 		proxyClient, _ = gloov1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),

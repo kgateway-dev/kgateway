@@ -32,7 +32,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		syncer = &curSyncer
 	})
 
-	getMapOnlyKey := func(r map[core.ResourceRef]reporter.Report) core.ResourceRef {
+	getMapOnlyKey := func(r map[*core.ResourceRef]reporter.Report) *core.ResourceRef {
 		Expect(r).To(HaveLen(1))
 		for k := range r {
 			return k
@@ -42,8 +42,8 @@ var _ = Describe("TranslatorSyncer", func() {
 
 	It("should set status correctly", func() {
 		acceptedProxy := &gloov1.Proxy{
-			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
-			Status:   core.Status{State: core.Status_Accepted},
+			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Status:   &core.Status{State: core.Status_Accepted},
 		}
 		vs := &gatewayv1.VirtualService{}
 		errs := reporter.ResourceReports{}
@@ -69,15 +69,15 @@ var _ = Describe("TranslatorSyncer", func() {
 
 	It("should set status correctly when proxy is pending first", func() {
 		desiredProxy := &gloov1.Proxy{
-			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
 		}
 		pendingProxy := &gloov1.Proxy{
-			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
-			Status:   core.Status{State: core.Status_Pending},
+			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Status:   &core.Status{State: core.Status_Pending},
 		}
 		acceptedProxy := &gloov1.Proxy{
-			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
-			Status:   core.Status{State: core.Status_Accepted},
+			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Status:   &core.Status{State: core.Status_Accepted},
 		}
 		vs := &gatewayv1.VirtualService{}
 		errs := reporter.ResourceReports{}
@@ -108,11 +108,11 @@ var _ = Describe("TranslatorSyncer", func() {
 
 	It("should retry setting the status if it first fails", func() {
 		desiredProxy := &gloov1.Proxy{
-			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
 		}
 		acceptedProxy := &gloov1.Proxy{
-			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
-			Status:   core.Status{State: core.Status_Accepted},
+			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Status:   &core.Status{State: core.Status_Accepted},
 		}
 		mockReporter.Err = fmt.Errorf("error")
 		vs := &gatewayv1.VirtualService{}
@@ -143,12 +143,12 @@ var _ = Describe("TranslatorSyncer", func() {
 
 	It("should set status correctly when one proxy errors", func() {
 		acceptedProxy := &gloov1.Proxy{
-			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
-			Status:   core.Status{State: core.Status_Accepted},
+			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Status:   &core.Status{State: core.Status_Accepted},
 		}
 		rejectedProxy := &gloov1.Proxy{
-			Metadata: core.Metadata{Name: "test2", Namespace: "gloo-system"},
-			Status:   core.Status{State: core.Status_Rejected},
+			Metadata: &core.Metadata{Name: "test2", Namespace: "gloo-system"},
+			Status:   &core.Status{State: core.Status_Rejected},
 		}
 		vs := &gatewayv1.VirtualService{}
 		errs := reporter.ResourceReports{}
@@ -178,12 +178,12 @@ var _ = Describe("TranslatorSyncer", func() {
 
 	It("should set status correctly when one proxy errors but is irrelevant", func() {
 		acceptedProxy := &gloov1.Proxy{
-			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
-			Status:   core.Status{State: core.Status_Accepted},
+			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Status:   &core.Status{State: core.Status_Accepted},
 		}
 		rejectedProxy := &gloov1.Proxy{
-			Metadata: core.Metadata{Name: "test2", Namespace: "gloo-system"},
-			Status:   core.Status{State: core.Status_Rejected},
+			Metadata: &core.Metadata{Name: "test2", Namespace: "gloo-system"},
+			Status:   &core.Status{State: core.Status_Rejected},
 		}
 		vs := &gatewayv1.VirtualService{}
 		errs := reporter.ResourceReports{}
@@ -212,12 +212,12 @@ var _ = Describe("TranslatorSyncer", func() {
 
 	It("should set status correctly when one proxy errors", func() {
 		rejectedProxy1 := &gloov1.Proxy{
-			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
-			Status:   core.Status{State: core.Status_Rejected},
+			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Status:   &core.Status{State: core.Status_Rejected},
 		}
 		rejectedProxy2 := &gloov1.Proxy{
-			Metadata: core.Metadata{Name: "test2", Namespace: "gloo-system"},
-			Status:   core.Status{State: core.Status_Rejected},
+			Metadata: &core.Metadata{Name: "test2", Namespace: "gloo-system"},
+			Status:   &core.Status{State: core.Status_Rejected},
 		}
 		vs := &gatewayv1.VirtualService{}
 		errsProxy1 := reporter.ResourceReports{}
@@ -285,7 +285,7 @@ var _ = Describe("TranslatorSyncer", func() {
 				},
 			}
 			proxy = &gloov1.Proxy{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name: "proxy",
 				},
 			}
@@ -327,18 +327,18 @@ func (f *fakeWatcher) Watch(namespace string, opts clients.WatchOpts) (<-chan gl
 }
 
 type fakeReporter struct {
-	reports  map[core.ResourceRef]reporter.Report
-	statuses map[core.ResourceRef]map[string]*core.Status
+	reports  map[*core.ResourceRef]reporter.Report
+	statuses map[*core.ResourceRef]map[string]*core.Status
 	lock     sync.Mutex
 	Err      error
 }
 
-func (f *fakeReporter) Reports() map[core.ResourceRef]reporter.Report {
+func (f *fakeReporter) Reports() map[*core.ResourceRef]reporter.Report {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	return f.reports
 }
-func (f *fakeReporter) Statuses() map[core.ResourceRef]map[string]*core.Status {
+func (f *fakeReporter) Statuses() map[*core.ResourceRef]map[string]*core.Status {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	return f.statuses
@@ -348,7 +348,7 @@ func (f *fakeReporter) WriteReports(ctx context.Context, errs reporter.ResourceR
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	fmt.Fprintf(GinkgoWriter, "WriteReports: %#v %#v", errs, subresourceStatuses)
-	newreports := map[core.ResourceRef]reporter.Report{}
+	newreports := map[*core.ResourceRef]reporter.Report{}
 	for k, v := range f.reports {
 		newreports[k] = v
 	}
@@ -357,7 +357,7 @@ func (f *fakeReporter) WriteReports(ctx context.Context, errs reporter.ResourceR
 	}
 	f.reports = newreports
 
-	newstatus := map[core.ResourceRef]map[string]*core.Status{}
+	newstatus := map[*core.ResourceRef]map[string]*core.Status{}
 	for k, v := range f.statuses {
 		newstatus[k] = v
 	}
@@ -371,6 +371,6 @@ func (f *fakeReporter) WriteReports(ctx context.Context, errs reporter.ResourceR
 	return err
 }
 
-func (f *fakeReporter) StatusFromReport(report reporter.Report, subresourceStatuses map[string]*core.Status) core.Status {
-	return core.Status{}
+func (f *fakeReporter) StatusFromReport(report reporter.Report, subresourceStatuses map[string]*core.Status) *core.Status {
+	return &core.Status{}
 }

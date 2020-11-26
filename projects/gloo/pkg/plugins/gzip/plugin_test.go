@@ -5,7 +5,6 @@ import (
 	envoygzip "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/gzip/v3"
 	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -21,12 +20,12 @@ var _ = Describe("Plugin", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Gzip: &v2.Gzip{
-					MemoryLevel: &types.UInt32Value{
+					MemoryLevel: &wrappers.UInt32Value{
 						Value: 10,
 					},
 					CompressionLevel:    v2.Gzip_CompressionLevel_SPEED,
 					CompressionStrategy: v2.Gzip_HUFFMAN,
-					WindowBits: &types.UInt32Value{
+					WindowBits: &wrappers.UInt32Value{
 						Value: 10,
 					},
 				},
@@ -84,7 +83,7 @@ var _ = Describe("Plugin", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Gzip: &v2.Gzip{
-					ContentLength: &types.UInt32Value{
+					ContentLength: &wrappers.UInt32Value{
 						Value: 10,
 					},
 					ContentType:                []string{"type1", "type2"},

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -19,7 +20,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
 	"k8s.io/client-go/kubernetes"
@@ -148,7 +148,7 @@ func UpdateAlwaysAcceptSetting(ctx context.Context, alwaysAccept bool, installNa
 	UpdateSettings(func(settings *v1.Settings) {
 		Expect(settings.Gateway).NotTo(BeNil())
 		Expect(settings.Gateway.Validation).NotTo(BeNil())
-		settings.Gateway.Validation.AlwaysAccept = &types.BoolValue{Value: alwaysAccept}
+		settings.Gateway.Validation.AlwaysAccept = &wrappers.BoolValue{Value: alwaysAccept}
 	}, ctx, installNamespace)
 }
 

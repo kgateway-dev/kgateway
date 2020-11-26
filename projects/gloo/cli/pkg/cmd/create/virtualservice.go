@@ -65,7 +65,7 @@ func VSCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 	}
 
 	pflags := cmd.PersistentFlags()
-	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
+	flagutils.AddMetadataFlags(pflags, opts.Metadata)
 	flagutils.AddVirtualServiceFlags(pflags, &opts.Create.VirtualService)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 
@@ -91,7 +91,7 @@ func createVirtualService(opts *options.Options, args []string) error {
 	return nil
 }
 
-func virtualServiceFromOpts(meta core.Metadata, input options.InputVirtualService) (*v1.VirtualService, error) {
+func virtualServiceFromOpts(meta *core.Metadata, input options.InputVirtualService) (*v1.VirtualService, error) {
 	if len(input.Domains) == 0 {
 		input.Domains = defaultDomains
 	}

@@ -25,7 +25,11 @@ func (p *protoMatcherImpl) Match(actual interface{}) (success bool, err error) {
 }
 
 func (p *protoMatcherImpl) FailureMessage(actual interface{}) (message string) {
-	return format.Message(actual, "To be identical to", p.msg)
+	msg, ok := actual.(proto.Message)
+	if !ok {
+		format.Message(actual, "To be identical to", p.msg.String())
+	}
+	return format.Message(msg.String(), "To be identical to", p.msg.String())
 }
 
 func (p *protoMatcherImpl) NegatedFailureMessage(actual interface{}) (message string) {

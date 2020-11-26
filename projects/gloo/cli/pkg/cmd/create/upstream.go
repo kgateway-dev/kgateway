@@ -191,7 +191,7 @@ func upstreamFromOpts(opts *options.Options) (*v1.Upstream, error) {
 		upstream.UpstreamType = &v1.Upstream_Aws{
 			Aws: &aws.UpstreamSpec{
 				Region:    input.Aws.Region,
-				SecretRef: &input.Aws.Secret,
+				SecretRef: input.Aws.Secret,
 			},
 		}
 	case options.UpstreamType_AwsEc2:
@@ -213,7 +213,7 @@ func upstreamFromOpts(opts *options.Options) (*v1.Upstream, error) {
 			if input.AwsEc2.Secret.Name == "" {
 				return nil, errors.Errorf("aws secret name must not be empty")
 			}
-			ec2Spec.SecretRef = &input.AwsEc2.Secret
+			ec2Spec.SecretRef = input.AwsEc2.Secret
 		}
 		var filters []*ec2.TagFilter
 		for _, key := range input.AwsEc2.KeyFilters {

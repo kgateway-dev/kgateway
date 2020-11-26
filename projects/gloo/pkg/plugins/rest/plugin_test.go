@@ -5,10 +5,10 @@ import (
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	pluginsv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
@@ -55,7 +55,7 @@ var _ = Describe("Plugin", func() {
 			}},
 		}
 		upstream = &v1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "test",
 				Namespace: "default",
 			},
@@ -85,7 +85,7 @@ var _ = Describe("Plugin", func() {
 
 		BeforeEach(func() {
 			ps = &transformapi.Parameters{
-				Path: &types.StringValue{Value: "/{what}/{ ever }/{nested.field}/too"},
+				Path: &wrappers.StringValue{Value: "/{what}/{ ever }/{nested.field}/too"},
 			}
 			routeIn = &v1.Route{
 				Action: &v1.Route_RouteAction{
@@ -101,7 +101,7 @@ var _ = Describe("Plugin", func() {
 									},
 								},
 								DestinationType: &v1.Destination_Upstream{
-									Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+									Upstream: upstream.Metadata.Ref(),
 								},
 							},
 						},
@@ -129,8 +129,7 @@ var _ = Describe("Plugin", func() {
 
 			var cfg envoy_transform.RouteTransformations
 			goTypedConfig := routeOut.GetTypedPerFilterConfig()[transformation.FilterName]
-			gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
-			err = types.UnmarshalAny(gogoTypedConfig, &cfg)
+			err = ptypes.UnmarshalAny(goTypedConfig, &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			extrs := cfg.GetRequestTransformation().GetTransformationTemplate().GetExtractors()
@@ -154,8 +153,7 @@ var _ = Describe("Plugin", func() {
 
 			var cfg envoy_transform.RouteTransformations
 			goTypedConfig := routeOut.GetTypedPerFilterConfig()[transformation.FilterName]
-			gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
-			err = types.UnmarshalAny(gogoTypedConfig, &cfg)
+			err = ptypes.UnmarshalAny(goTypedConfig, &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			extrs := cfg.GetRequestTransformation().GetTransformationTemplate().GetExtractors()

@@ -44,7 +44,7 @@ func RootCmdWithEditOpts(opts *options.Options, editOpts *editOptions.EditOption
 		},
 	}
 	flagutils.AddOutputFlag(cmd.PersistentFlags(), &editOpts.Top.Output)
-	flagutils.AddMetadataFlags(cmd.PersistentFlags(), &editOpts.Metadata)
+	flagutils.AddMetadataFlags(cmd.PersistentFlags(), editOpts.Metadata)
 
 	// add resource version flag. this is not needed in interactive mode, as we can do an edit
 	// atomically in that case

@@ -20,7 +20,7 @@ var _ = Describe("Session", func() {
 
 	BeforeEach(func() {
 		secrets = v1.SecretList{{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "name",
 				Namespace: "namespace",
 			},

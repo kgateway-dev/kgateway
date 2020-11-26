@@ -59,7 +59,7 @@ func AzureSecretArgsInteractive(input *options.AzureSecret) error {
 	return nil
 }
 
-func createAzureSecret(ctx context.Context, meta core.Metadata, input options.AzureSecret, dryRun bool, outputType printers.OutputType) error {
+func createAzureSecret(ctx context.Context, meta *core.Metadata, input options.AzureSecret, dryRun bool, outputType printers.OutputType) error {
 	if input.ApiKeys.Entries == nil {
 		return errors.Errorf("must provide azure api keys")
 	}

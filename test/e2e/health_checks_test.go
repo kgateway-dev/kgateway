@@ -150,10 +150,10 @@ var _ = Describe("Health Checks", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// update the health check configuration
-				envoyHealthCheckTest.Check.Timeout = gogoutils.DurationStdToProto(&translator.DefaultHealthCheckTimeout)
-				envoyHealthCheckTest.Check.Interval = gogoutils.DurationStdToProto(&translator.DefaultHealthCheckInterval)
-				envoyHealthCheckTest.Check.HealthyThreshold = gogoutils.UInt32GogoToProto(translator.DefaultThreshold)
-				envoyHealthCheckTest.Check.UnhealthyThreshold = gogoutils.UInt32GogoToProto(translator.DefaultThreshold)
+				envoyHealthCheckTest.Check.Timeout = translator.DefaultHealthCheckTimeout
+				envoyHealthCheckTest.Check.Interval = translator.DefaultHealthCheckInterval
+				envoyHealthCheckTest.Check.HealthyThreshold = translator.DefaultThreshold
+				envoyHealthCheckTest.Check.UnhealthyThreshold = translator.DefaultThreshold
 
 				// persist the health check configuration
 				us.HealthChecks, err = gogoutils.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{envoyHealthCheckTest.Check})
@@ -222,10 +222,10 @@ var _ = Describe("Health Checks", func() {
 
 			us.HealthChecks, err = gogoutils.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{
 				{
-					Timeout:            gogoutils.DurationStdToProto(&translator.DefaultHealthCheckTimeout),
-					Interval:           gogoutils.DurationStdToProto(&translator.DefaultHealthCheckInterval),
-					UnhealthyThreshold: gogoutils.UInt32GogoToProto(translator.DefaultThreshold),
-					HealthyThreshold:   gogoutils.UInt32GogoToProto(translator.DefaultThreshold),
+					Timeout:            translator.DefaultHealthCheckTimeout,
+					Interval:           translator.DefaultHealthCheckInterval,
+					UnhealthyThreshold: translator.DefaultThreshold,
+					HealthyThreshold:   translator.DefaultThreshold,
 					HealthChecker: &envoy_config_core_v3.HealthCheck_GrpcHealthCheck_{
 						GrpcHealthCheck: &envoy_config_core_v3.HealthCheck_GrpcHealthCheck{
 							ServiceName: "TestService",

@@ -5,24 +5,23 @@ import (
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
 	envoy_config_tracing_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	mock_hcm "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm/mocks"
-
-	"github.com/solo-io/gloo/pkg/utils"
+	. "github.com/solo-io/gloo/test/matchers"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	tracingv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
@@ -42,25 +41,24 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("copy all settings to hcm filter", func() {
-		pd := func(t time.Duration) *time.Duration { return &t }
 		collectorUs := v1.NewUpstream("default", "valid")
 		snapshot := &v1.ApiSnapshot{
 			Upstreams: v1.UpstreamList{collectorUs},
 		}
 
 		hcms := &hcm.HttpConnectionManagerSettings{
-			UseRemoteAddress:    &types.BoolValue{Value: false},
+			UseRemoteAddress:    &wrappers.BoolValue{Value: false},
 			XffNumTrustedHops:   5,
 			SkipXffAppend:       true,
 			Via:                 "Via",
-			GenerateRequestId:   &types.BoolValue{Value: false},
+			GenerateRequestId:   &wrappers.BoolValue{Value: false},
 			Proxy_100Continue:   true,
-			StreamIdleTimeout:   pd(time.Hour),
-			IdleTimeout:         pd(time.Hour),
-			MaxRequestHeadersKb: &types.UInt32Value{Value: 5},
-			RequestTimeout:      pd(time.Hour),
-			DrainTimeout:        pd(time.Hour),
-			DelayedCloseTimeout: pd(time.Hour),
+			StreamIdleTimeout:   prototime.DurationToProto(time.Hour),
+			IdleTimeout:         prototime.DurationToProto(time.Hour),
+			MaxRequestHeadersKb: &wrappers.UInt32Value{Value: 5},
+			RequestTimeout:      prototime.DurationToProto(time.Hour),
+			DrainTimeout:        prototime.DurationToProto(time.Hour),
+			DelayedCloseTimeout: prototime.DurationToProto(time.Hour),
 			ServerName:          "ServerName",
 
 			AcceptHttp_10:             true,
@@ -72,7 +70,7 @@ var _ = Describe("Plugin", func() {
 				Verbose:               true,
 				ProviderConfig: &tracingv1.ListenerTracingSettings_ZipkinConfig{
 					ZipkinConfig: &envoy_config_tracing_v3.ZipkinConfig{
-						CollectorUpstreamRef:     utils.ResourceRefPtr(collectorUs.Metadata.Ref()),
+						CollectorUpstreamRef:     collectorUs.Metadata.Ref(),
 						CollectorEndpointVersion: envoy_config_tracing_v3.ZipkinConfig_HTTP_JSON,
 						CollectorEndpoint:        "/api/v2/spans",
 						SharedSpanContext:        nil,
@@ -83,7 +81,7 @@ var _ = Describe("Plugin", func() {
 
 			ForwardClientCertDetails: hcm.HttpConnectionManagerSettings_APPEND_FORWARD,
 			SetCurrentClientCertDetails: &hcm.HttpConnectionManagerSettings_SetCurrentClientCertDetails{
-				Subject: &types.BoolValue{Value: true},
+				Subject: &wrappers.BoolValue{Value: true},
 				Cert:    true,
 				Chain:   true,
 				Dns:     true,
@@ -95,13 +93,13 @@ var _ = Describe("Plugin", func() {
 				{
 					UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
 						Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
-							Enabled: &types.BoolValue{Value: true},
+							Enabled: &wrappers.BoolValue{Value: true},
 						},
 					},
 				},
 			},
-			MaxConnectionDuration:      pd(time.Hour),
-			MaxStreamDuration:          pd(time.Hour),
+			MaxConnectionDuration:      prototime.DurationToProto(time.Hour),
+			MaxStreamDuration:          prototime.DurationToProto(time.Hour),
 			ServerHeaderTransformation: hcm.HttpConnectionManagerSettings_OVERWRITE,
 		}
 		hl := &v1.HttpListener{
@@ -137,17 +135,17 @@ var _ = Describe("Plugin", func() {
 		err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(cfg.UseRemoteAddress).To(Equal(gogoutils.BoolGogoToProto(hcms.UseRemoteAddress)))
+		Expect(cfg.UseRemoteAddress).To(Equal(hcms.UseRemoteAddress))
 		Expect(cfg.XffNumTrustedHops).To(Equal(hcms.XffNumTrustedHops))
 		Expect(cfg.SkipXffAppend).To(Equal(hcms.SkipXffAppend))
 		Expect(cfg.Via).To(Equal(hcms.Via))
-		Expect(cfg.GenerateRequestId).To(Equal(gogoutils.BoolGogoToProto(hcms.GenerateRequestId)))
+		Expect(cfg.GenerateRequestId).To(Equal(hcms.GenerateRequestId))
 		Expect(cfg.Proxy_100Continue).To(Equal(hcms.Proxy_100Continue))
-		Expect(cfg.StreamIdleTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.StreamIdleTimeout)))
-		Expect(cfg.MaxRequestHeadersKb).To(Equal(gogoutils.UInt32GogoToProto(hcms.MaxRequestHeadersKb)))
-		Expect(cfg.RequestTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.RequestTimeout)))
-		Expect(cfg.DrainTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.DrainTimeout)))
-		Expect(cfg.DelayedCloseTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.DelayedCloseTimeout)))
+		Expect(cfg.StreamIdleTimeout).To(MatchProto(hcms.StreamIdleTimeout))
+		Expect(cfg.MaxRequestHeadersKb).To(MatchProto(hcms.MaxRequestHeadersKb))
+		Expect(cfg.RequestTimeout).To(MatchProto(hcms.RequestTimeout))
+		Expect(cfg.DrainTimeout).To(MatchProto(hcms	.DrainTimeout))
+		Expect(cfg.DelayedCloseTimeout).To(MatchProto(hcms.DelayedCloseTimeout))
 		Expect(cfg.ServerName).To(Equal(hcms.ServerName))
 		Expect(cfg.HttpProtocolOptions.AcceptHttp_10).To(Equal(hcms.AcceptHttp_10))
 		if hcms.ProperCaseHeaderKeyFormat {
@@ -161,9 +159,9 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.PreserveExternalRequestId).To(Equal(hcms.PreserveExternalRequestId))
 
 		Expect(cfg.CommonHttpProtocolOptions).NotTo(BeNil())
-		Expect(cfg.CommonHttpProtocolOptions.IdleTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.IdleTimeout)))
-		Expect(cfg.CommonHttpProtocolOptions.GetMaxConnectionDuration()).To(Equal(gogoutils.DurationStdToProto(hcms.MaxConnectionDuration)))
-		Expect(cfg.CommonHttpProtocolOptions.GetMaxStreamDuration()).To(Equal(gogoutils.DurationStdToProto(hcms.MaxStreamDuration)))
+		Expect(cfg.CommonHttpProtocolOptions.IdleTimeout).To(MatchProto(hcms.IdleTimeout))
+		Expect(cfg.CommonHttpProtocolOptions.GetMaxConnectionDuration()).To(MatchProto(hcms.MaxConnectionDuration))
+		Expect(cfg.CommonHttpProtocolOptions.GetMaxStreamDuration()).To(MatchProto(hcms.MaxStreamDuration))
 		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_OVERWRITE))
 
 		// Confirm that MockTracingPlugin return the proper value
@@ -294,14 +292,14 @@ var _ = Describe("Plugin", func() {
 				{
 					UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
 						Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
-							Enabled: &types.BoolValue{Value: true},
+							Enabled: &wrappers.BoolValue{Value: true},
 						},
 					},
 				},
 				{
 					UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
 						Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
-							Enabled: &types.BoolValue{Value: true},
+							Enabled: &wrappers.BoolValue{Value: true},
 						},
 					},
 				},

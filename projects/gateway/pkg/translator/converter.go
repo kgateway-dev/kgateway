@@ -191,7 +191,7 @@ func (rv *routeVisitor) visit(
 			}
 
 			// Determine the route tables to delegate to
-			routeTables, err := rv.routeTableSelector.SelectRouteTables(action.DelegateAction, resource.InputResource().GetMetadata().Namespace)
+			routeTables, err := rv.routeTableSelector.SelectRouteTables(action.DelegateAction, resource.InputResource().GetMetadata().GetNamespace())
 			if err != nil {
 				reporterHelper.addWarning(resource.InputResource(), err)
 				continue
@@ -315,7 +315,7 @@ func routeName(resource resources.InputResource, route *gatewayv1.Route, parentR
 	default:
 		// Should never happen
 	}
-	resourceName := resource.GetMetadata().Name
+	resourceName := resource.GetMetadata().GetName()
 
 	var isRouteNamed bool
 	routeDisplayName := route.Name
@@ -333,8 +333,8 @@ func routeName(resource resources.InputResource, route *gatewayv1.Route, parentR
 
 func convertSimpleAction(simpleRoute *gatewayv1.Route) (*gloov1.Route, error) {
 	matchers := []*matchersv1.Matcher{defaults.DefaultMatcher()}
-	if len(simpleRoute.Matchers) > 0 {
-		matchers = simpleRoute.Matchers
+	if len(simpleRoute.GetMatchers()) > 0 {
+		matchers = simpleRoute.GetMatchers()
 	}
 
 	glooRoute := &gloov1.Route{

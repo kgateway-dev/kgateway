@@ -21,7 +21,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
@@ -542,7 +541,7 @@ var _ = Describe("Consul EDS", func() {
 			for _, svc := range svcs {
 				trackedServiceToUpstreams[svc.ServiceName] = []*v1.Upstream{
 					{
-						Metadata: core.Metadata{
+						Metadata: &core.Metadata{
 							Name:      "n",
 							Namespace: "n",
 						},
@@ -553,7 +552,7 @@ var _ = Describe("Consul EDS", func() {
 							},
 						},
 					}, {
-						Metadata: core.Metadata{
+						Metadata: &core.Metadata{
 							Name:      "n1",
 							Namespace: "n",
 						},
@@ -564,7 +563,7 @@ var _ = Describe("Consul EDS", func() {
 							},
 						},
 					}, {
-						Metadata: core.Metadata{
+						Metadata: &core.Metadata{
 							Name:      "n2",
 							Namespace: "n",
 						},
@@ -635,7 +634,7 @@ var _ = Describe("Consul EDS", func() {
 			Expect(err).To(BeNil())
 			Expect(endpoints).To(HaveLen(1))
 			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Namespace: writeNamespace,
 					Name:      "127-0-0-1-my-svc-my-svc-0-1234",
 					Labels: map[string]string{
@@ -647,7 +646,7 @@ var _ = Describe("Consul EDS", func() {
 					},
 					ResourceVersion: "9876",
 				},
-				Upstreams: []*core.ResourceRef{utils.ResourceRefPtr(upstream.Metadata.Ref())},
+				Upstreams: []*core.ResourceRef{upstream.Metadata.Ref()},
 				Address:   "127.0.0.1",
 				Port:      1234,
 			}))
@@ -675,7 +674,7 @@ var _ = Describe("Consul EDS", func() {
 			Expect(err).To(BeNil())
 			Expect(endpoints).To(HaveLen(1))
 			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Namespace: writeNamespace,
 					Name:      "127-0-0-1-my-svc-my-svc-0-1234",
 					Labels: map[string]string{
@@ -686,7 +685,7 @@ var _ = Describe("Consul EDS", func() {
 					},
 					ResourceVersion: "9876",
 				},
-				Upstreams:   []*core.ResourceRef{utils.ResourceRefPtr(upstream.Metadata.Ref())},
+				Upstreams:   []*core.ResourceRef{upstream.Metadata.Ref()},
 				Address:     "127.0.0.1",
 				Port:        1234,
 				Hostname:    "hostname.foo.com",
@@ -702,7 +701,7 @@ func createTestUpstream(usptreamName, svcName string, tags, dataCenters []string
 }
 func createTestFilteredUpstream(usptreamName, svcName string, tags, instancetags, dataCenters []string) *v1.Upstream {
 	return &v1.Upstream{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "consul-svc:" + usptreamName,
 			Namespace: "",
 		},
@@ -736,7 +735,7 @@ func createExpectedEndpoint(name, usname, hostname, ipAddress, version, ns strin
 	}
 
 	ep := &v1.Endpoint{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Namespace:       ns,
 			Name:            name,
 			Labels:          labels,

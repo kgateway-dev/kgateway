@@ -210,7 +210,7 @@ var _ = Describe("Consul e2e", func() {
 
 func getProxyWithConsulRoute(ns string, bindPort uint32) *gloov1.Proxy {
 	return &gloov1.Proxy{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      gatewaydefaults.GatewayProxyName,
 			Namespace: ns,
 		},

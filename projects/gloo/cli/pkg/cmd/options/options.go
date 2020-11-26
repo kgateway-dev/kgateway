@@ -15,7 +15,7 @@ import (
 )
 
 type Options struct {
-	Metadata  core.Metadata
+	Metadata  *core.Metadata
 	Top       Top
 	Install   Install
 	Uninstall Uninstall
@@ -167,14 +167,14 @@ type InputRoute struct {
 	Destination Destination
 	// TODO: multi destination
 	// Destinations []Destination
-	UpstreamGroup         core.ResourceRef
+	UpstreamGroup         *core.ResourceRef
 	Plugins               RoutePlugins
 	AddToRouteTable       bool // add the route to a route table rather than a virtual service
 	ClusterScopedVsClient bool
 }
 
 type Destination struct {
-	Upstream        core.ResourceRef
+	Upstream        *core.ResourceRef
 	Delegate        Delegate
 	DestinationSpec DestinationSpec
 }
@@ -289,12 +289,12 @@ type InputUpstream struct {
 
 type InputAwsSpec struct {
 	Region string
-	Secret core.ResourceRef
+	Secret *core.ResourceRef
 }
 
 type InputAwsEc2Spec struct {
 	Region          string
-	Secret          core.ResourceRef
+	Secret          *core.ResourceRef
 	Role            string
 	PublicIp        bool
 	Port            uint32
@@ -304,7 +304,7 @@ type InputAwsEc2Spec struct {
 
 type InputAzureSpec struct {
 	FunctionAppName string
-	Secret          core.ResourceRef
+	Secret          *core.ResourceRef
 }
 
 type InputConsulSpec struct {

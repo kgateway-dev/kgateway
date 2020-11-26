@@ -3,8 +3,9 @@ package aws_test
 import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/gogo/protobuf/types"
 	gogoproto "github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/duration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
@@ -43,7 +44,7 @@ var _ = Describe("Plugin", func() {
 		clusterName := upstreamName
 		funcName := "foo"
 		upstream = &v1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      upstreamName,
 				Namespace: "ns",
 			},
@@ -145,7 +146,7 @@ var _ = Describe("Plugin", func() {
 		It("should error non aws secret", func() {
 			params.Snapshot.Secrets[0].Kind = &v1.Secret_Tls{}
 			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
-			Expect(err).To(MatchError("secret {secretref ns} is not an AWS secret"))
+			Expect(err).To(MatchError("secret name:\"secretref\" namespace:\"ns\"  is not an AWS secret"))
 		})
 
 		It("should error upstream with no secret ref", func() {
@@ -280,8 +281,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters).To(HaveLen(1))
 			goTypedConfig := filters[0].HttpFilter.GetTypedConfig()
-			gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
-			err = types.UnmarshalAny(gogoTypedConfig, cfg)
+			err = ptypes.UnmarshalAny(goTypedConfig, cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 		}
@@ -367,8 +367,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters).To(HaveLen(1))
 			goTypedConfig := filters[0].HttpFilter.GetTypedConfig()
-			gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
-			err = types.UnmarshalAny(gogoTypedConfig, cfg)
+			err = ptypes.UnmarshalAny(goTypedConfig, cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 		}

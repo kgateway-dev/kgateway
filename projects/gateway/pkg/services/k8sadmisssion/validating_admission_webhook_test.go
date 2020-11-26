@@ -57,7 +57,7 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		},
 	}
 
-	routeTable := &v1.RouteTable{Metadata: core.Metadata{Namespace: "namespace", Name: "rt"}}
+	routeTable := &v1.RouteTable{Metadata: &core.Metadata{Namespace: "namespace", Name: "rt"}}
 
 	errMsg := "didn't say the magic word"
 
@@ -360,7 +360,7 @@ func (v *mockValidator) ValidateDeleteRouteTable(ctx context.Context, rt core.Re
 func proxyReports() validation.ProxyReports {
 	return validation.ProxyReports{
 		{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "listener-::-8080",
 				Namespace: "gloo-system",
 			},

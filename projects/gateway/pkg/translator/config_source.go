@@ -7,9 +7,9 @@ import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/go-utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 )
 
 type SourceMetadata struct {
@@ -95,6 +95,6 @@ func makeSourceRef(source resources.InputResource) SourceRef {
 	return SourceRef{
 		ResourceRef:        source.GetMetadata().Ref(),
 		ResourceKind:       resources.Kind(source),
-		ObservedGeneration: source.GetMetadata().Generation,
+		ObservedGeneration: source.GetMetadata().GetGeneration(),
 	}
 }

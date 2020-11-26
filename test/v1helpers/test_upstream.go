@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
@@ -73,7 +73,7 @@ func NewTestGRPCUpstream(ctx context.Context, addr string, replicas int) *TestUp
 	}
 
 	us := newTestUpstream(addr, ports, received)
-	us.Upstream.UseHttp2 = &types.BoolValue{Value: true}
+	us.Upstream.UseHttp2 = &wrappers.BoolValue{Value: true}
 	us.GrpcServers = grpcServices
 	return us
 }
@@ -105,7 +105,7 @@ func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequ
 		}
 	}
 	u := &gloov1.Upstream{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      fmt.Sprintf("local-%d", id),
 			Namespace: "default",
 		},

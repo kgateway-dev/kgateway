@@ -32,7 +32,7 @@ var _ = Describe("Plugin", func() {
 			Path: "/foo",
 		}
 		upstream = &v1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "extauth-server",
 				Namespace: "default",
 			},

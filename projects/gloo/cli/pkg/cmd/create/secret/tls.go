@@ -71,7 +71,7 @@ func TlsSecretArgsInteractive(input *options.TlsSecret) error {
 	return nil
 }
 
-func createTlsSecret(ctx context.Context, meta core.Metadata, input options.TlsSecret, dryRun bool, outputType printers.OutputType) error {
+func createTlsSecret(ctx context.Context, meta *core.Metadata, input options.TlsSecret, dryRun bool, outputType printers.OutputType) error {
 
 	// read the values
 

@@ -6,8 +6,8 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
@@ -31,9 +31,9 @@ var _ = Describe("Plugin", func() {
 				RequestHeadersForTags: []string{"header1", "header2"},
 				Verbose:               true,
 				TracePercentages: &tracing.TracePercentages{
-					ClientSamplePercentage:  &types.FloatValue{Value: 10},
-					RandomSamplePercentage:  &types.FloatValue{Value: 20},
-					OverallSamplePercentage: &types.FloatValue{Value: 30},
+					ClientSamplePercentage:  &wrappers.FloatValue{Value: 10},
+					RandomSamplePercentage:  &wrappers.FloatValue{Value: 20},
+					OverallSamplePercentage: &wrappers.FloatValue{Value: 30},
 				},
 				ProviderConfig: nil,
 			},
@@ -222,9 +222,9 @@ var _ = Describe("Plugin", func() {
 				Tracing: &tracing.RouteTracingSettings{
 					RouteDescriptor: "hello",
 					TracePercentages: &tracing.TracePercentages{
-						ClientSamplePercentage:  &types.FloatValue{Value: 10},
-						RandomSamplePercentage:  &types.FloatValue{Value: 20},
-						OverallSamplePercentage: &types.FloatValue{Value: 30},
+						ClientSamplePercentage:  &wrappers.FloatValue{Value: 10},
+						RandomSamplePercentage:  &wrappers.FloatValue{Value: 20},
+						OverallSamplePercentage: &wrappers.FloatValue{Value: 30},
 					},
 				},
 			},

@@ -63,8 +63,8 @@ var _ = Describe("Conversions", func() {
 		Expect(usList).To(HaveLen(1))
 
 		Expect(usList[0]).To(Equal(&v1.Upstream{
-			Status: core.Status{},
-			Metadata: core.Metadata{
+			Status: &core.Status{},
+			Metadata: &core.Metadata{
 				Name:      UpstreamNamePrefix + "svc-1-tls",
 				Namespace: defaults.GlooSystem,
 			},
@@ -104,8 +104,8 @@ var _ = Describe("Conversions", func() {
 
 		expectedUpstreams := []*v1.Upstream{
 			{
-				Status: core.Status{},
-				Metadata: core.Metadata{
+				Status: &core.Status{},
+				Metadata: &core.Metadata{
 					Name:      UpstreamNamePrefix + "svc-1",
 					Namespace: defaults.GlooSystem,
 				},
@@ -118,8 +118,8 @@ var _ = Describe("Conversions", func() {
 				},
 			},
 			{
-				Status: core.Status{},
-				Metadata: core.Metadata{
+				Status: &core.Status{},
+				Metadata: &core.Metadata{
 					Name:      UpstreamNamePrefix + "svc-1-tls",
 					Namespace: defaults.GlooSystem,
 				},

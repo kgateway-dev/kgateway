@@ -38,7 +38,10 @@ func shouldCompress(in resources.Resource) bool {
 }
 
 func SetShouldCompressed(in resources.Resource) {
-	metadata := in.GetMetadata()
+	metadata := &core.Metadata{}
+	if in.GetMetadata() != nil {
+		metadata = in.GetMetadata()
+	}
 	annotations := metadata.Annotations
 	if annotations == nil {
 		annotations = make(map[string]string)

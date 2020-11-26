@@ -12,7 +12,7 @@ func AllSourcesAccepted(reports reporter.ResourceReports, configObj translator.O
 	allSourcesAccepted := true
 
 	if err := translator.ForEachSource(configObj, func(src translator.SourceRef) error {
-		_, report := reports.Find(src.ResourceKind, core.ResourceRef{src.Name, src.Namespace})
+		_, report := reports.Find(src.ResourceKind, &core.ResourceRef{Name: src.Name, Namespace: src.Namespace})
 
 		if report.Errors != nil {
 			allSourcesAccepted = false
