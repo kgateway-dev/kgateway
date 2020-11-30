@@ -3,5 +3,5 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/3879
     resolvesIssue: false
     description:  >
-      Support optional OIDC configuration override for ext-auth API. OIDC Configuration is discovered at
+      Add API to support optional OIDC configuration override for ext-auth. OIDC Configuration is discovered at
       <issuerUrl>/.well-known/openid-configuration and this configuration can override those discovered values.
