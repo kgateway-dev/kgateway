@@ -866,7 +866,7 @@ var _ = Describe("Translator", func() {
 			}
 
 			localUpstream1 = buildLocalUpstream("")
-			localUpstream2 = buildLocalUpstream("randomString")
+			localUpstream2 = buildLocalUpstream("")
 
 		})
 

@@ -29,5 +29,4 @@ var _ = Describe("ConfigSource", func() {
 			}}))
 		}
 	})
-
 })

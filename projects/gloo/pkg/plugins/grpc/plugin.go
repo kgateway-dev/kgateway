@@ -9,16 +9,11 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"google.golang.org/genproto/googleapis/api/annotations"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
-	"github.com/solo-io/go-utils/contextutils"
 	envoytranscoder "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_json_transcoder/v3"
-	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -29,7 +24,12 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	transformutils "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/log"
+	"google.golang.org/genproto/googleapis/api/annotations"
 )
 
 type ServicesAndDescriptor struct {
@@ -160,7 +160,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				grpcDestinationSpec.Parameters = &transformapi.Parameters{
 					Path: &wrappers.StringValue{Value: path},
 				}
-		}
+			}
 
 			// get the package_name.service_name to generate the path that envoy wants
 			fullServiceName := genFullServiceName(grpcDestinationSpec.Package, grpcDestinationSpec.Service)
