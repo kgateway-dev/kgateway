@@ -531,6 +531,7 @@ Deprecated: Prefer OAuth2
 "scopes": []string
 "session": .enterprise.gloo.solo.io.UserSession
 "headers": .enterprise.gloo.solo.io.HeaderConfiguration
+"configurationOverride": .google.protobuf.Struct
 
 ```
 
@@ -546,6 +547,7 @@ Deprecated: Prefer OAuth2
 | `scopes` | `[]string` | Scopes to request in addition to openid scope. |
 | `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) | Configuration related to the user session. |
 | `headers` | [.enterprise.gloo.solo.io.HeaderConfiguration](../extauth.proto.sk/#headerconfiguration) | Configures headers added to requests. |
+| `configurationOverride` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration The configuration override defines any properties that should override this discovery configuration. |
 
 
 
@@ -791,6 +793,7 @@ Deprecated, prefer OAuth2Config
 "scopes": []string
 "session": .enterprise.gloo.solo.io.UserSession
 "headers": .enterprise.gloo.solo.io.HeaderConfiguration
+"configurationOverride": .google.protobuf.Struct
 
 ```
 
@@ -806,6 +809,7 @@ Deprecated, prefer OAuth2Config
 | `scopes` | `[]string` | scopes to request in addition to the openid scope. |
 | `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) |  |
 | `headers` | [.enterprise.gloo.solo.io.HeaderConfiguration](../extauth.proto.sk/#headerconfiguration) | Configures headers added to requests. |
+| `configurationOverride` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration The configuration override defines any properties that should override this discovery configuration. |
 
 
 
