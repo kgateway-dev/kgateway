@@ -91,8 +91,12 @@ var _ = Describe("Generate Changelog Test", func() {
 	})
 
 	Context("Markdown processing functions", func() {
-		Context("Parsing per release works", func() {
-			var releaseNotes = `**CVEs**
+		var releaseNotes = `
+*This release build failed*
+
+This release contained no user-facing changes
+
+**CVEs**
 
 Some CVE note 1
 
@@ -103,16 +107,23 @@ Some CVE note 2
 - Some dep bump 1 with **emphasis level 2**
 - Some dep bump 2 with *emphasis level 1*
 ` + "\n - Some dep bump 3 that contains `code`"
+		Context("Parsing per release", func() {
 
 			var expectedHeadersToNotesMap = map[string][]string{
 				"CVEs":             {"\n- Some CVE note 1\n", "\n- Some CVE note 2\n"},
 				"Dependency Bumps": {"\n- Some dep bump 1 with **emphasis level 2**", "\n- Some dep bump 2 with *emphasis level 1*", "\n- Some dep bump 3 that contains `code`"},
 			}
-			It("works", func() {
+			var expectedAccumulatorText = `
+- *This release build failed*
+
+- This release contained no user-facing changes
+`
+			It("parses text into headers -> release notes map", func() {
 				headersToNotesMap := make(map[string][]string)
-				changelogutils.ParseReleaseNotes(releaseNotes, headersToNotesMap, "\n- ")
+				accumulatorText := changelogutils.ParseReleaseNotes(releaseNotes, headersToNotesMap, "\n- ")
 
 				Expect(headersToNotesMap).To(Equal(expectedHeadersToNotesMap))
+				Expect(accumulatorText).To(Equal(expectedAccumulatorText))
 			})
 		})
 	})

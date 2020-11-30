@@ -164,17 +164,18 @@ func ParseReleaseNotes(releaseNotes string, headersToNotesMap map[string][]strin
 					if emphasis.Level == 2 {
 						// Header block
 						currentHeader = string(typedNode.Text(releaseNotesBuf))
+						continue
 					}
 
+				}
+				// This section will handles any paragraphs that do not show up under headers e.g. "This release build failed"
+				v := typedNode.Lines().At(0)
+				note := prefix + fmt.Sprintf("%s\n", v.Value(releaseNotesBuf))
+				if currentHeader != "" {
+					headersToNotesMap[currentHeader] = append(headersToNotesMap[currentHeader], note)
 				} else {
-					v := typedNode.Lines().At(0)
-					note := prefix + fmt.Sprintf("%s\n", v.Value(releaseNotesBuf))
-					if currentHeader != "" {
-						headersToNotesMap[currentHeader] = append(headersToNotesMap[currentHeader], note)
-					} else {
-						//any extra text e.g. "This release build has failed", only used for enterprise release notes
-						accumulator = accumulator + note
-					}
+					//any extra text e.g. "This release build has failed", only used for enterprise release notes
+					accumulator = accumulator + note
 				}
 			}
 		case *ast.List:

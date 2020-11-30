@@ -227,7 +227,6 @@ func printVersionOrderReleases(minorReleaseMap map[Version]string) {
 	}
 	SortReleaseVersions(versions)
 	for _, version := range versions {
-		println(version.String())
 		body := minorReleaseMap[version]
 		fmt.Printf("\n\n### v%d.%d\n\n", version.Major, version.Minor)
 		fmt.Printf("%v", body)
