@@ -107,10 +107,11 @@ function generateSiteForVersion() {
   # Generate data/Solo.yaml file with version info populated.
   generateHugoVersionsYaml $version
   # Use styles as defined on master, not the checked out temp repo.
-  mkdir -p layouts/partials
+  mkdir -p layouts/partials cmd/changelogutils
   cp -a $workingDir/layouts/partials/. layouts/partials/
   cp -f $workingDir/Makefile Makefile
   cp -f $workingDir/cmd/generate_changelog_doc.go cmd/generate_changelog_doc.go
+  cp -a $workingDir/cmd/changelogutils/. cmd/changelogutils/
   # Generate the versioned static site.
   make site-release
 

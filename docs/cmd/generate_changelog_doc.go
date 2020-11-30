@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sort"
 
 	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/go-utils/versionutils"
+	. "github.com/solo-io/gloo/docs/cmd/changelogutils"
+	. "github.com/solo-io/go-utils/versionutils"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -95,6 +95,11 @@ const (
 	skipChangelogGeneration = "SKIP_CHANGELOG_GENERATION"
 )
 
+const (
+	glooOpenSourceRepo = "gloo"
+	glooEnterpriseRepo = "solo-projects"
+)
+
 var (
 	InvalidInputError = func(arg string) error {
 		return eris.Errorf("invalid input, must provide exactly one argument, either '%v' or '%v', (provided %v)",
@@ -107,6 +112,8 @@ var (
 	}
 )
 
+// Generates changelog for releases as fetched from Github
+// Github defaults to a chronological order
 func generateChangelogMd(args []string) error {
 	if len(args) != 1 {
 		return InvalidInputError(fmt.Sprintf("%v", len(args)-1))
@@ -116,9 +123,9 @@ func generateChangelogMd(args []string) error {
 	var repo string
 	switch target {
 	case glooDocGen:
-		repo = "gloo"
+		repo = glooOpenSourceRepo
 	case glooEDocGen:
-		repo = "solo-projects"
+		repo = glooEnterpriseRepo
 		ctx := context.Background()
 		if os.Getenv("GITHUB_TOKEN") == "" {
 			return MissingGithubTokenError()
@@ -132,116 +139,96 @@ func generateChangelogMd(args []string) error {
 		return InvalidInputError(target)
 	}
 
-	allReleases, err := getAllReleases(client, repo)
+	allReleases, err := GetAllReleases(client, repo, false)
 	if err != nil {
 		return err
 	}
 
 	for _, release := range allReleases {
-		fmt.Printf("### %v\n\n", *release.TagName)
-		fmt.Printf("%v", *release.Body)
+		fmt.Printf("### %v\n\n", release.GetTagName())
+		fmt.Printf("%v", release.GetBody())
 	}
 	return nil
 }
 
+// Performs additional processing to generate changelog grouped and ordered by release version
 func generateMinorReleaseChangelog(args []string) error {
 	if len(args) != 1 {
 		return InvalidInputError(fmt.Sprintf("%v", len(args)-1))
 	}
-	client := github.NewClient(nil)
 	target := args[0]
-	var repo string
+	var (
+		err error
+	)
 	switch target {
 	case glooDocGen:
-		repo = "gloo"
+		err = generateGlooChangelog()
 	case glooEDocGen:
-		repo = "solo-projects"
-		ctx := context.Background()
-		if os.Getenv("GITHUB_TOKEN") == "" {
-			return MissingGithubTokenError()
-		}
-		ts := oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
-		)
-		tc := oauth2.NewClient(ctx, ts)
-		client = github.NewClient(tc)
+		err = generateGlooEChangelog()
 	default:
 		return InvalidInputError(target)
 	}
-	allReleases, err := getAllReleases(client, repo)
+
+	return err
+}
+
+// Fetches Gloo Open Source releases and orders them by version
+func generateGlooChangelog() error {
+	client := github.NewClient(nil)
+	allReleases, err := GetAllReleases(client, glooOpenSourceRepo, true)
 	if err != nil {
 		return err
 	}
 
-	var releaseList []*github.RepositoryRelease
-	for _, release := range allReleases {
-		releaseList = append(releaseList, release)
-	}
-
-	err = parseReleases(releaseList)
+	minorReleaseMap, err := ParseReleases(allReleases, true)
 	if err != nil {
 		return err
 	}
+	printVersionOrderReleases(minorReleaseMap)
 	return nil
 }
 
-func getAllReleases(client *github.Client, repo string) ([]*github.RepositoryRelease, error) {
-	allReleases, _, err := client.Repositories.ListReleases(context.Background(), "solo-io", repo,
-		&github.ListOptions{
-			Page:    0,
-			PerPage: 10000000,
-		})
-	if err != nil {
-		return nil, err
+// Fetches Gloo Enterprise releases, merges in open source release notes, and orders them by version
+func generateGlooEChangelog() error {
+	// Initialize Auth
+	ctx := context.Background()
+	if os.Getenv("GITHUB_TOKEN") == "" {
+		return MissingGithubTokenError()
 	}
-	return allReleases, nil
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	client := github.NewClient(tc)
+
+	// Get all Gloo OSS release changelogs
+	enterpriseReleases, err := GetAllReleases(client, glooEnterpriseRepo, true)
+	if err != nil {
+		return err
+	}
+	openSourceReleases, err := GetAllReleases(client, glooOpenSourceRepo, true)
+	if err != nil {
+		return err
+	}
+	minorReleaseMap, err := MergeEnterpriseOSSReleases(enterpriseReleases, openSourceReleases)
+	if err != nil {
+		return err
+	}
+
+	printVersionOrderReleases(minorReleaseMap)
+	return nil
 }
 
-func parseReleases(releases []*github.RepositoryRelease) error {
-	var minorReleaseMap = make(map[Version]string)
-	for _, release := range releases {
-		var releaseTag = release.GetTagName()
-		version, err := versionutils.ParseVersion(releaseTag)
-		if err != nil {
-			return err
-		}
-		minorVersion := Version{
-			Major: version.Major,
-			Minor: version.Minor,
-		}
-		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("##### %v\n", version.String()) + release.GetBody()
-	}
-
-	var versions Versions
+// Outputs changelogs in markdown format
+func printVersionOrderReleases(minorReleaseMap map[Version]string) {
+	var versions []Version
 	for minorVersion, _ := range minorReleaseMap {
 		versions = append(versions, minorVersion)
 	}
-	sort.Sort(versions)
+	SortReleaseVersions(versions)
 	for _, version := range versions {
 		body := minorReleaseMap[version]
-		fmt.Printf("### v%v.%v\n\n", version.Major, version.Minor)
+		fmt.Printf("\n\n### v%d.%d\n\n", version.Major, version.Minor)
 		fmt.Printf("%v", body)
 	}
-	return nil
-}
-
-type Version versionutils.Version
-type Versions []Version
-
-// The following functions are used to display the releases in order of release version
-func (v Version) LessThan(version Version) bool {
-	result, _ := versionutils.Version(v).IsGreaterThanOrEqualTo(versionutils.Version(version))
-	return result
-}
-
-func (s Versions) Len() int {
-	return len(s)
-}
-
-func (s Versions) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (s Versions) Less(i, j int) bool {
-	return s[i].LessThan(s[j])
 }
