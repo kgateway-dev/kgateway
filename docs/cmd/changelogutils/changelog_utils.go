@@ -96,7 +96,8 @@ func MergeEnterpriseOSSReleases(enterpriseReleasesSorted, osReleases []*github.R
 			OSSDescription = GetOSDependencyPrefix(*depVersion, true)
 		}
 
-		//TODO: Implement a cache for gloo enterprise dependencies to reduce the amount of API calls
+		// TODO: Implement a cache for gloo enterprise dependencies to reduce the amount of API calls
+		// Swallowing error here because we handle the case where previousDepVersion is nil
 		previousDepVersion, _ := GetOSSDependencyForEnterpriseVersion(previousEnterprisePatch)
 		var depVersions []Version
 		// Get all intermediate versions of Gloo OSS that this Gloo enterprise relies on
@@ -169,9 +170,9 @@ func ParseReleaseNotes(releaseNotes string, headersToNotesMap map[string][]strin
 					v := typedNode.Lines().At(0)
 					note := prefix + fmt.Sprintf("%s\n", v.Value(releaseNotesBuf))
 					if currentHeader != "" {
-						//any extra text e.g. "This release build has failed", only used for enterprise release notes
 						headersToNotesMap[currentHeader] = append(headersToNotesMap[currentHeader], note)
 					} else {
+						//any extra text e.g. "This release build has failed", only used for enterprise release notes
 						accumulator = accumulator + note
 					}
 				}
@@ -205,7 +206,10 @@ func GetOSDependencyPrefix(openSourceVersion Version, isHeader bool) string {
 
 func GetPreviousEnterprisePatchVersion(enterpriseReleasesSorted []*github.RepositoryRelease, index int) *Version {
 	var previousEnterpriseVersion *Version
-	currentVersion, _ := ParseVersion(enterpriseReleasesSorted[index].GetTagName())
+	currentVersion, err := ParseVersion(enterpriseReleasesSorted[index].GetTagName())
+	if err != nil {
+		return nil
+	}
 	if index+1 != len(enterpriseReleasesSorted) {
 		previousRelease := enterpriseReleasesSorted[index+1]
 		previousVersion, err := ParseVersion(previousRelease.GetTagName())
@@ -227,7 +231,10 @@ func GetAllOSSDependenciesBetweenEnterpriseVersions(startVersion, endVersion *Ve
 
 	var adding bool
 	for _, release := range versionsSorted {
-		tag, _ := ParseVersion(release.GetTagName())
+		tag, err := ParseVersion(release.GetTagName())
+		if err != nil {
+			continue
+		}
 		version := *tag
 		if version == *startVersion {
 			adding = true
@@ -282,7 +289,6 @@ func GetOSSDependencyForEnterpriseVersion(enterpriseVersion *Version) (*Version,
 // Sorts a slice of versions in descending order by version e.g. v1.6.1, v1.6.0, v1.6.0-beta9
 func SortReleaseVersions(versions []Version) {
 	sort.Slice(versions, func(i, j int) bool {
-		isGreaterThanOrEqualTo := versions[i].MustIsGreaterThanOrEqualTo(versions[j])
-		return isGreaterThanOrEqualTo
+		return versions[i].MustIsGreaterThanOrEqualTo(versions[j])
 	})
 }
