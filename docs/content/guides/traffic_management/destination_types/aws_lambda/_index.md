@@ -95,7 +95,7 @@ Global Flags:
   -o, --output string   output format: (yaml, json, table)
 ```
 
-For example, to create an AWS Upstream nammed `my-aws-upstream` in the (default) namespace `gloo-system` against the AWS
+For example, to create an AWS Upstream named `my-aws-upstream` in the (default) namespace `gloo-system` against the AWS
 region `us-east-1` and referencing the AWS Secret we created in the previous step - `my-aws` in `gloo-system` namespace.
 
 ```shell
