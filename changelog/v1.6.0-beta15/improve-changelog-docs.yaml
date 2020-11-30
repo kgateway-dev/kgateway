@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3227
+    description: >
+      When looking at enterprise changelogs, it is useful for customers and field engineers to have reference to which gloo OSS version the enterprise version relies on. This adds a link to the enterprise changelog docs next to each version.
+      In addition, enterprise changelogs will also include changes from the corresponding Open source versinos of gloo edge.
