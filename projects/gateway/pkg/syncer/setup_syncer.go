@@ -206,6 +206,8 @@ func RunGateway(opts translator.Opts) error {
 	// this tells Gateway that the validation snapshot has changed
 	notifications := make(<-chan struct{})
 
+	opts.Validation = nil
+
 	if opts.Validation != nil {
 		validationClient, err = gatewayvalidation.NewConnectionRefreshingValidationClient(
 			gatewayvalidation.RetryOnUnavailableClientConstructor(ctx, opts.Validation.ProxyValidationServerAddress),
