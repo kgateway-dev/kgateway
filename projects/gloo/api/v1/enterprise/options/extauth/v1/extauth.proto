@@ -346,6 +346,10 @@ message OidcAuthorizationCode {
   // Configures headers added to requests.
   HeaderConfiguration headers = 10;
 
+  // OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration
+  // The configuration override defines any properties that should override this discovery configuration
+  google.protobuf.Struct configuration_override = 11;
+
   // in the future we may implement this:
   // add optional configuration for validation of the access token received during the OIDC flow
   // AccessTokenValidation access_token_validation = 8;
@@ -545,6 +549,10 @@ message ExtAuthConfig {
 
     // Configures headers added to requests.
     HeaderConfiguration headers = 10;
+
+    // OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration
+    // The configuration override defines any properties that should override this discovery configuration
+    google.protobuf.Struct configuration_override = 11;
 
     // in the future we may implement this:
     // add optional configuration for validation of the access token received during the OIDC flow
