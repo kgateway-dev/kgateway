@@ -22,6 +22,7 @@ import (
 func (t *translatorInstance) computeClusters(
 	params plugins.Params,
 	reports reporter.ResourceReports,
+	proxy v1.Proxy,
 ) []*envoy_config_cluster_v3.Cluster {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.computeClusters")
@@ -33,6 +34,11 @@ func (t *translatorInstance) computeClusters(
 	clusters := make([]*envoy_config_cluster_v3.Cluster, 0, len(params.Snapshot.Upstreams))
 	// snapshot contains both real and service-derived upstreams
 	for _, upstream := range params.Snapshot.Upstreams {
+
+		if !validateUpstreamLambdaFunctions(upstream, proxy) {
+			reports.AddError(upstream, fmt.Errorf("cluster references lambda functions which do not exist"))
+		}
+
 		cluster := t.computeCluster(params, upstream, reports)
 		clusters = append(clusters, cluster)
 	}
@@ -222,4 +228,30 @@ func getHttp2ptions(us *v1.Upstream) *envoy_config_core_v3.Http2ProtocolOptions 
 		return &envoy_config_core_v3.Http2ProtocolOptions{}
 	}
 	return nil
+}
+
+func validateUpstreamLambdaFunctions(upstream *v1.Upstream, proxy v1.Proxy) bool {
+
+	upstreamLambdaFuncs := upstream.GetAws().GetLambdaFunctions()
+	if len(upstreamLambdaFuncs) == 0 {
+		return true
+	}
+
+	for _, listener := range proxy.GetListeners() {
+		httpListener := listener.GetHttpListener()
+		if httpListener != nil {
+			for _, virtualHost := range httpListener.GetVirtualHosts() {
+				for _, lambda := range upstreamLambdaFuncs {
+					for _, route := range virtualHost.GetRoutes() {
+						routeLambdaName := route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().GetLogicalName()
+						upstreamLambdaName := lambda.GetLogicalName()
+						if routeLambdaName == upstreamLambdaName {
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+	return false
 }
