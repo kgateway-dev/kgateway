@@ -211,9 +211,9 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 
-		proxyClient, _ = v1.NewProxyClient(resourceClientFactory)
+		proxyClient, _ = v1.NewProxyClient(context.Background(), resourceClientFactory)
 
-		usClient, err := resourceClientFactory.NewResourceClient(factory.NewResourceClientParams{ResourceType: &v1.Upstream{}})
+		usClient, err := resourceClientFactory.NewResourceClient(context.Background(), factory.NewResourceClientParams{ResourceType: &v1.Upstream{}})
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy1 := &v1.Proxy{
@@ -274,7 +274,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		// NilSnapshot is always consistent, so snapshot will always be set as part of endpoints update
 		Expect(xdsCache.called).To(BeTrue())
 
-		upstreamClient, err = v1.NewUpstreamClient(resourceClientFactory)
+		upstreamClient, err = v1.NewUpstreamClient(context.Background(), resourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
