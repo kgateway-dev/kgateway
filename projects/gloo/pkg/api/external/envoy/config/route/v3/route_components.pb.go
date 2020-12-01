@@ -6,6 +6,8 @@ package v3
 import (
 	bytes "bytes"
 	fmt "fmt"
+	math "math"
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
@@ -17,7 +19,6 @@ import (
 	v33 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/tracing/v3"
 	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

@@ -6,11 +6,12 @@ package mocks
 
 import (
 	context "context"
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v10 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	reporter "github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	reflect "reflect"
 )
 
 // MockTranslator is a mock of Translator interface
