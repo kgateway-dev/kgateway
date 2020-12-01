@@ -5,7 +5,7 @@ go 1.14
 require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.5 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
-	github.com/Masterminds/semver/v3 v3.0.3
+	github.com/Masterminds/semver/v3 v3.1.0
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.34.9
@@ -60,14 +60,14 @@ require (
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/solo-io/envoy-operator v0.1.4
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
-	github.com/solo-io/go-utils v0.16.6
+	github.com/solo-io/go-utils v0.17.0
 	github.com/solo-io/protoc-gen-ext v0.0.9
 	github.com/solo-io/reporting-client v0.1.2
 	github.com/solo-io/skv2 v0.8.1
 	github.com/solo-io/solo-apis v0.0.0-20201118222008-1b098636eb85
-	github.com/solo-io/solo-kit v0.13.15-0.20201201020606-b47cc30bd2a2
+	github.com/solo-io/solo-kit v0.15.1-0.20201201151126-43f6c0e9762b
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20200922223809-7fff932e9e9a
-	github.com/spf13/afero v1.2.2
+	github.com/spf13/afero v1.3.4
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
@@ -83,20 +83,20 @@ require (
 	google.golang.org/genproto v0.0.0-20200626011028-ee7919e894b5
 	google.golang.org/grpc v1.29.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
-	helm.sh/helm/v3 v3.1.2
+	helm.sh/helm/v3 v3.2.4
 	k8s.io/api v0.18.8
-	k8s.io/apiextensions-apiserver v0.18.2
+	k8s.io/apiextensions-apiserver v0.18.6
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v11.0.0+incompatible
-	k8s.io/code-generator v0.18.2
+	k8s.io/code-generator v0.18.6
 	k8s.io/helm v2.16.1+incompatible
 	k8s.io/kube-openapi v0.0.0-20200121204235-bf4fb3bd569c // indirect
-	k8s.io/kubectl v0.17.2
+	k8s.io/kubectl v0.18.0
 	k8s.io/kubernetes v1.17.1
 	k8s.io/utils v0.17.1
 	knative.dev/pkg v0.0.0-20191203174735-3444316bdeef
 	knative.dev/serving v0.10.0
-	sigs.k8s.io/controller-runtime v0.5.8
+	sigs.k8s.io/controller-runtime v0.6.2
 	sigs.k8s.io/yaml v1.2.0
 )
 
