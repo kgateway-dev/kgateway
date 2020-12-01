@@ -22,7 +22,7 @@ import (
 func (t *translatorInstance) computeClusters(
 	params plugins.Params,
 	reports reporter.ResourceReports,
-	proxy v1.Proxy,
+	proxy *v1.Proxy,
 ) []*envoy_config_cluster_v3.Cluster {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.computeClusters")
@@ -230,7 +230,7 @@ func getHttp2ptions(us *v1.Upstream) *envoy_config_core_v3.Http2ProtocolOptions 
 	return nil
 }
 
-func validateUpstreamLambdaFunctions(upstream *v1.Upstream, proxy v1.Proxy) bool {
+func validateUpstreamLambdaFunctions(upstream *v1.Upstream, proxy *v1.Proxy) bool {
 
 	upstreamLambdaFuncs := upstream.GetAws().GetLambdaFunctions()
 	if len(upstreamLambdaFuncs) == 0 {
