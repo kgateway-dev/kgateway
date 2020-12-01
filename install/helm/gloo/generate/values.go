@@ -289,6 +289,8 @@ type GatewayProxy struct {
 	Failover                       Failover                     `json:"failover" desc:"(Enterprise Only): Failover configuration"`
 	Disabled                       bool                         `json:"disabled,omitempty" desc:"Skips creation of this gateway proxy. Used to turn off gateway proxies created by preceding configurations"`
 	EnvoyApiVersion                string                       `json:"envoyApiVersion" desc:"Version of the envoy API to use for the xDS transport and resources. Default is V3"`
+	EnvoyBootstrapExtensions       []map[string]interface{}     `json:"envoyBootstrapExtensions"`
+	EnvoyStaticClusters            []map[string]interface{}     `json:"envoyStaticClusters"`
 }
 
 type GatewayProxyGatewaySettings struct {

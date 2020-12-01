@@ -308,6 +308,9 @@ data:
                     address: {{ $spec.loopBackAddress }}
                     port_value: 19000
 {{- end}} {{/* if or $statsConfig.enabled ($spec.readConfig) */}}
+{{- if ne (len $spec.envoyStaticClusters) 0 }}
+{{ toYaml $spec.envoyStaticClusters | indent 6}}
+{{- end}}
 
     dynamic_resources:
       ads_config:
@@ -322,6 +325,14 @@ data:
       lds_config:
         resource_api_version: {{ $spec.envoyApiVersion }}
         ads: {}
+{{- if ne (len $spec.envoyBootstrapExtensions) 0 }}
+    bootstrap_extensions:
+{{ toYaml $spec.envoyBootstrapExtensions | indent 6}}
+{{- end}}
+{{- if ne (len $spec.envoyStaticClusters) 0 }}
+    bootstrap_extensions:
+{{ toYaml $spec.envoyStaticClusters | indent 6}}
+{{- end}}
     admin:
       access_log_path: /dev/null
       address:
