@@ -9,6 +9,8 @@ import (
 	"testing"
 	"text/template"
 
+	envoy_config_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/go-utils/versionutils/git"
 
 	glooVersion "github.com/solo-io/gloo/pkg/version"
@@ -315,4 +317,15 @@ func makeUnstructureFromTemplateFile(fixtureName string, values interface{}) *un
 	err = tmpl.Execute(&b, values)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	return makeUnstructured(b.String())
+}
+
+func readEnvoyConfigFromFile(fixtureName string) *envoy_config_bootstrap_v3.Bootstrap {
+	byt, err := ioutil.ReadFile(fixtureName)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	jsn, err := yaml.YAMLToJSON(byt)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	var result envoy_config_bootstrap_v3.Bootstrap
+	err = jsonpb.Unmarshal(bytes.NewBuffer(jsn), &result)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	return &result
 }

@@ -376,13 +376,13 @@ var _ = Describe("Helm Test", func() {
 
 				It("should be able to set consul config values", func() {
 					settings := makeUnstructureFromTemplateFile("fixtures/settings/consul_config_values.yaml", namespace)
-					prepareMakefileFromValuesFile("val_consul_test_inputs.yaml")
+					prepareMakefileFromValuesFile("values/val_consul_test_inputs.yaml")
 					testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 				})
 
 				It("should be able to set consul config upstream discovery values", func() {
 					settings := makeUnstructureFromTemplateFile("fixtures/settings/consul_config_upstream_discovery.yaml", namespace)
-					prepareMakefileFromValuesFile("val_consul_discovery_test_inputs.yaml")
+					prepareMakefileFromValuesFile("values/val_consul_discovery_test_inputs.yaml")
 					testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 				})
 
@@ -651,7 +651,7 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("should allow setting a custom istio sidecar in the Gateway-Proxy Deployment", func() {
-					prepareMakefileFromValuesFile("val_custom_istio_sidecar.yaml")
+					prepareMakefileFromValuesFile("values/val_custom_istio_sidecar.yaml")
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 						return resource.GetKind() == "Deployment"
@@ -752,7 +752,7 @@ var _ = Describe("Helm Test", func() {
 					})
 
 					It("can create an access logging deployment/service", func() {
-						prepareMakefileFromValuesFile("val_access_logger.yaml")
+						prepareMakefileFromValuesFile("values/val_access_logger.yaml")
 						container := GetQuayContainerSpec("access-logger", version, GetPodNamespaceEnvVar(), GetPodNameEnvVar(),
 							v1.EnvVar{
 								Name:  "SERVICE_NAME",
@@ -821,7 +821,7 @@ var _ = Describe("Helm Test", func() {
 					})
 
 					It("has a proxy with access logging cluster", func() {
-						prepareMakefileFromValuesFile("val_access_logger.yaml")
+						prepareMakefileFromValuesFile("values/val_access_logger.yaml")
 						proxySpec := make(map[string]string)
 						labels = map[string]string{
 							"gloo":             "gateway-proxy",
@@ -896,7 +896,7 @@ var _ = Describe("Helm Test", func() {
 								Namespace: "one",
 							},
 						}
-						prepareMakefileFromValuesFile("val_custom_gateways.yaml")
+						prepareMakefileFromValuesFile("values/val_custom_gateways.yaml")
 						for _, name := range []string{newGatewayProxyName, defaults.GatewayProxyName} {
 							name := name
 							gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, name)
@@ -1094,7 +1094,7 @@ var _ = Describe("Helm Test", func() {
 						gatewayProxyService.Spec.Type = v1.ServiceTypeLoadBalancer
 						gatewayProxyService.Spec.LoadBalancerSourceRanges = []string{"130.211.204.1/32", "130.211.204.2/32"}
 						gatewayProxyService.Annotations = map[string]string{"test": "test"}
-						prepareMakefileFromValuesFile("val_lb_source_ranges.yaml")
+						prepareMakefileFromValuesFile("values/val_lb_source_ranges.yaml")
 						testManifest.ExpectService(gatewayProxyService)
 					})
 
@@ -2776,6 +2776,46 @@ metadata:
 					testManifest.Expect("ConfigMap", namespace, defaults.GatewayProxyName).To(BeNil())
 				})
 
+				FIt("can create a gateway proxy with added static clusters", func() {
+					prepareMakefileFromValuesFile("values/val_static_clusters.yaml")
+					envoyBootstrap := readEnvoyConfigFromFile("fixtures/envoy_config/static_clusters.yaml")
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == gatewayProxyConfigMapName {
+							addedCluster := envoyBootstrap.GetStaticResources().GetClusters()[len(envoyBootstrap.GetStaticResources().GetClusters())-1]
+							Expect(addedCluster).NotTo(BeNil())
+							Expect(addedCluster.GetName()).To(Equal("test_cluster"))
+						}
+					})
+				})
+
+				It("can create a gateway proxy config with added bootstrap extensions", func() {
+					prepareMakefileFromValuesFile("values/val_custom_bootstrap_extensions.yaml")
+					envoyBootstrap := readEnvoyConfigFromFile("fixtures/envoy_config/static_clusters.yaml")
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == gatewayProxyConfigMapName {
+							addedCluster := envoyBootstrap.GetStaticResources().GetClusters()[len(envoyBootstrap.GetStaticResources().GetClusters())-1]
+							Expect(addedCluster).NotTo(BeNil())
+							Expect(addedCluster.GetName()).To(Equal("test_cluster"))
+						}
+					})
+				})
+
 				Describe("gateway proxy - AWS", func() {
 
 					It("has a global cluster", func() {
@@ -2834,7 +2874,7 @@ metadata:
 					})
 
 					It("has a proxy with tracing cluster", func() {
-						prepareMakefileFromValuesFile("val_tracing_provider_cluster.yaml")
+						prepareMakefileFromValuesFile("values/val_tracing_provider_cluster.yaml")
 						proxySpec := make(map[string]string)
 						proxySpec["envoy.yaml"] = confWithTracingCluster
 						cmRb := ResourceBuilder{
