@@ -1074,8 +1074,8 @@ github.com/solo-io/solo-apis v0.0.0-20201118222008-1b098636eb85 h1:vbqfPIgEkutzv
 github.com/solo-io/solo-apis v0.0.0-20201118222008-1b098636eb85/go.mod h1:wyrnIh/q2p7wCWq8ZSvIw5zJ3jpAp/dtWatk+SULCqk=
 github.com/solo-io/solo-kit v0.13.8/go.mod h1:1cSoxO1Cgzn++03nnp5V1iGf0S45OLDTUmj70rD/+hY=
 github.com/solo-io/solo-kit v0.13.9/go.mod h1:1cSoxO1Cgzn++03nnp5V1iGf0S45OLDTUmj70rD/+hY=
-github.com/solo-io/solo-kit v0.13.14 h1:563vn7XCMpL6MsiAqJFGUG8VtaNKBCnX5b9mXUH85D0=
-github.com/solo-io/solo-kit v0.13.14/go.mod h1:1cSoxO1Cgzn++03nnp5V1iGf0S45OLDTUmj70rD/+hY=
+github.com/solo-io/solo-kit v0.13.15-0.20201201020606-b47cc30bd2a2 h1:vMMsablZewU0AHWm/56+O7sjdIX30u5GUGb5CJ89DAM=
+github.com/solo-io/solo-kit v0.13.15-0.20201201020606-b47cc30bd2a2/go.mod h1:1cSoxO1Cgzn++03nnp5V1iGf0S45OLDTUmj70rD/+hY=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20200922223809-7fff932e9e9a h1:cGPy01C3GXZyuq8s6pkRCjBA+NkLv4FbcP0Toa/7ung=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20200922223809-7fff932e9e9a/go.mod h1:3lckq1wF8I6I2a1Jx5IsEG+PQArE57Jp3wBE2rQnKmw=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
