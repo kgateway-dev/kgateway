@@ -318,6 +318,7 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 					if subresourceStatuses.Warnings != nil {
 						report.Warnings = append(report.Warnings, subresourceStatuses.Warnings...)
 					}
+					allReports[inputResource] = report
 				} else {
 					allReports[inputResource] = subresourceStatuses
 				}
