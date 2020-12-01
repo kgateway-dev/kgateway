@@ -130,7 +130,7 @@ func getSnapOut(metricsPort string) string {
 		Expect(err).ToNot(HaveOccurred())
 		bodyResp = string(body)
 		return bodyResp
-	}, "3s", "0.5s").ShouldNot(BeEmpty())
+	}, "5s", "1s").ShouldNot(BeEmpty())
 
 	Expect(bodyResp).To(ContainSubstring("api_gloo_solo_io_emitter_snap_out"))
 	findSnapOut := regexp.MustCompile("api_gloo_solo_io_emitter_snap_out ([\\d]+)")
@@ -141,16 +141,16 @@ func getSnapOut(metricsPort string) string {
 }
 
 // enable/disable strict validation
-func UpdateAlwaysAcceptSetting(alwaysAccept bool, installNamespace string) {
+func UpdateAlwaysAcceptSetting(ctx context.Context, alwaysAccept bool, installNamespace string) {
 	UpdateSettings(func(settings *v1.Settings) {
 		Expect(settings.Gateway).NotTo(BeNil())
 		Expect(settings.Gateway.Validation).NotTo(BeNil())
 		settings.Gateway.Validation.AlwaysAccept = &types.BoolValue{Value: alwaysAccept}
-	}, installNamespace)
+	}, ctx, installNamespace)
 }
 
-func UpdateSettings(f func(settings *v1.Settings), installNamespace string) {
-	settingsClient := clienthelpers.MustSettingsClient()
+func UpdateSettings(f func(settings *v1.Settings), ctx context.Context, installNamespace string) {
+	settingsClient := clienthelpers.MustSettingsClient(ctx)
 	settings, err := settingsClient.Read(installNamespace, "default", clients.ReadOpts{})
 	Expect(err).NotTo(HaveOccurred())
 

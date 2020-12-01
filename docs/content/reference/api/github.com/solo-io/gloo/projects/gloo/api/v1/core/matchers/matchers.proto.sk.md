@@ -40,14 +40,14 @@ Parameters for matching routes to requests received by a Gloo-managed proxy
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `prefix` | `string` | If specified, the route is a prefix rule meaning that the prefix must match the beginning of the *:path* header. Only one of `prefix`, or `regex` can be set. |  |
-| `exact` | `string` | If specified, the route is an exact path rule meaning that the path must exactly match the *:path* header once the query string is removed. Only one of `exact`, or `regex` can be set. |  |
-| `regex` | `string` | If specified, the route is a regular expression rule meaning that the regex must match the *:path* header once the query string is removed. The entire path (without the query string) must match the regex. The rule will not match if only a sub-sequence of the *:path* header matches the regex. The regex grammar is defined `here <http://en.cppreference.com/w/cpp/regex/ecmascript>`_. Examples:<br/> * The regex */b[io]t* matches the path */bit*<br/> * The regex */b[io]t* matches the path */bot*<br/> * The regex */b[io]t* does not match the path */bite*<br/> * The regex */b[io]t* does not match the path */bit/bot*<br/><br/> Note that the complexity of the regex is constrained by the regex engine's "program size" setting. If your regex is too complex, you may need to adjust the `regexMaxProgramSize` field in the `GlooOptions` section of your `Settings` resource. Only one of `regex`, or `exact` can be set. |  |
-| `headers` | [[]matchers.core.gloo.solo.io.HeaderMatcher](../matchers.proto.sk/#headermatcher) | Specifies a set of headers that the route should match on. The router will check the request’s headers against all the specified headers in the route config. A match will happen if all the headers in the route are present in the request with the same values (or based on presence if the value field is not in the config). |  |
-| `queryParameters` | [[]matchers.core.gloo.solo.io.QueryParameterMatcher](../matchers.proto.sk/#queryparametermatcher) | Specifies a set of URL query parameters on which the route should match. The router will check the query string from the *path* header against all the specified query parameters. If the number of specified query parameters is nonzero, they all must match the *path* header's query string for a match to occur. |  |
-| `methods` | `[]string` | HTTP Method/Verb(s) to match on. If none specified, the matcher will ignore the HTTP Method. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `prefix` | `string` | If specified, the route is a prefix rule meaning that the prefix must match the beginning of the *:path* header. Only one of `prefix`, or `regex` can be set. |
+| `exact` | `string` | If specified, the route is an exact path rule meaning that the path must exactly match the *:path* header once the query string is removed. Only one of `exact`, or `regex` can be set. |
+| `regex` | `string` | If specified, the route is a regular expression rule meaning that the regex must match the *:path* header once the query string is removed. The entire path (without the query string) must match the regex. The rule will not match if only a sub-sequence of the *:path* header matches the regex. The regex grammar is defined `here <http://en.cppreference.com/w/cpp/regex/ecmascript>`_. Examples:<br/> * The regex */b[io]t* matches the path */bit*<br/> * The regex */b[io]t* matches the path */bot*<br/> * The regex */b[io]t* does not match the path */bite*<br/> * The regex */b[io]t* does not match the path */bit/bot*<br/><br/> Note that the complexity of the regex is constrained by the regex engine's "program size" setting. If your regex is too complex, you may need to adjust the `regexMaxProgramSize` field in the `GlooOptions` section of your `Settings` resource. Only one of `regex`, or `exact` can be set. |
+| `headers` | [[]matchers.core.gloo.solo.io.HeaderMatcher](../matchers.proto.sk/#headermatcher) | Specifies a set of headers that the route should match on. The router will check the request’s headers against all the specified headers in the route config. A match will happen if all the headers in the route are present in the request with the same values (or based on presence if the value field is not in the config). |
+| `queryParameters` | [[]matchers.core.gloo.solo.io.QueryParameterMatcher](../matchers.proto.sk/#queryparametermatcher) | Specifies a set of URL query parameters on which the route should match. The router will check the query string from the *path* header against all the specified query parameters. If the number of specified query parameters is nonzero, they all must match the *path* header's query string for a match to occur. |
+| `methods` | `[]string` | HTTP Method/Verb(s) to match on. If none specified, the matcher will ignore the HTTP Method. |
 
 
 
@@ -67,12 +67,12 @@ Thus, if attempting to match on *Host*, match on *:authority* instead.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` | Specifies the name of the header in the request. |  |
-| `value` | `string` | Specifies the value of the header. If the value is absent a request that has the name header will match, regardless of the header’s value. |  |
-| `regex` | `bool` | Specifies whether the header value should be treated as regex or not. |  |
-| `invertMatch` | `bool` | If set to true, the result of the match will be inverted. Defaults to false. Examples: * name=foo, invert_match=true: matches if no header named `foo` is present * name=foo, value=bar, invert_match=true: matches if no header named `foo` with value `bar` is present * name=foo, value=``\d{3}``, regex=true, invert_match=true: matches if no header named `foo` with a value consisting of three integers is present. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | Specifies the name of the header in the request. |
+| `value` | `string` | Specifies the value of the header. If the value is absent a request that has the name header will match, regardless of the header’s value. |
+| `regex` | `bool` | Specifies whether the header value should be treated as regex or not. |
+| `invertMatch` | `bool` | If set to true, the result of the match will be inverted. Defaults to false. Examples: * name=foo, invert_match=true: matches if no header named `foo` is present * name=foo, value=bar, invert_match=true: matches if no header named `foo` with value `bar` is present * name=foo, value=``\d{3}``, regex=true, invert_match=true: matches if no header named `foo` with a value consisting of three integers is present. |
 
 
 
@@ -91,11 +91,11 @@ as an ampersand-separated list of keys and/or key=value elements.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` | Specifies the name of a key that must be present in the requested *path*'s query string. |  |
-| `value` | `string` | Specifies the value of the key. If the value is absent, a request that contains the key in its query string will match, whether the key appears with a value (e.g., "?debug=true") or not (e.g., "?debug"). |  |
-| `regex` | `bool` | Specifies whether the query parameter value is a regular expression. Defaults to false. The entire query parameter value (i.e., the part to the right of the equals sign in "key=value") must match the regex. E.g., the regex "\d+$" will match "123" but not "a123" or "123a". |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | Specifies the name of a key that must be present in the requested *path*'s query string. |
+| `value` | `string` | Specifies the value of the key. If the value is absent, a request that contains the key in its query string will match, whether the key appears with a value (e.g., "?debug=true") or not (e.g., "?debug"). |
+| `regex` | `bool` | Specifies whether the query parameter value is a regular expression. Defaults to false. The entire query parameter value (i.e., the part to the right of the equals sign in "key=value") must match the regex. E.g., the regex "\d+$" will match "123" but not "a123" or "123a". |
 
 
 

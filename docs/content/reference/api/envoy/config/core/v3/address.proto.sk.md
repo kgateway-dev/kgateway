@@ -39,10 +39,10 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `path` | `string` | Unix Domain Socket path. On Linux, paths starting with '@' will use the abstract namespace. The starting '@' is replaced by a null byte by Envoy. Paths starting with '@' will result in an error in environments other than Linux. |  |
-| `mode` | `int` | The mode for the Pipe. Not applicable for abstract sockets. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `path` | `string` | Unix Domain Socket path. On Linux, paths starting with '@' will use the abstract namespace. The starting '@' is replaced by a null byte by Envoy. Paths starting with '@' will result in an error in environments other than Linux. |
+| `mode` | `int` | The mode for the Pipe. Not applicable for abstract sockets. |
 
 
 
@@ -63,14 +63,14 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `protocol` | [.envoy.config.core.v3.SocketAddress.Protocol](../address.proto.sk/#protocol) |  |  |
-| `address` | `string` | The address for this socket. :ref:`Listeners <config_listeners>` will bind to the address. An empty address is not allowed. Specify ``0.0.0.0`` or ``::`` to bind to any address. [#comment:TODO(zuercher) reinstate when implemented: It is possible to distinguish a Listener address via the prefix/suffix matching in :ref:`FilterChainMatch <envoy_api_msg_config.listener.v3.FilterChainMatch>`.] When used within an upstream :ref:`BindConfig <envoy_api_msg_config.core.v3.BindConfig>`, the address controls the source address of outbound connections. For :ref:`clusters <envoy_api_msg_config.cluster.v3.Cluster>`, the cluster type determines whether the address must be an IP (*STATIC* or *EDS* clusters) or a hostname resolved by DNS (*STRICT_DNS* or *LOGICAL_DNS* clusters). Address resolution can be customized via :ref:`resolver_name <envoy_api_field_config.core.v3.SocketAddress.resolver_name>`. |  |
-| `portValue` | `int` |  Only one of `portValue` or `namedPort` can be set. |  |
-| `namedPort` | `string` | This is only valid if :ref:`resolver_name <envoy_api_field_config.core.v3.SocketAddress.resolver_name>` is specified below and the named resolver is capable of named port resolution. Only one of `namedPort` or `portValue` can be set. |  |
-| `resolverName` | `string` | The name of the custom resolver. This must have been registered with Envoy. If this is empty, a context dependent default applies. If the address is a concrete IP address, no resolution will occur. If address is a hostname this should be set for resolution other than DNS. Specifying a custom resolver with *STRICT_DNS* or *LOGICAL_DNS* will generate an error at runtime. |  |
-| `ipv4Compat` | `bool` | When binding to an IPv6 address above, this enables `IPv4 compatibility <https://tools.ietf.org/html/rfc3493#page-11>`_. Binding to ``::`` will allow both IPv4 and IPv6 connections, with peer IPv4 addresses mapped into IPv6 space as ``::FFFF:<IPv4-address>``. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `protocol` | [.envoy.config.core.v3.SocketAddress.Protocol](../address.proto.sk/#protocol) |  |
+| `address` | `string` | The address for this socket. :ref:`Listeners <config_listeners>` will bind to the address. An empty address is not allowed. Specify ``0.0.0.0`` or ``::`` to bind to any address. [#comment:TODO(zuercher) reinstate when implemented: It is possible to distinguish a Listener address via the prefix/suffix matching in :ref:`FilterChainMatch <envoy_api_msg_config.listener.v3.FilterChainMatch>`.] When used within an upstream :ref:`BindConfig <envoy_api_msg_config.core.v3.BindConfig>`, the address controls the source address of outbound connections. For :ref:`clusters <envoy_api_msg_config.cluster.v3.Cluster>`, the cluster type determines whether the address must be an IP (*STATIC* or *EDS* clusters) or a hostname resolved by DNS (*STRICT_DNS* or *LOGICAL_DNS* clusters). Address resolution can be customized via :ref:`resolver_name <envoy_api_field_config.core.v3.SocketAddress.resolver_name>`. |
+| `portValue` | `int` |  Only one of `portValue` or `namedPort` can be set. |
+| `namedPort` | `string` | This is only valid if :ref:`resolver_name <envoy_api_field_config.core.v3.SocketAddress.resolver_name>` is specified below and the named resolver is capable of named port resolution. Only one of `namedPort` or `portValue` can be set. |
+| `resolverName` | `string` | The name of the custom resolver. This must have been registered with Envoy. If this is empty, a context dependent default applies. If the address is a concrete IP address, no resolution will occur. If address is a hostname this should be set for resolution other than DNS. Specifying a custom resolver with *STRICT_DNS* or *LOGICAL_DNS* will generate an error at runtime. |
+| `ipv4Compat` | `bool` | When binding to an IPv6 address above, this enables `IPv4 compatibility <https://tools.ietf.org/html/rfc3493#page-11>`_. Binding to ``::`` will allow both IPv4 and IPv6 connections, with peer IPv4 addresses mapped into IPv6 space as ``::FFFF:<IPv4-address>``. |
 
 
 
@@ -100,11 +100,11 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `keepaliveProbes` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Maximum number of keepalive probes to send without response before deciding the connection is dead. Default is to use the OS level configuration (unless overridden, Linux defaults to 9.). |  |
-| `keepaliveTime` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The number of seconds a connection needs to be idle before keep-alive probes start being sent. Default is to use the OS level configuration (unless overridden, Linux defaults to 7200s (i.e., 2 hours.). |  |
-| `keepaliveInterval` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The number of seconds between keep-alive probes. Default is to use the OS level configuration (unless overridden, Linux defaults to 75s.). |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `keepaliveProbes` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Maximum number of keepalive probes to send without response before deciding the connection is dead. Default is to use the OS level configuration (unless overridden, Linux defaults to 9.). |
+| `keepaliveTime` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The number of seconds a connection needs to be idle before keep-alive probes start being sent. Default is to use the OS level configuration (unless overridden, Linux defaults to 7200s (i.e., 2 hours.). |
+| `keepaliveInterval` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The number of seconds between keep-alive probes. Default is to use the OS level configuration (unless overridden, Linux defaults to 75s.). |
 
 
 
@@ -121,11 +121,11 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `sourceAddress` | [.envoy.config.core.v3.SocketAddress](../address.proto.sk/#socketaddress) | The address to bind to when creating a socket. |  |
-| `freebind` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether to set the *IP_FREEBIND* option when creating the socket. When this flag is set to true, allows the :ref:`source_address <envoy_api_field_config.cluster.v3.UpstreamBindConfig.source_address>` to be an IP address that is not configured on the system running Envoy. When this flag is set to false, the option *IP_FREEBIND* is disabled on the socket. When this flag is not set (default), the socket is not modified, i.e. the option is neither enabled nor disabled. |  |
-| `socketOptions` | [[]envoy.config.core.v3.SocketOption](../socket_option.proto.sk/#socketoption) | Additional socket options that may not be present in Envoy source code or precompiled binaries. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `sourceAddress` | [.envoy.config.core.v3.SocketAddress](../address.proto.sk/#socketaddress) | The address to bind to when creating a socket. |
+| `freebind` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether to set the *IP_FREEBIND* option when creating the socket. When this flag is set to true, allows the :ref:`source_address <envoy_api_field_config.cluster.v3.UpstreamBindConfig.source_address>` to be an IP address that is not configured on the system running Envoy. When this flag is set to false, the option *IP_FREEBIND* is disabled on the socket. When this flag is not set (default), the socket is not modified, i.e. the option is neither enabled nor disabled. |
+| `socketOptions` | [[]envoy.config.core.v3.SocketOption](../socket_option.proto.sk/#socketoption) | Additional socket options that may not be present in Envoy source code or precompiled binaries. |
 
 
 
@@ -144,10 +144,10 @@ management servers.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `socketAddress` | [.envoy.config.core.v3.SocketAddress](../address.proto.sk/#socketaddress) |  Only one of `socketAddress` or `pipe` can be set. |  |
-| `pipe` | [.envoy.config.core.v3.Pipe](../address.proto.sk/#pipe) |  Only one of `pipe` or `socketAddress` can be set. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `socketAddress` | [.envoy.config.core.v3.SocketAddress](../address.proto.sk/#socketaddress) |  Only one of `socketAddress` or `pipe` can be set. |
+| `pipe` | [.envoy.config.core.v3.Pipe](../address.proto.sk/#pipe) |  Only one of `pipe` or `socketAddress` can be set. |
 
 
 
@@ -165,10 +165,10 @@ the subnet mask for a `CIDR <https://tools.ietf.org/html/rfc4632>`_ range.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `addressPrefix` | `string` | IPv4 or IPv6 address, e.g. ``192.0.0.0`` or ``2001:db8::``. |  |
-| `prefixLen` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Length of prefix, e.g. 0, 32. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `addressPrefix` | `string` | IPv4 or IPv6 address, e.g. ``192.0.0.0`` or ``2001:db8::``. |
+| `prefixLen` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Length of prefix, e.g. 0, 32. |
 
 
 

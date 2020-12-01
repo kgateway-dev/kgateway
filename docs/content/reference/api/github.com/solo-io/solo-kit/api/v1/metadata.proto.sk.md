@@ -42,16 +42,16 @@ Metadata contains general properties of resources for purposes of versioning, an
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` | Name of the resource. Names must be unique and follow the following syntax rules: One or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters. |  |
-| `namespace` | `string` | Namespace is used for the namespacing of resources. |  |
-| `cluster` | `string` | Cluster indicates the cluster this resource belongs to Cluster is only applicable in certain contexts, e.g. Kubernetes An empty string here refers to the local cluster. |  |
-| `resourceVersion` | `string` | An opaque value that represents the internal version of this object that can be used by clients to determine when objects have changed. |  |
-| `labels` | `map<string, string>` | Map of string keys and values that can be used to organize and categorize (scope and select) objects. Some resources contain `selectors` which can be linked with other resources by their labels. |  |
-| `annotations` | `map<string, string>` | Annotations is an unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. |  |
-| `generation` | `int` | A sequence number representing a specific generation of the desired state. Currently only populated for resources backed by Kubernetes. |  |
-| `ownerReferences` | [[]core.solo.io.Metadata.OwnerReference](../metadata.proto.sk/#ownerreference) | List of objects depended by this object. Currently only populated for resources backed by Kubernetes. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | Name of the resource. Names must be unique and follow the following syntax rules: One or more lowercase rfc1035/rfc1123 labels separated by '.' with a maximum length of 253 characters. |
+| `namespace` | `string` | Namespace is used for the namespacing of resources. |
+| `cluster` | `string` | Cluster indicates the cluster this resource belongs to Cluster is only applicable in certain contexts, e.g. Kubernetes An empty string here refers to the local cluster. |
+| `resourceVersion` | `string` | An opaque value that represents the internal version of this object that can be used by clients to determine when objects have changed. |
+| `labels` | `map<string, string>` | Map of string keys and values that can be used to organize and categorize (scope and select) objects. Some resources contain `selectors` which can be linked with other resources by their labels. |
+| `annotations` | `map<string, string>` | Annotations is an unstructured key value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. |
+| `generation` | `int` | A sequence number representing a specific generation of the desired state. Currently only populated for resources backed by Kubernetes. |
+| `ownerReferences` | [[]core.solo.io.Metadata.OwnerReference](../metadata.proto.sk/#ownerreference) | List of objects depended by this object. Currently only populated for resources backed by Kubernetes. |
 
 
 
@@ -73,14 +73,14 @@ https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#ownerrefere
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `apiVersion` | `string` |  |  |
-| `blockOwnerDeletion` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |  |
-| `controller` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |  |
-| `kind` | `string` |  |  |
-| `name` | `string` |  |  |
-| `uid` | `string` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `apiVersion` | `string` |  |
+| `blockOwnerDeletion` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
+| `controller` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
+| `kind` | `string` |  |
+| `name` | `string` |  |
+| `uid` | `string` |  |
 
 
 

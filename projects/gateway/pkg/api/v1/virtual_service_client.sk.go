@@ -3,6 +3,8 @@
 package v1
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type virtualServiceClient struct {
 	rc clients.ResourceClient
 }
 
-func NewVirtualServiceClient(rcFactory factory.ResourceClientFactory) (VirtualServiceClient, error) {
-	return NewVirtualServiceClientWithToken(rcFactory, "")
+func NewVirtualServiceClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (VirtualServiceClient, error) {
+	return NewVirtualServiceClientWithToken(ctx, rcFactory, "")
 }
 
-func NewVirtualServiceClientWithToken(rcFactory factory.ResourceClientFactory, token string) (VirtualServiceClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewVirtualServiceClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (VirtualServiceClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &VirtualService{},
 		Token:        token,
 	})

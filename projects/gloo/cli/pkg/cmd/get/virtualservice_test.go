@@ -1,6 +1,8 @@
 package get_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils"
@@ -18,16 +20,23 @@ import (
 )
 
 var _ = Describe("VirtualService", func() {
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
 
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
-		_, err := helpers.MustKubeClient().CoreV1().Namespaces().Create(&corev1.Namespace{
+		ctx, cancel = context.WithCancel(context.Background())
+		_, err := helpers.MustKubeClient().CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: defaults.GlooSystem,
 			},
-		})
+		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	AfterEach(func() { cancel() })
 
 	getVs := func() *gatewayv1.VirtualService {
 		upstream := samples.SimpleUpstream()
@@ -65,7 +74,7 @@ var _ = Describe("VirtualService", func() {
 	Context("Prints virtual services with table formatting", func() {
 
 		It("gets the virtual service", func() {
-			vsc := helpers.MustVirtualServiceClient()
+			vsc := helpers.MustVirtualServiceClient(ctx)
 			_, err := vsc.Write(getVs(), clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -80,7 +89,7 @@ var _ = Describe("VirtualService", func() {
 		})
 
 		It("gets the virtual service routes", func() {
-			vsc := helpers.MustVirtualServiceClient()
+			vsc := helpers.MustVirtualServiceClient(ctx)
 			_, err := vsc.Write(getVs(), clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 

@@ -1,6 +1,8 @@
 package common
 
 import (
+	"context"
+
 	"github.com/ghodss/yaml"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -12,24 +14,24 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
-func CreateAndPrintObject(yml []byte, outputType printers.OutputType, namespace string) error {
+func CreateAndPrintObject(ctx context.Context, yml []byte, outputType printers.OutputType, namespace string) error {
 	resource, err := resourceFromYaml(yml)
 	if err != nil {
 		return eris.Wrapf(err, "parsing resource from yaml")
 	}
 	switch res := resource.(type) {
 	case *gloov1.Upstream:
-		us, err := helpers.MustNamespacedUpstreamClient(namespace).Write(res, clients.WriteOpts{})
+		us, err := helpers.MustNamespacedUpstreamClient(ctx, namespace).Write(res, clients.WriteOpts{})
 		if err != nil {
 			return eris.Wrapf(err, "saving Upstream to storage")
 		}
 		_ = printers.PrintUpstreams(gloov1.UpstreamList{us}, outputType, nil)
 	case *v1.VirtualService:
-		vs, err := helpers.MustNamespacedVirtualServiceClient(namespace).Write(res, clients.WriteOpts{})
+		vs, err := helpers.MustNamespacedVirtualServiceClient(ctx, namespace).Write(res, clients.WriteOpts{})
 		if err != nil {
 			return eris.Wrapf(err, "saving VirtualService to storage")
 		}
-		_ = printers.PrintVirtualServices(v1.VirtualServiceList{vs}, outputType, namespace)
+		_ = printers.PrintVirtualServices(ctx, v1.VirtualServiceList{vs}, outputType, namespace)
 	default:
 		return eris.Errorf("cli error: unimplemented resource type %v", resource)
 	}

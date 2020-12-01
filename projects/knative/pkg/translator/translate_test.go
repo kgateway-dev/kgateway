@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"knative.dev/serving/pkg/apis/networking/v1alpha1"
+	"knative.dev/networking/pkg/apis/networking/v1alpha1"
 )
 
 var _ = Describe("Translate", func() {
@@ -58,9 +58,9 @@ var _ = Describe("Translate", func() {
 											},
 										},
 									},
-									AppendHeaders: map[string]string{"add": "me"},
-									Timeout:       &metav1.Duration{Duration: time.Nanosecond}, // good luck
-									Retries: &v1alpha1.HTTPRetry{
+									AppendHeaders:     map[string]string{"add": "me"},
+									DeprecatedTimeout: &metav1.Duration{Duration: time.Nanosecond}, // good luck
+									DeprecatedRetries: &v1alpha1.HTTPRetry{
 										Attempts:      14,
 										PerTryTimeout: &metav1.Duration{Duration: time.Microsecond},
 									},
@@ -86,9 +86,9 @@ var _ = Describe("Translate", func() {
 											},
 										},
 									},
-									AppendHeaders: map[string]string{"add": "me"},
-									Timeout:       &metav1.Duration{Duration: time.Nanosecond}, // good luck
-									Retries: &v1alpha1.HTTPRetry{
+									AppendHeaders:     map[string]string{"add": "me"},
+									DeprecatedTimeout: &metav1.Duration{Duration: time.Nanosecond}, // good luck
+									DeprecatedRetries: &v1alpha1.HTTPRetry{
 										Attempts:      14,
 										PerTryTimeout: &metav1.Duration{Duration: time.Microsecond},
 									},
@@ -130,9 +130,9 @@ var _ = Describe("Translate", func() {
 											},
 										},
 									},
-									AppendHeaders: map[string]string{"add": "me"},
-									Timeout:       &metav1.Duration{Duration: time.Nanosecond}, // good luck
-									Retries: &v1alpha1.HTTPRetry{
+									AppendHeaders:     map[string]string{"add": "me"},
+									DeprecatedTimeout: &metav1.Duration{Duration: time.Nanosecond}, // good luck
+									DeprecatedRetries: &v1alpha1.HTTPRetry{
 										Attempts:      14,
 										PerTryTimeout: &metav1.Duration{Duration: time.Microsecond},
 									},

@@ -19,14 +19,14 @@ type WebhookTlsConfig struct {
 func UpdateValidatingWebhookConfigurationCaBundle(ctx context.Context, kube kubernetes.Interface, vwcName string, cfg WebhookTlsConfig) error {
 	contextutils.LoggerFrom(ctx).Infow("attempting to patch caBundle for ValidatingWebhookConfiguration", zap.String("svc", cfg.ServiceName), zap.String("vwc", vwcName))
 
-	vwc, err := kube.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(vwcName, metav1.GetOptions{})
+	vwc, err := kube.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Get(ctx, vwcName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to retrieve vwc")
 	}
 
 	setCaBundle(ctx, vwc, cfg)
 
-	if _, err := kube.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Update(vwc); err != nil {
+	if _, err := kube.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Update(ctx, vwc, metav1.UpdateOptions{}); err != nil {
 		return errors.Wrapf(err, "failed to update vwc")
 	}
 

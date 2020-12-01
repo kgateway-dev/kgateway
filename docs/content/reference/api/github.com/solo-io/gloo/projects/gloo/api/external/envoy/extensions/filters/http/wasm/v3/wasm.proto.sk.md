@@ -36,9 +36,9 @@ copied from https://github.com/envoyproxy/envoy-wasm/blob/2721ee7897207c87c6cd2d
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `config` | [.envoy.extensions.wasm.v3.PluginConfig](../../../../../../../../../../../../../../envoy/extensions/wasm/v3/wasm.proto.sk/#pluginconfig) | General Plugin configuration. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `config` | [.envoy.extensions.wasm.v3.PluginConfig](../../../../../../../../../../../../../../envoy/extensions/wasm/v3/wasm.proto.sk/#pluginconfig) | General Plugin configuration. |
 
 
 

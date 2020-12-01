@@ -149,7 +149,7 @@ func KubeServiceClientForSettings(ctx context.Context,
 		return nil, errors.Errorf("internal error: shared cache cannot be nil")
 	}
 	memoryRcFactory := &factory.MemoryResourceClientFactory{Cache: sharedCache}
-	inMemoryClient, err := memoryRcFactory.NewResourceClient(factory.NewResourceClientParams{
+	inMemoryClient, err := memoryRcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &skkube.Service{},
 	})
 	if err != nil {

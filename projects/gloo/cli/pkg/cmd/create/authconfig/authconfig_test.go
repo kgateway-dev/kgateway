@@ -1,6 +1,8 @@
 package authconfig_test
 
 import (
+	"context"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/authconfig"
 
 	. "github.com/onsi/ginkgo"
@@ -16,39 +18,51 @@ import (
 )
 
 var _ = Describe("AuthConfig", func() {
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
+		ctx, cancel = context.WithCancel(context.Background())
+
 	})
 
-	getExtension := func() []*extauthpb.AuthConfig_Config {
-		ac, err := helpers.MustAuthConfigClient().Read("gloo-system", "ac1", clients.ReadOpts{})
+	AfterEach(func() {
+		cancel()
+	})
+
+	// since getExtension depends on the ctx, these functions must be regenerated everytime we regenerate the context.
+	getExtension := func(ctx context.Context) []*extauthpb.AuthConfig_Config {
+		ac, err := helpers.MustAuthConfigClient(ctx).Read("gloo-system", "ac1", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		return ac.Configs
 	}
 
-	getOIDCConfig := func() *extauthpb.OAuth {
-		return getExtension()[0].GetOauth()
+	getOIDCConfig := func(ctx context.Context) *extauthpb.OAuth {
+		return getExtension(ctx)[0].GetOauth()
 	}
 
-	getApiKeyConfig := func() *extauthpb.ApiKeyAuth {
-		return getExtension()[0].GetApiKeyAuth()
+	getApiKeyConfig := func(ctx context.Context) *extauthpb.ApiKeyAuth {
+		return getExtension(ctx)[0].GetApiKeyAuth()
 	}
-	getOpaConfig := func() *extauthpb.OpaAuth {
-		return getExtension()[0].GetOpaAuth()
+	getOpaConfig := func(ctx context.Context) *extauthpb.OpaAuth {
+		return getExtension(ctx)[0].GetOpaAuth()
 	}
 
-	get2ndOpaConfig := func() *extauthpb.OpaAuth {
-		return getExtension()[1].GetOpaAuth()
+	get2ndOpaConfig := func(ctx context.Context) *extauthpb.OpaAuth {
+		return getExtension(ctx)[1].GetOpaAuth()
 	}
 
 	DescribeTable("should create oidc authconfig",
-		func(cmd string, expected extauthpb.OAuth) {
+		func(ctx context.Context, cmd string, expected extauthpb.OAuth) {
 			err := testutils.Glooctl(cmd)
 			Expect(err).NotTo(HaveOccurred())
-			oidc := getOIDCConfig()
+			oidc := getOIDCConfig(ctx)
 			Expect(*oidc).To(Equal(expected))
 		},
-		Entry("with oid config", "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
+		Entry("with oid config", ctx, "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
 			"1 --oidc-auth-app-url http://app.example.com --oidc-auth-client-secret-name fake "+
 			"--oidc-auth-client-secret-namespace fakens --oidc-auth-issuer-url http://issuer.example.com "+
 			"--oidc-auth-callback-path /cb",
@@ -62,7 +76,7 @@ var _ = Describe("AuthConfig", func() {
 				IssuerUrl:    "http://issuer.example.com",
 				AppUrl:       "http://app.example.com",
 			}),
-		Entry("with default callback", "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
+		Entry("with default callback", ctx, "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
 			"1 --oidc-auth-app-url http://app.example.com --oidc-auth-client-secret-name fake "+
 			"--oidc-auth-client-secret-namespace fakens --oidc-auth-issuer-url http://issuer.example.com",
 			extauthpb.OAuth{
@@ -75,7 +89,7 @@ var _ = Describe("AuthConfig", func() {
 				IssuerUrl:    "http://issuer.example.com",
 				AppUrl:       "http://app.example.com",
 			}),
-		Entry("with default scopes", "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
+		Entry("with default scopes", ctx, "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
 			"1 --oidc-auth-app-url http://app.example.com --oidc-auth-client-secret-name fake "+
 			"--oidc-auth-client-secret-namespace fakens --oidc-auth-issuer-url http://issuer.example.com "+
 			"--oidc-scope=scope1 --oidc-scope=scope2",
@@ -93,19 +107,19 @@ var _ = Describe("AuthConfig", func() {
 	)
 
 	DescribeTable("should create apikey authconfig",
-		func(cmd string, expected extauthpb.ApiKeyAuth) {
+		func(ctx context.Context, cmd string, expected extauthpb.ApiKeyAuth) {
 			err := testutils.Glooctl(cmd)
 			Expect(err).NotTo(HaveOccurred())
-			apiKey := getApiKeyConfig()
+			apiKey := getApiKeyConfig(ctx)
 			Expect(*apiKey).To(Equal(expected))
 		},
-		Entry("with apikey config -- label selector", "create ac --name ac1 --enable-apikey-auth "+
+		Entry("with apikey config -- label selector", ctx, "create ac --name ac1 --enable-apikey-auth "+
 			"--apikey-label-selector k1=v1",
 			extauthpb.ApiKeyAuth{
 				LabelSelector: map[string]string{"k1": "v1"},
 			}),
 
-		Entry("with apikey config -- secret refs", "create ac --name ac1 --enable-apikey-auth "+
+		Entry("with apikey config -- secret refs", ctx, "create ac --name ac1 --enable-apikey-auth "+
 			"--apikey-secret-namespace ns1 --apikey-secret-name s1 ",
 			extauthpb.ApiKeyAuth{
 				LabelSelector: nil,
@@ -116,7 +130,7 @@ var _ = Describe("AuthConfig", func() {
 					},
 				},
 			}),
-		Entry("with apikey config -- both groups & secret refs", "create ac --name ac1 --enable-apikey-auth "+
+		Entry("with apikey config -- both groups & secret refs", ctx, "create ac --name ac1 --enable-apikey-auth "+
 			"--apikey-label-selector k1=v1 --apikey-secret-namespace ns1 --apikey-secret-name s1 ",
 			extauthpb.ApiKeyAuth{
 				LabelSelector: map[string]string{"k1": "v1"},
@@ -145,18 +159,18 @@ var _ = Describe("AuthConfig", func() {
 	})
 
 	DescribeTable("should create opa authconfig",
-		func(cmd string, expected extauthpb.OpaAuth) {
+		func(ctx context.Context, cmd string, expected extauthpb.OpaAuth) {
 			err := testutils.Glooctl(cmd)
 			Expect(err).NotTo(HaveOccurred())
-			opa := getOpaConfig()
+			opa := getOpaConfig(ctx)
 			Expect(*opa).To(Equal(expected))
 		},
-		Entry("with opa query and no modules", "create ac --name ac1 --enable-opa-auth "+
+		Entry("with opa query and no modules", ctx, "create ac --name ac1 --enable-opa-auth "+
 			"--opa-query test",
 			extauthpb.OpaAuth{
 				Query: "test",
 			}),
-		Entry("with opa query and some modules", "create ac --name ac1 --enable-opa-auth "+
+		Entry("with opa query and some modules", ctx, "create ac --name ac1 --enable-opa-auth "+
 			"--opa-query test --opa-module-ref ns1.name1 --opa-module-ref ns2.name2",
 			extauthpb.OpaAuth{
 				Query:   "test",
@@ -178,10 +192,10 @@ var _ = Describe("AuthConfig", func() {
 			Modules: []*core.ResourceRef{{Namespace: "ns1", Name: "name1"}, {Namespace: "ns2", Name: "name2"}},
 		}
 
-		oidc := getOIDCConfig()
+		oidc := getOIDCConfig(ctx)
 		Expect(oidc).NotTo(BeNil())
 
-		opa := get2ndOpaConfig()
+		opa := get2ndOpaConfig(ctx)
 		Expect(opa).NotTo(BeNil())
 		Expect(*opa).To(Equal(expected))
 
@@ -214,7 +228,7 @@ var _ = Describe("AuthConfig", func() {
 			}, func() {
 				err := testutils.Glooctl("create ac -i")
 				Expect(err).NotTo(HaveOccurred())
-				_, err = helpers.MustAuthConfigClient().Read("gloo-system", "default", clients.ReadOpts{})
+				_, err = helpers.MustAuthConfigClient(ctx).Read("gloo-system", "default", clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -260,7 +274,7 @@ var _ = Describe("AuthConfig", func() {
 				err := testutils.Glooctl("create ac -i")
 				Expect(err).NotTo(HaveOccurred())
 
-				oidc := getOIDCConfig()
+				oidc := getOIDCConfig(ctx)
 				expected := extauthpb.OAuth{
 					ClientId: "me",
 					ClientSecretRef: &core.ResourceRef{
@@ -307,7 +321,7 @@ var _ = Describe("AuthConfig", func() {
 				err := testutils.Glooctl("create ac -i")
 				Expect(err).NotTo(HaveOccurred())
 
-				apiKey := getApiKeyConfig()
+				apiKey := getApiKeyConfig(ctx)
 				expected := extauthpb.ApiKeyAuth{
 					LabelSelector: map[string]string{"k1": "v1"},
 					ApiKeySecretRefs: []*core.ResourceRef{
@@ -349,7 +363,7 @@ var _ = Describe("AuthConfig", func() {
 				err := testutils.Glooctl("create ac -i")
 				Expect(err).NotTo(HaveOccurred())
 
-				opa := getOpaConfig()
+				opa := getOpaConfig(ctx)
 				expected := extauthpb.OpaAuth{
 					Query: "test",
 					Modules: []*core.ResourceRef{

@@ -1,6 +1,8 @@
 package check_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v12 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -17,31 +19,39 @@ import (
 
 var _ = Describe("Root", func() {
 
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
+		ctx, cancel = context.WithCancel(context.Background())
 	})
+
+	AfterEach(func() { cancel() })
 
 	Context("With a good kube client", func() {
 
 		It("all checks pass with OK status", func() {
 
 			client := helpers.MustKubeClient()
-			client.CoreV1().Namespaces().Create(&corev1.Namespace{
+			client.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: defaults.GlooSystem,
 				},
-			})
+			}, metav1.CreateOptions{})
 
 			appName := "default"
-			client.AppsV1().Deployments("gloo-system").Create(&appsv1.Deployment{
+			client.AppsV1().Deployments("gloo-system").Create(ctx, &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      appName,
 					Namespace: "gloo-system",
 				},
 				Spec: appsv1.DeploymentSpec{},
-			})
+			}, metav1.CreateOptions{})
 
-			helpers.MustNamespacedSettingsClient("gloo-system").Write(&v1.Settings{
+			helpers.MustNamespacedSettingsClient(ctx, "gloo-system").Write(&v1.Settings{
 				Metadata: core.Metadata{
 					Name:      "default",
 					Namespace: "gloo-system",
@@ -65,22 +75,22 @@ var _ = Describe("Root", func() {
 
 		It("reports multiple errors at one time", func() {
 			client := helpers.MustKubeClient()
-			client.CoreV1().Namespaces().Create(&corev1.Namespace{
+			client.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: defaults.GlooSystem,
 				},
-			})
+			}, metav1.CreateOptions{})
 
 			appName := "default"
-			client.AppsV1().Deployments("gloo-system").Create(&appsv1.Deployment{
+			client.AppsV1().Deployments("gloo-system").Create(ctx, &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      appName,
 					Namespace: "gloo-system",
 				},
 				Spec: appsv1.DeploymentSpec{},
-			})
+			}, metav1.CreateOptions{})
 
-			helpers.MustNamespacedSettingsClient("gloo-system").Write(&v1.Settings{
+			helpers.MustNamespacedSettingsClient(ctx, "gloo-system").Write(&v1.Settings{
 				Metadata: core.Metadata{
 					Name:      "default",
 					Namespace: "gloo-system",
@@ -89,7 +99,7 @@ var _ = Describe("Root", func() {
 
 			// Creates rejected upstream in the gloo-system namespace
 
-			helpers.MustNamespacedUpstreamClient("gloo-system").Write(&v1.Upstream{
+			helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(&v1.Upstream{
 				Metadata: core.Metadata{
 					Name:      "some-warning-upstream",
 					Namespace: "gloo-system",
@@ -100,7 +110,7 @@ var _ = Describe("Root", func() {
 				},
 			}, clients.WriteOpts{})
 
-			helpers.MustNamespacedUpstreamClient("gloo-system").Write(&v1.Upstream{
+			helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(&v1.Upstream{
 				Metadata: core.Metadata{
 					Name:      "some-rejected-upstream",
 					Namespace: "gloo-system",
@@ -111,7 +121,7 @@ var _ = Describe("Root", func() {
 				},
 			}, clients.WriteOpts{})
 
-			helpers.MustNamespacedVirtualServiceClient("gloo-system").Write(
+			helpers.MustNamespacedVirtualServiceClient(ctx, "gloo-system").Write(
 				&v12.VirtualService{
 					Metadata: core.Metadata{Name: "some-bad-vs", Namespace: "gloo-system"},
 					Status: core.Status{
@@ -140,22 +150,22 @@ var _ = Describe("Root", func() {
 
 			myNs := "my-namespace"
 			client := helpers.MustKubeClient()
-			client.CoreV1().Namespaces().Create(&corev1.Namespace{
+			client.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: myNs,
 				},
-			})
+			}, metav1.CreateOptions{})
 
 			appName := "default"
-			client.AppsV1().Deployments(myNs).Create(&appsv1.Deployment{
+			client.AppsV1().Deployments(myNs).Create(ctx, &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      appName,
 					Namespace: myNs,
 				},
 				Spec: appsv1.DeploymentSpec{},
-			})
+			}, metav1.CreateOptions{})
 
-			helpers.MustNamespacedSettingsClient(myNs).Write(&v1.Settings{
+			helpers.MustNamespacedSettingsClient(ctx, myNs).Write(&v1.Settings{
 				Metadata: core.Metadata{
 					Name:      "default",
 					Namespace: myNs,

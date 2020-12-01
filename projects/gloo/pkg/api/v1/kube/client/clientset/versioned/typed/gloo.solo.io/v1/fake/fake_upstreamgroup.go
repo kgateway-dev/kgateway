@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	gloosoloiov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var upstreamgroupsResource = schema.GroupVersionResource{Group: "gloo.solo.io", 
 var upstreamgroupsKind = schema.GroupVersionKind{Group: "gloo.solo.io", Version: "v1", Kind: "UpstreamGroup"}
 
 // Get takes name of the upstreamGroup, and returns the corresponding upstreamGroup object, and an error if there is any.
-func (c *FakeUpstreamGroups) Get(name string, options v1.GetOptions) (result *gloosoloiov1.UpstreamGroup, err error) {
+func (c *FakeUpstreamGroups) Get(ctx context.Context, name string, options v1.GetOptions) (result *gloosoloiov1.UpstreamGroup, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(upstreamgroupsResource, c.ns, name), &gloosoloiov1.UpstreamGroup{})
 
@@ -50,7 +52,7 @@ func (c *FakeUpstreamGroups) Get(name string, options v1.GetOptions) (result *gl
 }
 
 // List takes label and field selectors, and returns the list of UpstreamGroups that match those selectors.
-func (c *FakeUpstreamGroups) List(opts v1.ListOptions) (result *gloosoloiov1.UpstreamGroupList, err error) {
+func (c *FakeUpstreamGroups) List(ctx context.Context, opts v1.ListOptions) (result *gloosoloiov1.UpstreamGroupList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(upstreamgroupsResource, upstreamgroupsKind, c.ns, opts), &gloosoloiov1.UpstreamGroupList{})
 
@@ -72,14 +74,14 @@ func (c *FakeUpstreamGroups) List(opts v1.ListOptions) (result *gloosoloiov1.Ups
 }
 
 // Watch returns a watch.Interface that watches the requested upstreamGroups.
-func (c *FakeUpstreamGroups) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeUpstreamGroups) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(upstreamgroupsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a upstreamGroup and creates it.  Returns the server's representation of the upstreamGroup, and an error, if there is any.
-func (c *FakeUpstreamGroups) Create(upstreamGroup *gloosoloiov1.UpstreamGroup) (result *gloosoloiov1.UpstreamGroup, err error) {
+func (c *FakeUpstreamGroups) Create(ctx context.Context, upstreamGroup *gloosoloiov1.UpstreamGroup, opts v1.CreateOptions) (result *gloosoloiov1.UpstreamGroup, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(upstreamgroupsResource, c.ns, upstreamGroup), &gloosoloiov1.UpstreamGroup{})
 
@@ -90,7 +92,7 @@ func (c *FakeUpstreamGroups) Create(upstreamGroup *gloosoloiov1.UpstreamGroup) (
 }
 
 // Update takes the representation of a upstreamGroup and updates it. Returns the server's representation of the upstreamGroup, and an error, if there is any.
-func (c *FakeUpstreamGroups) Update(upstreamGroup *gloosoloiov1.UpstreamGroup) (result *gloosoloiov1.UpstreamGroup, err error) {
+func (c *FakeUpstreamGroups) Update(ctx context.Context, upstreamGroup *gloosoloiov1.UpstreamGroup, opts v1.UpdateOptions) (result *gloosoloiov1.UpstreamGroup, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(upstreamgroupsResource, c.ns, upstreamGroup), &gloosoloiov1.UpstreamGroup{})
 
@@ -102,7 +104,7 @@ func (c *FakeUpstreamGroups) Update(upstreamGroup *gloosoloiov1.UpstreamGroup) (
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeUpstreamGroups) UpdateStatus(upstreamGroup *gloosoloiov1.UpstreamGroup) (*gloosoloiov1.UpstreamGroup, error) {
+func (c *FakeUpstreamGroups) UpdateStatus(ctx context.Context, upstreamGroup *gloosoloiov1.UpstreamGroup, opts v1.UpdateOptions) (*gloosoloiov1.UpstreamGroup, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(upstreamgroupsResource, "status", c.ns, upstreamGroup), &gloosoloiov1.UpstreamGroup{})
 
@@ -113,7 +115,7 @@ func (c *FakeUpstreamGroups) UpdateStatus(upstreamGroup *gloosoloiov1.UpstreamGr
 }
 
 // Delete takes name of the upstreamGroup and deletes it. Returns an error if one occurs.
-func (c *FakeUpstreamGroups) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeUpstreamGroups) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(upstreamgroupsResource, c.ns, name), &gloosoloiov1.UpstreamGroup{})
 
@@ -121,15 +123,15 @@ func (c *FakeUpstreamGroups) Delete(name string, options *v1.DeleteOptions) erro
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeUpstreamGroups) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(upstreamgroupsResource, c.ns, listOptions)
+func (c *FakeUpstreamGroups) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(upstreamgroupsResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &gloosoloiov1.UpstreamGroupList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched upstreamGroup.
-func (c *FakeUpstreamGroups) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *gloosoloiov1.UpstreamGroup, err error) {
+func (c *FakeUpstreamGroups) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *gloosoloiov1.UpstreamGroup, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(upstreamgroupsResource, c.ns, name, pt, data, subresources...), &gloosoloiov1.UpstreamGroup{})
 

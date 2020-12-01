@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	gloosoloiov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var artifactsResource = schema.GroupVersionResource{Group: "gloo.solo.io", Versi
 var artifactsKind = schema.GroupVersionKind{Group: "gloo.solo.io", Version: "v1", Kind: "Artifact"}
 
 // Get takes name of the artifact, and returns the corresponding artifact object, and an error if there is any.
-func (c *FakeArtifacts) Get(name string, options v1.GetOptions) (result *gloosoloiov1.Artifact, err error) {
+func (c *FakeArtifacts) Get(ctx context.Context, name string, options v1.GetOptions) (result *gloosoloiov1.Artifact, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(artifactsResource, c.ns, name), &gloosoloiov1.Artifact{})
 
@@ -50,7 +52,7 @@ func (c *FakeArtifacts) Get(name string, options v1.GetOptions) (result *gloosol
 }
 
 // List takes label and field selectors, and returns the list of Artifacts that match those selectors.
-func (c *FakeArtifacts) List(opts v1.ListOptions) (result *gloosoloiov1.ArtifactList, err error) {
+func (c *FakeArtifacts) List(ctx context.Context, opts v1.ListOptions) (result *gloosoloiov1.ArtifactList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(artifactsResource, artifactsKind, c.ns, opts), &gloosoloiov1.ArtifactList{})
 
@@ -72,14 +74,14 @@ func (c *FakeArtifacts) List(opts v1.ListOptions) (result *gloosoloiov1.Artifact
 }
 
 // Watch returns a watch.Interface that watches the requested artifacts.
-func (c *FakeArtifacts) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeArtifacts) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(artifactsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a artifact and creates it.  Returns the server's representation of the artifact, and an error, if there is any.
-func (c *FakeArtifacts) Create(artifact *gloosoloiov1.Artifact) (result *gloosoloiov1.Artifact, err error) {
+func (c *FakeArtifacts) Create(ctx context.Context, artifact *gloosoloiov1.Artifact, opts v1.CreateOptions) (result *gloosoloiov1.Artifact, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(artifactsResource, c.ns, artifact), &gloosoloiov1.Artifact{})
 
@@ -90,7 +92,7 @@ func (c *FakeArtifacts) Create(artifact *gloosoloiov1.Artifact) (result *gloosol
 }
 
 // Update takes the representation of a artifact and updates it. Returns the server's representation of the artifact, and an error, if there is any.
-func (c *FakeArtifacts) Update(artifact *gloosoloiov1.Artifact) (result *gloosoloiov1.Artifact, err error) {
+func (c *FakeArtifacts) Update(ctx context.Context, artifact *gloosoloiov1.Artifact, opts v1.UpdateOptions) (result *gloosoloiov1.Artifact, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(artifactsResource, c.ns, artifact), &gloosoloiov1.Artifact{})
 
@@ -101,7 +103,7 @@ func (c *FakeArtifacts) Update(artifact *gloosoloiov1.Artifact) (result *gloosol
 }
 
 // Delete takes name of the artifact and deletes it. Returns an error if one occurs.
-func (c *FakeArtifacts) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeArtifacts) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(artifactsResource, c.ns, name), &gloosoloiov1.Artifact{})
 
@@ -109,15 +111,15 @@ func (c *FakeArtifacts) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeArtifacts) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(artifactsResource, c.ns, listOptions)
+func (c *FakeArtifacts) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(artifactsResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &gloosoloiov1.ArtifactList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched artifact.
-func (c *FakeArtifacts) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *gloosoloiov1.Artifact, err error) {
+func (c *FakeArtifacts) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *gloosoloiov1.Artifact, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(artifactsResource, c.ns, name, pt, data, subresources...), &gloosoloiov1.Artifact{})
 

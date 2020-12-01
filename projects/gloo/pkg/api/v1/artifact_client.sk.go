@@ -3,6 +3,8 @@
 package v1
 
 import (
+	"context"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -28,12 +30,12 @@ type artifactClient struct {
 	rc clients.ResourceClient
 }
 
-func NewArtifactClient(rcFactory factory.ResourceClientFactory) (ArtifactClient, error) {
-	return NewArtifactClientWithToken(rcFactory, "")
+func NewArtifactClient(ctx context.Context, rcFactory factory.ResourceClientFactory) (ArtifactClient, error) {
+	return NewArtifactClientWithToken(ctx, rcFactory, "")
 }
 
-func NewArtifactClientWithToken(rcFactory factory.ResourceClientFactory, token string) (ArtifactClient, error) {
-	rc, err := rcFactory.NewResourceClient(factory.NewResourceClientParams{
+func NewArtifactClientWithToken(ctx context.Context, rcFactory factory.ResourceClientFactory, token string) (ArtifactClient, error) {
+	rc, err := rcFactory.NewResourceClient(ctx, factory.NewResourceClientParams{
 		ResourceType: &Artifact{},
 		Token:        token,
 	})

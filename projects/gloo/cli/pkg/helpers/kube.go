@@ -1,13 +1,14 @@
 package helpers
 
 import (
+	"context"
 	"time"
 
 	"github.com/solo-io/go-utils/kubeutils"
 	"k8s.io/client-go/kubernetes"
 )
 
-func CheckKubernetesConnection() error {
+func CheckKubernetesConnection(ctx context.Context) error {
 	cfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		return err
@@ -16,6 +17,6 @@ func CheckKubernetesConnection() error {
 	if err != nil {
 		return err
 	}
-	_, err = kubeClient.RESTClient().Get().Timeout(10 * time.Second).DoRaw()
+	_, err = kubeClient.RESTClient().Get().Timeout(10 * time.Second).DoRaw(ctx)
 	return err
 }

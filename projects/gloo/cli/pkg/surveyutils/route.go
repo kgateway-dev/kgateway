@@ -1,6 +1,7 @@
 package surveyutils
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -85,14 +86,14 @@ func getMatcherInteractive(match *options.RouteMatchers) error {
 	return nil
 }
 
-func getDestinationInteractive(route *options.InputRoute) error {
+func getDestinationInteractive(ctx context.Context, route *options.InputRoute) error {
 	dest := &route.Destination
 	// collect upstreams list
 	ussByKey := make(map[string]*v1.Upstream)
 	ugsByKey := make(map[string]*v1.UpstreamGroup)
 	var usKeys []string
-	for _, ns := range helpers.MustGetNamespaces() {
-		usList, err := helpers.MustNamespacedUpstreamClient(ns).List(ns, clients.ListOpts{})
+	for _, ns := range helpers.MustGetNamespaces(ctx) {
+		usList, err := helpers.MustNamespacedUpstreamClient(ctx, ns).List(ns, clients.ListOpts{})
 		if err != nil {
 			return err
 		}
@@ -106,8 +107,8 @@ func getDestinationInteractive(route *options.InputRoute) error {
 		return errors.Errorf("no upstreams found. create an upstream first or enable discovery.")
 	}
 
-	for _, ns := range helpers.MustGetNamespaces() {
-		ugList, err := helpers.MustNamespacedUpstreamGroupClient(ns).List(ns, clients.ListOpts{})
+	for _, ns := range helpers.MustGetNamespaces(ctx) {
+		ugList, err := helpers.MustNamespacedUpstreamGroupClient(ctx, ns).List(ns, clients.ListOpts{})
 		if err != nil {
 			return err
 		}
@@ -229,9 +230,9 @@ func AddRouteFlagsInteractive(opts *options.Options) error {
 	vsByKey := make(map[string]core.ResourceRef)
 	vsKeys := []string{"create a new virtualservice"}
 	var namespaces []string
-	for _, ns := range helpers.MustGetNamespaces() {
+	for _, ns := range helpers.MustGetNamespaces(opts.Top.Ctx) {
 		namespaces = append(namespaces, ns)
-		vsList, err := helpers.MustNamespacedVirtualServiceClient(ns).List(ns, clients.ListOpts{})
+		vsList, err := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{})
 		if err != nil {
 			return err
 		}
@@ -280,7 +281,7 @@ func AddRouteFlagsInteractive(opts *options.Options) error {
 	if err := getMatcherInteractive(&opts.Add.Route.Matcher); err != nil {
 		return err
 	}
-	if err := getDestinationInteractive(&opts.Add.Route); err != nil {
+	if err := getDestinationInteractive(opts.Top.Ctx, &opts.Add.Route); err != nil {
 		return err
 	}
 	if err := getPluginsInteractive(&opts.Add.Route.Plugins); err != nil {
@@ -352,9 +353,9 @@ func SelectVirtualServiceInteractiveWithPrompt(opts *options.Options, prompt str
 	vsByKey := make(map[string]*gatewayv1.VirtualService)
 	var vsKeys []string
 	var namespaces []string
-	for _, ns := range helpers.MustGetNamespaces() {
+	for _, ns := range helpers.MustGetNamespaces(opts.Top.Ctx) {
 		namespaces = append(namespaces, ns)
-		vsList, err := helpers.MustNamespacedVirtualServiceClient(ns).List(ns, clients.ListOpts{Ctx: opts.Top.Ctx})
+		vsList, err := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{Ctx: opts.Top.Ctx})
 		if err != nil {
 			return nil, err
 		}

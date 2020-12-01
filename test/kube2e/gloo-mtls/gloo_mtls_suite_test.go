@@ -28,6 +28,8 @@ import (
 var (
 	testHelper       *helper.SoloTestHelper
 	installNamespace = "gloo-system"
+	ctx              context.Context
+	cancel           context.CancelFunc
 )
 
 func TestGlooMtls(t *testing.T) {
@@ -44,6 +46,7 @@ func TestGlooMtls(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	ctx, cancel = context.WithCancel(context.Background())
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 
@@ -61,7 +64,7 @@ var _ = BeforeSuite(func() {
 	values, cleanup := getHelmOverrides()
 	defer cleanup()
 
-	err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", values, "-v"))
+	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", values, "-v"))
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(func() error {
 		opts := &options.Options{
@@ -100,6 +103,7 @@ var _ = AfterSuite(func() {
 		EventuallyWithOffset(1, func() error {
 			return testutils.Kubectl("get", "namespace", testHelper.InstallNamespace)
 		}, "60s", "1s").Should(HaveOccurred())
+		cancel()
 	}
 })
 

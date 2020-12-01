@@ -1,12 +1,13 @@
 package knative
 
 import (
+	"context"
 	"sort"
 
 	"github.com/solo-io/gloo/projects/knative/api/external/knative"
 	v1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
-	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
-	knativeclient "knative.dev/serving/pkg/client/clientset/versioned"
+	knativev1alpha1 "knative.dev/networking/pkg/apis/networking/v1alpha1"
+	knativeclient "knative.dev/networking/pkg/client/clientset/versioned"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -147,7 +148,7 @@ func (rc *ResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-cha
 	return resourcesChan, errs, nil
 }
 
-func (rc *ResourceClient) exist(namespace, name string) bool {
-	_, err := rc.knativeClient.NetworkingV1alpha1().Ingresses(namespace).Get(name, metav1.GetOptions{})
+func (rc *ResourceClient) exist(ctx context.Context, namespace, name string) bool {
+	_, err := rc.knativeClient.NetworkingV1alpha1().Ingresses(namespace).Get(ctx, name, metav1.GetOptions{})
 	return err == nil
 }

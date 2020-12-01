@@ -35,10 +35,10 @@ Representation of a Kubernetes cluster that has been registered.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `secretName` | `string` | name of the secret which contains the kubeconfig with information to connect to the remote cluster. |  |
-| `clusterDomain` | `string` | name local DNS suffix used by the cluster. used for building FQDNs for in-cluster services defaults to 'cluster.local'. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `secretName` | `string` | name of the secret which contains the kubeconfig with information to connect to the remote cluster. |
+| `clusterDomain` | `string` | name local DNS suffix used by the cluster. used for building FQDNs for in-cluster services defaults to 'cluster.local'. |
 
 
 
@@ -53,9 +53,9 @@ Representation of a Kubernetes cluster that has been registered.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `status` | [[]core.skv2.solo.io.Status](../../../core/v1/core.proto.sk/#status) | List of statuses about the kubernetes cluster. This list allows for multiple applications/pods to record their connection status. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `status` | [[]core.skv2.solo.io.Status](../../../core/v1/core.proto.sk/#status) | List of statuses about the kubernetes cluster. This list allows for multiple applications/pods to record their connection status. |
 
 
 

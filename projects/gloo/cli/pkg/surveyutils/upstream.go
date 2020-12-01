@@ -1,6 +1,7 @@
 package surveyutils
 
 import (
+	"context"
 	"fmt"
 
 	errors "github.com/rotisserie/eris"
@@ -12,7 +13,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-func getAwsInteractive(aws *options.InputAwsSpec) error {
+func getAwsInteractive(ctx context.Context, aws *options.InputAwsSpec) error {
 	if err := cliutil.GetStringInputDefault(
 		"What region are the AWS services in for this upstream?",
 		&aws.Region,
@@ -22,10 +23,10 @@ func getAwsInteractive(aws *options.InputAwsSpec) error {
 	}
 
 	// collect secrets list
-	secretClient := helpers.MustSecretClient()
+	secretClient := helpers.MustSecretClient(ctx)
 	secretsByKey := make(map[string]core.ResourceRef)
 	var secretKeys []string
-	for _, ns := range helpers.MustGetNamespaces() {
+	for _, ns := range helpers.MustGetNamespaces(ctx) {
 		secretList, err := secretClient.List(ns, clients.ListOpts{})
 		if err != nil {
 			return err
@@ -55,7 +56,7 @@ func getAwsInteractive(aws *options.InputAwsSpec) error {
 	return nil
 }
 
-func getAzureInteractive(azure *options.InputAzureSpec) error {
+func getAzureInteractive(ctx context.Context, azure *options.InputAzureSpec) error {
 	if err := cliutil.GetStringInputDefault(
 		"What is the name of the Azure Functions app to associate with this upstream?",
 		&azure.FunctionAppName,
@@ -65,10 +66,10 @@ func getAzureInteractive(azure *options.InputAzureSpec) error {
 	}
 
 	// collect secrets list
-	secretClient := helpers.MustSecretClient()
+	secretClient := helpers.MustSecretClient(ctx)
 	secretsByKey := make(map[string]core.ResourceRef)
 	var secretKeys []string
-	for _, ns := range helpers.MustGetNamespaces() {
+	for _, ns := range helpers.MustGetNamespaces(ctx) {
 		secretList, err := secretClient.List(ns, clients.ListOpts{})
 		if err != nil {
 			return err
@@ -108,7 +109,7 @@ func getStaticInteractive(static *options.InputStaticSpec) error {
 	return nil
 }
 
-func AddUpstreamFlagsInteractive(upstream *options.InputUpstream) error {
+func AddUpstreamFlagsInteractive(ctx context.Context, upstream *options.InputUpstream) error {
 	if upstream.UpstreamType == "" {
 		if err := cliutil.ChooseFromList(
 			"What type of Upstream do you want to create?",
@@ -120,11 +121,11 @@ func AddUpstreamFlagsInteractive(upstream *options.InputUpstream) error {
 	}
 	switch upstream.UpstreamType {
 	case options.UpstreamType_Aws:
-		if err := getAwsInteractive(&upstream.Aws); err != nil {
+		if err := getAwsInteractive(ctx, &upstream.Aws); err != nil {
 			return err
 		}
 	case options.UpstreamType_Azure:
-		if err := getAzureInteractive(&upstream.Azure); err != nil {
+		if err := getAzureInteractive(ctx, &upstream.Azure); err != nil {
 			return err
 		}
 	case options.UpstreamType_Static:

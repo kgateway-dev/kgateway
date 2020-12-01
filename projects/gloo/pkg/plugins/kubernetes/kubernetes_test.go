@@ -71,7 +71,7 @@ var _ = Describe("Kubernetes", func() {
 			// create a service
 			// create 2 pods for that service
 			// one with extra labels, one without
-			svc, err := kubeClient.CoreV1().Services(svcNamespace).Create(&kubev1.Service{
+			svc, err := kubeClient.CoreV1().Services(svcNamespace).Create(ctx, &kubev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: svcNamespace,
 					Name:      svcName,
@@ -89,9 +89,9 @@ var _ = Describe("Kubernetes", func() {
 						},
 					},
 				},
-			})
+			}, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			_, err = kubeClient.CoreV1().Pods(svcNamespace).Create(&kubev1.Pod{
+			_, err = kubeClient.CoreV1().Pods(svcNamespace).Create(ctx, &kubev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod-for-" + svc.Name + "-basic",
 					Namespace: svcNamespace,
@@ -105,9 +105,9 @@ var _ = Describe("Kubernetes", func() {
 						},
 					},
 				},
-			})
+			}, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			_, err = kubeClient.CoreV1().Pods(svcNamespace).Create(&kubev1.Pod{
+			_, err = kubeClient.CoreV1().Pods(svcNamespace).Create(ctx, &kubev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "pod-for-" + svc.Name + "-extra",
 					Namespace: svcNamespace,
@@ -121,9 +121,9 @@ var _ = Describe("Kubernetes", func() {
 						},
 					},
 				},
-			})
+			}, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			_, err = kubeClient.CoreV1().Endpoints(svcNamespace).Create(&kubev1.Endpoints{
+			_, err = kubeClient.CoreV1().Endpoints(svcNamespace).Create(ctx, &kubev1.Endpoints{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      svc.Name,
 					Namespace: svcNamespace,
@@ -138,7 +138,7 @@ var _ = Describe("Kubernetes", func() {
 						{Name: "bar", Port: 8080, Protocol: kubev1.ProtocolTCP},
 					},
 				}},
-			})
+			}, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 		AfterEach(func() {

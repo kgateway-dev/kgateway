@@ -39,10 +39,10 @@ Resource reference for an object
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` | name of the resource being referenced. |  |
-| `namespace` | `string` | namespace of the resource being referenced. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | name of the resource being referenced. |
+| `namespace` | `string` | namespace of the resource being referenced. |
 
 
 
@@ -60,11 +60,11 @@ Resource reference for a cross-cluster-scoped object
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` | name of the resource being referenced. |  |
-| `namespace` | `string` | namespace of the resource being referenced. |  |
-| `clusterName` | `string` | name of the cluster in which the resource exists. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | name of the resource being referenced. |
+| `namespace` | `string` | namespace of the resource being referenced. |
+| `clusterName` | `string` | name of the cluster in which the resource exists. |
 
 
 
@@ -83,12 +83,12 @@ Resource reference for a typed object
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `apiGroup` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | API group of the resource being referenced. |  |
-| `kind` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Kind of the resource being referenced. |  |
-| `name` | `string` | name of the resource being referenced. |  |
-| `namespace` | `string` | namespace of the resource being referenced. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `apiGroup` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | API group of the resource being referenced. |
+| `kind` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Kind of the resource being referenced. |
+| `name` | `string` | name of the resource being referenced. |
+| `namespace` | `string` | namespace of the resource being referenced. |
 
 
 
@@ -108,13 +108,13 @@ Resource reference for a typed, cross-cluster-scoped object
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `apiGroup` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | API group of the resource being referenced. |  |
-| `kind` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Kind of the resource being referenced. |  |
-| `name` | `string` | name of the resource being referenced. |  |
-| `namespace` | `string` | namespace of the resource being referenced. |  |
-| `clusterName` | `string` | name of the cluster in which the resource exists. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `apiGroup` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | API group of the resource being referenced. |
+| `kind` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Kind of the resource being referenced. |
+| `name` | `string` | name of the resource being referenced. |
+| `namespace` | `string` | namespace of the resource being referenced. |
+| `clusterName` | `string` | name of the cluster in which the resource exists. |
 
 
 
@@ -134,13 +134,13 @@ A generic status
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `state` | [.core.skv2.solo.io.Status.State](../core.proto.sk/#state) | The current state of the resource. |  |
-| `message` | `string` | A human readable message about the current state of the object. |  |
-| `observedGeneration` | `int` | The most recently observed generation of the resource. This value corresponds to the `metadata.generation` of a kubernetes resource. |  |
-| `processingTime` | [.google.protobuf.Timestamp](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/timestamp) | The time at which this status was recorded. |  |
-| `owner` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | (optional) The owner of the status, this value can be used to identify the entity which wrote this status. This is useful in situations where a given resource may have multiple owners. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `state` | [.core.skv2.solo.io.Status.State](../core.proto.sk/#state) | The current state of the resource. |
+| `message` | `string` | A human readable message about the current state of the object. |
+| `observedGeneration` | `int` | The most recently observed generation of the resource. This value corresponds to the `metadata.generation` of a kubernetes resource. |
+| `processingTime` | [.google.protobuf.Timestamp](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/timestamp) | The time at which this status was recorded. |
+| `owner` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | (optional) The owner of the status, this value can be used to identify the entity which wrote this status. This is useful in situations where a given resource may have multiple owners. |
 
 
 

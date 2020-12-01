@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis/gloo.solo.io/v1"
@@ -37,15 +38,15 @@ type UpstreamGroupsGetter interface {
 
 // UpstreamGroupInterface has methods to work with UpstreamGroup resources.
 type UpstreamGroupInterface interface {
-	Create(*v1.UpstreamGroup) (*v1.UpstreamGroup, error)
-	Update(*v1.UpstreamGroup) (*v1.UpstreamGroup, error)
-	UpdateStatus(*v1.UpstreamGroup) (*v1.UpstreamGroup, error)
-	Delete(name string, options *metav1.DeleteOptions) error
-	DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error
-	Get(name string, options metav1.GetOptions) (*v1.UpstreamGroup, error)
-	List(opts metav1.ListOptions) (*v1.UpstreamGroupList, error)
-	Watch(opts metav1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.UpstreamGroup, err error)
+	Create(ctx context.Context, upstreamGroup *v1.UpstreamGroup, opts metav1.CreateOptions) (*v1.UpstreamGroup, error)
+	Update(ctx context.Context, upstreamGroup *v1.UpstreamGroup, opts metav1.UpdateOptions) (*v1.UpstreamGroup, error)
+	UpdateStatus(ctx context.Context, upstreamGroup *v1.UpstreamGroup, opts metav1.UpdateOptions) (*v1.UpstreamGroup, error)
+	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.UpstreamGroup, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*v1.UpstreamGroupList, error)
+	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.UpstreamGroup, err error)
 	UpstreamGroupExpansion
 }
 
@@ -64,20 +65,20 @@ func newUpstreamGroups(c *GlooV1Client, namespace string) *upstreamGroups {
 }
 
 // Get takes name of the upstreamGroup, and returns the corresponding upstreamGroup object, and an error if there is any.
-func (c *upstreamGroups) Get(name string, options metav1.GetOptions) (result *v1.UpstreamGroup, err error) {
+func (c *upstreamGroups) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.UpstreamGroup, err error) {
 	result = &v1.UpstreamGroup{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("upstreamgroups").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of UpstreamGroups that match those selectors.
-func (c *upstreamGroups) List(opts metav1.ListOptions) (result *v1.UpstreamGroupList, err error) {
+func (c *upstreamGroups) List(ctx context.Context, opts metav1.ListOptions) (result *v1.UpstreamGroupList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -88,13 +89,13 @@ func (c *upstreamGroups) List(opts metav1.ListOptions) (result *v1.UpstreamGroup
 		Resource("upstreamgroups").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested upstreamGroups.
-func (c *upstreamGroups) Watch(opts metav1.ListOptions) (watch.Interface, error) {
+func (c *upstreamGroups) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -105,87 +106,90 @@ func (c *upstreamGroups) Watch(opts metav1.ListOptions) (watch.Interface, error)
 		Resource("upstreamgroups").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a upstreamGroup and creates it.  Returns the server's representation of the upstreamGroup, and an error, if there is any.
-func (c *upstreamGroups) Create(upstreamGroup *v1.UpstreamGroup) (result *v1.UpstreamGroup, err error) {
+func (c *upstreamGroups) Create(ctx context.Context, upstreamGroup *v1.UpstreamGroup, opts metav1.CreateOptions) (result *v1.UpstreamGroup, err error) {
 	result = &v1.UpstreamGroup{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("upstreamgroups").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(upstreamGroup).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a upstreamGroup and updates it. Returns the server's representation of the upstreamGroup, and an error, if there is any.
-func (c *upstreamGroups) Update(upstreamGroup *v1.UpstreamGroup) (result *v1.UpstreamGroup, err error) {
+func (c *upstreamGroups) Update(ctx context.Context, upstreamGroup *v1.UpstreamGroup, opts metav1.UpdateOptions) (result *v1.UpstreamGroup, err error) {
 	result = &v1.UpstreamGroup{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("upstreamgroups").
 		Name(upstreamGroup.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(upstreamGroup).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *upstreamGroups) UpdateStatus(upstreamGroup *v1.UpstreamGroup) (result *v1.UpstreamGroup, err error) {
+func (c *upstreamGroups) UpdateStatus(ctx context.Context, upstreamGroup *v1.UpstreamGroup, opts metav1.UpdateOptions) (result *v1.UpstreamGroup, err error) {
 	result = &v1.UpstreamGroup{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("upstreamgroups").
 		Name(upstreamGroup.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(upstreamGroup).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the upstreamGroup and deletes it. Returns an error if one occurs.
-func (c *upstreamGroups) Delete(name string, options *metav1.DeleteOptions) error {
+func (c *upstreamGroups) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("upstreamgroups").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *upstreamGroups) DeleteCollection(options *metav1.DeleteOptions, listOptions metav1.ListOptions) error {
+func (c *upstreamGroups) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("upstreamgroups").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched upstreamGroup.
-func (c *upstreamGroups) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.UpstreamGroup, err error) {
+func (c *upstreamGroups) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.UpstreamGroup, err error) {
 	result = &v1.UpstreamGroup{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("upstreamgroups").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }

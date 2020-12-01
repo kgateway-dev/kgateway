@@ -57,7 +57,7 @@ func GetResource(uri string) (io.ReadCloser, error) {
 	return file, nil
 }
 
-func GetIngressHost(proxyName, proxyNamespace, proxyPort string, localCluster bool, clusterName string) (string, error) {
+func GetIngressHost(ctx context.Context, proxyName, proxyNamespace, proxyPort string, localCluster bool, clusterName string) (string, error) {
 	restCfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		return "", errors.Wrapf(err, "getting kube rest config")
@@ -66,7 +66,7 @@ func GetIngressHost(proxyName, proxyNamespace, proxyPort string, localCluster bo
 	if err != nil {
 		return "", errors.Wrapf(err, "starting kube client")
 	}
-	svc, err := kube.CoreV1().Services(proxyNamespace).Get(proxyName, metav1.GetOptions{})
+	svc, err := kube.CoreV1().Services(proxyNamespace).Get(ctx, proxyName, metav1.GetOptions{})
 	if err != nil {
 		return "", errors.Wrapf(err, "could not detect '%v' service in %v namespace. "+
 			"Check that Gloo has been installed properly and is running with 'kubectl get pod -n gloo-system'",
@@ -95,7 +95,7 @@ func GetIngressHost(proxyName, proxyNamespace, proxyPort string, localCluster bo
 	if len(svc.Status.LoadBalancer.Ingress) == 0 || localCluster {
 		// assume nodeport on kubernetes
 		// TODO: support more types of NodePort services
-		host, err = getNodeIp(svc, kube, clusterName)
+		host, err = getNodeIp(ctx, svc, kube, clusterName)
 		if err != nil {
 			return "", errors.Wrapf(err, "")
 		}
@@ -110,9 +110,9 @@ func GetIngressHost(proxyName, proxyNamespace, proxyPort string, localCluster bo
 	return host + ":" + port, nil
 }
 
-func getNodeIp(svc *v1.Service, kube kubernetes.Interface, clusterName string) (string, error) {
+func getNodeIp(ctx context.Context, svc *v1.Service, kube kubernetes.Interface, clusterName string) (string, error) {
 	// pick a node where one of our pods is running
-	pods, err := kube.CoreV1().Pods(svc.Namespace).List(metav1.ListOptions{
+	pods, err := kube.CoreV1().Pods(svc.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(svc.Spec.Selector).String(),
 	})
 	if err != nil {
@@ -136,7 +136,7 @@ func getNodeIp(svc *v1.Service, kube kubernetes.Interface, clusterName string) (
 		return minikubeIp(clusterName)
 	}
 
-	node, err := kube.CoreV1().Nodes().Get(nodeName, metav1.GetOptions{})
+	node, err := kube.CoreV1().Nodes().Get(ctx, nodeName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}

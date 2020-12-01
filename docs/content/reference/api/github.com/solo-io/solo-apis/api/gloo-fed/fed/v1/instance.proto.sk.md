@@ -48,15 +48,15 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `cluster` | `string` | The cluster on which this Gloo instance is located. |  |
-| `isEnterprise` | `bool` |  |  |
-| `controlPlane` | [.fed.solo.io.GlooInstanceSpec.ControlPlane](../instance.proto.sk/#controlplane) |  |  |
-| `proxies` | [[]fed.solo.io.GlooInstanceSpec.Proxy](../instance.proto.sk/#proxy) |  |  |
-| `region` | `string` | Geographical region in which this gloo instance is located. Each proxy may potentially live in 1 or more zones, so zonal information is stored on the proxy. |  |
-| `admin` | [.fed.solo.io.GlooInstanceSpec.Admin](../instance.proto.sk/#admin) |  |  |
-| `check` | [.fed.solo.io.GlooInstanceSpec.Check](../instance.proto.sk/#check) |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `cluster` | `string` | The cluster on which this Gloo instance is located. |
+| `isEnterprise` | `bool` |  |
+| `controlPlane` | [.fed.solo.io.GlooInstanceSpec.ControlPlane](../instance.proto.sk/#controlplane) |  |
+| `proxies` | [[]fed.solo.io.GlooInstanceSpec.Proxy](../instance.proto.sk/#proxy) |  |
+| `region` | `string` | Geographical region in which this gloo instance is located. Each proxy may potentially live in 1 or more zones, so zonal information is stored on the proxy. |
+| `admin` | [.fed.solo.io.GlooInstanceSpec.Admin](../instance.proto.sk/#admin) |  |
+| `check` | [.fed.solo.io.GlooInstanceSpec.Check](../instance.proto.sk/#check) |  |
 
 
 
@@ -73,11 +73,11 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `version` | `string` | The version. |  |
-| `namespace` | `string` | Namespace in which the control-plane (Gloo) is located. |  |
-| `watchedNamespaces` | `[]string` | An optional list of watched namespaces for Gloo resources. By default, if this list is empty, we look in all namespaces. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `version` | `string` | The version. |
+| `namespace` | `string` | Namespace in which the control-plane (Gloo) is located. |
+| `watchedNamespaces` | `[]string` | An optional list of watched namespaces for Gloo resources. By default, if this list is empty, we look in all namespaces. |
 
 
 
@@ -101,18 +101,18 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `replicas` | `int` | The number of requested proxy replicas. |  |
-| `availableReplicas` | `int` | The number of available proxy replicas. |  |
-| `readyReplicas` | `int` | The number of ready proxy replicas. |  |
-| `wasmEnabled` | `bool` | Whether or not this proxy supports wasm plugins. |  |
-| `version` | `string` | The version. |  |
-| `name` | `string` | Name of the proxy instance, this is important to distinguish it from other proxy instances, which may be in the same namespace. |  |
-| `namespace` | `string` | Namespace in which the proxy is located. |  |
-| `workloadControllerType` | [.fed.solo.io.GlooInstanceSpec.Proxy.WorkloadController](../instance.proto.sk/#workloadcontroller) | Workload controller type indicates the type of workload controller managing the Proxy's pods (i.e. Deployment, DaemonSet). |  |
-| `zones` | `[]string` | Zones in which the replicas of a given proxy deployment are running. Kubernetes supports multi zone deployments, so 1 proxy may potentially live in multiple zones. |  |
-| `ingressEndpoints` | [[]fed.solo.io.GlooInstanceSpec.Proxy.IngressEndpoint](../instance.proto.sk/#ingressendpoint) |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `replicas` | `int` | The number of requested proxy replicas. |
+| `availableReplicas` | `int` | The number of available proxy replicas. |
+| `readyReplicas` | `int` | The number of ready proxy replicas. |
+| `wasmEnabled` | `bool` | Whether or not this proxy supports wasm plugins. |
+| `version` | `string` | The version. |
+| `name` | `string` | Name of the proxy instance, this is important to distinguish it from other proxy instances, which may be in the same namespace. |
+| `namespace` | `string` | Namespace in which the proxy is located. |
+| `workloadControllerType` | [.fed.solo.io.GlooInstanceSpec.Proxy.WorkloadController](../instance.proto.sk/#workloadcontroller) | Workload controller type indicates the type of workload controller managing the Proxy's pods (i.e. Deployment, DaemonSet). |
+| `zones` | `[]string` | Zones in which the replicas of a given proxy deployment are running. Kubernetes supports multi zone deployments, so 1 proxy may potentially live in multiple zones. |
+| `ingressEndpoints` | [[]fed.solo.io.GlooInstanceSpec.Proxy.IngressEndpoint](../instance.proto.sk/#ingressendpoint) |  |
 
 
 
@@ -129,11 +129,11 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `address` | `string` |  |  |
-| `ports` | [[]fed.solo.io.GlooInstanceSpec.Proxy.IngressEndpoint.Port](../instance.proto.sk/#port) |  |  |
-| `serviceName` | `string` | Kubernetes service name, will be populated only if applicable. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `address` | `string` |  |
+| `ports` | [[]fed.solo.io.GlooInstanceSpec.Proxy.IngressEndpoint.Port](../instance.proto.sk/#port) |  |
+| `serviceName` | `string` | Kubernetes service name, will be populated only if applicable. |
 
 
 
@@ -149,10 +149,10 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `port` | `int` |  |  |
-| `name` | `string` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `port` | `int` |  |
+| `name` | `string` |  |
 
 
 
@@ -182,10 +182,10 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `writeNamespace` | `string` | Namespace which gloo-fed will write all of its admin resources to. |  |
-| `proxyId` | [.core.skv2.solo.io.ObjectRef](../../../../../../skv2/api/core/v1/core.proto.sk/#objectref) | name of proxy which will be used for gloo-fed by default for this instance, unless specified via: TODO. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `writeNamespace` | `string` | Namespace which gloo-fed will write all of its admin resources to. |
+| `proxyId` | [.core.skv2.solo.io.ObjectRef](../../../../../../skv2/api/core/v1/core.proto.sk/#objectref) | name of proxy which will be used for gloo-fed by default for this instance, unless specified via: TODO. |
 
 
 
@@ -210,18 +210,18 @@ Check describes the status of the objects powering the GlooInstance.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `gateways` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Gateways describes the Gateways configuring the GlooInstance. |  |
-| `virtualServices` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | VirtualServices describes the VirtualServices configuring the GlooInstance. |  |
-| `routeTables` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Route Tables describes the RouteTables available the GlooInstance. |  |
-| `authConfigs` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Auth Configs describes the AuthConfigs available to the GlooInstance. |  |
-| `settings` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Settings describes the Settings configuring the GlooInstance. |  |
-| `upstreams` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Upstreams describes the Upstreams available to the GlooInstance. |  |
-| `upstreamGroups` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | UpstreamGroups describes the UpstreamGroups available to the GlooInstance. |  |
-| `proxies` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Proxies describes the Proxies configuring the GlooInstance. |  |
-| `deployments` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Deployments describes the Deployments in the GlooInstance's install namespace. |  |
-| `pods` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Pods describes the pods in the GlooInstance's install namespace. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `gateways` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Gateways describes the Gateways configuring the GlooInstance. |
+| `virtualServices` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | VirtualServices describes the VirtualServices configuring the GlooInstance. |
+| `routeTables` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Route Tables describes the RouteTables available the GlooInstance. |
+| `authConfigs` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Auth Configs describes the AuthConfigs available to the GlooInstance. |
+| `settings` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Settings describes the Settings configuring the GlooInstance. |
+| `upstreams` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Upstreams describes the Upstreams available to the GlooInstance. |
+| `upstreamGroups` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | UpstreamGroups describes the UpstreamGroups available to the GlooInstance. |
+| `proxies` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Proxies describes the Proxies configuring the GlooInstance. |
+| `deployments` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Deployments describes the Deployments in the GlooInstance's install namespace. |
+| `pods` | [.fed.solo.io.GlooInstanceSpec.Check.Summary](../instance.proto.sk/#summary) | Pods describes the pods in the GlooInstance's install namespace. |
 
 
 
@@ -239,11 +239,11 @@ Summary provides aggregate information for a given resource type.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `total` | `int` | The total number of resources in any state. |  |
-| `errors` | [[]fed.solo.io.GlooInstanceSpec.Check.Summary.ResourceReport](../instance.proto.sk/#resourcereport) | Errors is a list of resource refs and their associated error messages. |  |
-| `warnings` | [[]fed.solo.io.GlooInstanceSpec.Check.Summary.ResourceReport](../instance.proto.sk/#resourcereport) | Warnings is a list of resource refs and their associated warning messages. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `total` | `int` | The total number of resources in any state. |
+| `errors` | [[]fed.solo.io.GlooInstanceSpec.Check.Summary.ResourceReport](../instance.proto.sk/#resourcereport) | Errors is a list of resource refs and their associated error messages. |
+| `warnings` | [[]fed.solo.io.GlooInstanceSpec.Check.Summary.ResourceReport](../instance.proto.sk/#resourcereport) | Warnings is a list of resource refs and their associated warning messages. |
 
 
 
@@ -260,10 +260,10 @@ A ResourceReport references an object and provides a status message.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `ref` | [.core.skv2.solo.io.ObjectRef](../../../../../../skv2/api/core/v1/core.proto.sk/#objectref) |  |  |
-| `message` | `string` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `ref` | [.core.skv2.solo.io.ObjectRef](../../../../../../skv2/api/core/v1/core.proto.sk/#objectref) |  |
+| `message` | `string` |  |
 
 
 
@@ -277,8 +277,8 @@ A ResourceReport references an object and provides a status message.
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 

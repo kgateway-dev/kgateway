@@ -13,13 +13,13 @@ import (
 )
 
 // TODO(move this to a different place or use a different client function)
-func GetUpstreamClient() (*gloov1.UpstreamClient, error) {
+func GetUpstreamClient(ctx context.Context) (*gloov1.UpstreamClient, error) {
 	config, err := getKubernetesConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	upstreamClient, err := gloov1.NewUpstreamClient(&factory.KubeResourceClientFactory{
+	upstreamClient, err := gloov1.NewUpstreamClient(ctx, &factory.KubeResourceClientFactory{
 		Crd:         gloov1.UpstreamCrd,
 		Cfg:         config,
 		SharedCache: kube.NewKubeCache(context.TODO()),
@@ -33,8 +33,8 @@ func GetUpstreamClient() (*gloov1.UpstreamClient, error) {
 	return &upstreamClient, nil
 }
 
-func GatherResources(namespaces []string) (NsResourceMap, error) {
-	upstreamClient, err := GetUpstreamClient()
+func GatherResources(ctx context.Context, namespaces []string) (NsResourceMap, error) {
+	upstreamClient, err := GetUpstreamClient(ctx)
 	if err != nil {
 		return NsResourceMap{}, err
 	}

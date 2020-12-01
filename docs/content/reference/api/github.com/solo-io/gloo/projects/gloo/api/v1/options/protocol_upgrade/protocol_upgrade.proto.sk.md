@@ -33,9 +33,9 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `websocket` | [.protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig.ProtocolUpgradeSpec](../protocol_upgrade.proto.sk/#protocolupgradespec) | Specification for websocket upgrade requests. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `websocket` | [.protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig.ProtocolUpgradeSpec](../protocol_upgrade.proto.sk/#protocolupgradespec) | Specification for websocket upgrade requests. |
 
 
 
@@ -50,9 +50,9 @@ weight: 5
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `enabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether the upgrade should be enabled. If left unset, Envoy will enable the protocol upgrade. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `enabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether the upgrade should be enabled. If left unset, Envoy will enable the protocol upgrade. |
 
 
 

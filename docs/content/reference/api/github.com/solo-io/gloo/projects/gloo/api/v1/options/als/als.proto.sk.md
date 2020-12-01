@@ -37,9 +37,9 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `accessLog` | [[]als.options.gloo.solo.io.AccessLog](../als.proto.sk/#accesslog) |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `accessLog` | [[]als.options.gloo.solo.io.AccessLog](../als.proto.sk/#accesslog) |  |
 
 
 
@@ -55,10 +55,10 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `fileSink` | [.als.options.gloo.solo.io.FileSink](../als.proto.sk/#filesink) | Output access logs to local file. Only one of `fileSink` or `grpcService` can be set. |  |
-| `grpcService` | [.als.options.gloo.solo.io.GrpcService](../als.proto.sk/#grpcservice) | Send access logs to gRPC service. Only one of `grpcService` or `fileSink` can be set. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `fileSink` | [.als.options.gloo.solo.io.FileSink](../als.proto.sk/#filesink) | Output access logs to local file. Only one of `fileSink` or `grpcService` can be set. |
+| `grpcService` | [.als.options.gloo.solo.io.GrpcService](../als.proto.sk/#grpcservice) | Send access logs to gRPC service. Only one of `grpcService` or `fileSink` can be set. |
 
 
 
@@ -75,11 +75,11 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `path` | `string` | the file path to which the file access logging service will sink. |  |
-| `stringFormat` | `string` | the format string by which envoy will format the log lines https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/observability/access_log#config-access-log-format-strings. Only one of `stringFormat` or `jsonFormat` can be set. |  |
-| `jsonFormat` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | the format object by which to envoy will emit the logs in a structured way. https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/observability/access_log#format-dictionaries. Only one of `jsonFormat` or `stringFormat` can be set. |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `path` | `string` | the file path to which the file access logging service will sink. |
+| `stringFormat` | `string` | the format string by which envoy will format the log lines https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/observability/access_log#config-access-log-format-strings. Only one of `stringFormat` or `jsonFormat` can be set. |
+| `jsonFormat` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | the format object by which to envoy will emit the logs in a structured way. https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/observability/access_log#format-dictionaries. Only one of `jsonFormat` or `stringFormat` can be set. |
 
 
 
@@ -98,13 +98,13 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 
 ```
 
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `logName` | `string` | name of log stream. |  |
-| `staticClusterName` | `string` |  |  |
-| `additionalRequestHeadersToLog` | `[]string` |  |  |
-| `additionalResponseHeadersToLog` | `[]string` |  |  |
-| `additionalResponseTrailersToLog` | `[]string` |  |  |
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `logName` | `string` | name of log stream. |
+| `staticClusterName` | `string` |  |
+| `additionalRequestHeadersToLog` | `[]string` |  |
+| `additionalResponseHeadersToLog` | `[]string` |  |
+| `additionalResponseTrailersToLog` | `[]string` |  |
 
 
 

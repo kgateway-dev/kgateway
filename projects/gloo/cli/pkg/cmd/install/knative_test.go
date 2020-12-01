@@ -1,6 +1,7 @@
 package install
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"path/filepath"
@@ -21,6 +22,17 @@ var _ = Describe("Knative", func() {
 		InstallKnativeEventing:        true,
 		InstallKnativeMonitoring:      true,
 	}
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
+	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
+	})
+
+	AfterEach(func() { cancel() })
+
 	Context("RenderKnativeManifests", func() {
 		It("renders manifests for each knative component", func() {
 			manifests, err := RenderKnativeManifests(knativeInstallOpts)
@@ -33,29 +45,29 @@ var _ = Describe("Knative", func() {
 			optsJson, err := json.Marshal(knativeInstallOpts)
 			Expect(err).NotTo(HaveOccurred())
 			kc := fake.NewSimpleClientset()
-			_, err = kc.CoreV1().Namespaces().Create(&v1.Namespace{
+			_, err = kc.CoreV1().Namespaces().Create(ctx, &v1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "knative-serving",
 					Annotations: map[string]string{installedByUsAnnotationKey: string(optsJson)},
 				},
-			})
+			}, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			installed, opts, err := checkKnativeInstallation(kc)
+			installed, opts, err := checkKnativeInstallation(ctx, kc)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(installed).To(BeTrue())
 			Expect(opts).To(Equal(&knativeInstallOpts))
 		})
 		It("returns true, nil if knative was installed but not by us", func() {
 			kc := fake.NewSimpleClientset()
-			_, err := kc.CoreV1().Namespaces().Create(&v1.Namespace{
+			_, err := kc.CoreV1().Namespaces().Create(ctx, &v1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "knative-serving",
 				},
-			})
+			}, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			installed, opts, err := checkKnativeInstallation(kc)
+			installed, opts, err := checkKnativeInstallation(ctx, kc)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(installed).To(BeTrue())
 			Expect(opts).To(BeNil())
@@ -63,7 +75,7 @@ var _ = Describe("Knative", func() {
 		It("returns false, nil if knative was not installed", func() {
 			kc := fake.NewSimpleClientset()
 
-			installed, opts, err := checkKnativeInstallation(kc)
+			installed, opts, err := checkKnativeInstallation(ctx, kc)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(installed).To(BeFalse())
 			Expect(opts).To(BeNil())
