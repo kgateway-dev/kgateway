@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3839
+    description: Updates the docker compose guides to use 1.5.12 of Gloo Edge and newest stable versions of Vault and Consul
+    resolvesIssue: true
