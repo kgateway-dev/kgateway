@@ -2314,7 +2314,7 @@ type ExtAuthConfig_OidcAuthorizationCodeConfig struct {
 	// OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration
 	// The configuration override defines any properties that should override this discovery configuration
 	// For example, the following AuthConfig CRD could be defined as:
-	//	  ```yaml
+	//    ```yaml
 	//    apiVersion: enterprise.gloo.solo.io/v1
 	//    kind: AuthConfig
 	//    metadata:
