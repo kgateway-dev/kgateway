@@ -1499,6 +1499,29 @@ type OidcAuthorizationCode struct {
 	Headers *HeaderConfiguration `protobuf:"bytes,10,opt,name=headers,proto3" json:"headers,omitempty"`
 	// OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration
 	// The configuration override defines any properties that should override this discovery configuration
+	// For example, the following AuthConfig CRD could be defined as:
+	//    ```yaml
+	//    apiVersion: enterprise.gloo.solo.io/v1
+	//    kind: AuthConfig
+	//    metadata:
+	//      name: google-oidc
+	//      namespace: gloo-system
+	//    spec:
+	//      configs:
+	//      - oauth:
+	//          app_url: http://localhost:8080
+	//          callback_path: /callback
+	//          client_id: $CLIENT_ID
+	//          client_secret_ref:
+	//            name: google
+	//            namespace: gloo-system
+	//          issuer_url: https://accounts.google.com
+	//          configuration_override:
+	//            token_endpoint: "https://token.url/gettoken"
+	//    ```
+	//
+	// And this will ensure that regardless of what value is discovered at
+	// <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint
 	ConfigurationOverride *types.Struct `protobuf:"bytes,11,opt,name=configuration_override,json=configurationOverride,proto3" json:"configuration_override,omitempty"`
 	XXX_NoUnkeyedLiteral  struct{}      `json:"-"`
 	XXX_unrecognized      []byte        `json:"-"`
