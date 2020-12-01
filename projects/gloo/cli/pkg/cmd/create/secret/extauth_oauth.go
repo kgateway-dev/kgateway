@@ -19,7 +19,7 @@ import (
 )
 
 func ExtAuthOathCmd(opts *options.Options) *cobra.Command {
-	meta := opts.Metadata
+	meta := &opts.Metadata
 	input := extauth.OauthSecret{}
 	cmd := &cobra.Command{
 		Use:   "oauth",

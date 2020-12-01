@@ -75,7 +75,7 @@ require (
 	github.com/solo-io/envoy-operator v0.1.4
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.17.0
-	github.com/solo-io/protoc-gen-ext v0.0.10
+	github.com/solo-io/protoc-gen-ext v0.0.12
 	github.com/solo-io/reporting-client v0.2.0
 	github.com/solo-io/skv2 v0.8.1
 	github.com/solo-io/solo-apis v0.0.0-20201103221621-bbe4f60f466d

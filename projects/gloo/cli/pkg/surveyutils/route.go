@@ -130,7 +130,7 @@ func getDestinationInteractive(ctx context.Context, route *options.InputRoute) e
 	}
 
 	if ug, ok := ugsByKey[usKey]; ok {
-		route.UpstreamGroup = ug.Metadata.Ref()
+		route.UpstreamGroup = *(ug.Metadata.Ref())
 		return nil
 	}
 
@@ -138,7 +138,7 @@ func getDestinationInteractive(ctx context.Context, route *options.InputRoute) e
 	if !ok {
 		return errors.Errorf("internal error: upstream map not populated")
 	}
-	dest.Upstream = us.Metadata.Ref()
+	dest.Upstream = *(us.Metadata.Ref())
 	switch ut := us.UpstreamType.(type) {
 	case *v1.Upstream_Aws:
 		if err := getAwsDestinationSpecInteractive(&dest.DestinationSpec.Aws, ut.Aws); err != nil {

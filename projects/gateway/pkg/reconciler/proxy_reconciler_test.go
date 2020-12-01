@@ -1,8 +1,8 @@
 package reconciler_test
 
 import (
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"

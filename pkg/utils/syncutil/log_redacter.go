@@ -69,7 +69,7 @@ func NewProtoRedactor() ProtoRedactor {
 	return &protoRedactor{}
 }
 
-type protoRedactor struct {}
+type protoRedactor struct{}
 
 func (p *protoRedactor) BuildRedactedJsonString(message proto.Message) (string, error) {
 	// make a clone so that we can mutate it and zero-out fields

@@ -44,7 +44,7 @@ type apiKeySecret struct {
 }
 
 func ExtAuthApiKeyCmd(opts *options.Options) *cobra.Command {
-	meta := opts.Metadata
+	meta := &opts.Metadata
 	input := apiKeySecret{}
 	cmd := &cobra.Command{
 		Use:   "apikey",

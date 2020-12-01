@@ -9,8 +9,8 @@ import (
 	math "math"
 
 	_ "github.com/gogo/protobuf/gogoproto"
-	proto "github.com/golang/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
+	proto "github.com/golang/protobuf/proto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 

@@ -224,7 +224,7 @@ func routeActionFromInput(input options.InputRoute) (*gatewayv1.Route_RouteActio
 		}
 
 		a.RouteAction.Destination = &v1.RouteAction_UpstreamGroup{
-			UpstreamGroup: input.UpstreamGroup,
+			UpstreamGroup: &input.UpstreamGroup,
 		}
 		return a, nil
 	}
@@ -241,7 +241,7 @@ func routeActionFromInput(input options.InputRoute) (*gatewayv1.Route_RouteActio
 	a.RouteAction.Destination = &v1.RouteAction_Single{
 		Single: &v1.Destination{
 			DestinationType: &v1.Destination_Upstream{
-				Upstream: dest.Upstream,
+				Upstream: &dest.Upstream,
 			},
 			DestinationSpec: spec,
 		},

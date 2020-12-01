@@ -42,7 +42,7 @@ var _ = Describe("UpdateUpstream", func() {
 	It("should update config when one is desired", func() {
 		desiredSslConfig := &gloov1.UpstreamSslConfig{
 			SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
-				SecretRef: &core.ResourceRef{Name:"hi", Namespace: "there"},
+				SecretRef: &core.ResourceRef{Name: "hi", Namespace: "there"},
 			},
 		}
 		desiredCircuitBreaker := &gloov1.CircuitBreakerConfig{MaxConnections: &wrappers.UInt32Value{Value: 6}}

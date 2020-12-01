@@ -47,7 +47,7 @@ func ExtAuthConfig(opts *editRouteOptions.RouteEditInput, optionsFunc ...cliutil
 	}
 
 	pflags := cmd.PersistentFlags()
-	flagutils.AddMetadataFlags(pflags, opts.Metadata)
+	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
 
 	editRouteFlags(cmd.Flags(), input)
 	cliutils.ApplyOptions(cmd, optionsFunc)

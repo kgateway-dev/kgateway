@@ -35,7 +35,7 @@ func azureCmd(opts *options.Options) *cobra.Command {
 				}
 			}
 			// create the secret
-			if err := createAzureSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun, opts.Top.Output); err != nil {
+			if err := createAzureSecret(opts.Top.Ctx, &opts.Metadata, *input, opts.Create.DryRun, opts.Top.Output); err != nil {
 				return err
 			}
 			return nil

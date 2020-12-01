@@ -92,7 +92,7 @@ func upstreamGroupFromOpts(opts *options.Options) (*v1.UpstreamGroup, error) {
 		return nil, errors.Wrapf(err, "invalid upstream spec")
 	}
 	return &v1.UpstreamGroup{
-		Metadata:     opts.Metadata,
+		Metadata:     &opts.Metadata,
 		Destinations: dest,
 	}, nil
 }

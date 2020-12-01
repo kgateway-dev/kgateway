@@ -70,7 +70,7 @@ func AuthConfigCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc
 	}
 
 	pflags := cmd.PersistentFlags()
-	flagutils.AddMetadataFlags(pflags, opts.Metadata)
+	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
 	flagutils.AddAuthConfigFlags(pflags, &opts.Create.AuthConfig)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 
@@ -78,7 +78,7 @@ func AuthConfigCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc
 }
 
 func createAuthConfig(opts *options.Options, args []string) error {
-	ac, err := authConfigFromOpts(opts.Metadata, opts.Create.AuthConfig)
+	ac, err := authConfigFromOpts(&opts.Metadata, opts.Create.AuthConfig)
 	if err != nil {
 		return err
 	}

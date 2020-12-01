@@ -52,7 +52,7 @@ func getAwsInteractive(ctx context.Context, aws *options.InputAwsSpec) error {
 	); err != nil {
 		return err
 	}
-	aws.Secret = secretsByKey[secretKey]
+	aws.Secret = *secretsByKey[secretKey]
 	return nil
 }
 
@@ -95,7 +95,7 @@ func getAzureInteractive(ctx context.Context, azure *options.InputAzureSpec) err
 	); err != nil {
 		return err
 	}
-	azure.Secret = secretsByKey[secretKey]
+	azure.Secret = *secretsByKey[secretKey]
 	return nil
 }
 

@@ -7,8 +7,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
-	"github.com/golang/protobuf/proto"
 	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"

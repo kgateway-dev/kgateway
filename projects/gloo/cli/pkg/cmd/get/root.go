@@ -50,7 +50,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		},
 	}
 	pflags := cmd.PersistentFlags()
-	flagutils.AddMetadataFlags(pflags, opts.Metadata)
+	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
 	flagutils.AddOutputFlag(pflags, &opts.Top.Output)
 
 	cmd.AddCommand(VirtualService(opts))

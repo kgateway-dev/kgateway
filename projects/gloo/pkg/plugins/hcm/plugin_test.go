@@ -144,7 +144,7 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.StreamIdleTimeout).To(MatchProto(hcms.StreamIdleTimeout))
 		Expect(cfg.MaxRequestHeadersKb).To(MatchProto(hcms.MaxRequestHeadersKb))
 		Expect(cfg.RequestTimeout).To(MatchProto(hcms.RequestTimeout))
-		Expect(cfg.DrainTimeout).To(MatchProto(hcms	.DrainTimeout))
+		Expect(cfg.DrainTimeout).To(MatchProto(hcms.DrainTimeout))
 		Expect(cfg.DelayedCloseTimeout).To(MatchProto(hcms.DelayedCloseTimeout))
 		Expect(cfg.ServerName).To(Equal(hcms.ServerName))
 		Expect(cfg.HttpProtocolOptions.AcceptHttp_10).To(Equal(hcms.AcceptHttp_10))
