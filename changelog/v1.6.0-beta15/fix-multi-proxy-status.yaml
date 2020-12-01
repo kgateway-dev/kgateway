@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3935
+    description: >-
+      In multi-proxy environments, resources that were invalid on one proxy (error or warning) but valid on another may
+      have a status written of accepted, despite internally calculating (and logging) a warning. This is now fixed.

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -63,6 +65,52 @@ var _ = Describe("TranslatorSyncer", func() {
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
 		m := map[string]*core.Status{
 			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
+		}
+		Expect(mockReporter.Statuses()[reportedKey]).To(BeEquivalentTo(m))
+	})
+
+	It("should set status correctly when resources are in both proxies", func() {
+		acceptedProxy1 := &gloov1.Proxy{
+			Metadata: core.Metadata{Name: "test1", Namespace: "gloo-system"},
+			Status:   core.Status{State: core.Status_Accepted},
+		}
+		acceptedProxy2 := &gloov1.Proxy{
+			Metadata: core.Metadata{Name: "test2", Namespace: "gloo-system"},
+			Status:   core.Status{State: core.Status_Accepted},
+		}
+		errs1 := reporter.ResourceReports{}
+		errs2 := reporter.ResourceReports{}
+		expectedErr := reporter.ResourceReports{}
+
+		rt := &gatewayv1.RouteTable{
+			Metadata: core.Metadata{
+				Name:      "rt",
+				Namespace: defaults.GlooSystem,
+			},
+		}
+		errs1.AddWarning(rt, "warning 1")
+		errs2.AddWarning(rt, "warning 2")
+		expectedErr.AddWarning(rt, "warning 1")
+		expectedErr.AddWarning(rt, "warning 2")
+
+		desiredProxies := reconciler.GeneratedProxies{
+			acceptedProxy1: errs1,
+			acceptedProxy2: errs2,
+		}
+
+		syncer.setCurrentProxies(desiredProxies)
+		syncer.setStatuses(gloov1.ProxyList{acceptedProxy1, acceptedProxy2})
+
+		err := syncer.syncStatus(context.Background())
+		Expect(err).NotTo(HaveOccurred())
+
+		reportedKey := getMapOnlyKey(mockReporter.Reports())
+		Expect(reportedKey).To(BeEquivalentTo(rt.GetMetadata().Ref()))
+
+		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(expectedErr[rt]))
+		m := map[string]*core.Status{
+			"*v1.Proxy.gloo-system.test1": {State: core.Status_Accepted},
+			"*v1.Proxy.gloo-system.test2": {State: core.Status_Accepted},
 		}
 		Expect(mockReporter.Statuses()[reportedKey]).To(BeEquivalentTo(m))
 	})
