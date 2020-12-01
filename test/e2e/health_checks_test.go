@@ -8,20 +8,18 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/solo-io/gloo/test/helpers"
-
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
-	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
@@ -104,13 +102,13 @@ var _ = Describe("Health Checks", func() {
 
 		tests := []struct {
 			Name  string
-			Check *envoycore.HealthCheck
+			Check *envoy_config_core_v3.HealthCheck
 		}{
 			{
 				Name: "http",
-				Check: &envoycore.HealthCheck{
-					HealthChecker: &envoycore.HealthCheck_HttpHealthCheck_{
-						HttpHealthCheck: &envoycore.HealthCheck_HttpHealthCheck{
+				Check: &envoy_config_core_v3.HealthCheck{
+					HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
+						HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
 							Path: "xyz",
 						},
 					},
@@ -118,17 +116,17 @@ var _ = Describe("Health Checks", func() {
 			},
 			{
 				Name: "tcp",
-				Check: &envoycore.HealthCheck{
-					HealthChecker: &envoycore.HealthCheck_TcpHealthCheck_{
-						TcpHealthCheck: &envoycore.HealthCheck_TcpHealthCheck{
-							Send: &envoycore.HealthCheck_Payload{
-								Payload: &envoycore.HealthCheck_Payload_Text{
+				Check: &envoy_config_core_v3.HealthCheck{
+					HealthChecker: &envoy_config_core_v3.HealthCheck_TcpHealthCheck_{
+						TcpHealthCheck: &envoy_config_core_v3.HealthCheck_TcpHealthCheck{
+							Send: &envoy_config_core_v3.HealthCheck_Payload{
+								Payload: &envoy_config_core_v3.HealthCheck_Payload_Text{
 									Text: "AAAA",
 								},
 							},
-							Receive: []*envoycore.HealthCheck_Payload{
+							Receive: []*envoy_config_core_v3.HealthCheck_Payload{
 								{
-									Payload: &envoycore.HealthCheck_Payload_Text{
+									Payload: &envoy_config_core_v3.HealthCheck_Payload_Text{
 										Text: "AAAA",
 									},
 								},
@@ -158,7 +156,7 @@ var _ = Describe("Health Checks", func() {
 				envoyHealthCheckTest.Check.UnhealthyThreshold = gogoutils.UInt32GogoToProto(translator.DefaultThreshold)
 
 				// persist the health check configuration
-				us.HealthChecks, err = gogoutils.ToGlooHealthCheckList([]*envoycore.HealthCheck{envoyHealthCheckTest.Check})
+				us.HealthChecks, err = gogoutils.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{envoyHealthCheckTest.Check})
 				Expect(err).NotTo(HaveOccurred())
 
 				_, err = testClients.UpstreamClient.Write(us, clients.WriteOpts{OverwriteExisting: true})
@@ -181,7 +179,7 @@ var _ = Describe("Health Checks", func() {
 		It("outlier detection", func() {
 			us, err := testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
-			us.OutlierDetection = gogoutils.ToGlooOutlierDetection(&envoycluster.OutlierDetection{
+			us.OutlierDetection = gogoutils.ToGlooOutlierDetection(&envoy_config_cluster_v3.OutlierDetection{
 				Interval: &duration.Duration{Seconds: 1},
 			})
 
@@ -222,14 +220,14 @@ var _ = Describe("Health Checks", func() {
 			us, err := testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			us.HealthChecks, err = gogoutils.ToGlooHealthCheckList([]*envoycore.HealthCheck{
+			us.HealthChecks, err = gogoutils.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{
 				{
 					Timeout:            gogoutils.DurationStdToProto(&translator.DefaultHealthCheckTimeout),
 					Interval:           gogoutils.DurationStdToProto(&translator.DefaultHealthCheckInterval),
 					UnhealthyThreshold: gogoutils.UInt32GogoToProto(translator.DefaultThreshold),
 					HealthyThreshold:   gogoutils.UInt32GogoToProto(translator.DefaultThreshold),
-					HealthChecker: &envoycore.HealthCheck_GrpcHealthCheck_{
-						GrpcHealthCheck: &envoycore.HealthCheck_GrpcHealthCheck{
+					HealthChecker: &envoy_config_core_v3.HealthCheck_GrpcHealthCheck_{
+						GrpcHealthCheck: &envoy_config_core_v3.HealthCheck_GrpcHealthCheck{
 							ServiceName: "TestService",
 						},
 					},

@@ -3,14 +3,14 @@ package linkerd
 import (
 	"fmt"
 
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
 	usconversions "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -26,6 +26,8 @@ type Plugin struct {
 }
 
 var _ plugins.Plugin = &Plugin{}
+var _ plugins.RoutePlugin = &Plugin{}
+var _ plugins.UpstreamPlugin = &Plugin{}
 
 func NewPlugin() *Plugin {
 	return &Plugin{}
@@ -38,7 +40,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
+func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if !p.enabled {
 		return nil
 	}
@@ -93,7 +95,11 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	return nil
 }
 
-func configForMultiDestination(destinations []*v1.WeightedDestination, upstreams v1.UpstreamList, out *envoyroute.Route) error {
+func configForMultiDestination(
+	destinations []*v1.WeightedDestination,
+	upstreams v1.UpstreamList,
+	out *envoy_config_route_v3.Route,
+) error {
 	routeAction := out.GetRoute()
 	if routeAction == nil {
 		return nil
@@ -138,8 +144,11 @@ func configForMultiDestination(destinations []*v1.WeightedDestination, upstreams
 	return nil
 }
 
-func findClustersForName(clusterName string, weightedCluster []*envoyroute.WeightedCluster_ClusterWeight) []*envoyroute.WeightedCluster_ClusterWeight {
-	var result []*envoyroute.WeightedCluster_ClusterWeight
+func findClustersForName(
+	clusterName string,
+	weightedCluster []*envoy_config_route_v3.WeightedCluster_ClusterWeight,
+) []*envoy_config_route_v3.WeightedCluster_ClusterWeight {
+	var result []*envoy_config_route_v3.WeightedCluster_ClusterWeight
 	for _, v := range weightedCluster {
 		if v.Name == clusterName {
 			result = append(result, v)
@@ -148,14 +157,14 @@ func findClustersForName(clusterName string, weightedCluster []*envoyroute.Weigh
 	return result
 }
 
-func createHeaderForUpstream(us *kubernetes.UpstreamSpec) *envoycore.HeaderValueOption {
+func createHeaderForUpstream(us *kubernetes.UpstreamSpec) *envoy_config_core_v3.HeaderValueOption {
 	destination := fmt.Sprintf("%s.%s.svc.cluster.local:%v",
 		us.ServiceName, us.ServiceNamespace, us.ServicePort)
-	header := &envoycore.HeaderValueOption{
+	header := &envoy_config_core_v3.HeaderValueOption{
 		Append: &wrappers.BoolValue{
 			Value: false,
 		},
-		Header: &envoycore.HeaderValue{
+		Header: &envoy_config_core_v3.HeaderValue{
 			Value: destination,
 			Key:   HeaderKey,
 		},
@@ -163,6 +172,6 @@ func createHeaderForUpstream(us *kubernetes.UpstreamSpec) *envoycore.HeaderValue
 	return header
 }
 
-func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
+func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 	return nil
 }

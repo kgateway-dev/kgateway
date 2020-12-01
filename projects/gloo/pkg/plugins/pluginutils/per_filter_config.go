@@ -4,7 +4,7 @@ import (
 	"context"
 	"reflect"
 
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	errors "github.com/rotisserie/eris"
@@ -13,19 +13,23 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-func SetRoutePerFilterConfig(out *envoyroute.Route, filterName string, protoext proto.Message) error {
+func SetRoutePerFilterConfig(out *envoy_config_route_v3.Route, filterName string, protoext proto.Message) error {
 	if out.GetTypedPerFilterConfig() == nil {
 		out.TypedPerFilterConfig = make(map[string]*any.Any)
 	}
 	return setConfig(out.GetTypedPerFilterConfig(), filterName, protoext)
 }
-func SetVhostPerFilterConfig(out *envoyroute.VirtualHost, filterName string, protoext proto.Message) error {
+func SetVhostPerFilterConfig(out *envoy_config_route_v3.VirtualHost, filterName string, protoext proto.Message) error {
 	if out.GetTypedPerFilterConfig() == nil {
 		out.TypedPerFilterConfig = make(map[string]*any.Any)
 	}
 	return setConfig(out.GetTypedPerFilterConfig(), filterName, protoext)
 }
-func SetWeightedClusterPerFilterConfig(out *envoyroute.WeightedCluster_ClusterWeight, filterName string, protoext proto.Message) error {
+func SetWeightedClusterPerFilterConfig(
+	out *envoy_config_route_v3.WeightedCluster_ClusterWeight,
+	filterName string,
+	protoext proto.Message,
+) error {
 	if out.GetTypedPerFilterConfig() == nil {
 		out.TypedPerFilterConfig = make(map[string]*any.Any)
 	}
@@ -36,7 +40,14 @@ func SetWeightedClusterPerFilterConfig(out *envoyroute.WeightedCluster_ClusterWe
 type PerFilterConfigFunc func(spec *v1.Destination) (proto.Message, error)
 
 // call this from
-func MarkPerFilterConfig(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route, out *envoyroute.Route, filterName string, perFilterConfig PerFilterConfigFunc) error {
+func MarkPerFilterConfig(
+	ctx context.Context,
+	snap *v1.ApiSnapshot,
+	in *v1.Route,
+	out *envoy_config_route_v3.Route,
+	filterName string,
+	perFilterConfig PerFilterConfigFunc,
+) error {
 	inAction, outAction, err := getRouteActions(in, out)
 	if err != nil {
 		return err
@@ -70,9 +81,14 @@ func MarkPerFilterConfig(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route
 	return err
 }
 
-func configureMultiDest(in []*v1.WeightedDestination, outAction *envoyroute.RouteAction, filterName string, perFilterConfig PerFilterConfigFunc) error {
+func configureMultiDest(
+	in []*v1.WeightedDestination,
+	outAction *envoy_config_route_v3.RouteAction,
+	filterName string,
+	perFilterConfig PerFilterConfigFunc,
+) error {
 
-	multiClusterSpecifier, ok := outAction.ClusterSpecifier.(*envoyroute.RouteAction_WeightedClusters)
+	multiClusterSpecifier, ok := outAction.ClusterSpecifier.(*envoy_config_route_v3.RouteAction_WeightedClusters)
 	if !ok {
 		return errors.Errorf("input destination Multi but output destination was not")
 	}
@@ -82,8 +98,8 @@ func configureMultiDest(in []*v1.WeightedDestination, outAction *envoyroute.Rout
 		return errors.Errorf("number of input destinations did not match number of destination weighted clusters")
 	}
 	for i := range in {
-		if out.Clusters[i].GetTypedPerFilterConfig() == nil {
-			out.Clusters[i].TypedPerFilterConfig = make(map[string]*any.Any)
+		if out.GetClusters()[i].GetTypedPerFilterConfig() == nil {
+			out.GetClusters()[i].TypedPerFilterConfig = make(map[string]*any.Any)
 		}
 		err := configureSingleDest(in[i].Destination, out.Clusters[i].GetTypedPerFilterConfig(), filterName, perFilterConfig)
 		if err != nil {
@@ -94,7 +110,12 @@ func configureMultiDest(in []*v1.WeightedDestination, outAction *envoyroute.Rout
 	return nil
 }
 
-func configureSingleDest(in *v1.Destination, out map[string]*any.Any, filterName string, perFilterConfig PerFilterConfigFunc) error {
+func configureSingleDest(
+	in *v1.Destination,
+	out map[string]*any.Any,
+	filterName string,
+	perFilterConfig PerFilterConfigFunc,
+) error {
 	config, err := perFilterConfig(in)
 	if err != nil {
 		return err

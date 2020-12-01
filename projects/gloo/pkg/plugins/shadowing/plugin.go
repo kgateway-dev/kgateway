@@ -1,8 +1,8 @@
 package shadowing
 
 import (
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing"
@@ -33,7 +33,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
+func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if in.Options == nil || in.Options.Shadowing == nil {
 		return nil
 	}
@@ -47,30 +47,32 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	// if it is nil, we initialize it prior to transforming it
 	outRa := out.GetRoute()
 	if outRa == nil {
-		out.Action = &envoyroute.Route_Route{
-			Route: &envoyroute.RouteAction{},
+		out.Action = &envoy_config_route_v3.Route_Route{
+			Route: &envoy_config_route_v3.RouteAction{},
 		}
 		outRa = out.GetRoute()
 	}
 	return applyShadowSpec(outRa, shadowSpec)
 }
 
-func applyShadowSpec(out *envoyroute.RouteAction, spec *shadowing.RouteShadowing) error {
+func applyShadowSpec(out *envoy_config_route_v3.RouteAction, spec *shadowing.RouteShadowing) error {
 	if spec.Upstream == nil {
 		return UnspecifiedUpstreamError
 	}
 	if spec.Percentage < 0 || spec.Percentage > 100 {
 		return InvalidNumeratorError(spec.Percentage)
 	}
-	out.RequestMirrorPolicy = &envoyroute.RouteAction_RequestMirrorPolicy{
-		Cluster:         translator.UpstreamToClusterName(*spec.Upstream),
-		RuntimeFraction: getFractionalPercent(spec.Percentage),
+	out.RequestMirrorPolicies = []*envoy_config_route_v3.RouteAction_RequestMirrorPolicy{
+		{
+			Cluster:         translator.UpstreamToClusterName(*spec.Upstream),
+			RuntimeFraction: getFractionalPercent(spec.Percentage),
+		},
 	}
 	return nil
 }
 
-func getFractionalPercent(numerator float32) *envoycore.RuntimeFractionalPercent {
-	return &envoycore.RuntimeFractionalPercent{
-		DefaultValue: common.ToEnvoyv2Percentage(numerator),
+func getFractionalPercent(numerator float32) *envoy_config_core_v3.RuntimeFractionalPercent {
+	return &envoy_config_core_v3.RuntimeFractionalPercent{
+		DefaultValue: common.ToEnvoyPercentage(numerator),
 	}
 }

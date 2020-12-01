@@ -21,6 +21,32 @@ var _ = Describe("SecretConverter", func() {
 		secret := &kubev1.Secret{
 			Type: kubev1.SecretTypeTLS,
 			Data: map[string][]byte{
+				kubev1.TLSCertKey:              []byte("cert"),
+				kubev1.TLSPrivateKeyKey:        []byte("key"),
+				kubev1.ServiceAccountRootCAKey: []byte("ca"),
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            "s1",
+				Namespace:       "ns",
+				OwnerReferences: []metav1.OwnerReference{},
+			},
+		}
+		var t TLSSecretConverter
+		resource, err := t.FromKubeSecret(context.Background(), nil, secret)
+		Expect(err).NotTo(HaveOccurred())
+		glooSecret := resource.(*v1.Secret).Kind.(*v1.Secret_Tls).Tls
+		Expect(resource.GetMetadata().Name).To(Equal(secret.ObjectMeta.Name))
+		Expect(resource.GetMetadata().Namespace).To(Equal(secret.ObjectMeta.Namespace))
+
+		Expect(glooSecret.CertChain).To(BeEquivalentTo(secret.Data[kubev1.TLSCertKey]))
+		Expect(glooSecret.PrivateKey).To(BeEquivalentTo(secret.Data[kubev1.TLSPrivateKeyKey]))
+		Expect(glooSecret.RootCa).To(BeEquivalentTo(secret.Data[kubev1.ServiceAccountRootCAKey]))
+	})
+
+	It("should convert kube secret to gloo secret without optional root ca", func() {
+		secret := &kubev1.Secret{
+			Type: kubev1.SecretTypeTLS,
+			Data: map[string][]byte{
 				kubev1.TLSCertKey:       []byte("cert"),
 				kubev1.TLSPrivateKeyKey: []byte("key"),
 			},
@@ -39,6 +65,7 @@ var _ = Describe("SecretConverter", func() {
 
 		Expect(glooSecret.CertChain).To(BeEquivalentTo(secret.Data[kubev1.TLSCertKey]))
 		Expect(glooSecret.PrivateKey).To(BeEquivalentTo(secret.Data[kubev1.TLSPrivateKeyKey]))
+		Expect(glooSecret.RootCa).To(BeEquivalentTo(""))
 	})
 
 	It("should convert to gloo secret kube in gloo format", func() {
@@ -47,6 +74,7 @@ var _ = Describe("SecretConverter", func() {
 				Tls: &v1.TlsSecret{
 					PrivateKey: "key",
 					CertChain:  "cert",
+					RootCa:     "ca",
 				},
 			},
 			Metadata: core.Metadata{
@@ -63,6 +91,31 @@ var _ = Describe("SecretConverter", func() {
 	})
 
 	It("should round trip kube ssl secret back to kube ssl secret", func() {
+		secret := &kubev1.Secret{
+			Type: kubev1.SecretTypeTLS,
+			Data: map[string][]byte{
+				kubev1.TLSCertKey:              []byte("cert"),
+				kubev1.TLSPrivateKeyKey:        []byte("key"),
+				kubev1.ServiceAccountRootCAKey: []byte("ca"),
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:            "s1",
+				Namespace:       "ns",
+				Labels:          map[string]string{},
+				OwnerReferences: []metav1.OwnerReference{},
+			},
+		}
+		var t TLSSecretConverter
+		resource, err := t.FromKubeSecret(context.Background(), nil, secret)
+		Expect(err).NotTo(HaveOccurred())
+		kubeSecret, err := t.ToKubeSecret(context.Background(), nil, resource)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(secret).To(Equal(kubeSecret))
+
+	})
+
+	It("should round trip kube ssl secret back to kube ssl secret without optional root ca", func() {
 		secret := &kubev1.Secret{
 			Type: kubev1.SecretTypeTLS,
 			Data: map[string][]byte{

@@ -1,22 +1,21 @@
 package tracing
 
 import (
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
-	"github.com/golang/protobuf/ptypes"
-	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var _ = Describe("Plugin", func() {
@@ -191,7 +190,7 @@ var _ = Describe("Plugin", func() {
 	It("should update routes properly", func() {
 		p := NewPlugin()
 		in := &v1.Route{}
-		out := &envoyroute.Route{}
+		out := &envoy_config_route_v3.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, in, out)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -202,7 +201,7 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 		}
-		outFull := &envoyroute.Route{}
+		outFull := &envoy_config_route_v3.Route{}
 		err = p.ProcessRoute(plugins.RouteParams{}, inFull, outFull)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(outFull.Decorator.Operation).To(Equal("hello"))
@@ -214,7 +213,7 @@ var _ = Describe("Plugin", func() {
 	It("should update routes properly - with defaults", func() {
 		p := NewPlugin()
 		in := &v1.Route{}
-		out := &envoyroute.Route{}
+		out := &envoy_config_route_v3.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, in, out)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -230,7 +229,7 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 		}
-		outFull := &envoyroute.Route{}
+		outFull := &envoy_config_route_v3.Route{}
 		err = p.ProcessRoute(plugins.RouteParams{}, inFull, outFull)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(outFull.Decorator.Operation).To(Equal("hello"))

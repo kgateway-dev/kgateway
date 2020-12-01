@@ -26,6 +26,9 @@ data:
         static_layer:
           overload:
             global_downstream_max_connections: {{ $spec.globalDownstreamMaxConnections }}
+          upstream:
+            healthy_panic_threshold:
+              value: {{ $spec.healthyPanicThreshold }}
       - name: admin_layer
         admin_layer: {}
     node:
@@ -78,13 +81,6 @@ data:
                                 cluster: admin_port_cluster
                     http_filters:
                       - name: envoy.filters.http.router
-{{- if $spec.tracing -}}
-{{- if $spec.tracing.provider }}
-                    tracing:
-                      provider:
-{{ toYaml $spec.tracing.provider | indent 24}}
-{{- end}} {{/* if $spec.tracing.provider */}}
-{{- end}} {{/* if $spec.tracing */}}
 {{- end}} {{/* if $statsConfig.enabled */}}
 {{- if $spec.readConfig }}
         - name: read_config_listener
@@ -129,13 +125,6 @@ data:
                                 cluster: admin_port_cluster
                     http_filters:
                       - name: envoy.filters.http.router
-{{- if $spec.tracing -}}
-{{- if $spec.tracing.provider }}
-                    tracing:
-                      provider:
-{{ toYaml $spec.tracing.provider | indent 24}}
-{{- end}} {{/* if $spec.tracing.provider */}}
-{{- end}} {{/* if $spec.tracing */}}
 {{- end}} {{/* if $spec.readConfig */}}
       clusters:
       - name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:{{ $.Values.gloo.deployment.xdsPort }}
@@ -164,16 +153,20 @@ data:
               tls_certificate_sds_secret_configs:
                 - name: server_cert
                   sds_config:
+                    resource_api_version: V3
                     api_config_source:
                       api_type: GRPC
+                      transport_api_version: V3
                       grpc_services:
                       - envoy_grpc:
                           cluster_name: gateway_proxy_sds
               validation_context_sds_secret_config:
                 name: validation_context
                 sds_config:
+                  resource_api_version: V3
                   api_config_source:
                     api_type: GRPC
+                    transport_api_version: V3
                     grpc_services:
                     - envoy_grpc:
                         cluster_name: gateway_proxy_sds
@@ -215,18 +208,22 @@ data:
             "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
             common_tls_context:
               tls_certificate_sds_secret_configs:
-              - name: server_cert
-                sds_config:
-                  api_config_source:
-                    api_type: GRPC
-                    grpc_services:
-                    - envoy_grpc:
-                        cluster_name: gateway_proxy_sds
+                - name: server_cert
+                  sds_config:
+                    resource_api_version: V3
+                    api_config_source:
+                      api_type: GRPC
+                      transport_api_version: V3
+                      grpc_services:
+                      - envoy_grpc:
+                          cluster_name: gateway_proxy_sds
               validation_context_sds_secret_config:
                 name: validation_context
                 sds_config:
+                  resource_api_version: V3
                   api_config_source:
                     api_type: GRPC
+                    transport_api_version: V3
                     grpc_services:
                     - envoy_grpc:
                         cluster_name: gateway_proxy_sds
@@ -314,13 +311,16 @@ data:
 
     dynamic_resources:
       ads_config:
+        transport_api_version: {{ $spec.envoyApiVersion }}
         api_type: GRPC
         rate_limit_settings: {}
         grpc_services:
         - envoy_grpc: {cluster_name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:{{ $.Values.gloo.deployment.xdsPort }}}
       cds_config:
+        resource_api_version: {{ $spec.envoyApiVersion }}
         ads: {}
       lds_config:
+        resource_api_version: {{ $spec.envoyApiVersion }}
         ads: {}
     admin:
       access_log_path: /dev/null

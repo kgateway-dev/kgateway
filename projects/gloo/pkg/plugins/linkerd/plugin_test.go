@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -21,10 +21,10 @@ var _ = Describe("linkerd plugin", func() {
 	var (
 		params plugins.Params
 		plugin *Plugin
-		out    *envoyroute.Route
+		out    *envoy_config_route_v3.Route
 	)
 	BeforeEach(func() {
-		out = new(envoyroute.Route)
+		out = new(envoy_config_route_v3.Route)
 
 		params = plugins.Params{}
 		plugin = NewPlugin()
@@ -71,10 +71,12 @@ var _ = Describe("linkerd plugin", func() {
 		return upstream
 	}
 
-	var clustersAndDestinationsForUpstreams = func(upstreamRefs []core.ResourceRef) ([]*envoyroute.WeightedCluster_ClusterWeight, []*v1.WeightedDestination) {
-		clusters := make([]*envoyroute.WeightedCluster_ClusterWeight, len(upstreamRefs))
+	var clustersAndDestinationsForUpstreams = func(
+		upstreamRefs []core.ResourceRef,
+	) ([]*envoy_config_route_v3.WeightedCluster_ClusterWeight, []*v1.WeightedDestination) {
+		clusters := make([]*envoy_config_route_v3.WeightedCluster_ClusterWeight, len(upstreamRefs))
 		for i, v := range upstreamRefs {
-			clusters[i] = &envoyroute.WeightedCluster_ClusterWeight{
+			clusters[i] = &envoy_config_route_v3.WeightedCluster_ClusterWeight{
 				Name: translator.UpstreamToClusterName(v),
 			}
 		}
@@ -102,15 +104,15 @@ var _ = Describe("linkerd plugin", func() {
 
 	Context("config for multi destination", func() {
 		It("doesn't change output if route action doesn't exist", func() {
-			out.Action = &envoyroute.Route_DirectResponse{DirectResponse: &envoyroute.DirectResponseAction{}}
+			out.Action = &envoy_config_route_v3.Route_DirectResponse{DirectResponse: &envoy_config_route_v3.DirectResponseAction{}}
 			outCopy := proto.Clone(out)
 			Expect(configForMultiDestination(nil, nil, out)).To(BeNil())
 			Expect(out).To(BeEquivalentTo(outCopy))
 		})
 		It("doesn't change output if route action exists, but weighted clusters do not", func() {
-			out.Action = &envoyroute.Route_Route{
-				Route: &envoyroute.RouteAction{
-					ClusterSpecifier: &envoyroute.RouteAction_Cluster{
+			out.Action = &envoy_config_route_v3.Route_Route{
+				Route: &envoy_config_route_v3.RouteAction{
+					ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{
 						Cluster: "",
 					},
 				},
@@ -120,10 +122,10 @@ var _ = Describe("linkerd plugin", func() {
 			Expect(out).To(BeEquivalentTo(outCopy))
 		})
 		It("does not change output if no kube upstreams exist", func() {
-			out.Action = &envoyroute.Route_Route{
-				Route: &envoyroute.RouteAction{
-					ClusterSpecifier: &envoyroute.RouteAction_WeightedClusters{
-						WeightedClusters: &envoyroute.WeightedCluster{},
+			out.Action = &envoy_config_route_v3.Route_Route{
+				Route: &envoy_config_route_v3.RouteAction{
+					ClusterSpecifier: &envoy_config_route_v3.RouteAction_WeightedClusters{
+						WeightedClusters: &envoy_config_route_v3.WeightedCluster{},
 					},
 				},
 			}
@@ -156,10 +158,10 @@ var _ = Describe("linkerd plugin", func() {
 				{ServicePort: port, ServiceName: "three", ServiceNamespace: "one"},
 			}
 			clusters, destinations := clustersAndDestinationsForUpstreams(upstreamRefs)
-			out.Action = &envoyroute.Route_Route{
-				Route: &envoyroute.RouteAction{
-					ClusterSpecifier: &envoyroute.RouteAction_WeightedClusters{
-						WeightedClusters: &envoyroute.WeightedCluster{
+			out.Action = &envoy_config_route_v3.Route_Route{
+				Route: &envoy_config_route_v3.RouteAction{
+					ClusterSpecifier: &envoy_config_route_v3.RouteAction_WeightedClusters{
+						WeightedClusters: &envoy_config_route_v3.WeightedCluster{
 							Clusters: clusters,
 						},
 					},
@@ -192,10 +194,10 @@ var _ = Describe("linkerd plugin", func() {
 				nil,
 			}
 			clusters, destinations := clustersAndDestinationsForUpstreams(upstreamRefs)
-			out.Action = &envoyroute.Route_Route{
-				Route: &envoyroute.RouteAction{
-					ClusterSpecifier: &envoyroute.RouteAction_WeightedClusters{
-						WeightedClusters: &envoyroute.WeightedCluster{
+			out.Action = &envoy_config_route_v3.Route_Route{
+				Route: &envoy_config_route_v3.RouteAction{
+					ClusterSpecifier: &envoy_config_route_v3.RouteAction_WeightedClusters{
+						WeightedClusters: &envoy_config_route_v3.WeightedCluster{
 							Clusters: clusters,
 						},
 					},
@@ -243,10 +245,10 @@ var _ = Describe("linkerd plugin", func() {
 				nil,
 			}
 			clusters, _ := clustersAndDestinationsForUpstreams(upstreamRefs)
-			out.Action = &envoyroute.Route_Route{
-				Route: &envoyroute.RouteAction{
-					ClusterSpecifier: &envoyroute.RouteAction_WeightedClusters{
-						WeightedClusters: &envoyroute.WeightedCluster{
+			out.Action = &envoy_config_route_v3.Route_Route{
+				Route: &envoy_config_route_v3.RouteAction{
+					ClusterSpecifier: &envoy_config_route_v3.RouteAction_WeightedClusters{
+						WeightedClusters: &envoy_config_route_v3.WeightedCluster{
 							Clusters: clusters,
 						},
 					},

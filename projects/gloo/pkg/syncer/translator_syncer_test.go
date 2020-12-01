@@ -1,21 +1,21 @@
 package syncer_test
 
 import (
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-
 	"context"
 
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/syncer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -131,7 +131,7 @@ var _ = Describe("Translate Proxy", func() {
 			envoycache.NewResources("", nil),
 			envoycache.NewResources("", nil),
 			envoycache.NewResources("old listeners from before the war", []envoycache.Resource{
-				xds.NewEnvoyResource(&v2.Listener{}),
+				resource.NewEnvoyResource(&envoy_config_listener_v3.Listener{}),
 			}),
 		)
 
@@ -143,13 +143,13 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(sanitizer.called).To(BeTrue())
 		Expect(xdsCache.called).To(BeTrue())
 
-		oldListeners := oldXdsSnap.GetResources(xds.ListenerType)
-		newListeners := xdsCache.setSnap.GetResources(xds.ListenerType)
+		oldListeners := oldXdsSnap.GetResources(resource.ListenerTypeV3)
+		newListeners := xdsCache.setSnap.GetResources(resource.ListenerTypeV3)
 
 		Expect(oldListeners).To(Equal(newListeners))
 
-		oldRoutes := oldXdsSnap.GetResources(xds.RouteType)
-		newRoutes := xdsCache.setSnap.GetResources(xds.RouteType)
+		oldRoutes := oldXdsSnap.GetResources(resource.RouteTypeV3)
+		newRoutes := xdsCache.setSnap.GetResources(resource.RouteTypeV3)
 
 		Expect(oldRoutes).To(Equal(newRoutes))
 	})

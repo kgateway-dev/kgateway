@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -11,9 +14,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/go-utils/contextutils"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/gogo/protobuf/proto"
 	transformationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
@@ -29,6 +29,10 @@ import (
 const (
 	masterKeyName = "_master"
 )
+
+var _ plugins.Plugin = new(plugin)
+var _ plugins.RoutePlugin = new(plugin)
+var _ plugins.UpstreamPlugin = new(plugin)
 
 type plugin struct {
 	recordedUpstreams map[core.ResourceRef]*azure.UpstreamSpec
@@ -47,7 +51,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
+func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 	upstreamSpec, ok := in.UpstreamType.(*v1.Upstream_Azure)
 	if !ok {
 		// not ours
@@ -57,11 +61,11 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	p.recordedUpstreams[in.Metadata.Ref()] = azureUpstream
 
 	// configure Envoy cluster routing info
-	out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
-		Type: envoyapi.Cluster_LOGICAL_DNS,
+	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
+		Type: envoy_config_cluster_v3.Cluster_LOGICAL_DNS,
 	}
 	// TODO(yuval-k): why do we need to make sure we use ipv4 only dns?
-	out.DnsLookupFamily = envoyapi.Cluster_V4_ONLY
+	out.DnsLookupFamily = envoy_config_cluster_v3.Cluster_V4_ONLY
 	hostname := GetHostname(upstreamSpec.Azure)
 
 	pluginutils.EnvoySingleEndpointLoadAssignment(out, hostname, 443)
@@ -70,9 +74,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		// TODO(yuval-k): Add verification context
 		Sni: hostname,
 	}
-	out.TransportSocket = &envoycore.TransportSocket{
+	out.TransportSocket = &envoy_config_core_v3.TransportSocket{
 		Name:       wellknown.TransportSocketTls,
-		ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(tlsContext)},
+		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(tlsContext)},
 	}
 
 	if azureUpstream.SecretRef.Name != "" {
@@ -90,66 +94,68 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	return nil
 }
 
-func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName, func(spec *v1.Destination) (proto.Message, error) {
-		// check if it's azure upstream destination
-		if spec.DestinationSpec == nil {
-			return nil, nil
-		}
-		azureDestinationSpec, ok := spec.DestinationSpec.DestinationType.(*v1.DestinationSpec_Azure)
-		if !ok {
-			return nil, nil
-		}
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName,
+		func(spec *v1.Destination) (proto.Message, error) {
+			// check if it's azure upstream destination
+			if spec.DestinationSpec == nil {
+				return nil, nil
+			}
+			azureDestinationSpec, ok := spec.DestinationSpec.DestinationType.(*v1.DestinationSpec_Azure)
+			if !ok {
+				return nil, nil
+			}
 
-		upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
-		if err != nil {
-			contextutils.LoggerFrom(p.ctx).Error(err)
-			return nil, err
-		}
-		upstreamSpec, ok := p.recordedUpstreams[*upstreamRef]
-		if !ok {
-			// TODO(yuval-k): panic in debug
-			return nil, errors.Errorf("%v is not an Azure upstream", *upstreamRef)
-		}
+			upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
+			if err != nil {
+				contextutils.LoggerFrom(p.ctx).Error(err)
+				return nil, err
+			}
+			upstreamSpec, ok := p.recordedUpstreams[*upstreamRef]
+			if !ok {
+				// TODO(yuval-k): panic in debug
+				return nil, errors.Errorf("%v is not an Azure upstream", *upstreamRef)
+			}
 
-		// get function
-		functionName := azureDestinationSpec.Azure.FunctionName
-		for _, functionSpec := range upstreamSpec.Functions {
-			if functionSpec.FunctionName == functionName {
-				path, err := getPath(functionSpec, p.apiKeys)
-				if err != nil {
-					return nil, err
-				}
+			// get function
+			functionName := azureDestinationSpec.Azure.FunctionName
+			for _, functionSpec := range upstreamSpec.Functions {
+				if functionSpec.FunctionName == functionName {
+					path, err := getPath(functionSpec, p.apiKeys)
+					if err != nil {
+						return nil, err
+					}
 
-				*p.transformsAdded = true
+					*p.transformsAdded = true
 
-				hostname := GetHostname(upstreamSpec)
-				// TODO: consider adding a new add headers transformation allow adding headers with no templates to improve performance.
-				ret := &transformationapi.RouteTransformations{
-					RequestTransformation: &transformationapi.Transformation{
-						TransformationType: &transformationapi.Transformation_TransformationTemplate{
-							TransformationTemplate: &transformationapi.TransformationTemplate{
-								Headers: map[string]*transformationapi.InjaTemplate{
-									":path": {
-										Text: path,
+					hostname := GetHostname(upstreamSpec)
+					// TODO: consider adding a new add headers transformation allow adding headers with no templates to improve performance.
+					ret := &transformationapi.RouteTransformations{
+						RequestTransformation: &transformationapi.Transformation{
+							TransformationType: &transformationapi.Transformation_TransformationTemplate{
+								TransformationTemplate: &transformationapi.TransformationTemplate{
+									Headers: map[string]*transformationapi.InjaTemplate{
+										":path": {
+											Text: path,
+										},
+										":authority": {
+											Text: hostname,
+										},
 									},
-									":authority": {
-										Text: hostname,
+									BodyTransformation: &transformationapi.TransformationTemplate_Passthrough{
+										Passthrough: &transformationapi.Passthrough{},
 									},
-								},
-								BodyTransformation: &transformationapi.TransformationTemplate_Passthrough{
-									Passthrough: &transformationapi.Passthrough{},
 								},
 							},
 						},
-					},
-				}
+					}
 
-				return ret, nil
+					return ret, nil
+				}
 			}
-		}
-		return nil, errors.Errorf("unknown function %v", functionName)
-	})
+			return nil, errors.Errorf("unknown function %v", functionName)
+		},
+	)
 }
 
 func getPath(functionSpec *azure.UpstreamSpec_FunctionSpec, apiKeys map[string]string) (string, error) {

@@ -3,8 +3,8 @@ package pluginutils_test
 import (
 	"context"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -17,18 +17,18 @@ import (
 var _ = Describe("Headers", func() {
 	var (
 		in      *v1.Route
-		out     *envoyroute.Route
-		header  *envoycore.HeaderValueOption
-		headers []*envoycore.HeaderValueOption
+		out     *envoy_config_route_v3.Route
+		header  *envoy_config_core_v3.HeaderValueOption
+		headers []*envoy_config_core_v3.HeaderValueOption
 	)
 	BeforeEach(func() {
-		header = &envoycore.HeaderValueOption{
-			Header: &envoycore.HeaderValue{
+		header = &envoy_config_core_v3.HeaderValueOption{
+			Header: &envoy_config_core_v3.HeaderValue{
 				Key:   "test",
 				Value: "header",
 			},
 		}
-		headers = []*envoycore.HeaderValueOption{header}
+		headers = []*envoy_config_core_v3.HeaderValueOption{header}
 	})
 	Context("single dests", func() {
 
@@ -49,10 +49,10 @@ var _ = Describe("Headers", func() {
 					},
 				},
 			}
-			out = &envoyroute.Route{
-				Action: &envoyroute.Route_Route{
-					Route: &envoyroute.RouteAction{
-						ClusterSpecifier: &envoyroute.RouteAction_Cluster{
+			out = &envoy_config_route_v3.Route{
+				Action: &envoy_config_route_v3.Route_Route{
+					Route: &envoy_config_route_v3.RouteAction{
+						ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{
 							Cluster: "test",
 						},
 					},
@@ -62,21 +62,21 @@ var _ = Describe("Headers", func() {
 
 		It("should add header config to upstream", func() {
 
-			err := MarkHeaders(context.TODO(), &v1.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoycore.HeaderValueOption, error) {
+			err := MarkHeaders(context.TODO(), &v1.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoy_config_core_v3.HeaderValueOption, error) {
 				return headers, nil
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.RequestHeadersToAdd).To(ContainElement(header))
 		})
 		It("should not removing existing headers", func() {
-			existingheader := &envoycore.HeaderValueOption{
-				Header: &envoycore.HeaderValue{
+			existingheader := &envoy_config_core_v3.HeaderValueOption{
+				Header: &envoy_config_core_v3.HeaderValue{
 					Key:   "test1",
 					Value: "header1",
 				},
 			}
 			out.RequestHeadersToAdd = append(out.RequestHeadersToAdd, existingheader)
-			err := MarkHeaders(context.TODO(), &v1.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoycore.HeaderValueOption, error) {
+			err := MarkHeaders(context.TODO(), &v1.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoy_config_core_v3.HeaderValueOption, error) {
 				return headers, nil
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -87,8 +87,8 @@ var _ = Describe("Headers", func() {
 
 	Context("multiple dests", func() {
 		var (
-			yescluster *envoyroute.WeightedCluster_ClusterWeight
-			nocluster  *envoyroute.WeightedCluster_ClusterWeight
+			yescluster *envoy_config_route_v3.WeightedCluster_ClusterWeight
+			nocluster  *envoy_config_route_v3.WeightedCluster_ClusterWeight
 		)
 
 		BeforeEach(func() {
@@ -122,18 +122,18 @@ var _ = Describe("Headers", func() {
 				},
 			}
 
-			yescluster = &envoyroute.WeightedCluster_ClusterWeight{
+			yescluster = &envoy_config_route_v3.WeightedCluster_ClusterWeight{
 				Name: "yes",
 			}
-			nocluster = &envoyroute.WeightedCluster_ClusterWeight{
+			nocluster = &envoy_config_route_v3.WeightedCluster_ClusterWeight{
 				Name: "no",
 			}
-			out = &envoyroute.Route{
-				Action: &envoyroute.Route_Route{
-					Route: &envoyroute.RouteAction{
-						ClusterSpecifier: &envoyroute.RouteAction_WeightedClusters{
-							WeightedClusters: &envoyroute.WeightedCluster{
-								Clusters: []*envoyroute.WeightedCluster_ClusterWeight{yescluster, nocluster},
+			out = &envoy_config_route_v3.Route{
+				Action: &envoy_config_route_v3.Route_Route{
+					Route: &envoy_config_route_v3.RouteAction{
+						ClusterSpecifier: &envoy_config_route_v3.RouteAction_WeightedClusters{
+							WeightedClusters: &envoy_config_route_v3.WeightedCluster{
+								Clusters: []*envoy_config_route_v3.WeightedCluster_ClusterWeight{yescluster, nocluster},
 							},
 						},
 					},
@@ -142,7 +142,7 @@ var _ = Describe("Headers", func() {
 		})
 		It("should add per filter config only to relevant upstream in mutiple dest", func() {
 
-			err := MarkHeaders(context.TODO(), &v1.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoycore.HeaderValueOption, error) {
+			err := MarkHeaders(context.TODO(), &v1.ApiSnapshot{}, in, out, func(spec *v1.Destination) ([]*envoy_config_core_v3.HeaderValueOption, error) {
 				if spec.GetUpstream().Name == "yes" {
 					return headers, nil
 				}
@@ -203,7 +203,7 @@ var _ = Describe("Headers", func() {
 
 			It("should add per filter config only to relevant upstream in mutiple dest", func() {
 
-				err := MarkHeaders(context.TODO(), snap, in, out, func(spec *v1.Destination) ([]*envoycore.HeaderValueOption, error) {
+				err := MarkHeaders(context.TODO(), snap, in, out, func(spec *v1.Destination) ([]*envoy_config_core_v3.HeaderValueOption, error) {
 					if spec.GetUpstream().Name == "yes" {
 						return headers, nil
 					}

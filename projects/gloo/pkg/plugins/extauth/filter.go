@@ -30,7 +30,11 @@ var (
 	}
 )
 
-func BuildHttpFilters(globalSettings *extauthv1.Settings, listener *v1.HttpListener, upstreams v1.UpstreamList) ([]plugins.StagedHttpFilter, error) {
+func BuildHttpFilters(
+	globalSettings *extauthv1.Settings,
+	listener *v1.HttpListener,
+	upstreams v1.UpstreamList,
+) ([]plugins.StagedHttpFilter, error) {
 	var filters []plugins.StagedHttpFilter
 
 	// If no extauth settings are provided, don't configure the ext_authz filter

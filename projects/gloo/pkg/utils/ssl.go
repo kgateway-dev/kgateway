@@ -123,9 +123,11 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 	return &envoyauth.SdsSecretConfig{
 		Name: name,
 		SdsConfig: &envoycore.ConfigSource{
+			ResourceApiVersion: envoycore.ApiVersion_V3,
 			ConfigSourceSpecifier: &envoycore.ConfigSource_ApiConfigSource{
 				ApiConfigSource: &envoycore.ApiConfigSource{
-					ApiType: envoycore.ApiConfigSource_GRPC,
+					ApiType:             envoycore.ApiConfigSource_GRPC,
+					TransportApiVersion: envoycore.ApiVersion_V3,
 					GrpcServices: []*envoycore.GrpcService{
 						{
 							TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
@@ -176,9 +178,11 @@ func buildDeprecatedSDS(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSec
 	return &envoyauth.SdsSecretConfig{
 		Name: name,
 		SdsConfig: &envoycore.ConfigSource{
+			ResourceApiVersion: envoycore.ApiVersion_V3,
 			ConfigSourceSpecifier: &envoycore.ConfigSource_ApiConfigSource{
 				ApiConfigSource: &envoycore.ApiConfigSource{
-					ApiType: envoycore.ApiConfigSource_GRPC,
+					ApiType:             envoycore.ApiConfigSource_GRPC,
+					TransportApiVersion: envoycore.ApiVersion_V3,
 					GrpcServices: []*envoycore.GrpcService{
 						{
 							TargetSpecifier: &envoycore.GrpcService_GoogleGrpc_{

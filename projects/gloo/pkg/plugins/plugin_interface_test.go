@@ -3,9 +3,9 @@ package plugins
 import (
 	"sort"
 
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/golang/protobuf/ptypes/any"
 
-	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -96,15 +96,15 @@ var _ = Describe("Plugin", func() {
 	It("should order listener filter stages correctly", func() {
 		By("base case")
 		filters := StagedListenerFilterList{
-			StagedListenerFilter{&envoylistener.Filter{Name: "H"}, DuringStage(RouteStage)},
-			StagedListenerFilter{&envoylistener.Filter{Name: "G"}, DuringStage(OutAuthStage)},
-			StagedListenerFilter{&envoylistener.Filter{Name: "F"}, DuringStage(AcceptedStage)},
-			StagedListenerFilter{&envoylistener.Filter{Name: "E"}, DuringStage(RateLimitStage)},
-			StagedListenerFilter{&envoylistener.Filter{Name: "D"}, DuringStage(AuthZStage)},
-			StagedListenerFilter{&envoylistener.Filter{Name: "C"}, DuringStage(AuthNStage)},
-			StagedListenerFilter{&envoylistener.Filter{Name: "Waf"}, DuringStage(WafStage)},
-			StagedListenerFilter{&envoylistener.Filter{Name: "B"}, DuringStage(CorsStage)},
-			StagedListenerFilter{&envoylistener.Filter{Name: "A"}, DuringStage(FaultStage)},
+			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "H"}, DuringStage(RouteStage)},
+			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "G"}, DuringStage(OutAuthStage)},
+			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "F"}, DuringStage(AcceptedStage)},
+			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "E"}, DuringStage(RateLimitStage)},
+			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "D"}, DuringStage(AuthZStage)},
+			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "C"}, DuringStage(AuthNStage)},
+			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "Waf"}, DuringStage(WafStage)},
+			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "B"}, DuringStage(CorsStage)},
+			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "A"}, DuringStage(FaultStage)},
 		}
 		sort.Sort(filters)
 		ExpectListenerFilterNameOrder(filters, []string{"A", "B", "Waf", "C", "D", "E", "F", "G", "H"})

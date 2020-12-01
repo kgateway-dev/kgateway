@@ -1,9 +1,9 @@
 package loadbalancer
 
 import (
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
@@ -15,6 +15,7 @@ import (
 
 var _ plugins.Plugin = new(Plugin)
 var _ plugins.RoutePlugin = new(Plugin)
+var _ plugins.UpstreamPlugin = new(Plugin)
 
 type Plugin struct{}
 
@@ -32,7 +33,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
+func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	lbPlugin := in.Options.GetLbHash()
 	if lbPlugin == nil {
 		return nil
@@ -45,30 +46,30 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	return nil
 }
 
-func getHashPoliciesFromSpec(spec []*lbhash.HashPolicy) []*envoyroute.RouteAction_HashPolicy {
-	var policies []*envoyroute.RouteAction_HashPolicy
+func getHashPoliciesFromSpec(spec []*lbhash.HashPolicy) []*envoy_config_route_v3.RouteAction_HashPolicy {
+	var policies []*envoy_config_route_v3.RouteAction_HashPolicy
 	for _, s := range spec {
-		policy := &envoyroute.RouteAction_HashPolicy{
+		policy := &envoy_config_route_v3.RouteAction_HashPolicy{
 			Terminal: s.Terminal,
 		}
 		switch keyType := s.KeyType.(type) {
 		case *lbhash.HashPolicy_Header:
-			policy.PolicySpecifier = &envoyroute.RouteAction_HashPolicy_Header_{
-				Header: &envoyroute.RouteAction_HashPolicy_Header{
+			policy.PolicySpecifier = &envoy_config_route_v3.RouteAction_HashPolicy_Header_{
+				Header: &envoy_config_route_v3.RouteAction_HashPolicy_Header{
 					HeaderName: keyType.Header,
 				},
 			}
 		case *lbhash.HashPolicy_Cookie:
-			policy.PolicySpecifier = &envoyroute.RouteAction_HashPolicy_Cookie_{
-				Cookie: &envoyroute.RouteAction_HashPolicy_Cookie{
+			policy.PolicySpecifier = &envoy_config_route_v3.RouteAction_HashPolicy_Cookie_{
+				Cookie: &envoy_config_route_v3.RouteAction_HashPolicy_Cookie{
 					Name: keyType.Cookie.Name,
 					Ttl:  gogoutils.DurationStdToProto(keyType.Cookie.Ttl),
 					Path: keyType.Cookie.Path,
 				},
 			}
 		case *lbhash.HashPolicy_SourceIp:
-			policy.PolicySpecifier = &envoyroute.RouteAction_HashPolicy_ConnectionProperties_{
-				ConnectionProperties: &envoyroute.RouteAction_HashPolicy_ConnectionProperties{
+			policy.PolicySpecifier = &envoy_config_route_v3.RouteAction_HashPolicy_ConnectionProperties_{
+				ConnectionProperties: &envoy_config_route_v3.RouteAction_HashPolicy_ConnectionProperties{
 					SourceIp: keyType.SourceIp,
 				},
 			}
@@ -78,7 +79,7 @@ func getHashPoliciesFromSpec(spec []*lbhash.HashPolicy) []*envoyroute.RouteActio
 	return policies
 }
 
-func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
+func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 
 	cfg := in.GetLoadBalancerConfig()
 	if cfg == nil {
@@ -86,9 +87,9 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	if cfg.HealthyPanicThreshold != nil || cfg.UpdateMergeWindow != nil {
-		out.CommonLbConfig = &envoyapi.Cluster_CommonLbConfig{}
+		out.CommonLbConfig = &envoy_config_cluster_v3.Cluster_CommonLbConfig{}
 		if cfg.HealthyPanicThreshold != nil {
-			out.CommonLbConfig.HealthyPanicThreshold = &envoytype.Percent{
+			out.CommonLbConfig.HealthyPanicThreshold = &envoy_type_v3.Percent{
 				Value: cfg.HealthyPanicThreshold.Value,
 			}
 		}
@@ -100,12 +101,12 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	if cfg.Type != nil {
 		switch lbtype := cfg.Type.(type) {
 		case *v1.LoadBalancerConfig_RoundRobin_:
-			out.LbPolicy = envoyapi.Cluster_ROUND_ROBIN
+			out.LbPolicy = envoy_config_cluster_v3.Cluster_ROUND_ROBIN
 		case *v1.LoadBalancerConfig_LeastRequest_:
-			out.LbPolicy = envoyapi.Cluster_LEAST_REQUEST
+			out.LbPolicy = envoy_config_cluster_v3.Cluster_LEAST_REQUEST
 			if lbtype.LeastRequest.ChoiceCount != 0 {
-				out.LbConfig = &envoyapi.Cluster_LeastRequestLbConfig_{
-					LeastRequestLbConfig: &envoyapi.Cluster_LeastRequestLbConfig{
+				out.LbConfig = &envoy_config_cluster_v3.Cluster_LeastRequestLbConfig_{
+					LeastRequestLbConfig: &envoy_config_cluster_v3.Cluster_LeastRequestLbConfig{
 						ChoiceCount: &wrappers.UInt32Value{
 							Value: lbtype.LeastRequest.ChoiceCount,
 						},
@@ -113,21 +114,21 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 				}
 			}
 		case *v1.LoadBalancerConfig_Random_:
-			out.LbPolicy = envoyapi.Cluster_RANDOM
+			out.LbPolicy = envoy_config_cluster_v3.Cluster_RANDOM
 		case *v1.LoadBalancerConfig_RingHash_:
-			out.LbPolicy = envoyapi.Cluster_RING_HASH
+			out.LbPolicy = envoy_config_cluster_v3.Cluster_RING_HASH
 			setRingHashLbConfig(out, lbtype.RingHash.RingHashConfig)
 		case *v1.LoadBalancerConfig_Maglev_:
-			out.LbPolicy = envoyapi.Cluster_MAGLEV
+			out.LbPolicy = envoy_config_cluster_v3.Cluster_MAGLEV
 		}
 	}
 
 	return nil
 }
 
-func setRingHashLbConfig(out *envoyapi.Cluster, userConfig *v1.LoadBalancerConfig_RingHashConfig) {
-	cfg := &envoyapi.Cluster_RingHashLbConfig_{
-		RingHashLbConfig: &envoyapi.Cluster_RingHashLbConfig{},
+func setRingHashLbConfig(out *envoy_config_cluster_v3.Cluster, userConfig *v1.LoadBalancerConfig_RingHashConfig) {
+	cfg := &envoy_config_cluster_v3.Cluster_RingHashLbConfig_{
+		RingHashLbConfig: &envoy_config_cluster_v3.Cluster_RingHashLbConfig{},
 	}
 	if userConfig != nil {
 		if userConfig.MinimumRingSize != 0 {

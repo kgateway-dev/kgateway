@@ -111,9 +111,14 @@ install-go-tools: mod-download
 
 # command to run regression tests with guaranteed access to $(DEPSGOBIN)/ginkgo
 # requires the environment variable KUBE2E_TESTS to be set to the test type you wish to run
+
+.PHONY: run-tests
+run-tests:
+	$(DEPSGOBIN)/ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor $(TEST_PKG)
+
 .PHONY: run-ci-regression-tests
-run-ci-regression-tests: install-go-tools
-	$(DEPSGOBIN)/ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor ./test/kube2e/...
+run-ci-regression-tests: TEST_PKG=./test/kube2e/...
+run-ci-regression-tests: install-go-tools run-tests
 
 .PHONY: check-format
 check-format:

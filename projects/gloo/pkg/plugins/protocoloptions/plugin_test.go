@@ -1,7 +1,8 @@
 package protocoloptions_test
 
 import (
-	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -10,7 +11,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/gogo/protobuf/types"
 )
 
@@ -19,12 +19,12 @@ var _ = Describe("Plugin", func() {
 	var (
 		p      *protocoloptions.Plugin
 		params plugins.Params
-		out    *envoyapi.Cluster
+		out    *envoy_config_cluster_v3.Cluster
 	)
 
 	BeforeEach(func() {
 		p = protocoloptions.NewPlugin()
-		out = new(envoyapi.Cluster)
+		out = new(envoy_config_cluster_v3.Cluster)
 
 	})
 	Context("upstream", func() {
@@ -36,7 +36,7 @@ var _ = Describe("Plugin", func() {
 			nilVal := &v1.Upstream{
 				InitialConnectionWindowSize: &types.UInt32Value{Value: 7777777},
 			}
-			var nilOptions *envoy_api_v2_core.Http2ProtocolOptions = nil
+			var nilOptions *envoy_config_core_v3.Http2ProtocolOptions = nil
 
 			err := p.ProcessUpstream(params, falseVal, out)
 			Expect(err).NotTo(HaveOccurred())
