@@ -6,13 +6,12 @@ package v3
 import (
 	bytes "bytes"
 	fmt "fmt"
-	math "math"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

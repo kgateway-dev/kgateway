@@ -6,11 +6,10 @@ package proxylatency
 import (
 	bytes "bytes"
 	fmt "fmt"
-	math "math"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
