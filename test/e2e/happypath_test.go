@@ -45,7 +45,7 @@ import (
 	"k8s.io/kubernetes/pkg/apis/core/validation"
 )
 
-var _ = FDescribe("Happy path", func() {
+var _ = Describe("Happy path", func() {
 
 	var (
 		ctx           context.Context
