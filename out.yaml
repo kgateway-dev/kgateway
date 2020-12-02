@@ -170,19 +170,6 @@ data:
                   socket_address:
                     address: 127.0.0.1
                     port_value: 19000 
-      - connect_timeout: 5.000s
-        lb_policy: ROUND_ROBIN
-        load_assignment:
-          cluster_name: test_cluster
-          endpoints:
-          - lb_endpoints:
-            - endpoint:
-                address:
-                  socket_address:
-                    address: 127.0.0.1
-                    port_value: 8080
-        name: test_cluster
-        type: STATIC
 
     dynamic_resources:
       ads_config:
@@ -198,8 +185,9 @@ data:
         resource_api_version: V3
         ads: {}
     bootstrap_extensions:
-    - '@type': type.googleapis.com/envoy.extensions.wasm.v3.WasmService
-      config:
+    - name: envoy.wasm_service
+      typed_config:
+        '@type': type.googleapis.com/envoy.extensions.wasm.v3.WasmService
         config:
           name: my_plugin
           vm_config:
@@ -523,7 +511,7 @@ spec:
               fieldRef:
                 fieldPath: metadata.labels
       containers:
-      - image: quay.io/solo-io/gloo:1.6.0-beta14-22-gb409c10c6-dirty
+      - image: quay.io/solo-io/gloo:1.6.0-beta15-4-g77bafd470
         imagePullPolicy: IfNotPresent
         name: gloo
         resources:
@@ -595,7 +583,7 @@ spec:
       
       serviceAccountName: discovery
       containers:
-      - image: quay.io/solo-io/discovery:1.6.0-beta14-22-gb409c10c6-dirty
+      - image: quay.io/solo-io/discovery:1.6.0-beta15-4-g77bafd470
         imagePullPolicy: IfNotPresent
         name: discovery
         # container security context
@@ -644,7 +632,7 @@ spec:
       
       serviceAccountName: gateway
       containers:
-      - image: quay.io/solo-io/gateway:1.6.0-beta14-22-gb409c10c6-dirty
+      - image: quay.io/solo-io/gateway:1.6.0-beta15-4-g77bafd470
         imagePullPolicy: IfNotPresent
         name: gateway
         ports:
@@ -729,7 +717,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: quay.io/solo-io/gloo-envoy-wrapper:1.6.0-beta14-22-gb409c10c6-dirty
+        image: quay.io/solo-io/gloo-envoy-wrapper:1.6.0-beta15-4-g77bafd470
         imagePullPolicy: IfNotPresent
         name: gateway-proxy
         securityContext:
@@ -892,7 +880,7 @@ spec:
     spec:
       serviceAccountName: certgen
       containers:
-        - image: quay.io/solo-io/certgen:1.6.0-beta14-22-gb409c10c6-dirty
+        - image: quay.io/solo-io/certgen:1.6.0-beta15-4-g77bafd470
           imagePullPolicy: IfNotPresent
           name: certgen
           securityContext:

@@ -130,8 +130,9 @@ dynamic_resources:
     resource_api_version: V3
     ads: {}
 bootstrap_extensions:
-- '@type': type.googleapis.com/envoy.extensions.wasm.v3.WasmService
-  config:
+- name: envoy.wasm_service
+  typed_config:
+    '@type': type.googleapis.com/envoy.extensions.wasm.v3.WasmService
     config:
       name: my_plugin
       vm_config:
