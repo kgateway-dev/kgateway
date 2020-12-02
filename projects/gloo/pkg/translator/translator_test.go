@@ -32,6 +32,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	v1grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
@@ -1645,6 +1646,107 @@ var _ = Describe("Translator", func() {
 			Expect(metadata.Fields[tag(dev)]).To(Equal(falseValue))
 			Expect(metadata.Fields[tag(prod)]).To(Equal(trueValue))
 		})
+	})
+
+	Context("when translating a route that points to an AWS lambda", func() {
+
+		BeforeEach(func() {
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, &v1.Upstream{
+				Metadata: core.Metadata{
+					Name:      "aws-lambda-upstream",
+					Namespace: "my-namespace",
+				},
+				DiscoveryMetadata: nil,
+				UpstreamType: &v1.Upstream_Aws{
+					Aws: &aws.UpstreamSpec{
+						SecretRef: &core.ResourceRef{
+							Name:      "my-aws-secret",
+							Namespace: "my-namespace",
+						},
+						LambdaFunctions: []*aws.LambdaFunctionSpec{
+							{
+								LogicalName: "someLambdaFunc",
+							},
+							{
+								LogicalName: "anotherLambdaFunc",
+							},
+						},
+					},
+				},
+			})
+			secret := &v1.Secret{
+				Metadata: core.Metadata{
+					Name:      "my-aws-secret",
+					Namespace: "my-namespace",
+				},
+				Kind: &v1.Secret_Aws{
+					Aws: &v1.AwsSecret{
+						AccessKey: "a",
+						SecretKey: "a",
+					},
+				},
+			}
+
+			params.Snapshot.Secrets = v1.SecretList{secret}
+		})
+
+		It("has no errors when pointing to a valid lambda", func() {
+			validLambdaRoute := &v1.Route{Action: &v1.Route_RouteAction{
+				RouteAction: &v1.RouteAction{
+					Destination: &v1.RouteAction_Single{
+						Single: &v1.Destination{
+							DestinationType: &v1.Destination_Upstream{
+								Upstream: &core.ResourceRef{
+									Name:      "aws-lambda-upstream",
+									Namespace: "my-namespace",
+								},
+							},
+							DestinationSpec: &v1.DestinationSpec{
+								DestinationType: &v1.DestinationSpec_Aws{
+									Aws: &aws.DestinationSpec{
+										LogicalName: "someLambdaFunc",
+									},
+								},
+							},
+						},
+					},
+				}}}
+
+			routes := proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].GetRoutes()
+			proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].Routes = append(routes, validLambdaRoute)
+
+			translate()
+		})
+
+		It("reports error when pointing to a lambda function that doesn't exist", func() {
+			validLambdaRoute := &v1.Route{Action: &v1.Route_RouteAction{
+				RouteAction: &v1.RouteAction{
+					Destination: &v1.RouteAction_Single{
+						Single: &v1.Destination{
+							DestinationType: &v1.Destination_Upstream{
+								Upstream: &core.ResourceRef{
+									Name:      "aws-lambda-upstream",
+									Namespace: "my-namespace",
+								},
+							},
+							DestinationSpec: &v1.DestinationSpec{
+								DestinationType: &v1.DestinationSpec_Aws{
+									Aws: &aws.DestinationSpec{
+										LogicalName: "nonexistentLambdaFunc",
+									},
+								},
+							},
+						},
+					},
+				}}}
+
+			routes := proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].GetRoutes()
+			proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].Routes = append(routes, validLambdaRoute)
+			_, resourceReport, _, _ := translator.Translate(params, proxy)
+			Expect(resourceReport.Validate()).To(HaveOccurred())
+			Expect(resourceReport.Validate().Error()).To(ContainSubstring("a route references nonexistentLambdaFunc lambda function which does not exist in this upstream"))
+		})
+
 	})
 
 	Context("Route plugin", func() {

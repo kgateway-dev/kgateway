@@ -241,7 +241,10 @@ func validateUpstreamLambdaFunctions(proxy *v1.Proxy, validLambdas map[string]bo
 				for _, route := range virtualHost.GetRoutes() {
 					routeLambdaName := route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().GetLogicalName()
 					// If route references a lambda that is not in the aws upstream, route is invalid
-					if validLambdas[routeLambdaName] == false {
+					if routeLambdaName != "" {
+						print("eeks")
+					}
+					if routeLambdaName != "" && validLambdas[routeLambdaName] == false {
 						routeUpstream := route.GetRouteAction().GetSingle().GetUpstream()
 						for _, us := range upstreams {
 							if us.Metadata.Ref() == *routeUpstream {
