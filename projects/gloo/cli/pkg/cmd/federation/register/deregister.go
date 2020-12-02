@@ -14,8 +14,6 @@ func Deregister(opts *options.Options) error {
 	deregisterOpts := opts.Cluster.Deregister
 
 	clusterRegisterOpts := register.RegistrationOptions{
-		RemoteKubeCfgPath: deregisterOpts.RemoteKubeConfig,
-		RemoteKubeContext: deregisterOpts.RemoteContext,
 		APIServerAddress:  deregisterOpts.LocalClusterDomainOverride,
 		ClusterName:       deregisterOpts.ClusterName,
 		Namespace:         opts.Cluster.FederationNamespace,

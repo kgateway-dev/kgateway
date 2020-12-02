@@ -780,6 +780,16 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetConfigurationOverride()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetConfigurationOverride()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetConfigurationOverride(), target.GetConfigurationOverride()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -1773,6 +1783,16 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool
 		}
 	} else {
 		if !proto.Equal(m.GetHeaders(), target.GetHeaders()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetConfigurationOverride()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetConfigurationOverride()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetConfigurationOverride(), target.GetConfigurationOverride()) {
 			return false
 		}
 	}
