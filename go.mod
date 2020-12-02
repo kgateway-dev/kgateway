@@ -71,7 +71,6 @@ require (
 	github.com/sergi/go-diff v1.1.0
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/smartystreets/assertions v1.0.0 // indirect
-	github.com/solo-io/envoy-operator v0.1.4
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.17.0
 	github.com/solo-io/protoc-gen-ext v0.0.9
@@ -99,6 +98,7 @@ require (
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/ini.v1 v1.56.0 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
+	gopkg.in/yaml.v2 v2.3.0
 	helm.sh/helm/v3 v3.2.4
 	k8s.io/api v0.18.8
 	k8s.io/apiextensions-apiserver v0.18.8
