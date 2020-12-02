@@ -2782,7 +2782,7 @@ metadata:
 					testManifest.Expect("ConfigMap", namespace, defaults.GatewayProxyName).To(BeNil())
 				})
 
-				FIt("can create a gateway proxy with added static clusters", func() {
+				It("can create a gateway proxy with added static clusters", func() {
 					prepareMakefileFromValuesFile("values/val_static_clusters.yaml")
 					envoyBootstrap := readEnvoyConfigFromFile("fixtures/envoy_config/static_clusters.yaml")
 
@@ -2837,9 +2837,9 @@ metadata:
 					Expect(checkedAddedCluster).To(BeTrue(), "extra cluster was not found")
 				})
 
-				FIt("can create a gateway proxy with bootstrap extensions", func() {
-					prepareMakefileFromValuesFile("values/val_static_clusters.yaml")
-					byt, err := ioutil.ReadFile("fixtures/envoy_config/static_clusters.yaml")
+				It("can create a gateway proxy with bootstrap extensions", func() {
+					prepareMakefileFromValuesFile("values/val_custom_bootstrap_extensions.yaml")
+					byt, err := ioutil.ReadFile("fixtures/envoy_config/bootstrap_extensions.yaml")
 					Expect(err).NotTo(HaveOccurred())
 					jsn, err := yaml.YAMLToJSON(byt)
 					Expect(err).NotTo(HaveOccurred())
@@ -2858,41 +2858,9 @@ metadata:
 						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
 
 						if structuredConfigMap.GetName() == gatewayProxyConfigMapName {
-							addedCluster := envoyBootstrap.GetStaticResources().GetClusters()[len(envoyBootstrap.GetStaticResources().GetClusters())-1]
-							Expect(addedCluster).NotTo(BeNil())
-							Expect(addedCluster).To(Equal(&envoy_config_cluster_v3.Cluster{
-								Name:           "test_cluster",
-								ConnectTimeout: &duration.Duration{Seconds: 5},
-								LbPolicy:       envoy_config_cluster_v3.Cluster_ROUND_ROBIN,
-								ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
-									Type: envoy_config_cluster_v3.Cluster_STATIC,
-								},
-								LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-									ClusterName: "test_cluster",
-									Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-										{
-											LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
-												{
-													HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
-														Endpoint: &envoy_config_endpoint_v3.Endpoint{
-															Address: &envoy_config_core_v3.Address{
-																Address: &envoy_config_core_v3.Address_SocketAddress{
-																	SocketAddress: &envoy_config_core_v3.SocketAddress{
-																		Address: "127.0.0.1",
-																		PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
-																			PortValue: 8080,
-																		},
-																	},
-																},
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							}))
+							val, ok := bootstrapAsMap["bootstrap_extensions"]
+							Expect(ok).To(BeTrue())
+							Expect(val).To(BeAssignableToTypeOf([]interface{}{}))
 							checkedAddedCluster = true
 						}
 					})

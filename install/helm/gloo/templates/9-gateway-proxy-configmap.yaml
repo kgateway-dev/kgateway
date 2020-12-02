@@ -308,7 +308,7 @@ data:
                     address: {{ $spec.loopBackAddress }}
                     port_value: 19000
 {{- end}} {{/* if or $statsConfig.enabled ($spec.readConfig) */}}
-{{- if ne (len $spec.envoyStaticClusters) 0 }}
+{{- if $spec.envoyStaticClusters }}
 {{ toYaml $spec.envoyStaticClusters | indent 6}}
 {{- end}}
 
@@ -326,10 +326,8 @@ data:
         resource_api_version: {{ $spec.envoyApiVersion }}
         ads: {}
 {{- if $spec.envoyBootstrapExtensions }}
-{{- if ne (len $spec.envoyBootstrapExtensions) 0 }}
     bootstrap_extensions:
 {{ toYaml $spec.envoyBootstrapExtensions | indent 4}}
-{{- end}}
 {{- end}}
     admin:
       access_log_path: /dev/null
