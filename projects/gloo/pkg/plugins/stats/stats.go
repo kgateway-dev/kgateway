@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/rotisserie/eris"
 	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
@@ -119,7 +119,7 @@ func (c converter) validateHttpMethod(methodName string) (string, error) {
 		return "", nil
 	}
 	key := strings.ToUpper(methodName)
-	_, ok := envoycore.RequestMethod_value[key]
+	_, ok := envoy_config_core_v3.RequestMethod_value[key]
 	if !ok {
 		return "", invalidMethodErr(methodName)
 	}
@@ -128,7 +128,7 @@ func (c converter) validateHttpMethod(methodName string) (string, error) {
 
 func validMethodNames() string {
 	var names []string
-	for methodName := range envoycore.RequestMethod_value {
+	for methodName := range envoy_config_core_v3.RequestMethod_value {
 		names = append(names, methodName)
 	}
 	sort.Strings(names)
