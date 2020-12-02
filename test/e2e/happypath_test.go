@@ -55,8 +55,8 @@ var _ = Describe("Happy path", func() {
 		envoyPort     uint32
 
 		testCases = []struct {
-			Title               string
-			RestEdsEnabled      *types.BoolValue
+			Title          string
+			RestEdsEnabled *types.BoolValue
 		}{
 			{
 				Title: "Rest Eds Enabled",
