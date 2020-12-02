@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/go-utils/testutils/clusterlock"
+	"github.com/solo-io/k8s-utils/testutils/clusterlock"
 )
 
 func TestKube(t *testing.T) {

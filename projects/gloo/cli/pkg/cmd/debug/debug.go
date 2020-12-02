@@ -18,7 +18,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/go-utils/debugutils"
+	"github.com/solo-io/k8s-utils/debugutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

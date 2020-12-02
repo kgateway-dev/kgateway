@@ -10,7 +10,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
 
-	sanitizer "github.com/solo-io/go-utils/kubeutils"
+	sanitizer "github.com/solo-io/k8s-utils/kubeutils"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
