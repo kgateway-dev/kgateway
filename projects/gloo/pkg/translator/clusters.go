@@ -30,18 +30,20 @@ func (t *translatorInstance) computeClusters(
 	defer span.End()
 
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_clusters")
-
-	clusters := make([]*envoy_config_cluster_v3.Cluster, 0, len(params.Snapshot.Upstreams))
+	upstreams := params.Snapshot.Upstreams
+	clusters := make([]*envoy_config_cluster_v3.Cluster, 0, len(upstreams))
+	existingLambdaFuncs := make(map[string]bool)
 	// snapshot contains both real and service-derived upstreams
-	for _, upstream := range params.Snapshot.Upstreams {
-
-		if !validateUpstreamLambdaFunctions(upstream, proxy) {
-			reports.AddError(upstream, fmt.Errorf("cluster references lambda functions which do not exist"))
+	for _, upstream := range upstreams {
+		upstreamLambdaFuncs := upstream.GetAws().GetLambdaFunctions()
+		for _, lambda := range upstreamLambdaFuncs {
+			existingLambdaFuncs[lambda.GetLogicalName()] = true
 		}
-
 		cluster := t.computeCluster(params, upstream, reports)
 		clusters = append(clusters, cluster)
 	}
+	validateUpstreamLambdaFunctions(proxy, existingLambdaFuncs, reports, upstreams)
+
 	return clusters
 }
 
@@ -230,28 +232,25 @@ func getHttp2ptions(us *v1.Upstream) *envoy_config_core_v3.Http2ProtocolOptions 
 	return nil
 }
 
-func validateUpstreamLambdaFunctions(upstream *v1.Upstream, proxy *v1.Proxy) bool {
-
-	upstreamLambdaFuncs := upstream.GetAws().GetLambdaFunctions()
-	if len(upstreamLambdaFuncs) == 0 {
-		return true
-	}
+func validateUpstreamLambdaFunctions(proxy *v1.Proxy, validLambdas map[string]bool, reports reporter.ResourceReports, upstreams v1.UpstreamList) {
 
 	for _, listener := range proxy.GetListeners() {
 		httpListener := listener.GetHttpListener()
 		if httpListener != nil {
 			for _, virtualHost := range httpListener.GetVirtualHosts() {
-				for _, lambda := range upstreamLambdaFuncs {
-					for _, route := range virtualHost.GetRoutes() {
-						routeLambdaName := route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().GetLogicalName()
-						upstreamLambdaName := lambda.GetLogicalName()
-						if routeLambdaName == upstreamLambdaName {
-							return true
+				for _, route := range virtualHost.GetRoutes() {
+					routeLambdaName := route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().GetLogicalName()
+					// If route references a lambda that is not in the aws upstream, route is invalid
+					if validLambdas[routeLambdaName] == false {
+						routeUpstream := route.GetRouteAction().GetSingle().GetUpstream()
+						for _, us := range upstreams {
+							if us.Metadata.Ref() == *routeUpstream {
+								reports.AddError(us, fmt.Errorf("a route references %s lambda function which does not exist in this upstream", routeLambdaName))
+							}
 						}
 					}
 				}
 			}
 		}
 	}
-	return false
 }
