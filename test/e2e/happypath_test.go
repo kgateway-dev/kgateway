@@ -45,7 +45,7 @@ import (
 	"k8s.io/kubernetes/pkg/apis/core/validation"
 )
 
-var _ = Describe("Happy path", func() {
+var _ = FDescribe("Happy path", func() {
 
 	var (
 		ctx           context.Context
@@ -65,12 +65,14 @@ var _ = Describe("Happy path", func() {
 				RestEdsEnabled: &types.BoolValue{
 					Value: true,
 				},
+				TransportApiVersion: envoy_config_core_v3.ApiVersion_V2,
 			},
 			{
 				Title: "Rest Eds Disabled",
 				RestEdsEnabled: &types.BoolValue{
 					Value: false,
 				},
+				TransportApiVersion: envoy_config_core_v3.ApiVersion_V2,
 			},
 			{
 				Title: "Rest Eds Enabled",
@@ -84,7 +86,7 @@ var _ = Describe("Happy path", func() {
 				RestEdsEnabled: &types.BoolValue{
 					Value: false,
 				},
-				TransportApiVersion: envoy_config_core_v3.ApiVersion_V2,
+				TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 			},
 		}
 	)

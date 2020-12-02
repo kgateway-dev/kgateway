@@ -82,13 +82,14 @@ func (t *Transformer) Transform(in io.Reader, out io.Writer) error {
 		}
 	}
 
-	byt, err := json.Marshal(realNode)
+	marshaler := &jsonpb.Marshaler{}
+	byt, err := marshaler.MarshalToString(&realNode)
 	if err != nil {
 		return nil
 	}
 
 	var remarshalledNode map[string]interface{}
-	if err := json.Unmarshal(byt, &remarshalledNode); err != nil {
+	if err := json.Unmarshal([]byte(byt), &remarshalledNode); err != nil {
 		return err
 	}
 
