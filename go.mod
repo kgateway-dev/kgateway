@@ -74,10 +74,10 @@ require (
 	github.com/solo-io/envoy-operator v0.1.4
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.20.0
-	github.com/solo-io/k8s-utils v0.0.1 // indirect
+	github.com/solo-io/k8s-utils v0.0.1
 	github.com/solo-io/protoc-gen-ext v0.0.12
 	github.com/solo-io/reporting-client v0.2.0
-	github.com/solo-io/skv2 v0.8.1
+	github.com/solo-io/skv2 v0.13.5
 	github.com/solo-io/solo-apis v0.0.0-20201103221621-bbe4f60f466d
 	github.com/solo-io/solo-kit v0.15.0
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3

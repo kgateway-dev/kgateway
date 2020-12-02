@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
-	"github.com/solo-io/go-utils/testutils"
+	"github.com/solo-io/k8s-utils/testutils"
 )
 
 func RegisterGlooDebugLogPrintHandlerAndClearLogs() {

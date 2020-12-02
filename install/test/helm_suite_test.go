@@ -33,12 +33,12 @@ import (
 	helm2chartapi "k8s.io/helm/pkg/proto/hapi/chart"
 	k8syamlutil "sigs.k8s.io/yaml"
 
-	"github.com/solo-io/go-utils/testutils"
+	"github.com/solo-io/k8s-utils/testutils"
 	v1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/solo-io/go-utils/manifesttestutils"
+	. "github.com/solo-io/k8s-utils/manifesttestutils"
 )
 
 func TestHelm(t *testing.T) {

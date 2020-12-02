@@ -11,9 +11,9 @@ import (
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/log"
-	"github.com/solo-io/go-utils/testutils"
-	"github.com/solo-io/go-utils/testutils/exec"
-	"github.com/solo-io/go-utils/testutils/helper"
+	"github.com/solo-io/k8s-utils/testutils"
+	"github.com/solo-io/k8s-utils/testutils/exec"
+	"github.com/solo-io/k8s-utils/testutils/helper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

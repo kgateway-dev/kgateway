@@ -8,7 +8,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 
-	"github.com/solo-io/go-utils/testutils/exec"
+	"github.com/solo-io/k8s-utils/testutils/exec"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

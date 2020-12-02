@@ -4,7 +4,7 @@ import (
 	"crypto/x509"
 	"fmt"
 
-	"github.com/solo-io/go-utils/certutils"
+	"github.com/solo-io/k8s-utils/certutils"
 	"k8s.io/client-go/util/cert"
 	"knative.dev/pkg/network"
 )

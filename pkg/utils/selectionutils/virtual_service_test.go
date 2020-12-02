@@ -11,7 +11,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/selectionutils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	mock_gateway "github.com/solo-io/gloo/projects/gateway/pkg/mocks/mock_v1"
-	. "github.com/solo-io/go-utils/testutils"
+	. "github.com/solo-io/k8s-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	sk_errors "github.com/solo-io/solo-kit/pkg/errors"

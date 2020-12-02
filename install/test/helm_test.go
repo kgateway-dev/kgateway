@@ -6,35 +6,31 @@ import (
 	"fmt"
 	"html/template"
 
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/test/matchers"
-	"github.com/solo-io/go-utils/installutils/kuberesource"
-	"github.com/solo-io/go-utils/manifesttestutils"
-	"k8s.io/apimachinery/pkg/util/sets"
-
-	"github.com/golang/protobuf/proto"
-	"github.com/solo-io/reporting-client/pkg/client"
-	"helm.sh/helm/v3/pkg/releaseutil"
-	"k8s.io/utils/pointer"
-
 	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/proto"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/test/matchers"
+	"github.com/solo-io/k8s-utils/installutils/kuberesource"
+	"github.com/solo-io/k8s-utils/manifesttestutils"
+	. "github.com/solo-io/k8s-utils/manifesttestutils"
+	"github.com/solo-io/reporting-client/pkg/client"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"helm.sh/helm/v3/pkg/releaseutil"
 	appsv1 "k8s.io/api/apps/v1"
 	jobsv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/intstr"
-
-	. "github.com/solo-io/go-utils/manifesttestutils"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/utils/pointer"
 )
 
 func GetPodNamespaceStats() v1.EnvVar {
@@ -1838,7 +1834,7 @@ spec:
 								Expect(container.Resources).NotTo(BeNil(), "deployment/container %s/%s had nil resources", deployment.GetName(), container.Name)
 								if container.Name == "envoy-sidecar" || container.Name == "sds" || container.Name == "istio-proxy" {
 									var expectedVals = sdsVals
-									//istio-proxy is another sds container
+									// istio-proxy is another sds container
 									if container.Name == "envoy-sidecar" {
 										expectedVals = envoySidecarVals
 									}
@@ -3244,6 +3240,6 @@ func cloneMap(input map[string]string) map[string]string {
 }
 
 func constructResourceID(resource *unstructured.Unstructured) string {
-	//technically vulnerable to resources that have commas in their names, but that's not a big concern
+	// technically vulnerable to resources that have commas in their names, but that's not a big concern
 	return fmt.Sprintf("%s,%s,%s", resource.GetNamespace(), resource.GetName(), resource.GroupVersionKind().String())
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/matchers"
-	. "github.com/solo-io/go-utils/testutils"
+	. "github.com/solo-io/k8s-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo"

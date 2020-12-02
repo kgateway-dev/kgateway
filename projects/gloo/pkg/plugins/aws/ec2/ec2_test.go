@@ -3,7 +3,7 @@ package ec2
 import (
 	"context"
 
-	"github.com/solo-io/go-utils/testutils"
+	"github.com/solo-io/k8s-utils/testutils"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"

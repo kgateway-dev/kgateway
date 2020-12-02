@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8syamlutil "sigs.k8s.io/yaml"
 
-	"github.com/solo-io/go-utils/testutils"
+	"github.com/solo-io/k8s-utils/testutils"
 
 	"github.com/rotisserie/eris"
 

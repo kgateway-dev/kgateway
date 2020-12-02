@@ -19,7 +19,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	. "github.com/solo-io/go-utils/testutils"
+	. "github.com/solo-io/k8s-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
