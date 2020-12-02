@@ -1,0 +1,4 @@
+changelog:
+  - type: UPGRADE
+    issueLink: https://github.com/solo-io/gloo/issues/3651
+    description: Upgrade go-utils to v0.20 and use k8s-utils
