@@ -202,9 +202,8 @@ func GetOSDependencyPrefix(openSourceVersion Version, isHeader bool) string {
 	if isHeader {
 		prefix = " (Uses Gloo Edge"
 	}
-	// Links are broken in markdown rendered by readfile, commenting out for now
-	//osReleaseURL := strings.ReplaceAll(openSourceVersion.String(), ".", "")
-	osPrefix := fmt.Sprintf("%s OSS %s) ", prefix, openSourceVersion.String())
+	osReleaseURL := strings.ReplaceAll(openSourceVersion.String(), ".", "")
+	osPrefix := fmt.Sprintf("%s [OSS %s](../../../reference/changelog/open_source/#%s)) ", prefix, openSourceVersion.String(), osReleaseURL)
 	return osPrefix
 }
 

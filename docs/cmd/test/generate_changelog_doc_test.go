@@ -80,12 +80,12 @@ var _ = Describe("Generate Changelog Test", func() {
 			osVersion := Version{Major: 1, Minor: 5, Patch: 9, Label: "beta", LabelVersion: 3}
 			useHeaderPrefix := false
 			bulletPointPrefix := changelogutils.GetOSDependencyPrefix(osVersion, useHeaderPrefix)
-			expectedBulletPrefix := "\n- (From OSS v1.5.9-beta3) "
+			expectedBulletPrefix := "\n- (From OSS v1.5.9-beta3(../../../reference/changelog/open_source/#v159-beta3)) "
 			Expect(bulletPointPrefix).To(Equal(expectedBulletPrefix))
 
 			useHeaderPrefix = true
 			headerPrefix := changelogutils.GetOSDependencyPrefix(osVersion, useHeaderPrefix)
-			expectedHeaderPrefix := " (Uses Gloo Edge OSS v1.5.9-beta3) "
+			expectedHeaderPrefix := " (Uses Gloo Edge [OSS v1.5.9-beta3](../../../reference/changelog/open_source/#v159-beta3)) "
 			Expect(headerPrefix).To(Equal(expectedHeaderPrefix))
 		})
 	})
