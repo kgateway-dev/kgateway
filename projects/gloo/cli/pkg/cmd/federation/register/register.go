@@ -14,12 +14,10 @@ func Register(opts *options.Options) error {
 	registerOpts := opts.Cluster.Register
 
 	clusterRegisterOpts := register.RegistrationOptions{
-		RemoteKubeCfgPath: registerOpts.RemoteKubeConfig,
-		RemoteKubeContext: registerOpts.RemoteContext,
-		APIServerAddress:  registerOpts.LocalClusterDomainOverride,
-		ClusterName:       registerOpts.ClusterName,
-		Namespace:         opts.Cluster.FederationNamespace,
-		RemoteNamespace:   registerOpts.RemoteNamespace,
+		APIServerAddress: registerOpts.LocalClusterDomainOverride,
+		ClusterName:      registerOpts.ClusterName,
+		Namespace:        opts.Cluster.FederationNamespace,
+		RemoteNamespace:  registerOpts.RemoteNamespace,
 		ClusterRoles: []*v1.ClusterRole{
 			{
 				ObjectMeta: metav1.ObjectMeta{

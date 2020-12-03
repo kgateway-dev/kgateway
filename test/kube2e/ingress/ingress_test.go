@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/go-utils/testutils/helper"
+	"github.com/solo-io/k8s-utils/testutils/helper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/k8s-utils/kubeutils"
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"

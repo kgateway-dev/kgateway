@@ -3,7 +3,7 @@ package test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/solo-io/go-utils/manifesttestutils"
+	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
