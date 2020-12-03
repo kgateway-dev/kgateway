@@ -1067,6 +1067,9 @@ apis:
   multicluster.solo.io.KubernetesClusterStatus:
     relativepath: reference/api/github.com/solo-io/skv2/api/multicluster/v1alpha1/cluster.proto.sk/#KubernetesClusterStatus
     package: multicluster.solo.io
+  multicluster.solo.io.PolicyRule:
+    relativepath: reference/api/github.com/solo-io/skv2/api/multicluster/v1alpha1/cluster.proto.sk/#PolicyRule
+    package: multicluster.solo.io
   opencensus.proto.trace.AttributeValue:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/trace.proto.sk/#AttributeValue
     package: opencensus.proto.trace

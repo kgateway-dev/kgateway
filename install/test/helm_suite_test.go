@@ -38,7 +38,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/solo-io/go-utils/manifesttestutils"
+	. "github.com/solo-io/k8s-utils/manifesttestutils"
 )
 
 func TestHelm(t *testing.T) {
