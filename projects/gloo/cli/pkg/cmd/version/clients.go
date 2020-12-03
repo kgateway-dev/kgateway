@@ -6,8 +6,8 @@ import (
 
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
-	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/go-utils/stringutils"
+	"github.com/solo-io/k8s-utils/kubeutils"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"

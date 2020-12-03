@@ -1,9 +1,9 @@
 package gogoutils
 
 import (
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	types "github.com/gogo/protobuf/types"
 	envoyroute_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/route"
 	envoytype_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type"
@@ -18,8 +18,9 @@ import (
 // we should work to remove that assumption from solokit and delete this code:
 // https://github.com/solo-io/gloo/issues/1793
 
+// todo consider movinng this to solo-projects
 // used in enterprise code
-func ToGlooRouteMatch(routeMatch *envoyroute.RouteMatch) *envoyroute_gloo.RouteMatch {
+func ToGlooRouteMatch(routeMatch *envoy_config_route_v3.RouteMatch) *envoyroute_gloo.RouteMatch {
 	if routeMatch == nil {
 		return nil
 	}
@@ -32,19 +33,15 @@ func ToGlooRouteMatch(routeMatch *envoyroute.RouteMatch) *envoyroute_gloo.RouteM
 		Grpc:            ToGlooGrpc(routeMatch.GetGrpc()),
 	}
 	switch typed := routeMatch.GetPathSpecifier().(type) {
-	case *envoyroute.RouteMatch_Prefix:
+	case *envoy_config_route_v3.RouteMatch_Prefix:
 		rm.PathSpecifier = &envoyroute_gloo.RouteMatch_Prefix{
 			Prefix: typed.Prefix,
 		}
-	case *envoyroute.RouteMatch_Regex:
-		rm.PathSpecifier = &envoyroute_gloo.RouteMatch_Regex{
-			Regex: typed.Regex,
-		}
-	case *envoyroute.RouteMatch_SafeRegex:
+	case *envoy_config_route_v3.RouteMatch_SafeRegex:
 		rm.PathSpecifier = &envoyroute_gloo.RouteMatch_Regex{
 			Regex: typed.SafeRegex.GetRegex(),
 		}
-	case *envoyroute.RouteMatch_Path:
+	case *envoy_config_route_v3.RouteMatch_Path:
 		rm.PathSpecifier = &envoyroute_gloo.RouteMatch_Path{
 			Path: typed.Path,
 		}
@@ -52,7 +49,7 @@ func ToGlooRouteMatch(routeMatch *envoyroute.RouteMatch) *envoyroute_gloo.RouteM
 	return rm
 }
 
-func ToGlooRuntimeFractionalPercent(fp *envoycore.RuntimeFractionalPercent) *envoycore_sk.RuntimeFractionalPercent {
+func ToGlooRuntimeFractionalPercent(fp *envoy_config_core_v3.RuntimeFractionalPercent) *envoycore_sk.RuntimeFractionalPercent {
 	if fp == nil {
 		return nil
 	}
@@ -81,7 +78,7 @@ func ToGlooFractionalPercent(fp *envoytype.FractionalPercent) *envoytype_sk.Frac
 	return glooFp
 }
 
-func ToGlooHeaders(headers []*envoyroute.HeaderMatcher) []*envoyroute_gloo.HeaderMatcher {
+func ToGlooHeaders(headers []*envoy_config_route_v3.HeaderMatcher) []*envoyroute_gloo.HeaderMatcher {
 	if headers == nil {
 		return nil
 	}
@@ -92,7 +89,7 @@ func ToGlooHeaders(headers []*envoyroute.HeaderMatcher) []*envoyroute_gloo.Heade
 	return result
 }
 
-func ToGlooHeader(header *envoyroute.HeaderMatcher) *envoyroute_gloo.HeaderMatcher {
+func ToGlooHeader(header *envoy_config_route_v3.HeaderMatcher) *envoyroute_gloo.HeaderMatcher {
 	if header == nil {
 		return nil
 	}
@@ -102,34 +99,30 @@ func ToGlooHeader(header *envoyroute.HeaderMatcher) *envoyroute_gloo.HeaderMatch
 		InvertMatch:          header.GetInvertMatch(),
 	}
 	switch specificHeaderSpecifier := header.HeaderMatchSpecifier.(type) {
-	case *envoyroute.HeaderMatcher_ExactMatch:
+	case *envoy_config_route_v3.HeaderMatcher_ExactMatch:
 		h.HeaderMatchSpecifier = &envoyroute_gloo.HeaderMatcher_ExactMatch{
 			ExactMatch: specificHeaderSpecifier.ExactMatch,
 		}
-	case *envoyroute.HeaderMatcher_RegexMatch:
-		h.HeaderMatchSpecifier = &envoyroute_gloo.HeaderMatcher_RegexMatch{
-			RegexMatch: specificHeaderSpecifier.RegexMatch,
-		}
-	case *envoyroute.HeaderMatcher_SafeRegexMatch:
+	case *envoy_config_route_v3.HeaderMatcher_SafeRegexMatch:
 		h.HeaderMatchSpecifier = &envoyroute_gloo.HeaderMatcher_RegexMatch{
 			RegexMatch: specificHeaderSpecifier.SafeRegexMatch.GetRegex(),
 		}
-	case *envoyroute.HeaderMatcher_RangeMatch:
+	case *envoy_config_route_v3.HeaderMatcher_RangeMatch:
 		h.HeaderMatchSpecifier = &envoyroute_gloo.HeaderMatcher_RangeMatch{
 			RangeMatch: &envoytype_gloo.Int64Range{
 				Start: specificHeaderSpecifier.RangeMatch.Start,
 				End:   specificHeaderSpecifier.RangeMatch.End,
 			},
 		}
-	case *envoyroute.HeaderMatcher_PresentMatch:
+	case *envoy_config_route_v3.HeaderMatcher_PresentMatch:
 		h.HeaderMatchSpecifier = &envoyroute_gloo.HeaderMatcher_PresentMatch{
 			PresentMatch: specificHeaderSpecifier.PresentMatch,
 		}
-	case *envoyroute.HeaderMatcher_PrefixMatch:
+	case *envoy_config_route_v3.HeaderMatcher_PrefixMatch:
 		h.HeaderMatchSpecifier = &envoyroute_gloo.HeaderMatcher_PrefixMatch{
 			PrefixMatch: specificHeaderSpecifier.PrefixMatch,
 		}
-	case *envoyroute.HeaderMatcher_SuffixMatch:
+	case *envoy_config_route_v3.HeaderMatcher_SuffixMatch:
 		h.HeaderMatchSpecifier = &envoyroute_gloo.HeaderMatcher_SuffixMatch{
 			SuffixMatch: specificHeaderSpecifier.SuffixMatch,
 		}
@@ -137,7 +130,7 @@ func ToGlooHeader(header *envoyroute.HeaderMatcher) *envoyroute_gloo.HeaderMatch
 	return h
 }
 
-func ToGlooQueryParameterMatchers(queryParamMatchers []*envoyroute.QueryParameterMatcher) []*envoyroute_gloo.QueryParameterMatcher {
+func ToGlooQueryParameterMatchers(queryParamMatchers []*envoy_config_route_v3.QueryParameterMatcher) []*envoyroute_gloo.QueryParameterMatcher {
 	if queryParamMatchers == nil {
 		return nil
 	}
@@ -148,7 +141,7 @@ func ToGlooQueryParameterMatchers(queryParamMatchers []*envoyroute.QueryParamete
 	return result
 }
 
-func ToGlooQueryParameterMatcher(queryParamMatcher *envoyroute.QueryParameterMatcher) *envoyroute_gloo.QueryParameterMatcher {
+func ToGlooQueryParameterMatcher(queryParamMatcher *envoy_config_route_v3.QueryParameterMatcher) *envoyroute_gloo.QueryParameterMatcher {
 	if queryParamMatcher == nil {
 		return nil
 	}
@@ -175,7 +168,7 @@ func ToGlooQueryParameterMatcher(queryParamMatcher *envoyroute.QueryParameterMat
 	return qpm
 }
 
-func ToGlooGrpc(grpc *envoyroute.RouteMatch_GrpcRouteMatchOptions) *envoyroute_gloo.RouteMatch_GrpcRouteMatchOptions {
+func ToGlooGrpc(grpc *envoy_config_route_v3.RouteMatch_GrpcRouteMatchOptions) *envoyroute_gloo.RouteMatch_GrpcRouteMatchOptions {
 	if grpc == nil {
 		return nil
 	}
