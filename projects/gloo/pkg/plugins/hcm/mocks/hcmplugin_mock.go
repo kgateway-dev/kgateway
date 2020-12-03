@@ -5,12 +5,13 @@
 package mock_hcm
 
 import (
+	reflect "reflect"
+
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	gomock "github.com/golang/mock/gomock"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	hcm "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	reflect "reflect"
 )
 
 // MockHcmPlugin is a mock of HcmPlugin interface

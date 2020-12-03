@@ -73,12 +73,12 @@ require (
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.20.0
-	github.com/solo-io/k8s-utils v0.0.1
+	github.com/solo-io/k8s-utils v0.0.3
 	github.com/solo-io/protoc-gen-ext v0.0.12
 	github.com/solo-io/reporting-client v0.2.0
 	github.com/solo-io/skv2 v0.13.5
 	github.com/solo-io/solo-apis v0.0.0-20201103221621-bbe4f60f466d
-	github.com/solo-io/solo-kit v0.15.3-0.20201203155137-3c90db1eccdd
+	github.com/solo-io/solo-kit v0.16.0
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
 	github.com/spf13/cobra v1.0.0
@@ -165,3 +165,5 @@ replace (
 	k8s.io/sample-controller => k8s.io/sample-controller v0.18.6
 	k8s.io/utils => k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 )
+
+replace github.com/solo-io/k8s-utils => ../k8s-utils

@@ -14,10 +14,10 @@ func Register(opts *options.Options) error {
 	registerOpts := opts.Cluster.Register
 
 	clusterRegisterOpts := register.RegistrationOptions{
-		APIServerAddress:  registerOpts.LocalClusterDomainOverride,
-		ClusterName:       registerOpts.ClusterName,
-		Namespace:         opts.Cluster.FederationNamespace,
-		RemoteNamespace:   registerOpts.RemoteNamespace,
+		APIServerAddress: registerOpts.LocalClusterDomainOverride,
+		ClusterName:      registerOpts.ClusterName,
+		Namespace:        opts.Cluster.FederationNamespace,
+		RemoteNamespace:  registerOpts.RemoteNamespace,
 		ClusterRoles: []*v1.ClusterRole{
 			{
 				ObjectMeta: metav1.ObjectMeta{
