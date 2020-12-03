@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Fixed a bug in enterprise where extension syncers can sometimes 
+      compete with the main gloo syncer when writing statuses
+      to the proxy resource, causing overwrites.
+    issueLink: https://github.com/solo-io/gloo/issues/3815
+    resolvesIssue: false
