@@ -1,18 +1,11 @@
 package downward
 
 import (
-	"encoding/json"
-	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	structpb "github.com/golang/protobuf/ptypes/struct"
-
-	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	"github.com/golang/protobuf/jsonpb"
-	yaml "gopkg.in/yaml.v2"
 
 	// register all top level types used in the bootstrap config
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -44,63 +37,7 @@ func (t *Transformer) TransformFiles(in, out string) error {
 }
 
 func (t *Transformer) Transform(in io.Reader, out io.Writer) error {
-	// first step - serialize yaml to json
-	jsondata, err := getJson(in)
-
-	if err != nil {
-		return err
-	}
-
-	var genericBootstrap map[string]interface{}
-	err = json.Unmarshal(jsondata, &genericBootstrap)
-	var bootstrapConfig envoy_config_bootstrap.Bootstrap
-	err = jsonpb.UnmarshalString(string(jsondata), &bootstrapConfig)
-	if err != nil {
-		return err
-	}
-
-	node, ok := genericBootstrap["node"]
-	if !ok {
-		return errors.New("Could not find envoy node in input object")
-	}
-
-	remarshaled, err := json.Marshal(node)
-	if err != nil {
-		return err
-	}
-
-	var realNode envoy_config_core_v3.Node
-	err = jsonpb.UnmarshalString(string(remarshaled), &realNode)
-	if err != nil {
-		return err
-	}
-
-	for _, transformation := range t.transformations {
-		err := transformation(&realNode)
-		if err != nil {
-			return err
-		}
-	}
-
-	marshaler := &jsonpb.Marshaler{}
-	byt, err := marshaler.MarshalToString(&realNode)
-	if err != nil {
-		return nil
-	}
-
-	var remarshalledNode map[string]interface{}
-	if err := json.Unmarshal([]byte(byt), &remarshalledNode); err != nil {
-		return err
-	}
-
-	genericBootstrap["node"] = remarshalledNode
-
-	jsn, err := json.Marshal(genericBootstrap)
-	if err != nil {
-		return err
-	}
-	_, err = out.Write(jsn)
-	return err
+	return NewInterpolator().InterpolateIO(in, out, RetrieveDownwardAPI())
 }
 
 func TransformConfigTemplates(node *envoy_config_core_v3.Node) error {
@@ -157,36 +94,4 @@ func transformStruct(interpolate func(*string) error, s *structpb.Struct) error 
 		}
 	}
 	return nil
-}
-
-func getJson(in io.Reader) ([]byte, error) {
-	readbytes, err := ioutil.ReadAll(in)
-	if err != nil {
-		return nil, err
-	}
-	var body interface{}
-	if err := yaml.Unmarshal(readbytes, &body); err != nil {
-		return nil, err
-	}
-	body = convert(body)
-	if b, err := json.Marshal(body); err != nil {
-		return nil, err
-	} else {
-		return b, nil
-	}
-}
-func convert(i interface{}) interface{} {
-	switch x := i.(type) {
-	case map[interface{}]interface{}:
-		m2 := map[string]interface{}{}
-		for k, v := range x {
-			m2[k.(string)] = convert(v)
-		}
-		return m2
-	case []interface{}:
-		for i, v := range x {
-			x[i] = convert(v)
-		}
-	}
-	return i
 }

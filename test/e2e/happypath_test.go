@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/gogo/protobuf/types"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
@@ -55,20 +56,37 @@ var _ = Describe("Happy path", func() {
 		envoyPort     uint32
 
 		testCases = []struct {
-			Title          string
-			RestEdsEnabled *types.BoolValue
+			Title               string
+			RestEdsEnabled      *types.BoolValue
+			TransportApiVersion envoy_config_core_v3.ApiVersion
 		}{
 			{
 				Title: "Rest Eds Enabled",
 				RestEdsEnabled: &types.BoolValue{
 					Value: true,
 				},
+				TransportApiVersion: envoy_config_core_v3.ApiVersion_V2,
 			},
 			{
 				Title: "Rest Eds Disabled",
 				RestEdsEnabled: &types.BoolValue{
 					Value: false,
 				},
+				TransportApiVersion: envoy_config_core_v3.ApiVersion_V2,
+			},
+			{
+				Title: "Rest Eds Enabled",
+				RestEdsEnabled: &types.BoolValue{
+					Value: true,
+				},
+				TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
+			},
+			{
+				Title: "Rest Eds Disabled",
+				RestEdsEnabled: &types.BoolValue{
+					Value: false,
+				},
+				TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 			},
 		}
 	)
@@ -99,7 +117,7 @@ var _ = Describe("Happy path", func() {
 
 	for _, testCase := range testCases {
 
-		Describe(testCase.Title, func() {
+		Describe(fmt.Sprintf("%s: (%s)", testCase.Title, testCase.TransportApiVersion.String()), func() {
 
 			Describe("in memory", func() {
 
@@ -122,6 +140,7 @@ var _ = Describe("Happy path", func() {
 						},
 					}
 					testClients = services.RunGlooGatewayUdsFds(ctx, ro)
+					envoyInstance.ApiVersion = testCase.TransportApiVersion.String()
 					err := envoyInstance.RunWithRole(ns+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
 					Expect(err).NotTo(HaveOccurred())
 
