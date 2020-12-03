@@ -65,12 +65,14 @@ var _ = Describe("Happy path", func() {
 				RestEdsEnabled: &types.BoolValue{
 					Value: true,
 				},
+				TransportApiVersion: envoy_config_core_v3.ApiVersion_V2,
 			},
 			{
 				Title: "Rest Eds Disabled",
 				RestEdsEnabled: &types.BoolValue{
 					Value: false,
 				},
+				TransportApiVersion: envoy_config_core_v3.ApiVersion_V2,
 			},
 			{
 				Title: "Rest Eds Enabled",
@@ -84,7 +86,7 @@ var _ = Describe("Happy path", func() {
 				RestEdsEnabled: &types.BoolValue{
 					Value: false,
 				},
-				TransportApiVersion: envoy_config_core_v3.ApiVersion_V2,
+				TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 			},
 		}
 	)
@@ -115,7 +117,7 @@ var _ = Describe("Happy path", func() {
 
 	for _, testCase := range testCases {
 
-		Describe(testCase.Title, func() {
+		Describe(fmt.Sprintf("%s: (%s)", testCase.Title, testCase.TransportApiVersion.String()), func() {
 
 			Describe("in memory", func() {
 

@@ -1,0 +1,18 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/3905
+  description: >
+    Add the ability to add static clusters to the envoy bootstrap config via helm. This option can be accessed via
+    "<proxy-name>.envoyStaticClusters". The value should be a list of static clusters which will be passed directly to
+    envoy, so the yaml must be correct. The api can be found here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#config-cluster-v3-cluster.
+    This is meant to be used for advanced use cases
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/3943
+  description: >
+    Add the ability to add bootstrap extensions to the envoy bootstrap config via helm. This option can be accessed via
+    "<proxy-name>.envoyBootstrapExtensions". The value should be a list of bootstrap extensions which will be passed directly
+    envoy, so the yaml must be correct. The main use case being wasm services, for the purpose of creating singletons.
+    Bootstrap extensions is a list of typed extension config (https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/extension.proto#envoy-v3-api-msg-config-core-v3-typedextensionconfig)
+    so the list must be passed with the name, and type url.
+    The API for the wasm service specfically can be found here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-wasmservice.
+    This is meant to be used for advanced use cases

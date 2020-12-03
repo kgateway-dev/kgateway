@@ -289,6 +289,8 @@ type GatewayProxy struct {
 	Failover                       Failover                     `json:"failover" desc:"(Enterprise Only): Failover configuration"`
 	Disabled                       bool                         `json:"disabled,omitempty" desc:"Skips creation of this gateway proxy. Used to turn off gateway proxies created by preceding configurations"`
 	EnvoyApiVersion                string                       `json:"envoyApiVersion" desc:"Version of the envoy API to use for the xDS transport and resources. Default is V3"`
+	EnvoyBootstrapExtensions       []map[string]interface{}     `json:"envoyBootstrapExtensions" desc:"List of bootstrap extensions to add to envoy bootstrap config. Examples include Wasm Service (https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-wasmservice)."`
+	EnvoyStaticClusters            []map[string]interface{}     `json:"envoyStaticClusters" desc:"List of extra static clusters to be added to envoy bootstrap config. https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#envoy-v3-api-msg-config-cluster-v3-cluster"`
 }
 
 type GatewayProxyGatewaySettings struct {

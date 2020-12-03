@@ -5,7 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	"github.com/ghodss/yaml"
+	"github.com/golang/protobuf/ptypes/duration"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
@@ -376,13 +382,13 @@ var _ = Describe("Helm Test", func() {
 
 				It("should be able to set consul config values", func() {
 					settings := makeUnstructureFromTemplateFile("fixtures/settings/consul_config_values.yaml", namespace)
-					prepareMakefileFromValuesFile("val_consul_test_inputs.yaml")
+					prepareMakefileFromValuesFile("values/val_consul_test_inputs.yaml")
 					testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 				})
 
 				It("should be able to set consul config upstream discovery values", func() {
 					settings := makeUnstructureFromTemplateFile("fixtures/settings/consul_config_upstream_discovery.yaml", namespace)
-					prepareMakefileFromValuesFile("val_consul_discovery_test_inputs.yaml")
+					prepareMakefileFromValuesFile("values/val_consul_discovery_test_inputs.yaml")
 					testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 				})
 
@@ -651,7 +657,7 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("should allow setting a custom istio sidecar in the Gateway-Proxy Deployment", func() {
-					prepareMakefileFromValuesFile("val_custom_istio_sidecar.yaml")
+					prepareMakefileFromValuesFile("values/val_custom_istio_sidecar.yaml")
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 						return resource.GetKind() == "Deployment"
@@ -752,7 +758,7 @@ var _ = Describe("Helm Test", func() {
 					})
 
 					It("can create an access logging deployment/service", func() {
-						prepareMakefileFromValuesFile("val_access_logger.yaml")
+						prepareMakefileFromValuesFile("values/val_access_logger.yaml")
 						container := GetQuayContainerSpec("access-logger", version, GetPodNamespaceEnvVar(), GetPodNameEnvVar(),
 							v1.EnvVar{
 								Name:  "SERVICE_NAME",
@@ -821,7 +827,7 @@ var _ = Describe("Helm Test", func() {
 					})
 
 					It("has a proxy with access logging cluster", func() {
-						prepareMakefileFromValuesFile("val_access_logger.yaml")
+						prepareMakefileFromValuesFile("values/val_access_logger.yaml")
 						proxySpec := make(map[string]string)
 						labels = map[string]string{
 							"gloo":             "gateway-proxy",
@@ -896,7 +902,7 @@ var _ = Describe("Helm Test", func() {
 								Namespace: "one",
 							},
 						}
-						prepareMakefileFromValuesFile("val_custom_gateways.yaml")
+						prepareMakefileFromValuesFile("values/val_custom_gateways.yaml")
 						for _, name := range []string{newGatewayProxyName, defaults.GatewayProxyName} {
 							name := name
 							gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, name)
@@ -1094,7 +1100,7 @@ var _ = Describe("Helm Test", func() {
 						gatewayProxyService.Spec.Type = v1.ServiceTypeLoadBalancer
 						gatewayProxyService.Spec.LoadBalancerSourceRanges = []string{"130.211.204.1/32", "130.211.204.2/32"}
 						gatewayProxyService.Annotations = map[string]string{"test": "test"}
-						prepareMakefileFromValuesFile("val_lb_source_ranges.yaml")
+						prepareMakefileFromValuesFile("values/val_lb_source_ranges.yaml")
 						testManifest.ExpectService(gatewayProxyService)
 					})
 
@@ -1838,7 +1844,7 @@ spec:
 								Expect(container.Resources).NotTo(BeNil(), "deployment/container %s/%s had nil resources", deployment.GetName(), container.Name)
 								if container.Name == "envoy-sidecar" || container.Name == "sds" || container.Name == "istio-proxy" {
 									var expectedVals = sdsVals
-									//istio-proxy is another sds container
+									// istio-proxy is another sds container
 									if container.Name == "envoy-sidecar" {
 										expectedVals = envoySidecarVals
 									}
@@ -2776,6 +2782,111 @@ metadata:
 					testManifest.Expect("ConfigMap", namespace, defaults.GatewayProxyName).To(BeNil())
 				})
 
+				It("can create a gateway proxy with added static clusters", func() {
+					prepareMakefileFromValuesFile("values/val_static_clusters.yaml")
+					envoyBootstrap := readEnvoyConfigFromFile("fixtures/envoy_config/static_clusters.yaml")
+
+					checkedAddedCluster := false
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == gatewayProxyConfigMapName {
+							addedCluster := envoyBootstrap.GetStaticResources().GetClusters()[len(envoyBootstrap.GetStaticResources().GetClusters())-1]
+							Expect(addedCluster).NotTo(BeNil())
+							Expect(addedCluster).To(Equal(&envoy_config_cluster_v3.Cluster{
+								Name:           "test_cluster",
+								ConnectTimeout: &duration.Duration{Seconds: 5},
+								LbPolicy:       envoy_config_cluster_v3.Cluster_ROUND_ROBIN,
+								ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
+									Type: envoy_config_cluster_v3.Cluster_STATIC,
+								},
+								LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
+									ClusterName: "test_cluster",
+									Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
+										{
+											LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
+												{
+													HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
+														Endpoint: &envoy_config_endpoint_v3.Endpoint{
+															Address: &envoy_config_core_v3.Address{
+																Address: &envoy_config_core_v3.Address_SocketAddress{
+																	SocketAddress: &envoy_config_core_v3.SocketAddress{
+																		Address: "127.0.0.1",
+																		PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
+																			PortValue: 8080,
+																		},
+																	},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							}))
+							checkedAddedCluster = true
+						}
+					})
+					Expect(checkedAddedCluster).To(BeTrue(), "extra cluster was not found")
+				})
+
+				It("can create a gateway proxy with bootstrap extensions", func() {
+					prepareMakefileFromValuesFile("values/val_custom_bootstrap_extensions.yaml")
+					byt, err := ioutil.ReadFile("fixtures/envoy_config/bootstrap_extensions.yaml")
+					Expect(err).NotTo(HaveOccurred())
+					jsn, err := yaml.YAMLToJSON(byt)
+					Expect(err).NotTo(HaveOccurred())
+					// Need to treat this field as a map since the version of go-control-plane we are using
+					var bootstrapAsMap map[string]interface{}
+					err = json.Unmarshal(jsn, &bootstrapAsMap)
+					Expect(err).NotTo(HaveOccurred())
+
+					checkedAddedCluster := false
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == gatewayProxyConfigMapName {
+							val, ok := bootstrapAsMap["bootstrap_extensions"]
+							Expect(ok).To(BeTrue())
+							Expect(val).To(BeAssignableToTypeOf([]interface{}{}))
+							checkedAddedCluster = true
+						}
+					})
+					Expect(checkedAddedCluster).To(BeTrue(), "extra cluster was not found")
+				})
+
+				It("can create a gateway proxy config with added bootstrap extensions", func() {
+					prepareMakefileFromValuesFile("values/val_custom_bootstrap_extensions.yaml")
+					envoyBootstrap := readEnvoyConfigFromFile("fixtures/envoy_config/static_clusters.yaml")
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == gatewayProxyConfigMapName {
+							addedCluster := envoyBootstrap.GetStaticResources().GetClusters()[len(envoyBootstrap.GetStaticResources().GetClusters())-1]
+							Expect(addedCluster).NotTo(BeNil())
+							Expect(addedCluster.GetName()).To(Equal("test_cluster"))
+						}
+					})
+				})
+
 				Describe("gateway proxy - AWS", func() {
 
 					It("has a global cluster", func() {
@@ -2834,7 +2945,7 @@ metadata:
 					})
 
 					It("has a proxy with tracing cluster", func() {
-						prepareMakefileFromValuesFile("val_tracing_provider_cluster.yaml")
+						prepareMakefileFromValuesFile("values/val_tracing_provider_cluster.yaml")
 						proxySpec := make(map[string]string)
 						proxySpec["envoy.yaml"] = confWithTracingCluster
 						cmRb := ResourceBuilder{
@@ -3244,6 +3355,6 @@ func cloneMap(input map[string]string) map[string]string {
 }
 
 func constructResourceID(resource *unstructured.Unstructured) string {
-	//technically vulnerable to resources that have commas in their names, but that's not a big concern
+	// technically vulnerable to resources that have commas in their names, but that's not a big concern
 	return fmt.Sprintf("%s,%s,%s", resource.GetNamespace(), resource.GetName(), resource.GroupVersionKind().String())
 }
