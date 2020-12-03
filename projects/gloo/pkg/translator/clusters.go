@@ -228,6 +228,9 @@ func getHttp2ptions(us *v1.Upstream) *envoy_config_core_v3.Http2ProtocolOptions 
 	return nil
 }
 
+// Validates routes that point to the current AWS lambda upstream
+// Checks that the function the route is pointing to is available on the upstream
+// else it adds an error to the upstream, so that invalid route replacement can be used.
 func validateUpstreamLambdaFunctions(proxy *v1.Proxy, upstream *v1.Upstream, reports reporter.ResourceReports) {
 	// Create a set of the lambda functions in this upstream
 	upstreamLambdas := make(map[string]bool)
