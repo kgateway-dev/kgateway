@@ -12,26 +12,31 @@ import (
 	"time"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/gogo/protobuf/types"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
+	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	errors "github.com/rotisserie/eris"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
-	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/gloo/test/v1helpers"
-	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	skkubeutils "github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 	"github.com/solo-io/solo-kit/test/setup"
+
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	gloohelpers "github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/v1helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	skkubeutils "github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -40,7 +45,7 @@ import (
 	"k8s.io/kubernetes/pkg/apis/core/validation"
 )
 
-var _ = FDescribe("Happy path", func() {
+var _ = Describe("Happy path", func() {
 
 	var (
 		ctx           context.Context
@@ -56,16 +61,32 @@ var _ = FDescribe("Happy path", func() {
 			TransportApiVersion envoy_config_core_v3.ApiVersion
 		}{
 			{
-				Title: "Rest Eds Enabled (V3)",
+				Title: "Rest Eds Enabled",
 				RestEdsEnabled: &wrappers.BoolValue{
 					Value: true,
 				},
+				TransportApiVersion: envoy_config_core_v3.ApiVersion_V2,
 			},
 			{
-				Title: "Rest Eds Disabled (V3)",
+				Title: "Rest Eds Disabled",
 				RestEdsEnabled: &wrappers.BoolValue{
 					Value: false,
 				},
+				TransportApiVersion: envoy_config_core_v3.ApiVersion_V2,
+			},
+			{
+				Title: "Rest Eds Enabled",
+				RestEdsEnabled: &wrappers.BoolValue{
+					Value: true,
+				},
+				TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
+			},
+			{
+				Title: "Rest Eds Disabled",
+				RestEdsEnabled: &wrappers.BoolValue{
+					Value: false,
+				},
+				TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 			},
 		}
 	)
@@ -96,7 +117,7 @@ var _ = FDescribe("Happy path", func() {
 
 	for _, testCase := range testCases {
 
-		Describe(testCase.Title, func() {
+		Describe(fmt.Sprintf("%s: (%s)", testCase.Title, testCase.TransportApiVersion.String()), func() {
 
 			Describe("in memory", func() {
 

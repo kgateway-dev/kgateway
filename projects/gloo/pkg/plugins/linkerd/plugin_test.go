@@ -3,7 +3,7 @@ package linkerd
 import (
 	"fmt"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -43,16 +43,14 @@ var _ = Describe("linkerd plugin", func() {
 			}
 			host := fmt.Sprintf("%s.%s.svc.cluster.local:%v", name, ns, port)
 			Expect(createHeaderForUpstream(kus)).To(matchers.MatchProto(
-				&envoycore.HeaderValueOption{
-					Header: &envoycore.HeaderValue{
+				&envoy_config_core_v3.HeaderValueOption{
+					Header: &envoy_config_core_v3.HeaderValue{
 						Value: host,
 						Key:   HeaderKey,
 					},
 					Append: &wrappers.BoolValue{
 						Value: false,
 					},
-				},
-			))
 		})
 	})
 

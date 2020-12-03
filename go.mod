@@ -71,7 +71,6 @@ require (
 	github.com/sergi/go-diff v1.1.0
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/smartystreets/assertions v1.0.0 // indirect
-	github.com/solo-io/envoy-operator v0.1.4
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.20.0
 	github.com/solo-io/k8s-utils v0.0.1
@@ -79,7 +78,7 @@ require (
 	github.com/solo-io/reporting-client v0.2.0
 	github.com/solo-io/skv2 v0.13.5
 	github.com/solo-io/solo-apis v0.0.0-20201103221621-bbe4f60f466d
-	github.com/solo-io/solo-kit v0.15.0
+	github.com/solo-io/solo-kit v0.15.2
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
 	github.com/spf13/cobra v1.0.0
@@ -128,13 +127,10 @@ replace (
 	github.com/census-instrumentation/opencensus-proto => github.com/census-instrumentation/opencensus-proto v0.2.0 // indirect
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 	// Required for proper serialization of CRDs
-	//github.com/golang/protobuf => github.com/golang/protobuf v1.3.5
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
 
 	//the following block of replacements are needed to have locked these packages to before versions they switched to using proto4
-	//go.opencensus.io => go.opencensus.io v0.22.1
 	golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
-	//google.golang.org/genproto => google.golang.org/genproto v0.0.0-20200513103714-09dca8ec2884
 
 	// kube 0.18: redirects needed for most k8s.io dependencies because
 	// k8s.io/kubernetes tries to import v0.0.0 of everything.
