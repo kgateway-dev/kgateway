@@ -70,7 +70,6 @@ require (
 	github.com/sergi/go-diff v1.1.0
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/smartystreets/assertions v1.0.0 // indirect
-	github.com/solo-io/envoy-operator v0.1.4
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.20.0
 	github.com/solo-io/k8s-utils v0.0.2
