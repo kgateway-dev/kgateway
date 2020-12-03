@@ -1663,6 +1663,7 @@ var _ = Describe("Translator", func() {
 							Name:      "my-aws-secret",
 							Namespace: "my-namespace",
 						},
+						Region: "us-east-1",
 						LambdaFunctions: []*aws.LambdaFunctionSpec{
 							{
 								LogicalName: "someLambdaFunc",
