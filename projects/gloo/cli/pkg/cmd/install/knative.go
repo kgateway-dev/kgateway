@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/test/setup"
 	"go.uber.org/zap"
 	"helm.sh/helm/v3/pkg/chartutil"

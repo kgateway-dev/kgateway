@@ -8,8 +8,8 @@ import (
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/matchers"
-	"github.com/solo-io/go-utils/installutils/kuberesource"
-	"github.com/solo-io/go-utils/manifesttestutils"
+	"github.com/solo-io/k8s-utils/installutils/kuberesource"
+	"github.com/solo-io/k8s-utils/manifesttestutils"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/gogo/protobuf/proto"
@@ -34,7 +34,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	. "github.com/solo-io/go-utils/manifesttestutils"
+	. "github.com/solo-io/k8s-utils/manifesttestutils"
 )
 
 func GetPodNamespaceStats() v1.EnvVar {

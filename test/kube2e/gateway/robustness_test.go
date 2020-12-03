@@ -11,8 +11,8 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmisssion"
 
-	"github.com/solo-io/go-utils/kubeutils"
-	"github.com/solo-io/go-utils/testutils/helper"
+	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/k8s-utils/testutils/helper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"

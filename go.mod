@@ -36,7 +36,6 @@ require (
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v31 v31.0.0
 	github.com/gorilla/mux v1.7.4
-	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
 	github.com/hashicorp/consul/api v1.3.0
 	github.com/hashicorp/go-multierror v1.1.0
@@ -73,12 +72,13 @@ require (
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/solo-io/envoy-operator v0.1.4
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
-	github.com/solo-io/go-utils v0.17.0
+	github.com/solo-io/go-utils v0.20.0
+	github.com/solo-io/k8s-utils v0.0.2
 	github.com/solo-io/protoc-gen-ext v0.0.9
 	github.com/solo-io/reporting-client v0.2.0
-	github.com/solo-io/skv2 v0.8.1
+	github.com/solo-io/skv2 v0.13.5
 	github.com/solo-io/solo-apis v0.0.0-20201103221621-bbe4f60f466d
-	github.com/solo-io/solo-kit v0.15.0
+	github.com/solo-io/solo-kit v0.15.2
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
 	github.com/spf13/cobra v1.0.0
