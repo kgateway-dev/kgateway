@@ -51,6 +51,8 @@ var _ = Describe("linkerd plugin", func() {
 					Append: &wrappers.BoolValue{
 						Value: false,
 					},
+				},
+			))
 		})
 	})
 

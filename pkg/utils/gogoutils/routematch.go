@@ -4,7 +4,7 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	types "github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	envoyroute_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/route"
 	envoytype_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"

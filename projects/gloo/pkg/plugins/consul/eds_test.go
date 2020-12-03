@@ -9,7 +9,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	mock_consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul/mocks"
+	proto_matchers "github.com/solo-io/solo-kit/test/matchers"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
@@ -447,7 +449,11 @@ var _ = Describe("Consul EDS", func() {
 
 			// Simulate the initial read when starting watch
 			serviceMetaProducer <- consulServiceSnapshot
-			Eventually(endpointsChan).Should(Receive(matchers.BeEquivalentToDiff(expectedEndpointsFirstAttempt)))
+			var asProtos []proto.Message
+			for _, v := range expectedEndpointsFirstAttempt {
+				asProtos = append(asProtos, v)
+			}
+			Eventually(endpointsChan).Should(Receive(proto_matchers.ConistOfProtos(asProtos...)))
 
 			// Wait for error monitoring routine to stop, we want to simulate an error
 			errRoutineCancel()
@@ -584,7 +590,7 @@ var _ = Describe("Consul EDS", func() {
 				fmt.Fprintf(GinkgoWriter, "%s%v\n", "endpoint: ", endpoint)
 				endpontNames[endpoint.GetMetadata().Name] = true
 
-				Expect(endpoint.Upstreams).To(ContainElement(&core.ResourceRef{
+				Expect(endpoint.Upstreams).To(proto_matchers.ContainProto(&core.ResourceRef{
 					Name:      "n2",
 					Namespace: "n",
 				}))
@@ -592,18 +598,18 @@ var _ = Describe("Consul EDS", func() {
 				case 1235:
 					// 1235 is the http endpoint above
 					Expect(endpoint.Upstreams).To(HaveLen(2))
-					Expect(endpoint.Upstreams).To(ContainElement(&core.ResourceRef{
+					Expect(endpoint.Upstreams).To(proto_matchers.ContainProto(&core.ResourceRef{
 						Name:      "n",
 						Namespace: "n",
 					}))
 				case 1237:
 					// 1237 is the ftp,http endpoint above
 					Expect(endpoint.Upstreams).To(HaveLen(3))
-					Expect(endpoint.Upstreams).To(ContainElement(&core.ResourceRef{
+					Expect(endpoint.Upstreams).To(proto_matchers.ContainProto(&core.ResourceRef{
 						Name:      "n1",
 						Namespace: "n",
 					}))
-					Expect(endpoint.Upstreams).To(ContainElement(&core.ResourceRef{
+					Expect(endpoint.Upstreams).To(proto_matchers.ContainProto(&core.ResourceRef{
 						Name:      "n",
 						Namespace: "n",
 					}))
