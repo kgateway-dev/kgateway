@@ -239,10 +239,13 @@ func validateUpstreamLambdaFunctions(proxy *v1.Proxy, upstream *v1.Upstream, rep
 		httpListener := listener.GetHttpListener()
 		if httpListener != nil {
 			for _, virtualHost := range httpListener.GetVirtualHosts() {
+				// Iterate through all routes to check if they point to the current upstream
 				for _, route := range virtualHost.GetRoutes() {
 					routeUpstream := route.GetRouteAction().GetSingle().GetUpstream()
+					// Check that route is pointing to current upstream
 					if routeUpstream != nil && upstream.Metadata.Ref() == *routeUpstream {
 						routeLambdaName := route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().GetLogicalName()
+						// If route is pointing to a lambda that does not exist on this upstream, report error
 						if routeLambdaName != "" && upstreamLambdas[routeLambdaName] == false {
 							reports.AddError(upstream, fmt.Errorf("a route references %s lambda function which does not exist in this upstream", routeLambdaName))
 						}
