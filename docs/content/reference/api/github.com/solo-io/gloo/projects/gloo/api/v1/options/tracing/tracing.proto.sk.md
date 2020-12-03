@@ -64,6 +64,7 @@ See here for additional information about configuring tracing with Gloo: https:/
 ```yaml
 "routeDescriptor": string
 "tracePercentages": .tracing.options.gloo.solo.io.TracePercentages
+"propagate": .google.protobuf.BoolValue
 
 ```
 
@@ -71,6 +72,7 @@ See here for additional information about configuring tracing with Gloo: https:/
 | ----- | ---- | ----------- | 
 | `routeDescriptor` | `string` | Optional. If set, will be used to identify the route that produced the trace. Note that this value will be overridden if the "x-envoy-decorator-operation" header is passed. |
 | `tracePercentages` | [.tracing.options.gloo.solo.io.TracePercentages](../tracing.proto.sk/#tracepercentages) | Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided. TracePercentages defines the limits for random, forced, and overall tracing percentages. |
+| `propagate` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Optional. Default is true, If set to false, the tracing headers will not propagate to the upstream. |
 
 
 
