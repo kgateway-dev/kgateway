@@ -2,6 +2,7 @@ package translator
 
 import (
 	"fmt"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"time"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -32,9 +33,10 @@ func (t *translatorInstance) computeClusters(
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_clusters")
 	upstreams := params.Snapshot.Upstreams
 	clusters := make([]*envoy_config_cluster_v3.Cluster, 0, len(upstreams))
+	validateUpstreamLambdaFunctions(proxy, upstreams, reports)
+
 	// snapshot contains both real and service-derived upstreams
 	for _, upstream := range upstreams {
-		validateUpstreamLambdaFunctions(proxy, upstream, reports)
 
 		cluster := t.computeCluster(params, upstream, reports)
 		clusters = append(clusters, cluster)
@@ -231,30 +233,66 @@ func getHttp2ptions(us *v1.Upstream) *envoy_config_core_v3.Http2ProtocolOptions 
 // Validates routes that point to the current AWS lambda upstream
 // Checks that the function the route is pointing to is available on the upstream
 // else it adds an error to the upstream, so that invalid route replacement can be used.
-func validateUpstreamLambdaFunctions(proxy *v1.Proxy, upstream *v1.Upstream, reports reporter.ResourceReports) {
-	// Create a set of the lambda functions in this upstream
-	upstreamLambdas := make(map[string]bool)
-	lambdaFuncs := upstream.GetAws().GetLambdaFunctions()
-	for _, lambda := range lambdaFuncs {
-		upstreamLambdas[lambda.GetLogicalName()] = true
+func validateUpstreamLambdaFunctions(proxy *v1.Proxy, upstreams v1.UpstreamList, reports reporter.ResourceReports) {
+	// Create a set of the lambda functions in each upstream
+	upstreamLambdas := make(map[core.ResourceRef]map[string]bool)
+	for _, upstream := range upstreams {
+		lambdaFuncs := upstream.GetAws().GetLambdaFunctions()
+		for _, lambda := range lambdaFuncs {
+			upstreamRef := upstream.Metadata.Ref()
+			if upstreamLambdas[upstreamRef] == nil {
+				upstreamLambdas[upstreamRef] = make(map[string]bool)
+			}
+			upstreamLambdas[upstreamRef][lambda.GetLogicalName()] = true
+		}
 	}
+
 	for _, listener := range proxy.GetListeners() {
 		httpListener := listener.GetHttpListener()
 		if httpListener != nil {
 			for _, virtualHost := range httpListener.GetVirtualHosts() {
 				// Iterate through all routes to check if they point to the current upstream
 				for _, route := range virtualHost.GetRoutes() {
-					routeUpstream := route.GetRouteAction().GetSingle().GetUpstream()
-					// Check that route is pointing to current upstream
-					if routeUpstream != nil && upstream.Metadata.Ref() == *routeUpstream {
-						routeLambdaName := route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().GetLogicalName()
-						// If route is pointing to a lambda that does not exist on this upstream, report error
-						if routeLambdaName != "" && upstreamLambdas[routeLambdaName] == false {
-							reports.AddError(upstream, fmt.Errorf("a route references %s lambda function which does not exist in this upstream", routeLambdaName))
-						}
-					}
+					validateRouteDestinationForValidLambdas(route.GetRouteAction(), upstreams, reports, upstreamLambdas)
 				}
 			}
 		}
 	}
+}
+
+// Validates a route that may have a single or multi upstream destinations to make sure that any lambda upstreams are referencing valid lambdas
+func validateRouteDestinationForValidLambdas(route *v1.RouteAction, upstreams v1.UpstreamList, reports reporter.ResourceReports, upstreamLambdas map[core.ResourceRef]map[string]bool) {
+	// Append destinations to a destination list to process all of them in one go
+	var destinations []*v1.Destination
+	switch route.GetDestination().(type) {
+	case *v1.RouteAction_Single:
+		{
+			destinations = append(destinations, route.GetSingle())
+		}
+	case *v1.RouteAction_Multi:
+		{
+			multiDest := route.GetMulti()
+			for _, weightedDest := range multiDest.GetDestinations() {
+				destinations = append(destinations, weightedDest.GetDestination())
+			}
+		}
+	}
+	// Process destinations (upstreams)
+	for _, dest := range destinations {
+		routeUpstream := dest.GetUpstream()
+		// Check that route is pointing to current upstream
+		if routeUpstream != nil {
+			// Get the lambda functions that this upstream has
+			lambdaFuncSet := upstreamLambdas[*routeUpstream]
+			routeLambda := dest.GetDestinationSpec().GetAws()
+			routeLambdaName := routeLambda.GetLogicalName()
+			// If route is pointing to a lambda that does not exist on this upstream, report error on the upstream
+			if routeLambda != nil && lambdaFuncSet[routeLambdaName] == false {
+				// Get the actual upstream from the upstreams list add an error to that upstream
+				upstream, _ := upstreams.Find(routeUpstream.Namespace, routeUpstream.Name)
+				reports.AddError(upstream, fmt.Errorf("a route references %s lambda function which does not exist in this upstream", routeLambdaName))
+			}
+		}
+	}
+
 }

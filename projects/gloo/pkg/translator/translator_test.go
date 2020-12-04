@@ -1650,11 +1650,11 @@ var _ = Describe("Translator", func() {
 
 	Context("when translating a route that points to an AWS lambda", func() {
 
-		BeforeEach(func() {
-			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, &v1.Upstream{
+		createLambdaUpstream := func(namespace, name, region string, lambdaFuncs []*aws.LambdaFunctionSpec) *v1.Upstream {
+			return &v1.Upstream{
 				Metadata: core.Metadata{
-					Name:      "aws-lambda-upstream",
-					Namespace: "my-namespace",
+					Name:      name,
+					Namespace: namespace,
 				},
 				DiscoveryMetadata: nil,
 				UpstreamType: &v1.Upstream_Aws{
@@ -1663,18 +1663,34 @@ var _ = Describe("Translator", func() {
 							Name:      "my-aws-secret",
 							Namespace: "my-namespace",
 						},
-						Region: "us-east-1",
-						LambdaFunctions: []*aws.LambdaFunctionSpec{
-							{
-								LogicalName: "someLambdaFunc",
-							},
-							{
-								LogicalName: "anotherLambdaFunc",
-							},
-						},
+						Region:          region,
+						LambdaFunctions: lambdaFuncs,
 					},
 				},
-			})
+			}
+		}
+
+		BeforeEach(func() {
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams,
+				createLambdaUpstream("my-namespace", "lambda-upstream-1", "us-east-1",
+					[]*aws.LambdaFunctionSpec{
+						{
+							LogicalName: "usEast1Lambda1",
+						},
+						{
+							LogicalName: "usEast1Lambda2",
+						},
+					}),
+				createLambdaUpstream("my-namespace", "lambda-upstream-2", "us-east-2",
+					[]*aws.LambdaFunctionSpec{
+						{
+							LogicalName: "usEast2Lambda1",
+						},
+						{
+							LogicalName: "usEast2Lambda2",
+						},
+					}))
+
 			secret := &v1.Secret{
 				Metadata: core.Metadata{
 					Name:      "my-aws-secret",
@@ -1698,14 +1714,14 @@ var _ = Describe("Translator", func() {
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
 								Upstream: &core.ResourceRef{
-									Name:      "aws-lambda-upstream",
+									Name:      "lambda-upstream-1",
 									Namespace: "my-namespace",
 								},
 							},
 							DestinationSpec: &v1.DestinationSpec{
 								DestinationType: &v1.DestinationSpec_Aws{
 									Aws: &aws.DestinationSpec{
-										LogicalName: "someLambdaFunc",
+										LogicalName: "usEast1Lambda1",
 									},
 								},
 							},
@@ -1720,13 +1736,13 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("reports error when pointing to a lambda function that doesn't exist", func() {
-			validLambdaRoute := &v1.Route{Action: &v1.Route_RouteAction{
+			invalidLambdaRoute := &v1.Route{Action: &v1.Route_RouteAction{
 				RouteAction: &v1.RouteAction{
 					Destination: &v1.RouteAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
 								Upstream: &core.ResourceRef{
-									Name:      "aws-lambda-upstream",
+									Name:      "lambda-upstream-1",
 									Namespace: "my-namespace",
 								},
 							},
@@ -1742,7 +1758,42 @@ var _ = Describe("Translator", func() {
 				}}}
 
 			routes := proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].GetRoutes()
-			proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].Routes = append(routes, validLambdaRoute)
+			proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].Routes = append(routes, invalidLambdaRoute)
+			_, resourceReport, _, _ := translator.Translate(params, proxy)
+			Expect(resourceReport.Validate()).To(HaveOccurred())
+			Expect(resourceReport.Validate().Error()).To(ContainSubstring("a route references nonexistentLambdaFunc lambda function which does not exist in this upstream"))
+		})
+
+		It("reports error when route has Multi Cluster destination and points to at least one lambda function that doesn't exist", func() {
+			invalidLambdaRoute := &v1.Route{Action: &v1.Route_RouteAction{
+				RouteAction: &v1.RouteAction{
+					Destination: &v1.RouteAction_Multi{
+						Multi: &v1.MultiDestination{
+							Destinations: []*v1.WeightedDestination{
+								{
+									Destination: &v1.Destination{
+										DestinationType: &v1.Destination_Upstream{
+											Upstream: &core.ResourceRef{
+												Name:      "aws-lambda-upstream",
+												Namespace: "my-namespace",
+											},
+										},
+										DestinationSpec: &v1.DestinationSpec{
+											DestinationType: &v1.DestinationSpec_Aws{
+												Aws: &aws.DestinationSpec{
+													LogicalName: "nonexistentLambdaFunc",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}}}
+
+			routes := proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].GetRoutes()
+			proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].Routes = append(routes, invalidLambdaRoute)
 			_, resourceReport, _, _ := translator.Translate(params, proxy)
 			Expect(resourceReport.Validate()).To(HaveOccurred())
 			Expect(resourceReport.Validate().Error()).To(ContainSubstring("a route references nonexistentLambdaFunc lambda function which does not exist in this upstream"))
