@@ -10,6 +10,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
@@ -105,54 +106,88 @@ func processEnvoyTracingProvider(
 
 	switch typed := tracingSettings.GetProviderConfig().(type) {
 	case *tracing.ListenerTracingSettings_ZipkinConfig:
-		zipkinCollectorClusterName, err := getEnvoyTracingCollectorClusterName(snapshot, typed.ZipkinConfig.GetCollectorUpstreamRef())
-		if err != nil {
-			return nil, err
-		}
-
-		envoyZipkinConfig, err := gogoutils.ToEnvoyZipkinConfiguration(typed.ZipkinConfig, zipkinCollectorClusterName)
-		if err != nil {
-			return nil, err
-		}
-
-		marshalledZipkinConfig, err := ptypes.MarshalAny(envoyZipkinConfig)
-		if err != nil {
-			return nil, err
-		}
-
-		return &envoy_config_trace_v3.Tracing_Http{
-			Name: "envoy.tracers.zipkin",
-			ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
-				TypedConfig: marshalledZipkinConfig,
-			},
-		}, nil
+		return processEnvoyZipkinTracing(snapshot, typed)
 
 	case *tracing.ListenerTracingSettings_DatadogConfig:
-		datadogCollectorClusterName, err := getEnvoyTracingCollectorClusterName(snapshot, typed.DatadogConfig.GetCollectorUpstreamRef())
-		if err != nil {
-			return nil, err
-		}
-
-		envoyDatadogConfig, err := gogoutils.ToEnvoyDatadogConfiguration(typed.DatadogConfig, datadogCollectorClusterName)
-		if err != nil {
-			return nil, err
-		}
-
-		marshalledDatadogConfig, err := ptypes.MarshalAny(envoyDatadogConfig)
-		if err != nil {
-			return nil, err
-		}
-
-		return &envoy_config_trace_v3.Tracing_Http{
-			Name: "envoy.tracers.datadog",
-			ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
-				TypedConfig: marshalledDatadogConfig,
-			},
-		}, nil
+		return processEnvoyDatadogTracing(snapshot, typed)
 
 	default:
 		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", typed)
 	}
+}
+
+func processEnvoyZipkinTracing(
+	snapshot *v1.ApiSnapshot,
+	zipkinTracingSettings *tracing.ListenerTracingSettings_ZipkinConfig,
+) (*envoy_config_trace_v3.Tracing_Http, error) {
+	var collectorClusterName string
+
+	switch collectorCluster := zipkinTracingSettings.ZipkinConfig.GetCollectorCluster().(type) {
+	case *v3.ZipkinConfig_CollectorUpstreamRef:
+		// Support upstreams as the collector cluster
+		var err error
+		collectorClusterName, err = getEnvoyTracingCollectorClusterName(snapshot, collectorCluster.CollectorUpstreamRef)
+		if err != nil {
+			return nil, err
+		}
+	case *v3.ZipkinConfig_ClusterName:
+		// Support static clusters as the collector cluster
+		collectorClusterName = collectorCluster.ClusterName
+	}
+
+	envoyConfig, err := gogoutils.ToEnvoyZipkinConfiguration(zipkinTracingSettings.ZipkinConfig, collectorClusterName)
+	if err != nil {
+		return nil, err
+	}
+
+	marshalledEnvoyConfig, err := ptypes.MarshalAny(envoyConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return &envoy_config_trace_v3.Tracing_Http{
+		Name: "envoy.tracers.zipkin",
+		ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
+			TypedConfig: marshalledEnvoyConfig,
+		},
+	}, nil
+}
+
+func processEnvoyDatadogTracing(
+	snapshot *v1.ApiSnapshot,
+	datadogTracingSettings *tracing.ListenerTracingSettings_DatadogConfig,
+) (*envoy_config_trace_v3.Tracing_Http, error) {
+	var collectorClusterName string
+
+	switch collectorCluster := datadogTracingSettings.DatadogConfig.GetCollectorCluster().(type) {
+	case *v3.DatadogConfig_CollectorUpstreamRef:
+		// Support upstreams as the collector cluster
+		var err error
+		collectorClusterName, err = getEnvoyTracingCollectorClusterName(snapshot, collectorCluster.CollectorUpstreamRef)
+		if err != nil {
+			return nil, err
+		}
+	case *v3.DatadogConfig_ClusterName:
+		// Support static clusters as the collector cluster
+		collectorClusterName = collectorCluster.ClusterName
+	}
+
+	envoyConfig, err := gogoutils.ToEnvoyDatadogConfiguration(datadogTracingSettings.DatadogConfig, collectorClusterName)
+	if err != nil {
+		return nil, err
+	}
+
+	marshalledEnvoyConfig, err := ptypes.MarshalAny(envoyConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return &envoy_config_trace_v3.Tracing_Http{
+		Name: "envoy.tracers.datadog",
+		ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
+			TypedConfig: marshalledEnvoyConfig,
+		},
+	}, nil
 }
 
 func getEnvoyTracingCollectorClusterName(snapshot *v1.ApiSnapshot, collectorUpstreamRef *core.ResourceRef) (string, error) {
