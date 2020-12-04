@@ -220,7 +220,7 @@ var _ = Describe("Zipkin config loading", func() {
 			stopZipkinServer()
 		})
 
-		It("should send trace msgs with zipkin provider", func() {
+		It("should send trace msgs with zipkin provider using collector upstream ref", func() {
 			gatewayClient := testClients.GatewayClient
 			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
@@ -229,7 +229,9 @@ var _ = Describe("Zipkin config loading", func() {
 			zipkinTracing := &tracing.ListenerTracingSettings{
 				ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
 					ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
-						CollectorUpstreamRef:     utils.ResourceRefPtr(zipkinUs.Metadata.Ref()),
+						CollectorCluster: &envoytrace_gloo.ZipkinConfig_CollectorUpstreamRef{
+							CollectorUpstreamRef: utils.ResourceRefPtr(zipkinUs.Metadata.Ref()),
+						},
 						CollectorEndpoint:        "/api/v2/spans",
 						CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
 					},
@@ -290,7 +292,9 @@ var _ = Describe("Zipkin config loading", func() {
 			invalidZipkinTracing := &tracing.ListenerTracingSettings{
 				ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
 					ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
-						CollectorUpstreamRef:     nil,
+						CollectorCluster: &envoytrace_gloo.ZipkinConfig_CollectorUpstreamRef{
+							CollectorUpstreamRef: nil,
+						},
 						CollectorEndpoint:        "/api/v2/spans",
 						CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
 					},
