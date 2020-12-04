@@ -93,7 +93,7 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg).To(Equal(expected))
 	})
 
-	FContext("should handle tracing provider config", func() {
+	Context("should handle tracing provider config", func() {
 
 		It("when provider config is nil", func() {
 			pluginParams := plugins.Params{
