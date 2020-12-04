@@ -291,7 +291,7 @@ var _ = Describe("Plugin", func() {
 
 				expectedEnvoyConfig := &envoytrace.DatadogConfig{
 					CollectorCluster: "valid_default",
-					ServiceName: 	  "datadog-gloo",
+					ServiceName:      "datadog-gloo",
 				}
 				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
 
@@ -327,7 +327,7 @@ var _ = Describe("Plugin", func() {
 
 				expectedEnvoyConfig := &envoytrace.DatadogConfig{
 					CollectorCluster: "datadog-cluster-name",
-					ServiceName: 	  "datadog-gloo",
+					ServiceName:      "datadog-gloo",
 				}
 				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
 
