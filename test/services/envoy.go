@@ -72,6 +72,9 @@ func (ei *EnvoyInstance) buildBootstrapFromConfig(configFile string) (string, er
 
 	// The AdminPort is created dynamically. Ensure that the config matches the proper AdminPort
 	config = strings.ReplaceAll(config, "21001", strconv.Itoa(int(ei.AdminPort)))
+
+	// The Port is created dynamically. Ensure that the config matches the proper Port
+	config = strings.ReplaceAll(config, "30400", strconv.Itoa(int(ei.Port)))
 	return config, nil
 }
 
@@ -392,7 +395,7 @@ func (ei *EnvoyInstance) Run(port int) error {
 }
 
 func (ei *EnvoyInstance) RunWithConfig(port int, configFile string) error {
-	ei.Role = "default~proxy"
+	ei.Role = "gloo-system~gateway-proxy"
 
 	// TODO: refactor this function to include a context.
 	return ei.runWithPort(context.TODO(), uint32(port), configFile)

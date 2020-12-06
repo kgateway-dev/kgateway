@@ -1,0 +1,99 @@
+layered_runtime:
+  layers:
+    - name: static_layer
+      static_layer:
+        cluster:
+          healthy_panic_threshold:
+            value: 0
+    - name: admin_layer
+      admin_layer: {}
+
+node:
+  cluster: ingress
+  id: ingress~for-testing
+  metadata:
+    role: gloo-system~gateway-proxy
+
+stats_sinks:
+  - name: envoy.stat_sinks.metrics_service
+    typed_config:
+      "@type": type.googleapis.com/envoy.config.metrics.v3.MetricsServiceConfig
+      grpc_service:
+        envoy_grpc: {cluster_name: metrics_cluster}
+
+static_resources:
+  clusters:
+    - name: xds_cluster
+      connect_timeout: 5.000s
+      load_assignment:
+        cluster_name: xds_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: 127.0.0.1
+                      port_value: 30400
+      http2_protocol_options: { }
+      type: STATIC
+
+    - name: zipkin_cluster
+      connect_timeout: 1s
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: zipkin_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: 127.0.0.1
+                      port_value: 9411
+
+    - name: access_log_cluster
+      connect_timeout: 5.000s
+      load_assignment:
+        cluster_name: access_log_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: 192.168.86.92
+                      port_value: 0
+      http2_protocol_options: {}
+      type: STATIC
+
+    - name: metrics_cluster
+      connect_timeout: 5.000s
+      load_assignment:
+        cluster_name: metrics_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: 192.168.86.92
+                      port_value: 0
+      http2_protocol_options: {}
+      type: STATIC
+
+dynamic_resources:
+  ads_config:
+    transport_api_version: V3
+    api_type: GRPC
+    grpc_services:
+      - envoy_grpc: {cluster_name: xds_cluster}
+  cds_config:
+    resource_api_version: V3
+    ads: {}
+  lds_config:
+    resource_api_version: V3
+    ads: {}
+
+admin:
+  access_log_path: /dev/null
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 21001
