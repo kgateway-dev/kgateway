@@ -39,7 +39,7 @@ static_resources:
 
     - name: zipkin_cluster
       connect_timeout: 1s
-      type: STRICT_DNS
+      type: STATIC
       load_assignment:
         cluster_name: zipkin_cluster
         endpoints:
