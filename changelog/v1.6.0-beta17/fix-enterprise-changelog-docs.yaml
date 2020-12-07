@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix for broken OSS links in enterprise changelog docs. In addition, users can now see OSS releases merged into chronologically ordered enterprise docs.
+    issueLink: https://github.com/solo-io/gloo/issues/3953
