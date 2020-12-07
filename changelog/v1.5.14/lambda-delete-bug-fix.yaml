@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3895
+    description: Fixes a bug where routes that use a deleted lambda function as destination causes gloo to crash.
