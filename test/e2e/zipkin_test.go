@@ -410,7 +410,7 @@ var _ = Describe("Zipkin config loading", func() {
 
 			// ensure the zipkin server received tracing from the test upstream
 			expectedZipkinApiHit := true
-			Eventually(apiHit, 5*time.Second).Should(Receive(&expectedZipkinApiHit))
+			Eventually(apiHit, 10*time.Second).Should(Receive(&expectedZipkinApiHit))
 
 			stopZipkinServer()
 		})
