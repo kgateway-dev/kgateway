@@ -36,12 +36,46 @@ If you are running Gloo Edge Enterprise, you'll need to prefix that Helm values 
 * **Configure your load balancer correctly**
     - If you are running Gloo Edge behind a load balancer, be sure to configure your load balancer properly to consume the readiness probe mentioned above.
 
+#### Upstream health checks
+
+In addition to defining health checks for Envoy, you should strongly consider defining health checks for your `Upstreams`.
+These health checks are used by Envoy to determine the health of the various upstream hosts in an upstream cluster, for example checking the health of the various pods that make up a Kubernetes `Service`. This is known as "active health checking" and can be configured on the `Upstream` resource directly.
+[See the documentation]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/upstream_health_checks/" %}}) for additional info.
+
+Additionally, "outlier detection" can be configured which allows Envoy to passively check the health of upstream hosts.
+A helpful [overview of this feature is available in Envoy's documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier).
+This can be configured via the `outlierDetection` field on the `Upstream` resource. See the {{< protobuf name="gloo.solo.io.Upstream" display="API reference for more detail" >}}.
+
 ## Envoy performance
 
 * **Enable Envoy's gzip filter**
     - Optionally, you may choose to enable Envoy's gzip filter through Gloo Edge. More information on that can be found [here]({{% versioned_link_path fromRoot="/installation/advanced_configuration/gzip/" %}}).
 * **Set up an EDS warming timeout**
     - Set up the endpoints warming timeout to some nonzero value. More details [here]({{%versioned_link_path fromRoot="/operations/upgrading/1.3.0/#recommended-settings" %}}).
+
+## Configure appropriate resource usage
+
+* Before running in production it is important to ensure you have correctly configured the resources allocated to the various components of Gloo Edge. Ideally this tuning will be done in conjunction with load/performance testing.
+These values can be configured via helm values for the various deployments, such as `gloo.deployment.resources.requests.*` or `gatewayProxies.gatewayProxy.podTemplate.resources.requests.*`.
+See the [helm chart value reference]({{%versioned_link_path fromRoot="/reference/helm_chart_values/" %}}) for a full list.
+
+## Metrics and monitoring
+
+When running Gloo Edge (or any application for that matter) in a production environment, it is important to have a monitoring solution in place.
+Gloo Edge Enterprise provides a simple deployment of Prometheus and Grafana to assist with this necessity.
+However, depending on the requirements on your organization you may require a more robust solution, in which case you should make sure the metrics from the Gloo Edge components (especially Envoy) are available in whatever solution you are using.
+The [general documentation for monitoring/observability]({{%versioned_link_path fromRoot="/guides/observability/" %}}) has more info.
+
+Some metrics that may be useful to monitor (listed in Prometheus format):
+* `envoy_control_plane_connected_state` -- This metric shows whether or not a given Envoy instance is connected to the control plane, i.e. the Gloo pod.
+ This metric should have a value of `1` otherwise it indicates that Envoy is having trouble connecting to the Gloo pod.
+* `container_cpu_cfs_throttled_seconds_total / container_cpu_cfs_throttled_periods_total` -- This is a generic expression that will show whether or not a given container is being throttled for CPU, which will result is performance issues and service degradation. If the Gloo Edge containers are being throttled, it is important to understand why and given the underlying cause, increase the resources allocated.
+
+## Access Logging
+
+Envoy provides a powerful access logging mechanism which enables users and operators to understand the various traffic flowing through the proxy.
+Before deploying Gloo Edge in production, consider enabling access logging to help with monitoring traffic as well as to provide helpful information for troubleshooting.
+The [access logging documentation]({{%versioned_link_path fromRoot="/guides/security/access_logging/" %}}) should be consulted for more details.
 
 ## Other Envoy-specific guidance
 
