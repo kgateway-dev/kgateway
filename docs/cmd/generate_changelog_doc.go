@@ -124,30 +124,24 @@ func generateChangelogMd(args []string) error {
 	switch target {
 	case glooDocGen:
 		repo = glooOpenSourceRepo
-	case glooEDocGen:
-		repo = glooEnterpriseRepo
-		ctx := context.Background()
-		if os.Getenv("GITHUB_TOKEN") == "" {
-			return MissingGithubTokenError()
+		allReleases, err := GetAllReleases(client, repo)
+		if err != nil {
+			return err
 		}
-		ts := oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
-		)
-		tc := oauth2.NewClient(ctx, ts)
-		client = github.NewClient(tc)
+
+		for _, release := range allReleases {
+			fmt.Printf("### %v\n\n", release.GetTagName())
+			fmt.Printf("%v", release.GetBody())
+		}
+	case glooEDocGen:
+		err := generateGlooEChangelog(false)
+		if err != nil {
+			return err
+		}
 	default:
 		return InvalidInputError(target)
 	}
 
-	allReleases, err := GetAllReleases(client, repo, false)
-	if err != nil {
-		return err
-	}
-
-	for _, release := range allReleases {
-		fmt.Printf("### %v\n\n", release.GetTagName())
-		fmt.Printf("%v", release.GetBody())
-	}
 	return nil
 }
 
@@ -164,7 +158,7 @@ func generateMinorReleaseChangelog(args []string) error {
 	case glooDocGen:
 		err = generateGlooChangelog()
 	case glooEDocGen:
-		err = generateGlooEChangelog()
+		err = generateGlooEChangelog(true)
 	default:
 		return InvalidInputError(target)
 	}
@@ -175,7 +169,8 @@ func generateMinorReleaseChangelog(args []string) error {
 // Fetches Gloo Open Source releases and orders them by version
 func generateGlooChangelog() error {
 	client := github.NewClient(nil)
-	allReleases, err := GetAllReleases(client, glooOpenSourceRepo, true)
+	allReleases, err := GetAllReleases(client, glooOpenSourceRepo)
+	allReleases = SortReleases(allReleases)
 	if err != nil {
 		return err
 	}
@@ -184,12 +179,12 @@ func generateGlooChangelog() error {
 	if err != nil {
 		return err
 	}
-	printVersionOrderReleases(minorReleaseMap)
+	printVersionOrderReleases(minorReleaseMap, nil)
 	return nil
 }
 
 // Fetches Gloo Enterprise releases, merges in open source release notes, and orders them by version
-func generateGlooEChangelog() error {
+func generateGlooEChangelog(sortedByVersion bool) error {
 	// Initialize Auth
 	ctx := context.Background()
 	if os.Getenv("GITHUB_TOKEN") == "" {
@@ -202,33 +197,40 @@ func generateGlooEChangelog() error {
 	client := github.NewClient(tc)
 
 	// Get all Gloo OSS release changelogs
-	enterpriseReleases, err := GetAllReleases(client, glooEnterpriseRepo, true)
+	enterpriseReleases, err := GetAllReleases(client, glooEnterpriseRepo)
 	if err != nil {
 		return err
 	}
-	openSourceReleases, err := GetAllReleases(client, glooOpenSourceRepo, true)
+	openSourceReleases, err := GetAllReleases(client, glooOpenSourceRepo)
 	if err != nil {
 		return err
 	}
-	minorReleaseMap, err := MergeEnterpriseOSSReleases(enterpriseReleases, openSourceReleases)
+	openSourceReleasesSorted := SortReleases(openSourceReleases)
+	minorReleaseMap, versionOrder, err := MergeEnterpriseOSSReleases(enterpriseReleases, openSourceReleasesSorted, sortedByVersion)
 	if err != nil {
 		return err
 	}
+	printVersionOrderReleases(minorReleaseMap, versionOrder)
 
-	printVersionOrderReleases(minorReleaseMap)
 	return nil
 }
 
 // Outputs changelogs in markdown format
-func printVersionOrderReleases(minorReleaseMap map[Version]string) {
-	var versions []Version
-	for minorVersion, _ := range minorReleaseMap {
-		versions = append(versions, minorVersion)
+func printVersionOrderReleases(minorReleaseMap map[Version]string, versionOrder []Version) {
+	// if no version order is given, sort the versions by minor release
+	versions := versionOrder
+	// if versions (versionOrder) is nil, we want to sort the minorReleaseMap versions
+	if versions == nil {
+		for minorVersion, _ := range minorReleaseMap {
+			versions = append(versions, minorVersion)
+		}
+		versions = SortReleaseVersions(versions)
 	}
-	SortReleaseVersions(versions)
 	for _, version := range versions {
 		body := minorReleaseMap[version]
-		fmt.Printf("\n\n### v%d.%d\n\n", version.Major, version.Minor)
+		if versionOrder == nil {
+			fmt.Printf("\n\n### v%d.%d\n\n", version.Major, version.Minor)
+		}
 		fmt.Printf("%v", body)
 	}
 }
