@@ -71,6 +71,12 @@ Some metrics that may be useful to monitor (listed in Prometheus format):
  This metric should have a value of `1` otherwise it indicates that Envoy is having trouble connecting to the Gloo pod.
 * `container_cpu_cfs_throttled_seconds_total / container_cpu_cfs_throttled_periods_total` -- This is a generic expression that will show whether or not a given container is being throttled for CPU, which will result is performance issues and service degradation. If the Gloo Edge containers are being throttled, it is important to understand why and given the underlying cause, increase the resources allocated.
 
+## Access Logging
+
+Envoy provides a powerful access logging mechanism which enables users and operators to understand the various traffic flowing through the proxy.
+Before deploying Gloo Edge in production, you should enable access logging to help with monitoring traffic as well as to provide helpful information for troubleshooting.
+The [access logging documentation]({{%versioned_link_path fromRoot="/guides/security/access_logging/" %}}) should be consulted for more details.
+
 ## Other Envoy-specific guidance
 
 * Envoy has a list of edge proxy best-practices in their docs. You may also want to consult that to see what is applicable for your use case. Find those docs [here](https://www.envoyproxy.io/docs/envoy/latest/configuration/best_practices/edge#best-practices-edge).
