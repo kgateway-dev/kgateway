@@ -310,6 +310,39 @@ message HeaderConfiguration {
   string id_token_header = 1;
 }
 
+// OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration
+// The discovery override defines any properties that should override this discovery configuration
+// https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
+message DiscoveryOverride {
+  // url of the provider authorization endpoint
+  string auth_endpoint = 1;
+
+  // url of the provider token endpoint
+  string token_endpoint = 2;
+
+  // url of the provider json web key set
+  string jwks_uri = 3;
+
+  // list of scope values that the provider supports
+  repeated string scopes = 4;
+
+  // list of response types that the provider supports
+  repeated string response_types = 5;
+
+  // list of subject identifier types that the provider supports
+  repeated string subjects = 6;
+
+  // list of json web signature signing algorithms that the provider supports for encoding claims in a jwt
+  repeated string id_token_algs = 7;
+
+  // list of client authentication methods supported by the provider token endpoint
+  repeated string auth_methods = 8;
+
+  // list of claim types that the provider supports
+  repeated string claims = 9;
+}
+
+
 message OidcAuthorizationCode {
   // your client id as registered with the issuer
   string client_id = 1;
@@ -347,7 +380,7 @@ message OidcAuthorizationCode {
   HeaderConfiguration headers = 10;
 
   // OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration
-  // The configuration override defines any properties that should override this discovery configuration
+  // The discovery override defines any properties that should override this discovery configuration
   // For example, the following AuthConfig CRD could be defined as:
   //    ```yaml
   //    apiVersion: enterprise.gloo.solo.io/v1
@@ -365,13 +398,13 @@ message OidcAuthorizationCode {
   //            name: google
   //            namespace: gloo-system
   //          issuer_url: https://accounts.google.com
-  //          configuration_override:
+  //          discovery_override:
   //            token_endpoint: "https://token.url/gettoken"
   //    ```
   //
   // And this will ensure that regardless of what value is discovered at
   // <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint
-  google.protobuf.Struct configuration_override = 11;
+  DiscoveryOverride discovery_override = 11;
 
   // in the future we may implement this:
   // add optional configuration for validation of the access token received during the OIDC flow
@@ -592,13 +625,13 @@ message ExtAuthConfig {
     //            name: google
     //            namespace: gloo-system
     //          issuer_url: https://accounts.google.com
-    //          configuration_override:
+    //          discovery_override:
     //            token_endpoint: "https://token.url/gettoken"
     //    ```
     //
     // And this will ensure that regardless of what value is discovered at
     // <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint
-    google.protobuf.Struct configuration_override = 11;
+    DiscoveryOverride discovery_override = 11;
 
     // in the future we may implement this:
     // add optional configuration for validation of the access token received during the OIDC flow
