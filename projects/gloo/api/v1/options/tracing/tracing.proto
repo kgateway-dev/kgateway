@@ -48,6 +48,8 @@ message RouteTracingSettings {
     // Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided.
     // TracePercentages defines the limits for random, forced, and overall tracing percentages.
     TracePercentages trace_percentages = 2;
+    // Optional. Default is true, If set to false, the tracing headers will not propagate to the upstream.
+    google.protobuf.BoolValue propagate = 3;
 }
 
 // Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided.

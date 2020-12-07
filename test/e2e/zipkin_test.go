@@ -95,12 +95,6 @@ var _ = Describe("Zipkin config loading", func() {
 		stopZipkinServer()
 	})
 
-	It("should fail to load bad config", func() {
-		err := envoyInstance.RunWithConfig(int(defaults.HttpPort), "./envoyconfigs/zipkin-envoy-invalid-conf.yaml")
-		Expect(err).To(HaveOccurred())
-		Expect(err).To(MatchError(And(ContainSubstring("can't unmarshal"), ContainSubstring(`unknown field "invalid_field"`))))
-	})
-
 	Context("dynamic tracing", func() {
 
 		var (

@@ -1,6 +1,6 @@
 package test
 
-import "github.com/solo-io/go-utils/manifesttestutils"
+import "github.com/solo-io/k8s-utils/manifesttestutils"
 
 func GetServiceAccountPermissions(namespace string) *manifesttestutils.ServiceAccountPermissions {
 	permissions := &manifesttestutils.ServiceAccountPermissions{}

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/k8s-utils/kubeutils"
 
 	"github.com/solo-io/go-utils/contextutils"
 
