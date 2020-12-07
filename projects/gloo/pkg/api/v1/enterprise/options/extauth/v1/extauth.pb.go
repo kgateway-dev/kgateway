@@ -51,7 +51,7 @@ type AuthConfig struct {
 	// successful auth service get appended into the final auth response.
 	Configs []*AuthConfig_Config `protobuf:"bytes,3,rep,name=configs,proto3" json:"configs,omitempty"`
 	// How to handle processing of named configs within an auth config chain.
-	// An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) )
+	// An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )`
 	// The boolean expression is evaluated left to right but honors parenthesis and short-circuiting.
 	BooleanExpr          *types.StringValue `protobuf:"bytes,10,opt,name=boolean_expr,json=booleanExpr,proto3" json:"boolean_expr,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
@@ -2266,7 +2266,7 @@ type ExtAuthConfig struct {
 	// successful auth service get appended into the final auth response.
 	Configs []*ExtAuthConfig_Config `protobuf:"bytes,8,rep,name=configs,proto3" json:"configs,omitempty"`
 	// How to handle processing of named configs within an auth config chain.
-	// An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) )
+	// An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )`
 	// The boolean expression is evaluated left to right but honors parenthesis and short-circuiting.
 	BooleanExpr          *types.StringValue `protobuf:"bytes,10,opt,name=boolean_expr,json=booleanExpr,proto3" json:"boolean_expr,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
