@@ -199,7 +199,7 @@ var _ = Describe("Plugin", func() {
 			Options: &v1.RouteOptions{
 				Tracing: &tracing.RouteTracingSettings{
 					RouteDescriptor: "hello",
-					Propagate: &types.BoolValue{Value: false},
+					Propagate:       &types.BoolValue{Value: false},
 				},
 			},
 		}
