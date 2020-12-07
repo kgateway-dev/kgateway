@@ -1,0 +1,6 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/3931
+  description: >
+    Add the ability to configure the propagation of the tracing header x-envoy-decorator-operation, for me info:
+    https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto.html?highlight=decorator#config-route-v3-decorator
