@@ -1,0 +1,5 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/3908
+  description: >
+    Update service name by renaming `istio-pilot` to istiod.
