@@ -6,7 +6,7 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/duration"
-	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"

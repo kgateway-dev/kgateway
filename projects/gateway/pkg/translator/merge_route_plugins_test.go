@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 

@@ -6,7 +6,7 @@ import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	envoy_config_tracing_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	mock_hcm "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm/mocks"
 	. "github.com/solo-io/gloo/test/matchers"

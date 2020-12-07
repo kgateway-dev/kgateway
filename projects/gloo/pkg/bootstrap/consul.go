@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/consul/api"
-	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 )

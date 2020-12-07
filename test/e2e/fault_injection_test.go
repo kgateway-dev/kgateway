@@ -7,17 +7,15 @@ import (
 	"net/http"
 	"time"
 
-	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
-
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
+	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
 var _ = Describe("Fault Injection", func() {

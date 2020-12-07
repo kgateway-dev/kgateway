@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"google.golang.org/grpc"
 

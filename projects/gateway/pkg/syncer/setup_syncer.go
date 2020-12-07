@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 
 	"go.uber.org/zap"

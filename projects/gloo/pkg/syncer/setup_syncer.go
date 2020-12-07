@@ -15,7 +15,7 @@ import (
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
-	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/channelutils"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"

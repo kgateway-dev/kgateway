@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	prototime "github.com/libopenstorage/openstorage/pkg/proto/time"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"github.com/solo-io/gloo/test/matchers"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
