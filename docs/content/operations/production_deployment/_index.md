@@ -36,6 +36,16 @@ If you are running Gloo Edge Enterprise, you'll need to prefix that Helm values 
 * **Configure your load balancer correctly**
     - If you are running Gloo Edge behind a load balancer, be sure to configure your load balancer properly to consume the readiness probe mentioned above.
 
+#### Upstream health checks
+
+In addition to defining health checks for Envoy, you should strongly consider defining health checks for your `Upstreams`.
+These health checks are used by Envoy to determine the health of the various upstream hosts in an upstream cluster, for example checking the health of the various pods that make up a Kubernetes `Service`. This is known as "active health checking" and can be configured on the `Upstream` resource directly.
+[See the documentation]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/upstream_health_checks/" %}}) for additional info.
+
+Additionally, "outlier detection" can be configured which allows envoy to passively check the health of upstream hosts.
+A helpful [overview of this feature is available in Envoy's documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier).
+This can be configured via the `outlierDetection` field on the `Upstream` resource. See the {{< protobuf name="gloo.solo.io.Upstream" display="API reference for more detail" >}}.
+
 ## Envoy performance
 
 * **Enable Envoy's gzip filter**
