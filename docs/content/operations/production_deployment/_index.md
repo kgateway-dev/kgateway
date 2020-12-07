@@ -53,6 +53,12 @@ This can be configured via the `outlierDetection` field on the `Upstream` resour
 * **Set up an EDS warming timeout**
     - Set up the endpoints warming timeout to some nonzero value. More details [here]({{%versioned_link_path fromRoot="/operations/upgrading/1.3.0/#recommended-settings" %}}).
 
+## Configure appropriate resource usage
+
+* Before running in production it is important to ensure you have correctly configured resource allocated to the various components of Gloo Edge. Ideally this tuning will be done in conjunction with load/performance testing.
+These values can be configured via helm values for the various deployments, such as `gloo.deployment.resources.requests.*` or `gatewayProxies.gatewayProxy.podTemplate.resources.requests.*`.
+See the [helm chart value reference]({{%versioned_link_path fromRoot="/reference/helm_chart_values/" %}}) for a full list.
+
 ## Other Envoy-specific guidance
 
 * Envoy has a list of edge proxy best-practices in their docs. You may also want to consult that to see what is applicable for your use case. Find those docs [here](https://www.envoyproxy.io/docs/envoy/latest/configuration/best_practices/edge#best-practices-edge).
