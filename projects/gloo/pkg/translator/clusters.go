@@ -249,17 +249,6 @@ func validateUpstreamLambdaFunctions(proxy *v1.Proxy, upstreams v1.UpstreamList,
 		}
 	}
 
-	for _, ug := range upstreamGroups {
-		weightedDests := ug.GetDestinations()
-		for _, wDest := range weightedDests {
-			dest := wDest.GetDestination()
-			upstream := dest.GetUpstream()
-			for lambda, _ := range upstreamLambdas[*upstream] {
-				upstreamLambdas[*upstream][lambda] = true
-			}
-		}
-	}
-
 	for _, listener := range proxy.GetListeners() {
 		httpListener := listener.GetHttpListener()
 		if httpListener != nil {
@@ -301,6 +290,16 @@ func validateRouteDestinationForValidLambdas(proxy *v1.Proxy, route *v1.RouteAct
 			for _, weightedDest := range ug.GetDestinations() {
 				destinations = append(destinations, weightedDest.GetDestination())
 			}
+		}
+	case *v1.RouteAction_ClusterHeader:
+		{
+			// no upstream configuration is provided in this case; can't validate the route
+			return
+		}
+	default:
+		{
+			reports.AddError(proxy, fmt.Errorf("route destination type %T not supported with AWS Lambda", typedRoute))
+			return
 		}
 	}
 
