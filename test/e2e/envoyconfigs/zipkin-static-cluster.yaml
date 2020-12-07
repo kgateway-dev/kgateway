@@ -32,8 +32,8 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 127.0.0.1
-                      port_value: 30400
+                      address: {{.GlooAddr}}
+                      port_value: {{.Port}}
       http2_protocol_options: { }
       type: STATIC
 
@@ -47,7 +47,7 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: 127.0.0.1
+                      address: {{.GlooAddr}}
                       port_value: 9411
 
     - name: access_log_cluster
@@ -96,4 +96,4 @@ admin:
   address:
     socket_address:
       address: 0.0.0.0
-      port_value: 21001
+      port_value: {{.AdminPort}}
