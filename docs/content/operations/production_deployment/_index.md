@@ -59,6 +59,18 @@ This can be configured via the `outlierDetection` field on the `Upstream` resour
 These values can be configured via helm values for the various deployments, such as `gloo.deployment.resources.requests.*` or `gatewayProxies.gatewayProxy.podTemplate.resources.requests.*`.
 See the [helm chart value reference]({{%versioned_link_path fromRoot="/reference/helm_chart_values/" %}}) for a full list.
 
+## Metrics and monitoring
+
+When running Gloo Edge (or any application for that matter) in a production environment, it is important to have a monitoring solution in place.
+Gloo Edge Enterprise provides a simple deployment of Prometheus and Grafana to assist with this necessity.
+However, depending on the requirements on your organization you may require a more robust solution, in which case you should make sure the metrics from the Gloo Edge components (especially Envoy) are available in whatever solution you are using.
+The [general documentation for monitoring/observability]({{%versioned_link_path fromRoot="/guides/observability/" %}}) has more info.
+
+Some metrics that may be useful to monitor (listed in Prometheus format):
+* `envoy_control_plane_connected_state` -- This metric shows whether or not a given Envoy instance is connected to the control plane, i.e. the Gloo pod.
+ This metric should have a value of `1` otherwise it indicates that Envoy is having trouble connecting to the Gloo pod.
+* `container_cpu_cfs_throttled_seconds_total / container_cpu_cfs_throttled_periods_total` -- This is a generic expression that will show whether or not a given container is being throttled for CPU, which will result is performance issues and service degradation. If the Gloo Edge containers are being throttled, it is important to understand why and given the underlying cause, increase the resources allocated.
+
 ## Other Envoy-specific guidance
 
 * Envoy has a list of edge proxy best-practices in their docs. You may also want to consult that to see what is applicable for your use case. Find those docs [here](https://www.envoyproxy.io/docs/envoy/latest/configuration/best_practices/edge#best-practices-edge).
