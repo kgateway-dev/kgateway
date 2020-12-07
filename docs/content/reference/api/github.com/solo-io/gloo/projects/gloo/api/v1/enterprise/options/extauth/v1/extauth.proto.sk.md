@@ -81,7 +81,7 @@ format that will be included in the extauth snapshot.
 | `status` | [.core.solo.io.Status](../../../../../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `configs` | [[]enterprise.gloo.solo.io.AuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below. State is shared between successful requests on the chain, i.e., the headers returned from each successful auth service get appended into the final auth response. |
-| `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) ) The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |
+| `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )` The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |
 
 
 
@@ -779,7 +779,7 @@ is requested (meaning that all the polled connections are in use), the connectio
 | ----- | ---- | ----------- | 
 | `authConfigRefName` | `string` |  |
 | `configs` | [[]enterprise.gloo.solo.io.ExtAuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below. State is shared between successful requests on the chain, i.e., the headers returned from each successful auth service get appended into the final auth response. |
-| `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) ) The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |
+| `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )` The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |
 
 
 

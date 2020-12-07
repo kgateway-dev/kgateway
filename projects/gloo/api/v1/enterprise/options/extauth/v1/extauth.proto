@@ -63,7 +63,7 @@ message AuthConfig {
   repeated Config configs = 3;
 
   // How to handle processing of named configs within an auth config chain.
-  // An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) )
+  // An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )`
   // The boolean expression is evaluated left to right but honors parenthesis and short-circuiting.
   google.protobuf.StringValue boolean_expr = 10;
 }
@@ -719,7 +719,7 @@ message ExtAuthConfig {
   repeated Config configs = 8;
 
   // How to handle processing of named configs within an auth config chain.
-  // An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) )
+  // An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )`
   // The boolean expression is evaluated left to right but honors parenthesis and short-circuiting.
   google.protobuf.StringValue boolean_expr = 10;
 }
