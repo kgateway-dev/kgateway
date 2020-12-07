@@ -527,7 +527,7 @@ https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
 ```yaml
 "authEndpoint": string
 "tokenEndpoint": string
-"keys": string
+"jwksUri": string
 "scopes": []string
 "responseTypes": []string
 "subjects": []string
@@ -541,7 +541,7 @@ https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
 | ----- | ---- | ----------- | 
 | `authEndpoint` | `string` | url of the provider authorization endpoint. |
 | `tokenEndpoint` | `string` | url of the provider token endpoint. |
-| `keys` | `string` | url of the provider json web key set. |
+| `jwksUri` | `string` | url of the provider json web key set. |
 | `scopes` | `[]string` | list of scope values that the provider supports. |
 | `responseTypes` | `[]string` | list of response types that the provider supports. |
 | `subjects` | `[]string` | list of subject identifier types that the provider supports. |

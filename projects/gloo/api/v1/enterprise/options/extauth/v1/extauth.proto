@@ -321,7 +321,7 @@ message DiscoveryOverride {
   string token_endpoint = 2;
 
   // url of the provider json web key set
-  string keys = 3;
+  string jwks_uri = 3;
 
   // list of scope values that the provider supports
   repeated string scopes = 4;

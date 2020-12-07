@@ -711,7 +711,7 @@ func (m *DiscoveryOverride) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetKeys())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetJwksUri())); err != nil {
 		return 0, err
 	}
 
