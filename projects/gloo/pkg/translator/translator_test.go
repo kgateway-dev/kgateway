@@ -1761,7 +1761,7 @@ var _ = Describe("Translator", func() {
 			proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].Routes = append(routes, invalidLambdaRoute)
 			_, resourceReport, _, _ := translator.Translate(params, proxy)
 			Expect(resourceReport.Validate()).To(HaveOccurred())
-			Expect(resourceReport.Validate().Error()).To(ContainSubstring("a route references nonexistentLambdaFunc lambda function which does not exist in this upstream"))
+			Expect(resourceReport.Validate().Error()).To(ContainSubstring("a route references nonexistentLambdaFunc AWS lambda which does not exist on the route's upstream"))
 		})
 
 		It("reports error when route has Multi Cluster destination and points to at least one lambda function that doesn't exist", func() {
@@ -1796,7 +1796,7 @@ var _ = Describe("Translator", func() {
 			proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].Routes = append(routes, invalidLambdaRoute)
 			_, resourceReport, _, _ := translator.Translate(params, proxy)
 			Expect(resourceReport.Validate()).To(HaveOccurred())
-			Expect(resourceReport.Validate().Error()).To(ContainSubstring("a route references nonexistentLambdaFunc lambda function which does not exist in this upstream"))
+			Expect(resourceReport.Validate().Error()).To(ContainSubstring("a route references nonexistentLambdaFunc AWS lambda which does not exist on the route's upstream"))
 		})
 
 	})

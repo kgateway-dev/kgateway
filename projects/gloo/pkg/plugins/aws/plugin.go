@@ -172,7 +172,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			}
 			lambdaSpec, ok := p.recordedUpstreams[*upstreamRef]
 			if !ok {
-				err := errors.Errorf("%v is not a valid AWS upstream", *upstreamRef)
+				err := errors.Errorf("%v is not an AWS upstream", *upstreamRef)
 				contextutils.LoggerFrom(p.ctx).Error(err)
 				return nil, err
 			}

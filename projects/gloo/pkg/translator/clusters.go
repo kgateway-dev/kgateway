@@ -254,7 +254,7 @@ func validateUpstreamLambdaFunctions(proxy *v1.Proxy, upstreams v1.UpstreamList,
 			for _, virtualHost := range httpListener.GetVirtualHosts() {
 				// Iterate through all routes to check if they point to the current upstream
 				for _, route := range virtualHost.GetRoutes() {
-					validateRouteDestinationForValidLambdas(route.GetRouteAction(), upstreams, reports, upstreamLambdas)
+					validateRouteDestinationForValidLambdas(proxy, route.GetRouteAction(), reports, upstreamLambdas)
 				}
 			}
 		}
@@ -262,7 +262,7 @@ func validateUpstreamLambdaFunctions(proxy *v1.Proxy, upstreams v1.UpstreamList,
 }
 
 // Validates a route that may have a single or multi upstream destinations to make sure that any lambda upstreams are referencing valid lambdas
-func validateRouteDestinationForValidLambdas(route *v1.RouteAction, upstreams v1.UpstreamList, reports reporter.ResourceReports, upstreamLambdas map[core.ResourceRef]map[string]bool) {
+func validateRouteDestinationForValidLambdas(proxy *v1.Proxy, route *v1.RouteAction, reports reporter.ResourceReports, upstreamLambdas map[core.ResourceRef]map[string]bool) {
 	// Append destinations to a destination list to process all of them in one go
 	var destinations []*v1.Destination
 	switch route.GetDestination().(type) {
@@ -290,8 +290,7 @@ func validateRouteDestinationForValidLambdas(route *v1.RouteAction, upstreams v1
 			// If route is pointing to a lambda that does not exist on this upstream, report error on the upstream
 			if routeLambda != nil && lambdaFuncSet[routeLambdaName] == false {
 				// Get the actual upstream from the upstreams list add an error to that upstream
-				upstream, _ := upstreams.Find(routeUpstream.Namespace, routeUpstream.Name)
-				reports.AddError(upstream, fmt.Errorf("a route references %s lambda function which does not exist in this upstream", routeLambdaName))
+				reports.AddError(proxy, fmt.Errorf("a route references %s AWS lambda which does not exist on the route's upstream", routeLambdaName))
 			}
 		}
 	}
