@@ -32,6 +32,7 @@ weight: 5
 - [RedisSession](#redissession)
 - [CookieOptions](#cookieoptions)
 - [HeaderConfiguration](#headerconfiguration)
+- [DiscoveryOverride](#discoveryoverride)
 - [OidcAuthorizationCode](#oidcauthorizationcode)
 - [AccessTokenValidation](#accesstokenvalidation)
 - [OauthSecret](#oauthsecret)
@@ -80,7 +81,7 @@ format that will be included in the extauth snapshot.
 | `status` | [.core.solo.io.Status](../../../../../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `configs` | [[]enterprise.gloo.solo.io.AuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below. State is shared between successful requests on the chain, i.e., the headers returned from each successful auth service get appended into the final auth response. |
-| `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) ) The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |
+| `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )` The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |
 
 
 
@@ -516,6 +517,42 @@ Deprecated: Prefer OAuth2
 
 
 ---
+### DiscoveryOverride
+
+ 
+OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration
+The discovery override defines any properties that should override this discovery configuration
+https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
+
+```yaml
+"authEndpoint": string
+"tokenEndpoint": string
+"jwksUri": string
+"scopes": []string
+"responseTypes": []string
+"subjects": []string
+"idTokenAlgs": []string
+"authMethods": []string
+"claims": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `authEndpoint` | `string` | url of the provider authorization endpoint. |
+| `tokenEndpoint` | `string` | url of the provider token endpoint. |
+| `jwksUri` | `string` | url of the provider json web key set. |
+| `scopes` | `[]string` | list of scope values that the provider supports. |
+| `responseTypes` | `[]string` | list of response types that the provider supports. |
+| `subjects` | `[]string` | list of subject identifier types that the provider supports. |
+| `idTokenAlgs` | `[]string` | list of json web signature signing algorithms that the provider supports for encoding claims in a jwt. |
+| `authMethods` | `[]string` | list of client authentication methods supported by the provider token endpoint. |
+| `claims` | `[]string` | list of claim types that the provider supports. |
+
+
+
+
+---
 ### OidcAuthorizationCode
 
 
@@ -531,7 +568,7 @@ Deprecated: Prefer OAuth2
 "scopes": []string
 "session": .enterprise.gloo.solo.io.UserSession
 "headers": .enterprise.gloo.solo.io.HeaderConfiguration
-"configurationOverride": .google.protobuf.Struct
+"discoveryOverride": .enterprise.gloo.solo.io.DiscoveryOverride
 
 ```
 
@@ -547,7 +584,7 @@ Deprecated: Prefer OAuth2
 | `scopes` | `[]string` | Scopes to request in addition to openid scope. |
 | `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) | Configuration related to the user session. |
 | `headers` | [.enterprise.gloo.solo.io.HeaderConfiguration](../extauth.proto.sk/#headerconfiguration) | Configures headers added to requests. |
-| `configurationOverride` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration The configuration override defines any properties that should override this discovery configuration For example, the following AuthConfig CRD could be defined as: ```yaml apiVersion: enterprise.gloo.solo.io/v1 kind: AuthConfig metadata: name: google-oidc namespace: gloo-system spec: configs: - oauth: app_url: http://localhost:8080 callback_path: /callback client_id: $CLIENT_ID client_secret_ref: name: google namespace: gloo-system issuer_url: https://accounts.google.com configuration_override: token_endpoint: "https://token.url/gettoken" ``` And this will ensure that regardless of what value is discovered at <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint. |
+| `discoveryOverride` | [.enterprise.gloo.solo.io.DiscoveryOverride](../extauth.proto.sk/#discoveryoverride) | OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration The discovery override defines any properties that should override this discovery configuration For example, the following AuthConfig CRD could be defined as: ```yaml apiVersion: enterprise.gloo.solo.io/v1 kind: AuthConfig metadata: name: google-oidc namespace: gloo-system spec: configs: - oauth: app_url: http://localhost:8080 callback_path: /callback client_id: $CLIENT_ID client_secret_ref: name: google namespace: gloo-system issuer_url: https://accounts.google.com discovery_override: token_endpoint: "https://token.url/gettoken" ``` And this will ensure that regardless of what value is discovered at <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint. |
 
 
 
@@ -742,7 +779,7 @@ is requested (meaning that all the polled connections are in use), the connectio
 | ----- | ---- | ----------- | 
 | `authConfigRefName` | `string` |  |
 | `configs` | [[]enterprise.gloo.solo.io.ExtAuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below. State is shared between successful requests on the chain, i.e., the headers returned from each successful auth service get appended into the final auth response. |
-| `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) ) The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |
+| `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )` The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |
 
 
 
@@ -793,7 +830,7 @@ Deprecated, prefer OAuth2Config
 "scopes": []string
 "session": .enterprise.gloo.solo.io.UserSession
 "headers": .enterprise.gloo.solo.io.HeaderConfiguration
-"configurationOverride": .google.protobuf.Struct
+"discoveryOverride": .enterprise.gloo.solo.io.DiscoveryOverride
 
 ```
 
@@ -809,7 +846,7 @@ Deprecated, prefer OAuth2Config
 | `scopes` | `[]string` | scopes to request in addition to the openid scope. |
 | `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) |  |
 | `headers` | [.enterprise.gloo.solo.io.HeaderConfiguration](../extauth.proto.sk/#headerconfiguration) | Configures headers added to requests. |
-| `configurationOverride` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration The configuration override defines any properties that should override this discovery configuration For example, the following AuthConfig CRD could be defined as: ```yaml apiVersion: enterprise.gloo.solo.io/v1 kind: AuthConfig metadata: name: google-oidc namespace: gloo-system spec: configs: - oauth: app_url: http://localhost:8080 callback_path: /callback client_id: $CLIENT_ID client_secret_ref: name: google namespace: gloo-system issuer_url: https://accounts.google.com configuration_override: token_endpoint: "https://token.url/gettoken" ``` And this will ensure that regardless of what value is discovered at <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint. |
+| `discoveryOverride` | [.enterprise.gloo.solo.io.DiscoveryOverride](../extauth.proto.sk/#discoveryoverride) | OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration The configuration override defines any properties that should override this discovery configuration For example, the following AuthConfig CRD could be defined as: ```yaml apiVersion: enterprise.gloo.solo.io/v1 kind: AuthConfig metadata: name: google-oidc namespace: gloo-system spec: configs: - oauth: app_url: http://localhost:8080 callback_path: /callback client_id: $CLIENT_ID client_secret_ref: name: google namespace: gloo-system issuer_url: https://accounts.google.com discovery_override: token_endpoint: "https://token.url/gettoken" ``` And this will ensure that regardless of what value is discovered at <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint. |
 
 
 

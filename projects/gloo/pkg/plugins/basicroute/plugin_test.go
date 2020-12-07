@@ -5,7 +5,6 @@ import (
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -13,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/basicroute"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
 var _ = Describe("prefix rewrite", func() {

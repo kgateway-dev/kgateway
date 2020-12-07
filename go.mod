@@ -49,7 +49,6 @@ require (
 	github.com/k0kubun/pp v2.3.0+incompatible
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
-	github.com/libopenstorage/openstorage v1.0.0
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-sqlite3 v2.0.1+incompatible // indirect

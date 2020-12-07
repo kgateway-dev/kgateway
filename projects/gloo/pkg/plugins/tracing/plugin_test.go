@@ -6,6 +6,7 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -198,6 +199,7 @@ var _ = Describe("Plugin", func() {
 			Options: &v1.RouteOptions{
 				Tracing: &tracing.RouteTracingSettings{
 					RouteDescriptor: "hello",
+					Propagate:       &types.BoolValue{Value: false},
 				},
 			},
 		}
@@ -205,6 +207,7 @@ var _ = Describe("Plugin", func() {
 		err = p.ProcessRoute(plugins.RouteParams{}, inFull, outFull)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(outFull.Decorator.Operation).To(Equal("hello"))
+		Expect(outFull.Decorator.Propagate).To(Equal(&wrappers.BoolValue{Value: false}))
 		Expect(outFull.Tracing.ClientSampling.Numerator / 10000).To(Equal(uint32(100)))
 		Expect(outFull.Tracing.RandomSampling.Numerator / 10000).To(Equal(uint32(100)))
 		Expect(outFull.Tracing.OverallSampling.Numerator / 10000).To(Equal(uint32(100)))
@@ -233,6 +236,7 @@ var _ = Describe("Plugin", func() {
 		err = p.ProcessRoute(plugins.RouteParams{}, inFull, outFull)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(outFull.Decorator.Operation).To(Equal("hello"))
+		Expect(outFull.Decorator.Propagate).To(BeNil())
 		Expect(outFull.Tracing.ClientSampling.Numerator / 10000).To(Equal(uint32(10)))
 		Expect(outFull.Tracing.RandomSampling.Numerator / 10000).To(Equal(uint32(20)))
 		Expect(outFull.Tracing.OverallSampling.Numerator / 10000).To(Equal(uint32(30)))

@@ -18,7 +18,7 @@ import (
 )
 
 // Fetches releases for repo from github
-func GetAllReleases(client *github.Client, repo string, sortedByVersion bool) ([]*github.RepositoryRelease, error) {
+func GetAllReleases(client *github.Client, repo string) ([]*github.RepositoryRelease, error) {
 	allReleases, _, err := client.Repositories.ListReleases(context.Background(), "solo-io", repo,
 		&github.ListOptions{
 			Page:    0,
@@ -28,20 +28,6 @@ func GetAllReleases(client *github.Client, repo string, sortedByVersion bool) ([
 		return nil, err
 	}
 
-	if sortedByVersion {
-		sort.Slice(allReleases, func(i, j int) bool {
-			releaseA, releaseB := allReleases[i], allReleases[j]
-			versionA, err := ParseVersion(releaseA.GetTagName())
-			if err != nil {
-				return false
-			}
-			versionB, err := ParseVersion(releaseB.GetTagName())
-			if err != nil {
-				return false
-			}
-			return versionA.MustIsGreaterThan(*versionB)
-		})
-	}
 	return allReleases, nil
 }
 
@@ -70,13 +56,25 @@ func ParseReleases(releases []*github.RepositoryRelease, byMinorVersion bool) (m
 // Performs processing to generate a map of release version to the release notes
 // This also pulls in open source gloo edge release notes and merges them with enterprise release notes
 // The returned map will be a mapping of minor releases (v1.5, v1.6) to their body, which will contain the release notes
-// for all the patches under the minor releases
-func MergeEnterpriseOSSReleases(enterpriseReleasesSorted, osReleases []*github.RepositoryRelease) (map[Version]string, error) {
+// for all the patches under the minor releases. It also returns a list of versions, sorted by version if the sortedByVersion param is true.
+func MergeEnterpriseOSSReleases(enterpriseReleases, osReleasesSorted []*github.RepositoryRelease, sortedByVersion bool) (map[Version]string, []Version, error) {
 	var minorReleaseMap = make(map[Version]string)
+	var versionOrder []Version
 
-	openSourceReleases, err := ParseReleases(osReleases, false)
+	enterpriseReleasesSorted := SortReleases(enterpriseReleases)
+	// if we don't want to sort it by version, preserve original chronological ordering
+	if !sortedByVersion {
+		for _, release := range enterpriseReleases {
+			version, err := ParseVersion(release.GetTagName())
+			if err != nil {
+				return nil, nil, err
+			}
+			versionOrder = append(versionOrder, *version)
+		}
+	}
+	openSourceReleases, err := ParseReleases(osReleasesSorted, false)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	for index, release := range enterpriseReleasesSorted {
@@ -84,7 +82,7 @@ func MergeEnterpriseOSSReleases(enterpriseReleasesSorted, osReleases []*github.R
 
 		version, err := ParseVersion(releaseTag)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		previousEnterprisePatch := GetPreviousEnterprisePatchVersion(enterpriseReleasesSorted, index)
@@ -102,18 +100,22 @@ func MergeEnterpriseOSSReleases(enterpriseReleasesSorted, osReleases []*github.R
 		var depVersions []Version
 		// Get all intermediate versions of Gloo OSS that this Gloo enterprise relies on
 		if depVersion != nil && previousDepVersion != nil {
-			depVersions = GetAllOSSDependenciesBetweenEnterpriseVersions(depVersion, previousDepVersion, osReleases)
+			depVersions = GetAllOSSDependenciesBetweenEnterpriseVersions(depVersion, previousDepVersion, osReleasesSorted)
 		}
 		// Get release notes of the dependent open source gloo release version
 		body := AccumulateNotes(release.GetBody(), openSourceReleases, depVersions)
-		// We only want the minor version (not patch number or label) for the resulting map
-		minorVersion := Version{
-			Major: version.Major,
-			Minor: version.Minor,
+		if sortedByVersion {
+			// If sorting by minor version, we only want the minor version (not patch number or label) for the resulting map
+			minorVersion := Version{
+				Major: version.Major,
+				Minor: version.Minor,
+			}
+			minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("\n##### %s %s\n ", version.String(), OSSDescription) + body
+		} else {
+			minorReleaseMap[*version] = fmt.Sprintf("\n\n### %s %s\n", version.String(), OSSDescription) + body
 		}
-		minorReleaseMap[minorVersion] = minorReleaseMap[minorVersion] + fmt.Sprintf("\n##### %s %s\n ", version.String(), OSSDescription) + body
 	}
-	return minorReleaseMap, nil
+	return minorReleaseMap, versionOrder, nil
 }
 
 // Parses the enterprise release notes, then inserts open source release notes for each of the dependent versions
@@ -201,7 +203,7 @@ func GetOSDependencyPrefix(openSourceVersion Version, isHeader bool) string {
 		prefix = " (Uses Gloo Edge"
 	}
 	osReleaseURL := strings.ReplaceAll(openSourceVersion.String(), ".", "")
-	osPrefix := fmt.Sprintf("%s [OSS %s](/reference/changelog/open_source/#%s)) ", prefix, openSourceVersion.String(), osReleaseURL)
+	osPrefix := fmt.Sprintf("%s [OSS %s](../../../reference/changelog/open_source/#%s)) ", prefix, openSourceVersion.String(), osReleaseURL)
 	return osPrefix
 }
 
@@ -288,8 +290,29 @@ func GetOSSDependencyForEnterpriseVersion(enterpriseVersion *Version) (*Version,
 }
 
 // Sorts a slice of versions in descending order by version e.g. v1.6.1, v1.6.0, v1.6.0-beta9
-func SortReleaseVersions(versions []Version) {
-	sort.Slice(versions, func(i, j int) bool {
-		return versions[i].MustIsGreaterThanOrEqualTo(versions[j])
+func SortReleaseVersions(versions []Version) []Version {
+	versionsCopy := make([]Version, len(versions))
+	copy(versionsCopy, versions)
+	sort.Slice(versionsCopy, func(i, j int) bool {
+		return versionsCopy[i].MustIsGreaterThanOrEqualTo(versionsCopy[j])
 	})
+	return versionsCopy
+}
+
+func SortReleases(releases []*github.RepositoryRelease) []*github.RepositoryRelease {
+	releasesCopy := make([]*github.RepositoryRelease, len(releases))
+	copy(releasesCopy, releases)
+	sort.Slice(releasesCopy, func(i, j int) bool {
+		releaseA, releaseB := releasesCopy[i], releasesCopy[j]
+		versionA, err := ParseVersion(releaseA.GetTagName())
+		if err != nil {
+			return false
+		}
+		versionB, err := ParseVersion(releaseB.GetTagName())
+		if err != nil {
+			return false
+		}
+		return versionA.MustIsGreaterThan(*versionB)
+	})
+	return releasesCopy
 }

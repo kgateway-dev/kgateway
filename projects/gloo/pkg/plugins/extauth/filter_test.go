@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"github.com/solo-io/gloo/test/matchers"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"

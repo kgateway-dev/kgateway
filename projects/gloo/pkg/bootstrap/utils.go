@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"

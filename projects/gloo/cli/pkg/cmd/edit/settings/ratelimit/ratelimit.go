@@ -3,8 +3,8 @@ package ratelimit
 import (
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	editOptions "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit/options"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"

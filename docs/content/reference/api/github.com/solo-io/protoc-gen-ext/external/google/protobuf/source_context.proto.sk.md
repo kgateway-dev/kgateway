@@ -1,6 +1,6 @@
 
 ---
-title: "empty.proto"
+title: "source_context.proto"
 weight: 5
 ---
 
@@ -43,37 +43,32 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #### Types:
 
 
-- [Empty](#empty)
+- [SourceContext](#sourcecontext)
   
 
 
 
-##### Source File: [github.com/solo-io/solo-kit/api/external/google/protobuf/empty.proto](https://github.com/solo-io/solo-kit/blob/master/api/external/google/protobuf/empty.proto)
+##### Source File: [github.com/solo-io/protoc-gen-ext/external/google/protobuf/source_context.proto](https://github.com/solo-io/protoc-gen-ext/blob/master/external/google/protobuf/source_context.proto)
 
 
 
 
 
 ---
-### Empty
+### SourceContext
 
  
-A generic empty message that you can re-use to avoid defining duplicated
-empty messages in your APIs. A typical example is to use it as the request
-or the response type of an API method. For instance:
-
-    service Foo {
-      rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);
-    }
-
-The JSON representation for `Empty` is empty JSON object `{}`.
+`SourceContext` represents information about the source of a
+protobuf element, like the file in which it is defined.
 
 ```yaml
+"fileName": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
+| `fileName` | `string` | The path-qualified name of the .proto file that contained the associated protobuf element. For example: `"google/protobuf/source_context.proto"`. |
 
 
 

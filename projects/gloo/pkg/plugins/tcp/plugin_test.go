@@ -10,7 +10,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -21,6 +20,7 @@ import (
 	mock_utils "github.com/solo-io/gloo/projects/gloo/pkg/utils/mocks"
 	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
 var _ = Describe("Plugin", func() {

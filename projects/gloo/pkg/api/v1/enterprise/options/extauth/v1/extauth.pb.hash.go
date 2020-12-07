@@ -691,6 +691,82 @@ func (m *HeaderConfiguration) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
+func (m *DiscoveryOverride) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.DiscoveryOverride")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetAuthEndpoint())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetTokenEndpoint())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetJwksUri())); err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetScopes() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	for _, v := range m.GetResponseTypes() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	for _, v := range m.GetSubjects() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	for _, v := range m.GetIdTokenAlgs() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	for _, v := range m.GetAuthMethods() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	for _, v := range m.GetClaims() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *OidcAuthorizationCode) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -796,12 +872,12 @@ func (m *OidcAuthorizationCode) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetConfigurationOverride()).(safe_hasher.SafeHasher); ok {
+	if h, ok := interface{}(m.GetDiscoveryOverride()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetConfigurationOverride(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetDiscoveryOverride(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
@@ -1804,12 +1880,12 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Hash(hasher hash.Hash64) (ui
 		}
 	}
 
-	if h, ok := interface{}(m.GetConfigurationOverride()).(safe_hasher.SafeHasher); ok {
+	if h, ok := interface{}(m.GetDiscoveryOverride()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetConfigurationOverride(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetDiscoveryOverride(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {

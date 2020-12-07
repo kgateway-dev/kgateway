@@ -7,7 +7,6 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/hashicorp/go-multierror"
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -21,6 +20,7 @@ import (
 	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/k8s-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
 const (

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
 	"go.uber.org/zap"
 

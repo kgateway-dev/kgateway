@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"google.golang.org/grpc"
 
 	. "github.com/onsi/ginkgo"

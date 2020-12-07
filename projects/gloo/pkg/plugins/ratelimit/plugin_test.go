@@ -5,8 +5,8 @@ import (
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"github.com/solo-io/gloo/test/matchers"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"

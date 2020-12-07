@@ -137,6 +137,16 @@ func (m *RouteTracingSettings) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetPropagate()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPropagate()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPropagate(), target.GetPropagate()) {
+			return false
+		}
+	}
+
 	return true
 }
 

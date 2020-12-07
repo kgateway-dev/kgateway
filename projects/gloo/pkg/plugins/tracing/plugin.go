@@ -206,6 +206,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if descriptor != "" {
 		out.Decorator = &envoy_config_route_v3.Decorator{
 			Operation: descriptor,
+			Propagate: gogoutils.BoolGogoToProto(in.Options.Tracing.GetPropagate()),
 		}
 	}
 	return nil

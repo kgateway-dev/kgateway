@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
 	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
 	udssetup "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
