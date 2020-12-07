@@ -7,7 +7,6 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/types"
 	"github.com/rotisserie/eris"
@@ -17,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/trace"
 )
