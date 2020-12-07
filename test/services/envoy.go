@@ -396,8 +396,8 @@ func (ei *EnvoyInstance) RunWith(eic EnvoyInstanceConfig) error {
 
 func (ei *EnvoyInstance) RunWithRole(role string, port int) error {
 	eic := &envoyInstanceConfig{
-		role: role,
-		port: uint32(port),
+		role:    role,
+		port:    uint32(port),
 		context: context.TODO(),
 	}
 	boostrapBuilder := &templateBootstrapBuilder{
@@ -408,8 +408,8 @@ func (ei *EnvoyInstance) RunWithRole(role string, port int) error {
 
 func (ei *EnvoyInstance) RunWithConfigFile(port int, configFile string) error {
 	eic := &envoyInstanceConfig{
-		role: "gloo-system~gateway-proxy",
-		port: uint32(port),
+		role:    "gloo-system~gateway-proxy",
+		port:    uint32(port),
 		context: context.TODO(),
 	}
 	boostrapBuilder := &fileBootstrapBuilder{
