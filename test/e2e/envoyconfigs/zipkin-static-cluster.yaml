@@ -38,7 +38,7 @@ static_resources:
       type: STATIC
 
     - name: zipkin_cluster
-      connect_timeout: 1s
+      connect_timeout: 5.000s
       type: STATIC
       load_assignment:
         cluster_name: zipkin_cluster
