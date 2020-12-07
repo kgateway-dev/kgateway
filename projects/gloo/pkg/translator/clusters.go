@@ -277,7 +277,6 @@ func validateUpstreamLambdaFunctions(proxy *v1.Proxy, upstreams v1.UpstreamList,
 func validateRouteDestinationForValidLambdas(proxy *v1.Proxy, route *v1.RouteAction, upstreamGroups v1.UpstreamGroupList, reports reporter.ResourceReports, upstreamLambdas map[core.ResourceRef]map[string]bool) {
 	// Append destinations to a destination list to process all of them in one go
 	var destinations []*v1.Destination
-	var upstreamGroupDestination *core.ResourceRef
 
 	switch typedRoute := route.GetDestination().(type) {
 	case *v1.RouteAction_Single:
