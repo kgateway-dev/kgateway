@@ -404,7 +404,7 @@ message OidcAuthorizationCode {
   //
   // And this will ensure that regardless of what value is discovered at
   // <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint
-  DiscoveryOverride discovery_override = 12;
+  DiscoveryOverride discovery_override = 11;
 
   // in the future we may implement this:
   // add optional configuration for validation of the access token received during the OIDC flow
@@ -631,7 +631,7 @@ message ExtAuthConfig {
     //
     // And this will ensure that regardless of what value is discovered at
     // <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint
-    DiscoveryOverride discovery_override = 12;
+    DiscoveryOverride discovery_override = 11;
 
     // in the future we may implement this:
     // add optional configuration for validation of the access token received during the OIDC flow
