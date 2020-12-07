@@ -56,7 +56,7 @@ func ParseReleases(releases []*github.RepositoryRelease, byMinorVersion bool) (m
 // Performs processing to generate a map of release version to the release notes
 // This also pulls in open source gloo edge release notes and merges them with enterprise release notes
 // The returned map will be a mapping of minor releases (v1.5, v1.6) to their body, which will contain the release notes
-// for all the patches under the minor releases
+// for all the patches under the minor releases. It also returns a list of versions, sorted by version if the sortedByVersion param is true.
 func MergeEnterpriseOSSReleases(enterpriseReleases, osReleasesSorted []*github.RepositoryRelease, sortedByVersion bool) (map[Version]string, []Version, error) {
 	var minorReleaseMap = make(map[Version]string)
 	var versionOrder []Version
