@@ -6,7 +6,7 @@ gatewayProxies:
         "@type": type.googleapis.com/envoy.extensions.wasm.v3.WasmService
         config:
           name: "my_plugin"
-          vm_config:
+          inline_vm_config:
             runtime: "envoy.wasm.runtime.v8"
             code:
               local:
