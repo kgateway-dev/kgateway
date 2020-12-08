@@ -108,7 +108,7 @@ func BuildPerFilterBootstrapYaml(filterName string, msg proto.Message) string {
 
 	buf := &bytes.Buffer{}
 	marshaler := &jsonpb.Marshaler{
-		OrigName:    true,
+		OrigName: true,
 	}
 	marshaler.Marshal(buf, bootstrap)
 	json := string(buf.Bytes())
