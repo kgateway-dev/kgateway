@@ -1,7 +1,6 @@
 package e2e_test
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"html"
@@ -413,64 +412,6 @@ var _ = Describe("Zipkin config loading", func() {
 			Eventually(apiHit, 5*time.Second).Should(Receive(&expectedZipkinApiHit))
 
 			stopZipkinServer()
-		})
-
-		It("should not send trace msgs with invalid zipkin provider", func() {
-			gatewayClient := testClients.GatewayClient
-			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			// configure zipkin, and write tracing configuration to gateway
-			zipkinTracing := &tracing.ListenerTracingSettings{
-				ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
-					ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
-						CollectorCluster: &envoytrace_gloo.ZipkinConfig_ClusterName{
-							ClusterName: "invalid_zipkin_cluster", // wrong name of cluster
-						},
-						CollectorEndpoint:        "/api/v2/spans",
-						CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
-					},
-				},
-			}
-
-			httpGateway := gw.GetHttpGateway()
-			setTracingOnGateway(httpGateway, zipkinTracing)
-			_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-			Expect(err).NotTo(HaveOccurred())
-
-			// write a virtual service so we have a proxy to our test upstream
-			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, testUs.Upstream.Metadata.Ref())
-			_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			// ensure the proxy and virtual service are created
-			Eventually(func() (*gloov1.Proxy, error) {
-				return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-			}, "5s", "0.1s").ShouldNot(BeNil())
-			Eventually(func() (*gatewayv1.VirtualService, error) {
-				return testClients.VirtualServiceClient.Read(testVs.Metadata.GetNamespace(), testVs.Metadata.GetName(), clients.ReadOpts{})
-			}, "5s", "0.1s").ShouldNot(BeNil())
-
-			// verify that the gateway proxy is not reachable
-			// the tracing update to the gateway broke the envoy listener. Requests will no longer succeed
-			Eventually(func() error {
-				// send a request with a body
-				var res *http.Response
-				var buf bytes.Buffer
-				buf.Write([]byte("solo.io test"))
-
-				var client http.Client
-				var err error
-				res, err = client.Post(fmt.Sprintf("http://localhost:%d/1", defaults.HttpPort), "application/octet-stream", &buf)
-				if err != nil {
-					return err
-				}
-				if res.StatusCode != http.StatusOK {
-					return fmt.Errorf("%v is not OK", res.StatusCode)
-				}
-
-				return nil
-			}, "5s", "1s").Should(Not(BeNil()))
 		})
 	})
 })
