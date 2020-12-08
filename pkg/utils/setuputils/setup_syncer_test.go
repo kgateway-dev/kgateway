@@ -17,7 +17,7 @@ var _ = Describe("SetupSyncer", func() {
 	It("calls the setup function with the referenced settings crd", func() {
 		var actualSettings *v1.Settings
 		expectedSettings := &v1.Settings{
-			Metadata: core.Metadata{Name: "hello", Namespace: "goodbye"},
+			Metadata: &core.Metadata{Name: "hello", Namespace: "goodbye"},
 		}
 		setupSyncer := NewSetupSyncer(
 			expectedSettings.Metadata.Ref(),
