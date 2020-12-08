@@ -3,8 +3,7 @@ package main_test
 import (
 	"testing"
 
-	"github.com/solo-io/k8s-utils/testutils"
-
+	"github.com/solo-io/go-utils/testutils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
