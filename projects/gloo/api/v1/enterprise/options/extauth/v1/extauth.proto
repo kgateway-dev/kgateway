@@ -51,6 +51,7 @@ message AuthConfig {
       AuthPlugin plugin_auth = 5;
       OpaAuth opa_auth = 6;
       Ldap ldap = 7;
+      Jwt jwt = 11;
     }
   }
 
@@ -197,6 +198,10 @@ message AuthPlugin {
   string exported_symbol_name = 3;
 
   google.protobuf.Struct config = 4;
+}
+
+message Jwt {
+
 }
 
 message BasicAuth {
@@ -707,6 +712,7 @@ message ExtAuthConfig {
       AuthPlugin plugin_auth = 6;
       OpaAuthConfig opa_auth = 7;
       Ldap ldap = 8;
+      Jwt jwt = 12;
     }
   }
 
