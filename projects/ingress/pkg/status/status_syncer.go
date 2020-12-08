@@ -87,8 +87,8 @@ func getLbStatus(services v1.KubeServiceList) ([]kubev1.LoadBalancerIngress, err
 		}
 		return ingressStatusFromAddrs(serviceAddrs(kubeSvc)), nil
 	}
-	return nil, errors.Errorf("failed to get lb status: expected 1 ingress service, found %v", func() []core.ResourceRef {
-		var refs []core.ResourceRef
+	return nil, errors.Errorf("failed to get lb status: expected 1 ingress service, found %v", func() []*core.ResourceRef {
+		var refs []*core.ResourceRef
 		for _, svc := range services {
 			refs = append(refs, svc.Metadata.Ref())
 		}
