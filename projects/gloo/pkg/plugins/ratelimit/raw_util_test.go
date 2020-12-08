@@ -57,7 +57,7 @@ var _ = Describe("RawUtil", func() {
 		func(actions []*gloorl.Action) {
 			out := ConvertActions(nil, actions)
 
-			Expect( len(actions)).To(Equal(len(out)))
+			Expect(len(actions)).To(Equal(len(out)))
 			for i := range actions {
 				golangjson := golangjsonpb.Marshaler{}
 

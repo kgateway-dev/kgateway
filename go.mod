@@ -3,8 +3,6 @@ module github.com/solo-io/gloo
 go 1.14
 
 require (
-	github.com/Azure/go-autorest/autorest v0.10.2 // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.9.5 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/semver/v3 v3.1.0
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
@@ -76,7 +74,7 @@ require (
 	github.com/solo-io/protoc-gen-ext v0.0.13
 	github.com/solo-io/reporting-client v0.2.0
 	github.com/solo-io/skv2 v0.14.1
-	github.com/solo-io/solo-apis v0.0.0-20201208170656-81a712d752f0
+	github.com/solo-io/solo-apis v0.0.0-20201208172621-1ef725df2bff
 	github.com/solo-io/solo-kit v0.16.1
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
