@@ -7,7 +7,6 @@ import (
 	"os/exec"
 
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -109,7 +108,6 @@ func BuildPerFilterBootstrapYaml(filterName string, msg proto.Message) string {
 
 	buf := &bytes.Buffer{}
 	marshaler := &jsonpb.Marshaler{
-		AnyResolver: &protoutils.MultiAnyResolver{},
 		OrigName:    true,
 	}
 	marshaler.Marshal(buf, bootstrap)
