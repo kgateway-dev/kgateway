@@ -65,7 +65,7 @@ static_resources:
         - endpoint:
             address:
               socket_address:
-                address: 127.0.0.1
+                address: {{.GlooAddr}}
                 port_value: 9411
 
   - name: admin_port_cluster
@@ -79,8 +79,8 @@ static_resources:
         - endpoint:
             address:
               socket_address:
-                address: 127.0.0.1
-                port_value: 21001
+                address: {{.GlooAddr}}
+                port_value: {{.AdminPort}}
 
   - name: access_log_cluster
     connect_timeout: 5.000s
@@ -118,4 +118,4 @@ admin:
   address:
     socket_address:
       address: 0.0.0.0
-      port_value: 21001
+      port_value: {{.AdminPort}}
