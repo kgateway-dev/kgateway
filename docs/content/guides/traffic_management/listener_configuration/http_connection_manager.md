@@ -72,6 +72,11 @@ spec:
 status: # collapsed for brevity
 {{< /highlight >}}
 
+{{% notice note %}}
+If you provide an invalid clusterName, the error will not show up in Gloo.
+However, if you are using Gloo Edge Enterprise you can use our [observability]({{% versioned_link_path fromRoot="/guides/observability" %}}) features to track the `glooe.solo.io/xds/outofsync` statistic
+{{% /notice %}}
+
 ### Advanced listener configuration
 
 Gloo Edge exposes Envoy's powerful configuration capabilities with the HTTP Connection Manager. The details of these fields can be found [here](https://www.envoyproxy.io/docs/envoy/v1.9.0/configuration/http_conn_man/http_conn_man) and [here](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions)
