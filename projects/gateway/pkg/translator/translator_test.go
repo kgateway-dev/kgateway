@@ -18,7 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
 	"github.com/solo-io/gloo/test/samples"
-	"github.com/solo-io/k8s-utils/testutils"
+	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )

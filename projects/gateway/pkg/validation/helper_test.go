@@ -4,8 +4,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/gloo/test/samples"
+	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("virtualServicesForRouteTable", func() {

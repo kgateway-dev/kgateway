@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,6 +14,7 @@ import (
 	gatewaymocks "github.com/solo-io/gloo/projects/gateway/pkg/translator/mocks"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -77,19 +76,19 @@ var _ = Describe("TranslatorSyncer", func() {
 
 	It("should set status correctly when resources are in both proxies", func() {
 		acceptedProxy1 := &gloov1.Proxy{
-			Metadata: core.Metadata{Name: "test1", Namespace: "gloo-system"},
-			Status:   core.Status{State: core.Status_Accepted},
+			Metadata: &core.Metadata{Name: "test1", Namespace: "gloo-system"},
+			Status:   &core.Status{State: core.Status_Accepted},
 		}
 		acceptedProxy2 := &gloov1.Proxy{
-			Metadata: core.Metadata{Name: "test2", Namespace: "gloo-system"},
-			Status:   core.Status{State: core.Status_Accepted},
+			Metadata: &core.Metadata{Name: "test2", Namespace: "gloo-system"},
+			Status:   &core.Status{State: core.Status_Accepted},
 		}
 		errs1 := reporter.ResourceReports{}
 		errs2 := reporter.ResourceReports{}
 		expectedErr := reporter.ResourceReports{}
 
 		rt := &gatewayv1.RouteTable{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "rt",
 				Namespace: defaults.GlooSystem,
 			},
@@ -111,7 +110,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
-		Expect(reportedKey).To(BeEquivalentTo(rt.GetMetadata().Ref()))
+		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(rt.GetMetadata().Ref())))
 
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(expectedErr[rt]))
 		m := map[string]*core.Status{

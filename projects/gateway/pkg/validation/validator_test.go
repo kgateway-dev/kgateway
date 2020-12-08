@@ -5,24 +5,20 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	k8syamlutil "sigs.k8s.io/yaml"
-
-	"github.com/solo-io/k8s-utils/testutils"
-
-	"github.com/rotisserie/eris"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/gloo/test/samples"
+	"github.com/solo-io/go-utils/testutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"google.golang.org/grpc"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8syamlutil "sigs.k8s.io/yaml"
 )
 
 var _ = Describe("Validator", func() {
