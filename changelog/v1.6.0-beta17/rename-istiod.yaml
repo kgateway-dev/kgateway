@@ -2,4 +2,4 @@ changelog:
 - type: FIX
   issueLink: https://github.com/solo-io/gloo/issues/3908
   description: >
-    Update service name by renaming `istio-pilot` to istiod.
+    Changed Istio's default discoveryAddress used by the glooctl istio commands and helm installations when istioSDS is enabled

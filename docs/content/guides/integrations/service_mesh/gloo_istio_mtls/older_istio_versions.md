@@ -549,7 +549,7 @@ spec:
         - --parentShutdownDuration
         - 1m0s
         - --discoveryAddress
-        - istiod.istio-system.svc:15012
+        - istio-pilot.istio-system.svc:15012
         - --proxyLogLevel=warning
         - --proxyComponentLogLevel=misc:error
         - --connectTimeout
@@ -572,7 +572,7 @@ spec:
           - name: PILOT_CERT_PROVIDER
             value: istiod
           - name: CA_ADDR
-            value: istiod.istio-system.svc:15012
+            value: istio-pilot.istio-system.svc:15012
           - name: ISTIO_META_MESH_ID
             value: cluster.local
           - name: POD_NAME
