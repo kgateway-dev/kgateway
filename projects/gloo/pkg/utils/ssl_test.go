@@ -5,14 +5,13 @@ import (
 	envoygrpccredential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/golang/protobuf/ptypes"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/test/matchers"
-	. "github.com/solo-io/k8s-utils/testutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	. "github.com/solo-io/go-utils/testutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	test_matchers "github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("Ssl", func() {
@@ -424,7 +423,7 @@ var _ = Describe("Ssl", func() {
 			var credConfig envoygrpccredential.FileBasedMetadataConfig
 			ptypes.UnmarshalAny(credPlugin.GetTypedConfig(), &credConfig)
 
-			Expect(&credConfig).To(matchers.MatchProto(&envoygrpccredential.FileBasedMetadataConfig{
+			Expect(&credConfig).To(test_matchers.MatchProto(&envoygrpccredential.FileBasedMetadataConfig{
 				SecretData: &envoycore.DataSource{
 					Specifier: &envoycore.DataSource_Filename{
 						Filename: "TokenFileName",

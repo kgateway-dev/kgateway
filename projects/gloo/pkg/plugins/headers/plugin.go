@@ -3,7 +3,7 @@ package headers
 import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -117,7 +117,7 @@ func convertHeaderConfig(in *headers.HeaderManipulation, secrets *v1.SecretList)
 	// request headers can either be made from a normal key/value pair, or.
 	// they can be constructed from a supplied secret. To accomplish this, we use
 	// a utility function that was originally created to accomplish this for health check headers.
-	requestAdd, err := gogoutils.ToEnvoyHeaderValueOptionList(in.GetRequestHeadersToAdd(), secrets)
+	requestAdd, err := api_conversion.ToEnvoyHeaderValueOptionList(in.GetRequestHeadersToAdd(), secrets)
 	if err != nil {
 		return nil, err
 	}

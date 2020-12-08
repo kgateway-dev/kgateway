@@ -9,7 +9,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
@@ -110,7 +110,7 @@ func processEnvoyTracingProvider(
 			return nil, err
 		}
 
-		envoyZipkinConfig, err := gogoutils.ToEnvoyZipkinConfiguration(typed.ZipkinConfig, zipkinCollectorClusterName)
+		envoyZipkinConfig, err := api_conversion.ToEnvoyZipkinConfiguration(typed.ZipkinConfig, zipkinCollectorClusterName)
 		if err != nil {
 			return nil, err
 		}
@@ -133,7 +133,7 @@ func processEnvoyTracingProvider(
 			return nil, err
 		}
 
-		envoyDatadogConfig, err := gogoutils.ToEnvoyDatadogConfiguration(typed.DatadogConfig, datadogCollectorClusterName)
+		envoyDatadogConfig, err := api_conversion.ToEnvoyDatadogConfiguration(typed.DatadogConfig, datadogCollectorClusterName)
 		if err != nil {
 			return nil, err
 		}
@@ -206,7 +206,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if descriptor != "" {
 		out.Decorator = &envoy_config_route_v3.Decorator{
 			Operation: descriptor,
-			Propagate: gogoutils.BoolGogoToProto(in.Options.Tracing.GetPropagate()),
+			Propagate: api_conversion.BoolGogoToProto(in.Options.Tracing.GetPropagate()),
 		}
 	}
 	return nil

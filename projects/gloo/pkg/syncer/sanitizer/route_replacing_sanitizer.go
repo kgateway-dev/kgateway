@@ -14,7 +14,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -127,7 +127,7 @@ func makeFallbackListenerAndCluster(
 
 	fallbackCluster := &envoy_config_cluster_v3.Cluster{
 		Name:           fallbackClusterName,
-		ConnectTimeout: gogoutils.DurationStdToProto(&translator.ClusterConnectionTimeout),
+		ConnectTimeout: api_conversion.DurationStdToProto(&translator.ClusterConnectionTimeout),
 		LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
 			ClusterName: fallbackClusterName,
 			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{{

@@ -11,9 +11,10 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/ghodss/yaml"
-	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -871,14 +872,14 @@ var _ = Describe("Helm Test", func() {
 						Expect(gateway1.Ssl).To(BeFalse())
 						Expect(gateway1.BindPort).To(Equal(uint32(8080)))
 						Expect(gateway1.ProxyNames).To(Equal(proxyNames))
-						Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{Value: false}))
+						Expect(gateway1.UseProxyProto).To(Equal(&wrappers.BoolValue{Value: false}))
 						Expect(gateway1.BindAddress).To(Equal(defaults.GatewayBindAddress))
 						gatewayUns = testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName+"-ssl")
 						ConvertKubeResource(gatewayUns, &gateway1)
 						Expect(gateway1.Ssl).To(BeTrue())
 						Expect(gateway1.BindPort).To(Equal(uint32(8443)))
 						Expect(gateway1.ProxyNames).To(Equal(proxyNames))
-						Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{Value: false}))
+						Expect(gateway1.UseProxyProto).To(Equal(&wrappers.BoolValue{Value: false}))
 						Expect(gateway1.BindAddress).To(Equal(defaults.GatewayBindAddress))
 					})
 
@@ -904,7 +905,7 @@ var _ = Describe("Helm Test", func() {
 							gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, name)
 							var gateway1 gwv1.Gateway
 							ConvertKubeResource(gatewayUns, &gateway1)
-							Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{
+							Expect(gateway1.UseProxyProto).To(Equal(&wrappers.BoolValue{
 								Value: true,
 							}))
 							httpGateway := gateway1.GetHttpGateway()
@@ -912,7 +913,7 @@ var _ = Describe("Helm Test", func() {
 							Expect(httpGateway.VirtualServices).To(Equal(vsList))
 							gatewayUns = testManifest.ExpectCustomResource("Gateway", namespace, name+"-ssl")
 							ConvertKubeResource(gatewayUns, &gateway1)
-							Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{
+							Expect(gateway1.UseProxyProto).To(Equal(&wrappers.BoolValue{
 								Value: true,
 							}))
 							Expect(httpGateway.VirtualServices).To(Equal(vsList))
@@ -952,7 +953,7 @@ var _ = Describe("Helm Test", func() {
 								},
 							},
 						}))
-						Expect(host.GetDestination().GetForwardSniClusterName()).To(Equal(&types.Empty{}))
+						Expect(host.GetDestination().GetForwardSniClusterName()).To(Equal(&empty.Empty{}))
 					})
 
 					It("by default will not render failover gateway", func() {

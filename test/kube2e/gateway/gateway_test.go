@@ -8,60 +8,48 @@ import (
 	"strings"
 	"time"
 
-	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
-
-	"github.com/solo-io/gloo/test/kube2e"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
-	glootransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
-	kubernetes2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
-	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-
-	"github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
-	gloorest "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
-	v1 "k8s.io/api/apps/v1"
-	"sigs.k8s.io/yaml"
-
-	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-
-	"github.com/solo-io/gloo/pkg/cliutil/install"
-
-	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/intstr"
-
-	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
-	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
-
-	"github.com/rotisserie/eris"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
-	"github.com/solo-io/k8s-utils/testutils/helper"
-
-	"k8s.io/client-go/kubernetes"
-
+	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/cliutil/install"
+	"github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
-
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/k8s-utils/kubeutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/test/setup"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	gloov1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
+	gloorest "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
+	glootransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	kubernetes2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/k8s-utils/testutils/helper"
+	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/test/setup"
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/yaml"
 )
 
 var _ = Describe("Kube2e: gateway", func() {
@@ -216,7 +204,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				dest := &gloov1.Destination{
 					DestinationType: &gloov1.Destination_Kube{
 						Kube: &gloov1.KubernetesServiceDestination{
-							Ref: core.ResourceRef{
+							Ref: &core.ResourceRef{
 								Namespace: testHelper.InstallNamespace,
 								Name:      helper.TestrunnerName,
 							},
@@ -411,7 +399,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			It("appends linkerd headers when linkerd is enabled", func() {
 				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort)
-				var ref core.ResourceRef
+				var ref *core.ResourceRef
 				// give discovery time to write the upstream
 				Eventually(func() error {
 					upstreams, err := upstreamClient.List(testHelper.InstallNamespace, clients.ListOpts{})
@@ -428,7 +416,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				dest := &gloov1.Destination{
 					DestinationType: &gloov1.Destination_Upstream{
-						Upstream: &ref,
+						Upstream: ref,
 					},
 				}
 
@@ -471,7 +459,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					getVirtualServiceWithRoute(&gatewayv1.Route{
 						Matchers: []*matchers.Matcher{{}},
 						Options: &gloov1.RouteOptions{
-							PrefixRewrite: &types.StringValue{Value: "matcher and action are missing"},
+							PrefixRewrite: &wrappers.StringValue{Value: "matcher and action are missing"},
 						},
 					}, nil)))
 
@@ -932,7 +920,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						Single: &gloov1.Destination{
 							DestinationType: &gloov1.Destination_Kube{
 								Kube: &gloov1.KubernetesServiceDestination{
-									Ref: core.ResourceRef{
+									Ref: &core.ResourceRef{
 										Name:      helper.HttpEchoName,
 										Namespace: testHelper.InstallNamespace,
 									},
@@ -1006,12 +994,12 @@ var _ = Describe("Kube2e: gateway", func() {
 				Name: "one",
 				Destination: &gloov1.TcpHost_TcpAction{
 					Destination: &gloov1.TcpHost_TcpAction_ForwardSniClusterName{
-						ForwardSniClusterName: &types.Empty{},
+						ForwardSniClusterName: &empty.Empty{},
 					},
 				},
 				SslConfig: &gloov1.SslConfig{
 					// Use the translated cluster name as the SNI domain so envoy uses that in the cluster field
-					SniDomains: []string{translator.UpstreamToClusterName(*usRef)},
+					SniDomains: []string{translator.UpstreamToClusterName(usRef)},
 					SslSecrets: &gloov1.SslConfig_SecretRef{
 						SecretRef: &core.ResourceRef{
 							Name:      createdSecret.GetName(),
@@ -1034,7 +1022,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			}, "15s", "0.5s").Should(Not(BeNil()))
 
 			// wait for the expected proxy configuration to be accepted
-			Eventually(func() (*types.Empty, error) {
+			Eventually(func() (*empty.Empty, error) {
 				proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 				if err != nil {
 					return nil, err
@@ -1056,13 +1044,13 @@ var _ = Describe("Kube2e: gateway", func() {
 					}
 				}
 				return nil, eris.New("proxy has no active listeners")
-			}, "15s", "0.5s").Should(Equal(&types.Empty{}))
+			}, "15s", "0.5s").Should(Equal(&empty.Empty{}))
 
-			responseString := fmt.Sprintf(`"hostname":"%s"`, translator.UpstreamToClusterName(*usRef))
+			responseString := fmt.Sprintf(`"hostname":"%s"`, translator.UpstreamToClusterName(usRef))
 
 			httpEcho.CurlEventuallyShouldOutput(helper.CurlOpts{
 				Protocol:          "https",
-				Sni:               translator.UpstreamToClusterName(*usRef),
+				Sni:               translator.UpstreamToClusterName(usRef),
 				Service:           clusterIp,
 				Port:              int(defaultGateway.BindPort),
 				ConnectionTimeout: 10,
@@ -1187,7 +1175,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			// wait for upstream to be created
 			Eventually(getUpstream, "15s", "0.5s").ShouldNot(BeNil())
 
-			var upstreamRef core.ResourceRef
+			var upstreamRef *core.ResourceRef
 			// upstream write might error on a conflict so try it a few times
 			// I use eventually so it will wait a bit between retries.
 			Eventually(func() error {
@@ -1204,7 +1192,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			// add subsets to upstream
 			ug = &gloov1.UpstreamGroup{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "test",
 					Namespace: testHelper.InstallNamespace,
 				},
@@ -1213,7 +1201,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						Weight: 1,
 						Destination: &gloov1.Destination{
 							DestinationType: &gloov1.Destination_Upstream{
-								Upstream: &upstreamRef,
+								Upstream: upstreamRef,
 							},
 							Subset: &gloov1.Subset{
 								Values: map[string]string{"text": "red"},
@@ -1224,7 +1212,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						Weight: 1,
 						Destination: &gloov1.Destination{
 							DestinationType: &gloov1.Destination_Upstream{
-								Upstream: &upstreamRef,
+								Upstream: upstreamRef,
 							},
 							Subset: &gloov1.Subset{
 								Values: map[string]string{"text": "blue"},
@@ -1235,7 +1223,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						Weight: 1,
 						Destination: &gloov1.Destination{
 							DestinationType: &gloov1.Destination_Upstream{
-								Upstream: &upstreamRef,
+								Upstream: upstreamRef,
 							},
 							Subset: &gloov1.Subset{
 								Values: map[string]string{"text": ""},
@@ -1250,7 +1238,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			ugref := ug.Metadata.Ref()
 
 			vs, err = virtualServiceClient.Write(&gatewayv1.VirtualService{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "vs",
 					Namespace: testHelper.InstallNamespace,
 				},
@@ -1268,7 +1256,7 @@ var _ = Describe("Kube2e: gateway", func() {
 									Destination: &gloov1.RouteAction_Single{
 										Single: &gloov1.Destination{
 											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: &upstreamRef,
+												Upstream: upstreamRef,
 											},
 											Subset: &gloov1.Subset{
 												Values: map[string]string{"text": "red"},
@@ -1281,7 +1269,7 @@ var _ = Describe("Kube2e: gateway", func() {
 							Action: &gatewayv1.Route_RouteAction{
 								RouteAction: &gloov1.RouteAction{
 									Destination: &gloov1.RouteAction_UpstreamGroup{
-										UpstreamGroup: &ugref,
+										UpstreamGroup: ugref,
 									},
 								},
 							},
@@ -1597,7 +1585,7 @@ func getVirtualService(dest *gloov1.Destination, sslConfig *gloov1.SslConfig) *g
 
 func getVirtualServiceWithRoute(route *gatewayv1.Route, sslConfig *gloov1.SslConfig) *gatewayv1.VirtualService {
 	return &gatewayv1.VirtualService{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "vs",
 			Namespace: testHelper.InstallNamespace,
 		},
@@ -1612,7 +1600,7 @@ func getVirtualServiceWithRoute(route *gatewayv1.Route, sslConfig *gloov1.SslCon
 
 func getRouteTable(name string, route *gatewayv1.Route) *gatewayv1.RouteTable {
 	return &gatewayv1.RouteTable{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      name,
 			Namespace: testHelper.InstallNamespace,
 		},
@@ -1658,7 +1646,7 @@ func getRouteWithDelegate(delegate string, path string) *gatewayv1.Route {
 }
 
 func addPrefixRewrite(route *gatewayv1.Route, rewrite string) *gatewayv1.Route {
-	route.Options = &gloov1.RouteOptions{PrefixRewrite: &types.StringValue{Value: rewrite}}
+	route.Options = &gloov1.RouteOptions{PrefixRewrite: &wrappers.StringValue{Value: rewrite}}
 	return route
 }
 

@@ -14,7 +14,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -156,7 +156,7 @@ var _ = Describe("Health Checks", func() {
 				envoyHealthCheckTest.Check.UnhealthyThreshold = translator.DefaultThreshold
 
 				// persist the health check configuration
-				us.HealthChecks, err = gogoutils.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{envoyHealthCheckTest.Check})
+				us.HealthChecks, err = api_conversion.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{envoyHealthCheckTest.Check})
 				Expect(err).NotTo(HaveOccurred())
 
 				_, err = testClients.UpstreamClient.Write(us, clients.WriteOpts{OverwriteExisting: true})
@@ -179,7 +179,7 @@ var _ = Describe("Health Checks", func() {
 		It("outlier detection", func() {
 			us, err := testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
-			us.OutlierDetection = gogoutils.ToGlooOutlierDetection(&envoy_config_cluster_v3.OutlierDetection{
+			us.OutlierDetection = api_conversion.ToGlooOutlierDetection(&envoy_config_cluster_v3.OutlierDetection{
 				Interval: &duration.Duration{Seconds: 1},
 			})
 
@@ -220,7 +220,7 @@ var _ = Describe("Health Checks", func() {
 			us, err := testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			us.HealthChecks, err = gogoutils.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{
+			us.HealthChecks, err = api_conversion.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{
 				{
 					Timeout:            translator.DefaultHealthCheckTimeout,
 					Interval:           translator.DefaultHealthCheckInterval,

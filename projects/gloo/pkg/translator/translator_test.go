@@ -21,7 +21,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	gloo_envoy_core "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
@@ -577,7 +577,7 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			var err error
-			upstream.HealthChecks, err = gogoutils.ToGlooHealthCheckList(expectedResult)
+			upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList(expectedResult)
 			Expect(err).NotTo(HaveOccurred())
 			translate()
 			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
@@ -599,7 +599,7 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			var err error
-			upstream.HealthChecks, err = gogoutils.ToGlooHealthCheckList(expectedResult)
+			upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList(expectedResult)
 			Expect(err).NotTo(HaveOccurred())
 			translate()
 			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
@@ -624,14 +624,14 @@ var _ = Describe("Translator", func() {
 				EnforcingConsecutiveLocalOriginFailure: nil,
 				EnforcingLocalOriginSuccessRate:        nil,
 			}
-			upstream.OutlierDetection = gogoutils.ToGlooOutlierDetection(expectedResult)
+			upstream.OutlierDetection = api_conversion.ToGlooOutlierDetection(expectedResult)
 			translate()
 			Expect(cluster.OutlierDetection).To(BeEquivalentTo(expectedResult))
 		})
 
 		It("can properly validate outlier detection config", func() {
 			expectedResult := &envoy_config_cluster_v3.OutlierDetection{}
-			upstream.OutlierDetection = gogoutils.ToGlooOutlierDetection(expectedResult)
+			upstream.OutlierDetection = api_conversion.ToGlooOutlierDetection(expectedResult)
 			report := translateWithError()
 			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 		})
@@ -678,7 +678,7 @@ var _ = Describe("Translator", func() {
 			}
 
 			var err error
-			upstream.HealthChecks, err = gogoutils.ToGlooHealthCheckList(expectedResult)
+			upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList(expectedResult)
 			Expect(err).NotTo(HaveOccurred())
 
 			expectedResult[0].GetHttpHealthCheck().RequestHeadersToAdd = []*envoy_config_core_v3.HeaderValueOption{

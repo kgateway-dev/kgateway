@@ -229,8 +229,6 @@ func cloneItems(items map[string]cache.Resource) map[string]cache.Resource {
 	clonedItems := make(map[string]cache.Resource, len(items))
 	for k, v := range items {
 		resProto := v.ResourceProto()
-		// NOTE(marco): we have to use `github.com/golang/protobuf/proto.Clone()` to clone here,
-		// `github.com/gogo/protobuf/proto.Clone()` will panic!
 		resClone := proto.Clone(resProto)
 		clonedItems[k] = resource.NewEnvoyResource(resClone)
 	}

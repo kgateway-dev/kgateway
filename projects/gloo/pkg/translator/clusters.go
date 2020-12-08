@@ -10,7 +10,7 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -96,7 +96,7 @@ func (t *translatorInstance) initializeCluster(
 		HealthChecks:     hcConfig,
 		OutlierDetection: detectCfg,
 		// this field can be overridden by plugins
-		ConnectTimeout:       gogoutils.DurationStdToProto(&ClusterConnectionTimeout),
+		ConnectTimeout:       api_conversion.DurationStdToProto(&ClusterConnectionTimeout),
 		Http2ProtocolOptions: getHttp2ptions(upstream),
 	}
 
@@ -147,7 +147,7 @@ func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*
 		if hc.GetHealthChecker() == nil {
 			return nil, NilFieldError(fmt.Sprintf(fmt.Sprintf("HealthCheck[%d].HealthChecker", i)))
 		}
-		converted, err := gogoutils.ToEnvoyHealthCheck(hc, secrets)
+		converted, err := api_conversion.ToEnvoyHealthCheck(hc, secrets)
 		if err != nil {
 			return nil, err
 		}
@@ -166,7 +166,7 @@ func createOutlierDetectionConfig(upstream *v1.Upstream) (*envoy_config_cluster_
 	if upstream.GetOutlierDetection().GetInterval() == nil {
 		return nil, NilFieldError(fmt.Sprintf(fmt.Sprintf("OutlierDetection.HealthChecker")))
 	}
-	return gogoutils.ToEnvoyOutlierDetection(upstream.GetOutlierDetection()), nil
+	return api_conversion.ToEnvoyOutlierDetection(upstream.GetOutlierDetection()), nil
 }
 
 func createLbConfig(upstream *v1.Upstream) *envoy_config_cluster_v3.Cluster_LbSubsetConfig {

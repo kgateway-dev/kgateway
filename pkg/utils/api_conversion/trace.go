@@ -1,4 +1,4 @@
-package gogoutils
+package api_conversion
 
 import (
 	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"

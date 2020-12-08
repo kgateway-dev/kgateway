@@ -6,7 +6,6 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -199,7 +198,7 @@ var _ = Describe("Plugin", func() {
 			Options: &v1.RouteOptions{
 				Tracing: &tracing.RouteTracingSettings{
 					RouteDescriptor: "hello",
-					Propagate:       &types.BoolValue{Value: false},
+					Propagate:       &wrappers.BoolValue{Value: false},
 				},
 			},
 		}

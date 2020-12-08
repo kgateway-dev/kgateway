@@ -8,7 +8,6 @@ import (
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	gloorl "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -84,7 +83,7 @@ func convertAction(ctx context.Context, action *gloorl.Action) *envoy_config_rou
 	case *gloorl.Action_HeaderValueMatch_:
 		retAction.ActionSpecifier = &envoy_config_route_v3.RateLimit_Action_HeaderValueMatch_{
 			HeaderValueMatch: &envoy_config_route_v3.RateLimit_Action_HeaderValueMatch{
-				ExpectMatch:     gogoutils.BoolGogoToProto(specificAction.HeaderValueMatch.GetExpectMatch()),
+				ExpectMatch:     specificAction.HeaderValueMatch.GetExpectMatch(),
 				DescriptorValue: specificAction.HeaderValueMatch.GetDescriptorValue(),
 				Headers:         convertHeaders(ctx, specificAction.HeaderValueMatch.GetHeaders()),
 			},

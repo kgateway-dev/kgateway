@@ -3,14 +3,12 @@ package translator
 import (
 	"fmt"
 
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
-	"github.com/gogo/protobuf/types"
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -65,18 +63,6 @@ func NewAccessLogWithConfig(name string, config proto.Message) (envoyal.AccessLo
 	}
 
 	return s, nil
-}
-
-func ParseTypedGogoConfig(c gogoTypedConfigObject, config proto.Message) error {
-	any := c.GetTypedConfig()
-	if any != nil {
-		return types.UnmarshalAny(any, config)
-	}
-	return nil
-}
-
-type gogoTypedConfigObject interface {
-	GetTypedConfig() *types.Any
 }
 
 func ParseTypedConfig(c typedConfigObject, config proto.Message) error {
