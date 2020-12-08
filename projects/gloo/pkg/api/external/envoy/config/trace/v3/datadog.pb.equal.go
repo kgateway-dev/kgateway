@@ -46,18 +46,30 @@ func (m *DatadogConfig) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetCollectorUpstreamRef()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetCollectorUpstreamRef()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetCollectorUpstreamRef(), target.GetCollectorUpstreamRef()) {
-			return false
-		}
-	}
-
 	if strings.Compare(m.GetServiceName(), target.GetServiceName()) != 0 {
 		return false
+	}
+
+	switch m.CollectorCluster.(type) {
+
+	case *DatadogConfig_CollectorUpstreamRef:
+
+		if h, ok := interface{}(m.GetCollectorUpstreamRef()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetCollectorUpstreamRef()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetCollectorUpstreamRef(), target.GetCollectorUpstreamRef()) {
+				return false
+			}
+		}
+
+	case *DatadogConfig_ClusterName:
+
+		if strings.Compare(m.GetClusterName(), target.GetClusterName()) != 0 {
+			return false
+		}
+
 	}
 
 	return true

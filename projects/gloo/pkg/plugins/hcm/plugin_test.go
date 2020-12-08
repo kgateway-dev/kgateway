@@ -3,29 +3,25 @@ package hcm_test
 import (
 	"time"
 
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	envoy_config_tracing_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
-	mock_hcm "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm/mocks"
-	. "github.com/solo-io/gloo/test/matchers"
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
-
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
-
-	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
-	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
-
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_config_tracing_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	tracingv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
+	mock_hcm "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm/mocks"
+	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
+	. "github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("Plugin", func() {
@@ -70,7 +66,9 @@ var _ = Describe("Plugin", func() {
 				Verbose:               true,
 				ProviderConfig: &tracingv1.ListenerTracingSettings_ZipkinConfig{
 					ZipkinConfig: &envoy_config_tracing_v3.ZipkinConfig{
-						CollectorUpstreamRef:     collectorUs.Metadata.Ref(),
+						CollectorCluster: &envoy_config_tracing_v3.ZipkinConfig_CollectorUpstreamRef{
+							CollectorUpstreamRef: collectorUs.Metadata.Ref(),
+						},
 						CollectorEndpointVersion: envoy_config_tracing_v3.ZipkinConfig_HTTP_JSON,
 						CollectorEndpoint:        "/api/v2/spans",
 						SharedSpanContext:        nil,

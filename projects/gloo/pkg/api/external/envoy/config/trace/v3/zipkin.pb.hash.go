@@ -38,20 +38,6 @@ func (m *ZipkinConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetCollectorUpstreamRef()).(safe_hasher.SafeHasher); ok {
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if val, err := hashstructure.Hash(m.GetCollectorUpstreamRef(), nil); err != nil {
-			return 0, err
-		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-				return 0, err
-			}
-		}
-	}
-
 	if _, err = hasher.Write([]byte(m.GetCollectorEndpoint())); err != nil {
 		return 0, err
 	}
@@ -78,6 +64,32 @@ func (m *ZipkinConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	err = binary.Write(hasher, binary.LittleEndian, m.GetCollectorEndpointVersion())
 	if err != nil {
 		return 0, err
+	}
+
+	switch m.CollectorCluster.(type) {
+
+	case *ZipkinConfig_CollectorUpstreamRef:
+
+		if h, ok := interface{}(m.GetCollectorUpstreamRef()).(safe_hasher.SafeHasher); ok {
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if val, err := hashstructure.Hash(m.GetCollectorUpstreamRef(), nil); err != nil {
+				return 0, err
+			} else {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *ZipkinConfig_ClusterName:
+
+		if _, err = hasher.Write([]byte(m.GetClusterName())); err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil

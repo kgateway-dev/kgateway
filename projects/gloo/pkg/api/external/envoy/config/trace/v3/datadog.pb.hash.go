@@ -38,22 +38,34 @@ func (m *DatadogConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetCollectorUpstreamRef()).(safe_hasher.SafeHasher); ok {
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if val, err := hashstructure.Hash(m.GetCollectorUpstreamRef(), nil); err != nil {
-			return 0, err
-		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-				return 0, err
-			}
-		}
-	}
-
 	if _, err = hasher.Write([]byte(m.GetServiceName())); err != nil {
 		return 0, err
+	}
+
+	switch m.CollectorCluster.(type) {
+
+	case *DatadogConfig_CollectorUpstreamRef:
+
+		if h, ok := interface{}(m.GetCollectorUpstreamRef()).(safe_hasher.SafeHasher); ok {
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if val, err := hashstructure.Hash(m.GetCollectorUpstreamRef(), nil); err != nil {
+				return 0, err
+			} else {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *DatadogConfig_ClusterName:
+
+		if _, err = hasher.Write([]byte(m.GetClusterName())); err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil

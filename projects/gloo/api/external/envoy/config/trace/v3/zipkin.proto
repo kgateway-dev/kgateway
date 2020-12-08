@@ -45,10 +45,16 @@ message ZipkinConfig {
     HTTP_PROTO = 2;
   }
 
-  // The upstream that hosts the Zipkin collectors. Note that the
-  // Zipkin cluster must be defined in the :ref:`Bootstrap static cluster
-  // resources <envoy_api_field_config.bootstrap.v3.Bootstrap.StaticResources.clusters>`.
-  core.solo.io.ResourceRef collector_upstream_ref = 1;
+  // The cluster that hosts the Zipkin collectors.
+  oneof collector_cluster {
+    // The upstream that hosts the Zipkin collectors.
+    core.solo.io.ResourceRef collector_upstream_ref = 1;
+
+    // The name of the cluster that hosts the Zipkin collectors. Note that the
+    // Zipkin cluster must be defined in the :ref:`Bootstrap static cluster
+    // resources <envoy_api_field_config.bootstrap.v3.Bootstrap.StaticResources.clusters>`.
+    string cluster_name = 6;
+  }
 
   // The API endpoint of the Zipkin service where the spans will be sent. When
   // using a standard Zipkin installation, the API endpoint is typically

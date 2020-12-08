@@ -7,6 +7,7 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
@@ -96,7 +97,7 @@ func (t *translatorInstance) initializeCluster(
 		HealthChecks:     hcConfig,
 		OutlierDetection: detectCfg,
 		// this field can be overridden by plugins
-		ConnectTimeout:       api_conversion.DurationStdToProto(&ClusterConnectionTimeout),
+		ConnectTimeout:       ptypes.DurationProto(ClusterConnectionTimeout),
 		Http2ProtocolOptions: getHttp2ptions(upstream),
 	}
 
