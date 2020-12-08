@@ -72,7 +72,9 @@ var _ = Describe("Plugin", func() {
 				Verbose:               true,
 				ProviderConfig: &tracingv1.ListenerTracingSettings_ZipkinConfig{
 					ZipkinConfig: &envoy_config_tracing_v3.ZipkinConfig{
-						CollectorUpstreamRef:     utils.ResourceRefPtr(collectorUs.Metadata.Ref()),
+						CollectorCluster: &envoy_config_tracing_v3.ZipkinConfig_CollectorUpstreamRef{
+							CollectorUpstreamRef: utils.ResourceRefPtr(collectorUs.Metadata.Ref()),
+						},
 						CollectorEndpointVersion: envoy_config_tracing_v3.ZipkinConfig_HTTP_JSON,
 						CollectorEndpoint:        "/api/v2/spans",
 						SharedSpanContext:        nil,

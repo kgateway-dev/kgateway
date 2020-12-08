@@ -112,78 +112,236 @@ var _ = Describe("Plugin", func() {
 			Expect(cfg.Tracing.Provider).To(BeNil())
 		})
 
-		It("when provider config references invalid upstream", func() {
-			pluginParams := plugins.Params{
-				Snapshot: &v1.ApiSnapshot{
-					Upstreams: v1.UpstreamList{
-						// No valid upstreams
+		Describe("when zipkin provider config", func() {
+			It("references invalid upstream", func() {
+				pluginParams := plugins.Params{
+					Snapshot: &v1.ApiSnapshot{
+						Upstreams: v1.UpstreamList{
+							// No valid upstreams
+						},
 					},
-				},
-			}
-			p := NewPlugin()
-			cfg := &envoyhttp.HttpConnectionManager{}
-			hcmSettings := &hcm.HttpConnectionManagerSettings{
-				Tracing: &tracing.ListenerTracingSettings{
-					ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
-						ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
-							CollectorUpstreamRef: &core.ResourceRef{
-								Name:      "invalid-name",
-								Namespace: "invalid-namespace",
+				}
+				p := NewPlugin()
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings := &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
+							ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
+								CollectorCluster: &envoytrace_gloo.ZipkinConfig_CollectorUpstreamRef{
+									CollectorUpstreamRef: &core.ResourceRef{
+										Name:      "invalid-name",
+										Namespace: "invalid-namespace",
+									},
+								},
 							},
 						},
 					},
-				},
-			}
-			err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
-			Expect(err).NotTo(BeNil())
+				}
+				err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
+				Expect(err).NotTo(BeNil())
+			})
+
+			It("references valid upstream", func() {
+				us := v1.NewUpstream("default", "valid")
+				pluginParams := plugins.Params{
+					Snapshot: &v1.ApiSnapshot{
+						Upstreams: v1.UpstreamList{us},
+					},
+				}
+				p := NewPlugin()
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings := &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
+							ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
+								CollectorCluster: &envoytrace_gloo.ZipkinConfig_CollectorUpstreamRef{
+									CollectorUpstreamRef: &core.ResourceRef{
+										Name:      "valid",
+										Namespace: "default",
+									},
+								},
+								CollectorEndpoint:        "/api/v2/spans",
+								CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
+								SharedSpanContext:        nil,
+								TraceId_128Bit:           false,
+							},
+						},
+					},
+				}
+				err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
+				Expect(err).To(BeNil())
+
+				expectedEnvoyConfig := &envoytrace.ZipkinConfig{
+					CollectorCluster:         "valid_default",
+					CollectorEndpoint:        "/api/v2/spans",
+					CollectorEndpointVersion: envoytrace.ZipkinConfig_HTTP_JSON,
+					SharedSpanContext:        nil,
+					TraceId_128Bit:           false,
+				}
+				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
+
+				expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
+					Name: "envoy.tracers.zipkin",
+					ConfigType: &envoytrace.Tracing_Http_TypedConfig{
+						TypedConfig: expectedEnvoyConfigMarshalled,
+					},
+				}
+
+				Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
+				Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+			})
+
+			It("references cluster name", func() {
+				pluginParams := plugins.Params{}
+				p := NewPlugin()
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings := &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
+							ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
+								CollectorCluster: &envoytrace_gloo.ZipkinConfig_ClusterName{
+									ClusterName: "zipkin-cluster-name",
+								},
+								CollectorEndpoint:        "/api/v2/spans",
+								CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
+								SharedSpanContext:        nil,
+								TraceId_128Bit:           false,
+							},
+						},
+					},
+				}
+				err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
+				Expect(err).To(BeNil())
+
+				expectedEnvoyConfig := &envoytrace.ZipkinConfig{
+					CollectorCluster:         "zipkin-cluster-name",
+					CollectorEndpoint:        "/api/v2/spans",
+					CollectorEndpointVersion: envoytrace.ZipkinConfig_HTTP_JSON,
+					SharedSpanContext:        nil,
+					TraceId_128Bit:           false,
+				}
+				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
+
+				expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
+					Name: "envoy.tracers.zipkin",
+					ConfigType: &envoytrace.Tracing_Http_TypedConfig{
+						TypedConfig: expectedEnvoyConfigMarshalled,
+					},
+				}
+
+				Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
+				Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+			})
 		})
 
-		It("when provider config references valid upstream", func() {
-			us := v1.NewUpstream("default", "valid")
-			pluginParams := plugins.Params{
-				Snapshot: &v1.ApiSnapshot{
-					Upstreams: v1.UpstreamList{us},
-				},
-			}
-			p := NewPlugin()
-			cfg := &envoyhttp.HttpConnectionManager{}
-			hcmSettings := &hcm.HttpConnectionManagerSettings{
-				Tracing: &tracing.ListenerTracingSettings{
-					ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
-						ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
-							CollectorUpstreamRef: &core.ResourceRef{
-								Name:      "valid",
-								Namespace: "default",
-							},
-							CollectorEndpoint:        "/api/v2/spans",
-							CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
-							SharedSpanContext:        nil,
-							TraceId_128Bit:           false,
+		Describe("when datadog provider config", func() {
+			It("references invalid upstream", func() {
+				pluginParams := plugins.Params{
+					Snapshot: &v1.ApiSnapshot{
+						Upstreams: v1.UpstreamList{
+							// No valid upstreams
 						},
 					},
-				},
-			}
-			err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
-			Expect(err).To(BeNil())
+				}
+				p := NewPlugin()
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings := &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_DatadogConfig{
+							DatadogConfig: &envoytrace_gloo.DatadogConfig{
+								CollectorCluster: &envoytrace_gloo.DatadogConfig_CollectorUpstreamRef{
+									CollectorUpstreamRef: &core.ResourceRef{
+										Name:      "invalid-name",
+										Namespace: "invalid-namespace",
+									},
+								},
+							},
+						},
+					},
+				}
+				err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
+				Expect(err).NotTo(BeNil())
+			})
 
-			expectedZipkinConfig := &envoytrace.ZipkinConfig{
-				CollectorCluster:         "valid_default",
-				CollectorEndpoint:        "/api/v2/spans",
-				CollectorEndpointVersion: envoytrace.ZipkinConfig_HTTP_JSON,
-				SharedSpanContext:        nil,
-				TraceId_128Bit:           false,
-			}
-			expectedZipkinConfigMarshalled, _ := ptypes.MarshalAny(expectedZipkinConfig)
+			It("references valid upstream", func() {
+				us := v1.NewUpstream("default", "valid")
+				pluginParams := plugins.Params{
+					Snapshot: &v1.ApiSnapshot{
+						Upstreams: v1.UpstreamList{us},
+					},
+				}
+				p := NewPlugin()
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings := &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_DatadogConfig{
+							DatadogConfig: &envoytrace_gloo.DatadogConfig{
+								CollectorCluster: &envoytrace_gloo.DatadogConfig_CollectorUpstreamRef{
+									CollectorUpstreamRef: &core.ResourceRef{
+										Name:      "valid",
+										Namespace: "default",
+									},
+								},
+								ServiceName: "datadog-gloo",
+							},
+						},
+					},
+				}
+				err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
+				Expect(err).To(BeNil())
 
-			expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
-				Name: "envoy.tracers.zipkin",
-				ConfigType: &envoytrace.Tracing_Http_TypedConfig{
-					TypedConfig: expectedZipkinConfigMarshalled,
-				},
-			}
+				expectedEnvoyConfig := &envoytrace.DatadogConfig{
+					CollectorCluster: "valid_default",
+					ServiceName:      "datadog-gloo",
+				}
+				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
 
-			Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
-			Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+				expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
+					Name: "envoy.tracers.datadog",
+					ConfigType: &envoytrace.Tracing_Http_TypedConfig{
+						TypedConfig: expectedEnvoyConfigMarshalled,
+					},
+				}
+
+				Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
+				Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+			})
+
+			It("references cluster name", func() {
+				pluginParams := plugins.Params{}
+				p := NewPlugin()
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings := &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_DatadogConfig{
+							DatadogConfig: &envoytrace_gloo.DatadogConfig{
+								CollectorCluster: &envoytrace_gloo.DatadogConfig_ClusterName{
+									ClusterName: "datadog-cluster-name",
+								},
+								ServiceName: "datadog-gloo",
+							},
+						},
+					},
+				}
+				err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
+				Expect(err).To(BeNil())
+
+				expectedEnvoyConfig := &envoytrace.DatadogConfig{
+					CollectorCluster: "datadog-cluster-name",
+					ServiceName:      "datadog-gloo",
+				}
+				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
+
+				expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
+					Name: "envoy.tracers.datadog",
+					ConfigType: &envoytrace.Tracing_Http_TypedConfig{
+						TypedConfig: expectedEnvoyConfigMarshalled,
+					},
+				}
+
+				Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
+				Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+			})
 		})
 
 	})

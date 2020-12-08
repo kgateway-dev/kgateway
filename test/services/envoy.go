@@ -13,13 +13,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync/atomic"
 	"text/template"
 	"time"
 
-	"github.com/solo-io/gloo/projects/envoyinit/cmd/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/onsi/ginkgo"
@@ -45,34 +43,39 @@ func AdvanceBindPort(p *uint32) uint32 {
 	return atomic.AddUint32(p, 1) + uint32(config.GinkgoConfig.ParallelNode*1000)
 }
 
-func (ei *EnvoyInstance) buildBootstrap() string {
+type EnvoyBootstrapBuilder interface {
+	Build(ei *EnvoyInstance) string
+}
+
+type templateBootstrapBuilder struct {
+	template *template.Template
+}
+
+func (tbb *templateBootstrapBuilder) Build(ei *EnvoyInstance) string {
 	var b bytes.Buffer
-	if err := parsedTemplate.Execute(&b, ei); err != nil {
+	if err := tbb.template.Execute(&b, ei); err != nil {
 		panic(err)
 	}
 	return b.String()
 }
 
-func (ei *EnvoyInstance) buildBootstrapFromConfig(configFile string) (string, error) {
-	// Will error on missing file or invalid config
-	config, err := utils.GetConfig(configFile)
+type fileBootstrapBuilder struct {
+	file string
+}
+
+func (fbb *fileBootstrapBuilder) Build(ei *EnvoyInstance) string {
+	templateBytes, err := ioutil.ReadFile(fbb.file)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
 
-	addr, err := localAddr()
-	if err != nil {
-		return "", err
-	}
-	// When running envoy in docker, replace localhost
-	// loopback address with the docker routable IP.
-	if addr != "" && addr != "127.0.0.1" {
-		config = strings.ReplaceAll(config, "127.0.0.1", addr)
-	}
+	parsedTemplate := template.Must(template.New(fbb.file).Parse(string(templateBytes)))
 
-	// The AdminPort is created dynamically. Ensure that the config matches the proper AdminPort
-	config = strings.ReplaceAll(config, "21001", strconv.Itoa(int(ei.AdminPort)))
-	return config, nil
+	var b bytes.Buffer
+	if err := parsedTemplate.Execute(&b, ei); err != nil {
+		panic(err)
+	}
+	return b.String()
 }
 
 const envoyConfigTemplate = `
@@ -177,7 +180,7 @@ admin:
 
 `
 
-var parsedTemplate = template.Must(template.New("bootstrap").Parse(envoyConfigTemplate))
+var defaultBootstrapTemplate = template.Must(template.New("bootstrap").Parse(envoyConfigTemplate))
 
 type EnvoyFactory struct {
 	envoypath string
@@ -378,29 +381,41 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 
 func (ei *EnvoyInstance) RunWithId(id string) error {
 	ei.ID = id
-	ei.Role = "default~proxy"
-
-	// TODO: refactor this function to include a context.
-	return ei.runWithPort(context.TODO(), 8081, "")
+	return ei.RunWithRole("default~proxy", 8081)
 }
 
 func (ei *EnvoyInstance) Run(port int) error {
-	ei.Role = "default~proxy"
-
-	// TODO: refactor this function to include a context.
-	return ei.runWithPort(context.TODO(), uint32(port), "")
+	return ei.RunWithRole("default~proxy", port)
 }
 
-func (ei *EnvoyInstance) RunWithConfig(port int, configFile string) error {
-	ei.Role = "default~proxy"
-
-	// TODO: refactor this function to include a context.
-	return ei.runWithPort(context.TODO(), uint32(port), configFile)
+func (ei *EnvoyInstance) RunWith(eic EnvoyInstanceConfig) error {
+	return ei.runWithAll(eic, &templateBootstrapBuilder{
+		template: defaultBootstrapTemplate,
+	})
 }
+
 func (ei *EnvoyInstance) RunWithRole(role string, port int) error {
-	ei.Role = role
-	// TODO: refactor this function to include a context.
-	return ei.runWithPort(context.TODO(), uint32(port), "")
+	eic := &envoyInstanceConfig{
+		role:    role,
+		port:    uint32(port),
+		context: context.TODO(),
+	}
+	boostrapBuilder := &templateBootstrapBuilder{
+		template: defaultBootstrapTemplate,
+	}
+	return ei.runWithAll(eic, boostrapBuilder)
+}
+
+func (ei *EnvoyInstance) RunWithConfigFile(port int, configFile string) error {
+	eic := &envoyInstanceConfig{
+		role:    "gloo-system~gateway-proxy",
+		port:    uint32(port),
+		context: context.TODO(),
+	}
+	boostrapBuilder := &fileBootstrapBuilder{
+		file: configFile,
+	}
+	return ei.runWithAll(eic, boostrapBuilder)
 }
 
 type EnvoyInstanceConfig interface {
@@ -410,40 +425,45 @@ type EnvoyInstanceConfig interface {
 	Context() context.Context
 }
 
-func (ei *EnvoyInstance) RunWith(eic EnvoyInstanceConfig) error {
-	ei.Role = eic.Role()
-	return ei.runWithPort(eic.Context(), eic.Port(), "")
+type envoyInstanceConfig struct {
+	role string
+	port uint32
+
+	context context.Context
 }
 
-func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32, configFile string) error {
+func (eic *envoyInstanceConfig) Role() string {
+	return eic.role
+}
+
+func (eic *envoyInstanceConfig) Port() uint32 {
+	return eic.port
+}
+
+func (eic *envoyInstanceConfig) Context() context.Context {
+	return eic.context
+}
+
+func (ei *EnvoyInstance) runWithAll(eic EnvoyInstanceConfig, bootstrapBuilder EnvoyBootstrapBuilder) error {
 	go func() {
-		<-ctx.Done()
+		<-eic.Context().Done()
 		ei.Clean()
 	}()
 	if ei.ID == "" {
 		ei.ID = "ingress~for-testing"
 	}
-	ei.Port = port
-
-	if configFile == "" {
-		ei.envoycfg = ei.buildBootstrap()
-	} else {
-		var err error
-		ei.envoycfg, err = ei.buildBootstrapFromConfig(configFile)
-		if err != nil {
-			return err
-		}
-
-	}
+	ei.Role = eic.Role()
+	ei.Port = eic.Port()
+	ei.envoycfg = bootstrapBuilder.Build(ei)
 
 	if ei.UseDocker {
-		return ei.runContainer(ctx)
+		return ei.runContainer(eic.Context())
 	}
 
 	args := []string{"--config-yaml", ei.envoycfg, "--disable-hot-restart", "--log-level", "debug"}
 
 	// run directly
-	cmd := exec.CommandContext(ctx, ei.envoypath, args...)
+	cmd := exec.CommandContext(eic.Context(), ei.envoypath, args...)
 
 	buf := &bytes.Buffer{}
 	ei.logs = buf
