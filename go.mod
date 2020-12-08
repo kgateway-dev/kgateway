@@ -76,7 +76,7 @@ require (
 	github.com/solo-io/protoc-gen-ext v0.0.13
 	github.com/solo-io/reporting-client v0.2.0
 	github.com/solo-io/skv2 v0.14.1
-	github.com/solo-io/solo-apis v0.0.0-20201103221621-bbe4f60f466d
+	github.com/solo-io/solo-apis v0.0.0-20201208170656-81a712d752f0
 	github.com/solo-io/solo-kit v0.16.1
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
@@ -164,5 +164,3 @@ replace (
 	k8s.io/sample-controller => k8s.io/sample-controller v0.18.6
 	k8s.io/utils => k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 )
-
-replace github.com/solo-io/solo-apis => ../solo-apis
