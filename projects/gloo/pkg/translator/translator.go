@@ -95,7 +95,7 @@ func (t *translatorInstance) Translate(
 
 	// endpoints and listeners are shared between listeners
 	logger.Debugf("computing envoy clusters for proxy: %v", proxy.Metadata.Name)
-	clusters := t.computeClusters(params, reports)
+	clusters := t.computeClusters(params, reports, proxy)
 	logger.Debugf("computing envoy endpoints for proxy: %v", proxy.Metadata.Name)
 
 	endpoints := t.computeClusterEndpoints(params, reports)
