@@ -32,13 +32,14 @@ import (
 
 var _ = Describe("Zipkin config loading", func() {
 	var (
+		ctx           context.Context
 		cancel        context.CancelFunc
 		envoyInstance *services.EnvoyInstance
 		zipkinServer  *http.Server
 	)
 
 	BeforeEach(func() {
-		_, cancel = context.WithCancel(context.Background())
+		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
 
@@ -73,7 +74,7 @@ var _ = Describe("Zipkin config loading", func() {
 	}
 
 	It("should send trace msgs to the zipkin server", func() {
-		err := envoyInstance.RunWithConfig(int(defaults.HttpPort), "./envoyconfigs/zipkin-envoy-conf.yaml")
+		err := envoyInstance.RunWithConfigFile(int(defaults.HttpPort), "./envoyconfigs/zipkin-envoy-conf.yaml")
 		Expect(err).NotTo(HaveOccurred())
 
 		// Start a dummy server listening on 9411 for Zipkin requests
@@ -95,11 +96,9 @@ var _ = Describe("Zipkin config loading", func() {
 		stopZipkinServer()
 	})
 
-	Context("dynamic tracing", func() {
+	Context("dynamic tracing with collector upstream ref", func() {
 
 		var (
-			ctx            context.Context
-			cancel         context.CancelFunc
 			testClients    services.TestClients
 			writeNamespace string
 			testUs         *v1helpers.TestUpstream
@@ -107,12 +106,8 @@ var _ = Describe("Zipkin config loading", func() {
 		)
 
 		BeforeEach(func() {
-			ctx, cancel = context.WithCancel(context.Background())
-			defaults.HttpPort = services.NextBindPort()
-			defaults.HttpsPort = services.NextBindPort()
-
 			// run gloo
-			writeNamespace = "gloo-system"
+			writeNamespace = defaults.GlooSystem
 			ro := &services.RunOptions{
 				NsToWrite: writeNamespace,
 				NsToWatch: []string{"default", writeNamespace},
@@ -161,11 +156,6 @@ var _ = Describe("Zipkin config loading", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		AfterEach(func() {
-			envoyInstance.Clean()
-			cancel()
-		})
-
 		It("should not send trace msgs with nil provider", func() {
 			gatewayClient := testClients.GatewayClient
 			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
@@ -181,7 +171,7 @@ var _ = Describe("Zipkin config loading", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// write a virtual service so we have a proxy to our test upstream
-			testVs := getTrivialVirtualServiceForUpstream("gloo-system", testUs.Upstream.Metadata.Ref())
+			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, testUs.Upstream.Metadata.Ref())
 			_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -220,7 +210,7 @@ var _ = Describe("Zipkin config loading", func() {
 			stopZipkinServer()
 		})
 
-		It("should send trace msgs with zipkin provider", func() {
+		It("should send trace msgs with valid zipkin provider", func() {
 			gatewayClient := testClients.GatewayClient
 			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
@@ -229,7 +219,9 @@ var _ = Describe("Zipkin config loading", func() {
 			zipkinTracing := &tracing.ListenerTracingSettings{
 				ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
 					ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
-						CollectorUpstreamRef:     utils.ResourceRefPtr(zipkinUs.Metadata.Ref()),
+						CollectorCluster: &envoytrace_gloo.ZipkinConfig_CollectorUpstreamRef{
+							CollectorUpstreamRef: utils.ResourceRefPtr(zipkinUs.Metadata.Ref()),
+						},
 						CollectorEndpoint:        "/api/v2/spans",
 						CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
 					},
@@ -242,7 +234,7 @@ var _ = Describe("Zipkin config loading", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// write a virtual service so we have a proxy to our test upstream
-			testVs := getTrivialVirtualServiceForUpstream("gloo-system", testUs.Upstream.Metadata.Ref())
+			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, testUs.Upstream.Metadata.Ref())
 			_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -281,7 +273,7 @@ var _ = Describe("Zipkin config loading", func() {
 			stopZipkinServer()
 		})
 
-		It("should error with misconfigured zipkin provider", func() {
+		It("should error with invalid zipkin provider", func() {
 			gatewayClient := testClients.GatewayClient
 			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
@@ -290,7 +282,9 @@ var _ = Describe("Zipkin config loading", func() {
 			invalidZipkinTracing := &tracing.ListenerTracingSettings{
 				ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
 					ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
-						CollectorUpstreamRef:     nil,
+						CollectorCluster: &envoytrace_gloo.ZipkinConfig_CollectorUpstreamRef{
+							CollectorUpstreamRef: nil,
+						},
 						CollectorEndpoint:        "/api/v2/spans",
 						CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
 					},
@@ -303,7 +297,7 @@ var _ = Describe("Zipkin config loading", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// write a virtual service so we have a proxy to our test upstream
-			testVs := getTrivialVirtualServiceForUpstream("gloo-system", testUs.Upstream.Metadata.Ref())
+			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, testUs.Upstream.Metadata.Ref())
 			_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -315,6 +309,109 @@ var _ = Describe("Zipkin config loading", func() {
 				}
 				return nil
 			}, "5s", "0.1s").Should(Not(HaveOccurred()))
+		})
+	})
+
+	Context("dynamic tracing with static collector cluster", func() {
+
+		var (
+			testClients    services.TestClients
+			writeNamespace string
+			testUs         *v1helpers.TestUpstream
+		)
+
+		BeforeEach(func() {
+			// run gloo
+			writeNamespace = defaults.GlooSystem
+			ro := &services.RunOptions{
+				NsToWrite: writeNamespace,
+				NsToWatch: []string{"default", writeNamespace},
+				WhatToRun: services.What{
+					DisableFds: true,
+					DisableUds: true,
+				},
+			}
+			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
+
+			// write gateways and wait for them to be created
+			err := gloohelpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
+			Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
+			Eventually(func() (gatewayv1.GatewayList, error) {
+				return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
+			}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
+
+			// run envoy
+			err = envoyInstance.RunWithConfigFile(testClients.GlooPort, "./envoyconfigs/zipkin-static-cluster.yaml")
+			Expect(err).NotTo(HaveOccurred())
+
+			// create test upstream
+			// this is the upstream that will handle requests
+			testUs = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+			_, err = testClients.UpstreamClient.Write(testUs.Upstream, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should send trace msgs with valid zipkin provider", func() {
+			gatewayClient := testClients.GatewayClient
+			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// configure zipkin, and write tracing configuration to gateway
+			zipkinTracing := &tracing.ListenerTracingSettings{
+				ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
+					ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
+						CollectorCluster: &envoytrace_gloo.ZipkinConfig_ClusterName{
+							ClusterName: "zipkin_cluster", // name of cluster defined in envoy bootstrap config
+						},
+						CollectorEndpoint:        "/api/v2/spans",
+						CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,
+					},
+				},
+			}
+
+			httpGateway := gw.GetHttpGateway()
+			setTracingOnGateway(httpGateway, zipkinTracing)
+			_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			// write a virtual service so we have a proxy to our test upstream
+			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, testUs.Upstream.Metadata.Ref())
+			_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// ensure the proxy and virtual service are created
+			Eventually(func() (*gloov1.Proxy, error) {
+				return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+			}, "5s", "0.1s").ShouldNot(BeNil())
+			Eventually(func() (*gatewayv1.VirtualService, error) {
+				return testClients.VirtualServiceClient.Read(testVs.Metadata.GetNamespace(), testVs.Metadata.GetName(), clients.ReadOpts{})
+			}, "5s", "0.1s").ShouldNot(BeNil())
+
+			// ensure the upstream is reachable
+			TestUpstreamReachable := func() {
+				v1helpers.TestUpstreamReachable(defaults.HttpPort, testUs, nil)
+			}
+			TestUpstreamReachable()
+
+			// Start a dummy server listening on 9411 for Zipkin requests
+			apiHit := make(chan bool, 1)
+			zipkinHandler := http.NewServeMux()
+			zipkinHandler.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				Expect(r.URL.Path).To(Equal("/api/v2/spans")) // Zipkin json collector API
+				fmt.Fprintf(w, "Dummy Zipkin Collector received request on - %q", html.EscapeString(r.URL.Path))
+				apiHit <- true
+			}))
+			startZipkinServer(envoyInstance.LocalAddr()+":9411", zipkinHandler)
+
+			// ensure we can reach out test upstream with a request
+			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
+			Eventually(testRequest, 15*time.Second, 1*time.Second).Should(BeEmpty())
+
+			// ensure the zipkin server received tracing from the test upstream
+			expectedZipkinApiHit := true
+			Eventually(apiHit, 5*time.Second).Should(Receive(&expectedZipkinApiHit))
+
+			stopZipkinServer()
 		})
 	})
 })

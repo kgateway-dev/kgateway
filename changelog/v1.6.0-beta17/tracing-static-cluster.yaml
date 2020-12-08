@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3954
+    description: >
+      When configuring tracing, you can specify a cluster where traces are collected.
+      If the collector is an upstream, tracing works as expected. However, if the cluster is
+      statically defined in the envoy bootstrap, traces do not get collected. This adds support for
+      statically defined tracing collector clusters.

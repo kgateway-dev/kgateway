@@ -20,7 +20,9 @@ For notes on configuring and using tracing with Gloo Edge, please see the [traci
 
 The tracing configuration fields of the Gateway Custom Resource (CR) are highlighted below.
 
-{{< highlight yaml "hl_lines=8-15" >}}
+**Option 1: Using an upstream ref:**
+
+{{< highlight yaml "hl_lines=10-21" >}}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata: # collapsed for brevity
@@ -38,11 +40,42 @@ spec:
           zipkinConfig:
             collectorEndpoint: /api/v2/spans
             collectorEndpointVersion: HTTP_JSON
-            collectorUpstreamRef:
-              name: zipkin
-              namespace: default
+            collectorCluster:
+              collectorUpstreamRef:
+                name: zipkin
+                namespace: default
 status: # collapsed for brevity
 {{< /highlight >}}
+
+**Option 2: Using a cluster name:**
+
+{{< highlight yaml "hl_lines=10-19" >}}
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata: # collapsed for brevity
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  httpGateway:
+    options:
+      httpConnectionManagerSettings:
+        tracing:
+          verbose: true
+          requestHeadersForTags:
+            - path
+            - origin
+          zipkinConfig:
+            collectorEndpoint: /api/v2/spans
+            collectorEndpointVersion: HTTP_JSON
+            collectorCluster:
+              clusterName: zipkin
+status: # collapsed for brevity
+{{< /highlight >}}
+
+{{% notice note %}}
+If you provide an invalid clusterName, the error will not show up in Gloo.
+However, if you are using Gloo Edge Enterprise you can use our [observability]({{% versioned_link_path fromRoot="/guides/observability" %}}) features to track the `glooe.solo.io/xds/outofsync` statistic
+{{% /notice %}}
 
 ### Advanced listener configuration
 
