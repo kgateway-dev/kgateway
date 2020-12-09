@@ -26,7 +26,7 @@ func generateIstio17or18Sidecar(version, jwtPolicy string) *corev1.Container {
 			"--parentShutdownDuration",
 			"1m0s",
 			"--discoveryAddress",
-			"istio-pilot.istio-system.svc:15012",
+			"istiod.istio-system.svc:15012",
 			"--proxyLogLevel=warning",
 			"--proxyComponentLogLevel=misc:error",
 			"--connectTimeout",
