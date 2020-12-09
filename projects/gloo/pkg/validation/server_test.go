@@ -6,34 +6,26 @@ import (
 	"sync"
 	"time"
 
-	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
-	"github.com/solo-io/gloo/test/matchers"
-
-	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
-	"google.golang.org/grpc"
-
-	"github.com/solo-io/gloo/test/samples"
-
-	validationgrpc "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
-
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	validationgrpc "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	. "github.com/solo-io/gloo/projects/gloo/pkg/validation"
-
-	"github.com/golang/mock/gomock"
-
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/validation"
+	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-
-	. "github.com/solo-io/gloo/projects/gloo/pkg/translator"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
+	"github.com/solo-io/solo-kit/test/matchers"
+	"google.golang.org/grpc"
 )
 
 var _ = Describe("Validation Server", func() {

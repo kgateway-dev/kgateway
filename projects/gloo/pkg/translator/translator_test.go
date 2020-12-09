@@ -1650,7 +1650,7 @@ var _ = Describe("Translator", func() {
 
 		createLambdaUpstream := func(namespace, name, region string, lambdaFuncs []*aws.LambdaFunctionSpec) *v1.Upstream {
 			return &v1.Upstream{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      name,
 					Namespace: namespace,
 				},
@@ -1690,7 +1690,7 @@ var _ = Describe("Translator", func() {
 					}))
 
 			secret := &v1.Secret{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "my-aws-secret",
 					Namespace: "my-namespace",
 				},
