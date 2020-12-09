@@ -120,7 +120,7 @@ var _ = Describe("Robustness tests", func() {
 
 		By("create a virtual service routing to the service")
 		virtualService, err = virtualServiceClient.Write(&gatewayv1.VirtualService{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "echo-vs",
 				Namespace: namespace,
 			},
@@ -139,7 +139,7 @@ var _ = Describe("Robustness tests", func() {
 									Single: &gloov1.Destination{
 										DestinationType: &gloov1.Destination_Kube{
 											Kube: &gloov1.KubernetesServiceDestination{
-												Ref: core.ResourceRef{
+												Ref: &core.ResourceRef{
 													Namespace: appService.Namespace,
 													Name:      appService.Name,
 												},
@@ -197,7 +197,7 @@ var _ = Describe("Robustness tests", func() {
 						Single: &gloov1.Destination{
 							DestinationType: &gloov1.Destination_Kube{
 								Kube: &gloov1.KubernetesServiceDestination{
-									Ref: core.ResourceRef{
+									Ref: &core.ResourceRef{
 										Namespace: namespace,
 										Name:      "non-existent-svc",
 									},

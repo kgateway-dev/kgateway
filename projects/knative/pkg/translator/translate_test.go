@@ -356,7 +356,6 @@ var _ = Describe("Translate", func() {
 					},
 				},
 			},
-			Status: &core.Status{},
 			Metadata: &core.Metadata{
 				Name:      "test",
 				Namespace: "example",
