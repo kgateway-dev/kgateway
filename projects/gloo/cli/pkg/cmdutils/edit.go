@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 	"reflect"
 
+	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"k8s.io/kubectl/pkg/cmd/util/editor"
-	"github.com/ghodss/yaml"
 )
 
 type EditFunc func(prefix, suffix string, r io.Reader) ([]byte, string, error)

@@ -146,7 +146,7 @@ var _ = Describe("Plugin", func() {
 		It("should error non aws secret", func() {
 			params.Snapshot.Secrets[0].Kind = &v1.Secret_Tls{}
 			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
-			Expect(err).To(MatchError(`secret name:"secretref" namespace:"ns" is not an AWS secret`))
+			Expect(err.Error()).To(Equal(`secret (secretref.ns) is not an AWS secret`))
 		})
 
 		It("should error upstream with no secret ref", func() {

@@ -51,7 +51,6 @@ func MarshalBytesEmitZeroValues(pb proto.Message) ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-
 func UnmarshalBytes(data []byte, into proto.Message) error {
 	return jsonpb.Unmarshal(bytes.NewBuffer(data), into)
 }

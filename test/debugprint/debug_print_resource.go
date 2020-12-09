@@ -5,11 +5,11 @@ import (
 	"log"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/onsi/ginkgo"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/golang/protobuf/proto"
-	"github.com/onsi/ginkgo"
 	"sigs.k8s.io/yaml"
 )
 
