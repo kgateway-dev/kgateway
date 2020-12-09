@@ -6,16 +6,12 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
-	matchers2 "github.com/solo-io/gloo/test/matchers"
-
+	. "github.com/solo-io/solo-kit/test/matchers"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
-
 	"github.com/solo-io/gloo/projects/knative/api/external/knative"
 	v1alpha12 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -366,7 +362,7 @@ var _ = Describe("Translate", func() {
 				Namespace: "example",
 			},
 		}
-		Expect(proxy).To(matchers2.BeEquivalentToDiff(expected))
+		Expect(proxy).To(MatchProto(expected))
 	})
 
 	It("renders proxies on ssl config based on annotations", func() {

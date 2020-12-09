@@ -183,19 +183,19 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 					pathRegex = ".*"
 				}
 
-				var timeout *time.Duration
+				var timeout time.Duration
 				if route.DeprecatedTimeout != nil {
-					timeout = &route.DeprecatedTimeout.Duration
+					timeout = route.DeprecatedTimeout.Duration
 				}
 				var retryPolicy *retries.RetryPolicy
 				if route.DeprecatedRetries != nil {
-					var perTryTimeout *time.Duration
+					var perTryTimeout time.Duration
 					if route.DeprecatedRetries.PerTryTimeout != nil {
-						perTryTimeout = &route.DeprecatedRetries.PerTryTimeout.Duration
+						perTryTimeout = route.DeprecatedRetries.PerTryTimeout.Duration
 					}
 					retryPolicy = &retries.RetryPolicy{
 						NumRetries:    uint32(route.DeprecatedRetries.Attempts),
-						PerTryTimeout: ptypes.DurationProto(*perTryTimeout),
+						PerTryTimeout: ptypes.DurationProto(perTryTimeout),
 					}
 				}
 
@@ -215,7 +215,7 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 					},
 					Options: &gloov1.RouteOptions{
 						HeaderManipulation: getHeaderManipulation(route.AppendHeaders),
-						Timeout:            ptypes.DurationProto(*timeout),
+						Timeout:            ptypes.DurationProto(timeout),
 						Retries:            retryPolicy,
 					},
 				}
