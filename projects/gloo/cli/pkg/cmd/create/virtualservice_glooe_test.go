@@ -100,7 +100,7 @@ spec:
     domains:
     - foo.bar
     - baz.qux
-status: {}
+status: null
 `))
 		})
 
@@ -113,7 +113,6 @@ displayName: vs
 metadata:
   name: vs
   namespace: gloo-system
-status: {}
 virtualHost:
   domains:
   - foo.bar

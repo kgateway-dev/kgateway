@@ -27,7 +27,7 @@ var _ = Describe("Root", func() {
 		// create a settings object
 		vsClient = helpers.MustVirtualServiceClient(ctx)
 		vs = &gatewayv1.VirtualService{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "vs",
 				Namespace: "gloo-system",
 			},

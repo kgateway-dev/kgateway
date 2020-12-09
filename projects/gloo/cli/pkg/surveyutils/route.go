@@ -253,8 +253,8 @@ func AddRouteFlagsInteractive(opts *options.Options) error {
 	); err != nil {
 		return err
 	}
-	opts.Metadata.Name = vsByKey[vsKey].Name
-	opts.Metadata.Namespace = vsByKey[vsKey].Namespace
+	opts.Metadata.Name = vsByKey[vsKey].GetName()
+	opts.Metadata.Namespace = vsByKey[vsKey].GetNamespace()
 
 	if opts.Metadata.Name == "" || opts.Metadata.Namespace == "" {
 		if err := cliutil.GetStringInput("name of the virtual service: ", &opts.Metadata.Name); err != nil {

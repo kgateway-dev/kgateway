@@ -12,6 +12,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("Upstream Interactive Mode", func() {
@@ -87,13 +88,13 @@ var _ = Describe("Upstream Interactive Mode", func() {
 		)
 
 		var (
-			secretRef core.ResourceRef
+			secretRef *core.ResourceRef
 		)
 
 		BeforeEach(func() {
 			secretClient := helpers.MustSecretClient(ctx)
 			secret := &gloov1.Secret{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      awsSecretName,
 					Namespace: awsSecretNamespace,
 				},
@@ -105,7 +106,7 @@ var _ = Describe("Upstream Interactive Mode", func() {
 				},
 			}
 			_, err := secretClient.Write(secret, clients.WriteOpts{})
-			secretRef = core.ResourceRef{
+			secretRef = &core.ResourceRef{
 				Name:      awsSecretName,
 				Namespace: awsSecretNamespace,
 			}
@@ -126,7 +127,7 @@ var _ = Describe("Upstream Interactive Mode", func() {
 				var upstream options.InputUpstream
 				err := AddUpstreamFlagsInteractive(ctx, &upstream)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(upstream.Aws.Secret).To(Equal(localSecretRef))
+				Expect(&upstream.Aws.Secret).To(matchers.MatchProto(localSecretRef))
 				Expect(upstream.Aws.Region).To(Equal(defaultAwsRegion))
 			})
 		})
@@ -145,7 +146,7 @@ var _ = Describe("Upstream Interactive Mode", func() {
 				var upstream options.InputUpstream
 				err := AddUpstreamFlagsInteractive(ctx, &upstream)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(upstream.Aws.Secret).To(Equal(localSecretRef))
+				Expect(&upstream.Aws.Secret).To(matchers.MatchProto(localSecretRef))
 				Expect(upstream.Aws.Region).To(Equal("custom-region"))
 			})
 		})
@@ -215,7 +216,7 @@ var _ = Describe("Upstream Interactive Mode", func() {
 		BeforeEach(func() {
 			secretClient := helpers.MustSecretClient(ctx)
 			secret := &gloov1.Secret{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      azureSecretName,
 					Namespace: azureSecretNamespace,
 				},

@@ -64,7 +64,7 @@ var _ = Describe("TranslatorSyncer", func() {
 				}},
 		}}
 		knativeClient = &mockCiClient{ci: toKube(ingress)}
-		proxy = &v1.Proxy{Metadata: core.Metadata{Name: "hi", Namespace: "howareyou"}}
+		proxy = &v1.Proxy{Metadata: &core.Metadata{Name: "hi", Namespace: "howareyou"}}
 		proxy, _ = proxyClient.Write(proxy, clients.WriteOpts{})
 	})
 

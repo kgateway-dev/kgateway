@@ -25,7 +25,7 @@ spec:
     hosts:
     - addr: jsonplaceholder.typicode.com
       port: 80
-status: {}
+status: null
 `
 
 		yamlOutput := `---
@@ -36,7 +36,6 @@ static:
   hosts:
   - addr: jsonplaceholder.typicode.com
     port: 80
-status: {}
 `
 
 		tableOutput := `+--------------------+--------+---------+---------------------------------+

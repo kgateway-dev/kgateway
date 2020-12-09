@@ -15,8 +15,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
-	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 const (
@@ -146,7 +146,7 @@ var _ = Describe("Plugin", func() {
 		It("should error non aws secret", func() {
 			params.Snapshot.Secrets[0].Kind = &v1.Secret_Tls{}
 			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
-			Expect(err).To(MatchError("secret name:\"secretref\" namespace:\"ns\"  is not an AWS secret"))
+			Expect(err).To(MatchError(`secret name:"secretref" namespace:"ns" is not an AWS secret`))
 		})
 
 		It("should error upstream with no secret ref", func() {

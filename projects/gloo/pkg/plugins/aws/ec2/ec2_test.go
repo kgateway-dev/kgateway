@@ -3,7 +3,7 @@ package ec2
 import (
 	"context"
 
-	"github.com/solo-io/k8s-utils/testutils"
+	. "github.com/solo-io/solo-kit/test/matchers"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -86,8 +86,7 @@ var _ = Describe("Plugin", func() {
 		writeNamespace := "default"
 		DescribeTable("convert to endpoints", func(input *v1.Upstream, instance *ec2.Instance, expected *v1.Endpoint) {
 			out := upstreamInstanceToEndpoint(context.TODO(), writeNamespace, input, instance)
-			Expect(out).To(Equal(expected))
-			testutils.ExpectEqualProtoMessages(out, expected)
+			Expect(out).To(MatchProto(expected))
 		},
 			Entry("should use proper default port and ip when not specified", &v1.Upstream{
 				UpstreamType: &v1.Upstream_AwsEc2{
@@ -115,7 +114,7 @@ var _ = Describe("Plugin", func() {
 					Address:   privateIp,
 					Port:      80,
 					Metadata: &core.Metadata{
-						Name:        "ec2-name-ex1-namespace-default--5-5-5-5",
+						Name:        "ec2-name-ex1-namespace-default-5-5-5-5",
 						Namespace:   writeNamespace,
 						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
 					},
@@ -146,7 +145,7 @@ var _ = Describe("Plugin", func() {
 					Address:   pubIp,
 					Port:      77,
 					Metadata: &core.Metadata{
-						Name:        "ec2-name-ex1-namespace-default--1-2-3-4",
+						Name:        "ec2-name-ex1-namespace-default-1-2-3-4",
 						Namespace:   writeNamespace,
 						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
 					},
@@ -176,7 +175,7 @@ var _ = Describe("Plugin", func() {
 					Address:   privateIp,
 					Port:      77,
 					Metadata: &core.Metadata{
-						Name:        "ec2-name-ex1-namespace-default--5-5-5-5",
+						Name:        "ec2-name-ex1-namespace-default-5-5-5-5",
 						Namespace:   writeNamespace,
 						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
 					},

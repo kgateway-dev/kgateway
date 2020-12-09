@@ -51,7 +51,7 @@ var _ = Describe("Sort", func() {
 		}
 
 		vs, err := helpers.MustVirtualServiceClient(ctx).Write(&gatewayv1.VirtualService{
-			Metadata: core.Metadata{Namespace: "gloo-system", Name: "tacos"},
+			Metadata: &core.Metadata{Namespace: "gloo-system", Name: "tacos"},
 			VirtualHost: &gatewayv1.VirtualHost{
 				Routes: unsortedRoutes(),
 			},

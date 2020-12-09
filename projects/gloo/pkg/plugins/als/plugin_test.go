@@ -8,9 +8,9 @@ import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/test/matchers"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -168,7 +168,7 @@ var _ = Describe("Plugin", func() {
 		BeforeEach(func() {
 			strFormat, path = "formatting string", "path"
 			jsonFormat = &structpb.Struct{
-				Fields: nil,
+				Fields: map[string]*structpb.Value{},
 			}
 			fsStrFormat = &als.FileSink_StringFormat{
 				StringFormat: strFormat,
@@ -282,7 +282,7 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(falCfg.Path).To(Equal(path))
 				jsn := falCfg.GetLogFormat().GetJsonFormat()
-				Expect(protoutils.StructPbToGogo(jsn)).To(Equal(jsonFormat))
+				Expect(jsn).To(matchers.MatchProto(jsonFormat))
 			}
 
 			BeforeEach(func() {

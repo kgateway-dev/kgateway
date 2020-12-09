@@ -108,7 +108,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 		awsSecrets, ok := secret.Kind.(*v1.Secret_Aws)
 		if !ok {
-			return errors.Errorf("secret %v is not an AWS secret", secret.GetMetadata().Ref())
+			return errors.Errorf("secret %s is not an AWS secret", secret.GetMetadata().Ref().String())
 		}
 
 		var secretErrs error

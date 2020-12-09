@@ -3,23 +3,20 @@ package wasm
 import (
 	"fmt"
 
+	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
-	"github.com/solo-io/gloo/test/matchers"
-
-	"github.com/golang/mock/gomock"
-	"github.com/opencontainers/go-digest"
-	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
+	"github.com/opencontainers/go-digest"
+	"github.com/rotisserie/eris"
 	configcore "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	wasmv3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/wasm/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	mock_cache "github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm/mocks"
+	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("wasm plugin", func() {

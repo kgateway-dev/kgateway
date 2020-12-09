@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	gotestutils "github.com/solo-io/k8s-utils/testutils"
+	gotestutils "github.com/solo-io/go-utils/testutils"
 )
 
 func TestInstall(t *testing.T) {

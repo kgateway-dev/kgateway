@@ -3,6 +3,7 @@ package protoutils
 import (
 	"bytes"
 
+	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	structpb "github.com/golang/protobuf/ptypes/struct"
@@ -48,4 +49,18 @@ func MarshalBytesEmitZeroValues(pb proto.Message) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := jsonpbMarshalerEmitZeroValues.Marshal(buf, pb)
 	return buf.Bytes(), err
+}
+
+
+func UnmarshalBytes(data []byte, into proto.Message) error {
+	return jsonpb.Unmarshal(bytes.NewBuffer(data), into)
+}
+
+func UnmarshalYaml(data []byte, into proto.Message) error {
+	jsn, err := yaml.YAMLToJSON([]byte(data))
+	if err != nil {
+		return err
+	}
+
+	return jsonpb.Unmarshal(bytes.NewBuffer(jsn), into)
 }

@@ -7,11 +7,10 @@ import (
 	"log"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-
 	"github.com/golang/protobuf/ptypes"
 	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_core1 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -20,7 +19,6 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/proto"
 	"github.com/k0kubun/pp"
-	"github.com/solo-io/go-utils/protoutils"
 	"google.golang.org/grpc"
 )
 

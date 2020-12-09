@@ -45,7 +45,7 @@ spec:
           upstream:
             name: default-petstore-8080--prefix-rewrite
             namespace: gloo-system
-status: {}
+status: null
 `))
 	})
 })

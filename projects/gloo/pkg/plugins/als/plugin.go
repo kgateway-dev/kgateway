@@ -174,7 +174,7 @@ func copyFileSettings(cfg *envoyalfile.FileAccessLog, alsSettings *als.AccessLog
 		cfg.AccessLogFormat = &envoyalfile.FileAccessLog_LogFormat{
 			LogFormat: &envoycore.SubstitutionFormatString{
 				Format: &envoycore.SubstitutionFormatString_JsonFormat{
-					JsonFormat: cfg.GetJsonFormat(),
+					JsonFormat: fileSinkType.JsonFormat,
 				},
 			},
 		}

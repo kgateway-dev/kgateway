@@ -76,7 +76,7 @@ func Make(dir, args string) error {
 
 func GetTestSettings() *v1.Settings {
 	return &v1.Settings{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "default",
 			Namespace: defaults.GlooSystem,
 		},
