@@ -58,7 +58,7 @@ var _ = Describe("Session", func() {
 	It("should error on missing secret", func() {
 		secretRef.Name = "other-secret"
 		_, err := GetAwsSession(secretRef, secrets, nil)
-		Expect(err).To(MatchError(ContainSubstring("secrets not found for secret ref name:\"other-secret\" namespace:\"namespace\"")))
+		Expect(err).To(MatchError(ContainSubstring("secrets not found for secret ref other-secret.namespace")))
 	})
 	It("should error on non aws secret", func() {
 		secrets[0].Kind = &v1.Secret_Tls{}
