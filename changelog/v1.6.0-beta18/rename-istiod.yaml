@@ -1,0 +1,6 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/3908
+  description: >
+    Changed Istio's default discoveryAddress used by the glooctl istio commands and helm installations when istioSDS is enabled
+  resolvesIssue: false
