@@ -863,7 +863,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Eventually(func() error {
 					_, err := gatewayClient.Write(defaultGateway, clients.WriteOpts{})
 					return err
-				}, "5s", "0.5s").ShouldNot(HaveOccurred())
+				}, "15s", "0.5s").ShouldNot(HaveOccurred())
 			}
 		)
 
