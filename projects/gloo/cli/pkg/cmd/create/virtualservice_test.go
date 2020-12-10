@@ -32,7 +32,7 @@ spec:
     domains:
     - foo.bar
     - baz.qux
-status: null
+status: {}
 `))
 	})
 	It("can print as solo-kit yaml in dry run", func() {

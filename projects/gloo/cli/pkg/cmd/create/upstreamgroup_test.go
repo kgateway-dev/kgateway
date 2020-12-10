@@ -136,7 +136,7 @@ spec:
         name: us1
         namespace: gloo-system
     weight: 2
-status: null
+status: {}
 `))
 		})
 	})

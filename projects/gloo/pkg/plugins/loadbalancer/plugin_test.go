@@ -144,7 +144,7 @@ spec:
       ringHashConfig:
         maximumRingSize: "200"
         minimumRingSize: "100"
-status: null
+status: {}
 `
 		Expect(yamlForm).To(Equal(sampleInputYaml))
 		err = plugin.ProcessUpstream(params, upstream, out)
@@ -188,7 +188,7 @@ metadata:
 spec:
   loadBalancerConfig:
     maglev: {}
-status: null
+status: {}
 `
 		Expect(yamlForm).To(Equal(sampleInputYaml))
 		err = plugin.ProcessUpstream(params, upstream, out)
@@ -289,7 +289,7 @@ spec:
               name: gloo
               path: /abc
               ttl: 1s
-status: null
+status: {}
 `
 			Expect(yamlForm).To(Equal(sampleInputYaml))
 			err = plugin.ProcessRoute(routeParams, route, outRoute)

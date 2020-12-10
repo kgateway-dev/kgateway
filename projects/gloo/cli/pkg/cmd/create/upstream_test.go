@@ -195,7 +195,7 @@ spec:
     serviceName: kube-service
     serviceNamespace: default
     servicePort: 80
-status: null
+status: {}
 `))
 		})
 

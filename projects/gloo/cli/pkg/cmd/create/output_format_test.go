@@ -25,7 +25,7 @@ spec:
     hosts:
     - addr: jsonplaceholder.typicode.com
       port: 80
-status: null
+status: {}
 `
 
 		yamlOutput := `---

@@ -100,7 +100,7 @@ spec:
     domains:
     - foo.bar
     - baz.qux
-status: null
+status: {}
 `))
 		})
 
