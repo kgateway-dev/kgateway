@@ -42,12 +42,12 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       run: |
-        if [-z ${GITHUB_TOKEN}]; then ::set-output name=SKIP_CHANGELOG::true; fi
+        if [-z ${GITHUB_TOKEN}]; then ::set-output name=SKIP_CHANGELOG_GENERATION::true; fi
     - name: Generate versioned docs site
       run: make -C docs build-site
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        SKIP_CHANGELOG: ${{ steps.community-per-check.outputs.SKIP_CHANGELOG }}
+        SKIP_CHANGELOG_GENERATION: ${{ steps.community-per-check.outputs.SKIP_CHANGELOG_GENERATION }}
   regression_tests:
     name: k8s regression tests
     runs-on: ubuntu-18.04
