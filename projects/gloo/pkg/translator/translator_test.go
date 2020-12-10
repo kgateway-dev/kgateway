@@ -54,6 +54,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	. "github.com/solo-io/solo-kit/test/matchers"
 	k8scorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -580,7 +581,11 @@ var _ = Describe("Translator", func() {
 			upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList(expectedResult)
 			Expect(err).NotTo(HaveOccurred())
 			translate()
-			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
+			var msgList []proto.Message
+			for _, v := range expectedResult {
+				msgList = append(msgList, v)
+			}
+			Expect(cluster.HealthChecks).To(ConistOfProtos(msgList...))
 		})
 
 		It("can translate the grpc health check", func() {
@@ -602,7 +607,11 @@ var _ = Describe("Translator", func() {
 			upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList(expectedResult)
 			Expect(err).NotTo(HaveOccurred())
 			translate()
-			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
+			var msgList []proto.Message
+			for _, v := range expectedResult {
+				msgList = append(msgList, v)
+			}
+			Expect(cluster.HealthChecks).To(ConistOfProtos(msgList...))
 		})
 
 		It("can properly translate outlier detection config", func() {
@@ -626,7 +635,7 @@ var _ = Describe("Translator", func() {
 			}
 			upstream.OutlierDetection = api_conversion.ToGlooOutlierDetection(expectedResult)
 			translate()
-			Expect(cluster.OutlierDetection).To(BeEquivalentTo(expectedResult))
+			Expect(cluster.OutlierDetection).To(MatchProto(expectedResult))
 		})
 
 		It("can properly validate outlier detection config", func() {
@@ -717,7 +726,11 @@ var _ = Describe("Translator", func() {
 			clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
 			cluster = clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
 			Expect(cluster).NotTo(BeNil())
-			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
+			var msgList []proto.Message
+			for _, v := range expectedResult {
+				msgList = append(msgList, v)
+			}
+			Expect(cluster.HealthChecks).To(ConistOfProtos(msgList...))
 		})
 	})
 
