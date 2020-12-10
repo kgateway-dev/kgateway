@@ -153,6 +153,9 @@ func UnmarshalStatus(in resources.InputResource, status v1.Status) error {
 
 func MarshalStatus(in resources.InputResource) (v1.Status, error) {
 	statusProto := in.GetStatus()
+	if statusProto == nil {
+		return v1.Status{}, nil
+	}
 	statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(statusProto)
 	if err != nil {
 		return nil, crd.MarshalErr(err, "resource status to map")

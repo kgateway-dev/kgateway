@@ -78,7 +78,7 @@ func (r *RateLimitConfig) SetStatus(status *core.Status) {
 
 	var outputState types.RateLimitConfigStatus_State
 
-	switch status.State {
+	switch status.GetState() {
 	case core.Status_Pending:
 		outputState = types.RateLimitConfigStatus_PENDING
 	case core.Status_Accepted:
@@ -91,6 +91,6 @@ func (r *RateLimitConfig) SetStatus(status *core.Status) {
 	}
 
 	r.Status.State = outputState
-	r.Status.Message = status.Reason
+	r.Status.Message = status.GetReason()
 	r.Status.ObservedGeneration = r.Generation
 }

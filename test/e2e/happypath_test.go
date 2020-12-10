@@ -489,7 +489,7 @@ var _ = Describe("Happy path", func() {
 					if err != nil {
 						return core.Status_Pending, err
 					}
-					return u.Status.State, nil
+					return u.GetStatus().GetState(), nil
 				}
 
 				Context("specific namespace", func() {

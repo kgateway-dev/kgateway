@@ -162,7 +162,7 @@ var _ = Describe("Robustness tests", func() {
 			if err != nil {
 				return err
 			}
-			if proxy.Status.State == core.Status_Accepted {
+			if proxy.GetStatus().GetState() == core.Status_Accepted {
 				return nil
 			}
 			return eris.Errorf("waiting for proxy to be accepted, but status is %v", proxy.Status)
@@ -223,7 +223,7 @@ var _ = Describe("Robustness tests", func() {
 			if err != nil {
 				return err
 			}
-			if proxy.Status.State == core.Status_Warning {
+			if proxy.GetStatus().GetState() == core.Status_Warning {
 				return nil
 			}
 			return eris.Errorf("waiting for proxy to be warning, but status is %v", proxy.Status)

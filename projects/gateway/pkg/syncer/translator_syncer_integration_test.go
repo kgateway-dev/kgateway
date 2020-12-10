@@ -150,7 +150,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			if err != nil {
 				return core.Status_Pending, err
 			}
-			return proxy.Status.State, nil
+			return proxy.GetStatus().GetState(), nil
 		})
 	}
 

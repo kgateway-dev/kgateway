@@ -135,7 +135,7 @@ var _ = Describe("Consul e2e", func() {
 			if err != nil {
 				return false
 			}
-			return proxy.Status.State == core.Status_Accepted
+			return proxy.GetStatus().GetState() == core.Status_Accepted
 		}, "10s", "0.2s").Should(BeTrue())
 
 		time.Sleep(3 * time.Second)
@@ -190,7 +190,7 @@ var _ = Describe("Consul e2e", func() {
 			if err != nil {
 				return false
 			}
-			return proxy.Status.State == core.Status_Accepted
+			return proxy.GetStatus().GetState() == core.Status_Accepted
 		}, "10s", "0.2s").Should(BeTrue())
 
 		time.Sleep(3 * time.Second)

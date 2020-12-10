@@ -40,6 +40,7 @@ import (
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	. "github.com/solo-io/solo-kit/test/matchers"
 	"github.com/solo-io/solo-kit/test/setup"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -232,8 +233,8 @@ var _ = Describe("Kube2e: gateway", func() {
 						return err
 					}
 
-					if status := proxy.Status; status.State != core.Status_Accepted {
-						return eris.Errorf("unexpected proxy state: %v. Reason: %v", status.State, status.Reason)
+					if status := proxy.GetStatus(); status.GetState() != core.Status_Accepted {
+						return eris.Errorf("unexpected proxy state: %v. Reason: %v", status.GetState(), status.GetReason())
 					}
 
 					for _, l := range proxy.Listeners {
@@ -605,8 +606,8 @@ var _ = Describe("Kube2e: gateway", func() {
 					if err != nil {
 						return 0, err
 					}
-					reason = vs.Status.Reason
-					return vs.Status.State, nil
+					reason = vs.GetStatus().GetReason()
+					return vs.GetStatus().GetState(), nil
 				}, "10s", "0.5s").Should(Equal(core.Status_Rejected))
 				Expect(reason).To(ContainSubstring("does not have a rest service spec"))
 
@@ -639,7 +640,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					if err != nil {
 						return 0, err
 					}
-					return vs.Status.State, nil
+					return vs.GetStatus().GetState(), nil
 				}, "10s", "0.5s").Should(Equal(core.Status_Accepted))
 			})
 		})
@@ -839,7 +840,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 	})
 
-	Context("tcp", func() {
+	FContext("tcp", func() {
 
 		var (
 			defaultGateway *gatewayv1.Gateway
@@ -947,8 +948,8 @@ var _ = Describe("Kube2e: gateway", func() {
 					return err
 				}
 
-				if status := proxy.Status; status.State != core.Status_Accepted {
-					return eris.Errorf("unexpected proxy state: %v. Reason: %v", status.State, status.Reason)
+				if status := proxy.GetStatus(); status.GetState() != core.Status_Accepted {
+					return eris.Errorf("unexpected proxy state: %v. Reason: %v", status.GetState(), status.GetReason())
 				}
 
 				for _, l := range proxy.Listeners {
@@ -1028,7 +1029,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					return nil, err
 				}
 
-				if status := proxy.Status; status.State != core.Status_Accepted {
+				if status := proxy.GetStatus(); status.GetState() != core.Status_Accepted {
 					return nil, eris.New("proxy not in accepted state")
 				}
 
@@ -1044,7 +1045,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					}
 				}
 				return nil, eris.New("proxy has no active listeners")
-			}, "15s", "0.5s").Should(Equal(&empty.Empty{}))
+			}, "15s", "0.5s").Should(MatchProto(&empty.Empty{}))
 
 			responseString := fmt.Sprintf(`"hostname":"%s"`, translator.UpstreamToClusterName(usRef))
 
@@ -1372,7 +1373,7 @@ metadata:
 spec:
   virtualHoost: {}
 `,
-					expectedErr: `could not unmarshal raw object: parsing resource from crd spec default in namespace ` + testHelper.InstallNamespace + ` into *v1.VirtualService: unknown field "virtualHoost" in v1.VirtualService`,
+					expectedErr: `could not unmarshal raw object: parsing resource from crd spec default in namespace ` + testHelper.InstallNamespace + ` into *v1.VirtualService: unknown field "virtualHoost" in gateway.solo.io.VirtualService`,
 				},
 				{
 					resourceYaml: `
