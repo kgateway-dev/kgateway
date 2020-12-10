@@ -49,7 +49,10 @@ steps:
 
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
   entrypoint: 'bash'
-  args: ['echo', 'qwerty']
+  args:
+    - '-c'
+    - |
+      make proxycontroller
   dir: '/workspace/gloo/examples/proxycontroller'
   id: 'build-proxycontroller-example'
 
