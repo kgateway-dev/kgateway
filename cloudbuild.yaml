@@ -50,7 +50,7 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
   entrypoint: 'bash'
   args: ['make proxycontroller']
-  dir: &dir '/workspace/gloo/examples/proxycontroller'
+  dir: 'gloo/examples/proxycontroller'
   id: 'build-proxycontroller-example'
 
 - name: gcr.io/cloud-builders/gcloud
@@ -62,7 +62,7 @@ steps:
   - --location=global
   - --keyring=build
   - --key=build-key
-  dir: &dir '/workspace/gloo'
+  dir: *dir 
   waitFor: ['prepare-workspace']
   id: 'setup-aws-creds'
 
