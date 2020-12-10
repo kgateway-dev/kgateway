@@ -49,7 +49,7 @@ steps:
 
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
   entrypoint: 'bash'
-  args: ['make', 'proxycontroller']
+  args: ['echo hi there yes this worked; pwd']
   dir: *dir 'examples/proxycontroller'
   id: 'build-proxycontroller-example'
 
