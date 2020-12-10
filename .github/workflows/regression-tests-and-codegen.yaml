@@ -42,12 +42,12 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       run: |
-        if [-z ${GITHUB_TOKEN}]
+        if [-n ${GITHUB_TOKEN}]
         then
-          echo "GITHUB_TOKEN not set, setting SKIP_CHANGELOG_GENERATION to true"
+          echo "GITHUB_TOKEN not empty, setting SKIP_CHANGELOG_GENERATION to true"
           ::set-output name=SKIP_CHANGELOG_GENERATION::true
         else
-          echo "GITHUB_TOKEN is set, changelog generation will NOT be skipped"
+          echo "GITHUB_TOKEN is empty, changelog generation will NOT be skipped"
         fi
     - name: Generate versioned docs site
       run: make -C docs build-site
