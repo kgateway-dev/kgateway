@@ -53,7 +53,7 @@ steps:
     - '-c'
     - |
       pwd; ls; make proxycontroller
-  dir: '/workspace/gloo/examples/proxycontroller'
+  dir: '/workspace/gloo/example/proxycontroller'
   id: 'build-proxycontroller-example'
 
 - name: gcr.io/cloud-builders/gcloud
