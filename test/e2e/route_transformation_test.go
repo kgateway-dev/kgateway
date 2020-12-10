@@ -23,7 +23,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = FDescribe("Transformations", func() {
+var _ = Describe("Transformations", func() {
 
 	var (
 		ctx           context.Context
