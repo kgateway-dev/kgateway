@@ -52,7 +52,7 @@ steps:
   args:
     - '-c'
     - |
-      make proxycontroller
+      pwd; ls; make proxycontroller
   dir: '/workspace/gloo/examples/proxycontroller'
   id: 'build-proxycontroller-example'
 
