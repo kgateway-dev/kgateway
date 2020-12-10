@@ -49,8 +49,8 @@ steps:
 
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
   entrypoint: 'bash'
-  args: ['echo hi there yes this worked; pwd']
-  dir: *dir 'examples/proxycontroller'
+  args: ['echo', 'qwerty']
+  dir: '/workspace/gloo/examples/proxycontroller'
   id: 'build-proxycontroller-example'
 
 - name: gcr.io/cloud-builders/gcloud
