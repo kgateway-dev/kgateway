@@ -21,6 +21,8 @@ message VhostExtension {
 message RouteExtension {
     // Disable JWT checks on this route.
     bool disable = 1;
+    // Allow pass through of JWT requests, even if JWT token is missing or JWT auth failed.
+    bool allow_missing_or_failed = 2;
 }
 
 message Provider {

@@ -54,12 +54,14 @@ weight: 5
 
 ```yaml
 "disable": bool
+"allowMissingOrFailed": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `disable` | `bool` | Disable JWT checks on this route. |
+| `allowMissingOrFailed` | `bool` | Allow pass through of JWT requests, even if JWT token is missing or JWT auth failed. |
 
 
 
