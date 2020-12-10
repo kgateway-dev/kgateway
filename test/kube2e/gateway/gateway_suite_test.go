@@ -56,8 +56,11 @@ func StartTestHelper() {
 	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
 	defer cleanupFunc()
 
-	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", valueOverrideFile))
-	Expect(err).NotTo(HaveOccurred())
+	// Allow skipping of install step for running multiple times
+	if os.Getenv("SKIP_INSTALL") != "1" {
+		err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", valueOverrideFile))
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	// Check that everything is OK
 	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")

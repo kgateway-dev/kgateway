@@ -18,7 +18,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
-var _ = Describe("Fault Injection", func() {
+var _ = XDescribe("Fault Injection", func() {
 
 	var (
 		testClients services.TestClients

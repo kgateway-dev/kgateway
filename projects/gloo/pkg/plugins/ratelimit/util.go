@@ -35,7 +35,8 @@ func GenerateEnvoyConfigForFilterWith(
 		FailureModeDeny: denyOnFail,
 
 		RateLimitService: &rlconfig.RateLimitServiceConfig{
-			GrpcService: svc,
+			TransportApiVersion: envoycore.ApiVersion_V3,
+			GrpcService:         svc,
 		},
 	}
 	return &envoyrl
