@@ -62,7 +62,7 @@ steps:
   - --location=global
   - --keyring=build
   - --key=build-key
-  dir: *dir 
+  dir: *dir
   waitFor: ['prepare-workspace']
   id: 'setup-aws-creds'
 
