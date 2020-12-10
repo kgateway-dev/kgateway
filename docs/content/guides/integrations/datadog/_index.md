@@ -150,6 +150,8 @@ spec:
          [{"type": "multi_line", "name": "log_start_with_date","pattern" : "^\\[[0-9]{4}-[0-9]{2}-[0-9]{2}|{"}]}]'
 ```
 
+These annotations can also be added declaratively via helm, for example if using Gloo Edge Enterprise, these annotations can be added as a value for `gloo.gatewayProxies.gatewayProxy.podTemplate.extraAnnotations`.
+
 {{< notice note >}}
 If you upgrade the cluster using Helm version 3, these annotations should stay in place. Helm 3 uses a three-way merge when performing an update. Helm version 2 will also attempt a merge, but may have issues with changes made using kubectl edit. You should update the values used by Helm to include these annotations. More information is available [here](https://helm.sh/docs/faq/#improved-upgrade-strategy-3-way-strategic-merge-patches).
 {{< /notice >}}
