@@ -101,6 +101,7 @@ var _ = Describe("RateLimit Plugin", func() {
 			Timeout:         hundredms,
 			RequestType:     "both",
 			RateLimitService: &rlconfig.RateLimitServiceConfig{
+				TransportApiVersion: envoycore.ApiVersion_V3,
 				GrpcService: &envoycore.GrpcService{TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
 					EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
 						ClusterName: translator.UpstreamToClusterName(ref),
