@@ -44,7 +44,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       run: |
           echo "Pull Request is from a fork. Setting IS_COMMUNITY_PR to true"
-          ::set-output name=IS_COMMUNITY_PR::true
+          echo "::set-output name=IS_COMMUNITY_PR::true"
     - name: Generate versioned docs site
       run: make -C docs build-site
       env:
