@@ -157,7 +157,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		cancel()
 	})
 
-	Context("tests with virtual service", func() {
+	FContext("tests with virtual service", func() {
 
 		AfterEach(func() {
 			err := virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{IgnoreNotExist: true})
@@ -439,7 +439,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 		})
 
-		Context("with a mix of valid and invalid virtual services", func() {
+		FContext("with a mix of valid and invalid virtual services", func() {
 			var (
 				validVsName   = "i-am-valid"
 				invalidVsName = "i-am-invalid"
@@ -563,7 +563,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 			})
 
-			It("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
+			FIt("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
 
 				petstoreDeployment, petstoreSvc := petstore(testHelper.InstallNamespace)
 
@@ -608,7 +608,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					}
 					reason = vs.GetStatus().GetReason()
 					return vs.GetStatus().GetState(), nil
-				}, "10s", "0.5s").Should(Equal(core.Status_Rejected))
+				}, "15s", "0.5s").Should(Equal(core.Status_Rejected))
 				Expect(reason).To(ContainSubstring("does not have a rest service spec"))
 
 				// wrapped in eventually to get around resource version errors
@@ -840,7 +840,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 	})
 
-	FContext("tcp", func() {
+	Context("tcp", func() {
 
 		var (
 			defaultGateway *gatewayv1.Gateway

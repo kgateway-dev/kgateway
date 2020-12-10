@@ -54,7 +54,7 @@ var _ = Describe("polling", func() {
 			Address:   testPrivateIp1,
 			Port:      testPort1,
 			Metadata: &core.Metadata{
-				Name:        "ec2-name-u1--namespace-default-111-111-111-111",
+				Name:        "ec2-name-u1-namespace-default-111-111-111-111",
 				Namespace:   "default",
 				Annotations: map[string]string{InstanceIdAnnotationKey: "instanceIdA"},
 			},
@@ -69,7 +69,7 @@ var _ = Describe("polling", func() {
 			Address:   testPublicIp1,
 			Port:      testPort1,
 			Metadata: &core.Metadata{
-				Name:        "ec2-name-u2--namespace-default-222-222-222-222",
+				Name:        "ec2-name-u2-namespace-default-222-222-222-222",
 				Namespace:   "default",
 				Annotations: map[string]string{InstanceIdAnnotationKey: "instanceIdB"},
 			},
@@ -78,7 +78,7 @@ var _ = Describe("polling", func() {
 })
 
 func matchPollResponse(epw *edsWatcher, expectedList v1.EndpointList) {
-	Eventually(func() error {
+	EventuallyWithOffset(1, func() error {
 		endpointChan, eChan, err := epw.poll()
 		if err != nil {
 			return err

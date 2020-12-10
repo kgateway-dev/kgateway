@@ -114,7 +114,7 @@ var _ = Describe("Plugin", func() {
 					Address:   privateIp,
 					Port:      80,
 					Metadata: &core.Metadata{
-						Name:        "ec2-name-ex1--namespace-default-5-5-5-5",
+						Name:        "ec2-name-ex1-namespace-default-5-5-5-5",
 						Namespace:   writeNamespace,
 						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
 					},
@@ -145,7 +145,7 @@ var _ = Describe("Plugin", func() {
 					Address:   pubIp,
 					Port:      77,
 					Metadata: &core.Metadata{
-						Name:        "ec2-name-ex1--namespace-default-1-2-3-4",
+						Name:        "ec2-name-ex1-namespace-default-1-2-3-4",
 						Namespace:   writeNamespace,
 						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
 					},
@@ -175,7 +175,7 @@ var _ = Describe("Plugin", func() {
 					Address:   privateIp,
 					Port:      77,
 					Metadata: &core.Metadata{
-						Name:        "ec2-name-ex1--namespace-default-5-5-5-5",
+						Name:        "ec2-name-ex1-namespace-default-5-5-5-5",
 						Namespace:   writeNamespace,
 						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
 					},

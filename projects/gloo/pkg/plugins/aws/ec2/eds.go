@@ -143,5 +143,11 @@ const DefaultPort = 80
 const ec2EndpointNamePrefix = "ec2"
 
 func generateName(upstreamRef *core.ResourceRef, publicIpAddress string) string {
-	return kubeutils.SanitizeNameV2(fmt.Sprintf("%v-%v-%v", ec2EndpointNamePrefix, upstreamRef.String(), publicIpAddress))
+	return kubeutils.SanitizeNameV2(fmt.Sprintf(
+		"%v-name-%s-namespace-%s-%v",
+		ec2EndpointNamePrefix,
+		upstreamRef.GetName(),
+		upstreamRef.GetNamespace(),
+		publicIpAddress,
+	))
 }
