@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/azure"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/basicroute"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/buffer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/csrf"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
@@ -78,6 +79,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 		wasm.NewPlugin(),
 		gzip.NewPlugin(),
 		buffer.NewPlugin(),
+		csrf.NewPlugin(),
 		listener.NewPlugin(),
 		virtualhost.NewPlugin(),
 		protocoloptions.NewPlugin(),
