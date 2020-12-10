@@ -36,10 +36,18 @@ jobs:
       uses: peaceiris/actions-hugo@v2
       with:
         hugo-version: '0.69.2'
+    - name: Check if community PR
+      id: community-pr-check
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      run: |
+        if [-z ${GITHUB_TOKEN}]; then ::set-output name=SKIP_CHANGELOG::true; fi
     - name: Generate versioned docs site
       run: make -C docs build-site
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        SKIP_CHANGELOG: ${{ steps.community-per-check.outputs.SKIP_CHANGELOG }}
   regression_tests:
     name: k8s regression tests
     runs-on: ubuntu-18.04
