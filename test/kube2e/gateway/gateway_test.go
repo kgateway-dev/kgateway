@@ -157,7 +157,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		cancel()
 	})
 
-	FContext("tests with virtual service", func() {
+	Context("tests with virtual service", func() {
 
 		AfterEach(func() {
 			err := virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{IgnoreNotExist: true})
@@ -439,7 +439,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 		})
 
-		FContext("with a mix of valid and invalid virtual services", func() {
+		Context("with a mix of valid and invalid virtual services", func() {
 			var (
 				validVsName   = "i-am-valid"
 				invalidVsName = "i-am-invalid"
@@ -563,7 +563,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 			})
 
-			FIt("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
+			It("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
 
 				petstoreDeployment, petstoreSvc := petstore(testHelper.InstallNamespace)
 
@@ -636,12 +636,12 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				// the VS should get accepted
 				Eventually(func() (core.Status_State, error) {
-					vs, err := virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
+					vs, err := virtualServiceClient.Read(vsWithFunctionRoute.GetMetadata().GetNamespace(), vsWithFunctionRoute.GetMetadata().GetName(), clients.ReadOpts{})
 					if err != nil {
 						return 0, err
 					}
 					return vs.GetStatus().GetState(), nil
-				}, "10s", "0.5s").Should(Equal(core.Status_Accepted))
+				}, "15s", "0.5s").Should(Equal(core.Status_Accepted))
 			})
 		})
 

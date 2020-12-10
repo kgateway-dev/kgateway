@@ -3,6 +3,7 @@ package wasm
 import (
 	"fmt"
 
+	envoy_extensions_filters_http_wasm_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/wasm/v3"
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
@@ -11,7 +12,6 @@ import (
 	"github.com/opencontainers/go-digest"
 	"github.com/rotisserie/eris"
 	configcore "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	wasmv3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/wasm/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -87,14 +87,14 @@ var _ = Describe("wasm plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(f).To(HaveLen(1))
 		goTypedConfig := f[0].HttpFilter.GetTypedConfig()
-		var pc wasmv3.Wasm
+		var pc envoy_extensions_filters_http_wasm_v3.Wasm
 		Expect(ptypes.UnmarshalAny(goTypedConfig, &pc)).NotTo(HaveOccurred())
 		Expect(pc.Config.RootId).To(Equal(wasmFilter.RootId))
 		Expect(pc.Config.Name).To(Equal(wasmFilter.Name))
 		Expect(pc.Config.Configuration).To(matchers.MatchProto(wasmFilter.Config))
-		Expect(pc.Config.GetVmConfig().VmId).To(Equal(VmId))
-		Expect(pc.Config.GetVmConfig().Runtime).To(Equal(V8Runtime))
-		remote := pc.Config.GetVmConfig().Code.GetRemote()
+		Expect(pc.Config.GetInlineVmConfig().GetVmId()).To(Equal(VmId))
+		Expect(pc.Config.GetInlineVmConfig().GetRuntime()).To(Equal(V8Runtime))
+		remote := pc.Config.GetInlineVmConfig().GetCode().GetRemote()
 		Expect(remote).NotTo(BeNil())
 		Expect(remote.Sha256).To(Equal(sha))
 		Expect(remote.HttpUri.Uri).To(Equal(fmt.Sprintf("http://gloo/images/%s", sha)))

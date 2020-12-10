@@ -101,13 +101,15 @@ var _ = Describe("CustomAuth", func() {
 		_, err = testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		Eventually(func() (*core.Status, error) {
+		Eventually(func() (core.Status, error) {
 			proxy, err := testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
 			if err != nil {
-				return nil, err
+				return core.Status{}, err
 			}
-
-			return proxy.Status, nil
+			if proxy.GetStatus() == nil {
+				return core.Status{}, nil
+			}
+			return *(proxy.GetStatus()), nil
 		}, "60s", "0.1s").Should(MatchFields(IgnoreExtras, Fields{
 			"Reason": BeEmpty(),
 			"State":  Equal(core.Status_Accepted),
