@@ -40,8 +40,6 @@ jobs:
       id: community-pr-check
       if: ${{ github.event.pull_request.head.repo.full_name != 'solo-io/gloo' }}
       shell: bash
-      env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       run: |
           echo "Pull Request is from a fork. Setting IS_COMMUNITY_PR to true"
           echo "::set-output name=IS_COMMUNITY_PR::true"
