@@ -36,24 +36,20 @@ jobs:
       uses: peaceiris/actions-hugo@v2
       with:
         hugo-version: '0.69.2'
-    - name: Check if community PR
+    - name: Detect Communinty PR
       id: community-pr-check
+      if: ${{ github.event.pull_request.head.repo.full_name != 'solo-io/gloo' }}
       shell: bash
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       run: |
-        if [-n ${GITHUB_TOKEN}]
-        then
-          echo "GITHUB_TOKEN not empty, setting SKIP_CHANGELOG_GENERATION to true"
-          ::set-output name=SKIP_CHANGELOG_GENERATION::true
-        else
-          echo "GITHUB_TOKEN is empty, changelog generation will NOT be skipped"
-        fi
+          echo "Pull Request is from a fork. Setting IS_COMMUNITY_PR to true"
+          ::set-output name=IS_COMMUNITY_PR::true
     - name: Generate versioned docs site
       run: make -C docs build-site
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        SKIP_CHANGELOG_GENERATION: ${{ steps.community-per-check.outputs.SKIP_CHANGELOG_GENERATION }}
+        SKIP_CHANGELOG_GENERATION: ${{ steps.community-per-check.outputs.IS_COMMUNITY_PR }}
   regression_tests:
     name: k8s regression tests
     runs-on: ubuntu-18.04
