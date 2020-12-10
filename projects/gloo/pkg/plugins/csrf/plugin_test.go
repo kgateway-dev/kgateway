@@ -1,39 +1,62 @@
 package csrf_test
 
 import (
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoybuffer "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
+	envoycsrf "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/gogo/protobuf/types"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/wrappers"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+
+	api_type_matcher_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
+	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/csrf"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
 )
 
 var _ = Describe("Plugin", func() {
-	It("copies the csrf config from the listener to the filter", func() {
+	It("copies the csrf config from the listener to the filter with AdditionalOrigins set", func() {
+		additionalOrigins := []*api_type_matcher_v3.StringMatcher {
+			&api_type_matcher_v3.StringMatcher{
+				MatchPattern: &api_type_matcher_v3.StringMatcher_Exact{
+					Exact: "test",
+				},
+				IgnoreCase: true,
+			},
+		}
+
+		envoy_additionalOrigins := []*envoy_type_matcher_v3.StringMatcher {
+			&envoy_type_matcher_v3.StringMatcher{
+				MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{
+					Exact: "test",
+				},
+				IgnoreCase: true,
+			},
+		}
+
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
-				Csrf: &v3.CsrfPolicy{
-
+				Csrf: &v31.CsrfPolicy{
+					FilterEnabled: nil,
+					ShadowEnabled: nil,
+					AdditionalOrigins: additionalOrigins,
 				},
 			},
 		})
+
 		Expect(err).NotTo(HaveOccurred())
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
 				HttpFilter: &envoyhcm.HttpFilter{
-					Name: wellknown.Buffer,
+					Name: "envoy.filters.http.csrf",
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(&envoybuffer.Buffer{
-							MaxRequestBytes: &wrappers.UInt32Value{Value: 2048.000000},
+						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
+							FilterEnabled: nil,
+							ShadowEnabled: nil,
+							AdditionalOrigins: envoy_additionalOrigins,
 						}),
 					},
 				},
@@ -43,138 +66,6 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 		}))
-	})
-
-	It("allows route specific disabling of buffer", func() {
-		p := NewPlugin()
-		out := &envoy_config_route_v3.Route{}
-		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			Options: &v1.RouteOptions{
-				BufferPerRoute: &v3.BufferPerRoute{
-					Override: &v3.BufferPerRoute_Disabled{
-						Disabled: true,
-					},
-				},
-			},
-		}, out)
-
-		var cfg envoybuffer.BufferPerRoute
-		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[wellknown.Buffer], &cfg)
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg.GetDisabled()).To(Equal(true))
-	})
-
-	It("allows route specific buffer config", func() {
-		p := NewPlugin()
-		out := &envoy_config_route_v3.Route{}
-		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			Options: &v1.RouteOptions{
-				BufferPerRoute: &v3.BufferPerRoute{
-					Override: &v3.BufferPerRoute_Buffer{
-						Buffer: &v3.Buffer{
-							MaxRequestBytes: &types.UInt32Value{
-								Value: 4098,
-							},
-						},
-					},
-				},
-			},
-		}, out)
-
-		var cfg envoybuffer.BufferPerRoute
-		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[wellknown.Buffer], &cfg)
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg.GetBuffer().GetMaxRequestBytes().GetValue()).To(Equal(uint32(4098)))
-	})
-
-	It("allows vhost specific disabling of buffer", func() {
-		p := NewPlugin()
-		out := &envoy_config_route_v3.VirtualHost{}
-		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
-			Options: &v1.VirtualHostOptions{
-				BufferPerRoute: &v3.BufferPerRoute{
-					Override: &v3.BufferPerRoute_Disabled{
-						Disabled: true,
-					},
-				},
-			},
-		}, out)
-
-		var cfg envoybuffer.BufferPerRoute
-		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[wellknown.Buffer], &cfg)
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg.GetDisabled()).To(Equal(true))
-	})
-
-	It("allows vhost specific buffer config", func() {
-		p := NewPlugin()
-		out := &envoy_config_route_v3.VirtualHost{}
-		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
-			Options: &v1.VirtualHostOptions{
-				BufferPerRoute: &v3.BufferPerRoute{
-					Override: &v3.BufferPerRoute_Buffer{
-						Buffer: &v3.Buffer{
-							MaxRequestBytes: &types.UInt32Value{
-								Value: 4098,
-							},
-						},
-					},
-				},
-			},
-		}, out)
-
-		var cfg envoybuffer.BufferPerRoute
-		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[wellknown.Buffer], &cfg)
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg.GetBuffer().GetMaxRequestBytes().GetValue()).To(Equal(uint32(4098)))
-	})
-
-	It("allows weighted destination specific disabling of buffer", func() {
-		p := NewPlugin()
-		out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
-		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
-			Options: &v1.WeightedDestinationOptions{
-				BufferPerRoute: &v3.BufferPerRoute{
-					Override: &v3.BufferPerRoute_Disabled{
-						Disabled: true,
-					},
-				},
-			},
-		}, out)
-
-		var cfg envoybuffer.BufferPerRoute
-		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[wellknown.Buffer], &cfg)
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg.GetDisabled()).To(Equal(true))
-	})
-
-	It("allows weighted destination specific buffer config", func() {
-		p := NewPlugin()
-		out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
-		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
-			Options: &v1.WeightedDestinationOptions{
-				BufferPerRoute: &v3.BufferPerRoute{
-					Override: &v3.BufferPerRoute_Buffer{
-						Buffer: &v3.Buffer{
-							MaxRequestBytes: &types.UInt32Value{
-								Value: 4098,
-							},
-						},
-					},
-				},
-			},
-		}, out)
-
-		var cfg envoybuffer.BufferPerRoute
-		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[wellknown.Buffer], &cfg)
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg.GetBuffer().GetMaxRequestBytes().GetValue()).To(Equal(uint32(4098)))
 	})
 
 })
