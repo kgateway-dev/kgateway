@@ -61,7 +61,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	shadowEnabled := csrfPolicy.GetShadowEnabled()
 	if additionalOrigins != nil || filtersEnabled != nil || shadowEnabled != nil  {
 		config := getCsrfConfig(csrfPolicy)
-		return pluginutils.SetRoutePerFilterConfig(out, "envoy.filters.http.buffer", config)
+		return pluginutils.SetRoutePerFilterConfig(out, "envoy.filters.http.csrf", config)
 	}
 
 	return nil
@@ -82,7 +82,7 @@ func (p *Plugin) ProcessVirtualHost(
 	shadowEnabled := csrfPolicy.GetShadowEnabled()
 	if additionalOrigins != nil || filtersEnabled != nil || shadowEnabled != nil  {
 		config := getCsrfConfig(csrfPolicy)
-		return pluginutils.SetVhostPerFilterConfig(out, "envoy.filters.http.buffer", config)
+		return pluginutils.SetVhostPerFilterConfig(out, "envoy.filters.http.csrf", config)
 	}
 
 	return nil
@@ -103,7 +103,7 @@ func (p *Plugin) ProcessWeightedDestination(
 	shadowEnabled := csrfPolicy.GetShadowEnabled()
 	if additionalOrigins != nil || filtersEnabled != nil || shadowEnabled != nil  {
 		config := getCsrfConfig(csrfPolicy)
-		return pluginutils.SetWeightedClusterPerFilterConfig(out, "envoy.filters.http.buffer", config)
+		return pluginutils.SetWeightedClusterPerFilterConfig(out, "envoy.filters.http.csrf", config)
 	}
 
 	return nil
