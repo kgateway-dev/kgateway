@@ -24,25 +24,34 @@ import (
 
 var _ = Describe("Plugin", func() {
 
+	envoyFilter := &envoy_config_core.RuntimeFractionalPercent{
+		DefaultValue: &envoytype.FractionalPercent{
+			Numerator:   uint32(1),
+			Denominator: envoytype.FractionalPercent_HUNDRED,
+		},
+	}
+
+	apiAdditionalOrigins := []*gloo_type_matcher.StringMatcher{
+		{
+			MatchPattern: &gloo_type_matcher.StringMatcher_Exact{
+				Exact: "test",
+			},
+			IgnoreCase:    true,
+			XXX_sizecache: 8,
+		},
+	}
+
+	envoyAdditionalOrigins := []*envoy_type_matcher.StringMatcher{
+		{
+			MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+				Exact: "test",
+			},
+			IgnoreCase:    true,
+			XXX_sizecache: 8,
+		},
+	}
+
 	It("copies the csrf config from the listener to the filter with AdditionalOrigins set", func() {
-		apiAdditionalOrigins := []*gloo_type_matcher.StringMatcher{
-			{
-				MatchPattern: &gloo_type_matcher.StringMatcher_Exact{
-					Exact: "test",
-				},
-				IgnoreCase: true,
-			},
-		}
-
-		envoyAdditionalOrigins := []*envoy_type_matcher.StringMatcher{
-			{
-				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-					Exact: "test",
-				},
-				IgnoreCase: true,
-			},
-		}
-
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
@@ -75,24 +84,6 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("copies the csrf config from the listener to the filter with filters enabled", func() {
-		apiAdditionalOrigins := []*gloo_type_matcher.StringMatcher{
-			{
-				MatchPattern: &gloo_type_matcher.StringMatcher_Exact{
-					Exact: "test",
-				},
-				IgnoreCase: true,
-			},
-		}
-
-		envoyAdditionalOrigins := []*envoy_type_matcher.StringMatcher{
-			{
-				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-					Exact: "test",
-				},
-				IgnoreCase: true,
-			},
-		}
-
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
@@ -135,24 +126,6 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("copies the csrf config from the listener to the filter with shadow enabled", func() {
-		apiAdditionalOrigins := []*gloo_type_matcher.StringMatcher{
-			{
-				MatchPattern: &gloo_type_matcher.StringMatcher_Exact{
-					Exact: "test",
-				},
-				IgnoreCase: true,
-			},
-		}
-
-		envoyAdditionalOrigins := []*envoy_type_matcher.StringMatcher{
-			{
-				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-					Exact: "test",
-				},
-				IgnoreCase: true,
-			},
-		}
-
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
@@ -195,24 +168,6 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("copies the csrf config from the listener to the filter with filters and shadow enabled", func() {
-		apiAdditionalOrigins := []*gloo_type_matcher.StringMatcher{
-			{
-				MatchPattern: &gloo_type_matcher.StringMatcher_Exact{
-					Exact: "test",
-				},
-				IgnoreCase: true,
-			},
-		}
-
-		envoyAdditionalOrigins := []*envoy_type_matcher.StringMatcher{
-			{
-				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-					Exact: "test",
-				},
-				IgnoreCase: true,
-			},
-		}
-
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
@@ -265,30 +220,8 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("allows route specific csrf config", func() {
-		apiAdditionalOrigins := []*gloo_type_matcher.StringMatcher{
-			{
-				MatchPattern: &gloo_type_matcher.StringMatcher_Exact{
-					Exact: "test",
-				},
-				IgnoreCase: true,
-			},
-		}
-
-		envoyAdditionalOrigins := []*envoy_type_matcher.StringMatcher{
-			{
-				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-					Exact: "test",
-				},
-				IgnoreCase: true,
-			},
-		}
-
-		envoyFilter := &envoy_config_core.RuntimeFractionalPercent{
-			DefaultValue: &envoytype.FractionalPercent{
-				Numerator:   uint32(1),
-				Denominator: envoytype.FractionalPercent_HUNDRED,
-			},
-		}
+		envoyAdditionalOrigins[0].XXX_sizecache = 0
+		apiAdditionalOrigins[0].XXX_sizecache = 0
 
 		p := NewPlugin()
 		out := &envoy_config_route.Route{}
@@ -316,30 +249,8 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("allows vhost specific csrf config", func() {
-		apiAdditionalOrigins := []*gloo_type_matcher.StringMatcher{
-			{
-				MatchPattern: &gloo_type_matcher.StringMatcher_Exact{
-					Exact: "test",
-				},
-				IgnoreCase: true,
-			},
-		}
-
-		envoyAdditionalOrigins := []*envoy_type_matcher.StringMatcher{
-			{
-				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-					Exact: "test",
-				},
-				IgnoreCase: true,
-			},
-		}
-
-		envoyFilter := &envoy_config_core.RuntimeFractionalPercent{
-			DefaultValue: &envoytype.FractionalPercent{
-				Numerator:   uint32(1),
-				Denominator: envoytype.FractionalPercent_HUNDRED,
-			},
-		}
+		envoyAdditionalOrigins[0].XXX_sizecache = 0
+		apiAdditionalOrigins[0].XXX_sizecache = 0
 
 		p := NewPlugin()
 		out := &envoy_config_route.VirtualHost{}
@@ -367,30 +278,8 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("allows weighted destination specific csrf config", func() {
-		apiAdditionalOrigins := []*gloo_type_matcher.StringMatcher{
-			{
-				MatchPattern: &gloo_type_matcher.StringMatcher_Exact{
-					Exact: "test",
-				},
-				IgnoreCase: true,
-			},
-		}
-
-		envoyAdditionalOrigins := []*envoy_type_matcher.StringMatcher{
-			{
-				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-					Exact: "test",
-				},
-				IgnoreCase: true,
-			},
-		}
-
-		envoyFilter := &envoy_config_core.RuntimeFractionalPercent{
-			DefaultValue: &envoytype.FractionalPercent{
-				Numerator:   uint32(1),
-				Denominator: envoytype.FractionalPercent_HUNDRED,
-			},
-		}
+		envoyAdditionalOrigins[0].XXX_sizecache = 0
+		apiAdditionalOrigins[0].XXX_sizecache = 0
 
 		p := NewPlugin()
 		out := &envoy_config_route.WeightedCluster_ClusterWeight{}
