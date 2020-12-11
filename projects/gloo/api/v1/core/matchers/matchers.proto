@@ -35,6 +35,10 @@ message Matcher {
         // If your regex is too complex, you may need to adjust the `regexMaxProgramSize` field
         // in the `GlooOptions` section of your `Settings` resource
         string regex = 3;
+
+        //
+        // If true, indicates the exact/prefix matching should be case insensitive.
+        bool ignore_case = 4;
     }
 
     // Specifies a set of headers that the route should match on. The router will

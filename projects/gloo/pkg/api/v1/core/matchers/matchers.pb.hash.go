@@ -102,6 +102,13 @@ func (m *Matcher) Hash(hasher hash.Hash64) (uint64, error) {
 			return 0, err
 		}
 
+	case *Matcher_IgnoreCase:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetIgnoreCase())
+		if err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil
