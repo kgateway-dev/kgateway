@@ -5,6 +5,8 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -216,7 +218,7 @@ func GlooMatcherToEnvoyMatcher(params plugins.Params, matcher *matchers.Matcher)
 	// need to do this because Go's proto implementation makes oneofs private
 	// which genius thought of that?
 	setEnvoyPathMatcher(params, matcher, &match)
-	match.CaseSensitive = &wrappers.BoolValue{Value: matcher.GetIgnoreCase()}
+	match.CaseSensitive = gogoutils.BoolGogoToProto(matcher.GetCaseSensitive())
 	return match
 }
 
