@@ -93,6 +93,13 @@ spec:
 {{- toYaml .Values.settings.rateLimit | nindent 4 }}
 {{- end }}
 
+{{- if .Values.global.extensions }}
+{{- if .Values.global.extensions.extAuth }}
+  extauth:
+{{- toYaml .Values.global.extensions.extAuth | nindent 4 }}
+{{- end }}
+{{- end }}
+
 {{- if .Values.settings.singleNamespace }}
   watchNamespaces:
   - {{ .Release.Namespace }}
