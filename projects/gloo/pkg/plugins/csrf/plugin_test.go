@@ -24,7 +24,14 @@ import (
 
 var _ = Describe("plugin", func() {
 
-	envoyFilter := &envoy_config_core.RuntimeFractionalPercent{
+	apiFilter := gloo_config_core.RuntimeFractionalPercent{
+		DefaultValue: &glootype.FractionalPercent{
+			Numerator:   uint32(1),
+			Denominator: glootype.FractionalPercent_HUNDRED,
+		},
+	}
+
+	envoyFilter := envoy_config_core.RuntimeFractionalPercent{
 		DefaultValue: &envoytype.FractionalPercent{
 			Numerator:   uint32(1),
 			Denominator: envoytype.FractionalPercent_HUNDRED,
@@ -87,12 +94,7 @@ var _ = Describe("plugin", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
-					FilterEnabled: &gloo_config_core.RuntimeFractionalPercent{
-						DefaultValue: &glootype.FractionalPercent{
-							Numerator:   uint32(1),
-							Denominator: glootype.FractionalPercent_HUNDRED,
-						},
-					},
+					FilterEnabled:     &apiFilter,
 					ShadowEnabled:     nil,
 					AdditionalOrigins: apiAdditionalOrigins,
 				},
@@ -106,12 +108,7 @@ var _ = Describe("plugin", func() {
 					Name: "envoy.filters.http.csrf",
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
-							FilterEnabled: &envoy_config_core.RuntimeFractionalPercent{
-								DefaultValue: &envoytype.FractionalPercent{
-									Numerator:   uint32(1),
-									Denominator: envoytype.FractionalPercent_HUNDRED,
-								},
-							},
+							FilterEnabled:     &envoyFilter,
 							ShadowEnabled:     nil,
 							AdditionalOrigins: envoyAdditionalOrigins,
 						}),
@@ -129,13 +126,8 @@ var _ = Describe("plugin", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
-					FilterEnabled: nil,
-					ShadowEnabled: &gloo_config_core.RuntimeFractionalPercent{
-						DefaultValue: &glootype.FractionalPercent{
-							Numerator:   uint32(1),
-							Denominator: glootype.FractionalPercent_HUNDRED,
-						},
-					},
+					FilterEnabled:     nil,
+					ShadowEnabled:     &apiFilter,
 					AdditionalOrigins: apiAdditionalOrigins,
 				},
 			},
@@ -148,13 +140,8 @@ var _ = Describe("plugin", func() {
 					Name: "envoy.filters.http.csrf",
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
-							FilterEnabled: nil,
-							ShadowEnabled: &envoy_config_core.RuntimeFractionalPercent{
-								DefaultValue: &envoytype.FractionalPercent{
-									Numerator:   uint32(1),
-									Denominator: envoytype.FractionalPercent_HUNDRED,
-								},
-							},
+							FilterEnabled:     nil,
+							ShadowEnabled:     &envoyFilter,
 							AdditionalOrigins: envoyAdditionalOrigins,
 						}),
 					},
@@ -171,18 +158,8 @@ var _ = Describe("plugin", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
-					FilterEnabled: &gloo_config_core.RuntimeFractionalPercent{
-						DefaultValue: &glootype.FractionalPercent{
-							Numerator:   uint32(1),
-							Denominator: glootype.FractionalPercent_HUNDRED,
-						},
-					},
-					ShadowEnabled: &gloo_config_core.RuntimeFractionalPercent{
-						DefaultValue: &glootype.FractionalPercent{
-							Numerator:   uint32(1),
-							Denominator: glootype.FractionalPercent_HUNDRED,
-						},
-					},
+					FilterEnabled:     &apiFilter,
+					ShadowEnabled:     &apiFilter,
 					AdditionalOrigins: apiAdditionalOrigins,
 				},
 			},
@@ -195,18 +172,8 @@ var _ = Describe("plugin", func() {
 					Name: "envoy.filters.http.csrf",
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
-							FilterEnabled: &envoy_config_core.RuntimeFractionalPercent{
-								DefaultValue: &envoytype.FractionalPercent{
-									Numerator:   uint32(1),
-									Denominator: envoytype.FractionalPercent_HUNDRED,
-								},
-							},
-							ShadowEnabled: &envoy_config_core.RuntimeFractionalPercent{
-								DefaultValue: &envoytype.FractionalPercent{
-									Numerator:   uint32(1),
-									Denominator: envoytype.FractionalPercent_HUNDRED,
-								},
-							},
+							FilterEnabled:     &envoyFilter,
+							ShadowEnabled:     &envoyFilter,
 							AdditionalOrigins: envoyAdditionalOrigins,
 						}),
 					},
@@ -223,17 +190,15 @@ var _ = Describe("plugin", func() {
 		envoyAdditionalOrigins[0].XXX_sizecache = 0
 		apiAdditionalOrigins[0].XXX_sizecache = 0
 
+		envoyFilter.XXX_sizecache = 0
+		envoyFilter.DefaultValue.XXX_sizecache = 0
+
 		p := NewPlugin()
 		out := &envoy_config_route.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			Options: &v1.RouteOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
-					FilterEnabled: &gloo_config_core.RuntimeFractionalPercent{
-						DefaultValue: &glootype.FractionalPercent{
-							Numerator:   uint32(1),
-							Denominator: glootype.FractionalPercent_HUNDRED,
-						},
-					},
+					FilterEnabled:     &apiFilter,
 					ShadowEnabled:     nil,
 					AdditionalOrigins: apiAdditionalOrigins,
 				},
@@ -245,24 +210,22 @@ var _ = Describe("plugin", func() {
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetAdditionalOrigins()).To(Equal(envoyAdditionalOrigins))
-		Expect(cfg.GetFilterEnabled()).To(Equal(envoyFilter))
+		Expect(cfg.GetFilterEnabled()).To(Equal(&envoyFilter))
 	})
 
 	It("allows vhost specific csrf config", func() {
 		envoyAdditionalOrigins[0].XXX_sizecache = 0
 		apiAdditionalOrigins[0].XXX_sizecache = 0
 
+		envoyFilter.XXX_sizecache = 0
+		envoyFilter.DefaultValue.XXX_sizecache = 0
+
 		p := NewPlugin()
 		out := &envoy_config_route.VirtualHost{}
 		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
-					FilterEnabled: &gloo_config_core.RuntimeFractionalPercent{
-						DefaultValue: &glootype.FractionalPercent{
-							Numerator:   uint32(1),
-							Denominator: glootype.FractionalPercent_HUNDRED,
-						},
-					},
+					FilterEnabled:     &apiFilter,
 					ShadowEnabled:     nil,
 					AdditionalOrigins: apiAdditionalOrigins,
 				},
@@ -274,24 +237,22 @@ var _ = Describe("plugin", func() {
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetAdditionalOrigins()).To(Equal(envoyAdditionalOrigins))
-		Expect(cfg.GetFilterEnabled()).To(Equal(envoyFilter))
+		Expect(cfg.GetFilterEnabled()).To(Equal(&envoyFilter))
 	})
 
 	It("allows weighted destination specific csrf config", func() {
 		envoyAdditionalOrigins[0].XXX_sizecache = 0
 		apiAdditionalOrigins[0].XXX_sizecache = 0
 
+		envoyFilter.XXX_sizecache = 0
+		envoyFilter.DefaultValue.XXX_sizecache = 0
+
 		p := NewPlugin()
 		out := &envoy_config_route.WeightedCluster_ClusterWeight{}
 		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
 			Options: &v1.WeightedDestinationOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
-					FilterEnabled: &gloo_config_core.RuntimeFractionalPercent{
-						DefaultValue: &glootype.FractionalPercent{
-							Numerator:   uint32(1),
-							Denominator: glootype.FractionalPercent_HUNDRED,
-						},
-					},
+					FilterEnabled:     &apiFilter,
 					ShadowEnabled:     nil,
 					AdditionalOrigins: apiAdditionalOrigins,
 				},
@@ -303,7 +264,7 @@ var _ = Describe("plugin", func() {
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetAdditionalOrigins()).To(Equal(envoyAdditionalOrigins))
-		Expect(cfg.GetFilterEnabled()).To(Equal(envoyFilter))
+		Expect(cfg.GetFilterEnabled()).To(Equal(&envoyFilter))
 	})
 
 })
