@@ -1801,6 +1801,52 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
+					It("allows setting extauth", func() {
+						expectedYaml := makeUnstructured(`
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  labels:
+    app: gloo
+  name: default
+  namespace: gloo-system
+spec:
+  gloo:
+    xdsBindAddr: "0.0.0.0:9977"
+    restXdsBindAddr: "0.0.0.0:9976"
+    enableRestEds: true
+    disableKubernetesDestinations: false
+    disableProxyGarbageCollection: false
+  discoveryNamespace: gloo-system
+  kubernetesArtifactSource: {}
+  kubernetesConfigSource: {}
+  kubernetesSecretSource: {}
+  refreshRate: 60s
+
+  gateway:
+    readGatewaysFromAllNamespaces: false
+    validation:
+      proxyValidationServerAddr: gloo:9988
+      alwaysAccept: true
+      allowWarnings: true
+  discovery:
+    fdsMode: WHITELIST
+  extauth:
+    extauthzServerRef:
+      name: test
+      namespace: testspace
+`)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.extensions.extAuth.extauthzServerRef.name=test",
+								"global.extensions.extAuth.extauthzServerRef.namespace=testspace",
+							},
+						})
+
+						testManifest.ExpectUnstructured(expectedYaml.GetKind(), expectedYaml.GetNamespace(), expectedYaml.GetName()).To(BeEquivalentTo(expectedYaml))
+
+					})
+
 					It("finds resources on all containers, with identical resources on all sds and sidecar containers", func() {
 						envoySidecarVals := []string{"100Mi", "200m", "300Mi", "400m"}
 						sdsVals := []string{"101Mi", "201m", "301Mi", "401m"}
