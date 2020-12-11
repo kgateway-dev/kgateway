@@ -464,7 +464,7 @@ Deprecated: Prefer OAuth2
 "options": .enterprise.gloo.solo.io.RedisOptions
 "keyPrefix": string
 "cookieName": string
-"allowRefreshing": bool
+"allowRefreshing": .google.protobuf.BoolValue
 
 ```
 
@@ -473,7 +473,7 @@ Deprecated: Prefer OAuth2
 | `options` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Options to connect to redis. |
 | `keyPrefix` | `string` | Key prefix inside redis. |
 | `cookieName` | `string` | Cookie name to set and store the session id. If empty the default "__session" is used. |
-| `allowRefreshing` | `bool` | When set to true, refresh expired id tokens using the refresh token. |
+| `allowRefreshing` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When set, refresh expired id-tokens using the refresh-token. Defaults to true. Explicitly set to false to disable refreshing. |
 
 
 
