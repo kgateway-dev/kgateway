@@ -2846,7 +2846,7 @@ metadata:
 					Expect(checkedAddedCluster).To(BeTrue(), "extra cluster was not found")
 				})
 
-				FIt("can create a gateway proxy with bootstrap extensions", func() {
+				It("can create a gateway proxy with bootstrap extensions", func() {
 					prepareMakefileFromValuesFile("values/val_custom_bootstrap_extensions.yaml")
 					byt, err := ioutil.ReadFile("fixtures/envoy_config/bootstrap_extensions.yaml")
 					Expect(err).NotTo(HaveOccurred())
