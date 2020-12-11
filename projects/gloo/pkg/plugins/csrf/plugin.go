@@ -60,7 +60,10 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 
 	if csrfPolicy.GetAdditionalOrigins() != nil || csrfPolicy.GetFilterEnabled() != nil || csrfPolicy.GetShadowEnabled() != nil {
-		config := getCsrfConfig(csrfPolicy)
+		err, config := getCsrfConfig(csrfPolicy)
+		if err != nil {
+			return err
+		}
 		return pluginutils.SetRoutePerFilterConfig(out, "envoy.filters.http.csrf", config)
 	}
 
@@ -78,7 +81,10 @@ func (p *plugin) ProcessVirtualHost(
 	}
 
 	if csrfPolicy.GetAdditionalOrigins() != nil || csrfPolicy.GetFilterEnabled() != nil || csrfPolicy.GetShadowEnabled() != nil {
-		config := getCsrfConfig(csrfPolicy)
+		err, config := getCsrfConfig(csrfPolicy)
+		if err != nil {
+			return err
+		}
 		return pluginutils.SetVhostPerFilterConfig(out, "envoy.filters.http.csrf", config)
 	}
 
@@ -96,14 +102,17 @@ func (p *plugin) ProcessWeightedDestination(
 	}
 
 	if csrfPolicy.GetAdditionalOrigins() != nil || csrfPolicy.GetFilterEnabled() != nil || csrfPolicy.GetShadowEnabled() != nil {
-		config := getCsrfConfig(csrfPolicy)
+		err, config := getCsrfConfig(csrfPolicy)
+		if err != nil {
+			return err
+		}
 		return pluginutils.SetWeightedClusterPerFilterConfig(out, "envoy.filters.http.csrf", config)
 	}
 
 	return nil
 }
 
-func getCsrfConfig(csrf *csrf.CsrfPolicy) *envoycsrf.CsrfPolicy {
+func getCsrfConfig(csrf *csrf.CsrfPolicy) (error, *envoycsrf.CsrfPolicy) {
 	origins := csrf.GetAdditionalOrigins()
 	var additionalOrigins []*envoy_type_matcher.StringMatcher
 	for _, ao := range origins {
@@ -145,7 +154,7 @@ func getCsrfConfig(csrf *csrf.CsrfPolicy) *envoycsrf.CsrfPolicy {
 
 	}
 
-	return &envoycsrf.CsrfPolicy{
+	csrfPolicy := &envoycsrf.CsrfPolicy{
 		FilterEnabled: &envoy_config_core.RuntimeFractionalPercent{
 			DefaultValue: &envoytype.FractionalPercent{
 				Numerator:   csrf.GetFilterEnabled().GetDefaultValue().GetNumerator(),
@@ -162,4 +171,6 @@ func getCsrfConfig(csrf *csrf.CsrfPolicy) *envoycsrf.CsrfPolicy {
 		},
 		AdditionalOrigins: additionalOrigins,
 	}
+
+	return csrfPolicy.Validate(), csrfPolicy
 }
