@@ -528,6 +528,30 @@ var _ = Describe("Translator", func() {
 		})
 	})
 
+	Context("non route_routeaction routes", func() {
+		BeforeEach(func() {
+			redirectRoute := &v1.Route{
+				Action: &v1.Route_RedirectAction{
+					RedirectAction: &v1.RedirectAction{
+						ResponseCode: 400,
+					},
+				},
+			}
+			directResponseRoute := &v1.Route{
+				Action: &v1.Route_DirectResponseAction{
+					DirectResponseAction: &v1.DirectResponseAction{
+						Status: 400,
+					},
+				},
+			}
+			routes = []*v1.Route{redirectRoute, directResponseRoute}
+		})
+
+		It("reports no errors with a redirect route or direct response route", func() {
+			translate()
+		})
+	})
+
 	Context("Health check config", func() {
 
 		It("will error if required field is nil", func() {
