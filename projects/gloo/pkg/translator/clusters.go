@@ -255,9 +255,7 @@ func validateUpstreamLambdaFunctions(proxy *v1.Proxy, upstreams v1.UpstreamList,
 			for _, virtualHost := range httpListener.GetVirtualHosts() {
 				// Validate all routes to make sure that if they point to a lambda, it exists.
 				for _, route := range virtualHost.GetRoutes() {
-					if route.GetDirectResponseAction() == nil {
-						validateRouteDestinationForValidLambdas(proxy, route.GetRouteAction(), upstreamGroups, reports, upstreamLambdas)
-					}
+					validateRouteDestinationForValidLambdas(proxy, route, upstreamGroups, reports, upstreamLambdas)
 				}
 			}
 		}
@@ -265,18 +263,24 @@ func validateUpstreamLambdaFunctions(proxy *v1.Proxy, upstreams v1.UpstreamList,
 }
 
 // Validates a route that may have a single or multi upstream destinations to make sure that any lambda upstreams are referencing valid lambdas
-func validateRouteDestinationForValidLambdas(proxy *v1.Proxy, route *v1.RouteAction, upstreamGroups v1.UpstreamGroupList, reports reporter.ResourceReports, upstreamLambdas map[core.ResourceRef]map[string]bool) {
+func validateRouteDestinationForValidLambdas(proxy *v1.Proxy, route *v1.Route, upstreamGroups v1.UpstreamGroupList, reports reporter.ResourceReports, upstreamLambdas map[core.ResourceRef]map[string]bool) {
 	// Append destinations to a destination list to process all of them in one go
 	var destinations []*v1.Destination
 
-	switch typedRoute := route.GetDestination().(type) {
+	_, ok := route.GetAction().(*v1.Route_RouteAction)
+	if !ok {
+		// If this is not a Route_RouteAction (e.g. Route_DirectResponseAction, Route_RedirectAction), there is no destination to validate
+		return
+	}
+	routeAction := route.GetRouteAction()
+	switch typedRoute := routeAction.GetDestination().(type) {
 	case *v1.RouteAction_Single:
 		{
-			destinations = append(destinations, route.GetSingle())
+			destinations = append(destinations, routeAction.GetSingle())
 		}
 	case *v1.RouteAction_Multi:
 		{
-			multiDest := route.GetMulti()
+			multiDest := routeAction.GetMulti()
 			for _, weightedDest := range multiDest.GetDestinations() {
 				destinations = append(destinations, weightedDest.GetDestination())
 			}
