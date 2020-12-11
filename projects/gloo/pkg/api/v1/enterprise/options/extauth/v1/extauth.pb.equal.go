@@ -684,6 +684,10 @@ func (m *HeaderConfiguration) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetAccessTokenHeader(), target.GetAccessTokenHeader()) != 0 {
+		return false
+	}
+
 	return true
 }
 
@@ -1603,6 +1607,16 @@ func (m *UserSession_RedisSession) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetCookieName(), target.GetCookieName()) != 0 {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetAllowRefreshing()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAllowRefreshing()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAllowRefreshing(), target.GetAllowRefreshing()) {
+			return false
+		}
 	}
 
 	return true
