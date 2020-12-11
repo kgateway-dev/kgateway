@@ -1,0 +1,12 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/1892
+    description: >-
+      Add a helm value for setting extauth field for gloo.solo.io.Settings. This allows to configure custom external auth server while installing Helm chart, without need to post-render or patch Settings object after helm chart was installed or upgraded.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: go-utils
+    dependencyTag: v0.20.1
+    description: Update go-utils to version v0.20.1, allows for windows builds of the helm tests.
+    issueLink: https://github.com/solo-io/gloo/issues/1892
+
