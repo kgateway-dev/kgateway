@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Plugin", func() {
+var _ = Describe("plugin", func() {
 
 	envoyFilter := &envoy_config_core.RuntimeFractionalPercent{
 		DefaultValue: &envoytype.FractionalPercent{

@@ -20,21 +20,24 @@ var pluginStage = plugins.DuringStage(plugins.RouteStage)
 
 const FilterName = "envoy.filters.http.csrf"
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.HttpFilterPlugin = new(Plugin)
+var _ plugins.Plugin = new(plugin)
+var _ plugins.HttpFilterPlugin = new(plugin)
+var _ plugins.WeightedDestinationPlugin = new(plugin)
+var _ plugins.VirtualHostPlugin = new(plugin)
+var _ plugins.RoutePlugin = new(plugin)
 
-type Plugin struct {
+type plugin struct {
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
+func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 
 	csrfConfig := listener.GetOptions().GetCsrf()
 
@@ -50,7 +53,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 	return []plugins.StagedHttpFilter{csrfFilter}, nil
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route.Route) error {
 	csrfPolicy := in.Options.GetCsrf()
 	if csrfPolicy == nil {
 		return nil
@@ -64,7 +67,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	return nil
 }
 
-func (p *Plugin) ProcessVirtualHost(
+func (p *plugin) ProcessVirtualHost(
 	params plugins.VirtualHostParams,
 	in *v1.VirtualHost,
 	out *envoy_config_route.VirtualHost,
@@ -82,7 +85,7 @@ func (p *Plugin) ProcessVirtualHost(
 	return nil
 }
 
-func (p *Plugin) ProcessWeightedDestination(
+func (p *plugin) ProcessWeightedDestination(
 	params plugins.RouteParams,
 	in *v1.WeightedDestination,
 	out *envoy_config_route.WeightedCluster_ClusterWeight,
