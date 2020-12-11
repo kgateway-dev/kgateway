@@ -2846,7 +2846,7 @@ metadata:
 					Expect(checkedAddedCluster).To(BeTrue(), "extra cluster was not found")
 				})
 
-				It("can create a gateway proxy with bootstrap extensions", func() {
+				FIt("can create a gateway proxy with bootstrap extensions", func() {
 					prepareMakefileFromValuesFile("values/val_custom_bootstrap_extensions.yaml")
 					byt, err := ioutil.ReadFile("fixtures/envoy_config/bootstrap_extensions.yaml")
 					Expect(err).NotTo(HaveOccurred())
@@ -2881,8 +2881,8 @@ metadata:
 								Expect(&wasmSvc).To(test_matchers.MatchProto(&envoy_extensions_wasm_v3.WasmService{
 									Config: &envoy_extensions_wasm_v3.PluginConfig{
 										Name: "my_plugin",
-										VmConfig: &envoy_extensions_wasm_v3.PluginConfig_InlineVmConfig{
-											InlineVmConfig: &envoy_extensions_wasm_v3.VmConfig{
+										Vm: &envoy_extensions_wasm_v3.PluginConfig_VmConfig{
+											VmConfig: &envoy_extensions_wasm_v3.VmConfig{
 												VmId:    "",
 												Runtime: "envoy.wasm.runtime.v8",
 												Code: &envoy_config_core_v3.AsyncDataSource{

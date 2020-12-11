@@ -135,7 +135,7 @@ bootstrap_extensions:
     '@type': type.googleapis.com/envoy.extensions.wasm.v3.WasmService
     config:
       name: my_plugin
-      inline_vm_config:
+      vm_config:
         code:
           local:
             filename: /etc/envoy_filter_http_wasm_example.wasm

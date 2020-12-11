@@ -89,8 +89,8 @@ func (p *Plugin) ensureFilter(wasmFilter *wasm.WasmFilter) (*plugins.StagedHttpF
 			Name:          wasmFilter.Name,
 			RootId:        wasmFilter.RootId,
 			Configuration: wasmFilter.Config,
-			VmConfig: &envoy_extensions_wasm_v3.PluginConfig_InlineVmConfig{
-				InlineVmConfig: &envoy_extensions_wasm_v3.VmConfig{
+			Vm: &envoy_extensions_wasm_v3.PluginConfig_VmConfig{
+				VmConfig: &envoy_extensions_wasm_v3.VmConfig{
 					VmId:                VmId,
 					Runtime:             runtime,
 					NackOnCodeCacheMiss: true,
