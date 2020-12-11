@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3824
+    resolvesIssue: false
+    description:  >
+      Add API which supports refreshing the OIDC id-token automatically when it expires.
