@@ -22,7 +22,7 @@ Copied from https://github.com/envoyproxy/envoy/blob/26eaa2e85cee69e5c32ab6bf4c5
 
 
 
-##### Source File: `envoy/extensions/wasm/v3/wasm.proto`
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/wasm/v3/wasm.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/envoy/extensions/wasm/v3/wasm.proto)
 
 
 
@@ -49,7 +49,7 @@ Configuration for a Wasm VM.
 | ----- | ---- | ----------- | 
 | `vmId` | `string` | An ID which will be used along with a hash of the wasm code (or the name of the registered Null VM plugin) to determine which VM will be used for the plugin. All plugins which use the same *vm_id* and code will use the same VM. May be left blank. Sharing a VM between plugins can reduce memory utilization and make sharing of data easier which may have security implications. See ref: "TODO: add ref" for details. |
 | `runtime` | `string` | The Wasm runtime type (either "v8" or "null" for code compiled into Envoy). |
-| `code` | [.solo.io.envoy.config.core.v3.AsyncDataSource](../../../../../github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#asyncdatasource) | The Wasm code that Envoy will execute. |
+| `code` | [.solo.io.envoy.config.core.v3.AsyncDataSource](../../../../config/core/v3/base.proto.sk/#asyncdatasource) | The Wasm code that Envoy will execute. |
 | `configuration` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | The Wasm configuration used in initialization of a new VM (proxy_on_start). `google.protobuf.Struct` is serialized as JSON before passing it to the plugin. `google.protobuf.BytesValue` and `google.protobuf.StringValue` are passed directly without the wrapper. |
 | `allowPrecompiled` | `bool` | Allow the wasm file to include pre-compiled code on VMs which support it. Warning: this should only be enable for trusted sources as the precompiled code is not verified. |
 | `nackOnCodeCacheMiss` | `bool` | If true and the code needs to be remotely fetched and it is not in the cache then NACK the configuration update and do a background fetch to fill the cache, otherwise fetch the code asynchronously and enter warming state. |

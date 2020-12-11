@@ -4,10 +4,9 @@ syntax = "proto3";
 
 package solo.io.envoy.extensions.filters.http.wasm.v3;
 
-import "envoy/extensions/wasm/v3/wasm.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/wasm/v3/wasm.proto";
 
 import "validate/validate.proto";
-// manually removed udpa annotations and added gogo equal/hash, go_package
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/wasm/v3";
 
 import "extproto/ext.proto";
