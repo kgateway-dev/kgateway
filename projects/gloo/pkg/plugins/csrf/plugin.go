@@ -3,15 +3,15 @@ package csrf
 import (
 	"github.com/rotisserie/eris"
 	csrf "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
-	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+	gloo_type_matcher "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoycsrf "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
-	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 )
 
@@ -50,7 +50,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 	return []plugins.StagedHttpFilter{csrfFilter}, nil
 }
 
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route.Route) error {
 	csrfPolicy := in.Options.GetCsrf()
 	if csrfPolicy == nil {
 		return nil
@@ -59,7 +59,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	additionalOrigins := csrfPolicy.GetAdditionalOrigins()
 	filtersEnabled := csrfPolicy.GetFilterEnabled()
 	shadowEnabled := csrfPolicy.GetShadowEnabled()
-	if additionalOrigins != nil || filtersEnabled != nil || shadowEnabled != nil  {
+	if additionalOrigins != nil || filtersEnabled != nil || shadowEnabled != nil {
 		config := getCsrfConfig(csrfPolicy)
 		return pluginutils.SetRoutePerFilterConfig(out, "envoy.filters.http.csrf", config)
 	}
@@ -70,7 +70,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 func (p *Plugin) ProcessVirtualHost(
 	params plugins.VirtualHostParams,
 	in *v1.VirtualHost,
-	out *envoy_config_route_v3.VirtualHost,
+	out *envoy_config_route.VirtualHost,
 ) error {
 	csrfPolicy := in.Options.GetCsrf()
 	if csrfPolicy == nil {
@@ -80,7 +80,7 @@ func (p *Plugin) ProcessVirtualHost(
 	additionalOrigins := csrfPolicy.GetAdditionalOrigins()
 	filtersEnabled := csrfPolicy.GetFilterEnabled()
 	shadowEnabled := csrfPolicy.GetShadowEnabled()
-	if additionalOrigins != nil || filtersEnabled != nil || shadowEnabled != nil  {
+	if additionalOrigins != nil || filtersEnabled != nil || shadowEnabled != nil {
 		config := getCsrfConfig(csrfPolicy)
 		return pluginutils.SetVhostPerFilterConfig(out, "envoy.filters.http.csrf", config)
 	}
@@ -91,7 +91,7 @@ func (p *Plugin) ProcessVirtualHost(
 func (p *Plugin) ProcessWeightedDestination(
 	params plugins.RouteParams,
 	in *v1.WeightedDestination,
-	out *envoy_config_route_v3.WeightedCluster_ClusterWeight,
+	out *envoy_config_route.WeightedCluster_ClusterWeight,
 ) error {
 	csrfPolicy := in.Options.GetCsrf()
 	if csrfPolicy == nil {
@@ -101,7 +101,7 @@ func (p *Plugin) ProcessWeightedDestination(
 	additionalOrigins := csrfPolicy.GetAdditionalOrigins()
 	filtersEnabled := csrfPolicy.GetFilterEnabled()
 	shadowEnabled := csrfPolicy.GetShadowEnabled()
-	if additionalOrigins != nil || filtersEnabled != nil || shadowEnabled != nil  {
+	if additionalOrigins != nil || filtersEnabled != nil || shadowEnabled != nil {
 		config := getCsrfConfig(csrfPolicy)
 		return pluginutils.SetWeightedClusterPerFilterConfig(out, "envoy.filters.http.csrf", config)
 	}
@@ -111,58 +111,57 @@ func (p *Plugin) ProcessWeightedDestination(
 
 func getCsrfConfig(csrf *csrf.CsrfPolicy) *envoycsrf.CsrfPolicy {
 	origins := csrf.GetAdditionalOrigins()
-	var additionalOrigins []*envoy_type_matcher_v3.StringMatcher
+	var additionalOrigins []*envoy_type_matcher.StringMatcher
 	for _, ao := range origins {
 		switch typed := ao.GetMatchPattern().(type) {
-			case *v31.StringMatcher_Exact:
-				additionalOrigins = append(additionalOrigins, &envoy_type_matcher_v3.StringMatcher{
-					MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{
-						Exact: typed.Exact,
-					},
-					IgnoreCase: ao.GetIgnoreCase(),
-				})
-			case *v31.StringMatcher_Prefix:
-				additionalOrigins = append(additionalOrigins, &envoy_type_matcher_v3.StringMatcher{
-					MatchPattern: &envoy_type_matcher_v3.StringMatcher_Prefix{
-						Prefix: typed.Prefix,
-					},
-					IgnoreCase: ao.GetIgnoreCase(),
-				})
-			case *v31.StringMatcher_SafeRegex:
-				additionalOrigins = append(additionalOrigins, &envoy_type_matcher_v3.StringMatcher{
-					MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
-						SafeRegex: &envoy_type_matcher_v3.RegexMatcher{
-							EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-								GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
-							},
-							Regex: typed.SafeRegex.GetRegex(),
+		case *gloo_type_matcher.StringMatcher_Exact:
+			additionalOrigins = append(additionalOrigins, &envoy_type_matcher.StringMatcher{
+				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+					Exact: typed.Exact,
+				},
+				IgnoreCase: ao.GetIgnoreCase(),
+			})
+		case *gloo_type_matcher.StringMatcher_Prefix:
+			additionalOrigins = append(additionalOrigins, &envoy_type_matcher.StringMatcher{
+				MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
+					Prefix: typed.Prefix,
+				},
+				IgnoreCase: ao.GetIgnoreCase(),
+			})
+		case *gloo_type_matcher.StringMatcher_SafeRegex:
+			additionalOrigins = append(additionalOrigins, &envoy_type_matcher.StringMatcher{
+				MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
+					SafeRegex: &envoy_type_matcher.RegexMatcher{
+						EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
+							GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
 						},
+						Regex: typed.SafeRegex.GetRegex(),
 					},
-					IgnoreCase: ao.GetIgnoreCase(),
-				})
-			case *v31.StringMatcher_Suffix:
-				additionalOrigins = append(additionalOrigins, &envoy_type_matcher_v3.StringMatcher{
-					MatchPattern: &envoy_type_matcher_v3.StringMatcher_Suffix{
-						Suffix: typed.Suffix,
-					},
-					IgnoreCase: ao.GetIgnoreCase(),
-				})
+				},
+				IgnoreCase: ao.GetIgnoreCase(),
+			})
+		case *gloo_type_matcher.StringMatcher_Suffix:
+			additionalOrigins = append(additionalOrigins, &envoy_type_matcher.StringMatcher{
+				MatchPattern: &envoy_type_matcher.StringMatcher_Suffix{
+					Suffix: typed.Suffix,
+				},
+				IgnoreCase: ao.GetIgnoreCase(),
+			})
 		}
-
 
 	}
 
 	return &envoycsrf.CsrfPolicy{
-		FilterEnabled: &envoy_config_core_v3.RuntimeFractionalPercent{
+		FilterEnabled: &envoy_config_core.RuntimeFractionalPercent{
 			DefaultValue: &envoytype.FractionalPercent{
-				Numerator: csrf.GetFilterEnabled().GetDefaultValue().GetNumerator(),
+				Numerator:   csrf.GetFilterEnabled().GetDefaultValue().GetNumerator(),
 				Denominator: envoytype.FractionalPercent_DenominatorType(csrf.GetFilterEnabled().GetDefaultValue().GetDenominator()),
 			},
 			RuntimeKey: csrf.GetFilterEnabled().GetRuntimeKey(),
 		},
-		ShadowEnabled: &envoy_config_core_v3.RuntimeFractionalPercent{
+		ShadowEnabled: &envoy_config_core.RuntimeFractionalPercent{
 			DefaultValue: &envoytype.FractionalPercent{
-				Numerator: csrf.GetShadowEnabled().GetDefaultValue().GetNumerator(),
+				Numerator:   csrf.GetShadowEnabled().GetDefaultValue().GetNumerator(),
 				Denominator: envoytype.FractionalPercent_DenominatorType(csrf.GetShadowEnabled().GetDefaultValue().GetDenominator()),
 			},
 			RuntimeKey: csrf.GetShadowEnabled().GetRuntimeKey(),
