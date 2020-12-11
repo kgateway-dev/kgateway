@@ -47,6 +47,12 @@ steps:
   waitFor: ['prepare-workspace']
   id: 'get-envoy'
 
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
+  entrypoint: 'bash'
+  args: ['-c', 'make proxycontroller']
+  dir: '/workspace/gloo/example/proxycontroller'
+  id: 'build-proxycontroller-example'
+
 - name: gcr.io/cloud-builders/gcloud
   args:
   - kms

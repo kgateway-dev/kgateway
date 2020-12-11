@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix the proxycontroller docs example code, and the corresponding documentation.
+    issueLink: https://github.com/solo-io/gloo/issues/3941
