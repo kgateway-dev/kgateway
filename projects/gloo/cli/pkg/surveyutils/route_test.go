@@ -31,7 +31,7 @@ var _ = Describe("Route", func() {
 
 		vsClient := helpers.MustVirtualServiceClient(ctx)
 		vs := &gatewayv1.VirtualService{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "vs",
 				Namespace: "gloo-system",
 			},
@@ -51,7 +51,7 @@ var _ = Describe("Route", func() {
 
 		usClient := helpers.MustUpstreamClient(ctx)
 		us := &v1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "gloo-system.some-ns-test-svc-1234",
 				Namespace: "gloo-system",
 			},
@@ -72,7 +72,7 @@ var _ = Describe("Route", func() {
 			Qualifier:          "",
 		}}
 		us2 := &v1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "gloo-system.some-ns-test-svc-5678",
 				Namespace: "gloo-system",
 			},

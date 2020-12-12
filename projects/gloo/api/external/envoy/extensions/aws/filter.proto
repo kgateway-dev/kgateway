@@ -10,9 +10,8 @@ option java_outer_classname = "AwsLambdaProto";
 option java_multiple_files = true;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
+option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
 import "google/protobuf/wrappers.proto";

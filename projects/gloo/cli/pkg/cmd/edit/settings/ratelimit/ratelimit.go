@@ -4,6 +4,7 @@ import (
 	"time"
 
 	editOptions "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit/options"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -72,7 +73,7 @@ func editSettings(opts *editOptions.EditOptions, optsExt *RateLimitSettings, arg
 
 	var zeroDuration time.Duration
 	if optsExt.RequestTimeout != zeroDuration {
-		rlSettings.RequestTimeout = &optsExt.RequestTimeout
+		rlSettings.RequestTimeout = prototime.DurationToProto(optsExt.RequestTimeout)
 	}
 	if optsExt.DenyOnFailure != nil {
 		rlSettings.DenyOnFail = *optsExt.DenyOnFailure

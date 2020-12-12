@@ -34,7 +34,7 @@ func (m *HealthCheck) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck")); err != nil {
 		return 0, err
 	}
 
@@ -286,7 +286,7 @@ func (m *HealthCheck_Payload) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_Payload")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_Payload")); err != nil {
 		return 0, err
 	}
 
@@ -312,7 +312,7 @@ func (m *HealthCheck_HttpHealthCheck) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_HttpHealthCheck")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_HttpHealthCheck")); err != nil {
 		return 0, err
 	}
 
@@ -389,7 +389,7 @@ func (m *HealthCheck_TcpHealthCheck) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_TcpHealthCheck")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_TcpHealthCheck")); err != nil {
 		return 0, err
 	}
 
@@ -437,7 +437,7 @@ func (m *HealthCheck_RedisHealthCheck) Hash(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_RedisHealthCheck")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_RedisHealthCheck")); err != nil {
 		return 0, err
 	}
 
@@ -457,7 +457,7 @@ func (m *HealthCheck_GrpcHealthCheck) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_GrpcHealthCheck")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_GrpcHealthCheck")); err != nil {
 		return 0, err
 	}
 
@@ -481,7 +481,7 @@ func (m *HealthCheck_CustomHealthCheck) Hash(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_CustomHealthCheck")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_CustomHealthCheck")); err != nil {
 		return 0, err
 	}
 

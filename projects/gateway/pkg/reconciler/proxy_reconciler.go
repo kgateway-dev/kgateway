@@ -4,19 +4,16 @@ import (
 	"context"
 	"sort"
 
-	"go.uber.org/zap"
-
-	"github.com/solo-io/go-utils/contextutils"
-
 	"github.com/solo-io/gloo/projects/gateway/pkg/reporting"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"go.uber.org/zap"
 )
 
 type GeneratedProxies map[*gloov1.Proxy]reporter.ResourceReports
@@ -118,7 +115,7 @@ func (s *proxyReconciler) addProxyValidationResults(ctx context.Context, proxies
 
 		// add the proxy validation result to the existing resource reports
 		if err := reporting.AddProxyValidationResult(reports, proxy, proxyRpt.GetProxyReport()); err != nil {
-			//should never happen
+			// should never happen
 			return err
 		}
 	}

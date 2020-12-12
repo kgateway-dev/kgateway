@@ -8,7 +8,7 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
@@ -350,7 +350,7 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 			return err
 		}
 		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
-			Cluster: UpstreamToClusterName(*usRef),
+			Cluster: UpstreamToClusterName(usRef),
 		}
 
 		out.MetadataMatch = getSubsetMatch(dest.Single)
@@ -402,7 +402,7 @@ func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, mul
 		totalWeight += weightedDest.Weight
 
 		weightedCluster := &envoy_config_route_v3.WeightedCluster_ClusterWeight{
-			Name:          UpstreamToClusterName(*usRef),
+			Name:          UpstreamToClusterName(usRef),
 			Weight:        &wrappers.UInt32Value{Value: weightedDest.Weight},
 			MetadataMatch: getSubsetMatch(weightedDest.Destination),
 		}

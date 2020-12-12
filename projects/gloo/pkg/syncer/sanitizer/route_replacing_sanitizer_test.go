@@ -23,7 +23,7 @@ import (
 var _ = Describe("RouteReplacingSanitizer", func() {
 	var (
 		us = &v1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "my",
 				Namespace: "upstream",
 			},

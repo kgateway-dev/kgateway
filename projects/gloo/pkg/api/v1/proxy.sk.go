@@ -16,18 +16,18 @@ import (
 
 func NewProxy(namespace, name string) *Proxy {
 	proxy := &Proxy{}
-	proxy.SetMetadata(core.Metadata{
+	proxy.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
 	return proxy
 }
 
-func (r *Proxy) SetMetadata(meta core.Metadata) {
+func (r *Proxy) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 
-func (r *Proxy) SetStatus(status core.Status) {
+func (r *Proxy) SetStatus(status *core.Status) {
 	r.Status = status
 }
 

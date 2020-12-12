@@ -6,7 +6,7 @@ import (
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -38,7 +38,7 @@ var _ = Describe("Plugin", func() {
 			}},
 		}
 		upstream = &v1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "extauth-server",
 				Namespace: "default",
 			},
@@ -72,7 +72,7 @@ var _ = Describe("Plugin", func() {
 				Addr: "2603:3005:b0b:1d00::b7aa",
 				Port: 1234,
 			}}
-			upstreamSpec.AutoSniRewrite = &types.BoolValue{Value: false}
+			upstreamSpec.AutoSniRewrite = &wrappers.BoolValue{Value: false}
 			p.ProcessUpstream(params, upstream, out)
 			Expect(out.GetType()).To(Equal(envoy_config_cluster_v3.Cluster_STATIC))
 			expected := []*envoy_config_endpoint_v3.LocalityLbEndpoints{
@@ -197,7 +197,7 @@ var _ = Describe("Plugin", func() {
 
 		It("should have sni per host", func() {
 			upstreamSpec.UseTls = true
-			upstreamSpec.AutoSniRewrite = &types.BoolValue{Value: false}
+			upstreamSpec.AutoSniRewrite = &wrappers.BoolValue{Value: false}
 			upstreamSpec.Hosts[0].SniAddr = "test"
 			upstreamSpec.Hosts = append(upstreamSpec.Hosts, &v1static.Host{
 				Addr:    "1.2.3.5",

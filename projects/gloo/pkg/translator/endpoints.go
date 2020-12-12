@@ -95,7 +95,7 @@ func endpointsForUpstream(upstream *v1.Upstream, endpoints []*v1.Endpoint) []*v1
 	var clusterEndpoints []*v1.Endpoint
 	for _, ep := range endpoints {
 		for _, upstreamRef := range ep.Upstreams {
-			if *upstreamRef == upstream.Metadata.Ref() {
+			if upstreamRef.Equal(upstream.Metadata.Ref()) {
 				clusterEndpoints = append(clusterEndpoints, ep)
 			}
 		}

@@ -32,8 +32,8 @@ func UpstreamTable(xdsDump *xdsinspection.XdsDump, upstreams []*v1.Upstream, w i
 	table.SetHeader([]string{"Upstream", "type", "status", "details"})
 
 	for _, us := range upstreams {
-		name := us.GetMetadata().Name
-		s := us.Status.State.String()
+		name := us.GetMetadata().GetName()
+		s := us.GetStatus().GetState().String()
 
 		u := upstreamType(us)
 		details := upstreamDetails(us, xdsDump)
@@ -90,8 +90,8 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 	switch usType := up.UpstreamType.(type) {
 	case *v1.Upstream_Aws:
 		var functions []string
-		for _, fn := range usType.Aws.LambdaFunctions {
-			functions = append(functions, fn.LambdaFunctionName)
+		for _, fn := range usType.Aws.GetLambdaFunctions() {
+			functions = append(functions, fn.GetLambdaFunctionName())
 		}
 		add(
 			fmt.Sprintf("region: %v", usType.Aws.Region),
@@ -109,8 +109,8 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 			fmt.Sprintf("uses public ip: %v", usType.AwsEc2.PublicIp),
 			fmt.Sprintf("port:           %v", usType.AwsEc2.Port),
 		)
-		add(getEc2TagFiltersString(usType.AwsEc2.Filters)...)
-		instances := xdsDump.GetEc2InstancesForUpstream(up.Metadata.Ref())
+		add(getEc2TagFiltersString(usType.AwsEc2.GetFilters())...)
+		instances := xdsDump.GetEc2InstancesForUpstream(up.GetMetadata().Ref())
 		add(
 			"EC2 Instance Ids:",
 		)
@@ -119,8 +119,8 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 		)
 	case *v1.Upstream_Azure:
 		var functions []string
-		for _, fn := range usType.Azure.Functions {
-			functions = append(functions, fn.FunctionName)
+		for _, fn := range usType.Azure.GetFunctions() {
+			functions = append(functions, fn.GetFunctionName())
 		}
 		add(
 			fmt.Sprintf("function app name: %v", usType.Azure.FunctionAppName),
@@ -138,8 +138,8 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 			fmt.Sprintf("svc name: %v", usType.Consul.ServiceName),
 			fmt.Sprintf("svc tags: %v", usType.Consul.ServiceTags),
 		)
-		if usType.Consul.ServiceSpec != nil {
-			add(linesForServiceSpec(usType.Consul.ServiceSpec)...)
+		if usType.Consul.GetServiceSpec() != nil {
+			add(linesForServiceSpec(usType.Consul.GetServiceSpec())...)
 		}
 	case *v1.Upstream_Kube:
 		add(
@@ -148,10 +148,10 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 			fmt.Sprintf("port:          %v", usType.Kube.ServicePort),
 		)
 		if usType.Kube.ServiceSpec != nil {
-			add(linesForServiceSpec(usType.Kube.ServiceSpec)...)
+			add(linesForServiceSpec(usType.Kube.GetServiceSpec())...)
 		}
 	case *v1.Upstream_Static:
-		for i := range usType.Static.Hosts {
+		for i := range usType.Static.GetHosts() {
 			if i == 0 {
 				add("hosts:")
 			}
@@ -174,15 +174,15 @@ func linesForServiceSpec(serviceSpec *plugins.ServiceSpec) []string {
 	case *plugins.ServiceSpec_Rest:
 		add("REST service:")
 		var functions []string
-		for restFunc, transform := range plug.Rest.Transformations {
+		for restFunc, transform := range plug.Rest.GetTransformations() {
 			var method, path string
-			methodP, ok := transform.Headers[":method"]
+			methodP, ok := transform.GetHeaders()[":method"]
 			if ok {
-				method = methodP.Text
+				method = methodP.GetText()
 			}
-			pathP, ok := transform.Headers[":path"]
+			pathP, ok := transform.GetHeaders()[":path"]
 			if ok {
-				path = pathP.Text
+				path = pathP.GetText()
 			}
 			if false {
 				//TODO ilackarms: save it for -o wide

@@ -50,14 +50,14 @@ weight: 5
 
 
 ```yaml
-"match": .envoy.api.v2.route.RouteMatch
+"match": .solo.io.envoy.api.v2.route.RouteMatch
 "routeTransformations": .envoy.config.filter.http.transformation_ee.v2.RouteTransformations
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `match` | [.envoy.api.v2.route.RouteMatch](../../../../../../../../../../../envoy/api/v2/route/route.proto.sk/#routematch) | The route matching parameter. Only when the match is satisfied, the "requires" field will apply. For example: following match will match all requests. .. code-block:: yaml match: prefix: /. |
+| `match` | [.solo.io.envoy.api.v2.route.RouteMatch](../../../../../../../../../../../envoy/api/v2/route/route.proto.sk/#routematch) | The route matching parameter. Only when the match is satisfied, the "requires" field will apply. For example: following match will match all requests. .. code-block:: yaml match: prefix: /. |
 | `routeTransformations` | [.envoy.config.filter.http.transformation_ee.v2.RouteTransformations](../transformation.proto.sk/#routetransformations) | transformation to perform. |
 
 
@@ -127,7 +127,7 @@ weight: 5
 "name": string
 "regex": []string
 "shadow": bool
-"percent": .envoy.type.Percent
+"percent": .solo.io.envoy.type.Percent
 "maskChar": string
 
 ```
@@ -137,7 +137,7 @@ weight: 5
 | `name` | `string` | Identifier for this action. Used mostly to help ID specific actions in logs. If left null will default to unknown. |
 | `regex` | `[]string` | List of regexes to apply to the response body to match data which should be masked They will be applied iteratively in the order which they are specified. |
 | `shadow` | `bool` | If specified, this rule will not actually be applied, but only logged. |
-| `percent` | [.envoy.type.Percent](../../../../../../../../../../../envoy/type/percent.proto.sk/#percent) | The percent of the string which should be masked. If not set, defaults to 75%. |
+| `percent` | [.solo.io.envoy.type.Percent](../../../../../../../../../solo-kit/api/external/envoy/type/percent.proto.sk/#percent) | The percent of the string which should be masked. If not set, defaults to 75%. |
 | `maskChar` | `string` | The character which should overwrite the masked data If left empty, defaults to "X". |
 
 

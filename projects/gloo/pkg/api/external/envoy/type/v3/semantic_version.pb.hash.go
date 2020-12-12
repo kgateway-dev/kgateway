@@ -34,7 +34,7 @@ func (m *SemanticVersion) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.type.v3.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3.SemanticVersion")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.v3.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3.SemanticVersion")); err != nil {
 		return 0, err
 	}
 

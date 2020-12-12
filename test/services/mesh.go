@@ -6,8 +6,6 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/solo-io/gloo/pkg/utils"
-
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -64,7 +62,7 @@ func (m *QuoteUnquoteMesh) getSelfListener(svcIndex int) *gloov1.Listener {
 								Destination: &gloov1.RouteAction_Single{
 									Single: &gloov1.Destination{
 										DestinationType: &gloov1.Destination_Upstream{
-											Upstream: utils.ResourceRefPtr(m.upstreams[svcIndex].Metadata.Ref()),
+											Upstream: m.upstreams[svcIndex].Metadata.Ref(),
 										},
 									},
 								},
@@ -135,7 +133,7 @@ func (m *QuoteUnquoteMesh) Start(ef *EnvoyFactory, testClients TestClients, serv
 	for i, s := range services {
 
 		u := gloov1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      fmt.Sprintf("local-%d", i),
 				Namespace: "default",
 			},
@@ -154,7 +152,7 @@ func (m *QuoteUnquoteMesh) Start(ef *EnvoyFactory, testClients TestClients, serv
 	for i := range services {
 
 		u := gloov1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      fmt.Sprintf("mesh-local-%d", i),
 				Namespace: "default",
 			},
@@ -173,7 +171,7 @@ func (m *QuoteUnquoteMesh) Start(ef *EnvoyFactory, testClients TestClients, serv
 	for i := range services {
 		// proxy object for service i
 		proxy := &gloov1.Proxy{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      proxyForService(i),
 				Namespace: "default",
 			},
@@ -199,7 +197,7 @@ func (m *QuoteUnquoteMesh) Start(ef *EnvoyFactory, testClients TestClients, serv
 										Destination: &gloov1.RouteAction_Single{
 											Single: &gloov1.Destination{
 												DestinationType: &gloov1.Destination_Upstream{
-													Upstream: utils.ResourceRefPtr(m.meshupstreams[j].Metadata.Ref()),
+													Upstream: m.meshupstreams[j].Metadata.Ref(),
 												},
 											},
 										},

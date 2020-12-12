@@ -9,9 +9,8 @@ import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -154,7 +153,7 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(
 	if len(listener.SslConfigurations) == 0 {
 		return []*envoy_config_listener_v3.FilterChain{{
 			Filters:       listenerFilters,
-			UseProxyProto: gogoutils.BoolGogoToProto(listener.UseProxyProto),
+			UseProxyProto: listener.GetUseProxyProto(),
 		}}
 	}
 
@@ -248,8 +247,9 @@ func validateListenerPorts(proxy *v1.Proxy, listenerReport *validationapi.Listen
 func newSslFilterChain(
 	downstreamConfig *envoyauth.DownstreamTlsContext,
 	sniDomains []string,
-	useProxyProto *types.BoolValue,
-	listenerFilters []*envoy_config_listener_v3.Filter) *envoy_config_listener_v3.FilterChain {
+	useProxyProto *wrappers.BoolValue,
+	listenerFilters []*envoy_config_listener_v3.Filter,
+) *envoy_config_listener_v3.FilterChain {
 
 	// copy listenerFilter so we can modify filter chain later without changing the filters on all of them!
 	listenerFiltersCopy := make([]*envoy_config_listener_v3.Filter, len(listenerFilters))
@@ -268,7 +268,7 @@ func newSslFilterChain(
 			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(downstreamConfig)},
 		},
 
-		UseProxyProto: gogoutils.BoolGogoToProto(useProxyProto),
+		UseProxyProto: useProxyProto,
 	}
 }
 

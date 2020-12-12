@@ -9,13 +9,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
-	"github.com/solo-io/go-utils/pkgmgmtutils/formula_updater_types"
-	"github.com/solo-io/go-utils/protoutils"
-
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/pkgmgmtutils"
+	"github.com/solo-io/go-utils/pkgmgmtutils/formula_updater_types"
 	"github.com/solo-io/go-utils/versionutils"
 )
 

@@ -1,13 +1,12 @@
 syntax = "proto3";
 package waf.options.gloo.solo.io;
 
-import "gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto";
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
+option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
 message Settings {

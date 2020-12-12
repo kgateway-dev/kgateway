@@ -3,21 +3,20 @@ package wasm
 import (
 	"fmt"
 
-	"github.com/gogo/protobuf/types"
-
+	envoy_extensions_filters_http_wasm_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/wasm/v3"
 	"github.com/golang/mock/gomock"
-	"github.com/opencontainers/go-digest"
-	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/any"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
+	"github.com/opencontainers/go-digest"
+	"github.com/rotisserie/eris"
 	configcore "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	wasmv3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/wasm/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	mock_cache "github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm/mocks"
+	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("wasm plugin", func() {
@@ -67,7 +66,7 @@ var _ = Describe("wasm plugin", func() {
 		image := "image"
 		wasmFilter := &wasm.WasmFilter{
 			Image: image,
-			Config: &types.Any{
+			Config: &any.Any{
 				TypeUrl: "type.googleapis.com/google.protobuf.StringValue",
 				Value:   []byte("test-config"),
 			},
@@ -88,15 +87,14 @@ var _ = Describe("wasm plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(f).To(HaveLen(1))
 		goTypedConfig := f[0].HttpFilter.GetTypedConfig()
-		gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
-		var pc wasmv3.Wasm
-		Expect(types.UnmarshalAny(gogoTypedConfig, &pc)).NotTo(HaveOccurred())
+		var pc envoy_extensions_filters_http_wasm_v3.Wasm
+		Expect(ptypes.UnmarshalAny(goTypedConfig, &pc)).NotTo(HaveOccurred())
 		Expect(pc.Config.RootId).To(Equal(wasmFilter.RootId))
 		Expect(pc.Config.Name).To(Equal(wasmFilter.Name))
-		Expect(pc.Config.Configuration).To(Equal(wasmFilter.Config))
-		Expect(pc.Config.GetVmConfig().VmId).To(Equal(VmId))
-		Expect(pc.Config.GetVmConfig().Runtime).To(Equal(V8Runtime))
-		remote := pc.Config.GetVmConfig().Code.GetRemote()
+		Expect(pc.Config.Configuration).To(matchers.MatchProto(wasmFilter.Config))
+		Expect(pc.Config.GetVmConfig().GetVmId()).To(Equal(VmId))
+		Expect(pc.Config.GetVmConfig().GetRuntime()).To(Equal(V8Runtime))
+		remote := pc.Config.GetVmConfig().GetCode().GetRemote()
 		Expect(remote).NotTo(BeNil())
 		Expect(remote.Sha256).To(Equal(sha))
 		Expect(remote.HttpUri.Uri).To(Equal(fmt.Sprintf("http://gloo/images/%s", sha)))

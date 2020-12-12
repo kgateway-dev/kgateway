@@ -1,8 +1,8 @@
 package translator_test
 
 import (
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -21,7 +21,7 @@ var _ = Describe("Route converter", func() {
 		func(route *v1.Route, expectedErr error) {
 			reports := reporter.ResourceReports{}
 			vs := &v1.VirtualService{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "foo",
 					Namespace: "bar",
 				},
@@ -128,7 +128,7 @@ var _ = Describe("Route converter", func() {
 					Matchers: []*matchers.Matcher{}, // empty list should default to '/'
 					Action:   &v1.Route_DirectResponseAction{},
 				}},
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name: "any",
 				},
 			}
@@ -172,7 +172,7 @@ var _ = Describe("Route converter", func() {
 				VirtualHost: &v1.VirtualHost{
 					Routes: []*v1.Route{route},
 				},
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Namespace: "vs-ns",
 				},
 			}
@@ -215,7 +215,7 @@ var _ = Describe("Route converter", func() {
 				VirtualHost: &v1.VirtualHost{
 					Routes: []*v1.Route{route},
 				},
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Namespace: "vs-ns",
 				},
 			}
@@ -259,14 +259,14 @@ var _ = Describe("Route converter", func() {
 					Matchers: []*matchers.Matcher{},
 					Action:   &v1.Route_RouteAction{},
 				}},
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name: "any",
 				},
 			}
 
 			rpt := reporter.ResourceReports{}
 			vs := &v1.VirtualService{
-				Metadata: core.Metadata{Name: "vs1"},
+				Metadata: &core.Metadata{Name: "vs1"},
 				VirtualHost: &v1.VirtualHost{
 					Routes: []*v1.Route{route},
 				},
@@ -313,14 +313,14 @@ var _ = Describe("Route converter", func() {
 					Matchers: []*matchers.Matcher{},
 					Action:   &v1.Route_RouteAction{},
 				}},
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name: "any",
 				},
 			}
 
 			rpt := reporter.ResourceReports{}
 			vs := &v1.VirtualService{
-				Metadata: core.Metadata{Name: "vs1"},
+				Metadata: &core.Metadata{Name: "vs1"},
 				VirtualHost: &v1.VirtualHost{
 					Routes: []*v1.Route{route},
 				},
@@ -368,7 +368,7 @@ var _ = Describe("Route converter", func() {
 				}
 
 				rt = &v1.RouteTable{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "rt",
 						Namespace: "default",
 					},
@@ -384,7 +384,7 @@ var _ = Describe("Route converter", func() {
 				}
 
 				vs = &v1.VirtualService{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "vs",
 						Namespace: "default",
 					},
@@ -397,7 +397,7 @@ var _ = Describe("Route converter", func() {
 										Prefix: "/foo",
 									},
 								}},
-								InheritableMatchers: &types.BoolValue{Value: true},
+								InheritableMatchers: &wrappers.BoolValue{Value: true},
 								Action: &v1.Route_DelegateAction{
 									DelegateAction: &v1.DelegateAction{
 										DelegationType: &v1.DelegateAction_Ref{
@@ -541,7 +541,7 @@ var _ = Describe("Route converter", func() {
 
 		BeforeEach(func() {
 			rt = &v1.RouteTable{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "rt",
 					Namespace: "default",
 				},
@@ -557,7 +557,7 @@ var _ = Describe("Route converter", func() {
 			}
 
 			vs = &v1.VirtualService{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "vs",
 					Namespace: "default",
 				},
@@ -1038,7 +1038,7 @@ var _ = Describe("Route converter", func() {
 
 		buildVirtualService := func(rtSelector *v1.RouteTableSelector) *v1.VirtualService {
 			return &v1.VirtualService{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "vs-1",
 					Namespace: "ns-1",
 				},
@@ -1370,11 +1370,11 @@ var _ = Describe("Route converter", func() {
 						Namespaces: []string{"ns-2"},
 					},
 				)
-				rt1.Weight = &types.Int32Value{Value: 20}
+				rt1.Weight = &wrappers.Int32Value{Value: 20}
 
 				// Same weight as rt1
 				rt2 = buildRouteTableWithSimpleAction("rt-2", "ns-1", "/foo/b", nil)
-				rt2.Weight = &types.Int32Value{Value: 20}
+				rt2.Weight = &wrappers.Int32Value{Value: 20}
 
 				// Matches rt3a, rt3b
 				rt3 = buildRouteTableWithSelector("rt-3", "ns-1", "/foo/c", nil,
@@ -1382,7 +1382,7 @@ var _ = Describe("Route converter", func() {
 						Namespaces: []string{"ns-3"},
 					},
 				)
-				rt3.Weight = &types.Int32Value{Value: -10}
+				rt3.Weight = &wrappers.Int32Value{Value: -10}
 
 				// No weight
 				rt1a = buildRouteTableWithSimpleAction("rt-1-a", "ns-2", "/foo/a/1", nil)
@@ -1390,14 +1390,14 @@ var _ = Describe("Route converter", func() {
 				rt1b = buildRouteTableWithSimpleAction("rt-1-b", "ns-2", "/foo/a/1/2", nil)
 
 				rt3a = buildRouteTableWithSimpleAction("rt-3-a", "ns-3", "/foo/c/1", nil)
-				rt3a.Weight = &types.Int32Value{Value: -20}
+				rt3a.Weight = &wrappers.Int32Value{Value: -20}
 
 				// The following RTs have the same weight. We want to verify that only the routes from rt3b and rt3c
 				// get re-sorted, but that we respect the -10 weight on rt3a.
 				rt3b = buildRouteTableWithSimpleAction("rt-3-b", "ns-3", "/foo/c/1/short-circuited", nil)
-				rt3b.Weight = &types.Int32Value{Value: 0}
+				rt3b.Weight = &wrappers.Int32Value{Value: 0}
 				rt3c = buildRouteTableWithSimpleAction("rt-3-c", "ns-3", "/foo/c/2", nil)
-				rt3c.Weight = &types.Int32Value{Value: 0}
+				rt3c.Weight = &wrappers.Int32Value{Value: 0}
 
 				allRouteTables = v1.RouteTableList{rt1, rt2, rt3, rt1a, rt1b, rt3a, rt3b, rt3c}
 			})
@@ -1433,7 +1433,7 @@ func getFirstPrefixMatcher(route *gloov1.Route) string {
 
 func buildRouteTableWithSimpleAction(name, namespace, prefix string, labels map[string]string) *v1.RouteTable {
 	return &v1.RouteTable{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      name,
 			Namespace: namespace,
 			Labels:    labels,
@@ -1465,7 +1465,7 @@ func buildRouteTableWithSelector(name, namespace, prefix string, labels map[stri
 
 func buildRouteTableWithDelegateAction(name, namespace, prefix string, labels map[string]string, action *v1.DelegateAction) *v1.RouteTable {
 	return &v1.RouteTable{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      name,
 			Namespace: namespace,
 			Labels:    labels,

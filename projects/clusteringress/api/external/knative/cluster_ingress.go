@@ -10,11 +10,11 @@ import (
 
 type ClusterIngress v1alpha1.Ingress
 
-func (p *ClusterIngress) GetMetadata() core.Metadata {
+func (p *ClusterIngress) GetMetadata() *core.Metadata {
 	return kubeutils.FromKubeMeta(p.ObjectMeta)
 }
 
-func (p *ClusterIngress) SetMetadata(meta core.Metadata) {
+func (p *ClusterIngress) SetMetadata(meta *core.Metadata) {
 	p.ObjectMeta = kubeutils.ToKubeMeta(meta)
 }
 

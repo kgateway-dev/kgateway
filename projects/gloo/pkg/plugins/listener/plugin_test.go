@@ -2,7 +2,7 @@ package listener_test
 
 import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -25,7 +25,7 @@ var _ = Describe("Plugin", func() {
 
 		in := &v1.Listener{
 			Options: &v1.ListenerOptions{
-				PerConnectionBufferLimitBytes: &types.UInt32Value{
+				PerConnectionBufferLimitBytes: &wrappers.UInt32Value{
 					Value: uint32(4096),
 				},
 			},

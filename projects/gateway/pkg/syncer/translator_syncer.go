@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/hashicorp/go-multierror"
@@ -121,9 +122,9 @@ type reportsAndStatus struct {
 	Reports reporter.ResourceReports
 }
 type statusSyncer struct {
-	proxyToLastStatus       map[core.ResourceRef]reportsAndStatus
-	inputResourceLastStatus map[resources.InputResource]core.Status
-	currentGeneratedProxies []core.ResourceRef
+	proxyToLastStatus       map[string]reportsAndStatus
+	inputResourceLastStatus map[resources.InputResource]*core.Status
+	currentGeneratedProxies []*core.ResourceRef
 	mapLock                 sync.RWMutex
 	reporter                reporter.StatusReporter
 
@@ -134,7 +135,7 @@ type statusSyncer struct {
 
 func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, reporter reporter.StatusReporter) statusSyncer {
 	return statusSyncer{
-		proxyToLastStatus:       map[core.ResourceRef]reportsAndStatus{},
+		proxyToLastStatus:       map[string]reportsAndStatus{},
 		currentGeneratedProxies: nil,
 		reporter:                reporter,
 		proxyWatcher:            proxyWatcher,
@@ -147,27 +148,28 @@ func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProx
 	s.mapLock.Lock()
 	defer s.mapLock.Unlock()
 	// clear out the status map
-	s.inputResourceLastStatus = make(map[resources.InputResource]core.Status)
+	s.inputResourceLastStatus = make(map[resources.InputResource]*core.Status)
 	s.currentGeneratedProxies = nil
 	for proxy, reports := range desiredProxies {
 		// start propagating for new set of resources
 		ref := proxy.GetMetadata().Ref()
-		if _, ok := s.proxyToLastStatus[ref]; !ok {
-			s.proxyToLastStatus[ref] = reportsAndStatus{}
+		refKey := gloo_translator.UpstreamToClusterName(ref)
+		if _, ok := s.proxyToLastStatus[refKey]; !ok {
+			s.proxyToLastStatus[refKey] = reportsAndStatus{}
 		}
-		current := s.proxyToLastStatus[ref]
+		current := s.proxyToLastStatus[refKey]
 		// These reports are for gateway resources: VirtualServices, RouteTables and Gateways
 		current.Reports = reports
-		s.proxyToLastStatus[ref] = current
+		s.proxyToLastStatus[refKey] = current
 		s.currentGeneratedProxies = append(s.currentGeneratedProxies, ref)
 	}
 	sort.SliceStable(s.currentGeneratedProxies, func(i, j int) bool {
 		refi := s.currentGeneratedProxies[i]
 		refj := s.currentGeneratedProxies[j]
-		if refi.Namespace != refj.Namespace {
-			return refi.Namespace < refj.Namespace
+		if refi.GetNamespace() != refj.GetNamespace() {
+			return refi.GetNamespace() < refj.GetNamespace()
 		}
-		return refi.Name < refj.Name
+		return refi.GetName() < refj.GetName()
 	})
 }
 
@@ -234,13 +236,14 @@ func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
 	defer s.mapLock.Unlock()
 	for _, proxy := range list {
 		ref := proxy.Metadata.Ref()
+		refKey := gloo_translator.UpstreamToClusterName(ref)
 		status := proxy.Status
-		if current, ok := s.proxyToLastStatus[ref]; ok {
-			current.Status = &status
-			s.proxyToLastStatus[ref] = current
+		if current, ok := s.proxyToLastStatus[refKey]; ok {
+			current.Status = status
+			s.proxyToLastStatus[refKey] = current
 		} else {
-			s.proxyToLastStatus[ref] = reportsAndStatus{
-				Status: &status,
+			s.proxyToLastStatus[refKey] = reportsAndStatus{
+				Status: status,
 			}
 		}
 	}
@@ -282,7 +285,7 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 	var nilProxy *gloov1.Proxy
 	allReports := reporter.ResourceReports{}
 	inputResourceBySubresourceStatuses := map[resources.InputResource]map[string]*core.Status{}
-	var localInputResourceLastStatus map[resources.InputResource]core.Status
+	var localInputResourceLastStatus map[resources.InputResource]*core.Status
 
 	func() {
 		s.mapLock.RLock()
@@ -293,7 +296,8 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 
 		// iterate s.currentGeneratedProxies to guarantee order
 		for _, ref := range s.currentGeneratedProxies {
-			reportsAndStatus, ok := s.proxyToLastStatus[ref]
+			refKey := gloo_translator.UpstreamToClusterName(ref)
+			reportsAndStatus, ok := s.proxyToLastStatus[refKey]
 			if !ok {
 				continue
 			}

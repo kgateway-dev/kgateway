@@ -16,14 +16,14 @@ import (
 
 func NewEndpoint(namespace, name string) *Endpoint {
 	endpoint := &Endpoint{}
-	endpoint.SetMetadata(core.Metadata{
+	endpoint.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
 	return endpoint
 }
 
-func (r *Endpoint) SetMetadata(meta core.Metadata) {
+func (r *Endpoint) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 

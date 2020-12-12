@@ -62,7 +62,7 @@ func NewDestinationNotFoundErr(ref core.ResourceRef, resourceType resources.Reso
 }
 
 func (e *DestinationNotFoundError) Error() string {
-	return fmt.Sprintf("%T %v not found", e.ResourceType, e.Ref)
+	return fmt.Sprintf("%T { %s.%s } not found", e.ResourceType, e.Ref.GetNamespace(), e.Ref.GetName())
 }
 
 func IsDestinationNotFoundErr(err error) bool {

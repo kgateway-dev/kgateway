@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/go-utils/protoutils"
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 )
 
 var _ = Describe("SnapshotBenchmark", func() {
@@ -61,7 +61,7 @@ var _ = Describe("SnapshotBenchmark", func() {
 				Expect(err).NotTo(HaveOccurred())
 				val, ok := present[hash]
 				if ok {
-					Expect(v.UpstreamType.Equal(val.UpstreamType))
+					Expect(v.Equal(val))
 				}
 				present[hash] = v
 			}

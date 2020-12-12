@@ -130,7 +130,7 @@ func getDestinationInteractive(ctx context.Context, route *options.InputRoute) e
 	}
 
 	if ug, ok := ugsByKey[usKey]; ok {
-		route.UpstreamGroup = ug.Metadata.Ref()
+		route.UpstreamGroup = *(ug.Metadata.Ref())
 		return nil
 	}
 
@@ -138,7 +138,7 @@ func getDestinationInteractive(ctx context.Context, route *options.InputRoute) e
 	if !ok {
 		return errors.Errorf("internal error: upstream map not populated")
 	}
-	dest.Upstream = us.Metadata.Ref()
+	dest.Upstream = *(us.Metadata.Ref())
 	switch ut := us.UpstreamType.(type) {
 	case *v1.Upstream_Aws:
 		if err := getAwsDestinationSpecInteractive(&dest.DestinationSpec.Aws, ut.Aws); err != nil {
@@ -227,7 +227,7 @@ func getRestDestinationSpecInteractive(spec *options.RestDestinationSpec, restSp
 
 func AddRouteFlagsInteractive(opts *options.Options) error {
 	// collect vs list
-	vsByKey := make(map[string]core.ResourceRef)
+	vsByKey := make(map[string]*core.ResourceRef)
 	vsKeys := []string{"create a new virtualservice"}
 	var namespaces []string
 	for _, ns := range helpers.MustGetNamespaces(opts.Top.Ctx) {
@@ -253,8 +253,8 @@ func AddRouteFlagsInteractive(opts *options.Options) error {
 	); err != nil {
 		return err
 	}
-	opts.Metadata.Name = vsByKey[vsKey].Name
-	opts.Metadata.Namespace = vsByKey[vsKey].Namespace
+	opts.Metadata.Name = vsByKey[vsKey].GetName()
+	opts.Metadata.Namespace = vsByKey[vsKey].GetNamespace()
 
 	if opts.Metadata.Name == "" || opts.Metadata.Namespace == "" {
 		if err := cliutil.GetStringInput("name of the virtual service: ", &opts.Metadata.Name); err != nil {

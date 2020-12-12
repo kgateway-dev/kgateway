@@ -3,8 +3,8 @@ package kubeconverters
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/go-utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skcore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -140,7 +140,7 @@ func (t *AwsSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 	sessionToken, hasSessionToken := secret.Data[AwsSessionTokenName]
 	if hasAccessKey && hasSecretKey {
 		skSecret := &v1.Secret{
-			Metadata: skcore.Metadata{
+			Metadata: &skcore.Metadata{
 				Name:        secret.Name,
 				Namespace:   secret.Namespace,
 				Cluster:     secret.ClusterName,

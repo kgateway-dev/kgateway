@@ -107,11 +107,15 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 			return eris.Errorf("timed out waiting for proxy status to be updated")
 		case <-ticker:
 			// poll the proxy for an accepted or rejected status
-			updatedProxy, err := s.proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+			updatedProxy, err := s.proxyClient.Read(
+				proxy.GetMetadata().GetNamespace(),
+				proxy.GetMetadata().GetName(),
+				clients.ReadOpts{Ctx: ctx},
+			)
 			if err != nil {
 				return err
 			}
-			switch updatedProxy.Status.State {
+			switch updatedProxy.GetStatus().GetState() {
 			case core.Status_Pending:
 				continue
 			case core.Status_Rejected:

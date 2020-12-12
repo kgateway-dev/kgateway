@@ -28,7 +28,7 @@ func UpstreamGroupTable(upstreamGroups []*v1.UpstreamGroup, w io.Writer) {
 
 	for i, ug := range upstreamGroups {
 		name := ug.GetMetadata().Name
-		status := ug.Status.State.String()
+		status := ug.GetStatus().GetState().String()
 
 		weight := fmt.Sprint(totalWeight(ug))
 		details := upstreamGroupDetails(ug)

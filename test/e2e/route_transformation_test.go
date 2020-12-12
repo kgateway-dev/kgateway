@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -119,7 +117,7 @@ var _ = Describe("Transformations", func() {
 	WriteVhost := func(vs *gloov1.VirtualHost) {
 		proxycli := testClients.ProxyClient
 		proxy := &gloov1.Proxy{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "proxy",
 				Namespace: "default",
 			},
@@ -152,7 +150,7 @@ var _ = Describe("Transformations", func() {
 						Destination: &gloov1.RouteAction_Single{
 							Single: &gloov1.Destination{
 								DestinationType: &gloov1.Destination_Upstream{
-									Upstream: utils.ResourceRefPtr(tu.Upstream.Metadata.Ref()),
+									Upstream: tu.Upstream.Metadata.Ref(),
 								},
 							},
 						},
@@ -177,7 +175,7 @@ var _ = Describe("Transformations", func() {
 						Destination: &gloov1.RouteAction_Single{
 							Single: &gloov1.Destination{
 								DestinationType: &gloov1.Destination_Upstream{
-									Upstream: utils.ResourceRefPtr(tu.Upstream.Metadata.Ref()),
+									Upstream: tu.Upstream.Metadata.Ref(),
 								},
 							},
 						},
@@ -207,7 +205,7 @@ var _ = Describe("Transformations", func() {
 										Destination: &gloov1.Destination{
 
 											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: utils.ResourceRefPtr(tu.Upstream.Metadata.Ref()),
+												Upstream: tu.Upstream.Metadata.Ref(),
 											},
 										},
 									},

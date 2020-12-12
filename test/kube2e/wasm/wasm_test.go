@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
@@ -18,7 +20,6 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
-	"github.com/gogo/protobuf/types"
 	"github.com/rotisserie/eris"
 	"k8s.io/client-go/rest"
 
@@ -139,7 +140,7 @@ func getVirtualService(dest *gloov1.Destination, sslConfig *gloov1.SslConfig) *g
 
 func getVirtualServiceWithRoute(route *gatewayv1.Route, sslConfig *gloov1.SslConfig) *gatewayv1.VirtualService {
 	return &gatewayv1.VirtualService{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "vs",
 			Namespace: testHelper.InstallNamespace,
 		},
@@ -181,8 +182,8 @@ func writeWasmFilterToGateway(gatewayClient gatewayv1.GatewayClient, gatewayName
 	if !ok {
 		return nil, eris.Errorf("Listener did not have an httpGateway")
 	}
-	configVal := types.StringValue{Value: config}
-	configAny, err := types.MarshalAny(&configVal)
+	configVal := wrappers.StringValue{Value: config}
+	configAny, err := ptypes.MarshalAny(&configVal)
 
 	gw.HttpGateway.Options = &gloov1.HttpListenerOptions{
 		Wasm: &wasm.PluginSource{

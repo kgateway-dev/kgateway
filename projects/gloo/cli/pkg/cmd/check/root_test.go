@@ -52,7 +52,7 @@ var _ = Describe("Root", func() {
 			}, metav1.CreateOptions{})
 
 			helpers.MustNamespacedSettingsClient(ctx, "gloo-system").Write(&v1.Settings{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "default",
 					Namespace: "gloo-system",
 				},
@@ -91,7 +91,7 @@ var _ = Describe("Root", func() {
 			}, metav1.CreateOptions{})
 
 			helpers.MustNamespacedSettingsClient(ctx, "gloo-system").Write(&v1.Settings{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "default",
 					Namespace: "gloo-system",
 				},
@@ -100,22 +100,22 @@ var _ = Describe("Root", func() {
 			// Creates rejected upstream in the gloo-system namespace
 
 			helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(&v1.Upstream{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "some-warning-upstream",
 					Namespace: "gloo-system",
 				},
-				Status: core.Status{
+				Status: &core.Status{
 					State:  core.Status_Warning,
 					Reason: "I am an upstream with a warning",
 				},
 			}, clients.WriteOpts{})
 
 			helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(&v1.Upstream{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "some-rejected-upstream",
 					Namespace: "gloo-system",
 				},
-				Status: core.Status{
+				Status: &core.Status{
 					State:  core.Status_Rejected,
 					Reason: "I am a rejected upstream",
 				},
@@ -123,8 +123,8 @@ var _ = Describe("Root", func() {
 
 			helpers.MustNamespacedVirtualServiceClient(ctx, "gloo-system").Write(
 				&v12.VirtualService{
-					Metadata: core.Metadata{Name: "some-bad-vs", Namespace: "gloo-system"},
-					Status: core.Status{
+					Metadata: &core.Metadata{Name: "some-bad-vs", Namespace: "gloo-system"},
+					Status: &core.Status{
 						State:  core.Status_Rejected,
 						Reason: "I am a rejected vs",
 					},
@@ -166,7 +166,7 @@ var _ = Describe("Root", func() {
 			}, metav1.CreateOptions{})
 
 			helpers.MustNamespacedSettingsClient(ctx, myNs).Write(&v1.Settings{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "default",
 					Namespace: myNs,
 				},

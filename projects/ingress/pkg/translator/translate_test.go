@@ -152,7 +152,7 @@ var _ = Describe("Translate", func() {
 			ingressResTls2, err := ingresstype.FromKube(ingressTls2)
 			Expect(err).NotTo(HaveOccurred())
 			us := &gloov1.Upstream{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Namespace: namespace,
 					Name:      "wow-upstream",
 				},
@@ -168,7 +168,7 @@ var _ = Describe("Translate", func() {
 				},
 			}
 			usSubset := &gloov1.Upstream{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Namespace: namespace,
 					Name:      "wow-upstream-subset",
 				},
@@ -306,7 +306,7 @@ var _ = Describe("Translate", func() {
 						},
 					},
 				},
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "ingress-proxy",
 					Namespace: "example",
 				},
@@ -332,7 +332,7 @@ var _ = Describe("Translate", func() {
 		}()
 
 		us1 := &gloov1.Upstream{
-			Metadata: core.Metadata{Namespace: "gloo-system", Name: "amoeba-dev-api-gateway-amoeba-dev-8080"},
+			Metadata: &core.Metadata{Namespace: "gloo-system", Name: "amoeba-dev-api-gateway-amoeba-dev-8080"},
 			UpstreamType: &gloov1.Upstream_Kube{
 				Kube: &kubernetes.UpstreamSpec{
 					ServiceNamespace: "amoeba-dev",
@@ -343,7 +343,7 @@ var _ = Describe("Translate", func() {
 		}
 
 		us2 := &gloov1.Upstream{
-			Metadata: core.Metadata{Namespace: "gloo-system", Name: "amoeba-dev-api-gateway-amoeba-dev-8080"},
+			Metadata: &core.Metadata{Namespace: "gloo-system", Name: "amoeba-dev-api-gateway-amoeba-dev-8080"},
 			UpstreamType: &gloov1.Upstream_Kube{
 				Kube: &kubernetes.UpstreamSpec{
 					ServiceNamespace: "amoeba-dev",
@@ -527,7 +527,7 @@ func makeService(name, namespace, servicePortName string, servicePort int32) *v1
 func makeUpstream(name, namespace string, svc *v1.KubeService) *gloov1.Upstream {
 	kubeSvc, _ := service.ToKube(svc)
 	return &gloov1.Upstream{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Namespace: namespace,
 			Name:      name,
 		},

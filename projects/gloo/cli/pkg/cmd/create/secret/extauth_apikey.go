@@ -64,7 +64,7 @@ func ExtAuthApiKeyCmd(opts *options.Options) *cobra.Command {
 				}
 			}
 			// create the secret
-			if err := createApiKeySecret(opts.Top.Ctx, *meta, input, opts.Create.DryRun, opts.Top.Output); err != nil {
+			if err := createApiKeySecret(opts.Top.Ctx, meta, input, opts.Create.DryRun, opts.Top.Output); err != nil {
 				return err
 			}
 
@@ -113,7 +113,7 @@ func apiKeySecretArgsInteractive(ctx context.Context, meta *core.Metadata, input
 	return nil
 }
 
-func createApiKeySecret(ctx context.Context, meta core.Metadata, input apiKeySecret, dryRun bool, outputType printers.OutputType) error {
+func createApiKeySecret(ctx context.Context, meta *core.Metadata, input apiKeySecret, dryRun bool, outputType printers.OutputType) error {
 	if input.ApiKey == "" {
 		if !input.GenerateApiKey {
 			return MissingApiKeyError

@@ -8,11 +8,10 @@ import (
 
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
 	"github.com/gogo/googleapis/google/rpc"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
-	"github.com/solo-io/gloo/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -50,11 +49,11 @@ var _ = Describe("CustomAuth", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		customAuthServerUs := &gloov1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "custom-auth",
 				Namespace: "default",
 			},
-			UseHttp2: &types.BoolValue{Value: true},
+			UseHttp2: &wrappers.BoolValue{Value: true},
 			UpstreamType: &gloov1.Upstream_Static{
 				Static: &static.UpstreamSpec{
 					Hosts: []*static.Host{{
@@ -78,7 +77,7 @@ var _ = Describe("CustomAuth", func() {
 			},
 			Settings: &gloov1.Settings{
 				Extauth: &v1.Settings{
-					ExtauthzServerRef: &authUsRef,
+					ExtauthzServerRef: authUsRef,
 				},
 			},
 		})
@@ -107,8 +106,10 @@ var _ = Describe("CustomAuth", func() {
 			if err != nil {
 				return core.Status{}, err
 			}
-
-			return proxy.Status, nil
+			if proxy.GetStatus() == nil {
+				return core.Status{}, nil
+			}
+			return *(proxy.GetStatus()), nil
 		}, "60s", "0.1s").Should(MatchFields(IgnoreExtras, Fields{
 			"Reason": BeEmpty(),
 			"State":  Equal(core.Status_Accepted),
@@ -167,9 +168,9 @@ var _ = Describe("CustomAuth", func() {
 	})
 })
 
-func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.ResourceRef) *gloov1.Proxy {
+func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream *core.ResourceRef) *gloov1.Proxy {
 	return &gloov1.Proxy{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      name,
 			Namespace: namespace,
 		},
@@ -202,14 +203,14 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 										},
 									}},
 									Options: &gloov1.RouteOptions{
-										PrefixRewrite: &types.StringValue{Value: "/"},
+										PrefixRewrite: &wrappers.StringValue{Value: "/"},
 									},
 									Action: &gloov1.Route_RouteAction{
 										RouteAction: &gloov1.RouteAction{
 											Destination: &gloov1.RouteAction_Single{
 												Single: &gloov1.Destination{
 													DestinationType: &gloov1.Destination_Upstream{
-														Upstream: utils.ResourceRefPtr(upstream),
+														Upstream: upstream,
 													},
 												},
 											},
@@ -223,7 +224,7 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 										},
 									}},
 									Options: &gloov1.RouteOptions{
-										PrefixRewrite: &types.StringValue{Value: "/"},
+										PrefixRewrite: &wrappers.StringValue{Value: "/"},
 										Extauth: &v1.ExtAuthExtension{
 											Spec: &v1.ExtAuthExtension_CustomAuth{
 												CustomAuth: &v1.CustomAuth{
@@ -239,7 +240,7 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 											Destination: &gloov1.RouteAction_Single{
 												Single: &gloov1.Destination{
 													DestinationType: &gloov1.Destination_Upstream{
-														Upstream: utils.ResourceRefPtr(upstream),
+														Upstream: upstream,
 													},
 												},
 											},
@@ -253,7 +254,7 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 										},
 									}},
 									Options: &gloov1.RouteOptions{
-										PrefixRewrite: &types.StringValue{Value: "/"},
+										PrefixRewrite: &wrappers.StringValue{Value: "/"},
 										Extauth: &v1.ExtAuthExtension{
 											Spec: &v1.ExtAuthExtension_Disable{
 												Disable: true,
@@ -265,7 +266,7 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 											Destination: &gloov1.RouteAction_Single{
 												Single: &gloov1.Destination{
 													DestinationType: &gloov1.Destination_Upstream{
-														Upstream: utils.ResourceRefPtr(upstream),
+														Upstream: upstream,
 													},
 												},
 											},

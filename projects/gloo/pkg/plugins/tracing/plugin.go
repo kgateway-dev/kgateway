@@ -6,10 +6,10 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
@@ -135,7 +135,7 @@ func processEnvoyZipkinTracing(
 		collectorClusterName = collectorCluster.ClusterName
 	}
 
-	envoyConfig, err := gogoutils.ToEnvoyZipkinConfiguration(zipkinTracingSettings.ZipkinConfig, collectorClusterName)
+	envoyConfig, err := api_conversion.ToEnvoyZipkinConfiguration(zipkinTracingSettings.ZipkinConfig, collectorClusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,7 @@ func processEnvoyDatadogTracing(
 		collectorClusterName = collectorCluster.ClusterName
 	}
 
-	envoyConfig, err := gogoutils.ToEnvoyDatadogConfiguration(datadogTracingSettings.DatadogConfig, collectorClusterName)
+	envoyConfig, err := api_conversion.ToEnvoyDatadogConfiguration(datadogTracingSettings.DatadogConfig, collectorClusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func getEnvoyTracingCollectorClusterName(snapshot *v1.ApiSnapshot, collectorUpst
 		return "", errors.Errorf("Invalid CollectorUpstreamRef (no upstream found for ref %v)", collectorUpstreamRef)
 	}
 
-	return translatorutil.UpstreamToClusterName(*collectorUpstreamRef), nil
+	return translatorutil.UpstreamToClusterName(collectorUpstreamRef), nil
 }
 
 func envoySimplePercent(numerator float32) *envoy_type.Percent {
@@ -213,7 +213,7 @@ func envoySimplePercent(numerator float32) *envoy_type.Percent {
 }
 
 // use FloatValue to detect when nil (avoids error-prone float comparisons)
-func envoySimplePercentWithDefault(numerator *types.FloatValue, defaultValue float32) *envoy_type.Percent {
+func envoySimplePercentWithDefault(numerator *wrappers.FloatValue, defaultValue float32) *envoy_type.Percent {
 	if numerator == nil {
 		return envoySimplePercent(defaultValue)
 	}
@@ -241,7 +241,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if descriptor != "" {
 		out.Decorator = &envoy_config_route_v3.Decorator{
 			Operation: descriptor,
-			Propagate: gogoutils.BoolGogoToProto(in.Options.Tracing.GetPropagate()),
+			Propagate: in.Options.Tracing.GetPropagate(),
 		}
 	}
 	return nil

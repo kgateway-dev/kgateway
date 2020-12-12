@@ -4,45 +4,44 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
 import "google/protobuf/struct.proto";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
+option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
-import "gloo/projects/gloo/api/v1/extensions.proto";
-import "gloo/projects/gloo/api/v1/options/cors/cors.proto";
-import "gloo/projects/gloo/api/v1/options/rest/rest.proto";
-import "gloo/projects/gloo/api/v1/options/grpc/grpc.proto";
-import "gloo/projects/gloo/api/v1/options/als/als.proto";
-import "gloo/projects/gloo/api/v1/options/grpc_web/grpc_web.proto";
-import "gloo/projects/gloo/api/v1/options/grpc_json/grpc_json.proto";
-import "gloo/projects/gloo/api/v1/options/hcm/hcm.proto";
-import "gloo/projects/gloo/api/v1/options/lbhash/lbhash.proto";
-import "gloo/projects/gloo/api/v1/options/shadowing/shadowing.proto";
-import "gloo/projects/gloo/api/v1/options/tcp/tcp.proto";
-import "gloo/projects/gloo/api/v1/options/tracing/tracing.proto";
-import "gloo/projects/gloo/api/v1/options/retries/retries.proto";
-import "gloo/projects/gloo/api/v1/options/stats/stats.proto";
-import "gloo/projects/gloo/api/v1/options/faultinjection/fault.proto";
-import "gloo/projects/gloo/api/v1/options/headers/headers.proto";
-import "gloo/projects/gloo/api/v1/options/aws/aws.proto";
-import "gloo/projects/gloo/api/v1/options/wasm/wasm.proto";
-import "gloo/projects/gloo/api/v1/options/azure/azure.proto";
-import "gloo/projects/gloo/api/v1/options/healthcheck/healthcheck.proto";
-import "gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/rest/rest.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc_web/grpc_web.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc_json/grpc_json.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/lbhash/lbhash.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/shadowing/shadowing.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/tcp/tcp.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/retries/retries.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/stats/stats.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/faultinjection/fault.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/headers/headers.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/azure/azure.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/healthcheck/healthcheck.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
 
-import "gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
-import "gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto";
-import "gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto";
-import "gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto";
 
-import "gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
-import "gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto";
-import "gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
-import "gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto";
-import "gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto";
-import "gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto";
-import "gloo/projects/gloo/api/v1/options/transformation/transformation.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
@@ -106,7 +105,7 @@ message HttpListenerOptions {
     //  - "application/json"
     //  compressionLevel: BEST
     // ```
-    envoy.config.filter.http.gzip.v2.Gzip gzip = 8;
+    .solo.io.envoy.config.filter.http.gzip.v2.Gzip gzip = 8;
 
     // Enterprise-only: Proxy latency
     envoy.config.filter.http.proxylatency.v2.ProxyLatency proxy_latency = 9;
@@ -114,7 +113,7 @@ message HttpListenerOptions {
     // Buffer can be used to set the maximum request size
     // that the filter will buffer before the connection
     // manager will stop buffering and return a 413 response.
-    envoy.extensions.filters.http.buffer.v3.Buffer buffer = 12;
+    .solo.io.envoy.extensions.filters.http.buffer.v3.Buffer buffer = 12;
 
     // Exposed envoy config for the gRPC to JSON transcoding filter,
     // envoy.filters.http.grpc_json_transcoder.
@@ -190,7 +189,7 @@ message VirtualHostOptions {
     // manager will stop buffering and return a 413 response.
     // Note: If you have not set a global config (at the gateway level), this
     // override will not do anything by itself.
-    envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 14;
+    .solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 14;
     // IncludeRequestAttemptCount decides whether the x-envoy-attempt-count header
     // should be included in the upstream request.
     // Setting this option will cause it to override any existing header value,
@@ -225,7 +224,7 @@ message RouteOptions {
     // Specifies the upstream timeout for the route. If not specified, the default is 15s. This spans between the point
     // at which the entire downstream request (i.e. end-of-stream) has been processed and when the upstream response has
     // been completely processed. A value of 0 will disable the route’s timeout.
-    google.protobuf.Duration timeout = 4 [(gogoproto.stdduration) = true];
+    google.protobuf.Duration timeout = 4 ;
     retries.options.gloo.solo.io.RetryPolicy retries = 5;
     // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
     // underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
@@ -299,7 +298,7 @@ message RouteOptions {
     // manager will stop buffering and return a 413 response.
     // Note: If you have not set a global config (at the gateway level), this
     // override will not do anything by itself.
-    envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 22;
+    .solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 22;
 
     // Early transformations stage. These transformations run before most other options are processed.
     // If the `regular` field is set in here, the `transformations` field is ignored.
@@ -341,7 +340,7 @@ message WeightedDestinationOptions {
     // manager will stop buffering and return a 413 response.
     // Note: If you have not set a global config (at the gateway level), this
     // override will not do anything by itself.
-    envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 5;
+    .solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 5;
 
     // Early transformations stage. These transformations run before most other options are processed.
     // If the `regular` field is set in here, the `transformations` field is ignored.

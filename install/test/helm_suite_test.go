@@ -10,37 +10,29 @@ import (
 	"text/template"
 
 	envoy_config_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/solo-io/go-utils/versionutils/git"
-
-	glooVersion "github.com/solo-io/gloo/pkg/version"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
-
-	"helm.sh/helm/v3/pkg/release"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	helm2chartutil "k8s.io/helm/pkg/chartutil"
-	helm2renderutil "k8s.io/helm/pkg/renderutil"
-
-	"github.com/solo-io/gloo/pkg/cliutil/helm"
-
 	"github.com/ghodss/yaml"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/strvals"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	helm2chartapi "k8s.io/helm/pkg/proto/hapi/chart"
-	k8syamlutil "sigs.k8s.io/yaml"
-
-	"github.com/solo-io/go-utils/testutils"
-	v1 "k8s.io/api/core/v1"
-
+	"github.com/golang/protobuf/jsonpb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/cliutil/helm"
+	glooVersion "github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/go-utils/testutils"
+	"github.com/solo-io/go-utils/versionutils/git"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v3/pkg/strvals"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	helm2chartutil "k8s.io/helm/pkg/chartutil"
+	helm2chartapi "k8s.io/helm/pkg/proto/hapi/chart"
+	helm2renderutil "k8s.io/helm/pkg/renderutil"
+	k8syamlutil "sigs.k8s.io/yaml"
 )
 
 func TestHelm(t *testing.T) {

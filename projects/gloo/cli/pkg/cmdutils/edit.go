@@ -8,13 +8,12 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"github.com/gogo/protobuf/proto"
-	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/go-utils/protoutils"
-
-	"k8s.io/kubectl/pkg/cmd/util/editor"
-
 	"github.com/ghodss/yaml"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils/protoutils"
+	"k8s.io/kubectl/pkg/cmd/util/editor"
 )
 
 type EditFunc func(prefix, suffix string, r io.Reader) ([]byte, string, error)
@@ -83,7 +82,7 @@ func (e *Editor) ReadDescriptors(data []byte, result proto.Message) error {
 		jsn = e.JsonTransform(jsn)
 	}
 
-	return protoutils.UnmarshalBytes(jsn, result)
+	return jsonpb.Unmarshal(bytes.NewBuffer(jsn), result)
 }
 
 func Fresh(src proto.Message) proto.Message {

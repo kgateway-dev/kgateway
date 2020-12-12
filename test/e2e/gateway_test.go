@@ -12,7 +12,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
-	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	corev1 "k8s.io/api/core/v1"
@@ -101,7 +100,7 @@ var _ = Describe("Gateway", func() {
 			}
 
 			// write a virtual service so we have a proxy
-			vs := getTrivialVirtualServiceForUpstream("gloo-system", core.ResourceRef{Name: "test", Namespace: "test"})
+			vs := getTrivialVirtualServiceForUpstream("gloo-system", &core.ResourceRef{Name: "test", Namespace: "test"})
 			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -164,7 +163,7 @@ var _ = Describe("Gateway", func() {
 				if err != nil {
 					return false
 				}
-				return proxy.Status.State == core.Status_Accepted
+				return proxy.GetStatus().GetState() == core.Status_Accepted
 			}, "100s", "0.1s").Should(BeTrue())
 
 			// Verify that the proxy has the expected route
@@ -217,7 +216,7 @@ var _ = Describe("Gateway", func() {
 				if err != nil {
 					return false
 				}
-				return proxy.Status.State == core.Status_Accepted
+				return proxy.GetStatus().GetState() == core.Status_Accepted
 			}, "60s", "2s").Should(BeTrue(), "first virtualservice should be accepted")
 
 			// Create a second vs with a bad authconfig
@@ -246,7 +245,7 @@ var _ = Describe("Gateway", func() {
 					return false
 				}
 
-				return vs.Status.State == core.Status_Rejected
+				return vs.GetStatus().GetState() == core.Status_Rejected
 			}, "30s", "1s").Should(BeTrue(), fmt.Sprintf("second virtualservice should be rejected due to missing authconfig"))
 
 			Consistently(func() bool {
@@ -254,7 +253,7 @@ var _ = Describe("Gateway", func() {
 				if err != nil {
 					return false
 				}
-				return gateway.Status.State == core.Status_Accepted
+				return gateway.GetStatus().GetState() == core.Status_Accepted
 			}, "10s", "0.1s").Should(BeTrue(), "gateway should not have any errors from a bad VS")
 
 			Eventually(func() bool {
@@ -264,7 +263,7 @@ var _ = Describe("Gateway", func() {
 				}
 				nonSslListener := getNonSSLListener(proxy)
 
-				return proxy.Status.State == core.Status_Accepted && len(nonSslListener.GetHttpListener().VirtualHosts) == 1
+				return proxy.GetStatus().GetState() == core.Status_Accepted && len(nonSslListener.GetHttpListener().VirtualHosts) == 1
 			}, "10s", "0.1s").Should(BeTrue(), "second virtualservice should not end up in the proxy (bad config)")
 
 			// Create a third trivial vs with valid config
@@ -283,7 +282,7 @@ var _ = Describe("Gateway", func() {
 				}
 				nonSslListener := getNonSSLListener(proxy)
 
-				return proxy.Status.State == core.Status_Accepted && len(nonSslListener.GetHttpListener().VirtualHosts) == 2
+				return proxy.GetStatus().GetState() == core.Status_Accepted && len(nonSslListener.GetHttpListener().VirtualHosts) == 2
 			}, "10s", "0.1s").Should(BeTrue(), "third virtualservice should end up in the proxy (good config)")
 
 			// Verify that the proxy is as expected (2 functional virtualservices)
@@ -331,7 +330,6 @@ var _ = Describe("Gateway", func() {
 
 				_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
-				envoyInstance.ApiVersion = "V2"
 				err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 				// Check that the new instance of envoy is running
@@ -525,7 +523,7 @@ var _ = Describe("Gateway", func() {
 				It("should work with ssl", func() {
 
 					secret := &gloov1.Secret{
-						Metadata: core.Metadata{
+						Metadata: &core.Metadata{
 							Name:      "secret",
 							Namespace: "default",
 						},
@@ -561,15 +559,15 @@ var _ = Describe("Gateway", func() {
 	})
 })
 
-func getTrivialVirtualServiceForUpstream(ns string, upstream core.ResourceRef) *gatewayv1.VirtualService {
+func getTrivialVirtualServiceForUpstream(ns string, upstream *core.ResourceRef) *gatewayv1.VirtualService {
 	vs := getTrivialVirtualService(ns)
 	vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_Upstream{
-		Upstream: utils.ResourceRefPtr(upstream),
+		Upstream: upstream,
 	}
 	return vs
 }
 
-func getTrivialVirtualServiceForService(ns string, service core.ResourceRef, port uint32) *gatewayv1.VirtualService {
+func getTrivialVirtualServiceForService(ns string, service *core.ResourceRef, port uint32) *gatewayv1.VirtualService {
 	vs := getTrivialVirtualService(ns)
 	vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_Kube{
 		Kube: &gloov1.KubernetesServiceDestination{
@@ -582,7 +580,7 @@ func getTrivialVirtualServiceForService(ns string, service core.ResourceRef, por
 
 func getTrivialVirtualService(ns string) *gatewayv1.VirtualService {
 	return &gatewayv1.VirtualService{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "vs",
 			Namespace: ns,
 		},

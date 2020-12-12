@@ -114,7 +114,7 @@ var _ = Describe("Updater", func() {
 		testDisc.functionsCalled.Store(functionsCalled{})
 		updater = NewUpdater(ctx, resolver, upstreamWriterClient, 0, []FunctionDiscoveryFactory{testDisc})
 		up = &v1.Upstream{
-			Metadata: core_solo_io.Metadata{
+			Metadata: &core_solo_io.Metadata{
 				Namespace: "ns",
 				Name:      "up",
 			},

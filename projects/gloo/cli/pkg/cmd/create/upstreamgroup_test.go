@@ -36,7 +36,7 @@ var _ = Describe("UpstreamGroup", func() {
 					},
 				},
 			},
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Namespace: "gloo-system",
 				Name:      "us1",
 			},

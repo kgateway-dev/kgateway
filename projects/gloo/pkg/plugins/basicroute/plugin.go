@@ -3,7 +3,6 @@ package basicroute
 import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
@@ -89,7 +88,7 @@ func applyTimeout(in *v1.Route, out *envoy_config_route_v3.Route) error {
 			"had nil route", in.Action)
 	}
 
-	routeAction.Route.Timeout = gogoutils.DurationStdToProto(in.Options.Timeout)
+	routeAction.Route.Timeout = in.Options.Timeout
 	return nil
 }
 
@@ -131,7 +130,7 @@ func applyHostRewrite(in *v1.Route, out *envoy_config_route_v3.Route) error {
 		}
 	case *v1.RouteOptions_AutoHostRewrite:
 		routeAction.Route.HostRewriteSpecifier = &envoy_config_route_v3.RouteAction_AutoHostRewrite{
-			AutoHostRewrite: gogoutils.BoolGogoToProto(rewriteType.AutoHostRewrite),
+			AutoHostRewrite: rewriteType.AutoHostRewrite,
 		}
 	default:
 		return errors.Errorf("unimplemented host rewrite type: %T", rewriteType)
@@ -163,7 +162,7 @@ func applyUpgrades(in *v1.Route, out *envoy_config_route_v3.Route) error {
 		case *protocol_upgrade.ProtocolUpgradeConfig_Websocket:
 			routeAction.Route.UpgradeConfigs[i] = &envoy_config_route_v3.RouteAction_UpgradeConfig{
 				UpgradeType: upgradeconfig.WebSocketUpgradeType,
-				Enabled:     gogoutils.BoolGogoToProto(config.GetWebsocket().Enabled),
+				Enabled:     config.GetWebsocket().GetEnabled(),
 			}
 		default:
 			return errors.Errorf("unimplemented upgrade type: %T", upgradeType)
@@ -189,8 +188,8 @@ func convertPolicy(policy *retries.RetryPolicy) *envoy_config_route_v3.RetryPoli
 	}
 
 	return &envoy_config_route_v3.RetryPolicy{
-		RetryOn:       policy.RetryOn,
+		RetryOn:       policy.GetRetryOn(),
 		NumRetries:    &wrappers.UInt32Value{Value: numRetries},
-		PerTryTimeout: gogoutils.DurationStdToProto(policy.PerTryTimeout),
+		PerTryTimeout: policy.GetPerTryTimeout(),
 	}
 }

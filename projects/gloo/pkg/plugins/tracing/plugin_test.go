@@ -6,7 +6,6 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -32,9 +31,9 @@ var _ = Describe("Plugin", func() {
 				RequestHeadersForTags: []string{"header1", "header2"},
 				Verbose:               true,
 				TracePercentages: &tracing.TracePercentages{
-					ClientSamplePercentage:  &types.FloatValue{Value: 10},
-					RandomSamplePercentage:  &types.FloatValue{Value: 20},
-					OverallSamplePercentage: &types.FloatValue{Value: 30},
+					ClientSamplePercentage:  &wrappers.FloatValue{Value: 10},
+					RandomSamplePercentage:  &wrappers.FloatValue{Value: 20},
+					OverallSamplePercentage: &wrappers.FloatValue{Value: 30},
 				},
 				ProviderConfig: nil,
 			},
@@ -357,7 +356,7 @@ var _ = Describe("Plugin", func() {
 			Options: &v1.RouteOptions{
 				Tracing: &tracing.RouteTracingSettings{
 					RouteDescriptor: "hello",
-					Propagate:       &types.BoolValue{Value: false},
+					Propagate:       &wrappers.BoolValue{Value: false},
 				},
 			},
 		}
@@ -383,9 +382,9 @@ var _ = Describe("Plugin", func() {
 				Tracing: &tracing.RouteTracingSettings{
 					RouteDescriptor: "hello",
 					TracePercentages: &tracing.TracePercentages{
-						ClientSamplePercentage:  &types.FloatValue{Value: 10},
-						RandomSamplePercentage:  &types.FloatValue{Value: 20},
-						OverallSamplePercentage: &types.FloatValue{Value: 30},
+						ClientSamplePercentage:  &wrappers.FloatValue{Value: 10},
+						RandomSamplePercentage:  &wrappers.FloatValue{Value: 20},
+						OverallSamplePercentage: &wrappers.FloatValue{Value: 30},
 					},
 				},
 			},

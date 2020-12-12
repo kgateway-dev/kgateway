@@ -1,21 +1,19 @@
 package ratelimit
 
 import (
-	"time"
-
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	rlconfig "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
 	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 func GenerateEnvoyConfigForFilterWith(
-	ref core.ResourceRef,
+	ref *core.ResourceRef,
 	domain string,
 	currentState uint32,
-	timeout *time.Duration,
+	timeout *duration.Duration,
 	denyOnFail bool,
 ) *envoyratelimit.RateLimit {
 	var svc *envoycore.GrpcService
@@ -27,17 +25,18 @@ func GenerateEnvoyConfigForFilterWith(
 
 	curtimeout := DefaultTimeout
 	if timeout != nil {
-		curtimeout = *timeout
+		curtimeout = timeout
 	}
 	envoyrl := envoyratelimit.RateLimit{
 		Domain:          domain,
 		Stage:           currentState,
 		RequestType:     requestType,
-		Timeout:         gogoutils.DurationStdToProto(&curtimeout),
+		Timeout:         curtimeout,
 		FailureModeDeny: denyOnFail,
 
 		RateLimitService: &rlconfig.RateLimitServiceConfig{
-			GrpcService: svc,
+			TransportApiVersion: envoycore.ApiVersion_V3,
+			GrpcService:         svc,
 		},
 	}
 	return &envoyrl

@@ -21,7 +21,7 @@ import (
 var _ = Describe("UpstreamRemovingSanitizer", func() {
 	var (
 		us = &v1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "my",
 				Namespace: "upstream",
 			},
@@ -32,7 +32,7 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 		}
 
 		badUs = &v1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "bad",
 				Namespace: "upstream",
 			},

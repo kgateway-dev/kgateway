@@ -2,14 +2,14 @@ syntax = "proto3";
 package options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options";
 
-import "gogoproto/gogo.proto";
 
-import "gloo/projects/gloo/api/v1/options/rest/rest.proto";
-import "gloo/projects/gloo/api/v1/options/grpc/grpc.proto";
 
-option (gogoproto.equal_all) = true;
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/rest/rest.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto";
+
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 // Describes APIs and application-level information for services
 // Gloo routes to. ServiceSpec is contained within the UpstreamSpec for certain types

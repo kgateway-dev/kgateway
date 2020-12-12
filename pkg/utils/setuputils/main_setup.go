@@ -75,7 +75,7 @@ func Main(opts SetupOpts) error {
 	}
 
 	emitter := v1.NewSetupEmitter(settingsClient)
-	settingsRef := core.ResourceRef{Namespace: setupNamespace, Name: setupName}
+	settingsRef := &core.ResourceRef{Namespace: setupNamespace, Name: setupName}
 	eventLoop := v1.NewSetupEventLoop(emitter, NewSetupSyncer(settingsRef, opts.SetupFunc))
 	errs, err := eventLoop.Run([]string{setupNamespace}, clients.WatchOpts{
 		Ctx:         ctx,

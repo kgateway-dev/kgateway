@@ -13,8 +13,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
-	"github.com/solo-io/gloo/pkg/utils"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -140,7 +138,7 @@ func (td *corsTestData) getGlooCorsProxy(cors *cors.CorsPolicy) (*gloov1.Proxy, 
 
 func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(resourceVersion string, cors *cors.CorsPolicy) *gloov1.Proxy {
 	return &gloov1.Proxy{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:            "proxy",
 			Namespace:       "default",
 			ResourceVersion: resourceVersion,
@@ -160,7 +158,7 @@ func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(resourceVersion string, 
 									Destination: &gloov1.RouteAction_Single{
 										Single: &gloov1.Destination{
 											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: utils.ResourceRefPtr(ptd.up.Metadata.Ref()),
+												Upstream: ptd.up.Metadata.Ref(),
 											},
 										},
 									},

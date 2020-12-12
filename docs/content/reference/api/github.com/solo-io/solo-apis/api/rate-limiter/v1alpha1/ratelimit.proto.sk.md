@@ -299,6 +299,23 @@ setDescriptors:
    requestsPerUnit: 20
    unit: MINUTE
 
+It would also match the following setDescriptor which includes only a subset of the setActions enumerated:
+
+setDescriptors:
+- simpleDescriptors:
+  - key: account_id
+ rateLimit:
+   requestsPerUnit: 20
+   unit: MINUTE
+
+It would even match the following setDescriptor.
+Any setActions list would match this setDescriptor which has simpleDescriptors omitted entirely:
+
+setDescriptors:
+- rateLimit:
+   requestsPerUnit: 20
+   unit: MINUTE
+
 ```yaml
 "actions": []ratelimit.api.solo.io.Action
 "setActions": []ratelimit.api.solo.io.Action

@@ -30,7 +30,7 @@ var _ = Describe("CustomEnvoyConfig", func() {
 		// create a settings object
 		vsClient = helpers.MustVirtualServiceClient(ctx)
 		vsvc = &gatewayv1.VirtualService{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "vs",
 				Namespace: "gloo-system",
 			},

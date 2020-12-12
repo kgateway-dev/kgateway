@@ -16,14 +16,14 @@ import (
 
 func NewKubeService(namespace, name string) *KubeService {
 	kubeservice := &KubeService{}
-	kubeservice.SetMetadata(core.Metadata{
+	kubeservice.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
 	return kubeservice
 }
 
-func (r *KubeService) SetMetadata(meta core.Metadata) {
+func (r *KubeService) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 

@@ -32,7 +32,7 @@ var _ = Describe("CustomServerConfig", func() {
 		settingsClient = helpers.MustSettingsClient(ctx)
 
 		settings = &gloov1.Settings{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "default",
 				Namespace: "gloo-system",
 			},

@@ -8,14 +8,15 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gogo/protobuf/types"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_extensions_filters_http_wasm_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/wasm/v3"
+	envoy_extensions_wasm_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/wasm/v3"
+	"github.com/golang/protobuf/ptypes/any"
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/wasm/tools/wasme/pkg/defaults"
 
-	configcore "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	wasmv3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/wasm/v3"
-	wasmv3ext "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -83,25 +84,25 @@ func (p *Plugin) ensureFilter(wasmFilter *wasm.WasmFilter) (*plugins.StagedHttpF
 		runtime = WavmRuntime
 	}
 
-	filterCfg := &wasmv3.Wasm{
-		Config: &wasmv3ext.PluginConfig{
+	filterCfg := &envoy_extensions_filters_http_wasm_v3.Wasm{
+		Config: &envoy_extensions_wasm_v3.PluginConfig{
 			Name:          wasmFilter.Name,
 			RootId:        wasmFilter.RootId,
 			Configuration: wasmFilter.Config,
-			Vm: &wasmv3ext.PluginConfig_VmConfig{
-				VmConfig: &wasmv3ext.VmConfig{
+			Vm: &envoy_extensions_wasm_v3.PluginConfig_VmConfig{
+				VmConfig: &envoy_extensions_wasm_v3.VmConfig{
 					VmId:                VmId,
 					Runtime:             runtime,
 					NackOnCodeCacheMiss: true,
-					Code: &configcore.AsyncDataSource{
-						Specifier: &configcore.AsyncDataSource_Remote{
-							Remote: &configcore.RemoteDataSource{
-								HttpUri: &configcore.HttpUri{
+					Code: &envoy_config_core_v3.AsyncDataSource{
+						Specifier: &envoy_config_core_v3.AsyncDataSource_Remote{
+							Remote: &envoy_config_core_v3.RemoteDataSource{
+								HttpUri: &envoy_config_core_v3.HttpUri{
 									Uri: "http://gloo/images/" + cachedPlugin.Sha256,
-									HttpUpstreamType: &configcore.HttpUri_Cluster{
+									HttpUpstreamType: &envoy_config_core_v3.HttpUri_Cluster{
 										Cluster: WasmCacheCluster,
 									},
-									Timeout: &types.Duration{
+									Timeout: &duration.Duration{
 										Seconds: 5, // TODO: customize
 									},
 								},
@@ -134,7 +135,7 @@ func (p *Plugin) ensurePluginInCache(filter *wasm.WasmFilter) (*CachedPlugin, er
 	}, nil
 }
 
-func (p *Plugin) verifyConfiguration(schema Schema, config *types.Any) error {
+func (p *Plugin) verifyConfiguration(schema Schema, config *any.Any) error {
 	// everything goes now-a-days
 	return nil
 }

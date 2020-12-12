@@ -34,8 +34,8 @@ var _ = Describe("EnvoySnapshot", func() {
 		clone := toBeCloned.Clone()
 
 		// Verify that original snapshot and clone are identical
-		Expect(toBeCloned).To(Equal(clone))
-		Expect(untouched).To(Equal(clone))
+		Expect(toBeCloned.Equal(clone.(*xds.EnvoySnapshot))).To(BeTrue())
+		Expect(untouched.Equal(clone.(*xds.EnvoySnapshot))).To(BeTrue())
 
 		// Mutate the clone
 		clone.GetResources(
@@ -43,7 +43,7 @@ var _ = Describe("EnvoySnapshot", func() {
 		).Items[""].(*resource.EnvoyResource).ResourceProto().(*envoy_config_endpoint_v3.ClusterLoadAssignment).ClusterName = "new_endpoint"
 
 		// Verify that original snapshot was not mutated
-		Expect(toBeCloned).NotTo(Equal(clone))
-		Expect(toBeCloned).To(Equal(untouched))
+		Expect(toBeCloned.Equal(clone.(*xds.EnvoySnapshot))).NotTo(BeTrue())
+		Expect(toBeCloned.Equal(untouched)).To(BeTrue())
 	})
 })

@@ -52,7 +52,7 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy := &v1.Proxy{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Namespace: ns,
 				Name:      proxyName,
 			},
@@ -78,7 +78,7 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(proxies).To(HaveLen(1))
 		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
-		Expect(proxies[0].Status).To(Equal(core.Status{
+		Expect(proxies[0].Status).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
 			ReportedBy: ref,
@@ -106,7 +106,7 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(proxies).To(HaveLen(1))
 		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
-		Expect(proxies[0].Status).To(Equal(core.Status{
+		Expect(proxies[0].Status).To(Equal(&core.Status{
 			State:      1,
 			ReportedBy: ref,
 		}))

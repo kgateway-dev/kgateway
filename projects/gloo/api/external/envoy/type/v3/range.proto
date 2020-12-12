@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package envoy.type.v3;
+package solo.io.envoy.type.v3;
 
 import "udpa/annotations/status.proto";
 import "udpa/annotations/versioning.proto";
 
-option java_package = "io.envoyproxy.envoy.type.v3";
+option java_package = "io.envoyproxy.solo.io.envoy.type.v3";
 option java_outer_classname = "RangeProto";
 option java_multiple_files = true;
 option (udpa.annotations.file_status).package_version_status = ACTIVE;
@@ -15,7 +15,7 @@ option (udpa.annotations.file_status).package_version_status = ACTIVE;
 // Specifies the int64 start and end of the range using half-open interval semantics [start,
 // end).
 message Int64Range {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.type.Int64Range";
+  option (udpa.annotations.versioning).previous_message_type = ".solo.io.envoy.type.Int64Range";
 
   // start of the range (inclusive)
   int64 start = 1;
@@ -48,5 +48,7 @@ message DoubleRange {
   double end = 2;
 }
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3";
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
+

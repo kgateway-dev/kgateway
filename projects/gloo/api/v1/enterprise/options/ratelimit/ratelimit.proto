@@ -2,14 +2,13 @@ syntax = "proto3";
 package ratelimit.options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit";
 
-import "solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto";
+import "github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto";
 
-import "solo-kit/api/v1/ref.proto";
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
+option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
 // Basic rate-limiting API
@@ -20,7 +19,7 @@ message IngressRateLimit {
 
 message Settings {
   core.solo.io.ResourceRef ratelimit_server_ref = 1;
-  google.protobuf.Duration request_timeout = 2 [(gogoproto.stdduration) = true];
+  google.protobuf.Duration request_timeout = 2 ;
 
   bool deny_on_fail = 3;
 
