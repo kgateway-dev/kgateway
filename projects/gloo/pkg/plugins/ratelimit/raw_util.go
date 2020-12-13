@@ -2,21 +2,20 @@ package ratelimit
 
 import (
 	"context"
-	"time"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	gloorl "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 func generateEnvoyConfigForCustomFilter(
-	ref core.ResourceRef,
-	timeout *time.Duration,
+	ref *core.ResourceRef,
+	timeout *duration.Duration,
 	denyOnFail bool,
 ) *envoyratelimit.RateLimit {
 	return GenerateEnvoyConfigForFilterWith(ref, CustomDomain, CustomStage, timeout, denyOnFail)
@@ -84,7 +83,7 @@ func convertAction(ctx context.Context, action *gloorl.Action) *envoy_config_rou
 	case *gloorl.Action_HeaderValueMatch_:
 		retAction.ActionSpecifier = &envoy_config_route_v3.RateLimit_Action_HeaderValueMatch_{
 			HeaderValueMatch: &envoy_config_route_v3.RateLimit_Action_HeaderValueMatch{
-				ExpectMatch:     gogoutils.BoolGogoToProto(specificAction.HeaderValueMatch.GetExpectMatch()),
+				ExpectMatch:     specificAction.HeaderValueMatch.GetExpectMatch(),
 				DescriptorValue: specificAction.HeaderValueMatch.GetDescriptorValue(),
 				Headers:         convertHeaders(ctx, specificAction.HeaderValueMatch.GetHeaders()),
 			},

@@ -1,8 +1,7 @@
 package samples
 
 import (
-	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -13,7 +12,7 @@ import (
 
 func SimpleUpstream() *v1.Upstream {
 	return &v1.Upstream{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "test",
 			Namespace: "gloo-system",
 		},
@@ -38,7 +37,7 @@ func SimpleGlooSnapshot() *v1.ApiSnapshot {
 				Destination: &v1.RouteAction_Single{
 					Single: &v1.Destination{
 						DestinationType: &v1.Destination_Upstream{
-							Upstream: utils.ResourceRefPtr(us.Metadata.Ref()),
+							Upstream: us.Metadata.Ref(),
 						},
 					},
 				},
@@ -87,7 +86,7 @@ func SimpleGlooSnapshot() *v1.ApiSnapshot {
 	}
 
 	proxy := &v1.Proxy{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "test",
 			Namespace: "gloo-system",
 		},
@@ -103,7 +102,7 @@ func SimpleGlooSnapshot() *v1.ApiSnapshot {
 	}
 }
 
-func SimpleRoute(us core.ResourceRef) []*gwv1.Route {
+func SimpleRoute(us *core.ResourceRef) []*gwv1.Route {
 	return []*gwv1.Route{{
 		Matchers: []*matchers.Matcher{{
 			PathSpecifier: &matchers.Matcher_Prefix{
@@ -115,7 +114,7 @@ func SimpleRoute(us core.ResourceRef) []*gwv1.Route {
 				Destination: &v1.RouteAction_Single{
 					Single: &v1.Destination{
 						DestinationType: &v1.Destination_Upstream{
-							Upstream: utils.ResourceRefPtr(us),
+							Upstream: us,
 						},
 					},
 				},
@@ -124,14 +123,14 @@ func SimpleRoute(us core.ResourceRef) []*gwv1.Route {
 	}}
 }
 
-func SimpleGatewaySnapshot(us core.ResourceRef, namespace string) *gwv1.ApiSnapshot {
+func SimpleGatewaySnapshot(us *core.ResourceRef, namespace string) *gwv1.ApiSnapshot {
 	routes := SimpleRoute(us)
 	return &gwv1.ApiSnapshot{
 		Gateways: []*gwv1.Gateway{
 			defaults.DefaultGateway(namespace),
 			defaults.DefaultSslGateway(namespace),
 			{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "tcp-gateway",
 					Namespace: namespace,
 				},
@@ -145,7 +144,7 @@ func SimpleGatewaySnapshot(us core.ResourceRef, namespace string) *gwv1.ApiSnaps
 									Destination: &v1.TcpHost_TcpAction_Single{
 										Single: &v1.Destination{
 											DestinationType: &v1.Destination_Upstream{
-												Upstream: utils.ResourceRefPtr(us),
+												Upstream: us,
 											},
 										},
 									},
@@ -156,12 +155,12 @@ func SimpleGatewaySnapshot(us core.ResourceRef, namespace string) *gwv1.ApiSnaps
 				},
 				BindAddress:   "::",
 				BindPort:      12345,
-				UseProxyProto: &types.BoolValue{Value: false},
+				UseProxyProto: &wrappers.BoolValue{Value: false},
 			},
 		},
 		VirtualServices: []*gwv1.VirtualService{
 			{
-				Metadata: core.Metadata{Namespace: namespace, Name: "virtualservice"},
+				Metadata: &core.Metadata{Namespace: namespace, Name: "virtualservice"},
 				VirtualHost: &gwv1.VirtualHost{
 					Domains: []string{"*"},
 					Routes:  routes,
@@ -171,9 +170,9 @@ func SimpleGatewaySnapshot(us core.ResourceRef, namespace string) *gwv1.ApiSnaps
 	}
 }
 
-func AddVsToSnap(snap *gwv1.ApiSnapshot, us core.ResourceRef, namespace string) *gwv1.ApiSnapshot {
+func AddVsToSnap(snap *gwv1.ApiSnapshot, us *core.ResourceRef, namespace string) *gwv1.ApiSnapshot {
 	snap.VirtualServices = append(snap.VirtualServices, &gwv1.VirtualService{
-		Metadata: core.Metadata{Namespace: namespace, Name: "secondary-vs"},
+		Metadata: &core.Metadata{Namespace: namespace, Name: "secondary-vs"},
 		VirtualHost: &gwv1.VirtualHost{
 			Domains: []string{"secondary-vs.com"},
 			Routes:  SimpleRoute(us),
@@ -182,7 +181,7 @@ func AddVsToSnap(snap *gwv1.ApiSnapshot, us core.ResourceRef, namespace string) 
 	return snap
 }
 
-func GatewaySnapshotWithDelegates(us core.ResourceRef, namespace string) *gwv1.ApiSnapshot {
+func GatewaySnapshotWithDelegates(us *core.ResourceRef, namespace string) *gwv1.ApiSnapshot {
 	rtRoutes := []*gwv1.Route{
 		{
 			Action: &gwv1.Route_RouteAction{
@@ -190,7 +189,7 @@ func GatewaySnapshotWithDelegates(us core.ResourceRef, namespace string) *gwv1.A
 					Destination: &v1.RouteAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
-								Upstream: utils.ResourceRefPtr(us),
+								Upstream: us,
 							},
 						},
 					},
@@ -200,7 +199,7 @@ func GatewaySnapshotWithDelegates(us core.ResourceRef, namespace string) *gwv1.A
 	}
 
 	rt := &gwv1.RouteTable{
-		Metadata: core.Metadata{Namespace: namespace, Name: "delegated-routes"},
+		Metadata: &core.Metadata{Namespace: namespace, Name: "delegated-routes"},
 		Routes:   rtRoutes,
 	}
 
@@ -209,7 +208,7 @@ func GatewaySnapshotWithDelegates(us core.ResourceRef, namespace string) *gwv1.A
 			Action: &gwv1.Route_DelegateAction{
 				DelegateAction: &gwv1.DelegateAction{
 					DelegationType: &gwv1.DelegateAction_Ref{
-						Ref: utils.ResourceRefPtr(rt.Metadata.Ref()),
+						Ref: rt.Metadata.Ref(),
 					},
 				},
 			},
@@ -223,7 +222,7 @@ func GatewaySnapshotWithDelegates(us core.ResourceRef, namespace string) *gwv1.A
 	return snap
 }
 
-func GatewaySnapshotWithMultiDelegates(us core.ResourceRef, namespace string) *gwv1.ApiSnapshot {
+func GatewaySnapshotWithMultiDelegates(us *core.ResourceRef, namespace string) *gwv1.ApiSnapshot {
 	rtLeafRoutes := []*gwv1.Route{
 		{
 			Action: &gwv1.Route_RouteAction{
@@ -231,7 +230,7 @@ func GatewaySnapshotWithMultiDelegates(us core.ResourceRef, namespace string) *g
 					Destination: &v1.RouteAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
-								Upstream: utils.ResourceRefPtr(us),
+								Upstream: us,
 							},
 						},
 					},
@@ -241,7 +240,7 @@ func GatewaySnapshotWithMultiDelegates(us core.ResourceRef, namespace string) *g
 	}
 
 	rtLeaf := &gwv1.RouteTable{
-		Metadata: core.Metadata{Namespace: namespace, Name: "delegated-leaf-routes"},
+		Metadata: &core.Metadata{Namespace: namespace, Name: "delegated-leaf-routes"},
 		Routes:   rtLeafRoutes,
 	}
 
@@ -250,7 +249,7 @@ func GatewaySnapshotWithMultiDelegates(us core.ResourceRef, namespace string) *g
 			Action: &gwv1.Route_DelegateAction{
 				DelegateAction: &gwv1.DelegateAction{
 					DelegationType: &gwv1.DelegateAction_Ref{
-						Ref: utils.ResourceRefPtr(rtLeaf.Metadata.Ref()),
+						Ref: rtLeaf.Metadata.Ref(),
 					},
 				},
 			},
@@ -258,7 +257,7 @@ func GatewaySnapshotWithMultiDelegates(us core.ResourceRef, namespace string) *g
 	}
 
 	rt := &gwv1.RouteTable{
-		Metadata: core.Metadata{Namespace: namespace, Name: "delegated-routes"},
+		Metadata: &core.Metadata{Namespace: namespace, Name: "delegated-routes"},
 		Routes:   rtRoutes,
 	}
 
@@ -267,7 +266,7 @@ func GatewaySnapshotWithMultiDelegates(us core.ResourceRef, namespace string) *g
 			Action: &gwv1.Route_DelegateAction{
 				DelegateAction: &gwv1.DelegateAction{
 					DelegationType: &gwv1.DelegateAction_Ref{
-						Ref: utils.ResourceRefPtr(rt.Metadata.Ref()),
+						Ref: rt.Metadata.Ref(),
 					},
 				},
 			},
@@ -281,7 +280,7 @@ func GatewaySnapshotWithMultiDelegates(us core.ResourceRef, namespace string) *g
 	return snap
 }
 
-func GatewaySnapshotWithDelegateChain(us core.ResourceRef, namespace string) *gwv1.ApiSnapshot {
+func GatewaySnapshotWithDelegateChain(us *core.ResourceRef, namespace string) *gwv1.ApiSnapshot {
 	vs, rtList := LinkedRouteTablesWithVirtualService("vs", namespace)
 
 	snap := SimpleGatewaySnapshot(us, namespace)

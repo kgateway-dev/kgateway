@@ -42,7 +42,7 @@ func awsCmd(opts *options.Options) *cobra.Command {
 				}
 			}
 			// create the secret
-			if err := createAwsSecret(opts.Top.Ctx, opts.Metadata, *input, opts.Create.DryRun, opts.Top.Output); err != nil {
+			if err := createAwsSecret(opts.Top.Ctx, &opts.Metadata, *input, opts.Create.DryRun, opts.Top.Output); err != nil {
 				return err
 			}
 			return nil
@@ -77,7 +77,7 @@ func AwsSecretArgsInteractive(input *options.AwsSecret) error {
 	return nil
 }
 
-func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsSecret, dryRun bool, outputType printers.OutputType) error {
+func createAwsSecret(ctx context.Context, meta *core.Metadata, input options.AwsSecret, dryRun bool, outputType printers.OutputType) error {
 	if input.AccessKey == "" || input.SecretKey == "" {
 		fmt.Printf("access key or secret key not provided, reading credentials from ~/.aws/credentials")
 		creds := credentials.NewSharedCredentials("", "")

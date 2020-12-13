@@ -11,7 +11,7 @@ import (
 	envoy_data_accesslog_v2 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
 	"github.com/fgrosse/zaptest"
-	"github.com/gogo/protobuf/types"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
@@ -280,15 +280,15 @@ var _ = Describe("Access Log", func() {
 										FileSink: &als.FileSink{
 											Path: path,
 											OutputFormat: &als.FileSink_JsonFormat{
-												JsonFormat: &types.Struct{
-													Fields: map[string]*types.Value{
+												JsonFormat: &structpb.Struct{
+													Fields: map[string]*structpb.Value{
 														"protocol": {
-															Kind: &types.Value_StringValue{
+															Kind: &structpb.Value_StringValue{
 																StringValue: "%PROTOCOL%",
 															},
 														},
 														"method": {
-															Kind: &types.Value_StringValue{
+															Kind: &structpb.Value_StringValue{
 																StringValue: "%REQ(:METHOD)%",
 															},
 														},

@@ -4,7 +4,9 @@ import (
 	"context"
 	"time"
 
-	matchers2 "github.com/solo-io/gloo/test/matchers"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/duration"
+	test_matchers "github.com/solo-io/solo-kit/test/matchers"
 
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 
@@ -188,7 +190,7 @@ var _ = Describe("Translate", func() {
 																	Destination: &gloov1.Destination{
 																		DestinationType: &gloov1.Destination_Kube{
 																			Kube: &gloov1.KubernetesServiceDestination{
-																				Ref: core.ResourceRef{
+																				Ref: &core.ResourceRef{
 																					Name:      "peteszah-service",
 																					Namespace: "peteszah-service-namespace",
 																				},
@@ -242,7 +244,7 @@ var _ = Describe("Translate", func() {
 																	Destination: &gloov1.Destination{
 																		DestinationType: &gloov1.Destination_Kube{
 																			Kube: &gloov1.KubernetesServiceDestination{
-																				Ref: core.ResourceRef{
+																				Ref: &core.ResourceRef{
 																					Name:      "peteszah-service",
 																					Namespace: "peteszah-service-namespace",
 																				},
@@ -305,7 +307,7 @@ var _ = Describe("Translate", func() {
 																	Destination: &gloov1.Destination{
 																		DestinationType: &gloov1.Destination_Kube{
 																			Kube: &gloov1.KubernetesServiceDestination{
-																				Ref: core.ResourceRef{
+																				Ref: &core.ResourceRef{
 																					Name:      "peteszah-service",
 																					Namespace: "peteszah-service-namespace",
 																				},
@@ -351,18 +353,17 @@ var _ = Describe("Translate", func() {
 					},
 				},
 			},
-			Status: core.Status{},
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "clusteringress-proxy",
 				Namespace: "example",
 			},
 		}
 
-		Expect(proxy).To(matchers2.BeEquivalentToDiff(expected))
+		Expect(proxy).To(test_matchers.MatchProto(expected))
 	})
 })
 
-func durptr(d int) *time.Duration {
+func durptr(d int) *duration.Duration {
 	dur := time.Duration(d)
-	return &dur
+	return ptypes.DurationProto(dur)
 }

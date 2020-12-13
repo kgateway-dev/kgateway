@@ -2,7 +2,7 @@
 
 syntax = "proto3";
 
-package envoy.extensions.filters.http.buffer.v3;
+package solo.io.envoy.extensions.filters.http.buffer.v3;
 
 // manually updated this line:
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3";
@@ -17,9 +17,8 @@ option java_outer_classname = "BufferProto";
 option java_multiple_files = true;
 
 // manually added equal_all:
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
+option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
 // [#protodoc-title: Buffer]

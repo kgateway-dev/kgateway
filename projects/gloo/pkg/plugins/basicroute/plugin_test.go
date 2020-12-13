@@ -4,17 +4,15 @@ import (
 	"time"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
-
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/basicroute"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
 var _ = Describe("prefix rewrite", func() {
@@ -30,7 +28,7 @@ var _ = Describe("prefix rewrite", func() {
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			Options: &v1.RouteOptions{
-				PrefixRewrite: &types.StringValue{Value: "/foo"},
+				PrefixRewrite: &wrappers.StringValue{Value: "/foo"},
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
@@ -58,7 +56,7 @@ var _ = Describe("prefix rewrite", func() {
 		// should rewrite prefix rewrite
 		err = p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			Options: &v1.RouteOptions{
-				PrefixRewrite: &types.StringValue{Value: ""},
+				PrefixRewrite: &wrappers.StringValue{Value: ""},
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
@@ -68,7 +66,7 @@ var _ = Describe("prefix rewrite", func() {
 
 var _ = Describe("timeout", func() {
 	It("works", func() {
-		t := time.Minute
+		t := prototime.DurationToProto(time.Minute)
 		p := NewPlugin()
 		routeAction := &envoy_config_route_v3.RouteAction{}
 		out := &envoy_config_route_v3.Route{
@@ -78,12 +76,12 @@ var _ = Describe("timeout", func() {
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			Options: &v1.RouteOptions{
-				Timeout: &t,
+				Timeout: t,
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.Timeout).NotTo(BeNil())
-		Expect(routeAction.Timeout).To(Equal(gogoutils.DurationStdToProto(&t)))
+		Expect(routeAction.Timeout).To(Equal(t))
 	})
 })
 
@@ -95,18 +93,18 @@ var _ = Describe("retries", func() {
 		expectedRetryPolicy *envoy_config_route_v3.RetryPolicy
 	)
 	BeforeEach(func() {
-		t := time.Minute
+		t := prototime.DurationToProto(time.Minute)
 		retryPolicy = &retries.RetryPolicy{
 			RetryOn:       "if at first you don't succeed",
 			NumRetries:    5,
-			PerTryTimeout: &t,
+			PerTryTimeout: t,
 		}
 		expectedRetryPolicy = &envoy_config_route_v3.RetryPolicy{
 			RetryOn: "if at first you don't succeed",
 			NumRetries: &wrappers.UInt32Value{
 				Value: 5,
 			},
-			PerTryTimeout: gogoutils.DurationStdToProto(&t),
+			PerTryTimeout: t,
 		}
 
 		plugin = NewPlugin()
@@ -206,7 +204,7 @@ var _ = Describe("host rewrite", func() {
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			Options: &v1.RouteOptions{
 				HostRewriteType: &v1.RouteOptions_AutoHostRewrite{
-					AutoHostRewrite: &types.BoolValue{
+					AutoHostRewrite: &wrappers.BoolValue{
 						Value: true,
 					},
 				},
@@ -235,7 +233,7 @@ var _ = Describe("upgrades", func() {
 					{
 						UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
 							Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
-								Enabled: &types.BoolValue{Value: true},
+								Enabled: &wrappers.BoolValue{Value: true},
 							},
 						},
 					},
@@ -265,14 +263,14 @@ var _ = Describe("upgrades", func() {
 					{
 						UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
 							Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
-								Enabled: &types.BoolValue{Value: true},
+								Enabled: &wrappers.BoolValue{Value: true},
 							},
 						},
 					},
 					{
 						UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
 							Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
-								Enabled: &types.BoolValue{Value: true},
+								Enabled: &wrappers.BoolValue{Value: true},
 							},
 						},
 					},

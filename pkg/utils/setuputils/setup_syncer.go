@@ -25,12 +25,12 @@ type SetupFunc func(ctx context.Context,
 	settings *v1.Settings) error
 
 type SetupSyncer struct {
-	settingsRef   core.ResourceRef
+	settingsRef   *core.ResourceRef
 	setupFunc     SetupFunc
 	inMemoryCache memory.InMemoryResourceCache
 }
 
-func NewSetupSyncer(settingsRef core.ResourceRef, setupFunc SetupFunc) *SetupSyncer {
+func NewSetupSyncer(settingsRef *core.ResourceRef, setupFunc SetupFunc) *SetupSyncer {
 	return &SetupSyncer{
 		settingsRef:   settingsRef,
 		setupFunc:     setupFunc,

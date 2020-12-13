@@ -57,7 +57,7 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		},
 	}
 
-	routeTable := &v1.RouteTable{Metadata: core.Metadata{Namespace: "namespace", Name: "rt"}}
+	routeTable := &v1.RouteTable{Metadata: &core.Metadata{Namespace: "namespace", Name: "rt"}}
 
 	errMsg := "didn't say the magic word"
 
@@ -303,9 +303,9 @@ type mockValidator struct {
 	fValidateList                 func(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (validation.ProxyReports, *multierror.Error)
 	fValidateGateway              func(ctx context.Context, gw *v1.Gateway, dryRun bool) (validation.ProxyReports, error)
 	fValidateVirtualService       func(ctx context.Context, vs *v1.VirtualService, dryRun bool) (validation.ProxyReports, error)
-	fValidateDeleteVirtualService func(ctx context.Context, vs core.ResourceRef, dryRun bool) error
+	fValidateDeleteVirtualService func(ctx context.Context, vs *core.ResourceRef, dryRun bool) error
 	fValidateRouteTable           func(ctx context.Context, rt *v1.RouteTable, dryRun bool) (validation.ProxyReports, error)
-	fValidateDeleteRouteTable     func(ctx context.Context, rt core.ResourceRef, dryRun bool) error
+	fValidateDeleteRouteTable     func(ctx context.Context, rt *core.ResourceRef, dryRun bool) error
 }
 
 func (v *mockValidator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
@@ -336,7 +336,7 @@ func (v *mockValidator) ValidateVirtualService(ctx context.Context, vs *v1.Virtu
 	return v.fValidateVirtualService(ctx, vs, dryRun)
 }
 
-func (v *mockValidator) ValidateDeleteVirtualService(ctx context.Context, vs core.ResourceRef, dryRun bool) error {
+func (v *mockValidator) ValidateDeleteVirtualService(ctx context.Context, vs *core.ResourceRef, dryRun bool) error {
 	if v.fValidateDeleteVirtualService == nil {
 		return nil
 	}
@@ -350,7 +350,7 @@ func (v *mockValidator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTabl
 	return v.fValidateRouteTable(ctx, rt, dryRun)
 }
 
-func (v *mockValidator) ValidateDeleteRouteTable(ctx context.Context, rt core.ResourceRef, dryRun bool) error {
+func (v *mockValidator) ValidateDeleteRouteTable(ctx context.Context, rt *core.ResourceRef, dryRun bool) error {
 	if v.fValidateDeleteRouteTable == nil {
 		return nil
 	}
@@ -360,7 +360,7 @@ func (v *mockValidator) ValidateDeleteRouteTable(ctx context.Context, rt core.Re
 func proxyReports() validation.ProxyReports {
 	return validation.ProxyReports{
 		{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "listener-::-8080",
 				Namespace: "gloo-system",
 			},

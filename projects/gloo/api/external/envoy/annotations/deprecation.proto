@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package envoy.annotations;
+package solo.io.envoy.annotations;
 
 import "google/protobuf/descriptor.proto";
 
@@ -12,14 +12,16 @@ import "google/protobuf/descriptor.proto";
 // Magic number in this file derived from top 28bit of SHA256 digest of
 // "envoy.annotation.disallowed_by_default"
 extend google.protobuf.FieldOptions {
-  bool disallowed_by_default = 189503207;
+  bool disallowed_by_default = 189503208;
 }
 
 // Magic number in this file derived from top 28bit of SHA256 digest of
 // "envoy.annotation.disallowed_by_default_enum"
 extend google.protobuf.EnumValueOptions {
-  bool disallowed_by_default_enum = 70100853;
+  bool disallowed_by_default_enum = 70100854;
 }
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/annotations";
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
+

@@ -1,8 +1,8 @@
 package reconciler_test
 
 import (
-	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
@@ -38,7 +38,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		reports      reporter.ResourceReports
 		proxyToWrite GeneratedProxies
 		ns           = "namespace"
-		us           = core.ResourceRef{"upstream-name", ns}
+		us           = &core.ResourceRef{Name: "upstream-name", Namespace: ns}
 
 		proxyClient, _ = gloov1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),

@@ -20,11 +20,11 @@ var _ resources.CustomInputResource = &RateLimitConfig{}
 
 type RateLimitConfig v1alpha1.RateLimitConfig
 
-func (r *RateLimitConfig) GetMetadata() core.Metadata {
+func (r *RateLimitConfig) GetMetadata() *core.Metadata {
 	return kubeutils.FromKubeMeta(r.ObjectMeta)
 }
 
-func (r *RateLimitConfig) SetMetadata(meta core.Metadata) {
+func (r *RateLimitConfig) SetMetadata(meta *core.Metadata) {
 	r.ObjectMeta = kubeutils.ToKubeMeta(meta)
 }
 
@@ -55,7 +55,7 @@ func (r *RateLimitConfig) MarshalStatus() (skres.Status, error) {
 	return protoutils.MarshalMapFromProto(&r.Status)
 }
 
-func (r *RateLimitConfig) GetStatus() core.Status {
+func (r *RateLimitConfig) GetStatus() *core.Status {
 
 	var outputState core.Status_State
 
@@ -68,17 +68,17 @@ func (r *RateLimitConfig) GetStatus() core.Status {
 		outputState = core.Status_Rejected
 	}
 
-	return core.Status{
+	return &core.Status{
 		State:  outputState,
 		Reason: r.Status.GetMessage(),
 	}
 }
 
-func (r *RateLimitConfig) SetStatus(status core.Status) {
+func (r *RateLimitConfig) SetStatus(status *core.Status) {
 
 	var outputState types.RateLimitConfigStatus_State
 
-	switch status.State {
+	switch status.GetState() {
 	case core.Status_Pending:
 		outputState = types.RateLimitConfigStatus_PENDING
 	case core.Status_Accepted:
@@ -91,6 +91,6 @@ func (r *RateLimitConfig) SetStatus(status core.Status) {
 	}
 
 	r.Status.State = outputState
-	r.Status.Message = status.Reason
+	r.Status.Message = status.GetReason()
 	r.Status.ObservedGeneration = r.Generation
 }

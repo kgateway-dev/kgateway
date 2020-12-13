@@ -6,19 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	"knative.dev/pkg/network"
-
-	clusteringressclient "github.com/solo-io/gloo/projects/clusteringress/pkg/api/custom/knative"
-
-	clusteringressv1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
-
-	knativeclient "github.com/solo-io/gloo/projects/knative/pkg/api/custom/knative"
-	knativev1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/gloo/pkg/utils"
+	clusteringressclient "github.com/solo-io/gloo/projects/clusteringress/pkg/api/custom/knative"
+	clusteringressv1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	clusteringressv1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	clusteringresstranslator "github.com/solo-io/gloo/projects/clusteringress/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -29,6 +20,8 @@ import (
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/ingress/pkg/status"
 	"github.com/solo-io/gloo/projects/ingress/pkg/translator"
+	knativeclient "github.com/solo-io/gloo/projects/knative/pkg/api/custom/knative"
+	knativev1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
 	knativev1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
 	knativetranslator "github.com/solo-io/gloo/projects/knative/pkg/translator"
 	"github.com/solo-io/go-utils/contextutils"
@@ -36,11 +29,13 @@ import (
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	knativeclientset "knative.dev/networking/pkg/client/clientset/versioned"
+	"knative.dev/pkg/network"
 )
 
 var defaultClusterIngressProxyAddress = "clusteringress-proxy." + gloodefaults.GlooSystem + ".svc." + network.GetClusterDomainName()
@@ -87,7 +82,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		return err
 	}
 
-	refreshRate, err := types.DurationFromProto(settings.RefreshRate)
+	refreshRate, err := ptypes.Duration(settings.RefreshRate)
 	if err != nil {
 		return err
 	}

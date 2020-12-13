@@ -41,7 +41,7 @@ func ExtAuthOathCmd(opts *options.Options) *cobra.Command {
 				}
 			}
 			// create the secret
-			if err := createOauthSecret(opts.Top.Ctx, *meta, input, opts.Create.DryRun, opts.Top.Output); err != nil {
+			if err := createOauthSecret(opts.Top.Ctx, meta, input, opts.Create.DryRun, opts.Top.Output); err != nil {
 				return err
 			}
 
@@ -71,7 +71,7 @@ func oauthSecretArgsInteractive(ctx context.Context, meta *core.Metadata, input 
 	return nil
 }
 
-func createOauthSecret(ctx context.Context, meta core.Metadata, input extauth.OauthSecret, dryRun bool, outputType printers.OutputType) error {
+func createOauthSecret(ctx context.Context, meta *core.Metadata, input extauth.OauthSecret, dryRun bool, outputType printers.OutputType) error {
 	if input.ClientSecret == "" {
 		return fmt.Errorf("client-secret not provided")
 	}

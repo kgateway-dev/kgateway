@@ -3,7 +3,7 @@ package utils_test
 import (
 	"reflect"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
 	envoycore_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -20,13 +20,13 @@ var _ = Describe("UpdateUpstream", func() {
 		desired := &gloov1.Upstream{}
 		original := &gloov1.Upstream{
 			SslConfig:          &gloov1.UpstreamSslConfig{Sni: "testsni"},
-			CircuitBreakers:    &gloov1.CircuitBreakerConfig{MaxConnections: &types.UInt32Value{Value: 6}},
-			LoadBalancerConfig: &gloov1.LoadBalancerConfig{HealthyPanicThreshold: &types.DoubleValue{Value: 7}},
+			CircuitBreakers:    &gloov1.CircuitBreakerConfig{MaxConnections: &wrappers.UInt32Value{Value: 6}},
+			LoadBalancerConfig: &gloov1.LoadBalancerConfig{HealthyPanicThreshold: &wrappers.DoubleValue{Value: 7}},
 			ConnectionConfig:   &gloov1.ConnectionConfig{MaxRequestsPerConnection: 8},
 			HealthChecks:       []*envoycore_gloo.HealthCheck{{}},
-			OutlierDetection:   &cluster.OutlierDetection{Consecutive_5Xx: &types.UInt32Value{Value: 9}},
+			OutlierDetection:   &cluster.OutlierDetection{Consecutive_5Xx: &wrappers.UInt32Value{Value: 9}},
 			Failover:           &gloov1.Failover{PrioritizedLocalities: []*gloov1.Failover_PrioritizedLocality{{}}},
-			UseHttp2:           &types.BoolValue{Value: true},
+			UseHttp2:           &wrappers.BoolValue{Value: true},
 		}
 		utils.UpdateUpstream(original, desired)
 		Expect(desired.SslConfig).To(Equal(original.SslConfig))
@@ -42,16 +42,16 @@ var _ = Describe("UpdateUpstream", func() {
 	It("should update config when one is desired", func() {
 		desiredSslConfig := &gloov1.UpstreamSslConfig{
 			SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
-				SecretRef: &core.ResourceRef{"hi", "there"},
+				SecretRef: &core.ResourceRef{Name: "hi", Namespace: "there"},
 			},
 		}
-		desiredCircuitBreaker := &gloov1.CircuitBreakerConfig{MaxConnections: &types.UInt32Value{Value: 6}}
-		desiredLoadBalancer := &gloov1.LoadBalancerConfig{HealthyPanicThreshold: &types.DoubleValue{Value: 7}}
+		desiredCircuitBreaker := &gloov1.CircuitBreakerConfig{MaxConnections: &wrappers.UInt32Value{Value: 6}}
+		desiredLoadBalancer := &gloov1.LoadBalancerConfig{HealthyPanicThreshold: &wrappers.DoubleValue{Value: 7}}
 		desiredConnectionConfig := &gloov1.ConnectionConfig{MaxRequestsPerConnection: 8}
 		desiredHealthChecks := []*envoycore_gloo.HealthCheck{{}}
-		desiredOutlierDetection := &cluster.OutlierDetection{Consecutive_5Xx: &types.UInt32Value{Value: 9}}
+		desiredOutlierDetection := &cluster.OutlierDetection{Consecutive_5Xx: &wrappers.UInt32Value{Value: 9}}
 		desiredFailover := &gloov1.Failover{PrioritizedLocalities: []*gloov1.Failover_PrioritizedLocality{{}}}
-		desiredUseHttp2 := &types.BoolValue{Value: true}
+		desiredUseHttp2 := &wrappers.BoolValue{Value: true}
 		desired := &gloov1.Upstream{
 			SslConfig:          desiredSslConfig,
 			CircuitBreakers:    desiredCircuitBreaker,
@@ -64,13 +64,13 @@ var _ = Describe("UpdateUpstream", func() {
 		}
 		original := &gloov1.Upstream{
 			SslConfig:          &gloov1.UpstreamSslConfig{Sni: "testsni"},
-			CircuitBreakers:    &gloov1.CircuitBreakerConfig{MaxPendingRequests: &types.UInt32Value{Value: 6}},
-			LoadBalancerConfig: &gloov1.LoadBalancerConfig{HealthyPanicThreshold: &types.DoubleValue{Value: 9}},
-			ConnectionConfig:   &gloov1.ConnectionConfig{PerConnectionBufferLimitBytes: &types.UInt32Value{Value: 10}},
+			CircuitBreakers:    &gloov1.CircuitBreakerConfig{MaxPendingRequests: &wrappers.UInt32Value{Value: 6}},
+			LoadBalancerConfig: &gloov1.LoadBalancerConfig{HealthyPanicThreshold: &wrappers.DoubleValue{Value: 9}},
+			ConnectionConfig:   &gloov1.ConnectionConfig{PerConnectionBufferLimitBytes: &wrappers.UInt32Value{Value: 10}},
 			HealthChecks:       []*envoycore_gloo.HealthCheck{{}, {}},
-			OutlierDetection:   &cluster.OutlierDetection{ConsecutiveGatewayFailure: &types.UInt32Value{Value: 9}},
+			OutlierDetection:   &cluster.OutlierDetection{ConsecutiveGatewayFailure: &wrappers.UInt32Value{Value: 9}},
 			Failover:           &gloov1.Failover{PrioritizedLocalities: []*gloov1.Failover_PrioritizedLocality{{}, {}}},
-			UseHttp2:           &types.BoolValue{Value: false},
+			UseHttp2:           &wrappers.BoolValue{Value: false},
 		}
 
 		utils.UpdateUpstream(original, desired)

@@ -213,7 +213,6 @@ kube:
 metadata:
   name: kube-upstream
   namespace: gloo-system
-status: {}
 `))
 		})
 
@@ -236,7 +235,7 @@ status: {}
 			up := getUpstream(name)
 			consulSpec := up.UpstreamType.(*v1.Upstream_Consul).Consul
 			Expect(consulSpec.ServiceName).To(Equal(consulService))
-			Expect(consulSpec.ServiceTags).To(Equal(tags))
+			Expect(consulSpec.ServiceTags).To(ContainElements(tags))
 		}
 
 		It("should work with consul service name only", func() {

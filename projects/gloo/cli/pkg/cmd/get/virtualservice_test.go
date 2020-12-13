@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
@@ -41,7 +40,7 @@ var _ = Describe("VirtualService", func() {
 	getVs := func() *gatewayv1.VirtualService {
 		upstream := samples.SimpleUpstream()
 		return &gatewayv1.VirtualService{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "default",
 				Namespace: defaults.GlooSystem,
 			},
@@ -59,7 +58,7 @@ var _ = Describe("VirtualService", func() {
 								Destination: &gloov1.RouteAction_Single{
 									Single: &gloov1.Destination{
 										DestinationType: &gloov1.Destination_Upstream{
-											Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+											Upstream: upstream.Metadata.Ref(),
 										},
 									},
 								},

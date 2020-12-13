@@ -3,7 +3,7 @@ package regexutils_test
 import (
 	"context"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -32,7 +32,7 @@ var _ = Describe("Regex", func() {
 
 	It("should create regex from settings in context", func() {
 		ctx := settingsutil.WithSettings(context.Background(), &v1.Settings{
-			Gloo: &v1.GlooOptions{RegexMaxProgramSize: &types.UInt32Value{Value: 123}},
+			Gloo: &v1.GlooOptions{RegexMaxProgramSize: &wrappers.UInt32Value{Value: 123}},
 		})
 		regex := NewRegex(ctx, "foo")
 		Expect(regex.GetRegex()).To(Equal("foo"))

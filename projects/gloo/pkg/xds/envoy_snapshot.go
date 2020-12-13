@@ -229,10 +229,97 @@ func cloneItems(items map[string]cache.Resource) map[string]cache.Resource {
 	clonedItems := make(map[string]cache.Resource, len(items))
 	for k, v := range items {
 		resProto := v.ResourceProto()
-		// NOTE(marco): we have to use `github.com/golang/protobuf/proto.Clone()` to clone here,
-		// `github.com/gogo/protobuf/proto.Clone()` will panic!
 		resClone := proto.Clone(resProto)
 		clonedItems[k] = resource.NewEnvoyResource(resClone)
 	}
 	return clonedItems
+}
+
+// Equal checks is 2 snapshots are equal, important since reflect.DeepEqual no longer works with proto4
+func (this *EnvoySnapshot) Equal(that *EnvoySnapshot) bool {
+	if len(this.Clusters.Items) != len(that.Clusters.Items) || this.Clusters.Version != that.Clusters.Version {
+		return false
+	}
+	for key, thisVal := range this.Clusters.Items {
+		thatVal, ok := that.Clusters.Items[key]
+		if !ok {
+			return false
+		}
+		if !proto.Equal(thisVal.ResourceProto(), thatVal.ResourceProto()) {
+			return false
+		}
+	}
+	if len(this.Endpoints.Items) != len(that.Endpoints.Items) || this.Endpoints.Version != that.Endpoints.Version {
+		return false
+	}
+	for key, thisVal := range this.Endpoints.Items {
+		thatVal, ok := that.Endpoints.Items[key]
+		if !ok {
+			return false
+		}
+		if !proto.Equal(thisVal.ResourceProto(), thatVal.ResourceProto()) {
+			return false
+		}
+	}
+	if len(this.Routes.Items) != len(that.Routes.Items) || this.Routes.Version != that.Routes.Version {
+		return false
+	}
+	for key, thisVal := range this.Routes.Items {
+		thatVal, ok := that.Routes.Items[key]
+		if !ok {
+			return false
+		}
+		if !proto.Equal(thisVal.ResourceProto(), thatVal.ResourceProto()) {
+			return false
+		}
+	}
+	if len(this.Endpoints.Items) != len(that.Endpoints.Items) || this.Endpoints.Version != that.Endpoints.Version {
+		return false
+	}
+	for key, thisVal := range this.Endpoints.Items {
+		thatVal, ok := that.Endpoints.Items[key]
+		if !ok {
+			return false
+		}
+		if !proto.Equal(thisVal.ResourceProto(), thatVal.ResourceProto()) {
+			return false
+		}
+	}
+	if len(this.hiddenDeprecatedClusters.Items) != len(that.hiddenDeprecatedClusters.Items) || this.hiddenDeprecatedClusters.Version != that.hiddenDeprecatedClusters.Version {
+		return false
+	}
+	for key, thisVal := range this.hiddenDeprecatedClusters.Items {
+		thatVal, ok := that.hiddenDeprecatedClusters.Items[key]
+		if !ok {
+			return false
+		}
+		if !proto.Equal(thisVal.ResourceProto(), thatVal.ResourceProto()) {
+			return false
+		}
+	}
+	if len(this.hiddenDeprecatedEndpoints.Items) != len(that.hiddenDeprecatedEndpoints.Items) || this.hiddenDeprecatedEndpoints.Version != that.hiddenDeprecatedEndpoints.Version {
+		return false
+	}
+	for key, thisVal := range this.hiddenDeprecatedEndpoints.Items {
+		thatVal, ok := that.hiddenDeprecatedEndpoints.Items[key]
+		if !ok {
+			return false
+		}
+		if !proto.Equal(thisVal.ResourceProto(), thatVal.ResourceProto()) {
+			return false
+		}
+	}
+	if len(this.hiddenDeprecatedListeners.Items) != len(that.hiddenDeprecatedListeners.Items) || this.hiddenDeprecatedListeners.Version != that.hiddenDeprecatedListeners.Version {
+		return false
+	}
+	for key, thisVal := range this.hiddenDeprecatedListeners.Items {
+		thatVal, ok := that.hiddenDeprecatedListeners.Items[key]
+		if !ok {
+			return false
+		}
+		if !proto.Equal(thisVal.ResourceProto(), thatVal.ResourceProto()) {
+			return false
+		}
+	}
+	return true
 }

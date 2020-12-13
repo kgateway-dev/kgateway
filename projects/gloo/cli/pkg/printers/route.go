@@ -8,13 +8,13 @@ import (
 	"strconv"
 	"strings"
 
+	pbgostruct "github.com/golang/protobuf/ptypes/struct"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/solo-io/go-utils/cliutils"
 
-	"github.com/gogo/protobuf/types"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -211,26 +211,26 @@ func emptyActionTable(r *v1.Route, index int) []string {
 	return routeDefaultTableRow(r, index, []string{})
 }
 
-func prettyPrint(v *types.Value) string {
+func prettyPrint(v *pbgostruct.Value) string {
 	switch t := v.Kind.(type) {
-	case *types.Value_NullValue:
+	case *pbgostruct.Value_NullValue:
 		return ""
-	case *types.Value_NumberValue:
+	case *pbgostruct.Value_NumberValue:
 		return fmt.Sprintf("%v", t.NumberValue)
-	case *types.Value_StringValue:
+	case *pbgostruct.Value_StringValue:
 		return fmt.Sprintf("\"%v\"", t.StringValue)
-	case *types.Value_BoolValue:
+	case *pbgostruct.Value_BoolValue:
 		return fmt.Sprintf("%v", t.BoolValue)
-	case *types.Value_StructValue:
+	case *pbgostruct.Value_StructValue:
 		return prettyPrintStruct(t)
-	case *types.Value_ListValue:
+	case *pbgostruct.Value_ListValue:
 		return prettyPrintList(t)
 	default:
 		return "<unknown>"
 	}
 }
 
-func prettyPrintList(lv *types.Value_ListValue) string {
+func prettyPrintList(lv *pbgostruct.Value_ListValue) string {
 	if lv == nil || lv.ListValue == nil || lv.ListValue.Values == nil {
 		return ""
 	}
@@ -241,7 +241,7 @@ func prettyPrintList(lv *types.Value_ListValue) string {
 	return fmt.Sprintf("[%s]", strings.Join(s, ", "))
 }
 
-func prettyPrintStruct(sv *types.Value_StructValue) string {
+func prettyPrintStruct(sv *pbgostruct.Value_StructValue) string {
 	if sv == nil || sv.StructValue == nil || sv.StructValue.Fields == nil {
 		return ""
 	}

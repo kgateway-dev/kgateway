@@ -1,15 +1,15 @@
 syntax = "proto3";
 
-package envoy.config.trace.v3;
+package solo.io.envoy.config.trace.v3;
 
 import "udpa/annotations/migrate.proto";
 import "udpa/annotations/status.proto";
 import "udpa/annotations/versioning.proto";
 import "validate/validate.proto";
 
-import "solo-kit/api/v1/ref.proto";
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
-option java_package = "io.envoyproxy.envoy.config.trace.v3";
+option java_package = "io.envoyproxy.solo.io.envoy.config.trace.v3";
 option java_outer_classname = "DatadogProto";
 option java_multiple_files = true;
 option (udpa.annotations.file_migrate).move_to_package = "envoy.extensions.tracers.datadog.v4alpha";
@@ -38,5 +38,6 @@ message DatadogConfig {
   string service_name = 2 [(validate.rules).string = {min_len: 1}];
 }
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3";
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;

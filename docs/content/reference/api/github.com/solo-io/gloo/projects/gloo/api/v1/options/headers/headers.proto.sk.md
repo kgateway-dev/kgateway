@@ -33,7 +33,7 @@ requests and responses
 HeaderManipulation can be specified on routes, virtual hosts, or weighted destinations
 
 ```yaml
-"requestHeadersToAdd": []envoy.api.v2.core.HeaderValueOption
+"requestHeadersToAdd": []solo.io.envoy.api.v2.core.HeaderValueOption
 "requestHeadersToRemove": []string
 "responseHeadersToAdd": []headers.options.gloo.solo.io.HeaderValueOption
 "responseHeadersToRemove": []string
@@ -42,7 +42,7 @@ HeaderManipulation can be specified on routes, virtual hosts, or weighted destin
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `requestHeadersToAdd` | [[]envoy.api.v2.core.HeaderValueOption](../../../../../../../../../../envoy/api/v2/core/base.proto.sk/#headervalueoption) | Specifies a list of HTTP headers that should be added to each request handled by this route or virtual host. For more information, including details on header value syntax, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/headers#config-http-conn-man-headers-custom-request-headers) . |
+| `requestHeadersToAdd` | [[]solo.io.envoy.api.v2.core.HeaderValueOption](../../../../../../../../solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#headervalueoption) | Specifies a list of HTTP headers that should be added to each request handled by this route or virtual host. For more information, including details on header value syntax, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/headers#config-http-conn-man-headers-custom-request-headers) . |
 | `requestHeadersToRemove` | `[]string` | Specifies a list of HTTP headers that should be removed from each request handled by this route or virtual host. |
 | `responseHeadersToAdd` | [[]headers.options.gloo.solo.io.HeaderValueOption](../headers.proto.sk/#headervalueoption) | Specifies a list of HTTP headers that should be added to each response handled by this route or host. For more information, including details on header value syntax, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/headers#config-http-conn-man-headers-custom-request-headers) . |
 | `responseHeadersToRemove` | `[]string` | Specifies a list of HTTP headers that should be removed from each response handled by this route or virtual host. |

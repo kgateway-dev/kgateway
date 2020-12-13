@@ -40,7 +40,7 @@ var _ = Describe("Plugin", func() {
 
 		BeforeEach(func() {
 			upstream = &v1.Upstream{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name: "test",
 					// TODO(yuval-k): namespace
 					Namespace: "",
@@ -55,14 +55,14 @@ var _ = Describe("Plugin", func() {
 		Context("with secrets", func() {
 
 			BeforeEach(func() {
-				upstream.UpstreamType.(*v1.Upstream_Azure).Azure.SecretRef = core.ResourceRef{
+				upstream.UpstreamType.(*v1.Upstream_Azure).Azure.SecretRef = &core.ResourceRef{
 					Namespace: "",
 					Name:      "azure-secret1",
 				}
 
 				params.Snapshot = &v1.ApiSnapshot{
 					Secrets: v1.SecretList{{
-						Metadata: core.Metadata{
+						Metadata: &core.Metadata{
 							Name: "azure-secret1",
 							// TODO(yuval-k): namespace
 							Namespace: "",

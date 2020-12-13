@@ -20,7 +20,7 @@ import (
 
 func NewIngress(namespace, name string) *Ingress {
 	ingress := &Ingress{}
-	ingress.Ingress.SetMetadata(core.Metadata{
+	ingress.Ingress.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})

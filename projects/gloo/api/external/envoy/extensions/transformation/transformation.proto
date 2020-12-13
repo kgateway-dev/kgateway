@@ -3,15 +3,16 @@ syntax = "proto3";
 package envoy.api.v2.filter.http;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation";
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 
 import "google/protobuf/empty.proto";
 import "validate/validate.proto";
 
-import "envoy/config/route/v3/route_components.proto";
-import "envoy/type/matcher/v3/string.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/route/v3/route_components.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto";
 
 message FilterTransformations {
   // Specifies transformations based on the route matches. The first matched
@@ -35,7 +36,7 @@ message TransformationRule {
   //    match:
   //      prefix: /
   //
-  envoy.config.route.v3.RouteMatch match = 1
+  solo.io.envoy.config.route.v3.RouteMatch match = 1
       [ (validate.rules).message = {required : true} ];
 
   message Transformations {
@@ -67,7 +68,7 @@ message RouteTransformations {
 
     message RequestMatch {
       // if no match is specified, will match all
-      envoy.config.route.v3.RouteMatch match = 1;
+      solo.io.envoy.config.route.v3.RouteMatch match = 1;
       // transformation to perform
       Transformation request_transformation = 2;
       Transformation response_transformation = 3;
@@ -97,11 +98,11 @@ message ResponseMatcher {
   // config. A match will happen if all the headers in the route are present in
   // the request with the same values (or based on presence if the value field
   // is not in the config).
-  repeated envoy.config.route.v3.HeaderMatcher headers = 1;
+  repeated solo.io.envoy.config.route.v3.HeaderMatcher headers = 1;
 
   // Only match responses with non empty response code details (this usually
   // implies a local reply).
-  envoy.type.matcher.v3.StringMatcher response_code_details = 2;
+  solo.io.envoy.type.matcher.v3.StringMatcher response_code_details = 2;
 }
 
 message ResponseTransformationRule {

@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils"
-
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
@@ -137,7 +135,7 @@ var _ = Describe("Zipkin config loading", func() {
 
 			// create zipkin upstream
 			zipkinUs = &gloov1.Upstream{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "zipkin",
 					Namespace: "default",
 				},
@@ -220,7 +218,7 @@ var _ = Describe("Zipkin config loading", func() {
 				ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
 					ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
 						CollectorCluster: &envoytrace_gloo.ZipkinConfig_CollectorUpstreamRef{
-							CollectorUpstreamRef: utils.ResourceRefPtr(zipkinUs.Metadata.Ref()),
+							CollectorUpstreamRef: zipkinUs.Metadata.Ref(),
 						},
 						CollectorEndpoint:        "/api/v2/spans",
 						CollectorEndpointVersion: envoytrace_gloo.ZipkinConfig_HTTP_JSON,

@@ -77,7 +77,7 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 
 	utils.UpdateUpstream(original, desired)
 
-	if originalSpec.Equal(desiredSpec) {
+	if originalSpec.Consul.Equal(desiredSpec.Consul) {
 		return false, nil
 	}
 

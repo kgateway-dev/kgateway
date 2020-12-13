@@ -1,7 +1,7 @@
 package syncutil_test
 
 import (
-	"github.com/gogo/protobuf/types"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -19,7 +19,7 @@ var _ = Describe("Log Redacter", func() {
 
 		noSecretsSnapshot = &v1.SetupSnapshot{
 			Settings: []*v1.Settings{{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "settings",
 					Namespace: "ns",
 				},
@@ -27,7 +27,7 @@ var _ = Describe("Log Redacter", func() {
 		}
 		snapshotWithSecrets = &v1.ApiSnapshot{
 			Endpoints: []*v1.Endpoint{{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "endpoint",
 					Namespace: "ns",
 				},
@@ -36,7 +36,7 @@ var _ = Describe("Log Redacter", func() {
 				Kind: &v1.Secret_Tls{Tls: &v1.TlsSecret{
 					PrivateKey: privateKey,
 				}},
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      secretName,
 					Namespace: secretNamespace,
 				},
@@ -56,7 +56,7 @@ var _ = Describe("Log Redacter", func() {
 	})
 
 	DescribeTable("AuthConfig logging", func(secretPhrase string, config *xdsproto.ExtAuthConfig) {
-		redactor := syncutil.NewProtoRedactor(syncutil.LogRedactorTag, syncutil.LogRedactorTagValue)
+		redactor := syncutil.NewProtoRedactor()
 
 		jsonString, err := redactor.BuildRedactedJsonString(config)
 		Expect(err).NotTo(HaveOccurred())
@@ -88,7 +88,8 @@ var _ = Describe("Log Redacter", func() {
 					},
 				},
 			},
-		}}}), Entry("hides API keys from logs", "my-secret-api-key", &xdsproto.ExtAuthConfig{
+		}},
+	}), Entry("hides API keys from logs", "my-secret-api-key", &xdsproto.ExtAuthConfig{
 		AuthConfigRefName: "ref-name",
 		Configs: []*xdsproto.ExtAuthConfig_Config{{
 			AuthConfig: &xdsproto.ExtAuthConfig_Config_ApiKeyAuth{
@@ -106,24 +107,24 @@ var _ = Describe("Log Redacter", func() {
 			AuthConfig: &xdsproto.ExtAuthConfig_Config_PluginAuth{
 				PluginAuth: &xdsproto.AuthPlugin{
 					Name: "plugin-name",
-					Config: &types.Struct{
-						Fields: map[string]*types.Value{
+					Config: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
 							"RequiredHeader": {
-								Kind: &types.Value_StringValue{
+								Kind: &structpb.Value_StringValue{
 									StringValue: "test-header",
 								},
 							},
 							"AllowedValues": {
-								Kind: &types.Value_ListValue{
-									ListValue: &types.ListValue{
-										Values: []*types.Value{
+								Kind: &structpb.Value_ListValue{
+									ListValue: &structpb.ListValue{
+										Values: []*structpb.Value{
 											{
-												Kind: &types.Value_StringValue{
+												Kind: &structpb.Value_StringValue{
 													StringValue: "allowed-header-1",
 												},
 											},
 											{
-												Kind: &types.Value_StringValue{
+												Kind: &structpb.Value_StringValue{
 													StringValue: "allowed-header-2",
 												},
 											},

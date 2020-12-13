@@ -32,7 +32,7 @@ var _ = Describe("getStatus", func() {
 
 	It("handles Pending resource state", func() {
 		vs := &v1.VirtualService{
-			Status: core.Status{
+			Status: &core.Status{
 				State: core.Status_Pending,
 			},
 		}
@@ -53,7 +53,7 @@ var _ = Describe("getStatus", func() {
 	})
 	It("handles Accepted resource state", func() {
 		vs := &v1.VirtualService{
-			Status: core.Status{
+			Status: &core.Status{
 				State: core.Status_Accepted,
 			},
 		}
@@ -85,7 +85,7 @@ var _ = Describe("getStatus", func() {
 			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String() {
 				By(fmt.Sprintf("resource: %v", resourceStatusString))
 				vs := &v1.VirtualService{
-					Status: core.Status{
+					Status: &core.Status{
 						State: resourceStatusState,
 					},
 				}
@@ -106,7 +106,7 @@ var _ = Describe("getStatus", func() {
 					},
 				}
 				vs := &v1.VirtualService{
-					Status: core.Status{
+					Status: &core.Status{
 						State:               resourceStatusState,
 						SubresourceStatuses: subStatuses,
 					},
@@ -142,7 +142,7 @@ var _ = Describe("getStatus", func() {
 					},
 				}
 				vs := &v1.VirtualService{
-					Status: core.Status{
+					Status: &core.Status{
 						State:               resourceStatusState,
 						SubresourceStatuses: subStatuses,
 					},
@@ -187,7 +187,7 @@ var _ = Describe("getStatus", func() {
 					},
 				}
 				vs := &v1.VirtualService{
-					Status: core.Status{
+					Status: &core.Status{
 						State:               resourceStatusState,
 						SubresourceStatuses: subStatuses,
 					},

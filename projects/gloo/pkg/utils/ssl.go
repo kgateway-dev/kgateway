@@ -5,9 +5,7 @@ import (
 	envoygrpccredential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	gogo_types "github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
-
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -29,7 +27,7 @@ var (
 		return eris.Wrapf(err, "SSL secret not found")
 	}
 
-	NotTlsSecretError = func(ref core.ResourceRef) error {
+	NotTlsSecretError = func(ref *core.ResourceRef) error {
 		return eris.Errorf("%v is not a TLS secret", ref)
 	}
 
@@ -68,9 +66,9 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 	if err != nil {
 		return nil, err
 	}
-	var requireClientCert *gogo_types.BoolValue
+	var requireClientCert *wrappers.BoolValue
 	if common.ValidationContextType != nil {
-		requireClientCert = &gogo_types.BoolValue{Value: true}
+		requireClientCert = &wrappers.BoolValue{Value: true}
 	}
 	// default alpn for downstreams.
 	if len(common.AlpnProtocols) == 0 {
@@ -78,7 +76,7 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 	}
 	return &envoyauth.DownstreamTlsContext{
 		CommonTlsContext:         common,
-		RequireClientCertificate: gogoutils.BoolGogoToProto(requireClientCert),
+		RequireClientCertificate: requireClientCert,
 	}, nil
 }
 

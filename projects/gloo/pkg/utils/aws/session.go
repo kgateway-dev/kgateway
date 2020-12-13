@@ -30,7 +30,7 @@ func GetAwsSession(secretRef *core.ResourceRef, secrets v1.SecretList, config *a
 	}
 	awsSecrets, err := secrets.Find(secretRef.Namespace, secretRef.Name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "secrets not found for secret ref %v", secretRef)
+		return nil, errors.Wrapf(err, "secrets not found for secret ref %s.%s", secretRef.GetName(), secretRef.GetNamespace())
 	}
 
 	awsSecret, ok := awsSecrets.Kind.(*v1.Secret_Aws)

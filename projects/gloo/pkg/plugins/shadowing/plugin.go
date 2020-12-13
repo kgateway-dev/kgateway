@@ -64,7 +64,7 @@ func applyShadowSpec(out *envoy_config_route_v3.RouteAction, spec *shadowing.Rou
 	}
 	out.RequestMirrorPolicies = []*envoy_config_route_v3.RouteAction_RequestMirrorPolicy{
 		{
-			Cluster:         translator.UpstreamToClusterName(*spec.Upstream),
+			Cluster:         translator.UpstreamToClusterName(spec.Upstream),
 			RuntimeFraction: getFractionalPercent(spec.Percentage),
 		},
 	}

@@ -1,14 +1,14 @@
 syntax = "proto3";
 
-package envoy.type.tracing.v3;
+package solo.io.envoy.type.tracing.v3;
 
-import "envoy/type/metadata/v3/metadata.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/metadata/v3/metadata.proto";
 
 import "udpa/annotations/status.proto";
 import "udpa/annotations/versioning.proto";
 import "validate/validate.proto";
 
-option java_package = "io.envoyproxy.envoy.type.tracing.v3";
+option java_package = "io.envoyproxy.solo.io.envoy.type.tracing.v3";
 option java_outer_classname = "CustomTagProto";
 option java_multiple_files = true;
 option (udpa.annotations.file_status).package_version_status = ACTIVE;
@@ -100,5 +100,7 @@ message CustomTag {
   }
 }
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/tracing/v3";
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
+

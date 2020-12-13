@@ -15,7 +15,7 @@ var _ = Describe("Compress", func() {
 	Context("spec", func() {
 		It("should  not compress spec when not annotated", func() {
 			p := &v1.Proxy{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name: "foo",
 				},
 				Listeners: []*v1.Listener{{BindAddress: "1234"}},
@@ -27,7 +27,7 @@ var _ = Describe("Compress", func() {
 		})
 		It("should compress spec when annotated", func() {
 			p := &v1.Proxy{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:        "foo",
 					Annotations: map[string]string{"gloo.solo.io/compress": "true"},
 				},
@@ -41,7 +41,7 @@ var _ = Describe("Compress", func() {
 
 		It("should uncompress to the same thing", func() {
 			p := &v1.Proxy{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:        "foo",
 					Annotations: map[string]string{"gloo.solo.io/compress": "true"},
 				},
@@ -63,7 +63,7 @@ var _ = Describe("Compress", func() {
 				l = append(l, &v1.Listener{BindAddress: "1234"})
 			}
 			p := &v1.Proxy{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name: "foo",
 				},
 				Listeners: l,
@@ -85,11 +85,11 @@ var _ = Describe("Compress", func() {
 
 		It("should not unmarshall to the same thing status even when annotated", func() {
 			p := &v1.Proxy{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:        "foo",
 					Annotations: map[string]string{"gloo.solo.io/compress": "true"},
 				},
-				Status: core.Status{State: core.Status_Accepted},
+				Status: &core.Status{State: core.Status_Accepted},
 			}
 			status, err := MarshalStatus(p)
 			Expect(err).NotTo(HaveOccurred())
@@ -102,10 +102,10 @@ var _ = Describe("Compress", func() {
 
 		It("should not compress status even when annotated", func() {
 			p := &v1.Proxy{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name: "foo",
 				},
-				Status: core.Status{State: core.Status_Accepted},
+				Status: &core.Status{State: core.Status_Accepted},
 			}
 			status1, err := MarshalStatus(p)
 			Expect(err).NotTo(HaveOccurred())

@@ -2,7 +2,6 @@ package wasm_test
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -35,6 +34,7 @@ func TestWasm(t *testing.T) {
 
 var testHelper *helper.SoloTestHelper
 var ctx, cancel = context.WithCancel(context.Background())
+var installNamespace = "gloo-system"
 
 var _ = BeforeSuite(StartTestHelper)
 var _ = AfterSuite(TearDownTestHelper)
@@ -43,11 +43,10 @@ func StartTestHelper() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 
-	randomNumber := time.Now().Unix() % 10000
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
-		defaults.InstallNamespace = "wasm-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
+		defaults.InstallNamespace = installNamespace
 		defaults.Verbose = true
 		return defaults
 	})

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/any"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -43,7 +43,7 @@ func FromKube(ingress *v1beta1.Ingress) (*v1.Ingress, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling kube ingress object")
 	}
-	spec := &types.Any{
+	spec := &any.Any{
 		TypeUrl: typeUrl,
 		Value:   rawSpec,
 	}
@@ -52,7 +52,7 @@ func FromKube(ingress *v1beta1.Ingress) (*v1.Ingress, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "marshalling kube ingress object")
 	}
-	status := &types.Any{
+	status := &any.Any{
 		TypeUrl: typeUrl,
 		Value:   rawStatus,
 	}

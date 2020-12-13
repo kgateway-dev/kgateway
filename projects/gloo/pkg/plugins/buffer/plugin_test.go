@@ -5,7 +5,6 @@ import (
 	envoybuffer "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -15,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/buffer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("Plugin", func() {
@@ -22,29 +22,29 @@ var _ = Describe("Plugin", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Buffer: &v3.Buffer{
-					MaxRequestBytes: &types.UInt32Value{
+					MaxRequestBytes: &wrappers.UInt32Value{
 						Value: 2048,
 					},
 				},
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
-			plugins.StagedHttpFilter{
-				HttpFilter: &envoyhcm.HttpFilter{
-					Name: wellknown.Buffer,
-					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(&envoybuffer.Buffer{
-							MaxRequestBytes: &wrappers.UInt32Value{Value: 2048.000000},
-						}),
-					},
-				},
-				Stage: plugins.FilterStage{
-					RelativeTo: 8,
-					Weight:     0,
+		expectedStageFilter := plugins.StagedHttpFilter{
+			HttpFilter: &envoyhcm.HttpFilter{
+				Name: wellknown.Buffer,
+				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
+					TypedConfig: utils.MustMessageToAny(&envoybuffer.Buffer{
+						MaxRequestBytes: &wrappers.UInt32Value{Value: 2048.000000},
+					}),
 				},
 			},
-		}))
+			Stage: plugins.FilterStage{
+				RelativeTo: 8,
+				Weight:     0,
+			},
+		}
+		Expect(filters[0].HttpFilter).To(matchers.MatchProto(expectedStageFilter.HttpFilter))
+		Expect(filters[0].Stage).To(Equal(expectedStageFilter.Stage))
 	})
 
 	It("allows route specific disabling of buffer", func() {
@@ -75,7 +75,7 @@ var _ = Describe("Plugin", func() {
 				BufferPerRoute: &v3.BufferPerRoute{
 					Override: &v3.BufferPerRoute_Buffer{
 						Buffer: &v3.Buffer{
-							MaxRequestBytes: &types.UInt32Value{
+							MaxRequestBytes: &wrappers.UInt32Value{
 								Value: 4098,
 							},
 						},
@@ -119,7 +119,7 @@ var _ = Describe("Plugin", func() {
 				BufferPerRoute: &v3.BufferPerRoute{
 					Override: &v3.BufferPerRoute_Buffer{
 						Buffer: &v3.Buffer{
-							MaxRequestBytes: &types.UInt32Value{
+							MaxRequestBytes: &wrappers.UInt32Value{
 								Value: 4098,
 							},
 						},
@@ -163,7 +163,7 @@ var _ = Describe("Plugin", func() {
 				BufferPerRoute: &v3.BufferPerRoute{
 					Override: &v3.BufferPerRoute_Buffer{
 						Buffer: &v3.Buffer{
-							MaxRequestBytes: &types.UInt32Value{
+							MaxRequestBytes: &wrappers.UInt32Value{
 								Value: 4098,
 							},
 						},

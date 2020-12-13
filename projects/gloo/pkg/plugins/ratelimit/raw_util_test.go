@@ -5,8 +5,6 @@ import (
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	gogojsonpb "github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/types"
 	golangjsonpb "github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -59,19 +57,17 @@ var _ = Describe("RawUtil", func() {
 		func(actions []*gloorl.Action) {
 			out := ConvertActions(nil, actions)
 
-			ExpectWithOffset(1, len(actions)).To(Equal(len(out)))
+			Expect(len(actions)).To(Equal(len(out)))
 			for i := range actions {
-
-				gogojson := gogojsonpb.Marshaler{}
 				golangjson := golangjsonpb.Marshaler{}
 
-				ins, _ := gogojson.MarshalToString(actions[i])
+				ins, _ := golangjson.MarshalToString(actions[i])
 				outs, _ := golangjson.MarshalToString(out[i])
 				fmt.Fprintf(GinkgoWriter, "Compare \n%s\n\n%s", ins, outs)
 				remarshalled := new(envoy_config_route_v3.RateLimit_Action)
 				err := golangjsonpb.UnmarshalString(ins, remarshalled)
-				ExpectWithOffset(1, err).NotTo(HaveOccurred())
-				ExpectWithOffset(1, remarshalled).To(Equal(out[i]))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(remarshalled).To(Equal(out[i]))
 			}
 		},
 		Entry("should convert source cluster",
@@ -120,7 +116,7 @@ var _ = Describe("RawUtil", func() {
 					ActionSpecifier: &gloorl.Action_HeaderValueMatch_{
 						HeaderValueMatch: &gloorl.Action_HeaderValueMatch{
 							DescriptorValue: "somevalue",
-							ExpectMatch:     &types.BoolValue{Value: true},
+							ExpectMatch:     &wrappers.BoolValue{Value: true},
 							Headers:         hm,
 						},
 					},
@@ -128,7 +124,7 @@ var _ = Describe("RawUtil", func() {
 					ActionSpecifier: &gloorl.Action_HeaderValueMatch_{
 						HeaderValueMatch: &gloorl.Action_HeaderValueMatch{
 							DescriptorValue: "someothervalue",
-							ExpectMatch:     &types.BoolValue{Value: false},
+							ExpectMatch:     &wrappers.BoolValue{Value: false},
 							Headers:         hm,
 						},
 					},
@@ -144,7 +140,7 @@ var _ = Describe("RawUtil", func() {
 				ActionSpecifier: &gloorl.Action_HeaderValueMatch_{
 					HeaderValueMatch: &gloorl.Action_HeaderValueMatch{
 						DescriptorValue: "someothervalue",
-						ExpectMatch:     &types.BoolValue{Value: false},
+						ExpectMatch:     &wrappers.BoolValue{Value: false},
 						Headers: []*gloorl.Action_HeaderValueMatch_HeaderMatcher{
 							{
 								HeaderMatchSpecifier: &gloorl.Action_HeaderValueMatch_HeaderMatcher_RegexMatch{

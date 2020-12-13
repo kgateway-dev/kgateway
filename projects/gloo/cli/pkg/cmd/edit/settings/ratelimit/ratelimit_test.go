@@ -4,8 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/test/matchers"
 
 	"github.com/solo-io/gloo/pkg/cliutil/testutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -33,7 +35,7 @@ var _ = Describe("RateLimit", func() {
 		settingsClient = helpers.MustSettingsClient(ctx)
 
 		settings = &gloov1.Settings{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "default",
 				Namespace: "gloo-system",
 			},
@@ -63,7 +65,7 @@ var _ = Describe("RateLimit", func() {
 
 	It("should set timeout", func() {
 		Run("edit settings --name default --namespace gloo-system ratelimit --request-timeout=1s")
-		Expect(*rlSettings.RequestTimeout).To(Equal(time.Second))
+		Expect(rlSettings.RequestTimeout).To(matchers.MatchProto(ptypes.DurationProto(time.Second)))
 	})
 	It("should set upstream", func() {
 		Run("edit settings --name default --namespace gloo-system ratelimit --ratelimit-server-name=test --ratelimit-server-namespace=testns")
@@ -85,7 +87,7 @@ var _ = Describe("RateLimit", func() {
 	It("should not reset timeout change changing other things", func() {
 		Run("edit settings --name default --namespace gloo-system ratelimit --request-timeout=1s")
 		Run("edit settings --name default --namespace gloo-system ratelimit --deny-on-failure=true")
-		Expect(*rlSettings.RequestTimeout).To(Equal(time.Second))
+		Expect(rlSettings.RequestTimeout).To(matchers.MatchProto(ptypes.DurationProto(time.Second)))
 	})
 
 	It("should not set fail mode deny when explicitly set", func() {
@@ -99,7 +101,7 @@ var _ = Describe("RateLimit", func() {
 		BeforeEach(func() {
 			upstreamClient := helpers.MustUpstreamClient(ctx)
 			upstream := &gloov1.Upstream{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "test",
 					Namespace: "test",
 				},
@@ -135,10 +137,10 @@ var _ = Describe("RateLimit", func() {
 				err := testutils.Glooctl("edit settings ratelimit -i")
 				Expect(err).NotTo(HaveOccurred())
 				ReadSettings()
-				second := time.Second
+				second := ptypes.DurationProto(time.Second)
 				expectedSettings := ratelimitpb.Settings{
 					DenyOnFail:     true,
-					RequestTimeout: &second,
+					RequestTimeout: second,
 					RatelimitServerRef: &core.ResourceRef{
 						Name:      "ratelimit",
 						Namespace: "gloo-system",

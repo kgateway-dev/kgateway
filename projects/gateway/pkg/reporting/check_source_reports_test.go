@@ -25,7 +25,7 @@ var _ = Describe("CheckSourceReports", func() {
 		ignored = "ignored"
 	)
 	BeforeEach(func() {
-		snap = samples.SimpleGatewaySnapshot(core.ResourceRef{ignored, ignored}, ignored)
+		snap = samples.SimpleGatewaySnapshot(&core.ResourceRef{Name: ignored, Namespace: ignored}, ignored)
 		tx := translator.NewTranslator([]translator.ListenerFactory{&translator.HttpTranslator{}, &translator.TcpTranslator{}}, translator.Opts{})
 		proxy, reports = tx.Translate(context.TODO(), ignored, ignored, snap, snap.Gateways)
 	})

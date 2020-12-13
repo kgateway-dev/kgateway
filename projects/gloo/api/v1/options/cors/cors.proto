@@ -3,13 +3,9 @@ package cors.options.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors";
 
-import "gogoproto/gogo.proto";
-import "google/protobuf/wrappers.proto";
-import "google/protobuf/duration.proto";
-
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 // CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
 message CorsPolicy {

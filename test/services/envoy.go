@@ -517,9 +517,9 @@ func (ei *EnvoyInstance) Clean() error {
 	}
 
 	if ei.UseDocker {
-		if err := stopContainer(); err != nil {
-			return err
-		}
+		// No need to handle the error here as the call to quitquitquit above should kill and exit the container
+		// This is just a backup to make sure it really gets deleted
+		stopContainer()
 	}
 	return nil
 }

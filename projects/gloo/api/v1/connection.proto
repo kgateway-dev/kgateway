@@ -2,13 +2,12 @@ syntax = "proto3";
 package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
-import "gogoproto/gogo.proto";
+
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "extproto/ext.proto";
+option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
-
-option (gogoproto.equal_all) = true;
 
 
 // Fine tune the settings for connections to an upstream
@@ -16,7 +15,7 @@ message ConnectionConfig {
     // Maximum requests for a single upstream connection (unspecified or zero = no limit)
     uint32 max_requests_per_connection = 1;
     // The timeout for new network connections to hosts in the cluster
-    google.protobuf.Duration connect_timeout = 2 [ (gogoproto.stdduration) = true ];
+    google.protobuf.Duration connect_timeout = 2;
 
     // If set then set SO_KEEPALIVE on the socket to enable TCP Keepalives.
     // see more info here: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/address.proto#envoy-api-msg-core-tcpkeepalive
@@ -24,9 +23,9 @@ message ConnectionConfig {
         // Maximum number of keepalive probes to send without response before deciding the connection is dead.
         uint32 keepalive_probes = 1;
         // The number of seconds a connection needs to be idle before keep-alive probes start being sent. This is rounded up to the second.
-        google.protobuf.Duration keepalive_time = 2 [ (gogoproto.stdduration) = true ];
+        google.protobuf.Duration keepalive_time = 2;
         // The number of seconds between keep-alive probes. This is rounded up to the second.
-        google.protobuf.Duration keepalive_interval = 3 [ (gogoproto.stdduration) = true ];
+        google.protobuf.Duration keepalive_interval = 3;
     }
     // Configure OS-level tcp keepalive checks
     TcpKeepAlive tcp_keepalive = 3;
@@ -48,7 +47,7 @@ message ConnectionConfig {
         // .. warning::
         //   Disabling this timeout has a highly likelihood of yielding connection leaks due to lost TCP
         //   FIN packets, etc.
-        google.protobuf.Duration idle_timeout = 1 [ (gogoproto.stdduration) = true ];
+        google.protobuf.Duration idle_timeout = 1;
 
         // Note: max_connection_duration is not included here because it is "not implemented for upstream connections," per Envoy's documentation.
 
@@ -59,7 +58,7 @@ message ConnectionConfig {
 
         // Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be
         // reset independent of any other timeouts. If not specified, this value is not set.
-        google.protobuf.Duration max_stream_duration = 3 [ (gogoproto.stdduration) = true ];
+        google.protobuf.Duration max_stream_duration = 3;
 
         // Action to take when Envoy receives client request with header names containing underscore
         // characters.

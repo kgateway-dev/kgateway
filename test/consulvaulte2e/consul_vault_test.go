@@ -10,12 +10,12 @@ import (
 	"time"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
 	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
 	udssetup "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 
-	"github.com/gogo/protobuf/types"
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -189,7 +189,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		cert := helpers.Certificate()
 
 		secret := &gloov1.Secret{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "secret",
 				Namespace: "default",
 			},
@@ -224,7 +224,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			if err != nil {
 				return 0, err
 			}
-			return readVs.Status.State, nil
+			return readVs.GetStatus().GetState(), nil
 		}, "60s", "0.2s").Should(Equal(core.Status_Accepted))
 
 		// Wait for the proxy to be accepted. this can take up to 40 seconds, as the vault snapshot
@@ -234,7 +234,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			if err != nil {
 				return 0, err
 			}
-			return proxy.Status.State, nil
+			return proxy.GetStatus().GetState(), nil
 		}, "60s", "0.2s").Should(Equal(core.Status_Accepted))
 
 		v1helpers.TestUpstreamReachable(defaults.HttpsPort, svc1, &cert)
@@ -247,7 +247,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		proxyClient, err := gloov1.NewProxyClient(ctx, consulResources)
 		Expect(err).NotTo(HaveOccurred())
 
-		us := core.ResourceRef{Namespace: "gloo-system", Name: "petstore"}
+		us := &core.ResourceRef{Namespace: "gloo-system", Name: "petstore"}
 
 		vs := makeFunctionRoutingVirtualService(writeNamespace, us, "findPetById")
 
@@ -260,7 +260,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			if err != nil {
 				return 0, err
 			}
-			return proxy.Status.State, nil
+			return proxy.GetStatus().GetState(), nil
 		}, "60s", "0.2s").Should(Equal(core.Status_Accepted))
 
 		v1helpers.ExpectHttpOK(nil, nil, defaults.HttpPort,
@@ -269,9 +269,9 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 	})
 })
 
-func makeSslVirtualService(vsNamespace string, secret core.ResourceRef) *v1.VirtualService {
+func makeSslVirtualService(vsNamespace string, secret *core.ResourceRef) *v1.VirtualService {
 	return &v1.VirtualService{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "vs-ssl",
 			Namespace: vsNamespace,
 		},
@@ -305,9 +305,9 @@ func makeSslVirtualService(vsNamespace string, secret core.ResourceRef) *v1.Virt
 	}
 }
 
-func makeFunctionRoutingVirtualService(vsNamespace string, upstream core.ResourceRef, funcName string) *v1.VirtualService {
+func makeFunctionRoutingVirtualService(vsNamespace string, upstream *core.ResourceRef, funcName string) *v1.VirtualService {
 	return &v1.VirtualService{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "vs-functions",
 			Namespace: vsNamespace,
 		},
@@ -319,7 +319,7 @@ func makeFunctionRoutingVirtualService(vsNamespace string, upstream core.Resourc
 						Destination: &gloov1.RouteAction_Single{
 							Single: &gloov1.Destination{
 								DestinationType: &gloov1.Destination_Upstream{
-									Upstream: &upstream,
+									Upstream: upstream,
 								},
 								DestinationSpec: &gloov1.DestinationSpec{
 									DestinationType: &gloov1.DestinationSpec_Rest{
@@ -363,9 +363,9 @@ func writeSettings(settingsDir string, glooPort, validationPort int, writeNamesp
 			XdsBindAddr:        fmt.Sprintf("0.0.0.0:%v", glooPort),
 			ValidationBindAddr: fmt.Sprintf("0.0.0.0:%v", validationPort),
 		},
-		RefreshRate:        types.DurationProto(time.Second * 1),
+		RefreshRate:        prototime.DurationToProto(time.Second * 1),
 		DiscoveryNamespace: writeNamespace,
-		Metadata:           core.Metadata{Namespace: writeNamespace, Name: "default"},
+		Metadata:           &core.Metadata{Namespace: writeNamespace, Name: "default"},
 	}
 	yam, err := protoutils.MarshalYAML(settings)
 	if err != nil {

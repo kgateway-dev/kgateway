@@ -2,13 +2,14 @@ syntax = "proto3";
 package ingress.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/ingress/pkg/api/v1";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
 import "google/protobuf/any.proto";
 
-import "solo-kit/api/v1/metadata.proto";
-import "solo-kit/api/v1/status.proto";
-import "solo-kit/api/v1/solo-kit.proto";
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 /*
 A simple wrapper for a Kubernetes Service Object.
 */
@@ -22,5 +23,5 @@ message KubeService{
     google.protobuf.Any kube_service_status = 2;
 
     // Metadata contains the object metadata for this resource
-    core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+    core.solo.io.Metadata metadata = 7;
 }

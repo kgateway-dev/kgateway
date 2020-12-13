@@ -3,11 +3,9 @@ package protoutils
 import (
 	"bytes"
 
-	gogojson "github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/types"
+	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/rotisserie/eris"
 )
@@ -15,8 +13,6 @@ import (
 var (
 	jsonpbMarshaler               = &jsonpb.Marshaler{OrigName: false}
 	jsonpbMarshalerEmitZeroValues = &jsonpb.Marshaler{OrigName: false, EmitDefaults: true}
-
-	gogoJsonpbMarshaler = &gogojson.Marshaler{OrigName: false}
 
 	NilStructError = eris.New("cannot unmarshal nil struct")
 )
@@ -43,17 +39,6 @@ func MarshalStructEmitZeroValues(m proto.Message) (*structpb.Struct, error) {
 	return &pb, err
 }
 
-func UnmarshalStruct(structuredData *structpb.Struct, into proto.Message) error {
-	if structuredData == nil {
-		return NilStructError
-	}
-	strData, err := jsonpbMarshaler.MarshalToString(structuredData)
-	if err != nil {
-		return err
-	}
-	return jsonpb.UnmarshalString(strData, into)
-}
-
 func MarshalBytes(pb proto.Message) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	err := jsonpbMarshaler.Marshal(buf, pb)
@@ -66,62 +51,15 @@ func MarshalBytesEmitZeroValues(pb proto.Message) ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-func StructPbToGogo(structuredData *structpb.Struct) (*types.Struct, error) {
-	if structuredData == nil {
-		return nil, NilStructError
-	}
-	byt, err := proto.Marshal(structuredData)
-	if err != nil {
-		return nil, err
-	}
-	var st types.Struct
-	if err := proto.Unmarshal(byt, &st); err != nil {
-		return nil, err
-	}
-	return &st, nil
+func UnmarshalBytes(data []byte, into proto.Message) error {
+	return jsonpb.Unmarshal(bytes.NewBuffer(data), into)
 }
 
-func StructGogoToPb(structuredData *types.Struct) (*structpb.Struct, error) {
-	if structuredData == nil {
-		return nil, NilStructError
-	}
-	byt, err := proto.Marshal(structuredData)
+func UnmarshalYaml(data []byte, into proto.Message) error {
+	jsn, err := yaml.YAMLToJSON([]byte(data))
 	if err != nil {
-		return nil, err
+		return err
 	}
-	var st structpb.Struct
-	if err := proto.Unmarshal(byt, &st); err != nil {
-		return nil, err
-	}
-	return &st, nil
-}
 
-func AnyPbToGogo(structuredData *any.Any) (*types.Any, error) {
-	if structuredData == nil {
-		return nil, NilStructError
-	}
-	byt, err := proto.Marshal(structuredData)
-	if err != nil {
-		return nil, err
-	}
-	var st types.Any
-	if err := proto.Unmarshal(byt, &st); err != nil {
-		return nil, err
-	}
-	return &st, nil
-}
-
-func AnyGogoToPb(structuredData *types.Any) (*any.Any, error) {
-	if structuredData == nil {
-		return nil, NilStructError
-	}
-	byt, err := proto.Marshal(structuredData)
-	if err != nil {
-		return nil, err
-	}
-	var st any.Any
-	if err := proto.Unmarshal(byt, &st); err != nil {
-		return nil, err
-	}
-	return &st, nil
+	return jsonpb.Unmarshal(bytes.NewBuffer(jsn), into)
 }

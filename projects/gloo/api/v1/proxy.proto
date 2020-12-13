@@ -6,21 +6,20 @@ import "google/protobuf/wrappers.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/struct.proto";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
+option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
-import "solo-kit/api/v1/metadata.proto";
-import "solo-kit/api/v1/status.proto";
-import "solo-kit/api/v1/ref.proto";
-import "solo-kit/api/v1/solo-kit.proto";
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
-import "gloo/projects/gloo/api/v1/ssl.proto";
-import "gloo/projects/gloo/api/v1/subset.proto";
-import "gloo/projects/gloo/api/v1/options.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/subset.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 
-import "gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 
 /*
 A Proxy is a container for the entire set of configuration that will to be applied to one or more Proxy instances.
@@ -46,10 +45,10 @@ message Proxy {
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\"", (extproto.skip_hashing) = true];
+    core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
 
     // Metadata contains the object metadata for this resource
-    core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+    core.solo.io.Metadata metadata = 7;
 }
 
 // Listeners define the address:port where the proxy will listen for incoming connections
@@ -283,7 +282,7 @@ message Destination {
 message KubernetesServiceDestination {
 
     // The target service
-    core.solo.io.ResourceRef ref = 1 [(gogoproto.nullable) = false];
+    core.solo.io.ResourceRef ref = 1;
 
     // The port attribute of the service
     uint32 port = 2;
@@ -317,10 +316,10 @@ message UpstreamGroup {
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\"", (extproto.skip_hashing) = true];
+    core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
 
     // Metadata contains the object metadata for this resource
-    core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+    core.solo.io.Metadata metadata = 7;
 }
 
 // MultiDestination is a container for a set of weighted destinations. Gloo will load balance traffic for a single

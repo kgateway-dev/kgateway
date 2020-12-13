@@ -159,7 +159,7 @@ var _ = Describe("Headers", func() {
 			)
 			BeforeEach(func() {
 				upGrp := &v1.UpstreamGroup{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "test",
 						Namespace: "test",
 					},
@@ -188,7 +188,7 @@ var _ = Describe("Headers", func() {
 					Action: &v1.Route_RouteAction{
 						RouteAction: &v1.RouteAction{
 							Destination: &v1.RouteAction_UpstreamGroup{
-								UpstreamGroup: &ref,
+								UpstreamGroup: ref,
 							},
 						},
 					},

@@ -8,7 +8,6 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
@@ -88,17 +87,17 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 }
 
 func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpConnectionManagerSettings) error {
-	cfg.UseRemoteAddress = gogoutils.BoolGogoToProto(hcmSettings.GetUseRemoteAddress())
+	cfg.UseRemoteAddress = hcmSettings.GetUseRemoteAddress()
 	cfg.XffNumTrustedHops = hcmSettings.GetXffNumTrustedHops()
 	cfg.SkipXffAppend = hcmSettings.GetSkipXffAppend()
 	cfg.Via = hcmSettings.GetVia()
-	cfg.GenerateRequestId = gogoutils.BoolGogoToProto(hcmSettings.GetGenerateRequestId())
+	cfg.GenerateRequestId = hcmSettings.GetGenerateRequestId()
 	cfg.Proxy_100Continue = hcmSettings.GetProxy_100Continue()
-	cfg.StreamIdleTimeout = gogoutils.DurationStdToProto(hcmSettings.GetStreamIdleTimeout())
-	cfg.MaxRequestHeadersKb = gogoutils.UInt32GogoToProto(hcmSettings.GetMaxRequestHeadersKb())
-	cfg.RequestTimeout = gogoutils.DurationStdToProto(hcmSettings.GetRequestTimeout())
-	cfg.DrainTimeout = gogoutils.DurationStdToProto(hcmSettings.GetDrainTimeout())
-	cfg.DelayedCloseTimeout = gogoutils.DurationStdToProto(hcmSettings.GetDelayedCloseTimeout())
+	cfg.StreamIdleTimeout = hcmSettings.GetStreamIdleTimeout()
+	cfg.MaxRequestHeadersKb = hcmSettings.GetMaxRequestHeadersKb()
+	cfg.RequestTimeout = hcmSettings.GetRequestTimeout()
+	cfg.DrainTimeout = hcmSettings.GetDrainTimeout()
+	cfg.DelayedCloseTimeout = hcmSettings.GetDelayedCloseTimeout()
 	cfg.ServerName = hcmSettings.GetServerName()
 	cfg.PreserveExternalRequestId = hcmSettings.GetPreserveExternalRequestId()
 	cfg.ServerHeaderTransformation = envoyhttp.HttpConnectionManager_ServerHeaderTransformation(hcmSettings.GetServerHeaderTransformation())
@@ -125,21 +124,21 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 		if cfg.GetCommonHttpProtocolOptions() == nil {
 			cfg.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
 		}
-		cfg.CommonHttpProtocolOptions.IdleTimeout = gogoutils.DurationStdToProto(hcmSettings.GetIdleTimeout())
+		cfg.CommonHttpProtocolOptions.IdleTimeout = hcmSettings.GetIdleTimeout()
 	}
 
 	if hcmSettings.GetMaxConnectionDuration() != nil {
 		if cfg.GetCommonHttpProtocolOptions() == nil {
 			cfg.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
 		}
-		cfg.CommonHttpProtocolOptions.MaxConnectionDuration = gogoutils.DurationStdToProto(hcmSettings.GetMaxConnectionDuration())
+		cfg.CommonHttpProtocolOptions.MaxConnectionDuration = hcmSettings.GetMaxConnectionDuration()
 	}
 
 	if hcmSettings.GetMaxStreamDuration() != nil {
 		if cfg.GetCommonHttpProtocolOptions() == nil {
 			cfg.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
 		}
-		cfg.CommonHttpProtocolOptions.MaxStreamDuration = gogoutils.DurationStdToProto(hcmSettings.GetMaxStreamDuration())
+		cfg.CommonHttpProtocolOptions.MaxStreamDuration = hcmSettings.GetMaxStreamDuration()
 	}
 
 	// allowed upgrades
@@ -160,7 +159,7 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 		case *protocol_upgrade.ProtocolUpgradeConfig_Websocket:
 			cfg.UpgradeConfigs[i] = &envoyhttp.HttpConnectionManager_UpgradeConfig{
 				UpgradeType: upgradeconfig.WebSocketUpgradeType,
-				Enabled:     gogoutils.BoolGogoToProto(config.GetWebsocket().GetEnabled()),
+				Enabled:     config.GetWebsocket().GetEnabled(),
 			}
 
 			webSocketUpgradeSpecified = true
@@ -189,7 +188,7 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 
 	if shouldConfigureClientCertDetails {
 		cfg.SetCurrentClientCertDetails = &envoyhttp.HttpConnectionManager_SetCurrentClientCertDetails{
-			Subject: gogoutils.BoolGogoToProto(hcmSettings.GetSetCurrentClientCertDetails().GetSubject()),
+			Subject: hcmSettings.GetSetCurrentClientCertDetails().GetSubject(),
 			Cert:    hcmSettings.GetSetCurrentClientCertDetails().GetCert(),
 			Chain:   hcmSettings.GetSetCurrentClientCertDetails().GetChain(),
 			Dns:     hcmSettings.GetSetCurrentClientCertDetails().GetDns(),

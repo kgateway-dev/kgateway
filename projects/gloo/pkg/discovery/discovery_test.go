@@ -74,7 +74,7 @@ var _ = Describe("Discovery", func() {
 
 		ep := func(suffix string) *v1.Endpoint {
 			return &v1.Endpoint{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name: "endpoint-" + suffix,
 				},
 			}

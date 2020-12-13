@@ -60,7 +60,7 @@ func addListenerResult(resourceReports reporter.ResourceReports, listener *gloov
 	listenerErrs := getListenerLevelErrors(listenerReport)
 
 	return translator.ForEachSource(listener, func(src translator.SourceRef) error {
-		srcResource, _ := resourceReports.Find(src.ResourceKind, core.ResourceRef{Name: src.Name, Namespace: src.Namespace})
+		srcResource, _ := resourceReports.Find(src.ResourceKind, &core.ResourceRef{Name: src.Name, Namespace: src.Namespace})
 		if srcResource == nil {
 			return missingReportForSourceErr
 		}
@@ -73,7 +73,7 @@ func addVirtualHostResult(resourceReports reporter.ResourceReports, virtualHost 
 	virtualHostErrs, virtualHostWarnings := getVirtualHostLevelErrorsAndWarnings(vhReport)
 
 	return translator.ForEachSource(virtualHost, func(src translator.SourceRef) error {
-		srcResource, _ := resourceReports.Find(src.ResourceKind, core.ResourceRef{Name: src.Name, Namespace: src.Namespace})
+		srcResource, _ := resourceReports.Find(src.ResourceKind, &core.ResourceRef{Name: src.Name, Namespace: src.Namespace})
 		if srcResource == nil {
 			return missingReportForSourceErr
 		}
