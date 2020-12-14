@@ -63,7 +63,7 @@ var _ = Describe("Translate Proxy", func() {
 		rep := reporter.NewReporter(ref, proxyClient.BaseClient(), upstreamClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
-		syncer = NewTranslatorSyncer(&mockTranslator{true}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
+		syncer = NewTranslatorSyncer(&mockTranslator{true, false}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
 		snap = &v1.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy,
@@ -92,7 +92,7 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(err).NotTo(HaveOccurred())
 		snap.Proxies[0] = p1
 
-		syncer = NewTranslatorSyncer(&mockTranslator{false}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
+		syncer = NewTranslatorSyncer(&mockTranslator{false, false}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
 
 		err = syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
@@ -153,16 +153,190 @@ var _ = Describe("Translate Proxy", func() {
 
 		Expect(oldRoutes).To(Equal(newRoutes))
 	})
+
+})
+
+var _ = Describe("Translate mulitple proxies with errors", func() {
+
+	var (
+		xdsCache       *mockXdsCache
+		sanitizer      *mockXdsSanitizer
+		syncer         v1.ApiSyncer
+		snap           *v1.ApiSnapshot
+		settings       *v1.Settings
+		proxyClient    v1.ProxyClient
+		upstreamClient v1.UpstreamClient
+		proxyName      = "proxy-name"
+		upstreamName   = "upstream-name"
+		ref            = "syncer-test"
+		ns             = "any-ns"
+	)
+
+	proxiesShouldHaveErrors := func(proxies v1.ProxyList, numProxies int) {
+		Expect(proxies).To(HaveLen(numProxies))
+		for _, proxy := range proxies {
+			Expect(proxy).To(BeAssignableToTypeOf(&v1.Proxy{}))
+			Expect(proxy.Status).To(Equal(&core.Status{
+				State:      2,
+				Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
+				ReportedBy: ref,
+			}))
+
+		}
+
+	}
+	writeUniqueErrsToUpstreams := func() {
+		// Re-writes existing upstream to have an annotation
+		// which triggers a unique error to be written from each proxy's mockTranslator
+		upstreams, err := upstreamClient.List(ns, clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(upstreams).To(HaveLen(1))
+
+		us := upstreams[0]
+		// This annotation causes the translator mock to generate a unique error per proxy on each upstream
+		us.Metadata.Annotations = map[string]string{"uniqueErrPerProxy": "true"}
+		_, err = upstreamClient.Write(us, clients.WriteOpts{OverwriteExisting: true})
+		Expect(err).NotTo(HaveOccurred())
+		snap.Upstreams = upstreams
+		err = syncer.Sync(context.Background(), snap)
+		Expect(err).NotTo(HaveOccurred())
+	}
+
+	BeforeEach(func() {
+		var err error
+		xdsCache = &mockXdsCache{}
+		sanitizer = &mockXdsSanitizer{}
+
+		resourceClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+
+		proxyClient, _ = v1.NewProxyClient(context.Background(), resourceClientFactory)
+
+		usClient, err := resourceClientFactory.NewResourceClient(context.Background(), factory.NewResourceClientParams{ResourceType: &v1.Upstream{}})
+		Expect(err).NotTo(HaveOccurred())
+
+		proxy1 := &v1.Proxy{
+			Metadata: &core.Metadata{
+				Namespace: ns,
+				Name:      proxyName + "1",
+			},
+		}
+		proxy2 := &v1.Proxy{
+			Metadata: &core.Metadata{
+				Namespace: ns,
+				Name:      proxyName + "2",
+			},
+		}
+
+		us := &v1.Upstream{
+			Metadata: &core.Metadata{
+				Name:      upstreamName,
+				Namespace: ns,
+			},
+		}
+
+		settings = &v1.Settings{}
+
+		rep := reporter.NewReporter(ref, proxyClient.BaseClient(), usClient)
+
+		xdsHasher := &xds.ProxyKeyHasher{}
+		syncer = NewTranslatorSyncer(&mockTranslator{true, true}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
+		snap = &v1.ApiSnapshot{
+			Proxies: v1.ProxyList{
+				proxy1,
+				proxy2,
+			},
+			Upstreams: v1.UpstreamList{
+				us,
+			},
+		}
+
+		_, err = usClient.Write(us, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		_, err = proxyClient.Write(proxy1, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		_, err = proxyClient.Write(proxy2, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		err = syncer.Sync(context.Background(), snap)
+		Expect(err).NotTo(HaveOccurred())
+
+		proxies, err := proxyClient.List(proxy1.GetMetadata().Namespace, clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(proxies).To(HaveLen(2))
+		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
+		Expect(proxies[0].Status).To(Equal(&core.Status{
+			State:      2,
+			Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
+			ReportedBy: ref,
+		}))
+
+		// NilSnapshot is always consistent, so snapshot will always be set as part of endpoints update
+		Expect(xdsCache.called).To(BeTrue())
+
+		upstreamClient, err = v1.NewUpstreamClient(context.Background(), resourceClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("handles reporting errors on multiple proxies sharing an upstream reporting 2 different errors", func() {
+		// Testing the scenario where we have multiple proxies,
+		// each of which should report a different unique error on an upstream.
+		proxies, err := proxyClient.List(ns, clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		proxiesShouldHaveErrors(proxies, 2)
+
+		writeUniqueErrsToUpstreams()
+
+		upstreams, err := upstreamClient.List(ns, clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(upstreams[0].Status).To(Equal(&core.Status{
+			State:      2,
+			Reason:     "2 errors occurred:\n\t* upstream is bad - determined by proxy-name1\n\t* upstream is bad - determined by proxy-name2\n\n",
+			ReportedBy: ref,
+		}))
+
+		Expect(xdsCache.called).To(BeTrue())
+	})
+
+	It("handles reporting errors on multiple proxies sharing an upstream, each reporting the same upstream error", func() {
+		// Testing the scenario where we have multiple proxies,
+		// each of which should report the same error on an upstream.
+		proxies, err := proxyClient.List(ns, clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		proxiesShouldHaveErrors(proxies, 2)
+
+		upstreams, err := upstreamClient.List(ns, clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(upstreams).To(HaveLen(1))
+		Expect(upstreams[0].Status).To(Equal(&core.Status{
+			State:      2,
+			Reason:     "1 error occurred:\n\t* generic upstream error\n\n",
+			ReportedBy: ref,
+		}))
+
+		Expect(xdsCache.called).To(BeTrue())
+	})
 })
 
 type mockTranslator struct {
-	reportErrs bool
+	reportErrs         bool
+	reportUpstreamErrs bool // Adds an error to every upstream in the snapshot
 }
 
 func (t *mockTranslator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validation.ProxyReport, error) {
 	if t.reportErrs {
 		rpts := reporter.ResourceReports{}
 		rpts.AddError(proxy, errors.Errorf("hi, how ya doin'?"))
+		if t.reportUpstreamErrs {
+			for _, upstream := range params.Snapshot.Upstreams {
+				if upstream.Metadata.Annotations["uniqueErrPerProxy"] == "true" {
+					rpts.AddError(upstream, errors.Errorf("upstream is bad - determined by %s", proxy.Metadata.Name))
+				} else {
+					rpts.AddError(upstream, errors.Errorf("generic upstream error"))
+				}
+			}
+		}
 		return envoycache.NilSnapshot{}, rpts, &validation.ProxyReport{}, nil
 	}
 	return envoycache.NilSnapshot{}, nil, &validation.ProxyReport{}, nil
