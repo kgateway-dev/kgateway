@@ -217,20 +217,20 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy1 := &v1.Proxy{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Namespace: ns,
 				Name:      proxyName + "1",
 			},
 		}
 		proxy2 := &v1.Proxy{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Namespace: ns,
 				Name:      proxyName + "2",
 			},
 		}
 
 		us := &v1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      upstreamName,
 				Namespace: ns,
 			},
