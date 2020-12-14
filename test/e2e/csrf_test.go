@@ -39,7 +39,7 @@ type csrfTestData struct {
 	per         perCsrfTestData
 }
 
-var _ = Describe("CSRF Test", func() {
+var _ = FDescribe("CSRF Test", func() {
 
 	const (
 		filter_string         = "\"numerator\": 100"

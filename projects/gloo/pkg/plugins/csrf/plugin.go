@@ -31,6 +31,7 @@ var _ plugins.VirtualHostPlugin = new(plugin)
 var _ plugins.RoutePlugin = new(plugin)
 
 type plugin struct {
+	present bool
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
@@ -39,12 +40,14 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 
-	csrfPolicy := listener.GetOptions().GetCsrf()
-
-	if csrfPolicy == nil {
-		return nil, nil
+	err, config := getCsrfConfig(listener.GetOptions().GetCsrf())
+	if err != nil {
+		return nil, err
 	}
-	err, config := getCsrfConfig(csrfPolicy)
+
+	if config == nil && p.present {
+		return []plugins.StagedHttpFilter{plugins.NewStagedFilter(FilterName, pluginStage)}, nil
+	}
 
 	csrfFilter, err := plugins.NewStagedFilterWithConfig(FilterName, config, pluginStage)
 	if err != nil {
@@ -65,6 +68,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		if err != nil {
 			return err
 		}
+		p.present = true
 		return pluginutils.SetRoutePerFilterConfig(out, FilterName, config)
 	}
 
@@ -86,6 +90,7 @@ func (p *plugin) ProcessVirtualHost(
 		if err != nil {
 			return err
 		}
+		p.present = true
 		return pluginutils.SetVhostPerFilterConfig(out, FilterName, config)
 	}
 
@@ -107,6 +112,7 @@ func (p *plugin) ProcessWeightedDestination(
 		if err != nil {
 			return err
 		}
+		p.present = true
 		return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, config)
 	}
 
@@ -155,15 +161,12 @@ func getCsrfConfig(csrf *csrf.CsrfPolicy) (error, *envoycsrf.CsrfPolicy) {
 
 	}
 
-	var filterEnabled envoy_config_core.RuntimeFractionalPercent
-	if csrf.GetFilterEnabled() != nil {
-		filterEnabled = envoy_config_core.RuntimeFractionalPercent{
-			DefaultValue: &envoytype.FractionalPercent{
-				Numerator:   csrf.GetFilterEnabled().GetDefaultValue().GetNumerator(),
-				Denominator: envoytype.FractionalPercent_DenominatorType(csrf.GetFilterEnabled().GetDefaultValue().GetDenominator()),
-			},
-			RuntimeKey: csrf.GetFilterEnabled().GetRuntimeKey(),
-		}
+	filterEnabled := envoy_config_core.RuntimeFractionalPercent{
+		DefaultValue: &envoytype.FractionalPercent{
+			Numerator:   csrf.GetFilterEnabled().GetDefaultValue().GetNumerator(),
+			Denominator: envoytype.FractionalPercent_DenominatorType(csrf.GetFilterEnabled().GetDefaultValue().GetDenominator()),
+		},
+		RuntimeKey: csrf.GetFilterEnabled().GetRuntimeKey(),
 	}
 
 	var shadowEnabled envoy_config_core.RuntimeFractionalPercent
