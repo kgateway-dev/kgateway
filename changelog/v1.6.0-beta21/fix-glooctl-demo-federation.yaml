@@ -1,0 +1,30 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3972
+    description: >
+      Update `glooctl cluster register` and `glooctl cluster deregister` commands to use the default
+      Kubernetes config when registering and deregistering clusters.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: k8s-utils
+    dependencyTag: v0.0.3
+    issueLink: https://github.com/solo-io/gloo/issues/3972
+    description: Upgrade k8s-utils to v0.0.3
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: skv2
+    dependencyTag: v0.15.1
+    issueLink: https://github.com/solo-io/gloo/issues/3972
+    description: Upgrade skv2 to v0.15.1
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.16.2
+    issueLink: https://github.com/solo-io/gloo/issues/3972
+    description: Upgrade solo-kit to v0.16.2
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: golang
+    dependencyRepo: protobuf
+    dependencyTag: v1.4.3
+    issueLink: https://github.com/solo-io/gloo/issues/3972
+    description: Upgrade golang/protobuf to v1.4.3
