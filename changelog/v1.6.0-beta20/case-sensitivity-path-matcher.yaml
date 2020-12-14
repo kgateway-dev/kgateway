@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/3976
-    description: >
-      Adding case sensitivity option on the path matcher.
