@@ -54,7 +54,7 @@ func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route.Route) error {
-	csrfPolicy := in.Options.GetCsrf()
+	csrfPolicy := in.GetOptions().GetCsrf()
 	if csrfPolicy == nil {
 		return nil
 	}
@@ -75,7 +75,7 @@ func (p *plugin) ProcessVirtualHost(
 	in *v1.VirtualHost,
 	out *envoy_config_route.VirtualHost,
 ) error {
-	csrfPolicy := in.Options.GetCsrf()
+	csrfPolicy := in.GetOptions().GetCsrf()
 	if csrfPolicy == nil {
 		return nil
 	}
@@ -96,7 +96,7 @@ func (p *plugin) ProcessWeightedDestination(
 	in *v1.WeightedDestination,
 	out *envoy_config_route.WeightedCluster_ClusterWeight,
 ) error {
-	csrfPolicy := in.Options.GetCsrf()
+	csrfPolicy := in.GetOptions().GetCsrf()
 	if csrfPolicy == nil {
 		return nil
 	}

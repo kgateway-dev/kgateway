@@ -24,39 +24,44 @@ import (
 
 var _ = Describe("plugin", func() {
 
-	apiFilter := gloo_config_core.RuntimeFractionalPercent{
-		DefaultValue: &glootype.FractionalPercent{
-			Numerator:   uint32(1),
-			Denominator: glootype.FractionalPercent_HUNDRED,
-		},
-	}
+	var apiFilter gloo_config_core.RuntimeFractionalPercent
+	var envoyFilter envoy_config_core.RuntimeFractionalPercent
+	var apiAdditionalOrigins []*gloo_type_matcher.StringMatcher
+	var envoyAdditionalOrigins []*envoy_type_matcher.StringMatcher
 
-	envoyFilter := envoy_config_core.RuntimeFractionalPercent{
-		DefaultValue: &envoytype.FractionalPercent{
-			Numerator:   uint32(1),
-			Denominator: envoytype.FractionalPercent_HUNDRED,
-		},
-	}
-
-	apiAdditionalOrigins := []*gloo_type_matcher.StringMatcher{
-		{
-			MatchPattern: &gloo_type_matcher.StringMatcher_Exact{
-				Exact: "test",
+	BeforeEach(func() {
+		apiFilter = gloo_config_core.RuntimeFractionalPercent{
+			DefaultValue: &glootype.FractionalPercent{
+				Numerator:   uint32(1),
+				Denominator: glootype.FractionalPercent_HUNDRED,
 			},
-			IgnoreCase:    true,
-			XXX_sizecache: 8,
-		},
-	}
+		}
 
-	envoyAdditionalOrigins := []*envoy_type_matcher.StringMatcher{
-		{
-			MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-				Exact: "test",
+		envoyFilter = envoy_config_core.RuntimeFractionalPercent{
+			DefaultValue: &envoytype.FractionalPercent{
+				Numerator:   uint32(1),
+				Denominator: envoytype.FractionalPercent_HUNDRED,
 			},
-			IgnoreCase:    true,
-			XXX_sizecache: 8,
-		},
-	}
+		}
+
+		apiAdditionalOrigins = []*gloo_type_matcher.StringMatcher{
+			{
+				MatchPattern: &gloo_type_matcher.StringMatcher_Exact{
+					Exact: "test",
+				},
+				IgnoreCase: true,
+			},
+		}
+
+		envoyAdditionalOrigins = []*envoy_type_matcher.StringMatcher{
+			{
+				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+					Exact: "test",
+				},
+				IgnoreCase: true,
+			},
+		}
+	})
 
 	It("copies the csrf config from the listener to the filter with AdditionalOrigins set", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
@@ -95,7 +100,6 @@ var _ = Describe("plugin", func() {
 			Options: &v1.HttpListenerOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
 					FilterEnabled:     &apiFilter,
-					ShadowEnabled:     nil,
 					AdditionalOrigins: apiAdditionalOrigins,
 				},
 			},
@@ -109,7 +113,6 @@ var _ = Describe("plugin", func() {
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
 							FilterEnabled:     &envoyFilter,
-							ShadowEnabled:     nil,
 							AdditionalOrigins: envoyAdditionalOrigins,
 						}),
 					},
@@ -126,7 +129,6 @@ var _ = Describe("plugin", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
-					FilterEnabled:     nil,
 					ShadowEnabled:     &apiFilter,
 					AdditionalOrigins: apiAdditionalOrigins,
 				},
@@ -140,7 +142,6 @@ var _ = Describe("plugin", func() {
 					Name: "envoy.filters.http.csrf",
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
-							FilterEnabled:     nil,
 							ShadowEnabled:     &envoyFilter,
 							AdditionalOrigins: envoyAdditionalOrigins,
 						}),
@@ -187,9 +188,6 @@ var _ = Describe("plugin", func() {
 	})
 
 	It("allows route specific csrf config", func() {
-		envoyAdditionalOrigins[0].XXX_sizecache = 0
-		apiAdditionalOrigins[0].XXX_sizecache = 0
-
 		envoyFilter.XXX_sizecache = 0
 		envoyFilter.DefaultValue.XXX_sizecache = 0
 
@@ -199,7 +197,6 @@ var _ = Describe("plugin", func() {
 			Options: &v1.RouteOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
 					FilterEnabled:     &apiFilter,
-					ShadowEnabled:     nil,
 					AdditionalOrigins: apiAdditionalOrigins,
 				},
 			},
@@ -214,19 +211,12 @@ var _ = Describe("plugin", func() {
 	})
 
 	It("allows vhost specific csrf config", func() {
-		envoyAdditionalOrigins[0].XXX_sizecache = 0
-		apiAdditionalOrigins[0].XXX_sizecache = 0
-
-		envoyFilter.XXX_sizecache = 0
-		envoyFilter.DefaultValue.XXX_sizecache = 0
-
 		p := NewPlugin()
 		out := &envoy_config_route.VirtualHost{}
 		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
 					FilterEnabled:     &apiFilter,
-					ShadowEnabled:     nil,
 					AdditionalOrigins: apiAdditionalOrigins,
 				},
 			},
@@ -241,19 +231,12 @@ var _ = Describe("plugin", func() {
 	})
 
 	It("allows weighted destination specific csrf config", func() {
-		envoyAdditionalOrigins[0].XXX_sizecache = 0
-		apiAdditionalOrigins[0].XXX_sizecache = 0
-
-		envoyFilter.XXX_sizecache = 0
-		envoyFilter.DefaultValue.XXX_sizecache = 0
-
 		p := NewPlugin()
 		out := &envoy_config_route.WeightedCluster_ClusterWeight{}
 		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
 			Options: &v1.WeightedDestinationOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
 					FilterEnabled:     &apiFilter,
-					ShadowEnabled:     nil,
 					AdditionalOrigins: apiAdditionalOrigins,
 				},
 			},
