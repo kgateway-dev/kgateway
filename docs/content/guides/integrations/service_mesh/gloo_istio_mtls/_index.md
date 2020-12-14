@@ -9,15 +9,15 @@ Serving as the Ingress for an Istio cluster -- without compromising on security 
 
 ### Istio versions
 
-This guide was tested with Istio 1.6.6, 1.7.2, and 1.8.0. For older versions of Istio, see [here]({{% versioned_link_path fromRoot="/guides/integrations/service_mesh/gloo_istio_mtls/older_istio_versions/" %}}).
+This guide was tested with Istio 1.6.6, 1.7.2, and 1.8.1. For older versions of Istio, see [here]({{% versioned_link_path fromRoot="/guides/integrations/service_mesh/gloo_istio_mtls/older_istio_versions/" %}}).
 
 ### Gloo Edge versions
 
-This guide was tested with Gloo Edge v1.5.0-beta25.
+This guide was tested with Gloo Edge v1.5.0.
 
 {{% notice warning %}}
 
-The Gloo Edge integration with Istio 1.6.x requires Gloo Edge version 1.4.10, or 1.5.0-beta25 or higher.
+The Gloo Edge integration with Istio 1.6.6+ requires Gloo Edge version 1.4.10+, or 1.5.0+.
 
 {{% /notice %}}
 
@@ -41,8 +41,8 @@ For local development and testing, if you remove the istio-token mount then Isti
 To download and install the latest version of Istio, we will be following the installation instructions [here](https://istio.io/docs/setup/getting-started/).
 
 ```bash
-curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.6.6 sh -
-cd istio-1.6.6
+curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.8.1 sh -
+cd istio-1.8.1
 istioctl install --set profile=demo
 ```
 
@@ -193,7 +193,7 @@ data:
 {{< /highlight >}}
 
 ##### Deployment changes
-Next, it updates our `gateway-proxy` deployment to add two sidecars and some volume mounts. It adds an `istio-proxy` sidecar, which is used to generate the certificates used for mTLS communication. It also adds an `sds` sidecar, a running sds server which feeds any certificate changes into our `gateway-proxy` envoy whenever the certs change. For example, this will happen when the istio mTLS certificates rotate, which is every 24 hours in the default istio installation. The certs are also added to a volumeMount at `/etc/istio-certs/`
+Next, it updates our `gateway-proxy` deployment to add two sidecars and some volume mounts. It adds an `istio-proxy` sidecar, which is used to generate the certificates used for mTLS communication. Glooctl reads the currently installed version of `istiod` from your current cluster in order to determine which version of `istio-proxy` to install as a sidecar. Currently supported versions of Istio are 1.6.x-1.8.x. It also adds an `sds` sidecar, which is a running [sds server](https://www.envoyproxy.io/docs/envoy/latest/configuration/security/secret) that feeds any certificate changes into our `gateway-proxy` whenever the certs change. For example, this will happen when the istio mTLS certificates rotate, which is every 24 hours in the default istio installation. The certs are also added to a volumeMount at `/etc/istio-certs/`
 
 {{< highlight yaml "hl_lines=65-192 202-216" >}}
 apiVersion: apps/v1
@@ -467,7 +467,7 @@ Any upstreams using mTLS will need to be contain the sslConfig as described abov
 
 ##### Custom Sidecars
 
-The default istio-proxy image used as a sidecar by this declarative approach is `docker.io/istio/proxyv2:1.6.8`. If this image doesn't work for you (for example, your mesh is on a different, incompatible Istio versio), you can override the default sidecar with your own.
+The default istio-proxy image used as a sidecar by this declarative approach is `docker.io/istio/proxyv2:1.8.1`. If this image doesn't work for you (for example, your mesh is on a different, incompatible Istio version), you can override the default sidecar with your own.
 
 To do this, you must set your custom sidecar in the helm value `global.istioSDS.customSidecars`. For example, if you wanted to use istio proxy v1.6.6 instead:
 
