@@ -1,0 +1,7 @@
+changelog:
+  - type: HELM
+    description: >-
+      Update the version of Istio used by the Istio sidecar in the
+      gateway-proxy pod for mTLS cert generation when the helm value
+      global.istioSDS.enabled is set to true. New Istio version is 1.8.1.
+    issueLink: https://github.com/solo-io/gloo/issues/3967
