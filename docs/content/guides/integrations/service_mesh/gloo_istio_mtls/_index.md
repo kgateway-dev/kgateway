@@ -17,7 +17,7 @@ This guide was tested with Gloo Edge v1.5.0.
 
 {{% notice warning %}}
 
-The Gloo Edge integration with Istio 1.6.6+ requires Gloo Edge version 1.4.10+, or 1.5.0+ or higher.
+The Gloo Edge integration with Istio 1.6.6+ requires Gloo Edge version 1.4.10+, or 1.5.0+.
 
 {{% /notice %}}
 
@@ -467,7 +467,7 @@ Any upstreams using mTLS will need to be contain the sslConfig as described abov
 
 ##### Custom Sidecars
 
-The default istio-proxy image used as a sidecar by this declarative approach is `docker.io/istio/proxyv2:1.8.1`. If this image doesn't work for you (for example, your mesh is on a different, incompatible Istio versio), you can override the default sidecar with your own.
+The default istio-proxy image used as a sidecar by this declarative approach is `docker.io/istio/proxyv2:1.8.1`. If this image doesn't work for you (for example, your mesh is on a different, incompatible Istio version), you can override the default sidecar with your own.
 
 To do this, you must set your custom sidecar in the helm value `global.istioSDS.customSidecars`. For example, if you wanted to use istio proxy v1.6.6 instead:
 
