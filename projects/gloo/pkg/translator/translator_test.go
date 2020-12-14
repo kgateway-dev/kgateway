@@ -386,6 +386,42 @@ var _ = Describe("Translator", func() {
 		})
 	})
 
+	Context("route path match - sensitive case", func() {
+		It("should translate path matcher with sensitive case", func() {
+
+			routes[0].Matchers = []*matchers.Matcher{
+				{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo",
+					},
+					CaseSensitive: &wrappers.BoolValue{Value: true},
+				},
+			}
+
+			translate()
+			fooRoute := routeConfiguration.VirtualHosts[0].Routes[0]
+			Expect(fooRoute.Match.GetPrefix()).To(Equal("/foo"))
+			Expect(fooRoute.Match.CaseSensitive).To(Equal(&wrappers.BoolValue{Value: true}))
+		})
+
+		It("should translate path matcher with case insensitive", func() {
+
+			routes[0].Matchers = []*matchers.Matcher{
+				{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo",
+					},
+					CaseSensitive: &wrappers.BoolValue{Value: false},
+				},
+			}
+
+			translate()
+			fooRoute := routeConfiguration.VirtualHosts[0].Routes[0]
+			Expect(fooRoute.Match.GetPrefix()).To(Equal("/foo"))
+			Expect(fooRoute.Match.CaseSensitive).To(Equal(&wrappers.BoolValue{Value: false}))
+		})
+	})
+
 	Context("route header match", func() {
 		It("should translate header matcher with no value to a PresentMatch", func() {
 

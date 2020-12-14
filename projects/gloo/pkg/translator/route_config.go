@@ -216,6 +216,7 @@ func GlooMatcherToEnvoyMatcher(params plugins.Params, matcher *matchers.Matcher)
 	// need to do this because Go's proto implementation makes oneofs private
 	// which genius thought of that?
 	setEnvoyPathMatcher(params, matcher, &match)
+	match.CaseSensitive = matcher.GetCaseSensitive()
 	return match
 }
 

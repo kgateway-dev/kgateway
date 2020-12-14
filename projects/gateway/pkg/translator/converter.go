@@ -29,6 +29,7 @@ var (
 	MatcherCountErr      = errors.New("invalid route: routes with delegate actions must omit or specify a single matcher")
 	MissingPrefixErr     = errors.New("invalid route: routes with delegate actions must use a prefix matcher")
 	InvalidPrefixErr     = errors.New("invalid route: route table matchers must begin with the prefix of their parent route's matcher")
+	InvalidPathMatchErr  = errors.New("invalid route: route table matchers must have the same case sensitivity of their parent route's matcher")
 	InvalidHeaderErr     = errors.New("invalid route: route table matchers must have all headers that were specified on their parent route's matcher")
 	InvalidQueryParamErr = errors.New("invalid route: route table matchers must have all query params that were specified on their parent route's matcher")
 	InvalidMethodErr     = errors.New("invalid route: route table matchers must have all methods that were specified on their parent route's matcher")
@@ -50,6 +51,10 @@ var (
 	}
 	TopLevelVirtualResourceErr = func(rtRef *core.Metadata, err error) error {
 		return errors.Wrapf(err, "on sub route table %s", rtRef.Ref().Key())
+	}
+
+	InvalidRouteTableForDelegateCaseSensitivePathMatchErr = func(delegateMatchCaseSensitive, matchCaseSensitive *wrappers.BoolValue) error {
+		return errors.Wrapf(InvalidPathMatchErr, "required caseSensitive: %v, caseSensitive: %v", delegateMatchCaseSensitive, matchCaseSensitive)
 	}
 )
 
@@ -443,6 +448,11 @@ func isRouteTableValidForDelegateMatcher(parentMatcher *matchersv1.Matcher, chil
 		// ensure all sub-routes in the delegated route table match the parent prefix
 		if pathString := glooutils.PathAsString(childMatch); !strings.HasPrefix(pathString, parentMatcher.GetPrefix()) {
 			return InvalidRouteTableForDelegatePrefixErr(parentMatcher.GetPrefix(), pathString)
+		}
+
+		// ensure all sub-routes matches in the delegated route match the parent case sensitivity
+		if !proto.Equal(childMatch.GetCaseSensitive(), parentMatcher.GetCaseSensitive()) {
+			return InvalidRouteTableForDelegateCaseSensitivePathMatchErr(childMatch.CaseSensitive, parentMatcher.CaseSensitive)
 		}
 
 		// ensure all headers in the delegated route table are a superset of those from the parent route resource
