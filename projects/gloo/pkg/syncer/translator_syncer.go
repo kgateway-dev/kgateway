@@ -3,8 +3,10 @@ package syncer
 import (
 	"context"
 
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
+	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/hashicorp/go-multierror"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -29,7 +31,7 @@ type translatorSyncer struct {
 }
 
 type TranslatorSyncerExtensionParams struct {
-	Reporter                 reporter.Reporter
+	Reports                  reporter.ResourceReports
 	RateLimitServiceSettings ratelimit.ServiceSettings
 }
 
@@ -59,8 +61,9 @@ func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.S
 }
 
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
+	logger := contextutils.LoggerFrom(ctx)
 	var multiErr *multierror.Error
-	err := s.syncEnvoy(ctx, snap)
+	reports, err := s.syncEnvoy(ctx, snap)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
@@ -72,5 +75,11 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 		}
 		s.extensionKeys[nodeID] = struct{}{}
 	}
+
+	if err := s.reporter.WriteReports(ctx, reports, nil); err != nil {
+		logger.Debugf("Failed writing report for proxies: %v", err)
+		multiErr = multierror.Append(multiErr, eris.Wrapf(err, "writing reports"))
+	}
+
 	return multiErr.ErrorOrNil()
 }
