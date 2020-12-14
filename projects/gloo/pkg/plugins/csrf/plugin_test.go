@@ -199,6 +199,7 @@ var _ = Describe("plugin", func() {
 			Options: &v1.RouteOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
 					FilterEnabled:     &apiFilter,
+					ShadowEnabled:     &gloo_config_core.RuntimeFractionalPercent{},
 					AdditionalOrigins: apiAdditionalOrigins,
 				},
 			},
@@ -219,6 +220,7 @@ var _ = Describe("plugin", func() {
 			Options: &v1.VirtualHostOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
 					FilterEnabled:     &apiFilter,
+					ShadowEnabled:     &gloo_config_core.RuntimeFractionalPercent{},
 					AdditionalOrigins: apiAdditionalOrigins,
 				},
 			},
@@ -239,6 +241,7 @@ var _ = Describe("plugin", func() {
 			Options: &v1.WeightedDestinationOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
 					FilterEnabled:     &apiFilter,
+					ShadowEnabled:     &gloo_config_core.RuntimeFractionalPercent{},
 					AdditionalOrigins: apiAdditionalOrigins,
 				},
 			},
