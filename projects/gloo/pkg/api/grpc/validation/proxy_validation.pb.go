@@ -8,14 +8,15 @@ package validation
 
 import (
 	context "context"
+	reflect "reflect"
+	sync "sync"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
