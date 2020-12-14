@@ -33,8 +33,8 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/pr
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto";
-import "gloo/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto";
@@ -120,7 +120,7 @@ message HttpListenerOptions {
     // where policies will be evaluated and tracked, but not enforced and add additional source origins
     // that will be allowed in addition to the destination origin.
     // For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/csrf/v2/csrf.proto
-    envoy.extensions.filters.http.csrf.v3.CsrfPolicy csrf = 15;
+    .solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy csrf = 15;
 
     // Exposed envoy config for the gRPC to JSON transcoding filter,
     // envoy.filters.http.grpc_json_transcoder.
@@ -316,7 +316,7 @@ message RouteOptions {
     // where policies will be evaluated and tracked, but not enforced and add additional source origins
     // that will be allowed in addition to the destination origin.
     // For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/csrf/v2/csrf.proto
-    envoy.extensions.filters.http.csrf.v3.CsrfPolicy csrf = 24;
+    .solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy csrf = 24;
 
     // Early transformations stage. These transformations run before most other options are processed.
     // If the `regular` field is set in here, the `transformations` field is ignored.
@@ -364,7 +364,7 @@ message WeightedDestinationOptions {
     // where policies will be evaluated and tracked, but not enforced and add additional source origins
     // that will be allowed in addition to the destination origin.
     // For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/csrf/v2/csrf.proto
-    envoy.extensions.filters.http.csrf.v3.CsrfPolicy csrf = 7;
+    .solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy csrf = 7;
 
     // Early transformations stage. These transformations run before most other options are processed.
     // If the `regular` field is set in here, the `transformations` field is ignored.

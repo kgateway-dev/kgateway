@@ -71,8 +71,8 @@ Optional, feature-specific configuration that lives on http listeners
 "ratelimitServer": .ratelimit.options.gloo.solo.io.Settings
 "gzip": .solo.io.envoy.config.filter.http.gzip.v2.Gzip
 "proxyLatency": .envoy.config.filter.http.proxylatency.v2.ProxyLatency
-"buffer": .envoy.extensions.filters.http.buffer.v3.Buffer
-"csrf": .envoy.extensions.filters.http.csrf.v3.CsrfPolicy
+"buffer": .solo.io.envoy.extensions.filters.http.buffer.v3.Buffer
+"csrf": .solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy
 "grpcJsonTranscoder": .grpc_json.options.gloo.solo.io.GrpcJsonTranscoder
 "sanitizeClusterHeader": .google.protobuf.BoolValue
 

@@ -20,6 +20,8 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("plugin", func() {
@@ -63,7 +65,7 @@ var _ = Describe("plugin", func() {
 		}
 	})
 
-	It("copies the csrf config from the listener to the filter with AdditionalOrigins set", func() {
+	FIt("copies the csrf config from the listener to the filter with AdditionalOrigins set", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
@@ -75,24 +77,25 @@ var _ = Describe("plugin", func() {
 		})
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
-			{
-				HttpFilter: &envoyhcm.HttpFilter{
-					Name: FilterName,
-					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
-							FilterEnabled:     nil,
-							ShadowEnabled:     nil,
-							AdditionalOrigins: envoyAdditionalOrigins,
-						}),
-					},
-				},
-				Stage: plugins.FilterStage{
-					RelativeTo: 8,
-					Weight:     0,
+		expectedStageFilter := plugins.StagedHttpFilter{
+			HttpFilter: &envoyhcm.HttpFilter{
+				Name: FilterName,
+				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
+					TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
+						FilterEnabled:     nil,
+						ShadowEnabled:     nil,
+						AdditionalOrigins: envoyAdditionalOrigins,
+					}),
 				},
 			},
-		}))
+			Stage: plugins.FilterStage{
+				RelativeTo: 8,
+				Weight:     0,
+			},
+		}
+
+		Expect(filters[0].HttpFilter).To(matchers.MatchProto(expectedStageFilter.HttpFilter))
+		Expect(filters[0].Stage).To(Equal(expectedStageFilter.Stage))
 	})
 
 	It("copies the csrf config from the listener to the filter with filters enabled", func() {
@@ -188,9 +191,6 @@ var _ = Describe("plugin", func() {
 	})
 
 	It("allows route specific csrf config", func() {
-		envoyFilter.XXX_sizecache = 0
-		envoyFilter.DefaultValue.XXX_sizecache = 0
-
 		p := NewPlugin()
 		out := &envoy_config_route.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{

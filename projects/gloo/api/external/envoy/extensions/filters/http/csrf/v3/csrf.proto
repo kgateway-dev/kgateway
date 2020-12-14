@@ -2,13 +2,13 @@
 
 syntax = "proto3";
 
-package envoy.extensions.filters.http.csrf.v3;
+package solo.io.envoy.extensions.filters.http.csrf.v3;
 
 // manually updated this line:
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3";
 
-import "envoy/config/core/v3/base.proto";
-import "envoy/type/matcher/v3/string.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto";
 
 import "udpa/annotations/status.proto";
 import "udpa/annotations/versioning.proto";
@@ -31,7 +31,7 @@ option (extproto.hash_all) = true;
 // CSRF filter config.
 message CsrfPolicy {
   option (udpa.annotations.versioning).previous_message_type =
-      "envoy.config.filter.http.csrf.v2.CsrfPolicy";
+      ".solo.io.envoy.config.filter.http.csrf.v2.CsrfPolicy";
 
   // Specifies the % of requests for which the CSRF filter is enabled.
   //
