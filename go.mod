@@ -73,7 +73,7 @@ require (
 	github.com/solo-io/k8s-utils v0.0.3
 	github.com/solo-io/protoc-gen-ext v0.0.13
 	github.com/solo-io/reporting-client v0.2.0
-	github.com/solo-io/skv2 v0.14.1
+	github.com/solo-io/skv2 v0.15.1
 	github.com/solo-io/solo-apis v0.0.0-20201208172621-1ef725df2bff
 	github.com/solo-io/solo-kit v0.16.2
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
@@ -124,6 +124,7 @@ replace (
 	github.com/census-instrumentation/opencensus-proto => github.com/census-instrumentation/opencensus-proto v0.2.0 // indirect
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 	// Required for proper serialization of CRDs
+	github.com/golang/protobuf => github.com/golang/protobuf v1.4.3
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
 
 	//the following block of replacements are needed to have locked these packages to before versions they switched to using proto4
