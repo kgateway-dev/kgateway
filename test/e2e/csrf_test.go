@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 	//envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	//envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	gloo_config_core "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
@@ -15,8 +16,6 @@ import (
 
 	csrf "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-
-	"github.com/solo-io/gloo/pkg/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -43,8 +42,8 @@ type csrfTestData struct {
 var _ = Describe("CSRF Test", func() {
 
 	const (
-		filter_string         = "\"numerator\": 1"
-		extact_matcher_string = "\"exact\": \"test\""
+		filter_string         = "\"numerator\": 100"
+		extact_matcher_string = "\"exact\": \"allowThisOne.solo.io\""
 		matcher_string        = "\"ignore_case\": true"
 	)
 
@@ -52,7 +51,7 @@ var _ = Describe("CSRF Test", func() {
 
 	apiFilter := &gloo_config_core.RuntimeFractionalPercent{
 		DefaultValue: &glootype.FractionalPercent{
-			Numerator:   uint32(1),
+			Numerator:   uint32(100),
 			Denominator: glootype.FractionalPercent_HUNDRED,
 		},
 	}
@@ -60,10 +59,9 @@ var _ = Describe("CSRF Test", func() {
 	apiAdditionalOrigins := []*gloo_type_matcher.StringMatcher{
 		{
 			MatchPattern: &gloo_type_matcher.StringMatcher_Exact{
-				Exact: "test",
+				Exact: "allowThisOne.solo.io",
 			},
 			IgnoreCase:    true,
-			XXX_sizecache: 8,
 		},
 	}
 
@@ -99,9 +97,11 @@ var _ = Describe("CSRF Test", func() {
 		})
 
 		It("should run with csrf filter", func() {
+			allowedOrigins := []string{"allowThisOne.solo.io"}
+			allowedMethods := []string{"GET", "POST"}
 			csrf := &csrf.CsrfPolicy{
 				FilterEnabled:     apiFilter,
-				ShadowEnabled:     nil,
+				ShadowEnabled:     &gloo_config_core.RuntimeFractionalPercent{},
 				AdditionalOrigins: apiAdditionalOrigins,
 			}
 
@@ -112,12 +112,25 @@ var _ = Describe("CSRF Test", func() {
 			Expect(envoyConfig).To(MatchRegexp(filter_string))
 			Expect(envoyConfig).To(MatchRegexp(extact_matcher_string))
 			Expect(envoyConfig).To(MatchRegexp(matcher_string))
+
+			print(envoyConfig)
+
+			By("Request with allowed origin")
+			mockOrigin := allowedOrigins[0]
+			h := td.per.getOptions(mockOrigin, "GET")
+			v, ok := h[requestACHMethods]
+			Expect(ok).To(BeTrue())
+			Expect(strings.Split(v[0], ",")).Should(ConsistOf(allowedMethods))
+			v, ok = h[requestACHOrigin]
+			Expect(ok).To(BeTrue())
+			Expect(len(v)).To(Equal(1))
+			Expect(v[0]).To(Equal(mockOrigin))
 		})
 	})
 
 })
 
-func (td *csrfTestData) getGlooCorsProxy(csrf *csrf.CsrfPolicy) (*gloov1.Proxy, error) {
+func (td *csrfTestData) getGlooCsrfProxy(csrf *csrf.CsrfPolicy) (*gloov1.Proxy, error) {
 	readProxy, err := td.testClients.ProxyClient.Read("default", "proxy", clients.ReadOpts{})
 	if err != nil {
 		return nil, err
@@ -127,7 +140,7 @@ func (td *csrfTestData) getGlooCorsProxy(csrf *csrf.CsrfPolicy) (*gloov1.Proxy, 
 
 func (ptd *perCsrfTestData) getGlooCsrfProxyWithVersion(resourceVersion string, csrf *csrf.CsrfPolicy) *gloov1.Proxy {
 	return &gloov1.Proxy{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:            "proxy",
 			Namespace:       "default",
 			ResourceVersion: resourceVersion,
@@ -147,7 +160,7 @@ func (ptd *perCsrfTestData) getGlooCsrfProxyWithVersion(resourceVersion string, 
 									Destination: &gloov1.RouteAction_Single{
 										Single: &gloov1.Destination{
 											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: utils.ResourceRefPtr(ptd.up.Metadata.Ref()),
+												Upstream: ptd.up.Metadata.Ref(),
 											},
 										},
 									},
@@ -177,7 +190,7 @@ func (td *csrfTestData) setupInitialProxy(csrf *csrf.CsrfPolicy) {
 	err := td.setupProxy(proxy)
 	// Call with retries to ensure proxy is available
 	Eventually(func() error {
-		proxy, err := td.getGlooCorsProxy(csrf)
+		proxy, err := td.getGlooCsrfProxy(csrf)
 		if err != nil {
 			return err
 		}
