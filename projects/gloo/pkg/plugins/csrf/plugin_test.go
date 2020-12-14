@@ -78,7 +78,7 @@ var _ = Describe("plugin", func() {
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			{
 				HttpFilter: &envoyhcm.HttpFilter{
-					Name: "envoy.filters.http.csrf",
+					Name: FilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
 							FilterEnabled:     nil,
@@ -109,7 +109,7 @@ var _ = Describe("plugin", func() {
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			{
 				HttpFilter: &envoyhcm.HttpFilter{
-					Name: "envoy.filters.http.csrf",
+					Name: FilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
 							FilterEnabled:     &envoyFilter,
@@ -139,7 +139,7 @@ var _ = Describe("plugin", func() {
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			{
 				HttpFilter: &envoyhcm.HttpFilter{
-					Name: "envoy.filters.http.csrf",
+					Name: FilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
 							ShadowEnabled:     &envoyFilter,
@@ -170,7 +170,7 @@ var _ = Describe("plugin", func() {
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			{
 				HttpFilter: &envoyhcm.HttpFilter{
-					Name: "envoy.filters.http.csrf",
+					Name: FilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
 							FilterEnabled:     &envoyFilter,
@@ -203,7 +203,7 @@ var _ = Describe("plugin", func() {
 		}, out)
 
 		var cfg envoycsrf.CsrfPolicy
-		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()["envoy.filters.http.csrf"], &cfg)
+		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[FilterName], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetAdditionalOrigins()).To(Equal(envoyAdditionalOrigins))
@@ -223,7 +223,7 @@ var _ = Describe("plugin", func() {
 		}, out)
 
 		var cfg envoycsrf.CsrfPolicy
-		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()["envoy.filters.http.csrf"], &cfg)
+		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[FilterName], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetAdditionalOrigins()).To(Equal(envoyAdditionalOrigins))
@@ -243,7 +243,7 @@ var _ = Describe("plugin", func() {
 		}, out)
 
 		var cfg envoycsrf.CsrfPolicy
-		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()["envoy.filters.http.csrf"], &cfg)
+		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[FilterName], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetAdditionalOrigins()).To(Equal(envoyAdditionalOrigins))

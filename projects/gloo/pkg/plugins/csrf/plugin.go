@@ -64,7 +64,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		if err != nil {
 			return err
 		}
-		return pluginutils.SetRoutePerFilterConfig(out, "envoy.filters.http.csrf", config)
+		return pluginutils.SetRoutePerFilterConfig(out, FilterName, config)
 	}
 
 	return nil
@@ -85,7 +85,7 @@ func (p *plugin) ProcessVirtualHost(
 		if err != nil {
 			return err
 		}
-		return pluginutils.SetVhostPerFilterConfig(out, "envoy.filters.http.csrf", config)
+		return pluginutils.SetVhostPerFilterConfig(out, FilterName, config)
 	}
 
 	return nil
@@ -106,7 +106,7 @@ func (p *plugin) ProcessWeightedDestination(
 		if err != nil {
 			return err
 		}
-		return pluginutils.SetWeightedClusterPerFilterConfig(out, "envoy.filters.http.csrf", config)
+		return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, config)
 	}
 
 	return nil
