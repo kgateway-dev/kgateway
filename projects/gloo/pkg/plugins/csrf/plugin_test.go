@@ -69,8 +69,6 @@ var _ = Describe("plugin", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
-					FilterEnabled:     nil,
-					ShadowEnabled:     nil,
 					AdditionalOrigins: apiAdditionalOrigins,
 				},
 			},
@@ -82,8 +80,6 @@ var _ = Describe("plugin", func() {
 				Name: FilterName,
 				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 					TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
-						FilterEnabled:     nil,
-						ShadowEnabled:     nil,
 						AdditionalOrigins: envoyAdditionalOrigins,
 					}),
 				},
