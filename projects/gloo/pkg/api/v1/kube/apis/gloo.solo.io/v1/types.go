@@ -55,6 +55,7 @@ func (o *Artifact) UnmarshalJSON(data []byte) error {
 	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
 		return err
 	}
+	spec.Metadata = nil
 	*o = Artifact{
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
@@ -111,6 +112,7 @@ func (o *Endpoint) UnmarshalJSON(data []byte) error {
 	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
 		return err
 	}
+	spec.Metadata = nil
 	*o = Endpoint{
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
@@ -169,11 +171,15 @@ func (o *Proxy) UnmarshalJSON(data []byte) error {
 	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
 		return err
 	}
+	spec.Metadata = nil
 	*o = Proxy{
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
-		Status:     spec.Status,
+	}
+	if spec.Status != nil {
+		o.Status = *spec.Status
+		o.Spec.Status = nil
 	}
 
 	return nil
@@ -226,6 +232,7 @@ func (o *Secret) UnmarshalJSON(data []byte) error {
 	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
 		return err
 	}
+	spec.Metadata = nil
 	*o = Secret{
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
@@ -284,11 +291,15 @@ func (o *Settings) UnmarshalJSON(data []byte) error {
 	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
 		return err
 	}
+	spec.Metadata = nil
 	*o = Settings{
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
-		Status:     spec.Status,
+	}
+	if spec.Status != nil {
+		o.Status = *spec.Status
+		o.Spec.Status = nil
 	}
 
 	return nil
@@ -343,11 +354,15 @@ func (o *Upstream) UnmarshalJSON(data []byte) error {
 	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
 		return err
 	}
+	spec.Metadata = nil
 	*o = Upstream{
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
-		Status:     spec.Status,
+	}
+	if spec.Status != nil {
+		o.Status = *spec.Status
+		o.Spec.Status = nil
 	}
 
 	return nil
@@ -402,11 +417,15 @@ func (o *UpstreamGroup) UnmarshalJSON(data []byte) error {
 	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
 		return err
 	}
+	spec.Metadata = nil
 	*o = UpstreamGroup{
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
-		Status:     spec.Status,
+	}
+	if spec.Status != nil {
+		o.Status = *spec.Status
+		o.Spec.Status = nil
 	}
 
 	return nil

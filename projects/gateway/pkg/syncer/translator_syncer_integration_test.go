@@ -68,7 +68,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		ts = NewTranslatorSyncer(ctx, "gloo-system", proxyClient, proxyReconciler, rpt, xlator)
 
 		vs = &v1.VirtualService{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "name",
 				Namespace: "gloo-system",
 			},
@@ -95,7 +95,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		gw := &v1.Gateway{
 			GatewayType: &v1.Gateway_HttpGateway{
 				HttpGateway: &v1.HttpGateway{
-					VirtualServices: []core.ResourceRef{
+					VirtualServices: []*core.ResourceRef{
 						vs.Metadata.Ref(),
 					},
 				},
@@ -103,7 +103,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			BindAddress: "::",
 			BindPort:    8080,
 			ProxyNames:  []string{"gateway-proxy"},
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "gateway-proxy",
 				Namespace: "gloo-system",
 			},
@@ -133,7 +133,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			if err != nil {
 				return core.Status_Pending, err
 			}
-			subresouce := newvs.GetStatus().SubresourceStatuses
+			subresouce := newvs.GetStatus().GetSubresourceStatuses()
 			if subresouce == nil {
 				return core.Status_Pending, fmt.Errorf("no status")
 			}
@@ -150,14 +150,14 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			if err != nil {
 				return core.Status_Pending, err
 			}
-			return proxy.Status.State, nil
+			return proxy.GetStatus().GetState(), nil
 		})
 	}
 
 	AcceptProxy := func() {
 		proxy, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		proxy.Status = core.Status{State: core.Status_Accepted}
+		proxy.Status = &core.Status{State: core.Status_Accepted}
 		_, err = proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
 	}

@@ -16,18 +16,18 @@ import (
 
 func NewGateway(namespace, name string) *Gateway {
 	gateway := &Gateway{}
-	gateway.SetMetadata(core.Metadata{
+	gateway.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
 	return gateway
 }
 
-func (r *Gateway) SetMetadata(meta core.Metadata) {
+func (r *Gateway) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 
-func (r *Gateway) SetStatus(status core.Status) {
+func (r *Gateway) SetStatus(status *core.Status) {
 	r.Status = status
 }
 

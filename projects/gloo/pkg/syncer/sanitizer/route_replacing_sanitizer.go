@@ -11,10 +11,10 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -127,7 +127,7 @@ func makeFallbackListenerAndCluster(
 
 	fallbackCluster := &envoy_config_cluster_v3.Cluster{
 		Name:           fallbackClusterName,
-		ConnectTimeout: gogoutils.DurationStdToProto(&translator.ClusterConnectionTimeout),
+		ConnectTimeout: ptypes.DurationProto(translator.ClusterConnectionTimeout),
 		LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
 			ClusterName: fallbackClusterName,
 			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{{

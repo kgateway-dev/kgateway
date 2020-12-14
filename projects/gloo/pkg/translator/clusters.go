@@ -4,20 +4,21 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"go.opencensus.io/trace"
 )
 
@@ -96,7 +97,7 @@ func (t *translatorInstance) initializeCluster(
 		HealthChecks:     hcConfig,
 		OutlierDetection: detectCfg,
 		// this field can be overridden by plugins
-		ConnectTimeout:       gogoutils.DurationStdToProto(&ClusterConnectionTimeout),
+		ConnectTimeout:       ptypes.DurationProto(ClusterConnectionTimeout),
 		Http2ProtocolOptions: getHttp2ptions(upstream),
 	}
 
@@ -120,9 +121,9 @@ func (t *translatorInstance) initializeCluster(
 }
 
 var (
-	DefaultHealthCheckTimeout  = time.Second * 5
-	DefaultHealthCheckInterval = time.Millisecond * 100
-	DefaultThreshold           = &types.UInt32Value{
+	DefaultHealthCheckTimeout  = &duration.Duration{Seconds: 5}
+	DefaultHealthCheckInterval = prototime.DurationToProto(time.Millisecond * 100)
+	DefaultThreshold           = &wrappers.UInt32Value{
 		Value: 5,
 	}
 
@@ -147,7 +148,7 @@ func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*
 		if hc.GetHealthChecker() == nil {
 			return nil, NilFieldError(fmt.Sprintf(fmt.Sprintf("HealthCheck[%d].HealthChecker", i)))
 		}
-		converted, err := gogoutils.ToEnvoyHealthCheck(hc, secrets)
+		converted, err := api_conversion.ToEnvoyHealthCheck(hc, secrets)
 		if err != nil {
 			return nil, err
 		}
@@ -166,7 +167,7 @@ func createOutlierDetectionConfig(upstream *v1.Upstream) (*envoy_config_cluster_
 	if upstream.GetOutlierDetection().GetInterval() == nil {
 		return nil, NilFieldError(fmt.Sprintf(fmt.Sprintf("OutlierDetection.HealthChecker")))
 	}
-	return gogoutils.ToEnvoyOutlierDetection(upstream.GetOutlierDetection()), nil
+	return api_conversion.ToEnvoyOutlierDetection(upstream.GetOutlierDetection()), nil
 }
 
 func createLbConfig(upstream *v1.Upstream) *envoy_config_cluster_v3.Cluster_LbSubsetConfig {
@@ -214,10 +215,10 @@ func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoy_config_cluster_
 		if cfg != nil {
 			envoyCfg := &envoy_config_cluster_v3.CircuitBreakers{}
 			envoyCfg.Thresholds = []*envoy_config_cluster_v3.CircuitBreakers_Thresholds{{
-				MaxConnections:     gogoutils.UInt32GogoToProto(cfg.GetMaxConnections()),
-				MaxPendingRequests: gogoutils.UInt32GogoToProto(cfg.GetMaxPendingRequests()),
-				MaxRequests:        gogoutils.UInt32GogoToProto(cfg.GetMaxRequests()),
-				MaxRetries:         gogoutils.UInt32GogoToProto(cfg.GetMaxRetries()),
+				MaxConnections:     cfg.GetMaxConnections(),
+				MaxPendingRequests: cfg.GetMaxPendingRequests(),
+				MaxRequests:        cfg.GetMaxRequests(),
+				MaxRetries:         cfg.GetMaxRetries(),
 			}}
 			return envoyCfg
 		}
@@ -237,11 +238,11 @@ func getHttp2ptions(us *v1.Upstream) *envoy_config_core_v3.Http2ProtocolOptions 
 // else it adds an error to the upstream, so that invalid route replacement can be used.
 func validateUpstreamLambdaFunctions(proxy *v1.Proxy, upstreams v1.UpstreamList, upstreamGroups v1.UpstreamGroupList, reports reporter.ResourceReports) {
 	// Create a set of the lambda functions in each upstream
-	upstreamLambdas := make(map[core.ResourceRef]map[string]bool)
+	upstreamLambdas := make(map[string]map[string]bool)
 	for _, upstream := range upstreams {
 		lambdaFuncs := upstream.GetAws().GetLambdaFunctions()
 		for _, lambda := range lambdaFuncs {
-			upstreamRef := upstream.Metadata.Ref()
+			upstreamRef := UpstreamToClusterName(upstream.Metadata.Ref())
 			if upstreamLambdas[upstreamRef] == nil {
 				upstreamLambdas[upstreamRef] = make(map[string]bool)
 			}
@@ -263,7 +264,13 @@ func validateUpstreamLambdaFunctions(proxy *v1.Proxy, upstreams v1.UpstreamList,
 }
 
 // Validates a route that may have a single or multi upstream destinations to make sure that any lambda upstreams are referencing valid lambdas
-func validateRouteDestinationForValidLambdas(proxy *v1.Proxy, route *v1.Route, upstreamGroups v1.UpstreamGroupList, reports reporter.ResourceReports, upstreamLambdas map[core.ResourceRef]map[string]bool) {
+func validateRouteDestinationForValidLambdas(
+	proxy *v1.Proxy,
+	route *v1.Route,
+	upstreamGroups v1.UpstreamGroupList,
+	reports reporter.ResourceReports,
+	upstreamLambdas map[string]map[string]bool,
+) {
 	// Append destinations to a destination list to process all of them in one go
 	var destinations []*v1.Destination
 
@@ -315,7 +322,7 @@ func validateRouteDestinationForValidLambdas(proxy *v1.Proxy, route *v1.Route, u
 		// Check that route is pointing to current upstream
 		if routeUpstream != nil {
 			// Get the lambda functions that this upstream has
-			lambdaFuncSet := upstreamLambdas[*routeUpstream]
+			lambdaFuncSet := upstreamLambdas[UpstreamToClusterName(routeUpstream)]
 			routeLambda := dest.GetDestinationSpec().GetAws()
 			routeLambdaName := routeLambda.GetLogicalName()
 			// If route is pointing to a lambda that does not exist on this upstream, report error on the upstream

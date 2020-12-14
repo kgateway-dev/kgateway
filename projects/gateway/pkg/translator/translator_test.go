@@ -4,26 +4,23 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/go-utils/testutils"
-
+	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/hashicorp/go-multierror"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
-
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/test/samples"
-
-	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
-
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
+	"github.com/solo-io/gloo/test/samples"
+	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
 const (
@@ -44,14 +41,14 @@ var _ = Describe("Translator", func() {
 			snap = &v1.ApiSnapshot{
 				Gateways: v1.GatewayList{
 					{
-						Metadata: core.Metadata{Namespace: ns, Name: "name"},
+						Metadata: &core.Metadata{Namespace: ns, Name: "name"},
 						GatewayType: &v1.Gateway_HttpGateway{
 							HttpGateway: &v1.HttpGateway{},
 						},
 						BindPort: 2,
 					},
 					{
-						Metadata: core.Metadata{Namespace: ns2, Name: "name2"},
+						Metadata: &core.Metadata{Namespace: ns2, Name: "name2"},
 						GatewayType: &v1.Gateway_HttpGateway{
 							HttpGateway: &v1.HttpGateway{},
 						},
@@ -60,7 +57,7 @@ var _ = Describe("Translator", func() {
 				},
 				VirtualServices: v1.VirtualServiceList{
 					{
-						Metadata: core.Metadata{Namespace: ns, Name: "name1"},
+						Metadata: &core.Metadata{Namespace: ns, Name: "name1"},
 						VirtualHost: &v1.VirtualHost{
 							Domains: []string{"d1.com"},
 							Routes: []*v1.Route{
@@ -80,7 +77,7 @@ var _ = Describe("Translator", func() {
 						},
 					},
 					{
-						Metadata: core.Metadata{Namespace: ns, Name: "name2"},
+						Metadata: &core.Metadata{Namespace: ns, Name: "name2"},
 						VirtualHost: &v1.VirtualHost{
 							Domains: []string{"d2.com"},
 							Routes: []*v1.Route{
@@ -153,7 +150,7 @@ var _ = Describe("Translator", func() {
 			snap.Gateways = append(
 				snap.Gateways,
 				&v1.Gateway{
-					Metadata: core.Metadata{Namespace: ns, Name: "name2"},
+					Metadata: &core.Metadata{Namespace: ns, Name: "name2"},
 					GatewayType: &v1.Gateway_TcpGateway{
 						TcpGateway: &v1.TcpGateway{},
 					},
@@ -172,7 +169,7 @@ var _ = Describe("Translator", func() {
 			snap.Gateways = append(
 				snap.Gateways,
 				&v1.Gateway{
-					Metadata: core.Metadata{Namespace: ns, Name: "name2"},
+					Metadata: &core.Metadata{Namespace: ns, Name: "name2"},
 					GatewayType: &v1.Gateway_HttpGateway{
 						HttpGateway: &v1.HttpGateway{},
 					},
@@ -189,7 +186,7 @@ var _ = Describe("Translator", func() {
 
 		It("should error on two gateways with the same port in the same namespace", func() {
 			dupeGateway := v1.Gateway{
-				Metadata: core.Metadata{Namespace: ns, Name: "name2"},
+				Metadata: &core.Metadata{Namespace: ns, Name: "name2"},
 				BindPort: 2,
 			}
 			snap.Gateways = append(snap.Gateways, &dupeGateway)
@@ -236,14 +233,14 @@ var _ = Describe("Translator", func() {
 				snap = &v1.ApiSnapshot{
 					Gateways: v1.GatewayList{
 						{
-							Metadata: core.Metadata{Namespace: ns, Name: "name"},
+							Metadata: &core.Metadata{Namespace: ns, Name: "name"},
 							GatewayType: &v1.Gateway_HttpGateway{
 								HttpGateway: &v1.HttpGateway{},
 							},
 							BindPort: 2,
 						},
 						{
-							Metadata: core.Metadata{Namespace: ns2, Name: "name2"},
+							Metadata: &core.Metadata{Namespace: ns2, Name: "name2"},
 							GatewayType: &v1.Gateway_HttpGateway{
 								HttpGateway: &v1.HttpGateway{},
 							},
@@ -252,7 +249,7 @@ var _ = Describe("Translator", func() {
 					},
 					VirtualServices: v1.VirtualServiceList{
 						{
-							Metadata: core.Metadata{Namespace: ns, Name: "name1"},
+							Metadata: &core.Metadata{Namespace: ns, Name: "name1"},
 							VirtualHost: &v1.VirtualHost{
 								Domains: []string{"d1.com"},
 								Routes: []*v1.Route{
@@ -272,7 +269,7 @@ var _ = Describe("Translator", func() {
 							},
 						},
 						{
-							Metadata: core.Metadata{Namespace: ns, Name: "name2"},
+							Metadata: &core.Metadata{Namespace: ns, Name: "name2"},
 							VirtualHost: &v1.VirtualHost{
 								Domains: []string{"d2.com"},
 								Routes: []*v1.Route{
@@ -321,14 +318,14 @@ var _ = Describe("Translator", func() {
 				snap = &v1.ApiSnapshot{
 					Gateways: v1.GatewayList{
 						{
-							Metadata: core.Metadata{Namespace: ns, Name: "name"},
+							Metadata: &core.Metadata{Namespace: ns, Name: "name"},
 							GatewayType: &v1.Gateway_HttpGateway{
 								HttpGateway: &v1.HttpGateway{},
 							},
 							BindPort: 2,
 						},
 						{
-							Metadata: core.Metadata{Namespace: ns2, Name: "name2"},
+							Metadata: &core.Metadata{Namespace: ns2, Name: "name2"},
 							GatewayType: &v1.Gateway_HttpGateway{
 								HttpGateway: &v1.HttpGateway{},
 							},
@@ -337,7 +334,7 @@ var _ = Describe("Translator", func() {
 					},
 					VirtualServices: v1.VirtualServiceList{
 						{
-							Metadata: core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
+							Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
 							VirtualHost: &v1.VirtualHost{
 								Domains: []string{"d1.com"},
 								Routes: []*v1.Route{
@@ -357,7 +354,7 @@ var _ = Describe("Translator", func() {
 							},
 						},
 						{
-							Metadata: core.Metadata{Namespace: ns, Name: "name2"},
+							Metadata: &core.Metadata{Namespace: ns, Name: "name2"},
 							VirtualHost: &v1.VirtualHost{
 								Domains: []string{"d2.com"},
 								Routes: []*v1.Route{
@@ -377,7 +374,7 @@ var _ = Describe("Translator", func() {
 							},
 						},
 						{
-							Metadata: core.Metadata{Namespace: ns + "-other-namespace", Name: "name3", Labels: labelSet},
+							Metadata: &core.Metadata{Namespace: ns + "-other-namespace", Name: "name3", Labels: labelSet},
 							VirtualHost: &v1.VirtualHost{
 								Domains: []string{"d3.com"},
 								Routes: []*v1.Route{
@@ -437,7 +434,7 @@ var _ = Describe("Translator", func() {
 				It("should translate a gateway to only have its virtual services", func() {
 					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
 						HttpGateway: &v1.HttpGateway{
-							VirtualServices: []core.ResourceRef{snap.VirtualServices[0].Metadata.Ref()},
+							VirtualServices: []*core.ResourceRef{snap.VirtualServices[0].Metadata.Ref()},
 						},
 					}
 
@@ -453,7 +450,7 @@ var _ = Describe("Translator", func() {
 				It("can include a virtual service from some other namespace", func() {
 					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
 						HttpGateway: &v1.HttpGateway{
-							VirtualServices: []core.ResourceRef{snap.VirtualServices[2].Metadata.Ref()},
+							VirtualServices: []*core.ResourceRef{snap.VirtualServices[2].Metadata.Ref()},
 						},
 					}
 
@@ -597,21 +594,21 @@ var _ = Describe("Translator", func() {
 
 		Context("using RouteTables and delegation", func() {
 			Context("valid configuration", func() {
-				dur := time.Minute
+				dur := prototime.DurationToProto(time.Minute)
 
-				rootLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: &types.StringValue{Value: "root route plugin"}}
-				midLevelRoutePlugins := &gloov1.RouteOptions{Timeout: &dur}
-				leafLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: &types.StringValue{Value: "leaf level plugin"}}
+				rootLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: &wrappers.StringValue{Value: "root route plugin"}}
+				midLevelRoutePlugins := &gloov1.RouteOptions{Timeout: dur}
+				leafLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: &wrappers.StringValue{Value: "leaf level plugin"}}
 
-				mergedMidLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: rootLevelRoutePlugins.PrefixRewrite, Timeout: &dur}
-				mergedLeafLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: &types.StringValue{Value: "leaf level plugin"}, Timeout: midLevelRoutePlugins.Timeout}
+				mergedMidLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: rootLevelRoutePlugins.PrefixRewrite, Timeout: dur}
+				mergedLeafLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: &wrappers.StringValue{Value: "leaf level plugin"}, Timeout: midLevelRoutePlugins.Timeout}
 
 				BeforeEach(func() {
 					translator = NewTranslator([]ListenerFactory{&HttpTranslator{}}, Opts{})
 					snap = &v1.ApiSnapshot{
 						Gateways: v1.GatewayList{
 							{
-								Metadata: core.Metadata{Namespace: ns, Name: "name"},
+								Metadata: &core.Metadata{Namespace: ns, Name: "name"},
 								GatewayType: &v1.Gateway_HttpGateway{
 									HttpGateway: &v1.HttpGateway{},
 								},
@@ -620,7 +617,7 @@ var _ = Describe("Translator", func() {
 						},
 						VirtualServices: v1.VirtualServiceList{
 							{
-								Metadata: core.Metadata{Namespace: ns, Name: "name1"},
+								Metadata: &core.Metadata{Namespace: ns, Name: "name1"},
 								VirtualHost: &v1.VirtualHost{
 									Domains: []string{"d1.com"},
 									Routes: []*v1.Route{
@@ -647,7 +644,7 @@ var _ = Describe("Translator", func() {
 								},
 							},
 							{
-								Metadata: core.Metadata{Namespace: ns, Name: "name2"},
+								Metadata: &core.Metadata{Namespace: ns, Name: "name2"},
 								VirtualHost: &v1.VirtualHost{
 									Domains: []string{"d2.com"},
 									Routes: []*v1.Route{
@@ -674,7 +671,7 @@ var _ = Describe("Translator", func() {
 						},
 						RouteTables: []*v1.RouteTable{
 							{
-								Metadata: core.Metadata{
+								Metadata: &core.Metadata{
 									Name:      "delegate-1",
 									Namespace: ns,
 								},
@@ -722,7 +719,7 @@ var _ = Describe("Translator", func() {
 								},
 							},
 							{
-								Metadata: core.Metadata{
+								Metadata: &core.Metadata{
 									Name:      "delegate-2",
 									Namespace: ns,
 								},
@@ -774,7 +771,7 @@ var _ = Describe("Translator", func() {
 								},
 							},
 							{
-								Metadata: core.Metadata{
+								Metadata: &core.Metadata{
 									Name:      "delegate-3",
 									Namespace: ns,
 								},
@@ -976,7 +973,7 @@ var _ = Describe("Translator", func() {
 					snap = &v1.ApiSnapshot{
 						Gateways: v1.GatewayList{
 							{
-								Metadata: core.Metadata{Namespace: ns, Name: "name"},
+								Metadata: &core.Metadata{Namespace: ns, Name: "name"},
 								GatewayType: &v1.Gateway_HttpGateway{
 									HttpGateway: &v1.HttpGateway{},
 								},
@@ -985,7 +982,7 @@ var _ = Describe("Translator", func() {
 						},
 						VirtualServices: v1.VirtualServiceList{
 							{
-								Metadata: core.Metadata{Namespace: ns, Name: "has-a-cycle"},
+								Metadata: &core.Metadata{Namespace: ns, Name: "has-a-cycle"},
 								VirtualHost: &v1.VirtualHost{
 									Domains: []string{"d1.com"},
 									Routes: []*v1.Route{
@@ -1007,7 +1004,7 @@ var _ = Describe("Translator", func() {
 						},
 						RouteTables: []*v1.RouteTable{
 							{
-								Metadata: core.Metadata{
+								Metadata: &core.Metadata{
 									Name:      "delegate-1",
 									Namespace: ns,
 								},
@@ -1027,7 +1024,7 @@ var _ = Describe("Translator", func() {
 								},
 							},
 							{
-								Metadata: core.Metadata{
+								Metadata: &core.Metadata{
 									Name:      "delegate-2",
 									Namespace: ns,
 								},
@@ -1063,7 +1060,7 @@ var _ = Describe("Translator", func() {
 	Context("tcp", func() {
 		var (
 			factory     *TcpTranslator
-			idleTimeout time.Duration
+			idleTimeout *duration.Duration
 			plugins     *gloov1.TcpListenerOptions
 			tcpHost     *gloov1.TcpHost
 		)
@@ -1071,11 +1068,11 @@ var _ = Describe("Translator", func() {
 			factory = &TcpTranslator{}
 			translator = NewTranslator([]ListenerFactory{factory}, Opts{})
 
-			idleTimeout = 5 * time.Second
+			idleTimeout = prototime.DurationToProto(5 * time.Second)
 			plugins = &gloov1.TcpListenerOptions{
 				TcpProxySettings: &tcp.TcpProxySettings{
-					MaxConnectAttempts: &types.UInt32Value{Value: 10},
-					IdleTimeout:        &idleTimeout,
+					MaxConnectAttempts: &wrappers.UInt32Value{Value: 10},
+					IdleTimeout:        idleTimeout,
 				},
 			}
 			tcpHost = &gloov1.TcpHost{
@@ -1093,7 +1090,7 @@ var _ = Describe("Translator", func() {
 			snap = &v1.ApiSnapshot{
 				Gateways: v1.GatewayList{
 					{
-						Metadata: core.Metadata{Namespace: ns, Name: "name"},
+						Metadata: &core.Metadata{Namespace: ns, Name: "name"},
 						GatewayType: &v1.Gateway_TcpGateway{
 							TcpGateway: &v1.TcpGateway{
 								Options:  plugins,
@@ -1125,7 +1122,7 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 		{
 			Sources: []SourceRef{
 				{
-					ResourceRef: core.ResourceRef{
+					ResourceRef: &core.ResourceRef{
 						Name:      "delegate-1",
 						Namespace: "gloo-system",
 					},
@@ -1133,7 +1130,7 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 					ObservedGeneration: 0,
 				},
 				{
-					ResourceRef: core.ResourceRef{
+					ResourceRef: &core.ResourceRef{
 						Name:      "name1",
 						Namespace: "gloo-system",
 					},
@@ -1145,7 +1142,7 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 		{
 			Sources: []SourceRef{
 				{
-					ResourceRef: core.ResourceRef{
+					ResourceRef: &core.ResourceRef{
 						Name:      "delegate-3",
 						Namespace: "gloo-system",
 					},
@@ -1153,7 +1150,7 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 					ObservedGeneration: 0,
 				},
 				{
-					ResourceRef: core.ResourceRef{
+					ResourceRef: &core.ResourceRef{
 						Name:      "delegate-1",
 						Namespace: "gloo-system",
 					},
@@ -1161,7 +1158,7 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 					ObservedGeneration: 0,
 				},
 				{
-					ResourceRef: core.ResourceRef{
+					ResourceRef: &core.ResourceRef{
 						Name:      "name1",
 						Namespace: "gloo-system",
 					},
@@ -1173,7 +1170,7 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 		{
 			Sources: []SourceRef{
 				{
-					ResourceRef: core.ResourceRef{
+					ResourceRef: &core.ResourceRef{
 						Name:      "delegate-3",
 						Namespace: "gloo-system",
 					},
@@ -1181,7 +1178,7 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 					ObservedGeneration: 0,
 				},
 				{
-					ResourceRef: core.ResourceRef{
+					ResourceRef: &core.ResourceRef{
 						Name:      "delegate-1",
 						Namespace: "gloo-system",
 					},
@@ -1189,7 +1186,7 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 					ObservedGeneration: 0,
 				},
 				{
-					ResourceRef: core.ResourceRef{
+					ResourceRef: &core.ResourceRef{
 						Name:      "name1",
 						Namespace: "gloo-system",
 					},
@@ -1203,7 +1200,7 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 		{
 			Sources: []SourceRef{
 				{
-					ResourceRef: core.ResourceRef{
+					ResourceRef: &core.ResourceRef{
 						Name:      "delegate-2",
 						Namespace: "gloo-system",
 					},
@@ -1211,7 +1208,7 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 					ObservedGeneration: 0,
 				},
 				{
-					ResourceRef: core.ResourceRef{
+					ResourceRef: &core.ResourceRef{
 						Name:      "name2",
 						Namespace: "gloo-system",
 					},
@@ -1223,7 +1220,7 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 		{
 			Sources: []SourceRef{
 				{
-					ResourceRef: core.ResourceRef{
+					ResourceRef: &core.ResourceRef{
 						Name:      "delegate-2",
 						Namespace: "gloo-system",
 					},
@@ -1231,7 +1228,7 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 					ObservedGeneration: 0,
 				},
 				{
-					ResourceRef: core.ResourceRef{
+					ResourceRef: &core.ResourceRef{
 						Name:      "name2",
 						Namespace: "gloo-system",
 					},

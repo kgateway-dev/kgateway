@@ -16,14 +16,14 @@ import (
 
 func NewIngress(namespace, name string) *Ingress {
 	ingress := &Ingress{}
-	ingress.SetMetadata(core.Metadata{
+	ingress.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
 	return ingress
 }
 
-func (r *Ingress) SetMetadata(meta core.Metadata) {
+func (r *Ingress) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 

@@ -15,9 +15,9 @@ var _ = Describe("gateway util unit tests", func() {
 		It("assigns each gateway once to each proxy by their proxyNames", func() {
 
 			gws := v1.GatewayList{
-				{Metadata: core.Metadata{Name: "gw1"}, ProxyNames: nil /*default proxy*/},
-				{Metadata: core.Metadata{Name: "gw2"}, ProxyNames: []string{"proxy1", "proxy2"}},
-				{Metadata: core.Metadata{Name: "gw3"}, ProxyNames: []string{"proxy1", defaults.GatewayProxyName}},
+				{Metadata: &core.Metadata{Name: "gw1"}, ProxyNames: nil /*default proxy*/},
+				{Metadata: &core.Metadata{Name: "gw2"}, ProxyNames: []string{"proxy1", "proxy2"}},
+				{Metadata: &core.Metadata{Name: "gw3"}, ProxyNames: []string{"proxy1", defaults.GatewayProxyName}},
 			}
 
 			gw1, gw2, gw3 := gws[0], gws[1], gws[2]

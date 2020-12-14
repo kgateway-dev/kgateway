@@ -27,7 +27,7 @@ func main() {
 	generateOptions := cmd.GenerateOptions{
 		SkipGenMocks: true,
 		CustomCompileProtos: []string{
-			"projects/gloo/api/grpc",
+			"github.com/solo-io/gloo/projects/gloo/api/grpc",
 		},
 		SkipGeneratedTests: true,
 		// helps to cut down on time spent searching for imports, not strictly necessary

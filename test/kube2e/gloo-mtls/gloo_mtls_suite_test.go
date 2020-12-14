@@ -9,6 +9,9 @@ import (
 	"testing"
 	"time"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -18,10 +21,6 @@ import (
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	errors "github.com/rotisserie/eris"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 

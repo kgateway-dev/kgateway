@@ -57,11 +57,15 @@ func (o *Gateway) UnmarshalJSON(data []byte) error {
 	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
 		return err
 	}
+	spec.Metadata = nil
 	*o = Gateway{
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
-		Status:     spec.Status,
+	}
+	if spec.Status != nil {
+		o.Status = *spec.Status
+		o.Spec.Status = nil
 	}
 
 	return nil
@@ -116,11 +120,15 @@ func (o *RouteTable) UnmarshalJSON(data []byte) error {
 	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
 		return err
 	}
+	spec.Metadata = nil
 	*o = RouteTable{
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
-		Status:     spec.Status,
+	}
+	if spec.Status != nil {
+		o.Status = *spec.Status
+		o.Spec.Status = nil
 	}
 
 	return nil
@@ -175,11 +183,15 @@ func (o *VirtualService) UnmarshalJSON(data []byte) error {
 	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
 		return err
 	}
+	spec.Metadata = nil
 	*o = VirtualService{
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
-		Status:     spec.Status,
+	}
+	if spec.Status != nil {
+		o.Status = *spec.Status
+		o.Spec.Status = nil
 	}
 
 	return nil

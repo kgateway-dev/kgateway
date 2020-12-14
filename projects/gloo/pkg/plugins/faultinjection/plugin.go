@@ -5,8 +5,7 @@ import (
 	envoyfault "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/fault/v3"
 	envoyhttpfault "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/gogo/protobuf/proto"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/golang/protobuf/proto"
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
 
@@ -78,7 +77,7 @@ func toEnvoyDelay(delay *fault.RouteDelay) *envoyfault.FaultDelay {
 	}
 	percentage := common.ToEnvoyPercentage(delay.Percentage)
 	delaySpec := &envoyfault.FaultDelay_FixedDelay{
-		FixedDelay: gogoutils.DurationStdToProto(delay.FixedDelay),
+		FixedDelay: delay.FixedDelay,
 	}
 	return &envoyfault.FaultDelay{
 		Percentage:         percentage,

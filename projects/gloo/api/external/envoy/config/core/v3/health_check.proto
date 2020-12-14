@@ -1,12 +1,12 @@
 syntax = "proto3";
 
-package envoy.config.core.v3;
+package solo.io.envoy.config.core.v3;
 
-import "envoy/config/core/v3/base.proto";
-import "envoy/config/core/v3/event_service_config.proto";
-import "envoy/type/matcher/v3/string.proto";
-import "envoy/type/v3/http.proto";
-import "envoy/type/v3/range.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/event_service_config.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/http.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/range.proto";
 
 import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
@@ -18,7 +18,7 @@ import "udpa/annotations/status.proto";
 import "udpa/annotations/versioning.proto";
 import "validate/validate.proto";
 
-option java_package = "io.envoyproxy.envoy.config.core.v3";
+option java_package = "io.envoyproxy.solo.io.envoy.config.core.v3";
 option java_outer_classname = "HealthCheckProto";
 option java_multiple_files = true;
 option (udpa.annotations.file_status).package_version_status = ACTIVE;
@@ -56,12 +56,12 @@ enum HealthStatus {
 
 // [#next-free-field: 24]
 message HealthCheck {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.HealthCheck";
+  option (udpa.annotations.versioning).previous_message_type = ".solo.io.envoy.api.v2.core.HealthCheck";
 
   // Describes the encoding of the payload bytes in the payload.
   message Payload {
     option (udpa.annotations.versioning).previous_message_type =
-        "envoy.api.v2.core.HealthCheck.Payload";
+        ".solo.io.envoy.api.v2.core.HealthCheck.Payload";
 
     oneof payload {
       option (validate.required) = true;
@@ -77,7 +77,7 @@ message HealthCheck {
   // [#next-free-field: 12]
   message HttpHealthCheck {
     option (udpa.annotations.versioning).previous_message_type =
-        "envoy.api.v2.core.HealthCheck.HttpHealthCheck";
+        ".solo.io.envoy.api.v2.core.HealthCheck.HttpHealthCheck";
 
     reserved 5, 7;
 
@@ -132,7 +132,7 @@ message HealthCheck {
 
   message TcpHealthCheck {
     option (udpa.annotations.versioning).previous_message_type =
-        "envoy.api.v2.core.HealthCheck.TcpHealthCheck";
+        ".solo.io.envoy.api.v2.core.HealthCheck.TcpHealthCheck";
 
     // Empty payloads imply a connect-only health check.
     Payload send = 1;
@@ -145,7 +145,7 @@ message HealthCheck {
 
   message RedisHealthCheck {
     option (udpa.annotations.versioning).previous_message_type =
-        "envoy.api.v2.core.HealthCheck.RedisHealthCheck";
+        ".solo.io.envoy.api.v2.core.HealthCheck.RedisHealthCheck";
 
     // If set, optionally perform ``EXISTS <key>`` instead of ``PING``. A return value
     // from Redis of 0 (does not exist) is considered a passing healthcheck. A return value other
@@ -160,7 +160,7 @@ message HealthCheck {
   // for details.
   message GrpcHealthCheck {
     option (udpa.annotations.versioning).previous_message_type =
-        "envoy.api.v2.core.HealthCheck.GrpcHealthCheck";
+        ".solo.io.envoy.api.v2.core.HealthCheck.GrpcHealthCheck";
 
     // An optional service name parameter which will be sent to gRPC service in
     // `grpc.health.v1.HealthCheckRequest
@@ -180,7 +180,7 @@ message HealthCheck {
   // Custom health check.
   message CustomHealthCheck {
     option (udpa.annotations.versioning).previous_message_type =
-        "envoy.api.v2.core.HealthCheck.CustomHealthCheck";
+        "solo.io.envoy.api.v2.core.HealthCheck.CustomHealthCheck";
 
     reserved 2;
 
@@ -202,7 +202,7 @@ message HealthCheck {
   // This allows overriding the cluster TLS settings, just for health check connections.
   message TlsOptions {
     option (udpa.annotations.versioning).previous_message_type =
-        "envoy.api.v2.core.HealthCheck.TlsOptions";
+        "solo.io.envoy.api.v2.core.HealthCheck.TlsOptions";
 
     // Specifies the ALPN protocols for health check connections. This is useful if the
     // corresponding upstream is using ALPN-based :ref:`FilterChainMatch
@@ -357,5 +357,7 @@ message HealthCheck {
   google.protobuf.Struct transport_socket_match_criteria = 23;
 }
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3";
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
+

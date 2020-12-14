@@ -1,15 +1,15 @@
 syntax = "proto3";
 
-package envoy.type.matcher.v3;
+package solo.io.envoy.type.matcher.v3;
 
-import "envoy/type/matcher/v3/regex.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/regex.proto";
 
 import "envoy/annotations/deprecation.proto";
 import "udpa/annotations/status.proto";
 import "udpa/annotations/versioning.proto";
 import "validate/validate.proto";
 
-option java_package = "io.envoyproxy.envoy.type.matcher.v3";
+option java_package = "io.envoyproxy.solo.io.envoy.type.matcher.v3";
 option java_outer_classname = "StringProto";
 option java_multiple_files = true;
 option (udpa.annotations.file_status).package_version_status = ACTIVE;
@@ -69,5 +69,7 @@ message ListStringMatcher {
   repeated StringMatcher patterns = 1 [(validate.rules).repeated = {min_items: 1}];
 }
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3";
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
+

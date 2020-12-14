@@ -64,14 +64,14 @@ func newEndpointWatcherForUpstreams(kubeFactoryFactory func(ns []string) KubePlu
 }
 
 type edsWatcher struct {
-	upstreams        map[core.ResourceRef]*kubeplugin.UpstreamSpec
+	upstreams        map[*core.ResourceRef]*kubeplugin.UpstreamSpec
 	kubeShareFactory KubePluginSharedFactory
 	kubeCoreCache    corecache.KubeCoreCache
 	namespaces       []string
 }
 
 func newEndpointsWatcher(kubeCoreCache corecache.KubeCoreCache, namespaces []string, kubeShareFactory KubePluginSharedFactory, upstreams v1.UpstreamList) *edsWatcher {
-	upstreamSpecs := make(map[core.ResourceRef]*kubeplugin.UpstreamSpec)
+	upstreamSpecs := make(map[*core.ResourceRef]*kubeplugin.UpstreamSpec)
 	for _, us := range upstreams {
 		kubeUpstream, ok := us.UpstreamType.(*v1.Upstream_Kube)
 		// only care about kube upstreams
@@ -164,8 +164,14 @@ func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-cha
 	return endpointsChan, errs, nil
 }
 
-func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints []*kubev1.Endpoints,
-	services []*kubev1.Service, pods []*kubev1.Pod, upstreams map[core.ResourceRef]*kubeplugin.UpstreamSpec) v1.EndpointList {
+func filterEndpoints(
+	ctx context.Context,
+	writeNamespace string,
+	kubeEndpoints []*kubev1.Endpoints,
+	services []*kubev1.Service,
+	pods []*kubev1.Pod,
+	upstreams map[*core.ResourceRef]*kubeplugin.UpstreamSpec,
+) v1.EndpointList {
 	var endpoints v1.EndpointList
 
 	logger := contextutils.LoggerFrom(ctx)
@@ -175,7 +181,7 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 		Port         uint32
 		PodName      string
 		PodNamespace string
-		UpstreamRef  core.ResourceRef
+		UpstreamRef  *core.ResourceRef
 	}
 	endpointsMap := make(map[Epkey][]*core.ResourceRef)
 
@@ -254,7 +260,7 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 						}
 					}
 					key := Epkey{addr.IP, port, podName, podNamespace, usRef}
-					copyRef := usRef
+					copyRef := *usRef
 					endpointsMap[key] = append(endpointsMap[key], &copyRef)
 				}
 			}
@@ -290,7 +296,7 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 
 func createEndpoint(namespace, name string, upstreams []*core.ResourceRef, address string, port uint32, pod *kubev1.Pod) *v1.Endpoint {
 	ep := &v1.Endpoint{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Namespace: namespace,
 			Name:      name,
 		},

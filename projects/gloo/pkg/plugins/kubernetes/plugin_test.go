@@ -31,7 +31,7 @@ var _ = Describe("Plugin", func() {
 		plugin = NewPlugin(kube, kubeCoreCache)
 		plugin.Init(plugins.InitParams{})
 		upstream = &v1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "myUpstream",
 				Namespace: "ns",
 			},

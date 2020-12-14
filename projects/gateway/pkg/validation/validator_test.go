@@ -3,27 +3,22 @@ package validation
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	k8syamlutil "sigs.k8s.io/yaml"
-
-	"github.com/solo-io/go-utils/testutils"
-
-	"github.com/rotisserie/eris"
-
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/gloo/test/samples"
+	"github.com/solo-io/go-utils/testutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"google.golang.org/grpc"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8syamlutil "sigs.k8s.io/yaml"
 )
 
 var _ = Describe("Validator", func() {
@@ -205,8 +200,9 @@ var _ = Describe("Validator", func() {
 				Expect(err).NotTo(HaveOccurred())
 				err = v.ValidateDeleteRouteTable(context.TODO(), snap.RouteTables[1].Metadata.Ref(), false)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Deletion blocked because active Routes delegate to this Route Table. " +
-					"Remove delegate actions to this route table from the virtual services: [] and the route tables: [{node-0 my-namespace}], then try again"))
+				Expect(err.Error()).To(ContainSubstring(
+					RouteTableDeleteErr(nil, []*core.ResourceRef{snap.RouteTables[0].Metadata.Ref()}).Error()),
+				)
 			})
 		})
 		Context("has no parents", func() {
@@ -406,15 +402,17 @@ var _ = Describe("Validator", func() {
 					if !ok {
 						return
 					}
-					http.HttpGateway.VirtualServices = []core.ResourceRef{ref}
+					http.HttpGateway.VirtualServices = []*core.ResourceRef{ref}
 				})
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 				err = v.ValidateDeleteVirtualService(context.TODO(), ref, false)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Deletion blocked because active Gateways reference this Virtual Service. "+
-					"Remove refs to this virtual service from the gateways: [{%s my-namespace} {%s-ssl my-namespace}], "+
-					"then try again", defaults.GatewayProxyName, defaults.GatewayProxyName)))
+				Expect(err.Error()).To(ContainSubstring(
+					VirtualServiceDeleteErr([]*core.ResourceRef{
+						{Name: defaults.GatewayProxyName, Namespace: ns},
+						{Name: defaults.GatewayProxyName + "-ssl", Namespace: ns},
+					}).Error()))
 			})
 		})
 		Context("has no parent gateways", func() {
@@ -486,7 +484,7 @@ var _ = Describe("Validator", func() {
 		})
 		Context("gw rejected", func() {
 			It("rejects the gw", func() {
-				badRef := core.ResourceRef{}
+				badRef := &core.ResourceRef{}
 
 				// validate proxy should never be called
 				vc.validateProxy = nil
@@ -648,7 +646,8 @@ var _ = Describe("Validator", func() {
 				Expect(merr.Errors).To(HaveLen(3))
 				Expect(merr.Errors[0]).To(MatchError(ContainSubstring("route table gloo-system.i-dont-exist-rt missing")))
 				Expect(merr.Errors[1]).To(MatchError(ContainSubstring("virtual service [gloo-system.invalid-vs-2] does not specify a virtual host")))
-				Expect(merr.Errors[2]).To(MatchError(ContainSubstring("parsing resource from crd spec testproxy1-rt in namespace gloo-system into *v1.RouteTable: unknown field \"matcherss\" in v1.Route")))
+				Expect(merr.Errors[2]).To(MatchError(ContainSubstring("parsing resource from crd spec testproxy1-rt in namespace gloo-system into *v1.RouteTable")))
+				Expect(merr.Errors[2]).To(MatchError(ContainSubstring("unknown field \"matcherss\" in gateway.solo.io.Route")))
 				Expect(proxyReports).To(HaveLen(0))
 
 			})

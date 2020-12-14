@@ -148,7 +148,7 @@ func GatewayContainsVirtualService(gateway *v1.Gateway, virtualService *v1.Virtu
 	vsRef := virtualService.Metadata.Ref()
 
 	for _, ref := range virtualServiceRefs {
-		if ref == vsRef {
+		if ref.Equal(vsRef) {
 			return true
 		}
 	}

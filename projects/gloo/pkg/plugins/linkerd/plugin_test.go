@@ -5,7 +5,7 @@ import (
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,6 +15,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("linkerd plugin", func() {
@@ -41,21 +42,23 @@ var _ = Describe("linkerd plugin", func() {
 				ServiceName:      name,
 			}
 			host := fmt.Sprintf("%s.%s.svc.cluster.local:%v", name, ns, port)
-			Expect(createHeaderForUpstream(kus)).To(BeEquivalentTo(&envoy_config_core_v3.HeaderValueOption{
-				Header: &envoy_config_core_v3.HeaderValue{
-					Value: host,
-					Key:   HeaderKey,
+			Expect(createHeaderForUpstream(kus)).To(matchers.MatchProto(
+				&envoy_config_core_v3.HeaderValueOption{
+					Header: &envoy_config_core_v3.HeaderValue{
+						Value: host,
+						Key:   HeaderKey,
+					},
+					Append: &wrappers.BoolValue{
+						Value: false,
+					},
 				},
-				Append: &wrappers.BoolValue{
-					Value: false,
-				},
-			}))
+			))
 		})
 	})
 
-	var createUpstream = func(ref core.ResourceRef, spec *kubernetes.UpstreamSpec) *v1.Upstream {
+	var createUpstream = func(ref *core.ResourceRef, spec *kubernetes.UpstreamSpec) *v1.Upstream {
 		upstream := &v1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      ref.Name,
 				Namespace: ref.Namespace,
 			},
@@ -72,7 +75,7 @@ var _ = Describe("linkerd plugin", func() {
 	}
 
 	var clustersAndDestinationsForUpstreams = func(
-		upstreamRefs []core.ResourceRef,
+		upstreamRefs []*core.ResourceRef,
 	) ([]*envoy_config_route_v3.WeightedCluster_ClusterWeight, []*v1.WeightedDestination) {
 		clusters := make([]*envoy_config_route_v3.WeightedCluster_ClusterWeight, len(upstreamRefs))
 		for i, v := range upstreamRefs {
@@ -86,7 +89,7 @@ var _ = Describe("linkerd plugin", func() {
 			destinations[i] = &v1.WeightedDestination{
 				Destination: &v1.Destination{
 					DestinationType: &v1.Destination_Upstream{
-						Upstream: &usRef,
+						Upstream: usRef,
 					},
 				},
 			}
@@ -94,7 +97,7 @@ var _ = Describe("linkerd plugin", func() {
 		return clusters, destinations
 	}
 
-	var createUpstreamList = func(refs []core.ResourceRef, specs []*kubernetes.UpstreamSpec) v1.UpstreamList {
+	var createUpstreamList = func(refs []*core.ResourceRef, specs []*kubernetes.UpstreamSpec) v1.UpstreamList {
 		upstreams := make(v1.UpstreamList, len(refs))
 		for i, v := range refs {
 			upstreams[i] = createUpstream(v, specs[i])
@@ -107,7 +110,7 @@ var _ = Describe("linkerd plugin", func() {
 			out.Action = &envoy_config_route_v3.Route_DirectResponse{DirectResponse: &envoy_config_route_v3.DirectResponseAction{}}
 			outCopy := proto.Clone(out)
 			Expect(configForMultiDestination(nil, nil, out)).To(BeNil())
-			Expect(out).To(BeEquivalentTo(outCopy))
+			Expect(out).To(matchers.MatchProto(outCopy))
 		})
 		It("doesn't change output if route action exists, but weighted clusters do not", func() {
 			out.Action = &envoy_config_route_v3.Route_Route{
@@ -119,7 +122,7 @@ var _ = Describe("linkerd plugin", func() {
 			}
 			outCopy := proto.Clone(out)
 			Expect(configForMultiDestination(nil, nil, out)).To(BeNil())
-			Expect(out).To(BeEquivalentTo(outCopy))
+			Expect(out).To(matchers.MatchProto(outCopy))
 		})
 		It("does not change output if no kube upstreams exist", func() {
 			out.Action = &envoy_config_route_v3.Route_Route{
@@ -129,24 +132,24 @@ var _ = Describe("linkerd plugin", func() {
 					},
 				},
 			}
-			usRf := core.ResourceRef{
+			usRf := &core.ResourceRef{
 				Name:      "one",
 				Namespace: "two",
 			}
 			destinations := &v1.WeightedDestination{
 				Destination: &v1.Destination{
 					DestinationType: &v1.Destination_Upstream{
-						Upstream: &usRf,
+						Upstream: usRf,
 					},
 				},
 			}
 			upstreams := createUpstream(usRf, nil)
 			outCopy := proto.Clone(out)
 			Expect(configForMultiDestination([]*v1.WeightedDestination{destinations}, v1.UpstreamList{upstreams}, out)).To(BeNil())
-			Expect(out).To(BeEquivalentTo(outCopy))
+			Expect(out).To(matchers.MatchProto(outCopy))
 		})
 		It("properly adds the header to existing weighted clusters with kube upstreams", func() {
-			upstreamRefs := []core.ResourceRef{
+			upstreamRefs := []*core.ResourceRef{
 				{Name: "one", Namespace: "one"},
 				{Name: "two", Namespace: "one"},
 				{Name: "three", Namespace: "one"},
@@ -182,7 +185,7 @@ var _ = Describe("linkerd plugin", func() {
 
 		})
 		It("skips non-kubernetes upstreams", func() {
-			upstreamRefs := []core.ResourceRef{
+			upstreamRefs := []*core.ResourceRef{
 				{Name: "one", Namespace: "one"},
 				{Name: "two", Namespace: "one"},
 				{Name: "three", Namespace: "one"},
@@ -233,7 +236,7 @@ var _ = Describe("linkerd plugin", func() {
 			Expect(plugin.enabled).To(BeTrue())
 		})
 		It("works for a single", func() {
-			upstreamRefs := []core.ResourceRef{
+			upstreamRefs := []*core.ResourceRef{
 				{Name: "one", Namespace: "one"},
 				{Name: "two", Namespace: "one"},
 				{Name: "three", Namespace: "one"},
@@ -264,7 +267,7 @@ var _ = Describe("linkerd plugin", func() {
 						Destination: &v1.RouteAction_Single{
 							Single: &v1.Destination{
 								DestinationType: &v1.Destination_Upstream{
-									Upstream: &upstreamRefs[0],
+									Upstream: upstreamRefs[0],
 								},
 							},
 						},

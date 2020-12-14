@@ -38,7 +38,10 @@ func shouldCompress(in resources.Resource) bool {
 }
 
 func SetShouldCompressed(in resources.Resource) {
-	metadata := in.GetMetadata()
+	metadata := &core.Metadata{}
+	if in.GetMetadata() != nil {
+		metadata = in.GetMetadata()
+	}
 	annotations := metadata.Annotations
 	if annotations == nil {
 		annotations = make(map[string]string)
@@ -144,13 +147,16 @@ func UnmarshalStatus(in resources.InputResource, status v1.Status) error {
 	if err := protoutils.UnmarshalMapToProto(status, &typedStatus); err != nil {
 		return err
 	}
-	in.SetStatus(typedStatus)
+	in.SetStatus(&typedStatus)
 	return nil
 }
 
 func MarshalStatus(in resources.InputResource) (v1.Status, error) {
 	statusProto := in.GetStatus()
-	statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(&statusProto)
+	if statusProto == nil {
+		return v1.Status{}, nil
+	}
+	statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(statusProto)
 	if err != nil {
 		return nil, crd.MarshalErr(err, "resource status to map")
 	}

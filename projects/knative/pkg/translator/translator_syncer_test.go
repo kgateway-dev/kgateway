@@ -64,7 +64,7 @@ var _ = Describe("TranslatorSyncer", func() {
 				}},
 		}}
 		knativeClient = &mockCiClient{ci: toKube(ingress)}
-		proxy = &v1.Proxy{Metadata: core.Metadata{Name: "hi", Namespace: "howareyou"}}
+		proxy = &v1.Proxy{Metadata: &core.Metadata{Name: "hi", Namespace: "howareyou"}}
 		proxy, _ = proxyClient.Write(proxy, clients.WriteOpts{})
 	})
 
@@ -114,7 +114,9 @@ var _ = Describe("TranslatorSyncer", func() {
 			defer GinkgoRecover()
 			// update status after a 1s sleep
 			time.Sleep(time.Second / 5)
-			proxy.Status.State = core.Status_Accepted
+			proxy.Status = &core.Status{
+				State: core.Status_Accepted,
+			}
 			_, err := proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
 		}()

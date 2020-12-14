@@ -9,26 +9,22 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
-
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/hashicorp/go-multierror"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
-
-	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
@@ -55,7 +51,7 @@ func NewPlugin(transformsAdded *bool) plugins.Plugin {
 }
 
 type plugin struct {
-	recordedUpstreams map[core.ResourceRef]*aws.UpstreamSpec
+	recordedUpstreams map[string]*aws.UpstreamSpec
 	ctx               context.Context
 	transformsAdded   *bool
 	settings          *v1.GlooOptions_AWSOptions
@@ -63,7 +59,7 @@ type plugin struct {
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.ctx = params.Ctx
-	p.recordedUpstreams = make(map[core.ResourceRef]*aws.UpstreamSpec)
+	p.recordedUpstreams = make(map[string]*aws.UpstreamSpec)
 	p.settings = params.Settings.GetGloo().GetAwsOptions()
 	return nil
 }
@@ -75,7 +71,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return nil
 	}
 	// even if it failed, route should still be valid
-	p.recordedUpstreams[in.Metadata.Ref()] = upstreamSpec.Aws
+	p.recordedUpstreams[translator.UpstreamToClusterName(in.Metadata.Ref())] = upstreamSpec.Aws
 
 	lambdaHostname := getLambdaHostname(upstreamSpec.Aws)
 
@@ -112,7 +108,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 		awsSecrets, ok := secret.Kind.(*v1.Secret_Aws)
 		if !ok {
-			return errors.Errorf("secret %v is not an AWS secret", secret.GetMetadata().Ref())
+			return errors.Errorf("secret (%s.%s) is not an AWS secret", secret.GetMetadata().GetName(), secret.GetMetadata().GetNamespace())
 		}
 
 		var secretErrs error
@@ -170,7 +166,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				contextutils.LoggerFrom(p.ctx).Error(err)
 				return nil, err
 			}
-			lambdaSpec, ok := p.recordedUpstreams[*upstreamRef]
+			lambdaSpec, ok := p.recordedUpstreams[translator.UpstreamToClusterName(upstreamRef)]
 			if !ok {
 				err := errors.Errorf("%v is not an AWS upstream", *upstreamRef)
 				contextutils.LoggerFrom(p.ctx).Error(err)
@@ -248,7 +244,7 @@ func (p *plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 	switch typedFetcher := p.settings.GetCredentialsFetcher().(type) {
 	case *v1.GlooOptions_AWSOptions_EnableCredentialsDiscovey:
 		filterconfig.CredentialsFetcher = &AWSLambdaConfig_UseDefaultCredentials{
-			UseDefaultCredentials: &types.BoolValue{
+			UseDefaultCredentials: &wrappers.BoolValue{
 				Value: typedFetcher.EnableCredentialsDiscovey,
 			},
 		}

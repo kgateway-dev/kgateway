@@ -3,26 +3,17 @@ package grpc
 import (
 	"context"
 	"crypto/sha1"
+	"encoding/base64"
 	"fmt"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
-	"github.com/solo-io/go-utils/contextutils"
-
 	envoytranscoder "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_json_transcoder/v3"
-	"github.com/gogo/googleapis/google/api"
-	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
-
-	"encoding/base64"
-
-	"github.com/gogo/protobuf/types"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -33,8 +24,12 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	transformutils "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/log"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"google.golang.org/genproto/googleapis/api/annotations"
 )
 
 type ServicesAndDescriptor struct {
@@ -49,14 +44,14 @@ var _ plugins.HttpFilterPlugin = &plugin{}
 
 func NewPlugin(transformsAdded *bool) *plugin {
 	return &plugin{
-		recordedUpstreams: make(map[core.ResourceRef]*v1.Upstream),
+		recordedUpstreams: make(map[string]*v1.Upstream),
 		transformsAdded:   transformsAdded,
 	}
 }
 
 type plugin struct {
 	transformsAdded   *bool
-	recordedUpstreams map[core.ResourceRef]*v1.Upstream
+	recordedUpstreams map[string]*v1.Upstream
 	upstreamServices  []ServicesAndDescriptor
 
 	ctx context.Context
@@ -109,7 +104,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	addWellKnownProtos(descriptors)
 
-	p.recordedUpstreams[in.Metadata.Ref()] = in
+	p.recordedUpstreams[translator.UpstreamToClusterName(in.Metadata.Ref())] = in
 	p.upstreamServices = append(p.upstreamServices, ServicesAndDescriptor{
 		Descriptors: descriptors,
 		Spec:        grpcSpec,
@@ -163,7 +158,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				path := utils.EnvoyPathAsString(out.Match) + "?{query_string}"
 
 				grpcDestinationSpec.Parameters = &transformapi.Parameters{
-					Path: &types.StringValue{Value: path},
+					Path: &wrappers.StringValue{Value: path},
 				}
 			}
 
@@ -177,7 +172,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				return nil, err
 			}
 
-			upstream := p.recordedUpstreams[*upstreamRef]
+			upstream := p.recordedUpstreams[translator.UpstreamToClusterName(upstreamRef)]
 			if upstream == nil {
 				return nil, errors.New("upstream was not recorded for grpc route")
 			}
@@ -235,8 +230,8 @@ func addHttpRulesToProto(upstream *v1.Upstream, currentsvc *grpcapi.ServiceSpec_
 				if method.Options == nil {
 					method.Options = &descriptor.MethodOptions{}
 				}
-				if err := proto.SetExtension(method.Options, api.E_Http, &api.HttpRule{
-					Pattern: &api.HttpRule_Post{
+				if err := proto.SetExtension(method.Options, annotations.E_Http, &annotations.HttpRule{
+					Pattern: &annotations.HttpRule_Post{
 						Post: httpPath(upstream, fullServiceName, *method.Name),
 					},
 					Body: "*",

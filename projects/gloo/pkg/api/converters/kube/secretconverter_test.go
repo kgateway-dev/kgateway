@@ -77,7 +77,7 @@ var _ = Describe("SecretConverter", func() {
 					RootCa:     "ca",
 				},
 			},
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "s1",
 				Namespace: "ns",
 			},
@@ -185,7 +185,7 @@ var _ = Describe("SecretConverter", func() {
 		}
 		var awsConverter AwsSecretConverter
 		mockKube := &kubev1.Secret{Type: "this is a mock"}
-		mockResource := &v1.Secret{Metadata: core.Metadata{Name: "mock-name"}}
+		mockResource := &v1.Secret{Metadata: &core.Metadata{Name: "mock-name"}}
 		mockConverter := newMockConverter(mockKube, mockResource)
 		chainedConverterMockFirst := NewSecretConverterChain(mockConverter, &awsConverter)
 		resource, err := chainedConverterMockFirst.FromKubeSecret(context.Background(), nil, secret)

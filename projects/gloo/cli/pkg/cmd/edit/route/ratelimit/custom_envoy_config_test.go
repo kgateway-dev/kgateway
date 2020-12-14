@@ -29,7 +29,7 @@ var _ = Describe("CustomEnvoyConfig", func() {
 		ctx, cancel = context.WithCancel(context.Background())
 		vsClient = helpers.MustVirtualServiceClient(ctx)
 		vsvc = &gatewayv1.VirtualService{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "vs",
 				Namespace: "gloo-system",
 			},

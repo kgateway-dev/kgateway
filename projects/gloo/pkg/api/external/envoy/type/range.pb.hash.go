@@ -34,7 +34,7 @@ func (m *Int64Range) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.type.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type.Int64Range")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type.Int64Range")); err != nil {
 		return 0, err
 	}
 
@@ -60,7 +60,7 @@ func (m *DoubleRange) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.type.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type.DoubleRange")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.type.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type.DoubleRange")); err != nil {
 		return 0, err
 	}
 

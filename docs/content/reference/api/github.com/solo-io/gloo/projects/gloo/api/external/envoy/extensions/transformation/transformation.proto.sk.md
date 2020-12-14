@@ -64,14 +64,14 @@ weight: 5
 
 
 ```yaml
-"match": .envoy.config.route.v3.RouteMatch
+"match": .solo.io.envoy.config.route.v3.RouteMatch
 "routeTransformations": .envoy.api.v2.filter.http.TransformationRule.Transformations
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `match` | [.envoy.config.route.v3.RouteMatch](../../../../../../../../../../../envoy/config/route/v3/route_components.proto.sk/#routematch) | The route matching parameter. Only when the match is satisfied, the "requires" field will apply. For example: following match will match all requests. .. code-block:: yaml match: prefix: /. |
+| `match` | [.solo.io.envoy.config.route.v3.RouteMatch](../../../config/route/v3/route_components.proto.sk/#routematch) | The route matching parameter. Only when the match is satisfied, the "requires" field will apply. For example: following match will match all requests. .. code-block:: yaml match: prefix: /. |
 | `routeTransformations` | [.envoy.api.v2.filter.http.TransformationRule.Transformations](../transformation.proto.sk/#transformations) | transformation to perform. |
 
 
@@ -148,7 +148,7 @@ weight: 5
 
 
 ```yaml
-"match": .envoy.config.route.v3.RouteMatch
+"match": .solo.io.envoy.config.route.v3.RouteMatch
 "requestTransformation": .envoy.api.v2.filter.http.Transformation
 "responseTransformation": .envoy.api.v2.filter.http.Transformation
 "clearRouteCache": bool
@@ -157,7 +157,7 @@ weight: 5
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `match` | [.envoy.config.route.v3.RouteMatch](../../../../../../../../../../../envoy/config/route/v3/route_components.proto.sk/#routematch) | if no match is specified, will match all. |
+| `match` | [.solo.io.envoy.config.route.v3.RouteMatch](../../../config/route/v3/route_components.proto.sk/#routematch) | if no match is specified, will match all. |
 | `requestTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | transformation to perform. |
 | `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) |  |
 | `clearRouteCache` | `bool` | clear the route cache if the request transformation was applied. |
@@ -190,15 +190,15 @@ weight: 5
 
 
 ```yaml
-"headers": []envoy.config.route.v3.HeaderMatcher
-"responseCodeDetails": .envoy.type.matcher.v3.StringMatcher
+"headers": []solo.io.envoy.config.route.v3.HeaderMatcher
+"responseCodeDetails": .solo.io.envoy.type.matcher.v3.StringMatcher
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `headers` | [[]envoy.config.route.v3.HeaderMatcher](../../../../../../../../../../../envoy/config/route/v3/route_components.proto.sk/#headermatcher) | Specifies a set of headers that the route should match on. The router will check the response headers against all the specified headers in the route config. A match will happen if all the headers in the route are present in the request with the same values (or based on presence if the value field is not in the config). |
-| `responseCodeDetails` | [.envoy.type.matcher.v3.StringMatcher](../../../../../../../../../../../envoy/type/matcher/v3/string.proto.sk/#stringmatcher) | Only match responses with non empty response code details (this usually implies a local reply). |
+| `headers` | [[]solo.io.envoy.config.route.v3.HeaderMatcher](../../../config/route/v3/route_components.proto.sk/#headermatcher) | Specifies a set of headers that the route should match on. The router will check the response headers against all the specified headers in the route config. A match will happen if all the headers in the route are present in the request with the same values (or based on presence if the value field is not in the config). |
+| `responseCodeDetails` | [.solo.io.envoy.type.matcher.v3.StringMatcher](../../../type/matcher/v3/string.proto.sk/#stringmatcher) | Only match responses with non empty response code details (this usually implies a local reply). |
 
 
 

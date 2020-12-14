@@ -7,6 +7,7 @@ import (
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"github.com/golang/protobuf/proto"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -117,7 +118,7 @@ ClusterLoop:
 		}
 		// make sure to call EndpointPlugin with empty endpoint
 		for _, upstream := range params.Snapshot.Upstreams {
-			if UpstreamToClusterName(core.ResourceRef{
+			if UpstreamToClusterName(&core.ResourceRef{
 				Name:      upstream.Metadata.Name,
 				Namespace: upstream.Metadata.Namespace,
 			}) == c.Name {
@@ -228,17 +229,17 @@ func generateXDSSnapshot(
 	var endpointsProto, clustersProto, listenersProto []envoycache.Resource
 
 	for _, ep := range endpoints {
-		endpointsProto = append(endpointsProto, resource.NewEnvoyResource(ep))
+		endpointsProto = append(endpointsProto, resource.NewEnvoyResource(proto.Clone(ep)))
 	}
 	for _, cluster := range clusters {
-		clustersProto = append(clustersProto, resource.NewEnvoyResource(cluster))
+		clustersProto = append(clustersProto, resource.NewEnvoyResource(proto.Clone(cluster)))
 	}
 	for _, listener := range listeners {
 		// don't add empty listeners, envoy will complain
 		if len(listener.FilterChains) < 1 {
 			continue
 		}
-		listenersProto = append(listenersProto, resource.NewEnvoyResource(listener))
+		listenersProto = append(listenersProto, resource.NewEnvoyResource(proto.Clone(listener)))
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
@@ -275,7 +276,7 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 		if len(routeCfg.VirtualHosts) < 1 {
 			continue
 		}
-		routesProto = append(routesProto, resource.NewEnvoyResource(routeCfg))
+		routesProto = append(routesProto, resource.NewEnvoyResource(proto.Clone(routeCfg)))
 	}
 
 	routesVersion, err := hashstructure.Hash(routesProto, nil)

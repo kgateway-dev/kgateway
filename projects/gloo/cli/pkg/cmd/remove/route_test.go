@@ -32,7 +32,7 @@ var _ = Describe("Remove Route", func() {
 
 	It("should remove a route from a virtual service", func() {
 		vs, err := helpers.MustVirtualServiceClient(ctx).Write(&gatewayv1.VirtualService{
-			Metadata: core.Metadata{Namespace: "gloo-system", Name: "tacos"},
+			Metadata: &core.Metadata{Namespace: "gloo-system", Name: "tacos"},
 			VirtualHost: &gatewayv1.VirtualHost{
 				Routes: []*gatewayv1.Route{
 					routehelpers.MakeGatewayRoute(routehelpers.RegexPath, 5),

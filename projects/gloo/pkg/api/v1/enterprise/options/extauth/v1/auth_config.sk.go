@@ -16,18 +16,18 @@ import (
 
 func NewAuthConfig(namespace, name string) *AuthConfig {
 	authconfig := &AuthConfig{}
-	authconfig.SetMetadata(core.Metadata{
+	authconfig.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
 	return authconfig
 }
 
-func (r *AuthConfig) SetMetadata(meta core.Metadata) {
+func (r *AuthConfig) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 
-func (r *AuthConfig) SetStatus(status core.Status) {
+func (r *AuthConfig) SetStatus(status *core.Status) {
 	r.Status = status
 }
 

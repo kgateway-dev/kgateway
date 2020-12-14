@@ -3,7 +3,6 @@ package headers
 import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -89,7 +88,7 @@ var _ = Describe("Plugin", func() {
 									},
 								},
 							},
-							Metadata: coreV1.Metadata{
+							Metadata: &coreV1.Metadata{
 								Name:      "foo",
 								Namespace: "bar",
 							},
@@ -114,25 +113,25 @@ var _ = Describe("Plugin", func() {
 })
 
 var testBrokenConfigNoRequestHeader = &headers.HeaderManipulation{
-	RequestHeadersToAdd:     []*envoycore_sk.HeaderValueOption{{HeaderOption: nil, Append: &types.BoolValue{Value: true}}},
+	RequestHeadersToAdd:     []*envoycore_sk.HeaderValueOption{{HeaderOption: nil, Append: &wrappers.BoolValue{Value: true}}},
 	RequestHeadersToRemove:  []string{"a"},
-	ResponseHeadersToAdd:    []*headers.HeaderValueOption{{Header: &headers.HeaderValue{Key: "foo", Value: "bar"}, Append: &types.BoolValue{Value: true}}},
+	ResponseHeadersToAdd:    []*headers.HeaderValueOption{{Header: &headers.HeaderValue{Key: "foo", Value: "bar"}, Append: &wrappers.BoolValue{Value: true}}},
 	ResponseHeadersToRemove: []string{"b"},
 }
 
 var testBrokenConfigNoResponseHeader = &headers.HeaderManipulation{
 	RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{{HeaderOption: &envoycore_sk.HeaderValueOption_Header{Header: &envoycore_sk.HeaderValue{Key: "foo", Value: "bar"}},
-		Append: &types.BoolValue{Value: true}}},
+		Append: &wrappers.BoolValue{Value: true}}},
 	RequestHeadersToRemove:  []string{"a"},
-	ResponseHeadersToAdd:    []*headers.HeaderValueOption{{Header: nil, Append: &types.BoolValue{Value: true}}},
+	ResponseHeadersToAdd:    []*headers.HeaderValueOption{{Header: nil, Append: &wrappers.BoolValue{Value: true}}},
 	ResponseHeadersToRemove: []string{"b"},
 }
 
 var testHeaderManip = &headers.HeaderManipulation{
 	RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{{HeaderOption: &envoycore_sk.HeaderValueOption_Header{Header: &envoycore_sk.HeaderValue{Key: "foo", Value: "bar"}},
-		Append: &types.BoolValue{Value: true}}},
+		Append: &wrappers.BoolValue{Value: true}}},
 	RequestHeadersToRemove:  []string{"a"},
-	ResponseHeadersToAdd:    []*headers.HeaderValueOption{{Header: &headers.HeaderValue{Key: "foo", Value: "bar"}, Append: &types.BoolValue{Value: true}}},
+	ResponseHeadersToAdd:    []*headers.HeaderValueOption{{Header: &headers.HeaderValue{Key: "foo", Value: "bar"}, Append: &wrappers.BoolValue{Value: true}}},
 	ResponseHeadersToRemove: []string{"b"},
 }
 
@@ -145,9 +144,9 @@ var expectedHeaders = envoyHeaderManipulation{
 
 var testHeaderManipWithSecrets = &headers.HeaderManipulation{
 	RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{{HeaderOption: &envoycore_sk.HeaderValueOption_HeaderSecretRef{HeaderSecretRef: &coreV1.ResourceRef{Name: "foo", Namespace: "bar"}},
-		Append: &types.BoolValue{Value: true}}},
+		Append: &wrappers.BoolValue{Value: true}}},
 	RequestHeadersToRemove:  []string{"a"},
-	ResponseHeadersToAdd:    []*headers.HeaderValueOption{{Header: &headers.HeaderValue{Key: "foo", Value: "bar"}, Append: &types.BoolValue{Value: true}}},
+	ResponseHeadersToAdd:    []*headers.HeaderValueOption{{Header: &headers.HeaderValue{Key: "foo", Value: "bar"}, Append: &wrappers.BoolValue{Value: true}}},
 	ResponseHeadersToRemove: []string{"b"},
 }
 

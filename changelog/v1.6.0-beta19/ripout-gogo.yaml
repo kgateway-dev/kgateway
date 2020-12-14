@@ -1,0 +1,5 @@
+changelog:
+- type: FIX
+  description: Ripout gogo proto in favor of golang proto
+  issueLink: https://github.com/solo-io/gloo/issues/3926
+  resolvesIssue: false

@@ -71,7 +71,7 @@ const (
 	ApplicationYaml = "application/x-yaml"
 )
 
-func incrementMetric(ctx context.Context, resource string, ref core.ResourceRef, m *stats.Int64Measure) {
+func incrementMetric(ctx context.Context, resource string, ref *core.ResourceRef, m *stats.Int64Measure) {
 	utils.MeasureOne(
 		ctx,
 		m,
@@ -314,7 +314,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 		}
 	}
 
-	ref := core.ResourceRef{
+	ref := &core.ResourceRef{
 		Namespace: req.Namespace,
 		Name:      req.Name,
 	}
@@ -385,7 +385,13 @@ func getFailureCauses(validationErr *multierror.Error) []metav1.StatusCause {
 	return causes
 }
 
-func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.GroupVersionKind, ref core.ResourceRef, rawJson []byte, isDelete, dryRun bool) (validation.ProxyReports, *multierror.Error) {
+func (wh *gatewayValidationWebhook) validate(
+	ctx context.Context,
+	gvk schema.GroupVersionKind,
+	ref *core.ResourceRef,
+	rawJson []byte,
+	isDelete, dryRun bool,
+) (validation.ProxyReports, *multierror.Error) {
 
 	switch gvk {
 	case ListGVK:

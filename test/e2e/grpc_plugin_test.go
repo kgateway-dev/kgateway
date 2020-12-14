@@ -7,8 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -119,7 +118,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
 		grpc := vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().GetDestinationSpec().GetGrpc()
 		grpc.Parameters = &transformation.Parameters{
-			Path: &types.StringValue{Value: "/test/{str}"},
+			Path: &wrappers.StringValue{Value: "/test/{str}"},
 		}
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -142,9 +141,9 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 	})
 })
 
-func getGrpcVs(writeNamespace string, usRef core.ResourceRef) *gatewayv1.VirtualService {
+func getGrpcVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.VirtualService {
 	return &gatewayv1.VirtualService{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "default",
 			Namespace: writeNamespace,
 		},
@@ -161,7 +160,7 @@ func getGrpcVs(writeNamespace string, usRef core.ResourceRef) *gatewayv1.Virtual
 							Destination: &gloov1.RouteAction_Single{
 								Single: &gloov1.Destination{
 									DestinationType: &gloov1.Destination_Upstream{
-										Upstream: utils.ResourceRefPtr(usRef),
+										Upstream: usRef,
 									},
 									DestinationSpec: &gloov1.DestinationSpec{
 										DestinationType: &gloov1.DestinationSpec_Grpc{

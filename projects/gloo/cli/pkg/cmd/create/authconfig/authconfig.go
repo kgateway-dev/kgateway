@@ -78,7 +78,7 @@ func AuthConfigCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc
 }
 
 func createAuthConfig(opts *options.Options, args []string) error {
-	ac, err := authConfigFromOpts(opts.Metadata, opts.Create.AuthConfig)
+	ac, err := authConfigFromOpts(&opts.Metadata, opts.Create.AuthConfig)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func createAuthConfig(opts *options.Options, args []string) error {
 	return nil
 }
 
-func authConfigFromOpts(meta core.Metadata, input options.InputAuthConfig) (*extauth.AuthConfig, error) {
+func authConfigFromOpts(meta *core.Metadata, input options.InputAuthConfig) (*extauth.AuthConfig, error) {
 	ac := &extauth.AuthConfig{
 		Metadata: meta,
 	}

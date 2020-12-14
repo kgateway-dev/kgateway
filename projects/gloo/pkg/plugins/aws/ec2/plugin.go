@@ -75,7 +75,7 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	if !ok {
 		return false, WrongUpstreamTypeError(desired)
 	}
-	if !originalSpec.Equal(desiredSpec) {
+	if !originalSpec.AwsEc2.Equal(desiredSpec.AwsEc2) {
 		return false, UpstreamDeltaError()
 	}
 	return false, nil

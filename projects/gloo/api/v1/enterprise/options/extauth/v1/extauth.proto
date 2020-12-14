@@ -3,17 +3,16 @@ package enterprise.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1";
 
-import "solo-kit/api/v1/ref.proto";
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
+option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
-import "solo-kit/api/v1/metadata.proto";
-import "solo-kit/api/v1/status.proto";
-import "solo-kit/api/v1/solo-kit.proto";
-import "envoy/api/v2/discovery.proto";
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
@@ -30,10 +29,10 @@ message AuthConfig {
 
   // Status indicates the validation status of this resource.
   // Status is read-only by clients, and set by gloo during validation
-  core.solo.io.Status status = 1 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
+  core.solo.io.Status status = 1 ;
 
   // Metadata contains the object metadata for this resource
-  core.solo.io.Metadata metadata = 2 [(gogoproto.nullable) = false];
+  core.solo.io.Metadata metadata = 2;
 
   message Config {
 
@@ -93,7 +92,7 @@ message Settings {
   string user_id_header = 3;
 
   // Timeout for the ext auth service to respond. Defaults to 200ms
-  google.protobuf.Duration request_timeout = 4 [(gogoproto.stdduration) = true];
+  google.protobuf.Duration request_timeout = 4 ;
 
   // In case of a failure or timeout querying the auth server, normally a request is denied.
   // if this is set to true, the request will be allowed.
@@ -436,7 +435,7 @@ message AccessTokenValidation {
   // how long the token introspection and userinfo endpoint response for a specific access token should be kept
   // in the in-memory cache. the result will be invalidated at this timeout, or at "exp" time from the introspection
   // result, whichever comes sooner. if omitted, defaults to 10 minutes. if zero, then no caching will be done.
-  google.protobuf.Duration cache_timeout = 5 [(gogoproto.stdduration) = true];
+  google.protobuf.Duration cache_timeout = 5 ;
 }
 
 message OauthSecret {
@@ -553,7 +552,7 @@ message ExtAuthConfig {
     string client_id = 1 [deprecated=true];
 
     // your client secret as registered with the issuer
-    string client_secret = 2 [(gogoproto.moretags) = "logging:\"redact\"", deprecated=true];
+    string client_secret = 2 [deprecated=true, (extproto.sensitive)=true];
 
     // The url of the issuer. We will look for OIDC information in issuerUrl+
     // ".well-known/openid-configuration"
@@ -581,7 +580,7 @@ message ExtAuthConfig {
     string client_id = 1;
 
     // your client secret as registered with the issuer
-    string client_secret = 2 [(gogoproto.moretags) = "logging:\"redact\""];
+    string client_secret = 2 [(extproto.sensitive)=true];
 
     // The url of the issuer. We will look for OIDC information in issuerUrl+
     // ".well-known/openid-configuration"
@@ -672,7 +671,7 @@ message ExtAuthConfig {
 
     // A mapping of valid API keys to their associated metadata.
     // This map is automatically populated with the information from the relevant `ApiKeySecret`s.
-    map<string, KeyMetadata> valid_api_keys = 1 [(gogoproto.moretags) = "logging:\"redact\""];
+    map<string, KeyMetadata> valid_api_keys = 1 [(extproto.sensitive)=true];
 
     // (Optional) When receiving a request, the Gloo Enterprise external auth server will look for an API key
     // in a header with this name. This field is optional; if not provided it defaults to `api-key`.

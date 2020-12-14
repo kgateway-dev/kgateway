@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/duration"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
@@ -48,6 +48,7 @@ import (
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -184,10 +185,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 	refreshRate := time.Minute
 	if settings.GetRefreshRate() != nil {
-		refreshRate, err = types.DurationFromProto(settings.GetRefreshRate())
-		if err != nil {
-			return err
-		}
+		refreshRate = prototime.DurationFromProto(settings.GetRefreshRate())
 	}
 
 	writeNamespace := settings.DiscoveryNamespace
@@ -280,10 +278,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		opts.Consul.DnsServer = consulplugin.DefaultDnsAddress
 	}
 	if pollingInterval := settings.GetConsul().GetDnsPollingInterval(); pollingInterval != nil {
-		dnsPollingInterval, err := types.DurationFromProto(pollingInterval)
-		if err != nil {
-			return err
-		}
+		dnsPollingInterval := prototime.DurationFromProto(pollingInterval)
 		opts.Consul.DnsPollingInterval = &dnsPollingInterval
 	}
 
@@ -437,12 +432,12 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	warmTimeout := opts.Settings.GetGloo().GetEndpointsWarmingTimeout()
 
 	if warmTimeout == nil {
-		warmTimeout = &types.Duration{
+		warmTimeout = &duration.Duration{
 			Seconds: 5 * 60,
 		}
 	}
 	if warmTimeout.Seconds != 0 || warmTimeout.Nanos != 0 {
-		warmTimeoutDuration, err := types.DurationFromProto(warmTimeout)
+		warmTimeoutDuration := prototime.DurationFromProto(warmTimeout)
 		ctx := opts.WatchOpts.Ctx
 		err = channelutils.WaitForReady(ctx, warmTimeoutDuration, edsEventLoop.Ready(), disc.Ready())
 		if err != nil {

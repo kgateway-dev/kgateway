@@ -36,7 +36,7 @@ var getService = func(name, namespace string, ports []int32) *skkube.Service {
 
 var getUpstream = func(name, namespace, svcName, svcNs string, port uint32) *v1.Upstream {
 	return &v1.Upstream{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      name,
 			Namespace: namespace,
 		},

@@ -3,21 +3,19 @@ module github.com/solo-io/gloo
 go 1.14
 
 require (
-	github.com/Azure/go-autorest/autorest v0.10.2 // indirect
-	github.com/Azure/go-autorest/autorest/adal v0.9.5 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/semver/v3 v3.1.0
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.34.9
-	github.com/cncf/udpa/go v0.0.0-20200629203442-efcf912fb354
+	github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403
 	github.com/containerd/containerd v1.3.3 // indirect
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/docker/cli v0.0.0-20200210162036-a4bedce16568 // indirect
 	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2 // indirect
-	github.com/envoyproxy/go-control-plane v0.9.6-0.20200529035633-fc42e08917e9
+	github.com/envoyproxy/go-control-plane v0.9.8
 	github.com/envoyproxy/protoc-gen-validate v0.4.0
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/fgrosse/zaptest v1.1.0
@@ -56,7 +54,7 @@ require (
 	github.com/miekg/dns v1.1.29 // indirect
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/mitchellh/mapstructure v1.3.1 // indirect
-	github.com/mitchellh/reflectwalk v1.0.1
+	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/onsi/ginkgo v1.12.1
 	github.com/onsi/gomega v1.10.1
@@ -72,12 +70,12 @@ require (
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.20.1
-	github.com/solo-io/k8s-utils v0.0.2
-	github.com/solo-io/protoc-gen-ext v0.0.9
+	github.com/solo-io/k8s-utils v0.0.3
+	github.com/solo-io/protoc-gen-ext v0.0.13
 	github.com/solo-io/reporting-client v0.2.0
-	github.com/solo-io/skv2 v0.13.5
-	github.com/solo-io/solo-apis v0.0.0-20201103221621-bbe4f60f466d
-	github.com/solo-io/solo-kit v0.15.2
+	github.com/solo-io/skv2 v0.14.1
+	github.com/solo-io/solo-apis v0.0.0-20201208172621-1ef725df2bff
+	github.com/solo-io/solo-kit v0.16.2
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
 	github.com/spf13/cobra v1.0.0
@@ -95,6 +93,7 @@ require (
 	golang.org/x/tools v0.0.0-20201027213030-631220838841
 	google.golang.org/genproto v0.0.0-20200904004341-0bd0a958aa1d
 	google.golang.org/grpc v1.33.1
+	google.golang.org/protobuf v1.25.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/ini.v1 v1.56.0 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
@@ -125,13 +124,10 @@ replace (
 	github.com/census-instrumentation/opencensus-proto => github.com/census-instrumentation/opencensus-proto v0.2.0 // indirect
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 	// Required for proper serialization of CRDs
-	github.com/golang/protobuf => github.com/golang/protobuf v1.3.5
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
 
 	//the following block of replacements are needed to have locked these packages to before versions they switched to using proto4
-	go.opencensus.io => go.opencensus.io v0.22.1
 	golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
-	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20200513103714-09dca8ec2884
 
 	// kube 0.18: redirects needed for most k8s.io dependencies because
 	// k8s.io/kubernetes tries to import v0.0.0 of everything.

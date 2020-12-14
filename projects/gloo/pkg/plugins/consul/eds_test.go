@@ -9,7 +9,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	mock_consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul/mocks"
+	proto_matchers "github.com/solo-io/solo-kit/test/matchers"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
@@ -21,7 +23,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
@@ -448,7 +449,11 @@ var _ = Describe("Consul EDS", func() {
 
 			// Simulate the initial read when starting watch
 			serviceMetaProducer <- consulServiceSnapshot
-			Eventually(endpointsChan).Should(Receive(matchers.BeEquivalentToDiff(expectedEndpointsFirstAttempt)))
+			var asProtos []proto.Message
+			for _, v := range expectedEndpointsFirstAttempt {
+				asProtos = append(asProtos, v)
+			}
+			Eventually(endpointsChan).Should(Receive(proto_matchers.ConistOfProtos(asProtos...)))
 
 			// Wait for error monitoring routine to stop, we want to simulate an error
 			errRoutineCancel()
@@ -542,7 +547,7 @@ var _ = Describe("Consul EDS", func() {
 			for _, svc := range svcs {
 				trackedServiceToUpstreams[svc.ServiceName] = []*v1.Upstream{
 					{
-						Metadata: core.Metadata{
+						Metadata: &core.Metadata{
 							Name:      "n",
 							Namespace: "n",
 						},
@@ -553,7 +558,7 @@ var _ = Describe("Consul EDS", func() {
 							},
 						},
 					}, {
-						Metadata: core.Metadata{
+						Metadata: &core.Metadata{
 							Name:      "n1",
 							Namespace: "n",
 						},
@@ -564,7 +569,7 @@ var _ = Describe("Consul EDS", func() {
 							},
 						},
 					}, {
-						Metadata: core.Metadata{
+						Metadata: &core.Metadata{
 							Name:      "n2",
 							Namespace: "n",
 						},
@@ -585,7 +590,7 @@ var _ = Describe("Consul EDS", func() {
 				fmt.Fprintf(GinkgoWriter, "%s%v\n", "endpoint: ", endpoint)
 				endpontNames[endpoint.GetMetadata().Name] = true
 
-				Expect(endpoint.Upstreams).To(ContainElement(&core.ResourceRef{
+				Expect(endpoint.Upstreams).To(proto_matchers.ContainProto(&core.ResourceRef{
 					Name:      "n2",
 					Namespace: "n",
 				}))
@@ -593,18 +598,18 @@ var _ = Describe("Consul EDS", func() {
 				case 1235:
 					// 1235 is the http endpoint above
 					Expect(endpoint.Upstreams).To(HaveLen(2))
-					Expect(endpoint.Upstreams).To(ContainElement(&core.ResourceRef{
+					Expect(endpoint.Upstreams).To(proto_matchers.ContainProto(&core.ResourceRef{
 						Name:      "n",
 						Namespace: "n",
 					}))
 				case 1237:
 					// 1237 is the ftp,http endpoint above
 					Expect(endpoint.Upstreams).To(HaveLen(3))
-					Expect(endpoint.Upstreams).To(ContainElement(&core.ResourceRef{
+					Expect(endpoint.Upstreams).To(proto_matchers.ContainProto(&core.ResourceRef{
 						Name:      "n1",
 						Namespace: "n",
 					}))
-					Expect(endpoint.Upstreams).To(ContainElement(&core.ResourceRef{
+					Expect(endpoint.Upstreams).To(proto_matchers.ContainProto(&core.ResourceRef{
 						Name:      "n",
 						Namespace: "n",
 					}))
@@ -635,7 +640,7 @@ var _ = Describe("Consul EDS", func() {
 			Expect(err).To(BeNil())
 			Expect(endpoints).To(HaveLen(1))
 			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Namespace: writeNamespace,
 					Name:      "127-0-0-1-my-svc-my-svc-0-1234",
 					Labels: map[string]string{
@@ -647,7 +652,7 @@ var _ = Describe("Consul EDS", func() {
 					},
 					ResourceVersion: "9876",
 				},
-				Upstreams: []*core.ResourceRef{utils.ResourceRefPtr(upstream.Metadata.Ref())},
+				Upstreams: []*core.ResourceRef{upstream.Metadata.Ref()},
 				Address:   "127.0.0.1",
 				Port:      1234,
 			}))
@@ -675,7 +680,7 @@ var _ = Describe("Consul EDS", func() {
 			Expect(err).To(BeNil())
 			Expect(endpoints).To(HaveLen(1))
 			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Namespace: writeNamespace,
 					Name:      "127-0-0-1-my-svc-my-svc-0-1234",
 					Labels: map[string]string{
@@ -686,7 +691,7 @@ var _ = Describe("Consul EDS", func() {
 					},
 					ResourceVersion: "9876",
 				},
-				Upstreams:   []*core.ResourceRef{utils.ResourceRefPtr(upstream.Metadata.Ref())},
+				Upstreams:   []*core.ResourceRef{upstream.Metadata.Ref()},
 				Address:     "127.0.0.1",
 				Port:        1234,
 				Hostname:    "hostname.foo.com",
@@ -702,7 +707,7 @@ func createTestUpstream(usptreamName, svcName string, tags, dataCenters []string
 }
 func createTestFilteredUpstream(usptreamName, svcName string, tags, instancetags, dataCenters []string) *v1.Upstream {
 	return &v1.Upstream{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "consul-svc:" + usptreamName,
 			Namespace: "",
 		},
@@ -736,7 +741,7 @@ func createExpectedEndpoint(name, usname, hostname, ipAddress, version, ns strin
 	}
 
 	ep := &v1.Endpoint{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Namespace:       ns,
 			Name:            name,
 			Labels:          labels,

@@ -3,12 +3,11 @@ package azure.options.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
+option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
-import "solo-kit/api/v1/ref.proto";
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
 // Upstream Spec for Azure Functions Upstreams
 // Azure Upstreams represent a collection of Azure Functions for a particular Azure Account
@@ -19,7 +18,7 @@ message UpstreamSpec {
     // A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an [Azure Publish Profile JSON file](https://azure.microsoft.com/en-us/downloads/publishing-profile-overview/).
     // {{ hide_not_implemented "Azure Secrets can be created with `glooctl secret create azure ...`" }}
     // Note that this secret is not required unless Function Discovery is enabled
-    core.solo.io.ResourceRef secret_ref = 2 [(gogoproto.nullable) = false];
+    core.solo.io.ResourceRef secret_ref = 2;
 
     // Function Spec for Functions on Azure Functions Upstreams
     // The Function Spec contains data necessary for Gloo to invoke Azure functions

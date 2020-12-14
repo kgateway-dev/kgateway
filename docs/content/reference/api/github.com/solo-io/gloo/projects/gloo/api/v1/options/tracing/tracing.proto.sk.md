@@ -36,8 +36,8 @@ See here for additional information about configuring tracing with Gloo: https:/
 "requestHeadersForTags": []string
 "verbose": bool
 "tracePercentages": .tracing.options.gloo.solo.io.TracePercentages
-"zipkinConfig": .envoy.config.trace.v3.ZipkinConfig
-"datadogConfig": .envoy.config.trace.v3.DatadogConfig
+"zipkinConfig": .solo.io.envoy.config.trace.v3.ZipkinConfig
+"datadogConfig": .solo.io.envoy.config.trace.v3.DatadogConfig
 
 ```
 
@@ -46,8 +46,8 @@ See here for additional information about configuring tracing with Gloo: https:/
 | `requestHeadersForTags` | `[]string` | Optional. If specified, Envoy will include the headers and header values for any matching request headers. |
 | `verbose` | `bool` | Optional. If true, Envoy will include logs for streaming events. Default: false. |
 | `tracePercentages` | [.tracing.options.gloo.solo.io.TracePercentages](../tracing.proto.sk/#tracepercentages) | Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided. TracePercentages defines the limits for random, forced, and overall tracing percentages. |
-| `zipkinConfig` | [.envoy.config.trace.v3.ZipkinConfig](../../../../external/envoy/config/trace/v3/zipkin.proto.sk/#zipkinconfig) |  Only one of `zipkinConfig` or `datadogConfig` can be set. |
-| `datadogConfig` | [.envoy.config.trace.v3.DatadogConfig](../../../../external/envoy/config/trace/v3/datadog.proto.sk/#datadogconfig) |  Only one of `datadogConfig` or `zipkinConfig` can be set. |
+| `zipkinConfig` | [.solo.io.envoy.config.trace.v3.ZipkinConfig](../../../../external/envoy/config/trace/v3/zipkin.proto.sk/#zipkinconfig) |  Only one of `zipkinConfig` or `datadogConfig` can be set. |
+| `datadogConfig` | [.solo.io.envoy.config.trace.v3.DatadogConfig](../../../../external/envoy/config/trace/v3/datadog.proto.sk/#datadogconfig) |  Only one of `datadogConfig` or `zipkinConfig` can be set. |
 
 
 

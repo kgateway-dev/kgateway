@@ -3,13 +3,11 @@ package lbhash.options.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/lbhash";
 
-import "gogoproto/gogo.proto";
-import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
 
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 // Specifies the route’s hashing policy if the upstream cluster uses a hashing load balancer.
 // https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-hashpolicy
@@ -27,7 +25,7 @@ message Cookie {
     // required, the name of the cookie to be used to obtain the hash key
     string name = 1;
     // If specified, a cookie with the TTL will be generated if the cookie is not present. If the TTL is present and zero, the generated cookie will be a session cookie.
-    google.protobuf.Duration ttl = 2 [ (gogoproto.stdduration) = true ];
+    google.protobuf.Duration ttl = 2;
     // The name of the path for the cookie. If no path is specified here, no path will be set for the cookie.
     string path = 3;
 }

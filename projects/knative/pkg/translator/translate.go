@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 
 	"knative.dev/networking/pkg/apis/networking"
@@ -78,7 +79,7 @@ func translateProxy(ctx context.Context, proxyName, proxyNamespace string, ingre
 	ingressSpecsByRef := make(map[*core.Metadata]knativev1alpha1.IngressSpec)
 	for _, ing := range ingresses {
 		meta := ing.GetMetadata()
-		ingressSpecsByRef[&meta] = ing.Spec
+		ingressSpecsByRef[meta] = ing.Spec
 	}
 	return TranslateProxyFromSpecs(ctx, proxyName, proxyNamespace, ingressSpecsByRef)
 }
@@ -116,7 +117,7 @@ func TranslateProxyFromSpecs(ctx context.Context, proxyName, proxyNamespace stri
 		})
 	}
 	return &gloov1.Proxy{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      proxyName, // must match envoy role
 			Namespace: proxyNamespace,
 		},
@@ -182,19 +183,19 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 					pathRegex = ".*"
 				}
 
-				var timeout *time.Duration
+				var timeout time.Duration
 				if route.DeprecatedTimeout != nil {
-					timeout = &route.DeprecatedTimeout.Duration
+					timeout = route.DeprecatedTimeout.Duration
 				}
 				var retryPolicy *retries.RetryPolicy
 				if route.DeprecatedRetries != nil {
-					var perTryTimeout *time.Duration
+					var perTryTimeout time.Duration
 					if route.DeprecatedRetries.PerTryTimeout != nil {
-						perTryTimeout = &route.DeprecatedRetries.PerTryTimeout.Duration
+						perTryTimeout = route.DeprecatedRetries.PerTryTimeout.Duration
 					}
 					retryPolicy = &retries.RetryPolicy{
 						NumRetries:    uint32(route.DeprecatedRetries.Attempts),
-						PerTryTimeout: perTryTimeout,
+						PerTryTimeout: ptypes.DurationProto(perTryTimeout),
 					}
 				}
 
@@ -214,7 +215,7 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 					},
 					Options: &gloov1.RouteOptions{
 						HeaderManipulation: getHeaderManipulation(route.AppendHeaders),
-						Timeout:            timeout,
+						Timeout:            ptypes.DurationProto(timeout),
 						Retries:            retryPolicy,
 					},
 				}
@@ -293,7 +294,7 @@ func routeActionFromSplits(splits []knativev1alpha1.IngressBackendSplit) (*gloov
 func serviceForSplit(split knativev1alpha1.IngressBackendSplit) *gloov1.Destination_Kube {
 	return &gloov1.Destination_Kube{
 		Kube: &gloov1.KubernetesServiceDestination{
-			Ref:  core.ResourceRef{Name: split.ServiceName, Namespace: split.ServiceNamespace},
+			Ref:  &core.ResourceRef{Name: split.ServiceName, Namespace: split.ServiceNamespace},
 			Port: uint32(split.ServicePort.IntValue()),
 		},
 	}

@@ -3,16 +3,13 @@ package extauth_test
 import (
 	"time"
 
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
@@ -21,6 +18,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	. "github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
+	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("Extauth Http filter builder function", func() {
@@ -72,7 +71,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			params.Snapshot = &gloov1.ApiSnapshot{
 				Upstreams: []*gloov1.Upstream{
 					{
-						Metadata: core.Metadata{
+						Metadata: &core.Metadata{
 							Name:      "extauth-upstream",
 							Namespace: "ns",
 						},
@@ -81,7 +80,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			}
 			params.Snapshot.Upstreams = []*gloov1.Upstream{
 				{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "test",
 						Namespace: "test",
 					},
@@ -133,7 +132,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 		BeforeEach(func() {
 
 			upstream = &gloov1.Upstream{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "extauth",
 					Namespace: "default",
 				},
@@ -154,15 +153,13 @@ var _ = Describe("Extauth Http filter builder function", func() {
 				usRef := upstream.Metadata.Ref()
 
 				settings = &extauthv1.Settings{
-					ExtauthzServerRef: &usRef,
+					ExtauthzServerRef: usRef,
 				}
 
 				expectedConfig = &envoyauth.ExtAuthz{
 					Services: &envoyauth.ExtAuthz_GrpcService{
 						GrpcService: &envoycore.GrpcService{
-							Timeout: &duration.Duration{
-								Nanos: int32(DefaultTimeout),
-							},
+							Timeout: DefaultTimeout,
 							TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
 								EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
 									ClusterName: translator.UpstreamToClusterName(usRef),
@@ -179,7 +176,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 				Expect(filters).To(HaveLen(1))
 
 				actualFilterConfig := getExtAuthz(filters[0])
-				Expect(actualFilterConfig).To(Equal(expectedConfig))
+				Expect(actualFilterConfig).To(matchers.MatchProto(expectedConfig))
 			})
 		})
 
@@ -188,11 +185,11 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			BeforeEach(func() {
 				usRef := upstream.Metadata.Ref()
 
-				customTimeout := 500 * time.Millisecond
+				customTimeout := prototime.DurationToProto(500 * time.Millisecond)
 
 				settings = &extauthv1.Settings{
-					ExtauthzServerRef: &usRef,
-					RequestTimeout:    &customTimeout,
+					ExtauthzServerRef: usRef,
+					RequestTimeout:    customTimeout,
 					FailureModeAllow:  true,
 					RequestBody: &extauthv1.BufferSettings{
 						AllowPartialMessage: true,
@@ -205,9 +202,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 				expectedConfig = &envoyauth.ExtAuthz{
 					Services: &envoyauth.ExtAuthz_GrpcService{
 						GrpcService: &envoycore.GrpcService{
-							Timeout: &duration.Duration{
-								Nanos: int32(customTimeout),
-							},
+							Timeout: customTimeout,
 							TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
 								EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
 									ClusterName: translator.UpstreamToClusterName(usRef),
@@ -231,7 +226,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 				Expect(filters).To(HaveLen(1))
 
 				actualFilterConfig := getExtAuthz(filters[0])
-				Expect(actualFilterConfig).To(Equal(expectedConfig))
+				Expect(actualFilterConfig).To(matchers.MatchProto(expectedConfig))
 			})
 		})
 
@@ -241,7 +236,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 				usRef := upstream.Metadata.Ref()
 
 				settings = &extauthv1.Settings{
-					ExtauthzServerRef: &usRef,
+					ExtauthzServerRef: usRef,
 					// This is the only thing that can go wrong in the BuildHttpFilters function
 					StatusOnError: 999,
 				}
@@ -260,7 +255,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 				usRef := upstream.Metadata.Ref()
 
 				settings = &extauthv1.Settings{
-					ExtauthzServerRef: &usRef,
+					ExtauthzServerRef: usRef,
 					HttpService: &extauthv1.HttpService{
 						PathPrefix: "/foo",
 						Request: &extauthv1.HttpService_Request{
@@ -302,7 +297,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 							},
 							PathPrefix: "/foo",
 							ServerUri: &envoycore.HttpUri{
-								Timeout: gogoutils.DurationStdToProto(&DefaultTimeout),
+								Timeout: DefaultTimeout,
 								Uri:     HttpServerUri,
 								HttpUpstreamType: &envoycore.HttpUri_Cluster{
 									Cluster: translator.UpstreamToClusterName(usRef),
@@ -319,7 +314,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 				Expect(filters).To(HaveLen(1))
 
 				actualFilterConfig := getExtAuthz(filters[0])
-				Expect(actualFilterConfig).To(Equal(expectedConfig))
+				Expect(actualFilterConfig).To(matchers.MatchProto(expectedConfig))
 			})
 		})
 	})

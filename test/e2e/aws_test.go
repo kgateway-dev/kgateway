@@ -20,8 +20,6 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
 
-	"github.com/solo-io/gloo/pkg/utils"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -103,14 +101,14 @@ var _ = Describe("AWS Lambda", func() {
 
 	addUpstream := func() {
 		upstream = &gloov1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Namespace: "default",
 				Name:      region,
 			},
 			UpstreamType: &gloov1.Upstream_Aws{
 				Aws: &aws_plugin.UpstreamSpec{
 					Region:    region,
-					SecretRef: utils.ResourceRefPtr(secret.Metadata.Ref()),
+					SecretRef: secret.Metadata.Ref(),
 				},
 			},
 		}
@@ -141,7 +139,7 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy := &gloov1.Proxy{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "proxy",
 				Namespace: "default",
 			},
@@ -160,7 +158,7 @@ var _ = Describe("AWS Lambda", func() {
 										Destination: &gloov1.RouteAction_Single{
 											Single: &gloov1.Destination{
 												DestinationType: &gloov1.Destination_Upstream{
-													Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+													Upstream: upstream.Metadata.Ref(),
 												},
 												DestinationSpec: &gloov1.DestinationSpec{
 													DestinationType: &gloov1.DestinationSpec_Aws{
@@ -192,7 +190,7 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy := &gloov1.Proxy{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "proxy",
 				Namespace: "default",
 			},
@@ -211,7 +209,7 @@ var _ = Describe("AWS Lambda", func() {
 										Destination: &gloov1.RouteAction_Single{
 											Single: &gloov1.Destination{
 												DestinationType: &gloov1.Destination_Upstream{
-													Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+													Upstream: upstream.Metadata.Ref(),
 												},
 												DestinationSpec: &gloov1.DestinationSpec{
 													DestinationType: &gloov1.DestinationSpec_Aws{
@@ -244,7 +242,7 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		vs := &gw1.VirtualService{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "app",
 				Namespace: "gloo-system",
 			},
@@ -256,7 +254,7 @@ var _ = Describe("AWS Lambda", func() {
 							Destination: &gloov1.RouteAction_Single{
 								Single: &gloov1.Destination{
 									DestinationType: &gloov1.Destination_Upstream{
-										Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+										Upstream: upstream.Metadata.Ref(),
 									},
 									DestinationSpec: &gloov1.DestinationSpec{
 										DestinationType: &gloov1.DestinationSpec_Aws{
@@ -302,7 +300,7 @@ var _ = Describe("AWS Lambda", func() {
 			secretkey := v.SecretAccessKey
 
 			secret = &gloov1.Secret{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Namespace: "default",
 					Name:      region,
 				},
@@ -345,7 +343,7 @@ var _ = Describe("AWS Lambda", func() {
 
 			var opts clients.WriteOpts
 			secret = &gloov1.Secret{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Namespace: "default",
 					Name:      region,
 				},
@@ -436,7 +434,7 @@ var _ = Describe("AWS Lambda", func() {
 
 		addUpstreamSts := func() {
 			upstream = &gloov1.Upstream{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Namespace: "default",
 					Name:      region,
 				},

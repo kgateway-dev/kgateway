@@ -71,7 +71,7 @@ func CreateUpstreamsFromService(service *ServiceMeta, consulConfig *v1.Settings_
 				tlsInstanceTags = []string{consulConfig.GetTlsTagName()}
 			}
 			result = append(result, &v1.Upstream{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      fakeUpstreamName(service.Name + "-tls"),
 					Namespace: defaults.GlooSystem,
 				},
@@ -99,7 +99,7 @@ func CreateUpstreamsFromService(service *ServiceMeta, consulConfig *v1.Settings_
 		}
 	}
 	result = append(result, &v1.Upstream{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      fakeUpstreamName(service.Name),
 			Namespace: defaults.GlooSystem,
 		},

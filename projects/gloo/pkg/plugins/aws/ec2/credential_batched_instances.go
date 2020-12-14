@@ -155,10 +155,10 @@ func upstreamInstanceToEndpoint(ctx context.Context, writeNamespace string, upst
 	instanceInfo := make(map[string]string)
 	instanceInfo[InstanceIdAnnotationKey] = aws.StringValue(instance.InstanceId)
 	endpoint := v1.Endpoint{
-		Upstreams: []*core.ResourceRef{&ref},
+		Upstreams: []*core.ResourceRef{ref},
 		Address:   aws.StringValue(ipAddr),
 		Port:      port,
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:        generateName(ref, aws.StringValue(ipAddr)),
 			Namespace:   writeNamespace,
 			Annotations: instanceInfo,

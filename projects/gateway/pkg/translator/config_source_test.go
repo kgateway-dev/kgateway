@@ -17,17 +17,16 @@ var _ = Describe("ConfigSource", func() {
 			&gloov1.VirtualHost{},
 		} {
 			err := appendSource(obj, &v1.VirtualService{
-				Metadata: core.Metadata{Name: "taco", Namespace: "pizza", Generation: 5},
+				Metadata: &core.Metadata{Name: "taco", Namespace: "pizza", Generation: 5},
 			})
 			Expect(err).NotTo(HaveOccurred())
 			meta, err := GetSourceMeta(obj)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(meta.Sources).To(Equal([]SourceRef{{
 				ResourceKind:       "*v1.VirtualService",
-				ResourceRef:        core.ResourceRef{Namespace: "pizza", Name: "taco"},
+				ResourceRef:        &core.ResourceRef{Namespace: "pizza", Name: "taco"},
 				ObservedGeneration: 5,
 			}}))
 		}
 	})
-
 })

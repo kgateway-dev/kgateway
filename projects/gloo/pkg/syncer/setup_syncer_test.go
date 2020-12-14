@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"google.golang.org/grpc"
 
 	. "github.com/onsi/ginkgo"
@@ -41,7 +41,7 @@ var _ = Describe("SetupSyncer", func() {
 
 	BeforeEach(func() {
 		settings = &v1.Settings{
-			RefreshRate: types.DurationProto(time.Hour),
+			RefreshRate: prototime.DurationToProto(time.Hour),
 			Gloo: &v1.GlooOptions{
 				XdsBindAddr:        getRandomAddr(),
 				ValidationBindAddr: getRandomAddr(),
@@ -198,20 +198,20 @@ var _ = Describe("SetupSyncer", func() {
 			})
 
 			It("can be called with core cache warming endpoints", func() {
-				settings.Gloo.EndpointsWarmingTimeout = types.DurationProto(time.Minute)
+				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(time.Minute)
 				setup := NewSetupFunc()
 				err := setup(ctx, kubeCoreCache, memcache, settings)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("panics when endpoints don't arrive in a timely manner", func() {
-				settings.Gloo.EndpointsWarmingTimeout = types.DurationProto(1 * time.Nanosecond)
+				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(1 * time.Nanosecond)
 				setup := NewSetupFunc()
 				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).To(Panic())
 			})
 
 			It("doesn't panic when endpoints don't arrive in a timely manner if set to zero", func() {
-				settings.Gloo.EndpointsWarmingTimeout = types.DurationProto(0)
+				settings.Gloo.EndpointsWarmingTimeout = prototime.DurationToProto(0)
 				setup := NewSetupFunc()
 				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).NotTo(Panic())
 			})

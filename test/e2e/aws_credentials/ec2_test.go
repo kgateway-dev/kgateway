@@ -52,7 +52,7 @@ var _ = Describe("", func() {
 		secretKey := v.SecretAccessKey
 
 		secret = &v1.Secret{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Namespace: "default",
 				Name:      region,
 			},
@@ -91,14 +91,14 @@ var _ = Describe("", func() {
 			UpstreamType: &v1.Upstream_AwsEc2{
 				AwsEc2: &glooec2.UpstreamSpec{
 					Region:    region,
-					SecretRef: &secretRef,
+					SecretRef: secretRef,
 					RoleArn:   roleArn,
 					Filters:   filters,
 					PublicIp:  false,
 					Port:      80,
 				},
 			},
-			Metadata: core.Metadata{Name: "with-role", Namespace: "default"},
+			Metadata: &core.Metadata{Name: "with-role", Namespace: "default"},
 		}
 		withRoleWithoutSecret := &v1.Upstream{
 			UpstreamType: &v1.Upstream_AwsEc2{
@@ -110,19 +110,19 @@ var _ = Describe("", func() {
 					Port:     80,
 				},
 			},
-			Metadata: core.Metadata{Name: "with-role", Namespace: "default"},
+			Metadata: &core.Metadata{Name: "with-role", Namespace: "default"},
 		}
 		withOutRole := &v1.Upstream{
 			UpstreamType: &v1.Upstream_AwsEc2{
 				AwsEc2: &glooec2.UpstreamSpec{
 					Region:    region,
-					SecretRef: &secretRef,
+					SecretRef: secretRef,
 					Filters:   filters,
 					PublicIp:  false,
 					Port:      80,
 				},
 			},
-			Metadata: core.Metadata{Name: "without-role", Namespace: "default"},
+			Metadata: &core.Metadata{Name: "without-role", Namespace: "default"},
 		}
 
 		By("should error when no role provided")

@@ -1,14 +1,14 @@
 syntax = "proto3";
 
-package envoy.api.v2.core;
+package solo.io.envoy.api.v2.core;
 
 option java_outer_classname = "HealthCheckProto";
 option java_multiple_files = true;
-option java_package = "io.envoyproxy.envoy.api.v2.core";
+option java_package = "io.envoyproxy.solo.io.solo.io.envoy.api.v2.core";
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core";
 
-import "envoy/api/v2/core/base.proto";
-import "envoy/type/range.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/range.proto";
 
 import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
@@ -16,10 +16,8 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
 
 import "validate/validate.proto";
-import "gogoproto/gogo.proto";
-
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
+option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
 // [#protodoc-title: Health check]
@@ -34,8 +32,7 @@ message HealthCheck {
         (validate.rules).duration = {
           required: true,
           gt: {seconds: 0}
-        },
-        (gogoproto.stdduration) = true
+        }
     ];
 
     // The interval between health checks.
@@ -43,8 +40,7 @@ message HealthCheck {
         (validate.rules).duration = {
             required: true,
             gt: {seconds: 0}
-        },
-        (gogoproto.stdduration) = true
+        }
     ];
 
     // An optional jitter amount in milliseconds. If specified, Envoy will start health
@@ -119,7 +115,7 @@ message HealthCheck {
         // health checked cluster. For more information, including details on header value syntax, see
         // the documentation on `custom request headers
         // (config_http_conn_man_headers_custom_request_headers)`.
-        repeated core.HeaderValueOption request_headers_to_add = 6
+        repeated .solo.io.envoy.api.v2.core.HeaderValueOption request_headers_to_add = 6
         [(validate.rules).repeated .max_items = 1000];
 
         // Specifies a list of HTTP headers that should be removed from each request that is sent to the
@@ -132,7 +128,7 @@ message HealthCheck {
         // Specifies a list of HTTP response statuses considered healthy. If provided, replaces default
         // 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open
         // semantics of `Int64Range (envoy_api_msg_type.Int64Range)`.
-        repeated envoy.type.Int64Range expected_statuses = 9;
+        repeated .solo.io.envoy.type.Int64Range expected_statuses = 9;
     }
 
     message TcpHealthCheck {

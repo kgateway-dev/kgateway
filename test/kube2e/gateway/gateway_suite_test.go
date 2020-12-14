@@ -2,7 +2,6 @@ package gateway_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -34,6 +33,7 @@ func TestGateway(t *testing.T) {
 
 var testHelper *helper.SoloTestHelper
 var ctx, cancel = context.WithCancel(context.Background())
+var installNamespace = "gloo-system"
 
 var _ = BeforeSuite(StartTestHelper)
 var _ = AfterSuite(TearDownTestHelper)
@@ -42,11 +42,10 @@ func StartTestHelper() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 
-	randomNumber := time.Now().Unix() % 10000
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
-		defaults.InstallNamespace = "gateway-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
+		defaults.InstallNamespace = "gloo-system"
 		defaults.Verbose = true
 		return defaults
 	})
@@ -57,8 +56,11 @@ func StartTestHelper() {
 	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
 	defer cleanupFunc()
 
-	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", valueOverrideFile))
-	Expect(err).NotTo(HaveOccurred())
+	// Allow skipping of install step for running multiple times
+	if os.Getenv("SKIP_INSTALL") != "1" {
+		err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", valueOverrideFile))
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	// Check that everything is OK
 	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")

@@ -73,7 +73,7 @@ func VSCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 }
 
 func createVirtualService(opts *options.Options, args []string) error {
-	vs, err := virtualServiceFromOpts(opts.Metadata, opts.Create.VirtualService)
+	vs, err := virtualServiceFromOpts(&opts.Metadata, opts.Create.VirtualService)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func createVirtualService(opts *options.Options, args []string) error {
 	return nil
 }
 
-func virtualServiceFromOpts(meta core.Metadata, input options.InputVirtualService) (*v1.VirtualService, error) {
+func virtualServiceFromOpts(meta *core.Metadata, input options.InputVirtualService) (*v1.VirtualService, error) {
 	if len(input.Domains) == 0 {
 		input.Domains = defaultDomains
 	}

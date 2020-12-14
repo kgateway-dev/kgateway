@@ -11,10 +11,10 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/selectionutils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	mock_gateway "github.com/solo-io/gloo/projects/gateway/pkg/mocks/mock_v1"
-	. "github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	sk_errors "github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 var (
@@ -24,7 +24,7 @@ var (
 	selector     selectionutils.VirtualServiceSelector
 	podNamespace = "pod-ns"
 	otherNs      = "ns"
-	metadata     = core.Metadata{
+	metadata     = &core.Metadata{
 		Namespace: otherNs,
 		Name:      "name",
 	}
@@ -35,7 +35,7 @@ var (
 var _ = Describe("SelectorTest", func() {
 	getDefault := func(namespace, name string) *gatewayv1.VirtualService {
 		return &gatewayv1.VirtualService{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Namespace: namespace,
 				Name:      name,
 			},
@@ -57,7 +57,7 @@ var _ = Describe("SelectorTest", func() {
 	})
 
 	Describe("VirtualServiceSelector", func() {
-		getVirtualService := func(meta core.Metadata, domain string) *gatewayv1.VirtualService {
+		getVirtualService := func(meta *core.Metadata, domain string) *gatewayv1.VirtualService {
 			return &gatewayv1.VirtualService{
 				Metadata:    meta,
 				VirtualHost: &gatewayv1.VirtualHost{Domains: []string{domain}},
@@ -72,9 +72,9 @@ var _ = Describe("SelectorTest", func() {
 					Read(ref.Namespace, ref.Name, clients.ReadOpts{Ctx: context.Background()}).
 					Return(expected, nil)
 
-				actual, err := selector.SelectOrBuildVirtualService(context.Background(), &ref)
+				actual, err := selector.SelectOrBuildVirtualService(context.Background(), ref)
 				Expect(err).NotTo(HaveOccurred())
-				ExpectEqualProtoMessages(actual, expected)
+				Expect(actual).To(matchers.MatchProto(expected))
 			})
 
 			It("creates a new default vs with the provided name and namespace if not found", func() {
@@ -84,9 +84,9 @@ var _ = Describe("SelectorTest", func() {
 					Read(ref.GetNamespace(), ref.GetName(), clients.ReadOpts{Ctx: context.Background()}).
 					Return(nil, sk_errors.NewNotExistErr(ref.GetNamespace(), ref.GetName(), testErr))
 
-				actual, err := selector.SelectOrBuildVirtualService(context.Background(), &ref)
+				actual, err := selector.SelectOrBuildVirtualService(context.Background(), ref)
 				Expect(err).NotTo(HaveOccurred())
-				ExpectEqualProtoMessages(actual, expected)
+				Expect(actual).To(matchers.MatchProto(expected))
 			})
 
 			It("creates a new default vs with the provided name and default namespace", func() {
@@ -95,7 +95,7 @@ var _ = Describe("SelectorTest", func() {
 
 				actual, err := selector.SelectOrBuildVirtualService(context.Background(), nameRef)
 				Expect(err).NotTo(HaveOccurred())
-				ExpectEqualProtoMessages(actual, expected)
+				Expect(actual).To(matchers.MatchProto(expected))
 			})
 
 			It("errors when the client errors on read", func() {
@@ -103,7 +103,7 @@ var _ = Describe("SelectorTest", func() {
 					Read(ref.Namespace, ref.Name, clients.ReadOpts{Ctx: context.Background()}).
 					Return(nil, testErr)
 
-				_, err := selector.SelectOrBuildVirtualService(context.Background(), &ref)
+				_, err := selector.SelectOrBuildVirtualService(context.Background(), ref)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(Equal(testErr))
 			})
@@ -113,7 +113,7 @@ var _ = Describe("SelectorTest", func() {
 			It("returns the first virtual service with domain * if one exists", func() {
 				expected := getVirtualService(metadata, "*")
 				list := []*gatewayv1.VirtualService{
-					getVirtualService(core.Metadata{Namespace: otherNs}, ""),
+					getVirtualService(&core.Metadata{Namespace: otherNs}, ""),
 					expected,
 				}
 
@@ -129,7 +129,7 @@ var _ = Describe("SelectorTest", func() {
 
 				actual, err := selector.SelectOrBuildVirtualService(context.Background(), nil)
 				Expect(err).NotTo(HaveOccurred())
-				ExpectEqualProtoMessages(actual, expected)
+				Expect(actual).To(matchers.MatchProto(expected))
 			})
 
 			It("creates a new default vs when no vs with domain * is found", func() {
@@ -144,7 +144,7 @@ var _ = Describe("SelectorTest", func() {
 
 				actual, err := selector.SelectOrBuildVirtualService(context.Background(), nil)
 				Expect(err).NotTo(HaveOccurred())
-				ExpectEqualProtoMessages(actual, expected)
+				Expect(actual).To(matchers.MatchProto(expected))
 			})
 
 			It("errors when the namespaceLister errors on list", func() {

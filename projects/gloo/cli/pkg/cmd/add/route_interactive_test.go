@@ -26,7 +26,7 @@ var _ = Describe("Routes interactive", func() {
 		ctx, cancel = context.WithCancel(context.Background())
 		ugclient := helpers.MustUpstreamGroupClient(ctx)
 		ugclient.Write(&gloov1.UpstreamGroup{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "default",
 				Namespace: "default",
 			},
@@ -34,7 +34,7 @@ var _ = Describe("Routes interactive", func() {
 
 		upClient := helpers.MustUpstreamClient(ctx)
 		upClient.Write(&gloov1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "up",
 				Namespace: "gloo-system",
 			},
