@@ -65,7 +65,7 @@ var _ = Describe("plugin", func() {
 		}
 	})
 
-	FIt("copies the csrf config from the listener to the filter with AdditionalOrigins set", func() {
+	It("copies the csrf config from the listener to the filter with AdditionalOrigins set", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
@@ -80,6 +80,8 @@ var _ = Describe("plugin", func() {
 				Name: FilterName,
 				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 					TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
+						FilterEnabled:     &envoy_config_core.RuntimeFractionalPercent{},
+						ShadowEnabled:     &envoy_config_core.RuntimeFractionalPercent{},
 						AdditionalOrigins: envoyAdditionalOrigins,
 					}),
 				},
@@ -105,23 +107,25 @@ var _ = Describe("plugin", func() {
 		})
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
-			{
-				HttpFilter: &envoyhcm.HttpFilter{
-					Name: FilterName,
-					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
-							FilterEnabled:     &envoyFilter,
-							AdditionalOrigins: envoyAdditionalOrigins,
-						}),
-					},
-				},
-				Stage: plugins.FilterStage{
-					RelativeTo: 8,
-					Weight:     0,
+		expectedStageFilter := plugins.StagedHttpFilter{
+			HttpFilter: &envoyhcm.HttpFilter{
+				Name: FilterName,
+				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
+					TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
+						FilterEnabled:     &envoyFilter,
+						ShadowEnabled:     &envoy_config_core.RuntimeFractionalPercent{},
+						AdditionalOrigins: envoyAdditionalOrigins,
+					}),
 				},
 			},
-		}))
+			Stage: plugins.FilterStage{
+				RelativeTo: 8,
+				Weight:     0,
+			},
+		}
+
+		Expect(filters[0].HttpFilter).To(matchers.MatchProto(expectedStageFilter.HttpFilter))
+		Expect(filters[0].Stage).To(Equal(expectedStageFilter.Stage))
 	})
 
 	It("copies the csrf config from the listener to the filter with shadow enabled", func() {
@@ -135,23 +139,25 @@ var _ = Describe("plugin", func() {
 		})
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
-			{
-				HttpFilter: &envoyhcm.HttpFilter{
-					Name: FilterName,
-					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
-							ShadowEnabled:     &envoyFilter,
-							AdditionalOrigins: envoyAdditionalOrigins,
-						}),
-					},
-				},
-				Stage: plugins.FilterStage{
-					RelativeTo: 8,
-					Weight:     0,
+		expectedStageFilter := plugins.StagedHttpFilter{
+			HttpFilter: &envoyhcm.HttpFilter{
+				Name: FilterName,
+				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
+					TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
+						FilterEnabled:     &envoy_config_core.RuntimeFractionalPercent{},
+						ShadowEnabled:     &envoyFilter,
+						AdditionalOrigins: envoyAdditionalOrigins,
+					}),
 				},
 			},
-		}))
+			Stage: plugins.FilterStage{
+				RelativeTo: 8,
+				Weight:     0,
+			},
+		}
+
+		Expect(filters[0].HttpFilter).To(matchers.MatchProto(expectedStageFilter.HttpFilter))
+		Expect(filters[0].Stage).To(Equal(expectedStageFilter.Stage))
 	})
 
 	It("copies the csrf config from the listener to the filter with filters and shadow enabled", func() {

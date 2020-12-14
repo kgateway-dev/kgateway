@@ -39,13 +39,14 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 
-	csrfConfig := listener.GetOptions().GetCsrf()
+	csrfPolicy := listener.GetOptions().GetCsrf()
 
-	if csrfConfig == nil {
+	if csrfPolicy == nil {
 		return nil, nil
 	}
+	err, config := getCsrfConfig(csrfPolicy)
 
-	csrfFilter, err := plugins.NewStagedFilterWithConfig(FilterName, csrfConfig, pluginStage)
+	csrfFilter, err := plugins.NewStagedFilterWithConfig(FilterName, config, pluginStage)
 	if err != nil {
 		return nil, eris.Wrapf(err, "generating filter config")
 	}
@@ -154,21 +155,31 @@ func getCsrfConfig(csrf *csrf.CsrfPolicy) (error, *envoycsrf.CsrfPolicy) {
 
 	}
 
-	csrfPolicy := &envoycsrf.CsrfPolicy{
-		FilterEnabled: &envoy_config_core.RuntimeFractionalPercent{
+	var filterEnabled envoy_config_core.RuntimeFractionalPercent
+	if csrf.GetFilterEnabled() != nil {
+		filterEnabled = envoy_config_core.RuntimeFractionalPercent{
 			DefaultValue: &envoytype.FractionalPercent{
 				Numerator:   csrf.GetFilterEnabled().GetDefaultValue().GetNumerator(),
 				Denominator: envoytype.FractionalPercent_DenominatorType(csrf.GetFilterEnabled().GetDefaultValue().GetDenominator()),
 			},
 			RuntimeKey: csrf.GetFilterEnabled().GetRuntimeKey(),
-		},
-		ShadowEnabled: &envoy_config_core.RuntimeFractionalPercent{
+		}
+	}
+
+	var shadowEnabled envoy_config_core.RuntimeFractionalPercent
+	if csrf.GetShadowEnabled() != nil {
+		shadowEnabled = envoy_config_core.RuntimeFractionalPercent{
 			DefaultValue: &envoytype.FractionalPercent{
 				Numerator:   csrf.GetShadowEnabled().GetDefaultValue().GetNumerator(),
 				Denominator: envoytype.FractionalPercent_DenominatorType(csrf.GetShadowEnabled().GetDefaultValue().GetDenominator()),
 			},
 			RuntimeKey: csrf.GetShadowEnabled().GetRuntimeKey(),
-		},
+		}
+	}
+
+	csrfPolicy := &envoycsrf.CsrfPolicy{
+		FilterEnabled:     &filterEnabled,
+		ShadowEnabled:     &shadowEnabled,
 		AdditionalOrigins: additionalOrigins,
 	}
 
