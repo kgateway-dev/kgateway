@@ -5,10 +5,9 @@
 package mocks
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	release "helm.sh/helm/v3/pkg/release"
+	reflect "reflect"
 )
 
 // MockHelmUninstallation is a mock of HelmUninstallation interface

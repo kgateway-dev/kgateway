@@ -53,7 +53,7 @@ var (
 		return errors.Wrapf(err, "on sub route table %s", rtRef.Ref().Key())
 	}
 
-	InvalidRouteTableForDelegateCaseSensitivePathMatchErr = func(delegateMatchCaseSensitive, matchCaseSensitive *types.BoolValue) error {
+	InvalidRouteTableForDelegateCaseSensitivePathMatchErr = func(delegateMatchCaseSensitive, matchCaseSensitive *wrappers.BoolValue) error {
 		return errors.Wrapf(InvalidPathMatchErr, "required caseSensitive: %v, caseSensitive: %v", delegateMatchCaseSensitive, matchCaseSensitive)
 	}
 )
@@ -451,7 +451,7 @@ func isRouteTableValidForDelegateMatcher(parentMatcher *matchersv1.Matcher, chil
 		}
 
 		// ensure all sub-routes matches in the delegated route match the parent case sensitivity
-		if !childMatch.CaseSensitive.Equal(parentMatcher.CaseSensitive) {
+		if !proto.Equal(childMatch.GetCaseSensitive(), parentMatcher.GetCaseSensitive()) {
 			return InvalidRouteTableForDelegateCaseSensitivePathMatchErr(childMatch.CaseSensitive, parentMatcher.CaseSensitive)
 		}
 

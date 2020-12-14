@@ -623,7 +623,7 @@ var _ = Describe("Route converter", func() {
 
 		When("route table has a matcher case sensitivity that doesn't match the prefix case sensitivity of the parent route", func() {
 			It("reports error on the route table and on the virtual service", func() {
-				rtCaseSensitivity := &types.BoolValue{Value: false}
+				rtCaseSensitivity := &wrappers.BoolValue{Value: false}
 				rt.Routes[0].Matchers = []*matchers.Matcher{
 					{
 						PathSpecifier: &matchers.Matcher_Prefix{
