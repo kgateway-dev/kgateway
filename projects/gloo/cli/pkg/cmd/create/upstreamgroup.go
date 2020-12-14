@@ -7,7 +7,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 
-	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -93,7 +92,7 @@ func upstreamGroupFromOpts(opts *options.Options) (*v1.UpstreamGroup, error) {
 		return nil, errors.Wrapf(err, "invalid upstream spec")
 	}
 	return &v1.UpstreamGroup{
-		Metadata:     opts.Metadata,
+		Metadata:     &opts.Metadata,
 		Destinations: dest,
 	}, nil
 }
@@ -136,7 +135,7 @@ func upstreamGroupDestinationsFromOpts(ctx context.Context, input options.InputU
 		wd := v1.WeightedDestination{
 			Destination: &v1.Destination{
 				DestinationType: &v1.Destination_Upstream{
-					Upstream: utils.ResourceRefPtr(ussByKey[namespacedUpstream].Metadata.Ref()),
+					Upstream: ussByKey[namespacedUpstream].Metadata.Ref(),
 				},
 			},
 			Weight: weight,

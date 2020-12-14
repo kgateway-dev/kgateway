@@ -2,12 +2,11 @@ syntax = "proto3";
 package dlp.options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/dlp";
 
-import "gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 
-import "envoy/type/percent.proto";
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+import "github.com/solo-io/solo-kit/api/external/envoy/type/percent.proto";
 import "extproto/ext.proto";
+option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
 /*
@@ -169,5 +168,5 @@ message CustomAction {
     // The percent of the string which will be masked by the mask_char
     // default value: 75%
     // rounds ratio (percent/100) by std::round http://www.cplusplus.com/reference/cmath/round/
-    envoy.type.Percent percent = 4;
+    .solo.io.envoy.type.Percent percent = 4;
 }

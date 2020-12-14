@@ -5,12 +5,12 @@ import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/gogo/protobuf/types"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/test/matchers"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -30,7 +30,7 @@ var _ = Describe("Plugin", func() {
 
 		var (
 			params plugins.Params
-			usRef  core.ResourceRef
+			usRef  *core.ResourceRef
 
 			logName      string
 			extraHeaders []string
@@ -53,7 +53,7 @@ var _ = Describe("Plugin", func() {
 		BeforeEach(func() {
 			logName = "test"
 			extraHeaders = []string{"test"}
-			usRef = core.ResourceRef{
+			usRef = &core.ResourceRef{
 				Name:      "default",
 				Namespace: "default",
 			}
@@ -79,7 +79,7 @@ var _ = Describe("Plugin", func() {
 					Upstreams: v1.UpstreamList{
 						{
 							// UpstreamSpec: nil,
-							Metadata: core.Metadata{
+							Metadata: &core.Metadata{
 								Name:      usRef.Name,
 								Namespace: usRef.Namespace,
 							},
@@ -160,15 +160,15 @@ var _ = Describe("Plugin", func() {
 	Context("file", func() {
 		var (
 			strFormat, path string
-			jsonFormat      *types.Struct
+			jsonFormat      *structpb.Struct
 			fsStrFormat     *als.FileSink_StringFormat
 			fsJsonFormat    *als.FileSink_JsonFormat
 		)
 
 		BeforeEach(func() {
 			strFormat, path = "formatting string", "path"
-			jsonFormat = &types.Struct{
-				Fields: nil,
+			jsonFormat = &structpb.Struct{
+				Fields: map[string]*structpb.Value{},
 			}
 			fsStrFormat = &als.FileSink_StringFormat{
 				StringFormat: strFormat,
@@ -282,7 +282,7 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(falCfg.Path).To(Equal(path))
 				jsn := falCfg.GetLogFormat().GetJsonFormat()
-				Expect(protoutils.StructPbToGogo(jsn)).To(Equal(jsonFormat))
+				Expect(jsn).To(matchers.MatchProto(jsonFormat))
 			}
 
 			BeforeEach(func() {

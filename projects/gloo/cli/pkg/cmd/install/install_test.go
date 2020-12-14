@@ -4,15 +4,12 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/solo-io/gloo/pkg/version"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
-
-	"github.com/solo-io/go-utils/testutils/exec"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	"github.com/solo-io/go-utils/testutils/exec"
 )
 
 var _ = Describe("Install", func() {

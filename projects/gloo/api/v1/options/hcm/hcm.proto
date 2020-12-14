@@ -3,15 +3,15 @@ package hcm.options.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm";
 
-import "gogoproto/gogo.proto";
+
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
-import "gloo/projects/gloo/api/v1/options/tracing/tracing.proto";
-import "gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
 
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 // Contains various settings for Envoy's http connection manager.
 // See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/configuration/http_conn_man/http_conn_man
@@ -47,12 +47,12 @@ message HttpConnectionManagerSettings {
     google.protobuf.BoolValue use_remote_address = 4;
     google.protobuf.BoolValue generate_request_id = 5;
     bool proxy_100_continue = 6;
-    google.protobuf.Duration stream_idle_timeout = 7 [ (gogoproto.stdduration) = true ];
-    google.protobuf.Duration idle_timeout = 8 [ (gogoproto.stdduration) = true ];
+    google.protobuf.Duration stream_idle_timeout = 7;
+    google.protobuf.Duration idle_timeout = 8;
     google.protobuf.UInt32Value max_request_headers_kb = 9;
-    google.protobuf.Duration request_timeout = 10 [ (gogoproto.stdduration) = true ];
-    google.protobuf.Duration drain_timeout = 12 [ (gogoproto.stdduration) = true ];
-    google.protobuf.Duration delayed_close_timeout = 13 [ (gogoproto.stdduration) = true ];
+    google.protobuf.Duration request_timeout = 10;
+    google.protobuf.Duration drain_timeout = 12;
+    google.protobuf.Duration delayed_close_timeout = 13;
     string server_name = 14;
 
     // For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions
@@ -73,8 +73,8 @@ message HttpConnectionManagerSettings {
     repeated protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig upgrades = 21;
 
     // For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
-    google.protobuf.Duration max_connection_duration = 23 [ (gogoproto.stdduration) = true ];
-    google.protobuf.Duration max_stream_duration = 24 [ (gogoproto.stdduration) = true ];
+    google.protobuf.Duration max_connection_duration = 23;
+    google.protobuf.Duration max_stream_duration = 24;
 
     // For an explanation of the settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto.html#envoy-v3-api-enum-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-serverheadertransformation
     ServerHeaderTransformation server_header_transformation = 25;

@@ -3,11 +3,12 @@ syntax = "proto3";
 package envoy.config.health_checker.http_path.v2;
 
 import "udpa/annotations/status.proto";
-import "envoy/config/core/v3/health_check.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/health_check.proto";
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/http_path";
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 option java_package = "io.envoyproxy.envoy.config.health_checker.http_path.v2";
 option java_outer_classname = "HttpPath";
@@ -19,5 +20,5 @@ option (udpa.annotations.file_status).package_version_status = ACTIVE;
 // be in the "io.solo.health_checkers.http_path" namespace, under a string value named "path".
 message HttpPath {
   // Http health check.
-  config.core.v3.HealthCheck.HttpHealthCheck http_health_check = 1;
+  .solo.io.envoy.config.core.v3.HealthCheck.HttpHealthCheck http_health_check = 1;
 }

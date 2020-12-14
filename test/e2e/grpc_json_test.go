@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
-	"github.com/solo-io/gloo/pkg/utils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -118,8 +117,8 @@ func getGrpcJsonGateway() *gatewayv1.Gateway {
 	return &gatewayv1.Gateway{
 		BindAddress: "::",
 		BindPort:    defaults.HttpPort,
-		Status:      core.Status{},
-		Metadata: core.Metadata{
+		Status:      &core.Status{},
+		Metadata: &core.Metadata{
 			Name:      "gateway-proxy",
 			Namespace: "gloo-system",
 		},
@@ -137,9 +136,9 @@ func getGrpcJsonGateway() *gatewayv1.Gateway {
 	}
 }
 
-func getGrpcJsonRawVs(writeNamespace string, usRef core.ResourceRef) *gatewayv1.VirtualService {
+func getGrpcJsonRawVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.VirtualService {
 	return &gatewayv1.VirtualService{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "default",
 			Namespace: writeNamespace,
 		},
@@ -157,7 +156,7 @@ func getGrpcJsonRawVs(writeNamespace string, usRef core.ResourceRef) *gatewayv1.
 							Destination: &gloov1.RouteAction_Single{
 								Single: &gloov1.Destination{
 									DestinationType: &gloov1.Destination_Upstream{
-										Upstream: utils.ResourceRefPtr(usRef),
+										Upstream: usRef,
 									},
 								},
 							},

@@ -12,31 +12,26 @@ import (
 	"time"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"github.com/gogo/protobuf/types"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-
-	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
-
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/k8s-utils/kubeutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/setup"
-
+	errors "github.com/rotisserie/eris"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
+	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
 	skkubeutils "github.com/solo-io/solo-kit/pkg/utils/kubeutils"
+	"github.com/solo-io/solo-kit/test/helpers"
+	"github.com/solo-io/solo-kit/test/setup"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -57,33 +52,33 @@ var _ = Describe("Happy path", func() {
 
 		testCases = []struct {
 			Title               string
-			RestEdsEnabled      *types.BoolValue
+			RestEdsEnabled      *wrappers.BoolValue
 			TransportApiVersion envoy_config_core_v3.ApiVersion
 		}{
 			{
 				Title: "Rest Eds Enabled",
-				RestEdsEnabled: &types.BoolValue{
+				RestEdsEnabled: &wrappers.BoolValue{
 					Value: true,
 				},
 				TransportApiVersion: envoy_config_core_v3.ApiVersion_V2,
 			},
 			{
 				Title: "Rest Eds Disabled",
-				RestEdsEnabled: &types.BoolValue{
+				RestEdsEnabled: &wrappers.BoolValue{
 					Value: false,
 				},
 				TransportApiVersion: envoy_config_core_v3.ApiVersion_V2,
 			},
 			{
 				Title: "Rest Eds Enabled",
-				RestEdsEnabled: &types.BoolValue{
+				RestEdsEnabled: &wrappers.BoolValue{
 					Value: true,
 				},
 				TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
 			},
 			{
 				Title: "Rest Eds Disabled",
-				RestEdsEnabled: &types.BoolValue{
+				RestEdsEnabled: &wrappers.BoolValue{
 					Value: false,
 				},
 				TransportApiVersion: envoy_config_core_v3.ApiVersion_V3,
@@ -266,7 +261,7 @@ var _ = Describe("Happy path", func() {
 					BeforeEach(func() {
 						hellos = make(chan sslConn, 100)
 						sslSecret := &gloov1.Secret{
-							Metadata: core.Metadata{
+							Metadata: &core.Metadata{
 								Name:      "secret",
 								Namespace: "default",
 							},
@@ -304,7 +299,7 @@ var _ = Describe("Happy path", func() {
 						}
 						copyUp.SslConfig = &gloov1.UpstreamSslConfig{
 							SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
-								SecretRef: &ref,
+								SecretRef: ref,
 							},
 						}
 						upSsl = &copyUp
@@ -383,7 +378,10 @@ var _ = Describe("Happy path", func() {
 							if err != nil {
 								return 0, err
 							}
-							return updatedProxy.Status.State, nil
+							if updatedProxy.GetStatus() == nil {
+								return 0, nil
+							}
+							return updatedProxy.GetStatus().GetState(), nil
 						}
 
 						Eventually(getStatus, "10s").ShouldNot(Equal(core.Status_Pending))
@@ -491,7 +489,7 @@ var _ = Describe("Happy path", func() {
 					if err != nil {
 						return core.Status_Pending, err
 					}
-					return u.Status.State, nil
+					return u.GetStatus().GetState(), nil
 				}
 
 				Context("specific namespace", func() {
@@ -595,16 +593,16 @@ var _ = Describe("Happy path", func() {
 
 })
 
-func getTrivialProxyForUpstream(ns string, bindPort uint32, upstream core.ResourceRef) *gloov1.Proxy {
+func getTrivialProxyForUpstream(ns string, bindPort uint32, upstream *core.ResourceRef) *gloov1.Proxy {
 	proxy := getTrivialProxy(ns, bindPort)
 	proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener.
 		VirtualHosts[0].Routes[0].Action.(*gloov1.Route_RouteAction).RouteAction.
 		Destination.(*gloov1.RouteAction_Single).Single.DestinationType =
-		&gloov1.Destination_Upstream{Upstream: &upstream}
+		&gloov1.Destination_Upstream{Upstream: upstream}
 	return proxy
 }
 
-func getTrivialProxyForService(ns string, bindPort uint32, service core.ResourceRef, svcPort uint32) *gloov1.Proxy {
+func getTrivialProxyForService(ns string, bindPort uint32, service *core.ResourceRef, svcPort uint32) *gloov1.Proxy {
 	proxy := getTrivialProxy(ns, bindPort)
 	proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener.
 		VirtualHosts[0].Routes[0].Action.(*gloov1.Route_RouteAction).RouteAction.
@@ -620,7 +618,7 @@ func getTrivialProxyForService(ns string, bindPort uint32, service core.Resource
 
 func getTrivialProxy(ns string, bindPort uint32) *gloov1.Proxy {
 	return &gloov1.Proxy{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      gatewaydefaults.GatewayProxyName,
 			Namespace: ns,
 		},

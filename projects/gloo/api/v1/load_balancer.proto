@@ -2,15 +2,12 @@ syntax = "proto3";
 package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
-import "gloo/projects/gloo/api/v1/options/lbhash/lbhash.proto";
-
-import "gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 
 
@@ -25,7 +22,7 @@ message LoadBalancerConfig {
     // This allows batch updates of endpoints health/weight/metadata that happen during a time window.
     // this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
     // Set to 0 to disable and have changes applied immediately.
-    google.protobuf.Duration update_merge_window = 2 [ (gogoproto.stdduration) = true ];
+    google.protobuf.Duration update_merge_window = 2;
 
     message RoundRobin {}
     message LeastRequest {

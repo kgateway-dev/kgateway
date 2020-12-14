@@ -2,12 +2,9 @@ package buffer
 
 import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoybuffer "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
-
-	envoybuffer "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
-
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	buffer "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -36,7 +33,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 
 func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 
-	bufferConfig := listener.GetOptions().GetBuffer()
+	bufferConfig := p.translateBufferFilter(listener.GetOptions().GetBuffer())
 
 	if bufferConfig == nil {
 		return nil, nil
@@ -48,6 +45,16 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 	}
 
 	return []plugins.StagedHttpFilter{bufferFilter}, nil
+}
+
+func (p *Plugin) translateBufferFilter(buf *buffer.Buffer) *envoybuffer.Buffer {
+	if buf == nil {
+		return nil
+	}
+
+	return &envoybuffer.Buffer{
+		MaxRequestBytes: buf.GetMaxRequestBytes(),
+	}
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
@@ -124,7 +131,7 @@ func getBufferConfig(bufPerRoute *buffer.BufferPerRoute) *envoybuffer.BufferPerR
 	return &envoybuffer.BufferPerRoute{
 		Override: &envoybuffer.BufferPerRoute_Buffer{
 			Buffer: &envoybuffer.Buffer{
-				MaxRequestBytes: gogoutils.UInt32GogoToProto(bufPerRoute.GetBuffer().GetMaxRequestBytes()),
+				MaxRequestBytes: bufPerRoute.GetBuffer().GetMaxRequestBytes(),
 			},
 		},
 	}

@@ -174,7 +174,7 @@ func upstreamFromOpts(opts *options.Options) (*v1.Upstream, error) {
 	}
 
 	upstream := &v1.Upstream{
-		Metadata: opts.Metadata,
+		Metadata: &opts.Metadata,
 	}
 
 	switch input.UpstreamType {
@@ -251,7 +251,7 @@ func upstreamFromOpts(opts *options.Options) (*v1.Upstream, error) {
 		upstream.UpstreamType = &v1.Upstream_Azure{
 			Azure: &azure.UpstreamSpec{
 				FunctionAppName: input.Azure.FunctionAppName,
-				SecretRef:       input.Azure.Secret,
+				SecretRef:       &input.Azure.Secret,
 			},
 		}
 	case options.UpstreamType_Consul:

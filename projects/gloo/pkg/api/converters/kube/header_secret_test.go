@@ -29,7 +29,7 @@ var _ = Describe("Header Secret Converter", func() {
 		converter = &kubeconverters.HeaderSecretConverter{}
 
 		glooSecret = &v1.Secret{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "foo",
 				Namespace: "bar",
 			},
@@ -94,7 +94,7 @@ var _ = Describe("Header Secret Converter", func() {
 
 		It("ignores secret that are not header secrets", func() {
 			actual, err := converter.ToKubeSecret(ctx, resourceClient, &v1.Secret{
-				Metadata: core.Metadata{Name: "foo"},
+				Metadata: &core.Metadata{Name: "foo"},
 				Kind:     &v1.Secret_Aws{},
 			})
 			Expect(err).NotTo(HaveOccurred())

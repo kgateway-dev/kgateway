@@ -11,7 +11,6 @@ import (
 
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
@@ -322,7 +321,7 @@ func buildEndpoint(namespace, address, ipAddress string, service *consulapi.Cata
 		}
 	}
 	return &v1.Endpoint{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Namespace:       namespace,
 			Name:            buildEndpointName(ipAddress, service),
 			Labels:          buildLabels(service.ServiceTags, []string{service.Datacenter}, upstreams),
@@ -364,7 +363,7 @@ func toResourceRefs(upstreams []*v1.Upstream, endpointTags []string) (out []*cor
 	for _, us := range upstreams {
 		upstreamTags := us.GetConsul().GetInstanceTags()
 		if shouldAddToUpstream(endpointTags, upstreamTags) {
-			out = append(out, utils.ResourceRefPtr(us.Metadata.Ref()))
+			out = append(out, us.Metadata.Ref())
 		}
 	}
 	return

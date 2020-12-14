@@ -20,7 +20,7 @@ import (
 
 func NewClusterIngress(namespace, name string) *ClusterIngress {
 	clusteringress := &ClusterIngress{}
-	clusteringress.ClusterIngress.SetMetadata(core.Metadata{
+	clusteringress.ClusterIngress.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})

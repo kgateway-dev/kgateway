@@ -217,7 +217,7 @@ If the mask_char, and percent were left to default, the result would be:
 "name": string
 "regex": []string
 "maskChar": string
-"percent": .envoy.type.Percent
+"percent": .solo.io.envoy.type.Percent
 
 ```
 
@@ -226,7 +226,7 @@ If the mask_char, and percent were left to default, the result would be:
 | `name` | `string` | The name of the custom action. This name is used for logging and debugging purposes. |
 | `regex` | `[]string` | The list of regex strings which will be applied in order. |
 | `maskChar` | `string` | The masking character for the sensitive data. default value: X. |
-| `percent` | [.envoy.type.Percent](../../../../../../../../../../../envoy/type/percent.proto.sk/#percent) | The percent of the string which will be masked by the mask_char default value: 75% rounds ratio (percent/100) by std::round http://www.cplusplus.com/reference/cmath/round/. |
+| `percent` | [.solo.io.envoy.type.Percent](../../../../../../../../../solo-kit/api/external/envoy/type/percent.proto.sk/#percent) | The percent of the string which will be masked by the mask_char default value: 75% rounds ratio (percent/100) by std::round http://www.cplusplus.com/reference/cmath/round/. |
 
 
 

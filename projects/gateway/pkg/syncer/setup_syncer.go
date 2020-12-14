@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
 	"go.uber.org/zap"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gatewayvalidation "github.com/solo-io/gloo/projects/gateway/pkg/validation"
 
-	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -77,10 +77,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		return err
 	}
 
-	refreshRate, err := types.DurationFromProto(settings.RefreshRate)
-	if err != nil {
-		return err
-	}
+	refreshRate := prototime.DurationFromProto(settings.RefreshRate)
 
 	writeNamespace := settings.DiscoveryNamespace
 	if writeNamespace == "" {

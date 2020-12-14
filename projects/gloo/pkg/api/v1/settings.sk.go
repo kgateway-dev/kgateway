@@ -16,18 +16,18 @@ import (
 
 func NewSettings(namespace, name string) *Settings {
 	settings := &Settings{}
-	settings.SetMetadata(core.Metadata{
+	settings.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
 	return settings
 }
 
-func (r *Settings) SetMetadata(meta core.Metadata) {
+func (r *Settings) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 
-func (r *Settings) SetStatus(status core.Status) {
+func (r *Settings) SetStatus(status *core.Status) {
 	r.Status = status
 }
 

@@ -75,7 +75,6 @@ static:
   hosts:
   - addr: jsonplaceholder.typicode.com
     port: 80
-status: {}
 `
 
 	Context("default output should be -o table", func() {

@@ -10,7 +10,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envo
 import "validate/validate.proto";
 
 import "envoy/api/v2/route/route.proto";
-import "envoy/type/percent.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/type/percent.proto";
 
 
 message FilterTransformations {
@@ -30,7 +30,7 @@ message TransformationRule {
     //    match:
     //      prefix: /
     //
-    api.v2.route.RouteMatch match = 1 [(validate.rules).message = {required: true}];
+    .solo.io.envoy.api.v2.route.RouteMatch match = 1 [(validate.rules).message = {required: true}];
     // transformation to perform
     RouteTransformations route_transformations = 2;
 }
@@ -67,7 +67,7 @@ message Action {
     bool shadow = 3;
     // The percent of the string which should be masked.
     // If not set, defaults to 75%
-    envoy.type.Percent percent = 4;
+    .solo.io.envoy.type.Percent percent = 4;
     // The character which should overwrite the masked data
     // If left empty, defaults to "X"
     string mask_char = 5 [(validate.rules).string.max_bytes = 1];

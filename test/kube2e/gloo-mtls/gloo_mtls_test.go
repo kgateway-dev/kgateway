@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/k8s-utils/kubeutils"
@@ -69,7 +68,7 @@ var _ = Describe("Installing gloo edge in mtls mode", func() {
 
 	It("can route request to upstream", func() {
 		testRunnerUpstreamName := testHelper.InstallNamespace + "-" + helper.TestrunnerName + "-" + strconv.Itoa(helper.TestRunnerPort)
-		vs := getTrivialVirtualServiceForUpstream(testHelper.InstallNamespace, core.ResourceRef{Name: testRunnerUpstreamName, Namespace: testHelper.InstallNamespace})
+		vs := getTrivialVirtualServiceForUpstream(testHelper.InstallNamespace, &core.ResourceRef{Name: testRunnerUpstreamName, Namespace: testHelper.InstallNamespace})
 		_, err := virtualServiceClient.Write(vs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -93,9 +92,9 @@ var _ = Describe("Installing gloo edge in mtls mode", func() {
 
 })
 
-func getTrivialVirtualServiceForUpstream(ns string, upstream core.ResourceRef) *gatewayv1.VirtualService {
+func getTrivialVirtualServiceForUpstream(ns string, upstream *core.ResourceRef) *gatewayv1.VirtualService {
 	return &gatewayv1.VirtualService{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "vs",
 			Namespace: ns,
 		},
@@ -107,7 +106,7 @@ func getTrivialVirtualServiceForUpstream(ns string, upstream core.ResourceRef) *
 						Destination: &gloov1.RouteAction_Single{
 							Single: &gloov1.Destination{
 								DestinationType: &gloov1.Destination_Upstream{
-									Upstream: utils.ResourceRefPtr(upstream),
+									Upstream: upstream,
 								},
 							},
 						},

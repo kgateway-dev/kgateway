@@ -2,20 +2,19 @@ syntax = "proto3";
 package gateway.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gateway/pkg/api/v1";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
+option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
 
 import "google/protobuf/wrappers.proto";
-import "solo-kit/api/v1/metadata.proto";
-import "solo-kit/api/v1/status.proto";
-import "solo-kit/api/v1/ref.proto";
-import "solo-kit/api/v1/solo-kit.proto";
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
-import "gloo/projects/gloo/api/v1/proxy.proto";
-import "gloo/projects/gloo/api/v1/options.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 
 /*
 A Gateway describes a single Listener (bind address:port)
@@ -41,10 +40,10 @@ message Gateway {
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\"", (extproto.skip_hashing) = true];
+    core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
 
     // Metadata contains the object metadata for this resource
-    core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+    core.solo.io.Metadata metadata = 7;
 
     // Enable ProxyProtocol support for this listener
     google.protobuf.BoolValue use_proxy_proto = 8;
@@ -85,7 +84,7 @@ message HttpGateway {
     // with accordance to `ssl` flag on `Gateway` above.
     // The default namespace matching behavior can be overridden via `virtual_service_namespaces` flag below.
     // Only one of `virtualServices` or `virtualServiceSelector` should be provided.
-    repeated core.solo.io.ResourceRef virtual_services = 1 [(gogoproto.nullable) = false];
+    repeated core.solo.io.ResourceRef virtual_services = 1;
 
     // Select virtual services by their label. If `virtual_service_namespaces` is provided below, this will apply only
     // to virtual services in the namespaces specified.

@@ -38,12 +38,11 @@ status: {}
 	It("can print as solo-kit yaml in dry run", func() {
 		out, err := testutils.GlooctlOut("create virtualservice kube --dry-run -oyaml --name vs --domains foo.bar,baz.qux")
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out).To(Equal(`---
+		Expect(out).To(ContainSubstring(`---
 displayName: vs
 metadata:
   name: vs
   namespace: gloo-system
-status: {}
 virtualHost:
   domains:
   - foo.bar

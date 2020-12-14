@@ -3,7 +3,7 @@ package serviceconverter
 import (
 	"strings"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubev1 "k8s.io/api/core/v1"
 )
@@ -28,18 +28,18 @@ func (u *UseHttp2Converter) ConvertService(svc *kubev1.Service, port kubev1.Serv
 	return nil
 }
 
-func useHttp2(svc *kubev1.Service, port kubev1.ServicePort) *types.BoolValue {
+func useHttp2(svc *kubev1.Service, port kubev1.ServicePort) *wrappers.BoolValue {
 	if svc.Annotations != nil {
 		if svc.Annotations[GlooH2Annotation] == "true" {
-			return &types.BoolValue{Value: true}
+			return &wrappers.BoolValue{Value: true}
 		} else if svc.Annotations[GlooH2Annotation] == "false" {
-			return &types.BoolValue{Value: false}
+			return &wrappers.BoolValue{Value: false}
 		}
 	}
 
 	for _, http2Name := range http2PortNames {
 		if strings.HasPrefix(port.Name, http2Name) {
-			return &types.BoolValue{Value: true}
+			return &wrappers.BoolValue{Value: true}
 		}
 	}
 

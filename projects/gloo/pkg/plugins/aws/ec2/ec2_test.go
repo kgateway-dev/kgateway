@@ -3,7 +3,7 @@ package ec2
 import (
 	"context"
 
-	"github.com/solo-io/go-utils/testutils"
+	. "github.com/solo-io/solo-kit/test/matchers"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -42,7 +42,7 @@ var _ = Describe("Plugin", func() {
 	Context("convert filters from specs", func() {
 		key1 := "abc"
 		value1 := "123"
-		secret := &core.ResourceRef{"secret", "ns"}
+		secret := &core.ResourceRef{Name: "secret", Namespace: "ns"}
 		region := "us-east-1"
 		DescribeTable("filter conversion",
 			func(input *glooec2.UpstreamSpec, expected []*ec2.Filter) {
@@ -86,8 +86,7 @@ var _ = Describe("Plugin", func() {
 		writeNamespace := "default"
 		DescribeTable("convert to endpoints", func(input *v1.Upstream, instance *ec2.Instance, expected *v1.Endpoint) {
 			out := upstreamInstanceToEndpoint(context.TODO(), writeNamespace, input, instance)
-			Expect(out).To(Equal(expected))
-			testutils.ExpectEqualProtoMessages(out, expected)
+			Expect(out).To(MatchProto(expected))
 		},
 			Entry("should use proper default port and ip when not specified", &v1.Upstream{
 				UpstreamType: &v1.Upstream_AwsEc2{
@@ -100,7 +99,7 @@ var _ = Describe("Plugin", func() {
 						Port:      0,
 					},
 				},
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "ex1",
 					Namespace: "default",
 				},
@@ -111,11 +110,11 @@ var _ = Describe("Plugin", func() {
 					PrivateIpAddress: aws.String(privateIp),
 				},
 				&v1.Endpoint{
-					Upstreams: []*core.ResourceRef{{"ex1", "default"}},
+					Upstreams: []*core.ResourceRef{{Name: "ex1", Namespace: "default"}},
 					Address:   privateIp,
 					Port:      80,
-					Metadata: core.Metadata{
-						Name:        "ec2-name-ex1-namespace-default--5-5-5-5",
+					Metadata: &core.Metadata{
+						Name:        "ec2-name-ex1-namespace-default-5-5-5-5",
 						Namespace:   writeNamespace,
 						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
 					},
@@ -131,7 +130,7 @@ var _ = Describe("Plugin", func() {
 						Port:      77,
 					},
 				},
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "ex1",
 					Namespace: "default",
 				},
@@ -142,11 +141,11 @@ var _ = Describe("Plugin", func() {
 					PrivateIpAddress: aws.String(privateIp),
 				},
 				&v1.Endpoint{
-					Upstreams: []*core.ResourceRef{{"ex1", "default"}},
+					Upstreams: []*core.ResourceRef{{Name: "ex1", Namespace: "default"}},
 					Address:   pubIp,
 					Port:      77,
-					Metadata: core.Metadata{
-						Name:        "ec2-name-ex1-namespace-default--1-2-3-4",
+					Metadata: &core.Metadata{
+						Name:        "ec2-name-ex1-namespace-default-1-2-3-4",
 						Namespace:   writeNamespace,
 						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
 					},
@@ -162,7 +161,7 @@ var _ = Describe("Plugin", func() {
 						Port:      77,
 					},
 				},
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "ex1",
 					Namespace: "default",
 				},
@@ -172,11 +171,11 @@ var _ = Describe("Plugin", func() {
 					PrivateIpAddress: aws.String(privateIp),
 				},
 				&v1.Endpoint{
-					Upstreams: []*core.ResourceRef{{"ex1", "default"}},
+					Upstreams: []*core.ResourceRef{{Name: "ex1", Namespace: "default"}},
 					Address:   privateIp,
 					Port:      77,
-					Metadata: core.Metadata{
-						Name:        "ec2-name-ex1-namespace-default--5-5-5-5",
+					Metadata: &core.Metadata{
+						Name:        "ec2-name-ex1-namespace-default-5-5-5-5",
 						Namespace:   writeNamespace,
 						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
 					},
@@ -192,7 +191,7 @@ var _ = Describe("Plugin", func() {
 						Port:      77,
 					},
 				},
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "ex1",
 					Namespace: "default",
 				},

@@ -6,16 +6,13 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/gogo/protobuf/proto"
-	"github.com/mitchellh/reflectwalk"
+	"github.com/golang/protobuf/proto"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/protoc-gen-ext/pkg/redaction"
 )
 
 const (
 	Redacted = "[REDACTED]"
-
-	LogRedactorTag      = "logging"
-	LogRedactorTagValue = "redact"
 )
 
 // stringify the contents of the snapshot
@@ -68,48 +65,18 @@ type ProtoRedactor interface {
 }
 
 // build a ProtoRedactor that zeroes out fields that have the given struct tag set to the given value
-func NewProtoRedactor(tagName, tagValue string) ProtoRedactor {
-	return &protoRedactor{
-		tagName:  tagName,
-		tagValue: tagValue,
-	}
+func NewProtoRedactor() ProtoRedactor {
+	return &protoRedactor{}
 }
 
-type protoRedactor struct {
-	tagName  string
-	tagValue string
-}
+type protoRedactor struct{}
 
 func (p *protoRedactor) BuildRedactedJsonString(message proto.Message) (string, error) {
 	// make a clone so that we can mutate it and zero-out fields
 	clone := proto.Clone(message)
 
-	walker := &structWalker{
-		tagName:  p.tagName,
-		tagValue: p.tagValue,
-	}
-	err := reflectwalk.Walk(clone, walker)
-	if err != nil {
-		return "", err
-	}
+	redaction.Redact(proto.MessageReflect(clone))
 
 	bytes, err := json.Marshal(clone)
 	return string(bytes), err
-}
-
-// run the StructField callback for every field in the proto
-type structWalker struct {
-	tagName  string
-	tagValue string
-}
-
-func (s *structWalker) Struct(reflect.Value) error {
-	return nil
-}
-
-func (s *structWalker) StructField(field reflect.StructField, value reflect.Value) error {
-	if field.Tag.Get(s.tagName) == s.tagValue {
-		value.Set(reflect.Zero(value.Type()))
-	}
-	return nil
 }

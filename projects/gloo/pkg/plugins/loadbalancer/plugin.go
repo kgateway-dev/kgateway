@@ -6,7 +6,6 @@ import (
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/lbhash"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -63,7 +62,7 @@ func getHashPoliciesFromSpec(spec []*lbhash.HashPolicy) []*envoy_config_route_v3
 			policy.PolicySpecifier = &envoy_config_route_v3.RouteAction_HashPolicy_Cookie_{
 				Cookie: &envoy_config_route_v3.RouteAction_HashPolicy_Cookie{
 					Name: keyType.Cookie.Name,
-					Ttl:  gogoutils.DurationStdToProto(keyType.Cookie.Ttl),
+					Ttl:  keyType.Cookie.Ttl,
 					Path: keyType.Cookie.Path,
 				},
 			}
@@ -94,7 +93,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			}
 		}
 		if cfg.UpdateMergeWindow != nil {
-			out.CommonLbConfig.UpdateMergeWindow = gogoutils.DurationStdToProto(cfg.UpdateMergeWindow)
+			out.CommonLbConfig.UpdateMergeWindow = cfg.UpdateMergeWindow
 		}
 	}
 

@@ -36,7 +36,7 @@ var _ = Describe("Uds", func() {
 	It("should update ssl config when one is desired", func() {
 		desiredSslConfig := &gloov1.UpstreamSslConfig{
 			SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
-				SecretRef: &core.ResourceRef{"hi", "there"},
+				SecretRef: &core.ResourceRef{Name: "hi", Namespace: "there"},
 			},
 		}
 		desired := &gloov1.Upstream{

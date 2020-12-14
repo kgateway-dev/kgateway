@@ -10,37 +10,38 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoy_extensions_wasm_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/wasm/v3"
 	"github.com/ghodss/yaml"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	"github.com/solo-io/k8s-utils/manifesttestutils"
-	"k8s.io/apimachinery/pkg/util/sets"
-
-	"github.com/gogo/protobuf/proto"
+	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"github.com/solo-io/reporting-client/pkg/client"
-	"helm.sh/helm/v3/pkg/releaseutil"
-	"k8s.io/utils/pointer"
-
-	"github.com/gogo/protobuf/types"
-	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	test_matchers "github.com/solo-io/solo-kit/test/matchers"
+	"helm.sh/helm/v3/pkg/releaseutil"
 	appsv1 "k8s.io/api/apps/v1"
 	jobsv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/intstr"
-
-	. "github.com/solo-io/k8s-utils/manifesttestutils"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/utils/pointer"
 )
 
 func GetPodNamespaceStats() v1.EnvVar {
@@ -875,14 +876,14 @@ var _ = Describe("Helm Test", func() {
 						Expect(gateway1.Ssl).To(BeFalse())
 						Expect(gateway1.BindPort).To(Equal(uint32(8080)))
 						Expect(gateway1.ProxyNames).To(Equal(proxyNames))
-						Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{Value: false}))
+						Expect(gateway1.UseProxyProto).To(test_matchers.MatchProto(&wrappers.BoolValue{Value: false}))
 						Expect(gateway1.BindAddress).To(Equal(defaults.GatewayBindAddress))
 						gatewayUns = testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName+"-ssl")
 						ConvertKubeResource(gatewayUns, &gateway1)
 						Expect(gateway1.Ssl).To(BeTrue())
 						Expect(gateway1.BindPort).To(Equal(uint32(8443)))
 						Expect(gateway1.ProxyNames).To(Equal(proxyNames))
-						Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{Value: false}))
+						Expect(gateway1.UseProxyProto).To(test_matchers.MatchProto(&wrappers.BoolValue{Value: false}))
 						Expect(gateway1.BindAddress).To(Equal(defaults.GatewayBindAddress))
 					})
 
@@ -896,7 +897,7 @@ var _ = Describe("Helm Test", func() {
 
 					It("can render with custom listener yaml", func() {
 						newGatewayProxyName := "test-name"
-						vsList := []core.ResourceRef{
+						vsList := []*core.ResourceRef{
 							{
 								Name:      "one",
 								Namespace: "one",
@@ -908,18 +909,26 @@ var _ = Describe("Helm Test", func() {
 							gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, name)
 							var gateway1 gwv1.Gateway
 							ConvertKubeResource(gatewayUns, &gateway1)
-							Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{
+							Expect(gateway1.UseProxyProto).To(test_matchers.MatchProto(&wrappers.BoolValue{
 								Value: true,
 							}))
 							httpGateway := gateway1.GetHttpGateway()
 							Expect(httpGateway).NotTo(BeNil())
-							Expect(httpGateway.VirtualServices).To(Equal(vsList))
+							var msgList []proto.Message
+							for _, v := range vsList {
+								msgList = append(msgList, v)
+							}
+							Expect(httpGateway.VirtualServices).To(test_matchers.ConistOfProtos(msgList...))
 							gatewayUns = testManifest.ExpectCustomResource("Gateway", namespace, name+"-ssl")
 							ConvertKubeResource(gatewayUns, &gateway1)
-							Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{
+							Expect(gateway1.UseProxyProto).To(test_matchers.MatchProto(&wrappers.BoolValue{
 								Value: true,
 							}))
-							Expect(httpGateway.VirtualServices).To(Equal(vsList))
+							msgList = []proto.Message{}
+							for _, v := range vsList {
+								msgList = append(msgList, v)
+							}
+							Expect(httpGateway.VirtualServices).To(test_matchers.ConistOfProtos(msgList...))
 						}
 
 					})
@@ -948,7 +957,7 @@ var _ = Describe("Helm Test", func() {
 						Expect(tcpGateway).NotTo(BeNil())
 						Expect(tcpGateway.GetTcpHosts()).To(HaveLen(1))
 						host := tcpGateway.GetTcpHosts()[0]
-						Expect(host.GetSslConfig()).To(Equal(&gloov1.SslConfig{
+						Expect(host.GetSslConfig()).To(test_matchers.MatchProto(&gloov1.SslConfig{
 							SslSecrets: &gloov1.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
 									Name:      "failover-downstream",
@@ -956,7 +965,7 @@ var _ = Describe("Helm Test", func() {
 								},
 							},
 						}))
-						Expect(host.GetDestination().GetForwardSniClusterName()).To(Equal(&types.Empty{}))
+						Expect(host.GetDestination().GetForwardSniClusterName()).To(test_matchers.MatchProto(&empty.Empty{}))
 					})
 
 					It("by default will not render failover gateway", func() {
@@ -2844,7 +2853,7 @@ metadata:
 						if structuredConfigMap.GetName() == gatewayProxyConfigMapName {
 							addedCluster := envoyBootstrap.GetStaticResources().GetClusters()[len(envoyBootstrap.GetStaticResources().GetClusters())-1]
 							Expect(addedCluster).NotTo(BeNil())
-							Expect(addedCluster).To(Equal(&envoy_config_cluster_v3.Cluster{
+							Expect(addedCluster).To(test_matchers.MatchProto(&envoy_config_cluster_v3.Cluster{
 								Name:           "test_cluster",
 								ConnectTimeout: &duration.Duration{Seconds: 5},
 								LbPolicy:       envoy_config_cluster_v3.Cluster_ROUND_ROBIN,
@@ -2907,6 +2916,36 @@ metadata:
 							val, ok := bootstrapAsMap["bootstrap_extensions"]
 							Expect(ok).To(BeTrue())
 							Expect(val).To(BeAssignableToTypeOf([]interface{}{}))
+							Expect(val.([]interface{})).To(HaveLen(1))
+							for _, v := range val.([]interface{}) {
+								byt, err := json.Marshal(v)
+								Expect(err).NotTo(HaveOccurred())
+								var wasmTyped envoy_config_core_v3.TypedExtensionConfig
+								var wasmSvc envoy_extensions_wasm_v3.WasmService
+								Expect(jsonpb.UnmarshalString(string(byt), &wasmTyped)).NotTo(HaveOccurred())
+								Expect(ptypes.UnmarshalAny(wasmTyped.TypedConfig, &wasmSvc)).NotTo(HaveOccurred())
+								Expect(&wasmSvc).To(test_matchers.MatchProto(&envoy_extensions_wasm_v3.WasmService{
+									Config: &envoy_extensions_wasm_v3.PluginConfig{
+										Name: "my_plugin",
+										Vm: &envoy_extensions_wasm_v3.PluginConfig_VmConfig{
+											VmConfig: &envoy_extensions_wasm_v3.VmConfig{
+												VmId:    "",
+												Runtime: "envoy.wasm.runtime.v8",
+												Code: &envoy_config_core_v3.AsyncDataSource{
+													Specifier: &envoy_config_core_v3.AsyncDataSource_Local{
+														Local: &envoy_config_core_v3.DataSource{
+															Specifier: &envoy_config_core_v3.DataSource_Filename{
+																Filename: "/etc/envoy_filter_http_wasm_example.wasm",
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+									Singleton: true,
+								}))
+							}
 							checkedAddedCluster = true
 						}
 					})

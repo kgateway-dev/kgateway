@@ -56,7 +56,7 @@ func (s *routeTableSelector) SelectOrBuildRouteTable(ctx context.Context, ref *c
 
 func (s *routeTableSelector) build(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.RouteTable, error) {
 	routeTable := &gatewayv1.RouteTable{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Namespace: ref.GetNamespace(),
 			Name:      ref.GetName(),
 		},

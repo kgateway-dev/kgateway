@@ -8,7 +8,7 @@ import (
 	math "math"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	proto "github.com/gogo/protobuf/proto"
+	proto "github.com/golang/protobuf/proto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 )

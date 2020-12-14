@@ -20,7 +20,7 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 
 	makeRt := func(i int) *v1.RouteTable {
 		return &v1.RouteTable{
-			Metadata: core.Metadata{Name: fmt.Sprintf("node-%d", i), Namespace: namespace},
+			Metadata: &core.Metadata{Name: fmt.Sprintf("node-%d", i), Namespace: namespace},
 			Routes: []*v1.Route{{
 				Name: "testRouteName",
 				Matchers: []*matchers.Matcher{{
@@ -46,7 +46,7 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 		routeTables[i-1].Routes[0].Action = &v1.Route_DelegateAction{
 			DelegateAction: &v1.DelegateAction{
 				DelegationType: &v1.DelegateAction_Ref{
-					Ref: &ref,
+					Ref: ref,
 				},
 			},
 		}
@@ -54,7 +54,7 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 
 	// append the leaf
 	leaf := &v1.RouteTable{
-		Metadata: core.Metadata{Name: "leaf", Namespace: namespace},
+		Metadata: &core.Metadata{Name: "leaf", Namespace: namespace},
 		Routes: []*v1.Route{
 			{
 				Matchers: []*matchers.Matcher{{
@@ -72,7 +72,7 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 	routeTables[lengthOfChain-1].Routes[0].Action = &v1.Route_DelegateAction{
 		DelegateAction: &v1.DelegateAction{
 			DelegationType: &v1.DelegateAction_Ref{
-				Ref: &leafRef,
+				Ref: leafRef,
 			},
 		},
 	}
@@ -90,7 +90,7 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 		Action: &v1.Route_DelegateAction{
 			DelegateAction: &v1.DelegateAction{
 				DelegationType: &v1.DelegateAction_Ref{
-					Ref: &ref,
+					Ref: ref,
 				},
 			},
 		},

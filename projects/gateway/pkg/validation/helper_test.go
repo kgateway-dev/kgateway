@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/test/samples"
+	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("virtualServicesForRouteTable", func() {
@@ -15,9 +16,11 @@ var _ = Describe("virtualServicesForRouteTable", func() {
 		rtts := append(routeTables, routeTables2...)
 
 		containingVs := virtualServicesForRouteTable(routeTables[0], vss, rtts)
-		Expect(containingVs).To(Equal(v1.VirtualServiceList{vs}))
+		Expect(containingVs).To(HaveLen(1))
+		Expect(containingVs[0]).To(matchers.MatchProto(vs))
 
 		containingVs = virtualServicesForRouteTable(routeTables2[0], vss, rtts)
-		Expect(containingVs).To(Equal(v1.VirtualServiceList{vs2}))
+		Expect(containingVs).To(HaveLen(1))
+		Expect(containingVs[0]).To(matchers.MatchProto(vs2))
 	})
 })

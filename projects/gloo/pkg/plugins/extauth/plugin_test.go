@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -121,7 +120,7 @@ func getPluginContext(globalSettings bool, authOnVirtualHost, authOnRoute, authO
 	ctx := context.TODO()
 
 	extAuthServerUpstream := &gloov1.Upstream{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "extauth",
 			Namespace: "default",
 		},
@@ -161,7 +160,7 @@ func getPluginContext(globalSettings bool, authOnVirtualHost, authOnRoute, authO
 	weightedDestination := &gloov1.WeightedDestination{
 		Destination: &gloov1.Destination{
 			DestinationType: &gloov1.Destination_Upstream{
-				Upstream: utils.ResourceRefPtr(extAuthServerUpstream.Metadata.Ref()),
+				Upstream: extAuthServerUpstream.Metadata.Ref(),
 			},
 		},
 		Weight:  1,
@@ -226,13 +225,13 @@ func getPluginContext(globalSettings bool, authOnVirtualHost, authOnRoute, authO
 
 	usRef := extAuthServerUpstream.Metadata.Ref()
 	settings := &extauthv1.Settings{
-		ExtauthzServerRef: &usRef,
+		ExtauthzServerRef: usRef,
 	}
 	// ----------------------------------------------------------------------------
 	// Proxy
 	// ----------------------------------------------------------------------------
 	proxy := &gloov1.Proxy{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "proxy",
 			Namespace: "default",
 		},

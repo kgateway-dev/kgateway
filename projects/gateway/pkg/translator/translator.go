@@ -67,7 +67,7 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 		return nil, reports
 	}
 	return &gloov1.Proxy{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      proxyName,
 			Namespace: namespace,
 		},

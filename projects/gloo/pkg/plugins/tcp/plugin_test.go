@@ -7,11 +7,11 @@ import (
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -19,6 +19,8 @@ import (
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	mock_utils "github.com/solo-io/gloo/projects/gloo/pkg/utils/mocks"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
+	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("Plugin", func() {
@@ -73,23 +75,22 @@ var _ = Describe("Plugin", func() {
 		)
 
 		BeforeEach(func() {
-			pd := func(t time.Duration) *time.Duration { return &t }
 			snap = &v1.ApiSnapshot{
 				Upstreams: v1.UpstreamList{
 					{
-						Metadata: core.Metadata{
+						Metadata: &core.Metadata{
 							Name:      "one",
 							Namespace: ns,
 						},
 					},
 					{
-						Metadata: core.Metadata{
+						Metadata: &core.Metadata{
 							Name:      "two",
 							Namespace: ns,
 						},
 					},
 					{
-						Metadata: core.Metadata{
+						Metadata: &core.Metadata{
 							Name:      "three",
 							Namespace: ns,
 						},
@@ -97,10 +98,10 @@ var _ = Describe("Plugin", func() {
 				},
 			}
 			tcps = &tcp.TcpProxySettings{
-				MaxConnectAttempts: &types.UInt32Value{
+				MaxConnectAttempts: &wrappers.UInt32Value{
 					Value: 5,
 				},
-				IdleTimeout: pd(5 * time.Second),
+				IdleTimeout: prototime.DurationToProto(5 * time.Second),
 			}
 			tcpListener = &v1.TcpListener{
 				TcpHosts: []*v1.TcpHost{},
@@ -141,8 +142,8 @@ var _ = Describe("Plugin", func() {
 			err = translatorutil.ParseTypedConfig(filterChains[0].Filters[0], &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(cfg.IdleTimeout).To(Equal(gogoutils.DurationStdToProto(tcps.IdleTimeout)))
-			Expect(cfg.MaxConnectAttempts).To(Equal(gogoutils.UInt32GogoToProto(tcps.MaxConnectAttempts)))
+			Expect(cfg.IdleTimeout).To(matchers.MatchProto(tcps.IdleTimeout))
+			Expect(cfg.MaxConnectAttempts).To(matchers.MatchProto(tcps.MaxConnectAttempts))
 		})
 
 		It("can transform a single destination", func() {
@@ -170,7 +171,7 @@ var _ = Describe("Plugin", func() {
 			err = translatorutil.ParseTypedConfig(filterChains[0].Filters[0], &cfg)
 			Expect(err).NotTo(HaveOccurred())
 			cluster := cfg.GetCluster()
-			Expect(cluster).To(Equal(translatorutil.UpstreamToClusterName(core.ResourceRef{Namespace: ns, Name: "one"})))
+			Expect(cluster).To(Equal(translatorutil.UpstreamToClusterName(&core.ResourceRef{Namespace: ns, Name: "one"})))
 		})
 		It("can transform a multi destination", func() {
 			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
@@ -193,15 +194,15 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 			clusters := cfg.GetWeightedClusters()
 			Expect(clusters.Clusters).To(HaveLen(2))
-			Expect(clusters.Clusters[0].Name).To(Equal(translatorutil.UpstreamToClusterName(core.ResourceRef{Namespace: ns, Name: "one"})))
+			Expect(clusters.Clusters[0].Name).To(Equal(translatorutil.UpstreamToClusterName(&core.ResourceRef{Namespace: ns, Name: "one"})))
 			Expect(clusters.Clusters[0].Weight).To(Equal(uint32(5)))
-			Expect(clusters.Clusters[1].Name).To(Equal(translatorutil.UpstreamToClusterName(core.ResourceRef{Namespace: ns, Name: "two"})))
+			Expect(clusters.Clusters[1].Name).To(Equal(translatorutil.UpstreamToClusterName(&core.ResourceRef{Namespace: ns, Name: "two"})))
 			Expect(clusters.Clusters[1].Weight).To(Equal(uint32(1)))
 		})
 		It("can transform an upstream group", func() {
 			snap.UpstreamGroups = append(snap.UpstreamGroups, &v1.UpstreamGroup{
 				Destinations: wd,
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      "one",
 					Namespace: ns,
 				},
@@ -227,9 +228,9 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 			clusters := cfg.GetWeightedClusters()
 			Expect(clusters.Clusters).To(HaveLen(2))
-			Expect(clusters.Clusters[0].Name).To(Equal(translatorutil.UpstreamToClusterName(core.ResourceRef{Namespace: ns, Name: "one"})))
+			Expect(clusters.Clusters[0].Name).To(Equal(translatorutil.UpstreamToClusterName(&core.ResourceRef{Namespace: ns, Name: "one"})))
 			Expect(clusters.Clusters[0].Weight).To(Equal(uint32(5)))
-			Expect(clusters.Clusters[1].Name).To(Equal(translatorutil.UpstreamToClusterName(core.ResourceRef{Namespace: ns, Name: "two"})))
+			Expect(clusters.Clusters[1].Name).To(Equal(translatorutil.UpstreamToClusterName(&core.ResourceRef{Namespace: ns, Name: "two"})))
 			Expect(clusters.Clusters[1].Weight).To(Equal(uint32(1)))
 		})
 
@@ -247,7 +248,7 @@ var _ = Describe("Plugin", func() {
 				Name: "one",
 				Destination: &v1.TcpHost_TcpAction{
 					Destination: &v1.TcpHost_TcpAction_ForwardSniClusterName{
-						ForwardSniClusterName: &types.Empty{},
+						ForwardSniClusterName: &empty.Empty{},
 					},
 				},
 				SslConfig: sslConfig,
@@ -285,7 +286,7 @@ var _ = Describe("Plugin", func() {
 						Name: "one",
 						Destination: &v1.TcpHost_TcpAction{
 							Destination: &v1.TcpHost_TcpAction_ForwardSniClusterName{
-								ForwardSniClusterName: &types.Empty{},
+								ForwardSniClusterName: &empty.Empty{},
 							},
 						},
 						SslConfig: &v1.SslConfig{
@@ -315,7 +316,7 @@ var _ = Describe("Plugin", func() {
 						Name: "one",
 						Destination: &v1.TcpHost_TcpAction{
 							Destination: &v1.TcpHost_TcpAction_ForwardSniClusterName{
-								ForwardSniClusterName: &types.Empty{},
+								ForwardSniClusterName: &empty.Empty{},
 							},
 						},
 					},

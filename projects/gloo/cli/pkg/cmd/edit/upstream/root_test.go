@@ -27,7 +27,7 @@ var _ = Describe("Root", func() {
 		// create a settings object
 		upClient = helpers.MustUpstreamClient(ctx)
 		upstream = &gloov1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "up",
 				Namespace: "gloo-system",
 			},

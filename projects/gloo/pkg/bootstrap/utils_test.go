@@ -196,7 +196,7 @@ var _ = Describe("Utils", func() {
 
 				value, err := protoutils.MarshalYAML(&v1.Artifact{
 					Data:     map[string]string{"hi": "bye"},
-					Metadata: core.Metadata{Name: "name", Namespace: "namespace"},
+					Metadata: &core.Metadata{Name: "name", Namespace: "namespace"},
 				})
 				Expect(err).NotTo(HaveOccurred())
 

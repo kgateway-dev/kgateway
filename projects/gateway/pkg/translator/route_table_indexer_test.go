@@ -1,8 +1,8 @@
 package translator_test
 
 import (
-	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -25,13 +25,13 @@ var _ = Describe("RouteTableIndexer", func() {
 		weightTwenty *v1.RouteTable
 
 		routeTableWithWeight = func(weight *int32, name string) *v1.RouteTable {
-			var w *types.Int32Value
+			var w *wrappers.Int32Value
 			if weight != nil {
-				w = &types.Int32Value{Value: *weight}
+				w = &wrappers.Int32Value{Value: *weight}
 			}
 
 			table := &v1.RouteTable{
-				Metadata: core.Metadata{
+				Metadata: &core.Metadata{
 					Name:      name,
 					Namespace: defaults.GlooSystem,
 				},

@@ -3,10 +3,10 @@ package add
 import (
 	"sort"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 
-	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	"github.com/solo-io/gloo/pkg/utils/selectionutils"
@@ -255,7 +255,7 @@ func pluginsFromInput(input options.RoutePlugins) (*v1.RouteOptions, error) {
 		return nil, nil
 	}
 	return &v1.RouteOptions{
-		PrefixRewrite: &types.StringValue{Value: *input.PrefixRewrite.Value},
+		PrefixRewrite: &wrappers.StringValue{Value: *input.PrefixRewrite.Value},
 	}, nil
 }
 

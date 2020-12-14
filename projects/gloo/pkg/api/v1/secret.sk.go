@@ -16,14 +16,14 @@ import (
 
 func NewSecret(namespace, name string) *Secret {
 	secret := &Secret{}
-	secret.SetMetadata(core.Metadata{
+	secret.SetMetadata(&core.Metadata{
 		Name:      name,
 		Namespace: namespace,
 	})
 	return secret
 }
 
-func (r *Secret) SetMetadata(meta core.Metadata) {
+func (r *Secret) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 

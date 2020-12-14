@@ -5,10 +5,10 @@ import (
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/solo-io/gloo/pkg/utils"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	pluginsv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
@@ -18,8 +18,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
-	"github.com/gogo/protobuf/types"
 )
 
 var _ = Describe("Plugin", func() {
@@ -59,7 +57,7 @@ var _ = Describe("Plugin", func() {
 			}},
 		}
 		upstream = &v1.Upstream{
-			Metadata: core.Metadata{
+			Metadata: &core.Metadata{
 				Name:      "test",
 				Namespace: "default",
 			},
@@ -92,7 +90,7 @@ var _ = Describe("Plugin", func() {
 
 		BeforeEach(func() {
 			ps = &transformapi.Parameters{
-				Path: &types.StringValue{Value: "/{what}/{ ever }/{nested.field}/too"},
+				Path: &wrappers.StringValue{Value: "/{what}/{ ever }/{nested.field}/too"},
 				Headers: map[string]string{
 					"header-simple":            "{simple}",
 					"header-simple-with-space": "{ simple_with_space }",
@@ -115,7 +113,7 @@ var _ = Describe("Plugin", func() {
 									},
 								},
 								DestinationType: &v1.Destination_Upstream{
-									Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+									Upstream: upstream.Metadata.Ref(),
 								},
 							},
 						},
@@ -141,8 +139,7 @@ var _ = Describe("Plugin", func() {
 
 			var cfg envoy_transform.RouteTransformations
 			goTypedConfig := routeOut.GetTypedPerFilterConfig()[transformation.FilterName]
-			gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
-			err = types.UnmarshalAny(gogoTypedConfig, &cfg)
+			err = ptypes.UnmarshalAny(goTypedConfig, &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			tt := cfg.GetRequestTransformation().GetTransformationTemplate()
@@ -179,8 +176,7 @@ var _ = Describe("Plugin", func() {
 
 			var cfg envoy_transform.RouteTransformations
 			goTypedConfig := routeOut.GetTypedPerFilterConfig()[transformation.FilterName]
-			gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
-			err = types.UnmarshalAny(gogoTypedConfig, &cfg)
+			err = ptypes.UnmarshalAny(goTypedConfig, &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			tt := cfg.GetRequestTransformation().GetTransformationTemplate()

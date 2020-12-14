@@ -36,7 +36,6 @@ static:
   hosts:
   - addr: jsonplaceholder.typicode.com
     port: 80
-status: {}
 `
 
 		tableOutput := `+--------------------+--------+---------+---------------------------------+

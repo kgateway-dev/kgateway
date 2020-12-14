@@ -4,7 +4,7 @@ import (
 	"context"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
@@ -186,7 +186,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 			)
 			BeforeEach(func() {
 				upGrp := &v1.UpstreamGroup{
-					Metadata: core.Metadata{
+					Metadata: &core.Metadata{
 						Name:      "test",
 						Namespace: "test",
 					},
@@ -215,7 +215,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 					Action: &v1.Route_RouteAction{
 						RouteAction: &v1.RouteAction{
 							Destination: &v1.RouteAction_UpstreamGroup{
-								UpstreamGroup: &ref,
+								UpstreamGroup: ref,
 							},
 						},
 					},

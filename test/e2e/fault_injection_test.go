@@ -7,18 +7,15 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
-
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
+	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
 var _ = Describe("Fault Injection", func() {
@@ -122,9 +119,9 @@ var _ = Describe("Fault Injection", func() {
 		})
 
 		It("should cause envoy delay fault", func() {
-			fixedDelay := time.Second * 3
+			fixedDelay := prototime.DurationToProto(time.Second * 3)
 			delay := &fault.RouteDelay{
-				FixedDelay: &fixedDelay,
+				FixedDelay: fixedDelay,
 				Percentage: float32(100),
 			}
 
@@ -169,7 +166,7 @@ func getGlooProxy(testClients services.TestClients, abort *fault.RouteAbort, del
 
 func getGlooProxyWithVersion(abort *fault.RouteAbort, delay *fault.RouteDelay, envoyPort uint32, up *gloov1.Upstream, resourceVersion string) *gloov1.Proxy {
 	return &gloov1.Proxy{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:            "proxy",
 			Namespace:       "default",
 			ResourceVersion: resourceVersion,
@@ -189,7 +186,7 @@ func getGlooProxyWithVersion(abort *fault.RouteAbort, delay *fault.RouteDelay, e
 									Destination: &gloov1.RouteAction_Single{
 										Single: &gloov1.Destination{
 											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: utils.ResourceRefPtr(up.Metadata.Ref()),
+												Upstream: up.Metadata.Ref(),
 											},
 										},
 									},

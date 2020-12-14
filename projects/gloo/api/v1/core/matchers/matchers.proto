@@ -2,11 +2,10 @@ syntax = "proto3";
 package matchers.core.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers";
 
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
 import "google/protobuf/wrappers.proto";
 
 import "extproto/ext.proto";
+option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
 // Parameters for matching routes to requests received by a Gloo-managed proxy
@@ -41,7 +40,7 @@ message Matcher {
 
     // Indicates that prefix/path matching should be case sensitive. The default is true.
     google.protobuf.BoolValue case_sensitive = 4;
-    
+
     // Specifies a set of headers that the route should match on. The router will
     // check the request’s headers against all the specified headers in the route
     // config. A match will happen if all the headers in the route are present in

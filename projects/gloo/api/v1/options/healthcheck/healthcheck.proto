@@ -4,12 +4,12 @@ package healthcheck.options.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck";
 
-import "gogoproto/gogo.proto";
-import "solo-kit/api/v1/ref.proto";
 
-option (gogoproto.equal_all) = true;
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+option (extproto.equal_all) = true;
 
 import "google/protobuf/wrappers.proto";
 

@@ -9,7 +9,6 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	errors "github.com/rotisserie/eris"
@@ -95,7 +94,7 @@ func translateProxy(ctx context.Context, namespace string, snap *v1.TranslatorSn
 		})
 	}
 	return &gloov1.Proxy{
-		Metadata: core.Metadata{
+		Metadata: &core.Metadata{
 			Name:      "ingress-proxy", // must match envoy role
 			Namespace: namespace,
 		},
@@ -224,7 +223,7 @@ func virtualHosts(ctx context.Context, ingresses []*v1beta1.Ingress, upstreams g
 							Destination: &gloov1.RouteAction_Single{
 								Single: &gloov1.Destination{
 									DestinationType: &gloov1.Destination_Upstream{
-										Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+										Upstream: upstream.Metadata.Ref(),
 									},
 								},
 							},

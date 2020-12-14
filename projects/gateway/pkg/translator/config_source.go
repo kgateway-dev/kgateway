@@ -3,13 +3,13 @@ package translator
 import (
 	"encoding/json"
 
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/jsonpb"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/go-utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 )
 
 type SourceMetadata struct {
@@ -17,16 +17,16 @@ type SourceMetadata struct {
 }
 
 type SourceRef struct {
-	core.ResourceRef
+	*core.ResourceRef
 	ResourceKind       string `json:"kind"`
 	ObservedGeneration int64  `json:"observedGeneration"`
 }
 
 type ObjectWithMetadata interface {
-	GetMetadata() *types.Struct
+	GetMetadata() *structpb.Struct
 }
 
-func SourceMetaFromStruct(s *types.Struct) (*SourceMetadata, error) {
+func SourceMetaFromStruct(s *structpb.Struct) (*SourceMetadata, error) {
 	if s == nil {
 		return nil, nil
 	}
@@ -37,9 +37,9 @@ func SourceMetaFromStruct(s *types.Struct) (*SourceMetadata, error) {
 	return &m, nil
 }
 
-func objMetaToStruct(meta *SourceMetadata) (*types.Struct, error) {
+func objMetaToStruct(meta *SourceMetadata) (*structpb.Struct, error) {
 	data, err := json.Marshal(meta)
-	var pb types.Struct
+	var pb structpb.Struct
 	err = jsonpb.UnmarshalString(string(data), &pb)
 	return &pb, err
 }
@@ -95,6 +95,6 @@ func makeSourceRef(source resources.InputResource) SourceRef {
 	return SourceRef{
 		ResourceRef:        source.GetMetadata().Ref(),
 		ResourceKind:       resources.Kind(source),
-		ObservedGeneration: source.GetMetadata().Generation,
+		ObservedGeneration: source.GetMetadata().GetGeneration(),
 	}
 }
