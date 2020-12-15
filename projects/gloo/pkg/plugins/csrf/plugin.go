@@ -41,6 +41,9 @@ func (p *plugin) Init(params plugins.InitParams) error {
 func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 
 	config, err := getCsrfConfig(listener.GetOptions().GetCsrf())
+	if err != nil {
+		return nil, err
+	}
 
 	if config == nil && p.present {
 		return []plugins.StagedHttpFilter{plugins.NewStagedFilter(FilterName, pluginStage)}, nil
