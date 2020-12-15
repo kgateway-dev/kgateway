@@ -46,6 +46,16 @@ func (m *Matcher) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetCaseSensitive()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCaseSensitive()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetCaseSensitive(), target.GetCaseSensitive()) {
+			return false
+		}
+	}
+
 	if len(m.GetHeaders()) != len(target.GetHeaders()) {
 		return false
 	}

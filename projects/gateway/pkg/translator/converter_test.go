@@ -621,6 +621,34 @@ var _ = Describe("Route converter", func() {
 			})
 		})
 
+		When("route table has a matcher case sensitivity that doesn't match the prefix case sensitivity of the parent route", func() {
+			It("reports error on the route table and on the virtual service", func() {
+				rtCaseSensitivity := &wrappers.BoolValue{Value: false}
+				rt.Routes[0].Matchers = []*matchers.Matcher{
+					{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: "/foo/bar",
+						},
+						CaseSensitive: rtCaseSensitivity,
+					},
+				}
+
+				rpt := reporter.ResourceReports{}
+				converted, err := rv.ConvertVirtualService(vs, rpt)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(BeNil())
+				Expect(rpt).To(HaveLen(2))
+
+				expectedErr := translator.InvalidRouteTableForDelegateCaseSensitivePathMatchErr(rtCaseSensitivity, nil).Error()
+
+				_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
+				Expect(vsReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+
+				_, rtReport := rpt.Find("*v1.RouteTable", rt.Metadata.Ref())
+				Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
+			})
+		})
+
 		When("route table has headers that don't match the headers of the parent route", func() {
 
 			var (
