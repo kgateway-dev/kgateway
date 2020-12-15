@@ -148,7 +148,6 @@ func getCsrfConfig(csrf *csrf.CsrfPolicy) (*envoycsrf.CsrfPolicy, error) {
 						Regex: typed.SafeRegex.GetRegex(),
 					},
 				},
-				IgnoreCase: ao.GetIgnoreCase(),
 			})
 		case *gloo_type_matcher.StringMatcher_Suffix:
 			additionalOrigins = append(additionalOrigins, &envoy_type_matcher.StringMatcher{

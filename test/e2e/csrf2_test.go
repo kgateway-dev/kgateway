@@ -4,14 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+
 	gloo_config_core "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	gloo_type_matcher "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	glootype "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
-	"io"
-	"net/http"
-	"strings"
-
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	csrf "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
@@ -43,11 +41,6 @@ var _ = FDescribe("csrf 2", func() {
 
 	var td csrfTestData
 
-	const (
-		corsFilterString       = `"name": "` + wellknown.CORS + `"`
-		corsActiveConfigString = `"cors":`
-	)
-
 	apiFilter := &gloo_config_core.RuntimeFractionalPercent{
 		DefaultValue: &glootype.FractionalPercent{
 			Numerator:   uint32(100),
@@ -65,7 +58,6 @@ var _ = FDescribe("csrf 2", func() {
 					Regex: "allowThisOne.solo.io",
 				},
 			},
-			IgnoreCase: true,
 		},
 	}
 
@@ -118,41 +110,12 @@ var _ = FDescribe("csrf 2", func() {
 			}
 
 			td.setupInitialProxy(cors, csrf)
-			envoyConfig := td.per.getEnvoyConfig()
-
-			By("Check config")
-			print(envoyConfig)
-			//Expect(envoyConfig).To(MatchRegexp(corsFilterString))
-			//Expect(envoyConfig).To(MatchRegexp(corsActiveConfigString))
-			//Expect(envoyConfig).To(MatchRegexp(allowedOrigins[0]))
 
 			By("Request with allowed origin")
 			mockOrigin := allowedOrigins[0]
-			//h := td.per.getOptions(mockOrigin, "GET")
-			h :=  td.per.getOptionsCsrf(mockOrigin, "GET")
-
-			v, ok := h[requestACHMethods]
-			Expect(ok).To(BeTrue())
-			Expect(strings.Split(v[0], ",")).Should(ConsistOf(allowedMethods))
-			v, ok = h[requestACHOrigin]
-			Expect(ok).To(BeTrue())
-			Expect(len(v)).To(Equal(1))
-			Expect(v[0]).To(Equal(mockOrigin))
-
-			By("Request with disallowed origin")
-			mockOrigin = "http://example.com"
-			h = td.per.getOptions(mockOrigin, "GET")
-			v, ok = h[requestACHMethods]
-			Expect(ok).To(BeFalse())
+			td.per.testRequest(mockOrigin, "GET")
 
 		})
-		//It("should run without cors", func() {
-		//	td.setupInitialProxy(nil, nil)
-		//	envoyConfig := td.per.getEnvoyConfig()
-		//
-		//	Expect(envoyConfig).To(MatchRegexp(corsFilterString))
-		//	Expect(envoyConfig).NotTo(MatchRegexp(corsActiveConfigString))
-		//})
 	})
 })
 
@@ -230,7 +193,7 @@ func (td *csrfTestData) setupInitialProxy(cors *cors.CorsPolicy, csrf *csrf.Csrf
 			return err
 		}
 		return nil
-	}, "10s", ".1s").Should(BeNil())
+	}, "5m", ".1s").Should(BeNil())
 }
 
 func (td *csrfTestData) setupUpstream() *gloov1.Upstream {
@@ -262,13 +225,7 @@ func (ptd *perCsrfTestData) getOptionsCsrf(origin, method string) http.Header {
 	return h
 }
 
-// To test this with curl:
-// curl -H "Origin: http://example.com" \
-//   -H "Access-Control-Request-Method: POST" \
-//   -H "Access-Control-Request-Headers: X-Requested-With" \
-//   -X OPTIONS --verbose localhost:11082
-func (ptd *perCsrfTestData) getOptions(origin, method string) http.Header {
-	h := http.Header{}
+func (ptd *perCsrfTestData) testRequest(origin, method string) {
 	Eventually(func() error {
 		req, err := http.NewRequest("OPTIONS", fmt.Sprintf("http://localhost:%v", ptd.envoyPort), nil)
 		if err != nil {
@@ -285,8 +242,7 @@ func (ptd *perCsrfTestData) getOptions(origin, method string) http.Header {
 		defer resp.Body.Close()
 		h = resp.Header
 		return nil
-	}, "10s", ".1s").Should(BeNil())
-	return h
+	}, "5m", ".1s").Should(BeNil())
 }
 
 func (ptd *perCsrfTestData) getEnvoyConfig() string {
