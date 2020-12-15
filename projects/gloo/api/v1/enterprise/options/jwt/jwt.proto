@@ -16,7 +16,9 @@ message VhostExtension {
     // if this list is provided the fields above are ignored.
     map<string, Provider> providers = 4;
 
-    // Allow pass through of JWT requests, even if JWT token is missing or JWT auth failed.
+    // Allow pass through of JWT requests for this virtual host, even if JWT token is missing or JWT auth failed.
+    // If this is false, then requests that fail JWT authentication will fail authorization immediately.
+    // For example, if a request requires either JWT auth OR another auth method, this can be enabled to allow a failed JWT auth request to pass through to the other auth method.
     bool allow_missing_or_failed_jwt = 2;
 }
 
@@ -24,7 +26,9 @@ message RouteExtension {
     // Disable JWT checks on this route.
     bool disable = 1;
 
-    // Allow pass through of JWT requests, even if JWT token is missing or JWT auth failed.
+    // Allow pass through of JWT requests for this route, even if JWT token is missing or JWT auth failed.
+    // If this is false, then requests that fail JWT authentication will fail authorization immediately.
+    // For example, if a request requires either JWT auth OR another auth method, this can be enabled to allow a failed JWT auth request to pass through to the other auth method.
     bool allow_missing_or_failed_jwt = 2;
 }
 
