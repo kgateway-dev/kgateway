@@ -40,7 +40,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 
-	err, config := getCsrfConfig(listener.GetOptions().GetCsrf())
+	config, err := getCsrfConfig(listener.GetOptions().GetCsrf())
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 
 	if csrfPolicy.GetAdditionalOrigins() != nil || csrfPolicy.GetFilterEnabled() != nil || csrfPolicy.GetShadowEnabled() != nil {
-		err, config := getCsrfConfig(csrfPolicy)
+		config, err := getCsrfConfig(csrfPolicy)
 		if err != nil {
 			return err
 		}
@@ -86,7 +86,7 @@ func (p *plugin) ProcessVirtualHost(
 	}
 
 	if csrfPolicy.GetAdditionalOrigins() != nil || csrfPolicy.GetFilterEnabled() != nil || csrfPolicy.GetShadowEnabled() != nil {
-		err, config := getCsrfConfig(csrfPolicy)
+		config, err := getCsrfConfig(csrfPolicy)
 		if err != nil {
 			return err
 		}
@@ -108,7 +108,7 @@ func (p *plugin) ProcessWeightedDestination(
 	}
 
 	if csrfPolicy.GetAdditionalOrigins() != nil || csrfPolicy.GetFilterEnabled() != nil || csrfPolicy.GetShadowEnabled() != nil {
-		err, config := getCsrfConfig(csrfPolicy)
+		config, err := getCsrfConfig(csrfPolicy)
 		if err != nil {
 			return err
 		}
@@ -119,7 +119,7 @@ func (p *plugin) ProcessWeightedDestination(
 	return nil
 }
 
-func getCsrfConfig(csrf *csrf.CsrfPolicy) (error, *envoycsrf.CsrfPolicy) {
+func getCsrfConfig(csrf *csrf.CsrfPolicy) (*envoycsrf.CsrfPolicy, error) {
 	origins := csrf.GetAdditionalOrigins()
 	var additionalOrigins []*envoy_type_matcher.StringMatcher
 	for _, ao := range origins {
@@ -161,16 +161,22 @@ func getCsrfConfig(csrf *csrf.CsrfPolicy) (error, *envoycsrf.CsrfPolicy) {
 
 	}
 
-	filterEnabled := envoy_config_core.RuntimeFractionalPercent{
-		DefaultValue: &envoytype.FractionalPercent{
-			Numerator:   csrf.GetFilterEnabled().GetDefaultValue().GetNumerator(),
-			Denominator: envoytype.FractionalPercent_DenominatorType(csrf.GetFilterEnabled().GetDefaultValue().GetDenominator()),
-		},
-		RuntimeKey: csrf.GetFilterEnabled().GetRuntimeKey(),
+	var filterEnabled = envoy_config_core.RuntimeFractionalPercent{
+		DefaultValue: &envoytype.FractionalPercent{},
+	}
+	var shadowEnabled = envoy_config_core.RuntimeFractionalPercent{
+		DefaultValue: &envoytype.FractionalPercent{},
 	}
 
-	var shadowEnabled envoy_config_core.RuntimeFractionalPercent
-	if csrf.GetShadowEnabled() != nil {
+	if csrf.GetFilterEnabled() != nil {
+		filterEnabled = envoy_config_core.RuntimeFractionalPercent{
+			DefaultValue: &envoytype.FractionalPercent{
+				Numerator:   csrf.GetFilterEnabled().GetDefaultValue().GetNumerator(),
+				Denominator: envoytype.FractionalPercent_DenominatorType(csrf.GetFilterEnabled().GetDefaultValue().GetDenominator()),
+			},
+			RuntimeKey: csrf.GetFilterEnabled().GetRuntimeKey(),
+		}
+	} else if csrf.GetShadowEnabled() != nil {
 		shadowEnabled = envoy_config_core.RuntimeFractionalPercent{
 			DefaultValue: &envoytype.FractionalPercent{
 				Numerator:   csrf.GetShadowEnabled().GetDefaultValue().GetNumerator(),
@@ -186,5 +192,5 @@ func getCsrfConfig(csrf *csrf.CsrfPolicy) (error, *envoycsrf.CsrfPolicy) {
 		AdditionalOrigins: additionalOrigins,
 	}
 
-	return csrfPolicy.Validate(), csrfPolicy
+	return csrfPolicy, csrfPolicy.Validate()
 }

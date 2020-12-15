@@ -39,7 +39,7 @@ type csrfTestData struct {
 	per         perCsrfTestData
 }
 
-var _ = FDescribe("CSRF Test", func() {
+var _ = Describe("CSRF Test", func() {
 
 	const (
 		filter_string         = "\"numerator\": 100"
@@ -61,7 +61,7 @@ var _ = FDescribe("CSRF Test", func() {
 			MatchPattern: &gloo_type_matcher.StringMatcher_Exact{
 				Exact: "allowThisOne.solo.io",
 			},
-			IgnoreCase:    true,
+			IgnoreCase: true,
 		},
 	}
 

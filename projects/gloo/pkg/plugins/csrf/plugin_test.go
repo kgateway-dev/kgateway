@@ -34,14 +34,14 @@ var _ = Describe("plugin", func() {
 	BeforeEach(func() {
 		apiFilter = gloo_config_core.RuntimeFractionalPercent{
 			DefaultValue: &glootype.FractionalPercent{
-				Numerator:   uint32(1),
+				Numerator:   uint32(100),
 				Denominator: glootype.FractionalPercent_HUNDRED,
 			},
 		}
 
 		envoyFilter = envoy_config_core.RuntimeFractionalPercent{
 			DefaultValue: &envoytype.FractionalPercent{
-				Numerator:   uint32(1),
+				Numerator:   uint32(100),
 				Denominator: envoytype.FractionalPercent_HUNDRED,
 			},
 		}
@@ -65,37 +65,6 @@ var _ = Describe("plugin", func() {
 		}
 	})
 
-	It("copies the csrf config from the listener to the filter with AdditionalOrigins set", func() {
-		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
-			Options: &v1.HttpListenerOptions{
-				Csrf: &gloocsrf.CsrfPolicy{
-					AdditionalOrigins: apiAdditionalOrigins,
-				},
-			},
-		})
-
-		Expect(err).NotTo(HaveOccurred())
-		expectedStageFilter := plugins.StagedHttpFilter{
-			HttpFilter: &envoyhcm.HttpFilter{
-				Name: FilterName,
-				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-					TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
-						FilterEnabled:     &envoy_config_core.RuntimeFractionalPercent{},
-						ShadowEnabled:     &envoy_config_core.RuntimeFractionalPercent{},
-						AdditionalOrigins: envoyAdditionalOrigins,
-					}),
-				},
-			},
-			Stage: plugins.FilterStage{
-				RelativeTo: 8,
-				Weight:     0,
-			},
-		}
-
-		Expect(filters[0].HttpFilter).To(matchers.MatchProto(expectedStageFilter.HttpFilter))
-		Expect(filters[0].Stage).To(Equal(expectedStageFilter.Stage))
-	})
-
 	It("copies the csrf config from the listener to the filter with filters enabled", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
@@ -112,8 +81,10 @@ var _ = Describe("plugin", func() {
 				Name: FilterName,
 				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 					TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
-						FilterEnabled:     &envoyFilter,
-						ShadowEnabled:     &envoy_config_core.RuntimeFractionalPercent{},
+						FilterEnabled: &envoyFilter,
+						ShadowEnabled: &envoy_config_core.RuntimeFractionalPercent{
+							DefaultValue: &envoytype.FractionalPercent{},
+						},
 						AdditionalOrigins: envoyAdditionalOrigins,
 					}),
 				},
@@ -144,7 +115,9 @@ var _ = Describe("plugin", func() {
 				Name: FilterName,
 				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 					TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
-						FilterEnabled:     &envoy_config_core.RuntimeFractionalPercent{},
+						FilterEnabled: &envoy_config_core.RuntimeFractionalPercent{
+							DefaultValue: &envoytype.FractionalPercent{},
+						},
 						ShadowEnabled:     &envoyFilter,
 						AdditionalOrigins: envoyAdditionalOrigins,
 					}),
@@ -160,7 +133,7 @@ var _ = Describe("plugin", func() {
 		Expect(filters[0].Stage).To(Equal(expectedStageFilter.Stage))
 	})
 
-	It("copies the csrf config from the listener to the filter with filters and shadow enabled", func() {
+	It("copies the csrf config from the listener to the filter with enabled filters and shadow enabled ignored", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
@@ -178,8 +151,10 @@ var _ = Describe("plugin", func() {
 					Name: FilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
-							FilterEnabled:     &envoyFilter,
-							ShadowEnabled:     &envoyFilter,
+							FilterEnabled: &envoyFilter,
+							ShadowEnabled: &envoy_config_core.RuntimeFractionalPercent{
+								DefaultValue: &envoytype.FractionalPercent{},
+							},
 							AdditionalOrigins: envoyAdditionalOrigins,
 						}),
 					},
