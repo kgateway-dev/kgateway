@@ -38,8 +38,9 @@ var _ = Describe("Plugin", func() {
 					}),
 				},
 			},
+
 			Stage: plugins.FilterStage{
-				RelativeTo: 8,
+				RelativeTo: 9,
 				Weight:     0,
 			},
 		}
