@@ -298,7 +298,8 @@ This is used with custom auth servers.
 ---
 ### Jwt
 
-
+ 
+This is a "dummy" extauth service which can be used to support multiple auth mechanisms with jwt authentication
 
 ```yaml
 

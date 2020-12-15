@@ -609,6 +609,7 @@ func (x *AuthPlugin) GetConfig() *_struct.Struct {
 	return nil
 }
 
+// This is a "dummy" extauth service which can be used to support multiple auth mechanisms with jwt authentication
 type Jwt struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

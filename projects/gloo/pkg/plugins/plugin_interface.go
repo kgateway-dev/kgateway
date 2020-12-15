@@ -206,7 +206,7 @@ const (
 	FaultStage     WellKnownFilterStage = iota // Fault injection // First Filter Stage
 	CorsStage                                  // Cors stage
 	WafStage                                   // Web application firewall stage
-	JwtStage                                   // Jwt authentication stage
+	JwtAuthnStage                              // Jwt authentication stage
 	AuthNStage                                 // Authentication stage
 	AuthZStage                                 // Authorization stage
 	RateLimitStage                             // Rate limiting stage
