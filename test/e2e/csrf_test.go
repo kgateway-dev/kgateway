@@ -3,8 +3,8 @@ package e2e_test
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"errors"
+	"fmt"
 	"github.com/onsi/gomega"
 	gloo_config_core "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	gloo_type_matcher "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
@@ -37,7 +37,7 @@ type csrfTestData struct {
 	per         perCsrfTestData
 }
 
-var _ = FDescribe("csrf 2", func() {
+var _ = Describe("CSRF", func() {
 
 	var td csrfTestData
 
@@ -94,7 +94,7 @@ var _ = FDescribe("csrf 2", func() {
 		})
 
 		It("should run with csrf", func() {
-			//allowedOrigins := []string{"allowThisOne.solo.io"}
+			allowedOrigins := []string{"allowThisOne.solo.io"}
 
 			csrf := &csrf.CsrfPolicy{
 				FilterEnabled:     apiFilter,
@@ -103,18 +103,24 @@ var _ = FDescribe("csrf 2", func() {
 
 			td.setupInitialProxy(csrf)
 
-			//By("Request with allowed origin")
-			//mockOrigin := allowedOrigins[0]
-			//td.per.testRequest(mockOrigin, "GET").Should(BeNil())
+			By("Request with allowed origin")
+			mockOrigin := allowedOrigins[0]
+			td.per.testRequest(mockOrigin, "GET").Should(BeNil())
+		})
 
-			By("Request with unallowed origin")
-			mockOriginUnallowed := "notAllowed"
-			td.per.testRequest(mockOriginUnallowed, "GET").ShouldNot(BeNil())
+		It("should not run without csrf", func() {
+			allowedOrigins := []string{"allowThisOne.solo.io"}
+			csrf := &csrf.CsrfPolicy{}
+			td.setupInitialProxy(csrf)
+
+			By("Request with allowed origin")
+			mockOrigin := allowedOrigins[0]
+			td.per.testRequest(mockOrigin, "GET").ShouldNot(BeNil())
 		})
 	})
 })
 
-func (td *csrfTestData) getGlooCsrfProxy(csrf * csrf.CsrfPolicy) (*gloov1.Proxy, error) {
+func (td *csrfTestData) getGlooCsrfProxy(csrf *csrf.CsrfPolicy) (*gloov1.Proxy, error) {
 	readProxy, err := td.testClients.ProxyClient.Read("default", "proxy", clients.ReadOpts{})
 	if err != nil {
 		return nil, err
