@@ -41,9 +41,6 @@ func (p *plugin) Init(params plugins.InitParams) error {
 func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 
 	config, err := getCsrfConfig(listener.GetOptions().GetCsrf())
-	if err != nil {
-		return nil, err
-	}
 
 	if config == nil && p.present {
 		return []plugins.StagedHttpFilter{plugins.NewStagedFilter(FilterName, pluginStage)}, nil
@@ -63,7 +60,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return nil
 	}
 
-	if csrfPolicy.GetAdditionalOrigins() != nil || csrfPolicy.GetFilterEnabled() != nil || csrfPolicy.GetShadowEnabled() != nil {
+	if csrfPolicy.GetFilterEnabled() != nil || csrfPolicy.GetShadowEnabled() != nil {
 		config, err := getCsrfConfig(csrfPolicy)
 		if err != nil {
 			return err
@@ -85,7 +82,7 @@ func (p *plugin) ProcessVirtualHost(
 		return nil
 	}
 
-	if csrfPolicy.GetAdditionalOrigins() != nil || csrfPolicy.GetFilterEnabled() != nil || csrfPolicy.GetShadowEnabled() != nil {
+	if csrfPolicy.GetFilterEnabled() != nil || csrfPolicy.GetShadowEnabled() != nil {
 		config, err := getCsrfConfig(csrfPolicy)
 		if err != nil {
 			return err
@@ -107,7 +104,7 @@ func (p *plugin) ProcessWeightedDestination(
 		return nil
 	}
 
-	if csrfPolicy.GetAdditionalOrigins() != nil || csrfPolicy.GetFilterEnabled() != nil || csrfPolicy.GetShadowEnabled() != nil {
+	if csrfPolicy.GetFilterEnabled() != nil || csrfPolicy.GetShadowEnabled() != nil {
 		config, err := getCsrfConfig(csrfPolicy)
 		if err != nil {
 			return err
