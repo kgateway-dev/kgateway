@@ -299,7 +299,9 @@ This is used with custom auth servers.
 ### Jwt
 
  
-This is a "dummy" extauth service which can be used to support multiple auth mechanisms with jwt authentication
+This is a "dummy" extauth service which can be used to support multiple auth mechanisms with JWT authentication.
+If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig,
+you can use this auth config type to include Jwt as an Auth config.
 
 ```yaml
 
