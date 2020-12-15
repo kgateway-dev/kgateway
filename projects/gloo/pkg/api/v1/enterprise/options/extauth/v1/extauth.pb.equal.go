@@ -416,10 +416,6 @@ func (m *Jwt) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetPlaceholder(), target.GetPlaceholder()) != 0 {
-		return false
-	}
-
 	return true
 }
 

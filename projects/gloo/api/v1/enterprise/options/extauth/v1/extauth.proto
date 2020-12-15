@@ -200,7 +200,6 @@ message AuthPlugin {
 }
 
 message Jwt {
-  string placeholder = 1;
 }
 
 message BasicAuth {

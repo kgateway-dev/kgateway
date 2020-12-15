@@ -301,13 +301,11 @@ This is used with custom auth servers.
 
 
 ```yaml
-"placeholder": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `placeholder` | `string` |  |
 
 
 
