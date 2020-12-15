@@ -73,7 +73,7 @@ require (
 	github.com/solo-io/k8s-utils v0.0.3
 	github.com/solo-io/protoc-gen-ext v0.0.13
 	github.com/solo-io/reporting-client v0.2.0
-	github.com/solo-io/skv2 v0.15.1
+	github.com/solo-io/skv2 v0.15.2
 	github.com/solo-io/solo-apis v0.0.0-20201208172621-1ef725df2bff
 	github.com/solo-io/solo-kit v0.16.2
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
@@ -163,3 +163,7 @@ replace (
 	k8s.io/sample-controller => k8s.io/sample-controller v0.18.6
 	k8s.io/utils => k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 )
+
+replace github.com/solo-io/skv2 => ../skv2
+
+replace github.com/solo-io/solo-apis => ../solo-apis
