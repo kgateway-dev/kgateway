@@ -192,6 +192,9 @@ spec:
         issuer_url: http://dex.gloo-system.svc.cluster.local:32000/
         scopes:
         - email
+        session:
+          cookieOptions:
+            notSecure: true
 {{< /highlight >}}
 
 {{% notice note %}}
