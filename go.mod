@@ -124,7 +124,6 @@ replace (
 	github.com/census-instrumentation/opencensus-proto => github.com/census-instrumentation/opencensus-proto v0.2.0 // indirect
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 	// Required for proper serialization of CRDs
-	github.com/golang/protobuf => github.com/golang/protobuf v1.4.3
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
 
 	//the following block of replacements are needed to have locked these packages to before versions they switched to using proto4
