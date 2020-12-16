@@ -50,6 +50,7 @@ message AuthConfig {
       AuthPlugin plugin_auth = 5;
       OpaAuth opa_auth = 6;
       Ldap ldap = 7;
+      PassThroughAuth pass_through_auth = 11;
     }
   }
 
@@ -534,6 +535,26 @@ message Ldap {
   ConnectionPool pool = 5;
 }
 
+// Authorizes requests by querying a custom extauth server.
+message PassThroughAuth {
+
+  oneof protocol {
+    PassThroughGrpc grpc = 1;
+  }
+}
+
+// Authorizes requests by querying a custom extauth grpc server
+// Assumes that the server implements the envoy external authorization spec:
+// https://github.com/envoyproxy/envoy/blob/ae1ed1fa74f096dabe8dd5b19fc70333621b0309/api/envoy/service/auth/v3/external_auth.proto#L29
+message PassThroughGrpc {
+
+  // Address of the auth server to query. Should be in the form ADDRESS:PORT, e.g. `default.svc.cluster.local:389`.
+  string address = 1;
+
+  // Timeout for the auth server to respond. Defaults to 5s
+  google.protobuf.Duration connection_timeout = 2;
+}
+
 /*
 @solo-kit:xds-service=ExtAuthDiscoveryService
 @solo-kit:resource.no_references
@@ -711,6 +732,7 @@ message ExtAuthConfig {
       AuthPlugin plugin_auth = 6;
       OpaAuthConfig opa_auth = 7;
       Ldap ldap = 8;
+      PassThroughAuth pass_through_auth = 12;
     }
   }
 
