@@ -416,6 +416,16 @@ func (m *Jwt) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetJwt()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetJwt(), target.GetJwt()) {
+			return false
+		}
+	}
+
 	return true
 }
 

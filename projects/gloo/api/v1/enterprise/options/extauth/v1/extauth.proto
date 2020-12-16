@@ -17,7 +17,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
-
+import "google/protobuf/empty.proto";
 
 // This is the user-facing auth configuration. When processed by Gloo, certain configuration types (i.a. oauth, opa)
 // will be translated, e.g. to resolve resource references. See the `ExtAuthConfig.AuthConfig` for the final config
@@ -203,6 +203,7 @@ message AuthPlugin {
 // If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config.
 // In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
 message Jwt {
+  google.protobuf.Empty jwt = 1;
 }
 
 message BasicAuth {

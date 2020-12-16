@@ -304,11 +304,13 @@ If Jwt authentication is to be used in the [boolean expression](https://docs.sol
 In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
 
 ```yaml
+"jwt": .google.protobuf.Empty
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
+| `jwt` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) |  |
 
 
 

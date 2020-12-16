@@ -94,7 +94,7 @@ type RouteExtension struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Disable JWT checks on this route.
+	// Disable JWT checks on this r oute.
 	Disable bool `protobuf:"varint,1,opt,name=disable,proto3" json:"disable,omitempty"`
 	// Allow pass through of JWT requests for this route, even if JWT token is missing or JWT auth failed.
 	// If this is false (default false), requests that fail JWT authentication will fail authorization immediately.

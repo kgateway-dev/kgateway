@@ -30,6 +30,8 @@ var (
 	}
 )
 
+const JWTFilterName = "envoy.filters.http.jwt_authn"
+
 func BuildHttpFilters(
 	globalSettings *extauthv1.Settings,
 	listener *v1.HttpListener,
@@ -72,7 +74,7 @@ func BuildHttpFilters(
 
 func generateEnvoyConfigForFilter(settings *extauthv1.Settings, extauthUpstreamRef *core.ResourceRef) (*envoyauth.ExtAuthz, error) {
 	cfg := &envoyauth.ExtAuthz{
-		MetadataContextNamespaces: []string{"envoy.filters.http.jwt_authn"},
+		MetadataContextNamespaces: []string{JWTFilterName},
 	}
 	httpService := settings.GetHttpService()
 	if httpService == nil {

@@ -157,7 +157,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 				}
 
 				expectedConfig = &envoyauth.ExtAuthz{
-					MetadataContextNamespaces: []string{"envoy.filters.http.jwt_authn"},
+					MetadataContextNamespaces: []string{JWTFilterName},
 					Services: &envoyauth.ExtAuthz_GrpcService{
 						GrpcService: &envoycore.GrpcService{
 							Timeout: DefaultTimeout,
@@ -201,7 +201,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 				}
 
 				expectedConfig = &envoyauth.ExtAuthz{
-					MetadataContextNamespaces: []string{"envoy.filters.http.jwt_authn"},
+					MetadataContextNamespaces: []string{JWTFilterName},
 					Services: &envoyauth.ExtAuthz_GrpcService{
 						GrpcService: &envoycore.GrpcService{
 							Timeout: customTimeout,
@@ -272,7 +272,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 				}
 
 				expectedConfig = &envoyauth.ExtAuthz{
-					MetadataContextNamespaces: []string{"envoy.filters.http.jwt_authn"},
+					MetadataContextNamespaces: []string{JWTFilterName},
 					Services: &envoyauth.ExtAuthz_HttpService{
 						HttpService: &envoyauth.HttpService{
 							AuthorizationRequest: &envoyauth.AuthorizationRequest{
