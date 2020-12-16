@@ -169,8 +169,6 @@ func TransformWasmFilterStage(filterStage *wasm.FilterStage) plugins.FilterStage
 		resultStage = plugins.CorsStage
 	case wasm.FilterStage_WafStage:
 		resultStage = plugins.WafStage
-	case wasm.FilterStage_JwtAuthnStage:
-		resultStage = plugins.JwtAuthnStage
 	case wasm.FilterStage_AuthNStage:
 		resultStage = plugins.AuthNStage
 	case wasm.FilterStage_AuthZStage:

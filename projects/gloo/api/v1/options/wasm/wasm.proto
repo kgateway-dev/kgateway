@@ -59,7 +59,6 @@ message FilterStage {
         FaultStage = 0;
         CorsStage = 1;
         WafStage = 2;
-        JwtAuthnStage = 3;
         AuthNStage = 4;
         AuthZStage = 5;
         RateLimitStage = 6;
