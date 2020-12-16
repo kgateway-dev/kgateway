@@ -59,12 +59,13 @@ message FilterStage {
         FaultStage = 0;
         CorsStage = 1;
         WafStage = 2;
-        AuthNStage = 3;
-        AuthZStage = 4;
-        RateLimitStage = 5;
-        AcceptedStage = 6;
-        OutAuthStage = 7;
-        RouteStage = 8;
+        JwtAuthnStage = 3;
+        AuthNStage = 4;
+        AuthZStage = 5;
+        RateLimitStage = 6;
+        AcceptedStage = 7;
+        OutAuthStage = 8;
+        RouteStage = 9;
     }
 
     // During is the 0th member so that it is the default, even though

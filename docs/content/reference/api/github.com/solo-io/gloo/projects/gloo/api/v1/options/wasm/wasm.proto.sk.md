@@ -118,6 +118,7 @@ list of filter stages which can be selected for a WASM filter
 | `FaultStage` |  |
 | `CorsStage` |  |
 | `WafStage` |  |
+| `JwtAuthnStage` |  |
 | `AuthNStage` |  |
 | `AuthZStage` |  |
 | `RateLimitStage` |  |

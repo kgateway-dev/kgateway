@@ -39,10 +39,7 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 
-			Stage: plugins.FilterStage{
-				RelativeTo: 9,
-				Weight:     0,
-			},
+			Stage: plugins.DuringStage(plugins.RouteStage),
 		}
 		Expect(filters[0].HttpFilter).To(matchers.MatchProto(expectedStageFilter.HttpFilter))
 		Expect(filters[0].Stage).To(Equal(expectedStageFilter.Stage))
