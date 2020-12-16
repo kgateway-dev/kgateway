@@ -396,40 +396,6 @@ func (m *AuthPlugin) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *Jwt) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*Jwt)
-	if !ok {
-		that2, ok := that.(Jwt)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetJwt()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetJwt(), target.GetJwt()) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
 func (m *BasicAuth) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil

@@ -21,7 +21,6 @@ weight: 5
 - [BufferSettings](#buffersettings)
 - [CustomAuth](#customauth)
 - [AuthPlugin](#authplugin)
-- [Jwt](#jwt)
 - [BasicAuth](#basicauth)
 - [Apr](#apr)
 - [SaltedHashedPassword](#saltedhashedpassword)
@@ -101,7 +100,7 @@ format that will be included in the extauth snapshot.
 "pluginAuth": .enterprise.gloo.solo.io.AuthPlugin
 "opaAuth": .enterprise.gloo.solo.io.OpaAuth
 "ldap": .enterprise.gloo.solo.io.Ldap
-"jwt": .enterprise.gloo.solo.io.Jwt
+"jwt": .google.protobuf.Empty
 
 ```
 
@@ -115,7 +114,7 @@ format that will be included in the extauth snapshot.
 | `pluginAuth` | [.enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk/#authplugin) |  Only one of `pluginAuth`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `opaAuth`, or `jwt` can be set. |
 | `opaAuth` | [.enterprise.gloo.solo.io.OpaAuth](../extauth.proto.sk/#opaauth) |  Only one of `opaAuth`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, or `jwt` can be set. |
 | `ldap` | [.enterprise.gloo.solo.io.Ldap](../extauth.proto.sk/#ldap) |  Only one of `ldap`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, or `jwt` can be set. |
-| `jwt` | [.enterprise.gloo.solo.io.Jwt](../extauth.proto.sk/#jwt) |  Only one of `jwt`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |
+| `jwt` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) |  Only one of `jwt`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |
 
 
 
@@ -291,26 +290,6 @@ This is used with custom auth servers.
 | `pluginFileName` | `string` | Name of the compiled plugin file. If not specified, GlooE will look for an ".so" file with same name as the plugin. |
 | `exportedSymbolName` | `string` | Name of the exported symbol that implements the plugin interface in the plugin. If not specified, defaults to the name of the plugin. |
 | `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) |  |
-
-
-
-
----
-### Jwt
-
- 
-This is a "dummy" extauth service which can be used to support multiple auth mechanisms with JWT authentication.
-If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config.
-In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
-
-```yaml
-"jwt": .google.protobuf.Empty
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `jwt` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) |  |
 
 
 
@@ -971,7 +950,7 @@ Deprecated, prefer OAuth2Config
 "pluginAuth": .enterprise.gloo.solo.io.AuthPlugin
 "opaAuth": .enterprise.gloo.solo.io.ExtAuthConfig.OpaAuthConfig
 "ldap": .enterprise.gloo.solo.io.Ldap
-"jwt": .enterprise.gloo.solo.io.Jwt
+"jwt": .google.protobuf.Empty
 
 ```
 
@@ -985,7 +964,7 @@ Deprecated, prefer OAuth2Config
 | `pluginAuth` | [.enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk/#authplugin) |  Only one of `pluginAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `opaAuth`, or `jwt` can be set. |
 | `opaAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OpaAuthConfig](../extauth.proto.sk/#opaauthconfig) |  Only one of `opaAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, or `jwt` can be set. |
 | `ldap` | [.enterprise.gloo.solo.io.Ldap](../extauth.proto.sk/#ldap) |  Only one of `ldap`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, or `jwt` can be set. |
-| `jwt` | [.enterprise.gloo.solo.io.Jwt](../extauth.proto.sk/#jwt) |  Only one of `jwt`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |
+| `jwt` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | This is a "dummy" extauth service which can be used to support multiple auth mechanisms with JWT authentication. If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config. In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour. Only one of `jwt`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |
 
 
 
