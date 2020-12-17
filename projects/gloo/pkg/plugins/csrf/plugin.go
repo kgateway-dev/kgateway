@@ -1,18 +1,18 @@
 package csrf
 
 import (
-	"github.com/rotisserie/eris"
-	csrf "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
-	gloo_type_matcher "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoycsrf "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"github.com/rotisserie/eris"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	csrf "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
+	gloo_type_matcher "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
 // filter should be called after routing decision has been made
@@ -40,16 +40,18 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 
-	config, err := getCsrfConfig(listener.GetOptions().GetCsrf())
+	glooCsrfConfig := listener.GetOptions().GetCsrf()
+	if glooCsrfConfig == nil {
+		// TODO - envoy might not like this, we may need to return an emtpy staged filter
+		return nil, nil
+	}
+
+	envoyCsrfConfig, err := translateCsrfConfig(glooCsrfConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	if config == nil && p.present {
-		return []plugins.StagedHttpFilter{plugins.NewStagedFilter(FilterName, pluginStage)}, nil
-	}
-
-	csrfFilter, err := plugins.NewStagedFilterWithConfig(FilterName, config, pluginStage)
+	csrfFilter, err := plugins.NewStagedFilterWithConfig(FilterName, envoyCsrfConfig, pluginStage)
 	if err != nil {
 		return nil, eris.Wrapf(err, "generating filter config")
 	}
@@ -63,16 +65,12 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return nil
 	}
 
-	if csrfPolicy.GetFilterEnabled() != nil || csrfPolicy.GetShadowEnabled() != nil {
-		config, err := getCsrfConfig(csrfPolicy)
-		if err != nil {
-			return err
-		}
-		p.present = true
-		return pluginutils.SetRoutePerFilterConfig(out, FilterName, config)
+	envoyCsrfConfig, err := translateCsrfConfig(csrfPolicy)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return pluginutils.SetRoutePerFilterConfig(out, FilterName, envoyCsrfConfig)
 }
 
 func (p *plugin) ProcessVirtualHost(
@@ -85,16 +83,12 @@ func (p *plugin) ProcessVirtualHost(
 		return nil
 	}
 
-	if csrfPolicy.GetFilterEnabled() != nil || csrfPolicy.GetShadowEnabled() != nil {
-		config, err := getCsrfConfig(csrfPolicy)
-		if err != nil {
-			return err
-		}
-		p.present = true
-		return pluginutils.SetVhostPerFilterConfig(out, FilterName, config)
+	envoyCsrfConfig, err := translateCsrfConfig(csrfPolicy)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return pluginutils.SetVhostPerFilterConfig(out, FilterName, envoyCsrfConfig)
 }
 
 func (p *plugin) ProcessWeightedDestination(
@@ -107,39 +101,80 @@ func (p *plugin) ProcessWeightedDestination(
 		return nil
 	}
 
-	if csrfPolicy.GetFilterEnabled() != nil || csrfPolicy.GetShadowEnabled() != nil {
-		config, err := getCsrfConfig(csrfPolicy)
-		if err != nil {
-			return err
-		}
-		p.present = true
-		return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, config)
+	envoyCsrfConfig, err := translateCsrfConfig(csrfPolicy)
+	if err != nil {
+		return err
 	}
 
-	return nil
+	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, envoyCsrfConfig)
 }
 
-func getCsrfConfig(csrf *csrf.CsrfPolicy) (*envoycsrf.CsrfPolicy, error) {
-	origins := csrf.GetAdditionalOrigins()
-	var additionalOrigins []*envoy_type_matcher.StringMatcher
-	for _, ao := range origins {
+
+func translateCsrfConfig(csrf *csrf.CsrfPolicy) (*envoycsrf.CsrfPolicy, error) {
+	csrfPolicy := &envoycsrf.CsrfPolicy{
+		FilterEnabled:     translateFilterEnabled(csrf.GetFilterEnabled()),
+		ShadowEnabled:     translateShadowEnabled(csrf.GetShadowEnabled()),
+		AdditionalOrigins: translateAdditionalOrigins(csrf.GetAdditionalOrigins()),
+	}
+
+	return csrfPolicy, csrfPolicy.Validate()
+}
+
+func translateFilterEnabled(glooFilterEnabled *v3.RuntimeFractionalPercent) *envoy_config_core.RuntimeFractionalPercent {
+	if glooFilterEnabled == nil {
+		// TODO - what happens if we just return nil
+		return &envoy_config_core.RuntimeFractionalPercent{
+			DefaultValue: &envoytype.FractionalPercent{},
+		}
+	}
+
+	return &envoy_config_core.RuntimeFractionalPercent{
+		DefaultValue: &envoytype.FractionalPercent{
+			Numerator:   glooFilterEnabled.GetDefaultValue().GetNumerator(),
+			Denominator: envoytype.FractionalPercent_DenominatorType(glooFilterEnabled.GetDefaultValue().GetDenominator()),
+		},
+		RuntimeKey: glooFilterEnabled.GetRuntimeKey(),
+	}
+}
+
+func translateShadowEnabled(glooShadowEnabled *v3.RuntimeFractionalPercent) *envoy_config_core.RuntimeFractionalPercent {
+	if glooShadowEnabled == nil {
+		// TODO - what happens if we just return nil
+		return &envoy_config_core.RuntimeFractionalPercent{
+			DefaultValue: &envoytype.FractionalPercent{},
+		}
+	}
+
+	return &envoy_config_core.RuntimeFractionalPercent{
+		DefaultValue: &envoytype.FractionalPercent{
+			Numerator:   glooShadowEnabled.GetDefaultValue().GetNumerator(),
+			Denominator: envoytype.FractionalPercent_DenominatorType(glooShadowEnabled.GetDefaultValue().GetDenominator()),
+		},
+		RuntimeKey: glooShadowEnabled.GetRuntimeKey(),
+	}
+}
+
+func translateAdditionalOrigins(glooAdditionalOrigins []*gloo_type_matcher.StringMatcher) []*envoy_type_matcher.StringMatcher {
+	var envoyAdditionalOrigins []*envoy_type_matcher.StringMatcher
+
+	for _, ao := range glooAdditionalOrigins {
 		switch typed := ao.GetMatchPattern().(type) {
 		case *gloo_type_matcher.StringMatcher_Exact:
-			additionalOrigins = append(additionalOrigins, &envoy_type_matcher.StringMatcher{
+			envoyAdditionalOrigins = append(envoyAdditionalOrigins, &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
 					Exact: typed.Exact,
 				},
 				IgnoreCase: ao.GetIgnoreCase(),
 			})
 		case *gloo_type_matcher.StringMatcher_Prefix:
-			additionalOrigins = append(additionalOrigins, &envoy_type_matcher.StringMatcher{
+			envoyAdditionalOrigins = append(envoyAdditionalOrigins, &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
 					Prefix: typed.Prefix,
 				},
 				IgnoreCase: ao.GetIgnoreCase(),
 			})
 		case *gloo_type_matcher.StringMatcher_SafeRegex:
-			additionalOrigins = append(additionalOrigins, &envoy_type_matcher.StringMatcher{
+			envoyAdditionalOrigins = append(envoyAdditionalOrigins, &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
 					SafeRegex: &envoy_type_matcher.RegexMatcher{
 						EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
@@ -150,46 +185,14 @@ func getCsrfConfig(csrf *csrf.CsrfPolicy) (*envoycsrf.CsrfPolicy, error) {
 				},
 			})
 		case *gloo_type_matcher.StringMatcher_Suffix:
-			additionalOrigins = append(additionalOrigins, &envoy_type_matcher.StringMatcher{
+			envoyAdditionalOrigins = append(envoyAdditionalOrigins, &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_Suffix{
 					Suffix: typed.Suffix,
 				},
 				IgnoreCase: ao.GetIgnoreCase(),
 			})
 		}
-
 	}
 
-	var filterEnabled = envoy_config_core.RuntimeFractionalPercent{
-		DefaultValue: &envoytype.FractionalPercent{},
-	}
-	var shadowEnabled = envoy_config_core.RuntimeFractionalPercent{
-		DefaultValue: &envoytype.FractionalPercent{},
-	}
-
-	if csrf.GetFilterEnabled() != nil {
-		filterEnabled = envoy_config_core.RuntimeFractionalPercent{
-			DefaultValue: &envoytype.FractionalPercent{
-				Numerator:   csrf.GetFilterEnabled().GetDefaultValue().GetNumerator(),
-				Denominator: envoytype.FractionalPercent_DenominatorType(csrf.GetFilterEnabled().GetDefaultValue().GetDenominator()),
-			},
-			RuntimeKey: csrf.GetFilterEnabled().GetRuntimeKey(),
-		}
-	} else if csrf.GetShadowEnabled() != nil {
-		shadowEnabled = envoy_config_core.RuntimeFractionalPercent{
-			DefaultValue: &envoytype.FractionalPercent{
-				Numerator:   csrf.GetShadowEnabled().GetDefaultValue().GetNumerator(),
-				Denominator: envoytype.FractionalPercent_DenominatorType(csrf.GetShadowEnabled().GetDefaultValue().GetDenominator()),
-			},
-			RuntimeKey: csrf.GetShadowEnabled().GetRuntimeKey(),
-		}
-	}
-
-	csrfPolicy := &envoycsrf.CsrfPolicy{
-		FilterEnabled:     &filterEnabled,
-		ShadowEnabled:     &shadowEnabled,
-		AdditionalOrigins: additionalOrigins,
-	}
-
-	return csrfPolicy, csrfPolicy.Validate()
+	return envoyAdditionalOrigins
 }
