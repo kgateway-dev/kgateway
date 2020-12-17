@@ -27,6 +27,14 @@ var glooFederationPolicyRules = []v1.PolicyRule{
 	},
 }
 
+var glooFederationReadConfigPolicyRules = []v1.PolicyRule{
+	{
+		Verbs:     []string{"get"},
+		APIGroups: []string{""},
+		Resources: []string{"services/proxy"},
+	},
+}
+
 func RegisterCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     constants.CLUSTER_REGISTER_COMMAND.Use,
