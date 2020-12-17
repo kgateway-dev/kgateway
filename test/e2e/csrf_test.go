@@ -37,7 +37,7 @@ type csrfTestData struct {
 	per         perCsrfTestData
 }
 
-var _ = Describe("CSRF", func() {
+var _ = FDescribe("CSRF", func() {
 
 	var td csrfTestData
 
@@ -93,7 +93,7 @@ var _ = Describe("CSRF", func() {
 			}
 		})
 
-		It("should run with csrf", func() {
+		FIt("should run with csrf", func() {
 			allowedOrigins := []string{"allowThisOne.solo.io"}
 
 			csrf := &csrf.CsrfPolicy{
@@ -103,19 +103,33 @@ var _ = Describe("CSRF", func() {
 
 			td.setupInitialProxy(csrf)
 
+			envoyConfig := td.per.getEnvoyConfig()
+			By("Check config")
+			Expect(envoyConfig).To(MatchRegexp("\"numerator\": 100"))
+			Expect(envoyConfig).To(MatchRegexp(allowedOrigins[0]))
+
 			By("Request with allowed origin")
 			mockOrigin := allowedOrigins[0]
-			td.per.testRequest(mockOrigin, "GET").Should(BeNil())
+			td.per.testRequestService(mockOrigin, "GET").Should(BeNil())
+
+			envoyStats := td.per.getEnvoyStats()
+			Expect(envoyStats).To(MatchRegexp("http.http.csrf.request_invalid: 0"))
+
+			By("Request with allowed origin")
+			mockOriginUnallowed := "no"
+			td.per.testRequestService(mockOriginUnallowed, "GET").Should(BeNil())
+
+			envoyStatsUpdate := td.per.getEnvoyStats()
+			Expect(envoyStatsUpdate).To(MatchRegexp("http.http.csrf.request_invalid: 0"))
 		})
 
-		It("should not run without csrf", func() {
+		It("should run without csrf", func() {
 			allowedOrigins := []string{"allowThisOne.solo.io"}
-			csrf := &csrf.CsrfPolicy{}
-			td.setupInitialProxy(csrf)
+			td.setupInitialProxy(nil)
 
 			By("Request with allowed origin")
 			mockOrigin := allowedOrigins[0]
-			td.per.testRequest(mockOrigin, "GET").ShouldNot(BeNil())
+			td.per.testRequestService(mockOrigin, "GET").Should(BeNil())
 		})
 	})
 })
@@ -209,9 +223,10 @@ func (td *csrfTestData) setupUpstream() *gloov1.Upstream {
 	return up
 }
 
-func (ptd *perCsrfTestData) testRequest(origin, method string) gomega.AsyncAssertion {
+func (ptd *perCsrfTestData) testRequestService(origin, method string) gomega.AsyncAssertion {
 	return Eventually(func() error {
-		req, err := http.NewRequest("OPTIONS", fmt.Sprintf("http://localhost:%v", ptd.envoyPort), nil)
+
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/status/200", "localhost", ptd.envoyPort), nil)
 		if err != nil {
 			return err
 		}
@@ -249,4 +264,28 @@ func (ptd *perCsrfTestData) getEnvoyConfig() string {
 		return nil
 	}, "10s", ".1s").Should(BeNil())
 	return envoyConfig
+}
+
+func (ptd *perCsrfTestData) getEnvoyStats() string {
+	By("Get config")
+	envoyStats := ""
+	Eventually(func() error {
+
+		envoyStatsUrl := fmt.Sprintf("http://%s:%d/stats",
+			ptd.envoyInstance.LocalAddr(),
+			ptd.envoyInstance.AdminPort)
+
+		r, err := http.Get(envoyStatsUrl)
+		if err != nil {
+			return err
+		}
+		p := new(bytes.Buffer)
+		if _, err := io.Copy(p, r.Body); err != nil {
+			return err
+		}
+		defer r.Body.Close()
+		envoyStats = p.String()
+		return nil
+	}, "10s", ".1s").Should(BeNil())
+	return envoyStats
 }
