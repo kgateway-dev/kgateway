@@ -1454,6 +1454,18 @@ func (m *AuthConfig_Config) Equal(that interface{}) bool {
 			}
 		}
 
+	case *AuthConfig_Config_Jwt:
+
+		if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetJwt()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetJwt(), target.GetJwt()) {
+				return false
+			}
+		}
+
 	case *AuthConfig_Config_PassThroughAuth:
 
 		if h, ok := interface{}(m.GetPassThroughAuth()).(equality.Equalizer); ok {
@@ -2266,6 +2278,18 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetLdap(), target.GetLdap()) {
+				return false
+			}
+		}
+
+	case *ExtAuthConfig_Config_Jwt:
+
+		if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetJwt()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetJwt(), target.GetJwt()) {
 				return false
 			}
 		}

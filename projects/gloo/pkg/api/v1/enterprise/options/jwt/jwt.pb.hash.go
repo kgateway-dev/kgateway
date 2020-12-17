@@ -71,6 +71,11 @@ func (m *VhostExtension) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	err = binary.Write(hasher, binary.LittleEndian, m.GetAllowMissingOrFailedJwt())
+	if err != nil {
+		return 0, err
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -88,6 +93,11 @@ func (m *RouteExtension) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetDisable())
+	if err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetAllowMissingOrFailedJwt())
 	if err != nil {
 		return 0, err
 	}
