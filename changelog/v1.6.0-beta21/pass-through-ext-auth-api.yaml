@@ -3,7 +3,7 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/3645
     resolvesIssue: false
     description: >
-      Introduce an API to support passthrough grpc ext auth service. This service authorizes
+      Introduce an API to support a passthrough grpc ext auth service. This service authorizes
       requests by delegating to an external service which implements the envoy external auth API:
       https://github.com/envoyproxy/envoy/blob/ae1ed1fa74f096dabe8dd5b19fc70333621b0309/api/envoy/service/auth/v3/external_auth.proto#L29
 
