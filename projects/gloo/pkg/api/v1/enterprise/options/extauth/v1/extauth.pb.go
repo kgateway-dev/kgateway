@@ -2228,6 +2228,9 @@ type AuthConfig_Config_Ldap struct {
 }
 
 type AuthConfig_Config_Jwt struct {
+	// This is a "dummy" extauth service which can be used to support multiple auth mechanisms with JWT authentication.
+	// If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config.
+	// In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
 	Jwt *empty.Empty `protobuf:"bytes,11,opt,name=jwt,proto3,oneof"`
 }
 
