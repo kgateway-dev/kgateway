@@ -106,7 +106,12 @@ func (client *settingsClient) Watch(namespace string, opts clients.WatchOpts) (<
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				settingsChan <- convertToSettings(resourceList)
+				select {
+				case settingsChan <- convertToSettings(resourceList):
+				case <-opts.Ctx.Done():
+					close(settingsChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(settingsChan)
 				return

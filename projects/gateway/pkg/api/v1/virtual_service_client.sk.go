@@ -106,7 +106,12 @@ func (client *virtualServiceClient) Watch(namespace string, opts clients.WatchOp
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				virtualServicesChan <- convertToVirtualService(resourceList)
+				select {
+				case virtualServicesChan <- convertToVirtualService(resourceList):
+				case <-opts.Ctx.Done():
+					close(virtualServicesChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(virtualServicesChan)
 				return
