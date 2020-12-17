@@ -132,6 +132,9 @@ spec:
           name: google
           namespace: gloo-system
         issuer_url: https://accounts.google.com
+        session:
+          cookieOptions:
+            notSecure: true
         scopes:
         - email
 EOF
@@ -139,6 +142,7 @@ EOF
 
 {{% notice note %}}
 The above configuration uses the new `oauth2` syntax. The older `oauth` syntax is still supported, but has been deprecated.
+Note this example explicitly allows insecure cookies (`session.cookieOptions.notSecure`), so that it works in this guide using localhost. In a live hosted environment secured with TLS, you should not set this.
 {{% /notice %}}
 
 Notice how we set the `CLIENT_ID` and reference the client secret we just created. The `callback_path` matches the authorized redirect URI we added for the OAuth Client ID. Redirecting to an unauthorized URI would result in an error from the Google authentication flow.
