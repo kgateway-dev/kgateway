@@ -51,6 +51,7 @@ message AuthConfig {
       OpaAuth opa_auth = 6;
       Ldap ldap = 7;
       google.protobuf.Empty jwt = 11;
+      PassThroughAuth pass_through_auth = 12;
     }
   }
 
@@ -535,6 +536,26 @@ message Ldap {
   ConnectionPool pool = 5;
 }
 
+// Authorizes requests by querying a custom extauth server.
+message PassThroughAuth {
+
+  oneof protocol {
+    PassThroughGrpc grpc = 1;
+  }
+}
+
+// Authorizes requests by querying a custom extauth grpc server
+// Assumes that the server implements the envoy external authorization spec:
+// https://github.com/envoyproxy/envoy/blob/ae1ed1fa74f096dabe8dd5b19fc70333621b0309/api/envoy/service/auth/v3/external_auth.proto#L29
+message PassThroughGrpc {
+
+  // Address of the auth server to query. Should be in the form ADDRESS:PORT, e.g. `default.svc.cluster.local:389`.
+  string address = 1;
+
+  // Timeout for the auth server to respond. Defaults to 5s
+  google.protobuf.Duration connection_timeout = 2;
+}
+
 /*
 @solo-kit:xds-service=ExtAuthDiscoveryService
 @solo-kit:resource.no_references
@@ -716,6 +737,7 @@ message ExtAuthConfig {
       // If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config.
       // In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
       google.protobuf.Empty jwt = 12;
+      PassThroughAuth pass_through_auth = 13;
     }
   }
 
