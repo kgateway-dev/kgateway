@@ -7,4 +7,5 @@ changelog:
       requests by delegating to an external service which implements the envoy external auth API:
       https://github.com/envoyproxy/envoy/blob/ae1ed1fa74f096dabe8dd5b19fc70333621b0309/api/envoy/service/auth/v3/external_auth.proto#L29
 
-      This enables GlooE users to use custom external auth services in addition to GlooE out of the box features.
+      This enables GlooE users to use custom external auth services in addition to GlooE out of the box features,
+      without requiring users to write and maintain extauth go plugins
