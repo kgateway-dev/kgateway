@@ -63,6 +63,10 @@ func (m *VhostExtension) Equal(that interface{}) bool {
 
 	}
 
+	if m.GetAllowMissingOrFailedJwt() != target.GetAllowMissingOrFailedJwt() {
+		return false
+	}
+
 	return true
 }
 
@@ -88,6 +92,10 @@ func (m *RouteExtension) Equal(that interface{}) bool {
 	}
 
 	if m.GetDisable() != target.GetDisable() {
+		return false
+	}
+
+	if m.GetAllowMissingOrFailedJwt() != target.GetAllowMissingOrFailedJwt() {
 		return false
 	}
 

@@ -37,12 +37,14 @@ weight: 5
 
 ```yaml
 "providers": map<string, .jwt.options.gloo.solo.io.Provider>
+"allowMissingOrFailedJwt": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `providers` | `map<string, .jwt.options.gloo.solo.io.Provider>` | Auth providers can be used instead of the fields above where more than one is required. if this list is provided the fields above are ignored. |
+| `allowMissingOrFailedJwt` | `bool` | Allow pass through of JWT requests for this virtual host, even if JWT token is missing or JWT auth failed. If this is false (default false), requests that fail JWT authentication will fail authorization immediately. For example, if a request requires either JWT auth OR another auth method, this can be enabled to allow a failed JWT auth request to pass through to the other auth method. |
 
 
 
@@ -54,12 +56,14 @@ weight: 5
 
 ```yaml
 "disable": bool
+"allowMissingOrFailedJwt": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `disable` | `bool` | Disable JWT checks on this route. |
+| `allowMissingOrFailedJwt` | `bool` | Allow pass through of JWT requests for this route, even if JWT token is missing or JWT auth failed. If this is false (default false), requests that fail JWT authentication will fail authorization immediately. For example, if a request requires either JWT auth OR another auth method, this can be enabled to allow a failed JWT auth request to pass through to the other auth method. |
 
 
 

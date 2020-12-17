@@ -45,10 +45,7 @@ var _ = Describe("Plugin", func() {
 						}),
 					},
 				},
-				Stage: plugins.FilterStage{
-					RelativeTo: 8,
-					Weight:     0,
-				},
+				Stage: plugins.DuringStage(plugins.RouteStage),
 			},
 		}))
 
@@ -70,10 +67,7 @@ var _ = Describe("Plugin", func() {
 						}),
 					},
 				},
-				Stage: plugins.FilterStage{
-					RelativeTo: 8,
-					Weight:     0,
-				},
+				Stage: plugins.DuringStage(plugins.RouteStage),
 			},
 		}))
 	})
@@ -108,10 +102,7 @@ var _ = Describe("Plugin", func() {
 						}),
 					},
 				},
-				Stage: plugins.FilterStage{
-					RelativeTo: 8,
-					Weight:     0,
-				},
+				Stage: plugins.DuringStage(plugins.RouteStage),
 			},
 		}))
 
@@ -136,10 +127,7 @@ var _ = Describe("Plugin", func() {
 						}),
 					},
 				},
-				Stage: plugins.FilterStage{
-					RelativeTo: 8,
-					Weight:     0,
-				},
+				Stage: plugins.DuringStage(plugins.RouteStage),
 			},
 		}))
 	})
