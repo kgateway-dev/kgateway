@@ -68,7 +68,13 @@ func transform(ctx context.Context, src <-chan skkube.ServiceList) <-chan v1.Ups
 					close(upstreams)
 					return
 				}
-				upstreams <- KubeServicesToUpstreams(ctx, services)
+				select {
+				case upstreams <- KubeServicesToUpstreams(ctx, services):
+				case <-ctx.Done():
+					return
+				}
+			case <-ctx.Done():
+				return
 			}
 		}
 	}()

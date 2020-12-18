@@ -1205,6 +1205,84 @@ func (m *Ldap) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *PassThroughAuth) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*PassThroughAuth)
+	if !ok {
+		that2, ok := that.(PassThroughAuth)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Protocol.(type) {
+
+	case *PassThroughAuth_Grpc:
+
+		if h, ok := interface{}(m.GetGrpc()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGrpc()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGrpc(), target.GetGrpc()) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *PassThroughGrpc) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*PassThroughGrpc)
+	if !ok {
+		that2, ok := that.(PassThroughGrpc)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetAddress(), target.GetAddress()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetConnectionTimeout()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetConnectionTimeout()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetConnectionTimeout(), target.GetConnectionTimeout()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *ExtAuthConfig) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -1384,6 +1462,18 @@ func (m *AuthConfig_Config) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetJwt(), target.GetJwt()) {
+				return false
+			}
+		}
+
+	case *AuthConfig_Config_PassThroughAuth:
+
+		if h, ok := interface{}(m.GetPassThroughAuth()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPassThroughAuth()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetPassThroughAuth(), target.GetPassThroughAuth()) {
 				return false
 			}
 		}
@@ -2200,6 +2290,18 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetJwt(), target.GetJwt()) {
+				return false
+			}
+		}
+
+	case *ExtAuthConfig_Config_PassThroughAuth:
+
+		if h, ok := interface{}(m.GetPassThroughAuth()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPassThroughAuth()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetPassThroughAuth(), target.GetPassThroughAuth()) {
 				return false
 			}
 		}

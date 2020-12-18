@@ -106,7 +106,12 @@ func (client *kubeServiceClient) Watch(namespace string, opts clients.WatchOpts)
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				servicesChan <- convertToKubeService(resourceList)
+				select {
+				case servicesChan <- convertToKubeService(resourceList):
+				case <-opts.Ctx.Done():
+					close(servicesChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(servicesChan)
 				return
