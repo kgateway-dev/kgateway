@@ -27,7 +27,7 @@ func main() {
 	ctx, _ := context.WithTimeout(context.Background(), 15*time.Minute)
 	maxRetries := uint32(5)
 	for {
-		time.Sleep(100 *time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		select {
 		case <-ctx.Done():
 			os.Exit(1)

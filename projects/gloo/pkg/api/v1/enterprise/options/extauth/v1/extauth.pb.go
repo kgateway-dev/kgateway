@@ -8,6 +8,9 @@ package v1
 
 import (
 	context "context"
+	reflect "reflect"
+	sync "sync"
+
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	proto "github.com/golang/protobuf/proto"
 	duration "github.com/golang/protobuf/ptypes/duration"
@@ -22,8 +25,6 @@ import (
 	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
