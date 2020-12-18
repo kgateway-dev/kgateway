@@ -24,13 +24,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-
 const (
-	allowedOriginRegex = "allowThisOne.solo.io"
+	allowedOriginRegex   = "allowThisOne.solo.io"
 	unAllowedOriginRegex = "doNot.allowThisOne.solo.io"
 )
 
-var _ = Describe("CSRF", func() {
+var _ = FDescribe("CSRF", func() {
 
 	var (
 		err           error
@@ -133,6 +132,126 @@ var _ = Describe("CSRF", func() {
 			// write a virtual service so we have a proxy to our test upstream
 			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, testUs.Upstream.Metadata.Ref())
 			_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// ensure the proxy and virtual service are created
+			Eventually(func() (*gloov1.Proxy, error) {
+				return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+			}, "5s", "0.1s").ShouldNot(BeNil())
+			Eventually(func() (*gatewayv1.VirtualService, error) {
+				return testClients.VirtualServiceClient.Read(testVs.Metadata.GetNamespace(), testVs.Metadata.GetName(), clients.ReadOpts{})
+			}, "5s", "0.1s").ShouldNot(BeNil())
+		})
+
+		It("should succeed with allowed origin, safe request", func() {
+			spoofedRequest := buildRequestFromOrigin(allowedOriginRegex, true)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
+		})
+
+		It("should succeed with allowed origin, unsafe request", func() {
+			spoofedRequest := buildRequestFromOrigin(allowedOriginRegex, false)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
+		})
+
+		It("should succeed with un-allowed origin, safe request", func() {
+			// confirm that a safe (read only) request is not affected by filter
+			spoofedRequest := buildRequestFromOrigin(unAllowedOriginRegex, true)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
+		})
+
+		It("should fail with un-allowed origin", func() {
+			spoofedRequest := buildRequestFromOrigin(unAllowedOriginRegex, false)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(Equal("Invalid origin"))
+		})
+
+	})
+
+	Context("defined on route", func() {
+
+		JustBeforeEach(func() {
+			//gatewayClient := testClients.GatewayClient
+			//gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+			//Expect(err).NotTo(HaveOccurred())
+
+			// build a csrf policy
+			csrfPolicy := getCsrfPolicyWithAllowedRegex()
+			//
+			//// update the listener to include the csrf policy
+			//httpGateway := gw.GetHttpGateway()
+			//httpGateway.Options = &gloov1.HttpListenerOptions{
+			//	Csrf: csrfPolicy,
+			//}
+			//_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			//Expect(err).NotTo(HaveOccurred())
+
+			// write a virtual service so we have a proxy to our test upstream
+			vhClient := testClients.VirtualServiceClient
+			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, testUs.Upstream.Metadata.Ref())
+			// apply to route
+			route := testVs.VirtualHost.Routes[0]
+			route.Options = &gloov1.RouteOptions{
+				Csrf: csrfPolicy,
+			}
+			_, err = vhClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			// ensure the proxy and virtual service are created
+			Eventually(func() (*gloov1.Proxy, error) {
+				return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+			}, "5s", "0.1s").ShouldNot(BeNil())
+			Eventually(func() (*gatewayv1.VirtualService, error) {
+				return testClients.VirtualServiceClient.Read(testVs.Metadata.GetNamespace(), testVs.Metadata.GetName(), clients.ReadOpts{})
+			}, "5s", "0.1s").ShouldNot(BeNil())
+		})
+
+		//FIt("should succeed with allowed origin, safe request", func() {
+		//	spoofedRequest := buildRequestFromOrigin(allowedOriginRegex, true)
+		//	Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
+		//})
+		//
+		//It("should succeed with allowed origin, unsafe request", func() {
+		//	spoofedRequest := buildRequestFromOrigin(allowedOriginRegex, false)
+		//	Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
+		//})
+
+		It("should succeed with un-allowed origin, safe request", func() {
+			// confirm that a safe (read only) request is not affected by filter
+			spoofedRequest := buildRequestFromOrigin(unAllowedOriginRegex, true)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
+		})
+
+		It("should fail with un-allowed origin", func() {
+			spoofedRequest := buildRequestFromOrigin(unAllowedOriginRegex, false)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(Equal("Invalid origin"))
+		})
+
+	})
+
+	Context("defined on vhost", func() {
+
+		JustBeforeEach(func() {
+			//gatewayClient := testClients.GatewayClient
+			//gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+			//Expect(err).NotTo(HaveOccurred())
+
+			// build a csrf policy
+			csrfPolicy := getCsrfPolicyWithAllowedRegex()
+			//
+			//// update the listener to include the csrf policy
+			//httpGateway := gw.GetHttpGateway()
+			//httpGateway.Options = &gloov1.HttpListenerOptions{
+			//	Csrf: csrfPolicy,
+			//}
+			//_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			//Expect(err).NotTo(HaveOccurred())
+
+			// write a virtual service so we have a proxy to our test upstream
+			vhClient := testClients.VirtualServiceClient
+			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, testUs.Upstream.Metadata.Ref())
+			testVs.VirtualHost.Options = &gloov1.VirtualHostOptions{
+				Csrf: csrfPolicy,
+			}
+			_, err = vhClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
 
 			// ensure the proxy and virtual service are created
