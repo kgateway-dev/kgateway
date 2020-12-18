@@ -231,7 +231,7 @@ var _ = FDescribe("CSRF", func() {
 		})
 	})
 
-	Context("defined on listener", func() {
+	Context("defined on listener with shadow mode config", func() {
 
 		JustBeforeEach(func() {
 			gatewayClient := testClients.GatewayClient
