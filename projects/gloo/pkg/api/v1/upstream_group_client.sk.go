@@ -106,7 +106,12 @@ func (client *upstreamGroupClient) Watch(namespace string, opts clients.WatchOpt
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				upstreamGroupsChan <- convertToUpstreamGroup(resourceList)
+				select {
+				case upstreamGroupsChan <- convertToUpstreamGroup(resourceList):
+				case <-opts.Ctx.Done():
+					close(upstreamGroupsChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(upstreamGroupsChan)
 				return
