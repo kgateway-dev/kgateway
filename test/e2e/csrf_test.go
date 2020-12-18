@@ -229,7 +229,48 @@ var _ = FDescribe("CSRF", func() {
 			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 1"))
 			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 0"))
 		})
+	})
 
+	Context("defined on listener", func() {
+
+		JustBeforeEach(func() {
+			gatewayClient := testClients.GatewayClient
+			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// build a csrf policy
+			csrfPolicy := getCsrfPolicyWithShadowEnabled(allowedOriginRegex)
+
+			// update the listener to include the csrf policy
+			httpGateway := gw.GetHttpGateway()
+			httpGateway.Options = &gloov1.HttpListenerOptions{
+				Csrf: csrfPolicy,
+			}
+			_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			// write a virtual service so we have a proxy to our test upstream
+			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
+			_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			checkProxy()
+			checkVirtualService(testVs)
+		})
+
+		It("should succeed with allowed origin, unsafe request", func() {
+			spoofedRequest := buildRequestFromOrigin(allowedOriginRegex, false)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
+			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 0"))
+			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 1"))
+		})
+
+		It("should succeed with un-allowed origin and update invalid count", func() {
+			spoofedRequest := buildRequestFromOrigin(unAllowedOriginRegex, false)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
+			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 1"))
+			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 0"))
+		})
 	})
 
 	Context("defined on route", func() {
@@ -400,6 +441,27 @@ var _ = FDescribe("CSRF", func() {
 func getCsrfPolicyWithAllowedRegex(allowedOrigin string) *csrf.CsrfPolicy {
 	return &csrf.CsrfPolicy{
 		FilterEnabled: &gloo_config_core.RuntimeFractionalPercent{
+			DefaultValue: &glootype.FractionalPercent{
+				Numerator:   uint32(100),
+				Denominator: glootype.FractionalPercent_HUNDRED,
+			},
+		},
+		AdditionalOrigins: []*gloo_type_matcher.StringMatcher{{
+			MatchPattern: &gloo_type_matcher.StringMatcher_SafeRegex{
+				SafeRegex: &gloo_type_matcher.RegexMatcher{
+					EngineType: &gloo_type_matcher.RegexMatcher_GoogleRe2{
+						GoogleRe2: &gloo_type_matcher.RegexMatcher_GoogleRE2{},
+					},
+					Regex: allowedOrigin,
+				},
+			},
+		}},
+	}
+}
+
+func getCsrfPolicyWithShadowEnabled(allowedOrigin string) *csrf.CsrfPolicy {
+	return &csrf.CsrfPolicy{
+		ShadowEnabled: &gloo_config_core.RuntimeFractionalPercent{
 			DefaultValue: &glootype.FractionalPercent{
 				Numerator:   uint32(100),
 				Denominator: glootype.FractionalPercent_HUNDRED,
