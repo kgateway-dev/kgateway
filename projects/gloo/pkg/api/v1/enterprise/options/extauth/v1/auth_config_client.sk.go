@@ -106,7 +106,12 @@ func (client *authConfigClient) Watch(namespace string, opts clients.WatchOpts) 
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				authConfigsChan <- convertToAuthConfig(resourceList)
+				select {
+				case authConfigsChan <- convertToAuthConfig(resourceList):
+				case <-opts.Ctx.Done():
+					close(authConfigsChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(authConfigsChan)
 				return

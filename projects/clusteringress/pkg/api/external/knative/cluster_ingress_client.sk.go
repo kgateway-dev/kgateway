@@ -106,7 +106,12 @@ func (client *clusterIngressClient) Watch(namespace string, opts clients.WatchOp
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				clusteringressesChan <- convertToClusterIngress(resourceList)
+				select {
+				case clusteringressesChan <- convertToClusterIngress(resourceList):
+				case <-opts.Ctx.Done():
+					close(clusteringressesChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(clusteringressesChan)
 				return
