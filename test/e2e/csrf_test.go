@@ -182,7 +182,7 @@ var _ = FDescribe("CSRF", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// build a csrf policy
-			csrfPolicy := getCsrfPolicyWithAllowedRegex()
+			csrfPolicy := getCsrfPolicyWithAllowedRegex(allowedOriginRegex)
 
 			// update the listener to include the csrf policy
 			httpGateway := gw.GetHttpGateway()
@@ -237,7 +237,7 @@ var _ = FDescribe("CSRF", func() {
 		JustBeforeEach(func() {
 
 			// build a csrf policy
-			csrfPolicy := getCsrfPolicyWithAllowedRegex()
+			csrfPolicy := getCsrfPolicyWithAllowedRegex(allowedOriginRegex)
 
 			// write a virtual service so we have a proxy to our test upstream
 			vhClient := testClients.VirtualServiceClient
@@ -275,7 +275,7 @@ var _ = FDescribe("CSRF", func() {
 		JustBeforeEach(func() {
 
 			// build a csrf policy
-			csrfPolicy := getCsrfPolicyWithAllowedRegex()
+			csrfPolicy := getCsrfPolicyWithAllowedRegex(allowedOriginRegex)
 
 			// write a virtual service so we have a proxy to our test upstream
 			vhClient := testClients.VirtualServiceClient
@@ -311,11 +311,11 @@ var _ = FDescribe("CSRF", func() {
 		JustBeforeEach(func() {
 
 			// build a csrf policy
-			csrfPolicy := getCsrfPolicyWithAllowedRegex()
+			csrfPolicy := getCsrfPolicyWithAllowedRegex(allowedOriginRegex)
 
 			// write a virtual service so we have a proxy to our test upstream
 			vhClient := testClients.VirtualServiceClient
-			testVs := getTrivialVirtualServiceForUpstreamDest(writeNamespace, up.Metadata.Ref(), up)
+			testVs := getTrivialVirtualServiceForUpstreamDest(writeNamespace, up)
 			// apply to weighted destination
 			route := testVs.VirtualHost.Routes[0]
 
@@ -347,9 +347,57 @@ var _ = FDescribe("CSRF", func() {
 
 	})
 
+	Context("defined on listener and vhost", func() {
+
+		JustBeforeEach(func() {
+			gatewayClient := testClients.GatewayClient
+			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// build a csrf policy
+			csrfPolicyAllowed := getCsrfPolicyWithAllowedRegex(allowedOriginRegex)
+			csrfPolicyUnallowed := getCsrfPolicyWithAllowedRegex(unAllowedOriginRegex)
+
+			// update the listener to include the csrf policy
+			httpGateway := gw.GetHttpGateway()
+			httpGateway.Options = &gloov1.HttpListenerOptions{
+				Csrf: csrfPolicyUnallowed,
+			}
+			_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			// write a virtual service so we have a proxy to our test upstream
+			vhClient := testClients.VirtualServiceClient
+			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
+			testVs.VirtualHost.Options = &gloov1.VirtualHostOptions{
+				Csrf: csrfPolicyAllowed,
+			}
+			_, err = vhClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			checkProxy()
+			checkVirtualService(testVs)
+		})
+
+		It("should succeed with allowed origin, unsafe request", func() {
+			spoofedRequest := buildRequestFromOrigin(allowedOriginRegex, false)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
+			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 0"))
+			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 1"))
+		})
+
+		It("should fail with un-allowed origin", func() {
+			spoofedRequest := buildRequestFromOrigin(unAllowedOriginRegex, false)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(Equal("Invalid origin"))
+			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 1"))
+			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 0"))
+		})
+
+	})
+
 })
 
-func getCsrfPolicyWithAllowedRegex() *csrf.CsrfPolicy {
+func getCsrfPolicyWithAllowedRegex(allowedOrigin string) *csrf.CsrfPolicy {
 	return &csrf.CsrfPolicy{
 		FilterEnabled: &gloo_config_core.RuntimeFractionalPercent{
 			DefaultValue: &glootype.FractionalPercent{
@@ -363,17 +411,17 @@ func getCsrfPolicyWithAllowedRegex() *csrf.CsrfPolicy {
 					EngineType: &gloo_type_matcher.RegexMatcher_GoogleRe2{
 						GoogleRe2: &gloo_type_matcher.RegexMatcher_GoogleRE2{},
 					},
-					Regex: allowedOriginRegex,
+					Regex: allowedOrigin,
 				},
 			},
 		}},
 	}
 }
 
-func getTrivialVirtualServiceForUpstreamDest(ns string, upstream *core.ResourceRef, up *gloov1.Upstream) *gatewayv1.VirtualService {
+func getTrivialVirtualServiceForUpstreamDest(ns string, up *gloov1.Upstream) *gatewayv1.VirtualService {
 	vs := getVirtualServiceMultiDest(ns, up)
 	vs.VirtualHost.Routes[0].GetRouteAction().GetMulti().GetDestinations()[0].GetDestination().DestinationType = &gloov1.Destination_Upstream{
-		Upstream: upstream,
+		Upstream: up.Metadata.Ref(),
 	}
 	return vs
 }
