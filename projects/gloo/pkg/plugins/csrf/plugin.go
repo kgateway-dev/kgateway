@@ -30,22 +30,14 @@ var _ plugins.WeightedDestinationPlugin = new(plugin)
 var _ plugins.VirtualHostPlugin = new(plugin)
 var _ plugins.RoutePlugin = new(plugin)
 
-type plugin struct {
-	present bool
-}
+type plugin struct{}
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
 func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-
 	glooCsrfConfig := listener.GetOptions().GetCsrf()
-	//if glooCsrfConfig == nil {
-	//	csrfPolicy := &envoycsrf.CsrfPolicy{
-	//		FilterEnabled:     envoy,
-	//	}
-	//}
 
 	envoyCsrfConfig, err := translateCsrfConfig(glooCsrfConfig)
 	if err != nil {
@@ -111,6 +103,7 @@ func (p *plugin) ProcessWeightedDestination(
 }
 
 func translateCsrfConfig(csrf *csrf.CsrfPolicy) (*envoycsrf.CsrfPolicy, error) {
+	// returns empty csrfConfig for HttpFilters
 	var csrfPolicy = &envoycsrf.CsrfPolicy{
 		FilterEnabled: &envoy_config_core.RuntimeFractionalPercent{
 			DefaultValue: &envoytype.FractionalPercent{},
@@ -129,7 +122,6 @@ func translateCsrfConfig(csrf *csrf.CsrfPolicy) (*envoycsrf.CsrfPolicy, error) {
 
 func translateFilterEnabled(glooFilterEnabled *v3.RuntimeFractionalPercent) *envoy_config_core.RuntimeFractionalPercent {
 	if glooFilterEnabled == nil {
-		// TODO - what happens if we just return nil
 		return &envoy_config_core.RuntimeFractionalPercent{
 			DefaultValue: &envoytype.FractionalPercent{},
 		}
@@ -146,10 +138,7 @@ func translateFilterEnabled(glooFilterEnabled *v3.RuntimeFractionalPercent) *env
 
 func translateShadowEnabled(glooShadowEnabled *v3.RuntimeFractionalPercent) *envoy_config_core.RuntimeFractionalPercent {
 	if glooShadowEnabled == nil {
-		// TODO - what happens if we just return nil
-		return &envoy_config_core.RuntimeFractionalPercent{
-			DefaultValue: &envoytype.FractionalPercent{},
-		}
+		return nil
 	}
 
 	return &envoy_config_core.RuntimeFractionalPercent{
