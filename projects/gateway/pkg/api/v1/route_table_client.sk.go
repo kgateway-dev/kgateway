@@ -106,7 +106,12 @@ func (client *routeTableClient) Watch(namespace string, opts clients.WatchOpts) 
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				routeTablesChan <- convertToRouteTable(resourceList)
+				select {
+				case routeTablesChan <- convertToRouteTable(resourceList):
+				case <-opts.Ctx.Done():
+					close(routeTablesChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(routeTablesChan)
 				return

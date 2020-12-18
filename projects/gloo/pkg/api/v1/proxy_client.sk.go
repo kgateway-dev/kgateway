@@ -106,7 +106,12 @@ func (client *proxyClient) Watch(namespace string, opts clients.WatchOpts) (<-ch
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				proxiesChan <- convertToProxy(resourceList)
+				select {
+				case proxiesChan <- convertToProxy(resourceList):
+				case <-opts.Ctx.Done():
+					close(proxiesChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(proxiesChan)
 				return

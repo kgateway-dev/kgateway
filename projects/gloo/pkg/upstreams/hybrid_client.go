@@ -200,13 +200,12 @@ func aggregateUpstreams(ctx context.Context, dest chan *upstreamsWithSource, src
 				return
 			}
 			select {
+			case dest <- &upstreamsWithSource{
+				source:    sourceName,
+				upstreams: upstreams,
+			}:
 			case <-ctx.Done():
 				return
-			default:
-				dest <- &upstreamsWithSource{
-					source:    sourceName,
-					upstreams: upstreams,
-				}
 			}
 		case <-ctx.Done():
 			return

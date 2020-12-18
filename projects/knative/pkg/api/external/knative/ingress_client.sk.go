@@ -106,7 +106,12 @@ func (client *ingressClient) Watch(namespace string, opts clients.WatchOpts) (<-
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				ingressesChan <- convertToIngress(resourceList)
+				select {
+				case ingressesChan <- convertToIngress(resourceList):
+				case <-opts.Ctx.Done():
+					close(ingressesChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(ingressesChan)
 				return
