@@ -21,9 +21,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 const (
@@ -304,6 +306,47 @@ var _ = FDescribe("CSRF", func() {
 
 	})
 
+	Context("defined on weighted dest", func() {
+
+		JustBeforeEach(func() {
+
+			// build a csrf policy
+			csrfPolicy := getCsrfPolicyWithAllowedRegex()
+
+			// write a virtual service so we have a proxy to our test upstream
+			vhClient := testClients.VirtualServiceClient
+			testVs := getTrivialVirtualServiceForUpstreamDest(writeNamespace, up.Metadata.Ref(), up)
+			// apply to weighted destination
+			route := testVs.VirtualHost.Routes[0]
+
+			dest := route.GetRouteAction().GetMulti().GetDestinations()[0]
+			dest.Options = &gloov1.WeightedDestinationOptions{
+				Csrf: csrfPolicy,
+			}
+
+			_, err = vhClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			checkProxy()
+			checkVirtualService(testVs)
+		})
+
+		It("should succeed with allowed origin, unsafe request", func() {
+			spoofedRequest := buildRequestFromOrigin(allowedOriginRegex, false)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
+			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 0"))
+			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 1"))
+		})
+
+		It("should fail with un-allowed origin", func() {
+			spoofedRequest := buildRequestFromOrigin(unAllowedOriginRegex, false)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(Equal("Invalid origin"))
+			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 1"))
+			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 0"))
+		})
+
+	})
+
 })
 
 func getCsrfPolicyWithAllowedRegex() *csrf.CsrfPolicy {
@@ -324,5 +367,59 @@ func getCsrfPolicyWithAllowedRegex() *csrf.CsrfPolicy {
 				},
 			},
 		}},
+	}
+}
+
+func getTrivialVirtualServiceForUpstreamDest(ns string, upstream *core.ResourceRef, up *gloov1.Upstream) *gatewayv1.VirtualService {
+	vs := getVirtualServiceMultiDest(ns, up)
+	vs.VirtualHost.Routes[0].GetRouteAction().GetMulti().GetDestinations()[0].GetDestination().DestinationType = &gloov1.Destination_Upstream{
+		Upstream: upstream,
+	}
+	return vs
+}
+
+func getVirtualServiceMultiDest(ns string, up *gloov1.Upstream) *gatewayv1.VirtualService {
+	return &gatewayv1.VirtualService{
+		Metadata: &core.Metadata{
+			Name:      "vs",
+			Namespace: ns,
+		},
+		VirtualHost: &gatewayv1.VirtualHost{
+			Domains: []string{"*"},
+			Routes: []*gatewayv1.Route{{
+				Action: &gatewayv1.Route_RouteAction{
+					RouteAction: &gloov1.RouteAction{
+						Destination: &gloov1.RouteAction_Multi{
+							Multi: &gloov1.MultiDestination{
+								Destinations: []*gloov1.WeightedDestination{
+									{
+										Weight: 1,
+										Destination: &gloov1.Destination{
+
+											DestinationType: &gloov1.Destination_Upstream{
+												Upstream: up.Metadata.Ref(),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Matchers: []*matchers.Matcher{
+					{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: "/",
+						},
+						Headers: []*matchers.HeaderMatcher{
+							{
+								Name:        "this-header-must-not-be-present",
+								InvertMatch: true,
+							},
+						},
+					},
+				},
+			}},
+		},
 	}
 }
