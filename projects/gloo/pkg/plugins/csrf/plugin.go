@@ -30,7 +30,7 @@ var _ plugins.WeightedDestinationPlugin = new(plugin)
 var _ plugins.VirtualHostPlugin = new(plugin)
 var _ plugins.RoutePlugin = new(plugin)
 
-type plugin struct{
+type plugin struct {
 	present bool
 }
 
