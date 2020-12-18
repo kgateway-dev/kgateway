@@ -183,16 +183,6 @@ func (m *Upstream) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetDashboardFolderId()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetDashboardFolderId()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetDashboardFolderId(), target.GetDashboardFolderId()) {
-			return false
-		}
-	}
-
 	switch m.UpstreamType.(type) {
 
 	case *Upstream_Kube:

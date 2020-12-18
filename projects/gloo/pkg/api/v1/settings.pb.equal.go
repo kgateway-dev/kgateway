@@ -219,6 +219,16 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetGrafanaConfiguration()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetGrafanaConfiguration()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetGrafanaConfiguration(), target.GetGrafanaConfiguration()) {
+			return false
+		}
+	}
+
 	switch m.ConfigSource.(type) {
 
 	case *Settings_KubernetesConfigSource:
@@ -951,6 +961,40 @@ func (m *Settings_KubernetesConfiguration) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetRateLimits(), target.GetRateLimits()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Settings_GrafanaConfiguration) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_GrafanaConfiguration)
+	if !ok {
+		that2, ok := that.(Settings_GrafanaConfiguration)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetDefaultDashboardFolderId()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDefaultDashboardFolderId()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDefaultDashboardFolderId(), target.GetDefaultDashboardFolderId()) {
 			return false
 		}
 	}
