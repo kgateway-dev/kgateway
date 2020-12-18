@@ -38,7 +38,6 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	glooCsrfConfig := listener.GetOptions().GetCsrf()
-
 	envoyCsrfConfig, err := translateCsrfConfig(glooCsrfConfig)
 	if err != nil {
 		return nil, err
@@ -103,21 +102,31 @@ func (p *plugin) ProcessWeightedDestination(
 }
 
 func translateCsrfConfig(csrf *csrf.CsrfPolicy) (*envoycsrf.CsrfPolicy, error) {
-	// returns empty csrfConfig for HttpFilters
-	var csrfPolicy = &envoycsrf.CsrfPolicy{
-		FilterEnabled: &envoy_config_core.RuntimeFractionalPercent{
-			DefaultValue: &envoytype.FractionalPercent{},
-		},
-	}
-	if csrf != nil {
-		csrfPolicy = &envoycsrf.CsrfPolicy{
+
+	if csrf.GetFilterEnabled() != nil {
+		csrfPolicy := &envoycsrf.CsrfPolicy{
 			FilterEnabled:     translateFilterEnabled(csrf.GetFilterEnabled()),
-			ShadowEnabled:     translateShadowEnabled(csrf.GetShadowEnabled()),
 			AdditionalOrigins: translateAdditionalOrigins(csrf.GetAdditionalOrigins()),
 		}
+
+		return csrfPolicy, csrfPolicy.Validate()
+	} else if csrf.GetShadowEnabled() != nil {
+		csrfPolicy := &envoycsrf.CsrfPolicy{
+			FilterEnabled:     translateFilterEnabled(csrf.GetFilterEnabled()),
+			ShadowEnabled:     translateFilterEnabled(csrf.GetShadowEnabled()),
+			AdditionalOrigins: translateAdditionalOrigins(csrf.GetAdditionalOrigins()),
+		}
+
+		return csrfPolicy, csrfPolicy.Validate()
+	} else {
+
+		csrfPolicy := &envoycsrf.CsrfPolicy{
+			FilterEnabled: translateFilterEnabled(csrf.GetFilterEnabled()),
+		}
+
+		return csrfPolicy, csrfPolicy.Validate()
 	}
 
-	return csrfPolicy, csrfPolicy.Validate()
 }
 
 func translateFilterEnabled(glooFilterEnabled *v3.RuntimeFractionalPercent) *envoy_config_core.RuntimeFractionalPercent {
