@@ -182,14 +182,18 @@ message VirtualHost {
 * top-level `RouteTable` resources.
 */
 message Route {
-    // Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.)
-    // If empty, the route will match all requests (i.e, a single "/" path prefix matcher)
-    // For delegated routes, the matcher must contain only a `prefix` path matcher and no other config
+    // Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.).
+    // If empty, the route will match all requests (i.e, a single "/" path prefix matcher).
+    // For delegated routes, any parent matcher must have a `prefix` path matcher.
     repeated matchers.core.gloo.solo.io.Matcher matchers = 1;
 
-    // Whether any child route objects should inherit headers, methods, and query parameter matchers from the parent.
+    // Whether this route as a child should inherit headers, methods, and query parameter matchers from the parent.
     // Defaults to value of parent; for virtual services (no parent) defaults to false.
     google.protobuf.BoolValue inheritable_matchers = 8;
+
+    // Whether this route as a child should inherit path matchers (i.e., path itself, case-sensitive setting) from
+    // the parent. Defaults to value of parent; for virtual services (no parent) defaults to false.
+    google.protobuf.BoolValue inheritable_path_matchers = 9;
 
     // The Route Action Defines what action the proxy should take when a request matches the route.
     oneof action {
@@ -197,7 +201,7 @@ message Route {
         // route requests to an upstream.
         gloo.solo.io.RouteAction route_action = 2;
 
-        // Redirect actions tell the proxy to return a redirect response to the downstream client
+        // Redirect actions tell the proxy to return a redirect response to the downstream client.
         gloo.solo.io.RedirectAction redirect_action = 3;
 
         // Return an arbitrary HTTP response directly, without proxying.
