@@ -30,9 +30,7 @@ var _ plugins.WeightedDestinationPlugin = new(plugin)
 var _ plugins.VirtualHostPlugin = new(plugin)
 var _ plugins.RoutePlugin = new(plugin)
 
-type plugin struct {
-	present bool
-}
+type plugin struct{}
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
@@ -40,11 +38,6 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	glooCsrfConfig := listener.GetOptions().GetCsrf()
-	if glooCsrfConfig == nil && !p.present {
-		// if there is no config and plugin is not present, return empty list
-		// if present, creates an empty csrf config
-		return []plugins.StagedHttpFilter{plugins.NewStagedFilter(FilterName, pluginStage)}, nil
-	}
 	envoyCsrfConfig, err := translateCsrfConfig(glooCsrfConfig)
 	if err != nil {
 		return nil, err
@@ -69,7 +62,6 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return err
 	}
 
-	p.present = true
 	return pluginutils.SetRoutePerFilterConfig(out, FilterName, envoyCsrfConfig)
 }
 
@@ -88,7 +80,6 @@ func (p *plugin) ProcessVirtualHost(
 		return err
 	}
 
-	p.present = true
 	return pluginutils.SetVhostPerFilterConfig(out, FilterName, envoyCsrfConfig)
 }
 
@@ -107,7 +98,6 @@ func (p *plugin) ProcessWeightedDestination(
 		return err
 	}
 
-	p.present = true
 	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, envoyCsrfConfig)
 }
 
@@ -129,7 +119,7 @@ func translateCsrfConfig(csrf *csrf.CsrfPolicy) (*envoycsrf.CsrfPolicy, error) {
 
 		return csrfPolicy, csrfPolicy.Validate()
 	} else {
-
+		// if null config, return empty csrf policy with valid FilterEnabled
 		csrfPolicy := &envoycsrf.CsrfPolicy{
 			FilterEnabled: translateFilterEnabled(csrf.GetFilterEnabled()),
 		}
