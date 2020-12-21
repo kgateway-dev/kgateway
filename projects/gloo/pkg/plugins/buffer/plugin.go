@@ -4,6 +4,7 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoybuffer "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
 	buffer "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -25,6 +26,7 @@ var _ plugins.VirtualHostPlugin = new(Plugin)
 var _ plugins.WeightedDestinationPlugin = new(Plugin)
 
 type Plugin struct {
+	present bool
 }
 
 func (p *Plugin) Init(params plugins.InitParams) error {
@@ -36,12 +38,19 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 	bufferConfig := p.translateBufferFilter(listener.GetOptions().GetBuffer())
 
 	if bufferConfig == nil {
+		if !p.present {
+			return nil, nil
+		}
 		// put the filter in the chain, actual buffer will be configured on route, vhost, etc.
-		return []plugins.StagedHttpFilter{
-			plugins.NewStagedFilter(wellknown.Buffer, pluginStage),
-		}, nil
+		bufferConfig = &envoybuffer.Buffer{
+			MaxRequestBytes: &wrappers.UInt32Value{
+				Value: 1,
+			},
+		}
+
 	}
 
+	// put the filter in the chain, actual buffer will be configured on route, vhost, etc.
 	bufferFilter, err := plugins.NewStagedFilterWithConfig(wellknown.Buffer, bufferConfig, pluginStage)
 	if err != nil {
 		return nil, eris.Wrapf(err, "generating filter config")
@@ -51,7 +60,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 }
 
 func (p *Plugin) translateBufferFilter(buf *buffer.Buffer) *envoybuffer.Buffer {
-	if buf == nil {
+	if buf == nil || buf.GetMaxRequestBytes() == nil {
 		return nil
 	}
 
@@ -67,11 +76,13 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 
 	if bufPerRoute.GetDisabled() {
+		p.present = true
 		return pluginutils.SetRoutePerFilterConfig(out, wellknown.Buffer, getNoBufferConfig())
 	}
 
 	if bufPerRoute.GetBuffer() != nil {
 		config := getBufferConfig(bufPerRoute)
+		p.present = true
 		return pluginutils.SetRoutePerFilterConfig(out, wellknown.Buffer, config)
 	}
 
@@ -89,11 +100,13 @@ func (p *Plugin) ProcessVirtualHost(
 	}
 
 	if bufPerRoute.GetDisabled() {
+		p.present = true
 		return pluginutils.SetVhostPerFilterConfig(out, wellknown.Buffer, getNoBufferConfig())
 	}
 
 	if bufPerRoute.GetBuffer() != nil {
 		config := getBufferConfig(bufPerRoute)
+		p.present = true
 		return pluginutils.SetVhostPerFilterConfig(out, wellknown.Buffer, config)
 	}
 
@@ -111,11 +124,13 @@ func (p *Plugin) ProcessWeightedDestination(
 	}
 
 	if bufPerRoute.GetDisabled() {
+		p.present = true
 		return pluginutils.SetWeightedClusterPerFilterConfig(out, wellknown.Buffer, getNoBufferConfig())
 	}
 
 	if bufPerRoute.GetBuffer() != nil {
 		config := getBufferConfig(bufPerRoute)
+		p.present = true
 		return pluginutils.SetWeightedClusterPerFilterConfig(out, wellknown.Buffer, config)
 	}
 

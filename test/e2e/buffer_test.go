@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -100,7 +101,6 @@ var _ = Describe("buffer", func() {
 			if err != nil {
 				return "", err
 			}
-			req.Header.Add("Accept-Encoding", "gzip")
 
 			res, err := http.DefaultClient.Do(req)
 			if err != nil {
@@ -120,7 +120,11 @@ var _ = Describe("buffer", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// build a buffer policy
-			bufferPolicy := &buffer.Buffer{}
+			bufferPolicy := &buffer.Buffer{
+				MaxRequestBytes: &wrappers.UInt32Value{
+					Value: 1,
+				},
+			}
 
 			// update the listener to include the gzip policy
 			httpGateway := gw.GetHttpGateway()
