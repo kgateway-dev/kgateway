@@ -219,12 +219,12 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetGrafanaConfiguration()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetGrafanaConfiguration()) {
+	if h, ok := interface{}(m.GetObservabilityOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetObservabilityOptions()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetGrafanaConfiguration(), target.GetGrafanaConfiguration()) {
+		if !proto.Equal(m.GetObservabilityOptions(), target.GetObservabilityOptions()) {
 			return false
 		}
 	}
@@ -969,14 +969,14 @@ func (m *Settings_KubernetesConfiguration) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *Settings_GrafanaConfiguration) Equal(that interface{}) bool {
+func (m *Settings_ObservabilityOptions) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*Settings_GrafanaConfiguration)
+	target, ok := that.(*Settings_ObservabilityOptions)
 	if !ok {
-		that2, ok := that.(Settings_GrafanaConfiguration)
+		that2, ok := that.(Settings_ObservabilityOptions)
 		if ok {
 			target = &that2
 		} else {
@@ -989,12 +989,12 @@ func (m *Settings_GrafanaConfiguration) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetDefaultDashboardFolderId()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetDefaultDashboardFolderId()) {
+	if h, ok := interface{}(m.GetGrafanaIntegration()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetGrafanaIntegration()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetDefaultDashboardFolderId(), target.GetDefaultDashboardFolderId()) {
+		if !proto.Equal(m.GetGrafanaIntegration(), target.GetGrafanaIntegration()) {
 			return false
 		}
 	}
@@ -1064,6 +1064,40 @@ func (m *Settings_KubernetesConfiguration_RateLimits) Equal(that interface{}) bo
 
 	if m.GetBurst() != target.GetBurst() {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Settings_ObservabilityOptions_GrafanaIntegration) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_ObservabilityOptions_GrafanaIntegration)
+	if !ok {
+		that2, ok := that.(Settings_ObservabilityOptions_GrafanaIntegration)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetDefaultDashboardFolderId()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDefaultDashboardFolderId()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDefaultDashboardFolderId(), target.GetDefaultDashboardFolderId()) {
+			return false
+		}
 	}
 
 	return true
