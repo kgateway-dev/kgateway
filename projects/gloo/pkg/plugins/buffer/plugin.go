@@ -36,7 +36,10 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 	bufferConfig := p.translateBufferFilter(listener.GetOptions().GetBuffer())
 
 	if bufferConfig == nil {
-		return nil, nil
+		// put the filter in the chain, actual buffer will be configured on route, vhost, etc.
+		return []plugins.StagedHttpFilter{
+			plugins.NewStagedFilter(wellknown.Buffer, pluginStage),
+		}, nil
 	}
 
 	bufferFilter, err := plugins.NewStagedFilterWithConfig(wellknown.Buffer, bufferConfig, pluginStage)

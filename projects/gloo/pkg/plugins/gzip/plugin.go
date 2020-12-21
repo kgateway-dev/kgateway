@@ -33,7 +33,10 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 	gzipConfig := listener.GetOptions().GetGzip()
 
 	if gzipConfig == nil {
-		return nil, nil
+		// put the filter in the chain
+		return []plugins.StagedHttpFilter{
+			plugins.NewStagedFilter(wellknown.Gzip, pluginStage),
+		}, nil
 	}
 
 	envoyGzipConfig, err := glooToEnvoyGzip(gzipConfig)
