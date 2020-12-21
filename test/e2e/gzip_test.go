@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"compress/gzip"
 	"context"
 	"fmt"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -23,7 +24,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("gzip", func() {
+var _ = FDescribe("gzip", func() {
 
 	var (
 		err           error
@@ -95,19 +96,20 @@ var _ = Describe("gzip", func() {
 
 	testRequest := func() func() (string, error) {
 		return func() (string, error) {
-			method := "GET"
-			req, err := http.NewRequest(method, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), nil)
 			if err != nil {
 				return "", err
 			}
-			req.Header.Add("Accept-Encoding", "gzip")
+			//req.Header.Add("Accept-Encoding", "gzip")
 
 			res, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return "", err
-			}
+			//if err != nil {
+			//	return "", err
+			//}
 			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
+			reader, err := gzip.NewReader(res.Body)
+			defer reader.Close()
+			body, err := ioutil.ReadAll(reader)
 			return string(body), err
 		}
 	}
@@ -122,12 +124,12 @@ var _ = Describe("gzip", func() {
 			// build a gzip policy
 			gzipPolicy := &v2.Gzip{
 				MemoryLevel: &wrappers.UInt32Value{
-					Value: 256,
+					Value: 8,
 				},
 				CompressionLevel:    v2.Gzip_CompressionLevel_SPEED,
 				CompressionStrategy: v2.Gzip_HUFFMAN,
 				WindowBits: &wrappers.UInt32Value{
-					Value: 128,
+					Value: 10,
 				},
 			}
 
