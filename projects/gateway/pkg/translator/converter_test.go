@@ -528,6 +528,73 @@ var _ = Describe("Route converter", func() {
 				))
 			})
 
+			It("inherits route config from parent", func() {
+
+				rt = buildRouteTableWithSimpleAction("rt", "default", "/bar", nil)
+
+				rv = translator.NewRouteConverter(
+					translator.NewRouteTableSelector(v1.RouteTableList{rt}),
+					translator.NewRouteTableIndexer(),
+				)
+
+				// parent has /foo matcher
+				Expect(vs.VirtualHost.GetRoutes()).To(HaveLen(1))
+				Expect(vs.VirtualHost.GetRoutes()[0].Matchers).To(HaveLen(1))
+				Expect(vs.VirtualHost.GetRoutes()[0].Matchers[0].GetPrefix()).To(Equal("/foo"))
+
+				// but child has /bar matcher
+				Expect(rt.GetRoutes()).To(HaveLen(1))
+				Expect(rt.GetRoutes()[0].Matchers).To(HaveLen(1))
+				Expect(rt.GetRoutes()[0].Matchers[0].GetPrefix()).To(Equal("/bar"))
+
+				// with inheritable path matchers, the parent matcher will trump any child config
+				vs.VirtualHost.Routes[0].InheritablePathMatchers = &wrappers.BoolValue{Value: true}
+
+				rpt := reporter.ResourceReports{}
+				converted, err := rv.ConvertVirtualService(vs, rpt)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(HaveLen(1))
+				Expect(rpt).To(HaveLen(0))
+
+				Expect(converted[0].Matchers).To(HaveLen(1))
+				Expect(converted[0].Matchers[0].GetPrefix()).To(Equal("/foo"))
+			})
+
+			It("child route inheritance config overrides parent route inheritance config", func() {
+
+				vs.VirtualHost.Routes[0].InheritableMatchers = &wrappers.BoolValue{Value: false}
+
+				rt = buildRouteTableWithSimpleAction("rt", "default", "/bar", nil)
+
+				rv = translator.NewRouteConverter(
+					translator.NewRouteTableSelector(v1.RouteTableList{rt}),
+					translator.NewRouteTableIndexer(),
+				)
+
+				// parent has /foo matcher
+				Expect(vs.VirtualHost.GetRoutes()).To(HaveLen(1))
+				Expect(vs.VirtualHost.GetRoutes()[0].Matchers).To(HaveLen(1))
+				Expect(vs.VirtualHost.GetRoutes()[0].Matchers[0].GetPrefix()).To(Equal("/foo"))
+
+				// but child has /bar matcher
+				Expect(rt.GetRoutes()).To(HaveLen(1))
+				Expect(rt.GetRoutes()[0].Matchers).To(HaveLen(1))
+				Expect(rt.GetRoutes()[0].Matchers[0].GetPrefix()).To(Equal("/bar"))
+
+				// with inheritable matchers, the parent matcher will trump any child config
+				rt.Routes[0].InheritablePathMatchers = &wrappers.BoolValue{Value: true}
+				rt.Routes[0].InheritableMatchers = &wrappers.BoolValue{Value: true}
+
+				rpt := reporter.ResourceReports{}
+				converted, err := rv.ConvertVirtualService(vs, rpt)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(HaveLen(1))
+				Expect(rpt).To(HaveLen(0))
+
+				Expect(converted[0].Matchers).To(HaveLen(1))
+				Expect(converted[0].Matchers[0].GetPrefix()).To(Equal("/foo"))
+			})
+
 		})
 	})
 
