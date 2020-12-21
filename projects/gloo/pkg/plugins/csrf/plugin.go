@@ -45,7 +45,7 @@ func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 
 	csrfFilter, err := plugins.NewStagedFilterWithConfig(FilterName, envoyCsrfConfig, pluginStage)
 	if err != nil {
-		return nil, eris.Wrapf(err, "generating filter config")
+		return nil, eris.Wrap(err, "generating filter config")
 	}
 
 	return []plugins.StagedHttpFilter{csrfFilter}, nil
@@ -131,6 +131,7 @@ func translateCsrfConfig(csrf *csrf.CsrfPolicy) (*envoycsrf.CsrfPolicy, error) {
 
 func translateFilterEnabled(glooFilterEnabled *v3.RuntimeFractionalPercent) *envoy_config_core.RuntimeFractionalPercent {
 	if glooFilterEnabled == nil {
+		// validation requires empty FilterEnabled with DefaultValue
 		return &envoy_config_core.RuntimeFractionalPercent{
 			DefaultValue: &envoytype.FractionalPercent{},
 		}
