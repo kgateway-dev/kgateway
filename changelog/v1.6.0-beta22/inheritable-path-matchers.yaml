@@ -1,0 +1,13 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4008
+    description: >-
+      Fix a bug where the `inheritableMatchers` value itself was being read from the parent route, rather than the
+      child route (as documented and intended).
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3726
+    description: >-
+      Add support for the new `inheritablePathMatchers` value on `Route` config. This new setting is similar to the
+      `inheritableMatchers` boolean value that allows delegated routes (i.e., routes on route tables) to optionally
+      opt into inheriting HTTP header, method, or query parameter matching from the parent route. The new
+      `inheritablePathMatchers` is used to optionally opt into inheriting HTTP path matcher config from the parent.

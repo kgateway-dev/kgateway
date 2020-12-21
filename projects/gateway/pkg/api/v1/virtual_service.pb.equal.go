@@ -203,6 +203,16 @@ func (m *Route) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetInheritablePathMatchers()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetInheritablePathMatchers()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetInheritablePathMatchers(), target.GetInheritablePathMatchers()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetOptions()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetOptions()) {
 			return false
