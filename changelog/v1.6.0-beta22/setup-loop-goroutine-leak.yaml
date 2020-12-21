@@ -2,4 +2,4 @@ changelog:
 - type: FIX
   issueLink: https://github.com/solo-io/gloo/issues/4001
   description: >
-    Fix generated resource clients watch functions to not block infinitiely, therefore leaking go-routines.
+    Fix generated resource clients watch functions to not block infinitely, therefore leaking go-routines.
