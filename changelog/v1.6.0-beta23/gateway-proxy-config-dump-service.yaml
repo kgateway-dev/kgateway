@@ -1,0 +1,8 @@
+changelog:
+- type: HELM
+  issueLink: https://github.com/solo-io/gloo/issues/4012
+  description: >
+    Add the helm value `gatewayProxies.gatewayProxy.readConfigMulticluster`, set to
+    false by default. Setting this to true will add a gateway-proxy-config-dump-service
+    Service to the gloo installation namespace. This service allows multicluster
+    management planes to access the envoy config dump on port 8082 of the gateway-proxy.
