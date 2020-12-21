@@ -562,7 +562,7 @@ var _ = Describe("Route converter", func() {
 
 			It("child route inheritance config overrides parent route inheritance config", func() {
 
-				vs.VirtualHost.Routes[0].InheritableMatchers = &wrappers.BoolValue{Value:false}
+				vs.VirtualHost.Routes[0].InheritableMatchers = &wrappers.BoolValue{Value: false}
 
 				rt = buildRouteTableWithSimpleAction("rt", "default", "/bar", nil)
 
