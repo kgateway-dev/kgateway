@@ -220,6 +220,16 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetCsrf()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCsrf()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetCsrf(), target.GetCsrf()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetGrpcJsonTranscoder()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetGrpcJsonTranscoder()) {
 			return false
@@ -424,6 +434,16 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetBufferPerRoute(), target.GetBufferPerRoute()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetCsrf()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCsrf()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetCsrf(), target.GetCsrf()) {
 			return false
 		}
 	}
@@ -707,6 +727,16 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetCsrf()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCsrf()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetCsrf(), target.GetCsrf()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetStagedTransformations()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetStagedTransformations()) {
 			return false
@@ -913,6 +943,16 @@ func (m *WeightedDestinationOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetBufferPerRoute(), target.GetBufferPerRoute()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetCsrf()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCsrf()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetCsrf(), target.GetCsrf()) {
 			return false
 		}
 	}
