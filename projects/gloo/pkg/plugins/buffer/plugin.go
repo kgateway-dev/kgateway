@@ -35,7 +35,10 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 
 func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 
-	bufferConfig := p.translateBufferFilter(listener.GetOptions().GetBuffer())
+	bufferConfig, err := p.translateBufferFilter(listener.GetOptions().GetBuffer())
+	if err != nil {
+		return nil, err
+	}
 
 	if bufferConfig == nil {
 		if !p.present {
@@ -59,14 +62,16 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 	return []plugins.StagedHttpFilter{bufferFilter}, nil
 }
 
-func (p *Plugin) translateBufferFilter(buf *buffer.Buffer) *envoybuffer.Buffer {
-	if buf == nil || buf.GetMaxRequestBytes() == nil {
-		return nil
+func (p *Plugin) translateBufferFilter(buf *buffer.Buffer) (*envoybuffer.Buffer, error) {
+	if buf == nil {
+		return nil, nil
 	}
 
-	return &envoybuffer.Buffer{
+	envoyConfig := &envoybuffer.Buffer{
 		MaxRequestBytes: buf.GetMaxRequestBytes(),
 	}
+
+	return envoyConfig, envoyConfig.Validate()
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
@@ -81,7 +86,10 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 
 	if bufPerRoute.GetBuffer() != nil {
-		config := getBufferConfig(bufPerRoute)
+		config, err := getBufferConfig(bufPerRoute)
+		if err != nil {
+			return err
+		}
 		p.present = true
 		return pluginutils.SetRoutePerFilterConfig(out, wellknown.Buffer, config)
 	}
@@ -105,7 +113,10 @@ func (p *Plugin) ProcessVirtualHost(
 	}
 
 	if bufPerRoute.GetBuffer() != nil {
-		config := getBufferConfig(bufPerRoute)
+		config, err := getBufferConfig(bufPerRoute)
+		if err != nil {
+			return err
+		}
 		p.present = true
 		return pluginutils.SetVhostPerFilterConfig(out, wellknown.Buffer, config)
 	}
@@ -129,7 +140,10 @@ func (p *Plugin) ProcessWeightedDestination(
 	}
 
 	if bufPerRoute.GetBuffer() != nil {
-		config := getBufferConfig(bufPerRoute)
+		config, err := getBufferConfig(bufPerRoute)
+		if err != nil {
+			return err
+		}
 		p.present = true
 		return pluginutils.SetWeightedClusterPerFilterConfig(out, wellknown.Buffer, config)
 	}
@@ -145,12 +159,13 @@ func getNoBufferConfig() *envoybuffer.BufferPerRoute {
 	}
 }
 
-func getBufferConfig(bufPerRoute *buffer.BufferPerRoute) *envoybuffer.BufferPerRoute {
-	return &envoybuffer.BufferPerRoute{
+func getBufferConfig(bufPerRoute *buffer.BufferPerRoute) (*envoybuffer.BufferPerRoute, error) {
+	envoyConfig := &envoybuffer.BufferPerRoute{
 		Override: &envoybuffer.BufferPerRoute_Buffer{
 			Buffer: &envoybuffer.Buffer{
 				MaxRequestBytes: bufPerRoute.GetBuffer().GetMaxRequestBytes(),
 			},
 		},
 	}
+	return envoyConfig, envoyConfig.Validate()
 }
