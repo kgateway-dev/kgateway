@@ -119,7 +119,7 @@ var _ = Describe("CSRF", func() {
 	getEnvoyStats := func() string {
 		By("Get stats")
 		envoyStats := ""
-		Eventually(func() error {
+		EventuallyWithOffset(1, func() error {
 			statsUrl := fmt.Sprintf("http://%s:%d/stats",
 				envoyInstance.LocalAddr(),
 				envoyInstance.AdminPort)
