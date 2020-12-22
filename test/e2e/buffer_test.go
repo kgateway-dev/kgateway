@@ -25,7 +25,7 @@ import (
 	buffer "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 )
 
-var _ = FDescribe("buffer", func() {
+var _ = Describe("buffer", func() {
 
 	var (
 		err           error
@@ -97,9 +97,8 @@ var _ = FDescribe("buffer", func() {
 
 	testRequest := func() func() (string, error) {
 		return func() (string, error) {
-			method := "POST"
 			var json = []byte(`{"value":"test"}`)
-			req, err := http.NewRequest(method, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
+			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
 			//req.Header.Add("Content-Length",size)
 			req.Header.Set("Content-Type", "application/json")
 			if err != nil {
