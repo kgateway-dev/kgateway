@@ -3080,8 +3080,8 @@ metadata:
 						gatewayProxyConfigDumpService.Spec.Selector = serviceLabels
 						gatewayProxyConfigDumpService.Spec.Ports = []v1.ServicePort{
 							{
-								Protocol:   "TCP",
-								Port:       8082,
+								Protocol: "TCP",
+								Port:     8082,
 							},
 						}
 						gatewayProxyConfigDumpService.Spec.Type = v1.ServiceTypeClusterIP
