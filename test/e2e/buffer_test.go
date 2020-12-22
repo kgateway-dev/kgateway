@@ -115,7 +115,7 @@ var _ = Describe("buffer", func() {
 		}
 	}
 
-	Context("filter defined", func() {
+	Context("filter defined on listener", func() {
 
 		Context("Large buffer ", func() {
 			JustBeforeEach(func() {
@@ -126,7 +126,7 @@ var _ = Describe("buffer", func() {
 				// build a buffer policy
 				bufferPolicy := &buffer.Buffer{
 					MaxRequestBytes: &wrappers.UInt32Value{
-						Value: 100,
+						Value: 4098, // max size
 					},
 				}
 
@@ -167,7 +167,7 @@ var _ = Describe("buffer", func() {
 					},
 				}
 
-				// update the listener to include the gzip policy
+				// update the listener to include the buffer policy
 				httpGateway := gw.GetHttpGateway()
 				httpGateway.Options = &gloov1.HttpListenerOptions{
 					Buffer: bufferPolicy,
@@ -178,6 +178,75 @@ var _ = Describe("buffer", func() {
 				// write a virtual service so we have a proxy to our test upstream
 				testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
 				_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				checkProxy()
+				checkVirtualService(testVs)
+			})
+
+			It("empty buffer should fail", func() {
+				testReq := testRequest()
+				Eventually(testReq, 10*time.Second, 1*time.Second).Should(Equal("Payload Too Large"))
+			})
+		})
+	})
+
+	Context("filter defined on vhost", func() {
+
+		Context("Large buffer ", func() {
+			JustBeforeEach(func() {
+				// build a buffer policy
+				bufferPolicy := &buffer.BufferPerRoute{
+					Override: &buffer.BufferPerRoute_Buffer{
+						Buffer: &buffer.Buffer{
+							MaxRequestBytes: &wrappers.UInt32Value{
+								Value: 4098, // max size
+							},
+						},
+					},
+				}
+
+				// write a virtual service so we have a proxy to our test upstream
+				vhClient := testClients.VirtualServiceClient
+				testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
+				testVs.VirtualHost.Options = &gloov1.VirtualHostOptions{
+					BufferPerRoute: bufferPolicy,
+				}
+				_, err = vhClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+
+				checkProxy()
+				checkVirtualService(testVs)
+			})
+
+			It("valid buffer size should succeed", func() {
+				testReq := testRequest()
+				Eventually(testReq, 10*time.Second, 1*time.Second).Should(Equal("{\"value\":\"test\"}"))
+			})
+
+		})
+
+		Context("Small buffer ", func() {
+			JustBeforeEach(func() {
+
+				// build a buffer policy
+				bufferPolicy := &buffer.BufferPerRoute{
+					Override: &buffer.BufferPerRoute_Buffer{
+						Buffer: &buffer.Buffer{
+							MaxRequestBytes: &wrappers.UInt32Value{
+								Value: 1, // max size
+							},
+						},
+					},
+				}
+
+				// write a virtual service so we have a proxy to our test upstream
+				vhClient := testClients.VirtualServiceClient
+				testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
+				testVs.VirtualHost.Options = &gloov1.VirtualHostOptions{
+					BufferPerRoute: bufferPolicy,
+				}
+				_, err = vhClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 
 				checkProxy()
