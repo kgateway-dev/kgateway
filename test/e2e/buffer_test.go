@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -24,7 +25,7 @@ import (
 	buffer "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 )
 
-var _ = Describe("buffer", func() {
+var _ = FDescribe("buffer", func() {
 
 	var (
 		err           error
@@ -96,8 +97,11 @@ var _ = Describe("buffer", func() {
 
 	testRequest := func() func() (string, error) {
 		return func() (string, error) {
-			method := "GET"
-			req, err := http.NewRequest(method, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), nil)
+			method := "POST"
+			var json = []byte(`{"value":"test"}`)
+			req, err := http.NewRequest(method, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
+			//req.Header.Add("Content-Length",size)
+			req.Header.Set("Content-Type", "application/json")
 			if err != nil {
 				return "", err
 			}
@@ -114,38 +118,77 @@ var _ = Describe("buffer", func() {
 
 	Context("filter defined", func() {
 
-		JustBeforeEach(func() {
-			gatewayClient := testClients.GatewayClient
-			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-			Expect(err).NotTo(HaveOccurred())
+		Context("Large buffer ", func() {
+			JustBeforeEach(func() {
+				gatewayClient := testClients.GatewayClient
+				gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				Expect(err).NotTo(HaveOccurred())
 
-			// build a buffer policy
-			bufferPolicy := &buffer.Buffer{
-				MaxRequestBytes: &wrappers.UInt32Value{
-					Value: 1,
-				},
-			}
+				// build a buffer policy
+				bufferPolicy := &buffer.Buffer{
+					MaxRequestBytes: &wrappers.UInt32Value{
+						Value: 100,
+					},
+				}
 
-			// update the listener to include the gzip policy
-			httpGateway := gw.GetHttpGateway()
-			httpGateway.Options = &gloov1.HttpListenerOptions{
-				Buffer: bufferPolicy,
-			}
-			_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-			Expect(err).NotTo(HaveOccurred())
+				// update the listener to include the gzip policy
+				httpGateway := gw.GetHttpGateway()
+				httpGateway.Options = &gloov1.HttpListenerOptions{
+					Buffer: bufferPolicy,
+				}
+				_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
 
-			// write a virtual service so we have a proxy to our test upstream
-			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-			_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
-			Expect(err).NotTo(HaveOccurred())
+				// write a virtual service so we have a proxy to our test upstream
+				testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
+				_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
 
-			checkProxy()
-			checkVirtualService(testVs)
+				checkProxy()
+				checkVirtualService(testVs)
+			})
+
+			It("valid buffer size should succeed", func() {
+				testReq := testRequest()
+				Eventually(testReq, 10*time.Second, 1*time.Second).Should(Equal("{\"value\":\"test\"}"))
+			})
+
 		})
 
-		It("should succeed", func() {
-			testReq := testRequest()
-			Eventually(testReq, 10*time.Second, 1*time.Second).Should(BeEmpty())
+		Context("Small buffer ", func() {
+			JustBeforeEach(func() {
+				gatewayClient := testClients.GatewayClient
+				gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// build a buffer policy
+				bufferPolicy := &buffer.Buffer{
+					MaxRequestBytes: &wrappers.UInt32Value{
+						Value: 1,
+					},
+				}
+
+				// update the listener to include the gzip policy
+				httpGateway := gw.GetHttpGateway()
+				httpGateway.Options = &gloov1.HttpListenerOptions{
+					Buffer: bufferPolicy,
+				}
+				_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+
+				// write a virtual service so we have a proxy to our test upstream
+				testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
+				_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				checkProxy()
+				checkVirtualService(testVs)
+			})
+
+			It("empty buffer should fail", func() {
+				testReq := testRequest()
+				Eventually(testReq, 10*time.Second, 1*time.Second).Should(Equal("Payload Too Large"))
+			})
 		})
 	})
 })
