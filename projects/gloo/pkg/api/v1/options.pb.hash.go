@@ -264,6 +264,20 @@ func (m *HttpListenerOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetCsrf()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetCsrf(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	if h, ok := interface{}(m.GetGrpcJsonTranscoder()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
@@ -512,6 +526,20 @@ func (m *VirtualHostOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	} else {
 		if val, err := hashstructure.Hash(m.GetBufferPerRoute(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetCsrf()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetCsrf(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
@@ -884,6 +912,20 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetCsrf()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetCsrf(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	if h, ok := interface{}(m.GetStagedTransformations()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
@@ -1122,6 +1164,20 @@ func (m *WeightedDestinationOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	} else {
 		if val, err := hashstructure.Hash(m.GetBufferPerRoute(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetCsrf()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetCsrf(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {

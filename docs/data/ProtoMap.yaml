@@ -1157,6 +1157,9 @@ apis:
   solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto.sk/#BufferPerRoute
     package: solo.io.envoy.extensions.filters.http.buffer.v3
+  solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto.sk/#CsrfPolicy
+    package: solo.io.envoy.extensions.filters.http.csrf.v3
   solo.io.envoy.extensions.filters.http.wasm.v3.Wasm:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/wasm/v3/wasm.proto.sk/#Wasm
     package: solo.io.envoy.extensions.filters.http.wasm.v3
