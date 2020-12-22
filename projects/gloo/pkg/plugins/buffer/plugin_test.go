@@ -206,6 +206,11 @@ var _ = Describe("Plugin", func() {
 		expectedStageFilter := plugins.StagedHttpFilter{
 			HttpFilter: &envoyhcm.HttpFilter{
 				Name: wellknown.Buffer,
+				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
+					TypedConfig: utils.MustMessageToAny(&envoybuffer.Buffer{
+						MaxRequestBytes: &wrappers.UInt32Value{Value: 1},
+					}),
+				},
 			},
 
 			Stage: plugins.DuringStage(plugins.RouteStage),
