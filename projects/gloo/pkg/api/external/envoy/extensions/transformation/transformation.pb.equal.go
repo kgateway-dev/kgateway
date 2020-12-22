@@ -439,6 +439,23 @@ func (m *TransformationTemplate) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetHeadersToAppend()) != len(target.GetHeadersToAppend()) {
+		return false
+	}
+	for idx, v := range m.GetHeadersToAppend() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHeadersToAppend()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetHeadersToAppend()[idx]) {
+				return false
+			}
+		}
+
+	}
+
 	if m.GetParseBodyBehavior() != target.GetParseBodyBehavior() {
 		return false
 	}
@@ -806,6 +823,44 @@ func (m *RouteTransformations_RouteTransformation_ResponseMatch) Equal(that inte
 		}
 	} else {
 		if !proto.Equal(m.GetResponseTransformation(), target.GetResponseTransformation()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *TransformationTemplate_HeaderToAppend) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*TransformationTemplate_HeaderToAppend)
+	if !ok {
+		that2, ok := that.(TransformationTemplate_HeaderToAppend)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetValue()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetValue()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetValue(), target.GetValue()) {
 			return false
 		}
 	}

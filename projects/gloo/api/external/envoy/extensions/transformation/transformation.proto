@@ -175,6 +175,20 @@ message TransformationTemplate {
   // resulting header, the rendered template will determine the value.
   map<string, InjaTemplate> headers = 3;
 
+  // Defines a header-template pair to be used in `headers_to_append`
+  message HeaderToAppend {
+    // Header name
+    string key = 1;
+    // Apply a template to the header value
+    InjaTemplate value = 2;
+  }
+
+  // Use this attribute to transform request/response headers. It consists of
+  // an array of string/template objects. Use this attribute to define multiple
+  // templates for a single header. Header template(s) defined here will be appended to any
+  // existing headers with the same header name, not replace existing ones.
+  repeated HeaderToAppend headers_to_append = 10;
+
   // Determines the type of transformation to apply to the request/response body
   oneof body_transformation {
     // Apply a template to the body
