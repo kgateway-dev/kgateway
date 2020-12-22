@@ -26,6 +26,8 @@ weight: 5
 - [ConsulUpstreamDiscoveryConfiguration](#consulupstreamdiscoveryconfiguration)
 - [KubernetesConfiguration](#kubernetesconfiguration)
 - [RateLimits](#ratelimits)
+- [ObservabilityOptions](#observabilityoptions)
+- [GrafanaIntegration](#grafanaintegration)
 - [GlooOptions](#gloooptions)
 - [AWSOptions](#awsoptions)
 - [InvalidConfigPolicy](#invalidconfigpolicy)
@@ -76,6 +78,7 @@ Represents global settings for all the Gloo components.
 "extauth": .enterprise.gloo.solo.io.Settings
 "metadata": .core.solo.io.Metadata
 "status": .core.solo.io.Status
+"observabilityOptions": .gloo.solo.io.Settings.ObservabilityOptions
 
 ```
 
@@ -109,6 +112,7 @@ Represents global settings for all the Gloo components.
 | `extauth` | [.enterprise.gloo.solo.io.Settings](../enterprise/options/extauth/v1/extauth.proto.sk/#settings) | Enterprise-only: External auth related settings. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |
+| `observabilityOptions` | [.gloo.solo.io.Settings.ObservabilityOptions](../settings.proto.sk/#observabilityoptions) | Provides settings related to the observability deployment (enterprise only). |
 
 
 
@@ -415,6 +419,41 @@ Provides overrides for the default configuration parameters used to interact wit
 | ----- | ---- | ----------- | 
 | `qPS` | `float` | The maximum queries-per-second Gloo can make to the Kubernetes API Server. |
 | `burst` | `int` | Maximum burst for throttle. When a steady state of QPS requests per second, this is an additional number of allowed, to allow for short bursts. |
+
+
+
+
+---
+### ObservabilityOptions
+
+
+
+```yaml
+"grafanaIntegration": .gloo.solo.io.Settings.ObservabilityOptions.GrafanaIntegration
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `grafanaIntegration` | [.gloo.solo.io.Settings.ObservabilityOptions.GrafanaIntegration](../settings.proto.sk/#grafanaintegration) | Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/). |
+
+
+
+
+---
+### GrafanaIntegration
+
+ 
+Provides settings related to the observability pod's interactions with grafana
+
+```yaml
+"defaultDashboardFolderId": .google.protobuf.UInt32Value
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `defaultDashboardFolderId` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | (UInt32Value) Grafana allows dashboards to be added to specific folders by specifying that folder's ID If unset, automatic upstream dashboards are generated in the general folder (folderId: 0). If set, the observability deployment will try to create/move all upstreams without their own folderId to the folder specified here, after verifying that a folder with such an ID exists. Be aware that grafana requires a folders ID, which should not be confused with the similarly-named and more easily accessible folder UID value. If individual upstream dashboards need to be placed specific granafa folders, they can be given their own folder IDs by annotating the upstreams. The annotation key must be 'observability.solo.io/dashboard_folder_id' and the value must be the folder ID. Folder IDs can be retrieved from grafana with a pair of terminal commands: 1. Port forward the grafana deployment to surface its API: kubectl -n gloo-system port-forward deployment/glooe-grafana 3000 2. Request all folder data (after admin:admin is replaced with the correct credentials): curl http://admin:admin@localhost:3000/api/folders. |
 
 
 

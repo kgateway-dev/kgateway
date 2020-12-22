@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add the defaultDashboardFolderId value to the settings proto definition for use in gloo-E.
+    issueLink: https://github.com/solo-io/gloo/issues/3920
+    resolvesIssue: false
