@@ -1,0 +1,8 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3898
+    description: >
+      Gloo now supports enabling the upstream Envoy CSRF filter by configuring `spec.httpGateway.options.csrf` of
+      the desired Gateway. This can also be overridden on virtual services at the virtual host or route level,
+      and on weighted destinations. See [envoy csrf](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/csrf/v3/csrf.proto)
+      for more details.
