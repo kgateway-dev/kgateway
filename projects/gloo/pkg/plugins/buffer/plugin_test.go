@@ -177,7 +177,7 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.GetBuffer().GetMaxRequestBytes().GetValue()).To(Equal(uint32(4098)))
 	})
 
-	FIt("allows route specific buffer config", func() {
+	It("allows route specific buffer config", func() {
 		p := NewPlugin()
 		out := &envoy_config_route_v3.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
