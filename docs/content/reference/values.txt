@@ -338,6 +338,7 @@
 |gatewayProxies.NAME.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |gatewayProxies.NAME.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
 |gatewayProxies.NAME.readConfig|bool||expose a read-only subset of the envoy admin api|
+|gatewayProxies.NAME.readConfigMulticluster|bool||expose a read-only subset of the envoy admin api to gloo-fed|
 |gatewayProxies.NAME.extraProxyVolumeMountHelper|string||name of custom made named template allowing for extra volume mounts on the proxy container|
 |gatewayProxies.NAME.loopBackAddress|string||Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
 |gatewayProxies.NAME.failover.enabled|bool||(Enterprise Only): Configure this proxy for failover|
@@ -460,6 +461,7 @@
 |gatewayProxies.gatewayProxy.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |gatewayProxies.gatewayProxy.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
 |gatewayProxies.gatewayProxy.readConfig|bool|false|expose a read-only subset of the envoy admin api|
+|gatewayProxies.gatewayProxy.readConfigMulticluster|bool|false|expose a read-only subset of the envoy admin api to gloo-fed|
 |gatewayProxies.gatewayProxy.extraProxyVolumeMountHelper|string||name of custom made named template allowing for extra volume mounts on the proxy container|
 |gatewayProxies.gatewayProxy.loopBackAddress|string|127.0.0.1|Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
 |gatewayProxies.gatewayProxy.failover.enabled|bool|false|(Enterprise Only): Configure this proxy for failover|

@@ -284,6 +284,7 @@ type GatewayProxy struct {
 	ExtraListenersHelper           string                       `json:"extraListenersHelper,omitempty"`
 	Stats                          *Stats                       `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway-proxy pod"`
 	ReadConfig                     bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
+	ReadConfigMulticluster         bool                         `json:"readConfigMulticluster" desc:"expose a read-only subset of the envoy admin api to gloo-fed"`
 	ExtraProxyVolumeMountHelper    string                       `json:"extraProxyVolumeMountHelper,omitempty" desc:"name of custom made named template allowing for extra volume mounts on the proxy container"`
 	LoopBackAddress                string                       `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 	Failover                       Failover                     `json:"failover" desc:"(Enterprise Only): Failover configuration"`

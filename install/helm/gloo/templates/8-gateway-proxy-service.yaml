@@ -81,6 +81,23 @@ spec:
   {{- end }} {{/* with spec.service.loadBalancerSourceRanges */}}
   {{- end }} {{/* $spec.service.loadBalancerSourceRanges */}}
   {{- end }} {{/* $spec.service.type "LoadBalancer" */}}
+---
+{{- if and $spec.readConfig $spec.readConfigMulticluster }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-proxy-config-dump-service
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    gloo: gateway-proxy
+spec:
+  type: ClusterIP
+  selector:
+    gloo: gateway-proxy
+  ports:
+    - protocol: TCP
+      port: 8082
+{{- end }} {{/* if and ($spec.readConfig $spec.readConfigMulticluster) */}}
 {{- end }} {{/* range $name, $spec := .Values.gatewayProxies */}}
 {{- end }} {{/* if not $spec.disabled */}}
 {{ end }} {{/* if .Values.gateway.enabled */}}
