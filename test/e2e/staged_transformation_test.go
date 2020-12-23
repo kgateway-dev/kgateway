@@ -247,7 +247,8 @@ var _ = FDescribe("Staged Transformation", func() {
 
 			res, err := http.Get(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort))
 			Expect(err).NotTo(HaveOccurred())
-			customHeaderValues := res.Header.Get("x-custom-header")
+			customHeaderValues := res.Header["x-custom-header"]
+			fmt.Printf("%+v\n", customHeaderValues)
 			Expect(customHeaderValues).To(Equal("original value"))
 		})
 	})
