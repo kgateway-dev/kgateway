@@ -72,10 +72,6 @@ func (m *WasmFilter) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetImage())); err != nil {
-		return 0, err
-	}
-
 	if h, ok := interface{}(m.GetConfig()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
@@ -115,6 +111,22 @@ func (m *WasmFilter) Hash(hasher hash.Hash64) (uint64, error) {
 	err = binary.Write(hasher, binary.LittleEndian, m.GetVmType())
 	if err != nil {
 		return 0, err
+	}
+
+	switch m.Src.(type) {
+
+	case *WasmFilter_Image:
+
+		if _, err = hasher.Write([]byte(m.GetImage())); err != nil {
+			return 0, err
+		}
+
+	case *WasmFilter_FilePath:
+
+		if _, err = hasher.Write([]byte(m.GetFilePath())); err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil

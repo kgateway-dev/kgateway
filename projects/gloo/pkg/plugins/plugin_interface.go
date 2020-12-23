@@ -23,6 +23,14 @@ type Plugin interface {
 	Init(params InitParams) error
 }
 
+// Upgradable plugins are those which can be replaced by
+// another version with enhanced functionality. Identified
+// by PluginName().
+type Upgradable interface {
+	PluginName() string
+	IsUpgrade() bool
+}
+
 type Params struct {
 	Ctx      context.Context
 	Snapshot *v1.ApiSnapshot

@@ -21,8 +21,13 @@ message PluginSource {
     This message defines a single Envoy WASM filter to be placed into the filter chain
 */
 message WasmFilter {
-    // name of image which houses the compiled wasm filter
-    string image = 2;
+
+    oneof src {
+        // name of image which houses the compiled wasm filter
+        string image = 2;
+        // path from which to load wasm filter from disk
+        string file_path = 8;
+    }
 
     // Filter/service configuration used to configure or reconfigure a plugin
     // (proxy_on_configuration).
