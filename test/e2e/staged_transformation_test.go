@@ -109,7 +109,7 @@ var _ = Describe("Staged Transformation", func() {
 		vs := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener.
 			VirtualHosts[0]
 		vs.Options = &gloov1.VirtualHostOptions{
-			StagedTransformations: et,
+			//StagedTransformations: et,
 			Extauth: &extauthv1.ExtAuthExtension{
 				Spec: &extauthv1.ExtAuthExtension_Disable{
 					Disable: true,
@@ -245,7 +245,9 @@ var _ = Describe("Staged Transformation", func() {
 				},
 			})
 
-			res, err := http.Get(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort))
+			setProxy(nil)
+
+			res, err := http.Post(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), "application/octet-stream", nil)
 			Expect(err).NotTo(HaveOccurred())
 			customHeaderValues := res.Header["x-custom-header"]
 			Expect(customHeaderValues).To(Equal("original value,appended value 1,appended value 2"))
