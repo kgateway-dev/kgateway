@@ -5,7 +5,6 @@ import (
 	envoycompressor "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	envoygzip "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/gzip/v3"
 	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -41,7 +40,7 @@ var _ = Describe("Plugin", func() {
 						TypedConfig: utils.MustMessageToAny(
 							&envoycompressor.Compressor{
 								CompressorLibrary: &v3.TypedExtensionConfig{
-									Name: wellknown.Gzip,
+									Name: GzipLibrary,
 									TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
 										MemoryLevel:         &wrappers.UInt32Value{Value: 10.000000},
 										CompressionLevel:    envoygzip.Gzip_CompressionLevel_SPEED,
@@ -71,7 +70,7 @@ var _ = Describe("Plugin", func() {
 						TypedConfig: utils.MustMessageToAny(
 							&envoycompressor.Compressor{
 								CompressorLibrary: &v3.TypedExtensionConfig{
-									Name: wellknown.Gzip,
+									Name: GzipLibrary,
 									TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
 										CompressionLevel:    envoygzip.Gzip_CompressionLevel_DEFAULT,
 										CompressionStrategy: envoygzip.Gzip_DEFAULT,
@@ -108,7 +107,7 @@ var _ = Describe("Plugin", func() {
 						TypedConfig: utils.MustMessageToAny(
 							&envoycompressor.Compressor{
 								CompressorLibrary: &v3.TypedExtensionConfig{
-									Name: wellknown.Gzip,
+									Name: GzipLibrary,
 									TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
 										Compressor: &envoycompressor.Compressor{
 											ContentLength:              &wrappers.UInt32Value{Value: 10.000000},
@@ -142,7 +141,7 @@ var _ = Describe("Plugin", func() {
 						TypedConfig: utils.MustMessageToAny(
 							&envoycompressor.Compressor{
 								CompressorLibrary: &v3.TypedExtensionConfig{
-									Name: wellknown.Gzip,
+									Name: GzipLibrary,
 									TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
 										Compressor: &envoycompressor.Compressor{
 											RemoveAcceptEncodingHeader: true,

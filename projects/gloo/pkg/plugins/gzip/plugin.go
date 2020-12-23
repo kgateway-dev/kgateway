@@ -4,7 +4,6 @@ import (
 	v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoycompressor "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	envoygzip "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/gzip/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
 	v2 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
@@ -21,7 +20,11 @@ func NewPlugin() *Plugin {
 }
 
 // Compressor not in wellknown names
-const FilterName = "envoy.filters.http.compressor"
+const (
+	FilterName  = "envoy.filters.http.compressor"
+	GzipLibrary = "envoy.compression.gzip.compressor"
+	TypeURL     = "type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip"
+)
 
 var _ plugins.Plugin = new(Plugin)
 var _ plugins.HttpFilterPlugin = new(Plugin)
@@ -61,10 +64,12 @@ func glooToEnvoyCompressor(gzip *v2.Gzip) (*envoycompressor.Compressor, error) {
 
 	envoyCompressor := &envoycompressor.Compressor{
 		CompressorLibrary: &v3.TypedExtensionConfig{
-			Name:        wellknown.Gzip,
+			Name:        GzipLibrary,
 			TypedConfig: utils.MustMessageToAny(envoyGzip),
 		},
 	}
+
+	envoyCompressor.CompressorLibrary.TypedConfig.TypeUrl = TypeURL
 
 	return envoyCompressor, envoyCompressor.Validate()
 }
