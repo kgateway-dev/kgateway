@@ -245,8 +245,6 @@ var _ = Describe("Staged Transformation", func() {
 				},
 			})
 
-			setProxy(nil)
-
 			res, err := http.Post(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), "application/octet-stream", nil)
 			Expect(err).NotTo(HaveOccurred())
 			customHeaderValues := res.Header["x-custom-header"]
