@@ -19,14 +19,14 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v2 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
+	gloogzip "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = FDescribe("gzip", func() {
+var _ = Describe("gzip", func() {
 
 	var (
 		ctx           context.Context
@@ -104,12 +104,12 @@ var _ = FDescribe("gzip", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// build a gzip policy
-			gzipPolicy := &v2.Gzip{
+			gzipPolicy := &gloogzip.Gzip{
 				MemoryLevel: &wrappers.UInt32Value{
 					Value: 5,
 				},
-				CompressionLevel:    v2.Gzip_CompressionLevel_SPEED,
-				CompressionStrategy: v2.Gzip_HUFFMAN,
+				CompressionLevel:    gloogzip.Gzip_CompressionLevel_SPEED,
+				CompressionStrategy: gloogzip.Gzip_HUFFMAN,
 				WindowBits: &wrappers.UInt32Value{
 					Value: 12,
 				},
