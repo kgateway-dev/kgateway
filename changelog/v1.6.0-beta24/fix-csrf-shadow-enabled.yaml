@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: >
+      Csrf envoy filter shadow mode now gets correctly applied to the envoy config.
