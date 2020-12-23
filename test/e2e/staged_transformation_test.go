@@ -109,7 +109,7 @@ var _ = Describe("Staged Transformation", func() {
 		vs := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener.
 			VirtualHosts[0]
 		vs.Options = &gloov1.VirtualHostOptions{
-			//StagedTransformations: et,
+			StagedTransformations: et,
 			Extauth: &extauthv1.ExtAuthExtension{
 				Spec: &extauthv1.ExtAuthExtension_Disable{
 					Disable: true,
