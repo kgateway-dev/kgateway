@@ -627,15 +627,13 @@ type TransformationTemplate struct {
 	// extractor with a name. You can reference extractors by their name in
 	// templates, e.g. "{{ my-extractor }}" will render to the value of the
 	// "my-extractor" extractor.
-	Extractors map[string]*Extraction `protobuf:"bytes,2,rep,name=extractors,proto3" json:"extractors,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// Use this attribute to transform request/response headers. It consists of a
-	// map of strings to templates. The string key determines the name of the
-	// resulting header, the rendered template will determine the value.
-	Headers map[string]*InjaTemplate `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Extractors map[string]*Extraction   `protobuf:"bytes,2,rep,name=extractors,proto3" json:"extractors,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Headers    map[string]*InjaTemplate `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Use this attribute to transform request/response headers. It consists of
 	// an array of string/template objects. Use this attribute to define multiple
 	// templates for a single header. Header template(s) defined here will be appended to any
 	// existing headers with the same header name, not replace existing ones.
+	// See `headers` documentation to see an example of usage.
 	HeadersToAppend []*TransformationTemplate_HeaderToAppend `protobuf:"bytes,10,rep,name=headers_to_append,json=headersToAppend,proto3" json:"headers_to_append,omitempty"`
 	// Determines the type of transformation to apply to the request/response body
 	//

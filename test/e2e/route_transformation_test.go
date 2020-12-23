@@ -23,7 +23,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Transformations", func() {
+var _ = FDescribe("Transformations", func() {
 
 	var (
 		ctx           context.Context
@@ -86,7 +86,7 @@ var _ = Describe("Transformations", func() {
 
 	AfterEach(func() {
 		if envoyInstance != nil {
-			envoyInstance.Clean()
+			//envoyInstance.Clean()
 		}
 		cancel()
 	})
@@ -111,7 +111,7 @@ var _ = Describe("Transformations", func() {
 			}
 			b, err := ioutil.ReadAll(res.Body)
 			return string(b), err
-		}, "20s", ".5s").Should(Equal("test"))
+		}, "3s", ".5s").Should(Equal("test"))
 	}
 
 	WriteVhost := func(vs *gloov1.VirtualHost) {
@@ -137,7 +137,7 @@ var _ = Describe("Transformations", func() {
 		Expect(err).NotTo(HaveOccurred())
 	}
 
-	It("should should transform json to html response on vhost", func() {
+	FIt("should should transform json to html response on vhost", func() {
 		WriteVhost(&gloov1.VirtualHost{
 			Options: &gloov1.VirtualHostOptions{
 				Transformations: transform,
