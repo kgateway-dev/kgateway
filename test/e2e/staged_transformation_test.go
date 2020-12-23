@@ -224,18 +224,18 @@ var _ = Describe("Staged Transformation", func() {
 								TransformationTemplate: &envoytransformation.TransformationTemplate{
 									Headers: map[string]*envoytransformation.InjaTemplate{
 										"x-custom-header": {
-											Text: "{{original value}}",
+											Text: "original value",
 										},
 									},
 									HeadersToAppend: []*envoytransformation.TransformationTemplate_HeaderToAppend{{
 										Key: "x-custom-header",
 										Value: &envoytransformation.InjaTemplate{
-											Text: "{{appended value 1}}",
+											Text: "appended value 1",
 										},
 									}, {
 										Key: "x-custom-header",
 										Value: &envoytransformation.InjaTemplate{
-											Text: "{{appended value 2}}",
+											Text: "appended value 2",
 										},
 									}},
 								},
