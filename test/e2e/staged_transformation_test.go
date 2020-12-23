@@ -213,6 +213,43 @@ var _ = Describe("Staged Transformation", func() {
 			body := []byte("test")
 			v1helpers.ExpectHttpOK(body, nil, envoyPort, "test")
 		})
+
+		XIt("should allow multiple header values using HeadersToAppend", func() {
+			setProxy(&transformation.TransformationStages{
+				Regular: &transformation.RequestResponseTransformations{
+					ResponseTransforms: []*transformation.ResponseMatch{{
+						ResponseCodeDetails: "ext_authz_error",
+						ResponseTransformation: &envoytransformation.Transformation{
+							TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+								TransformationTemplate: &envoytransformation.TransformationTemplate{
+									Headers: map[string]*envoytransformation.InjaTemplate{
+										"x-custom-header": {
+											Text: "{{original value}}",
+										},
+									},
+									HeadersToAppend: []*envoytransformation.TransformationTemplate_HeaderToAppend{{
+										Key: "x-custom-header",
+										Value: &envoytransformation.InjaTemplate{
+											Text: "{{appended value 1}}",
+										},
+									}, {
+										Key: "x-custom-header",
+										Value: &envoytransformation.InjaTemplate{
+											Text: "{{appended value 2}}",
+										},
+									}},
+								},
+							},
+						},
+					}},
+				},
+			})
+
+			res, err := http.Get(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort))
+			Expect(err).NotTo(HaveOccurred())
+			customHeaderValues := res.Header.Values("x-custom-header")
+			Expect(customHeaderValues).To(ContainElements("original value", "appended value 1", "appended value 2"))
+		})
 	})
 
 	Context("with auth", func() {

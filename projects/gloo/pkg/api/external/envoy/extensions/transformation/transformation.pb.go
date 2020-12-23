@@ -627,8 +627,34 @@ type TransformationTemplate struct {
 	// extractor with a name. You can reference extractors by their name in
 	// templates, e.g. "{{ my-extractor }}" will render to the value of the
 	// "my-extractor" extractor.
-	Extractors map[string]*Extraction   `protobuf:"bytes,2,rep,name=extractors,proto3" json:"extractors,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	Headers    map[string]*InjaTemplate `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Extractors map[string]*Extraction `protobuf:"bytes,2,rep,name=extractors,proto3" json:"extractors,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Use this attribute to transform request/response headers. It consists of a
+	// map of strings to templates. The string key determines the name of the
+	// resulting header, the rendered template will determine the value. Any existing
+	// headers with the same header name will be replaced by the transformed header.
+	// If a header name is included in `headers` and `headers_to_append`, it will first
+	// be replaced the template in `headers`, then additional header values will be appended
+	// by the templates defined in `headers_to_append`.
+	// For example, the following header transformation configuration:
+	//
+	// ```yaml
+	//    headers:
+	//      x-header-one: {"text": "first {{inja}} template"}
+	//      x-header-one: {"text": "second {{inja}} template"}
+	//    headersToAppend:
+	//      - key: x-header-one
+	//        value: {"text": "first appended {{inja}} template"}
+	//      - key: x-header-one
+	//        value: {"text": "second appended {{inja}} template"}
+	// ```
+	// will result in the following headers on the HTTP message:
+	//
+	// ```
+	// x-header-one: first inja template
+	// x-header-one: first appended inja template
+	// x-header-one: second appended inja template
+	// ```
+	Headers map[string]*InjaTemplate `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Use this attribute to transform request/response headers. It consists of
 	// an array of string/template objects. Use this attribute to define multiple
 	// templates for a single header. Header template(s) defined here will be appended to any

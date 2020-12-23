@@ -169,7 +169,6 @@ message TransformationTemplate {
   // templates, e.g. "{{ my-extractor }}" will render to the value of the
   // "my-extractor" extractor.
   map<string, Extraction> extractors = 2;
-  // TODO: fix the comment
   // Use this attribute to transform request/response headers. It consists of a
   // map of strings to templates. The string key determines the name of the
   // resulting header, the rendered template will determine the value. Any existing
@@ -177,10 +176,9 @@ message TransformationTemplate {
   // If a header name is included in `headers` and `headers_to_append`, it will first
   // be replaced the template in `headers`, then additional header values will be appended
   // by the templates defined in `headers_to_append`.
-  // For example, the following header configuration:
+  // For example, the following header transformation configuration:
   //
-  // .. code-block:: yaml
-  //
+  // ```yaml
   //    headers:
   //      x-header-one: {"text": "first {{inja}} template"}
   //      x-header-one: {"text": "second {{inja}} template"}
@@ -189,7 +187,7 @@ message TransformationTemplate {
   //        value: {"text": "first appended {{inja}} template"}
   //      - key: x-header-one
   //        value: {"text": "second appended {{inja}} template"}
-  //
+  // ```
   // will result in the following headers on the HTTP message:
   //
   // ```
@@ -197,7 +195,6 @@ message TransformationTemplate {
   // x-header-one: first appended inja template
   // x-header-one: second appended inja template
   // ```
-
   map<string, InjaTemplate> headers = 3;
 
   // Defines a header-template pair to be used in `headers_to_append`
