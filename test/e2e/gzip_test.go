@@ -26,7 +26,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("gzip", func() {
+var _ = FDescribe("gzip", func() {
 
 	var (
 		ctx           context.Context
@@ -96,32 +96,6 @@ var _ = Describe("gzip", func() {
 		}, "5s", "0.1s").ShouldNot(BeNil())
 	}
 
-	testRequest := func() func() (string, error) {
-		return func() (string, error) {
-			var json = []byte(`{"value":"test"}`)
-			var gzipJson bytes.Buffer
-			gz := gzip.NewWriter(&gzipJson)
-			gz.Write(json)
-			gz.Close()
-
-			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), &gzipJson)
-			if err != nil {
-				return "", err
-			}
-			req.Header.Set("Accept-Encoding", "gzip")
-
-			res, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return "", err
-			}
-			defer res.Body.Close()
-			reader, err := gzip.NewReader(res.Body)
-			defer reader.Close()
-			body, err := ioutil.ReadAll(reader)
-			return string(body), err
-		}
-	}
-
 	Context("filter defined", func() {
 
 		JustBeforeEach(func() {
@@ -158,9 +132,40 @@ var _ = Describe("gzip", func() {
 			checkVirtualService(testVs)
 		})
 
-		It("should succeed", func() {
-			testReq := testRequest()
-			Eventually(testReq, 10*time.Second, 1*time.Second).Should(Equal("{\"value\":\"test\"}"))
+		It("should return uncompressed json", func() {
+			jsonStr := `{"value":"test"}`
+
+			testReq := func() (string, error) {
+				// compress json with gzip
+				var gzipJson bytes.Buffer
+				gz := gzip.NewWriter(&gzipJson)
+				gz.Write([]byte(jsonStr))
+				gz.Close()
+
+				req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), &gzipJson)
+				if err != nil {
+					return "", err
+				}
+				req.Header.Set("Accept-Encoding", "gzip")
+				res, err := http.DefaultClient.Do(req)
+				if err != nil {
+					return "", err
+				}
+				defer res.Body.Close()
+
+				// decompress response body
+				reader, err := gzip.NewReader(res.Body)
+				if err != nil {
+					return "", err
+				}
+				defer reader.Close()
+				body, err := ioutil.ReadAll(reader)
+				if err != nil {
+					return "", err
+				}
+				return string(body), err
+			}
+			Eventually(testReq, 10*time.Second, 1*time.Second).Should(Equal(jsonStr))
 		})
 	})
 })
