@@ -3061,6 +3061,33 @@ metadata:
 						testManifest.ExpectConfigMapWithYamlData(proxy)
 					})
 				})
+				Describe("gateway proxy -- readConfigMulticluster config", func() {
+					It("has a service for the gateway proxy config dump port", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.readConfig=true",
+								"gatewayProxies.gatewayProxy.readConfigMulticluster=true"},
+						})
+						serviceLabels := map[string]string{
+							"gloo": "gateway-proxy",
+						}
+						rb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      "gateway-proxy-config-dump-service",
+							Args:      nil,
+							Labels:    serviceLabels,
+						}
+						gatewayProxyConfigDumpService := rb.GetService()
+						gatewayProxyConfigDumpService.Spec.Selector = serviceLabels
+						gatewayProxyConfigDumpService.Spec.Ports = []v1.ServicePort{
+							{
+								Protocol: "TCP",
+								Port:     8082,
+							},
+						}
+						gatewayProxyConfigDumpService.Spec.Type = v1.ServiceTypeClusterIP
+						testManifest.ExpectService(gatewayProxyConfigDumpService)
+					})
+				})
 				Describe("supports multiple gateway proxy config maps", func() {
 					It("can parse multiple config maps", func() {
 						prepareMakefile(namespace, helmValues{
