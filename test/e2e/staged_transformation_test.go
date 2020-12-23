@@ -187,7 +187,7 @@ var _ = FDescribe("Staged Transformation", func() {
 			v1helpers.ExpectHttpOK(body, nil, envoyPort, "early-transformed")
 		})
 
-		FIt("should not transform when auth succeeds", func() {
+		It("should not transform when auth succeeds", func() {
 			setProxy(&transformation.TransformationStages{
 				Early: &transformation.RequestResponseTransformations{
 					ResponseTransforms: []*transformation.ResponseMatch{{
@@ -214,7 +214,7 @@ var _ = FDescribe("Staged Transformation", func() {
 			v1helpers.ExpectHttpOK(body, nil, envoyPort, "test")
 		})
 
-		It("should allow multiple header values using HeadersToAppend", func() {
+		FIt("should allow multiple header values using HeadersToAppend", func() {
 			setProxy(&transformation.TransformationStages{
 				Regular: &transformation.RequestResponseTransformations{
 					ResponseTransforms: []*transformation.ResponseMatch{{
@@ -248,7 +248,7 @@ var _ = FDescribe("Staged Transformation", func() {
 			res, err := http.Get(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort))
 			Expect(err).NotTo(HaveOccurred())
 			customHeaderValues := res.Header["x-custom-header"]
-			fmt.Printf("%+v\n", customHeaderValues)
+			fmt.Printf("%+vaasdf\n", customHeaderValues)
 			Expect(customHeaderValues).To(Equal("original value"))
 		})
 	})
