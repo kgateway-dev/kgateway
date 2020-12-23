@@ -90,7 +90,7 @@ var _ = FDescribe("Staged Transformation", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		err = envoyInstance.RunWithRole(ns+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
-ls 		Expect(err).NotTo(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		up = tu.Upstream
 		_, err = testClients.UpstreamClient.Write(up, clients.WriteOpts{})
