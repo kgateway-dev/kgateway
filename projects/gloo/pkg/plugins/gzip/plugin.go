@@ -2,8 +2,8 @@ package gzip
 
 import (
 	v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoygzip "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/compressor/v3"
 	envoycompressor "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
-	envoygzip "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/gzip/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
 	v2 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
@@ -69,7 +69,24 @@ func glooToEnvoyCompressor(gzip *v2.Gzip) (*envoycompressor.Compressor, error) {
 		},
 	}
 
-	envoyCompressor.CompressorLibrary.TypedConfig.TypeUrl = TypeURL
+	contentLength := gzip.GetContentLength()
+	contentType := gzip.GetContentType()
+	disableOnEtagHeader := gzip.GetDisableOnEtagHeader()
+	removeAcceptEncodingHeader := gzip.GetRemoveAcceptEncodingHeader()
+
+	// Envoy API has changed. v2.Gzip is based on an old Envoy API with several now deprecated fields.
+	containsOldFields := contentLength != nil || contentType != nil || disableOnEtagHeader || removeAcceptEncodingHeader
+
+	// Include the data from deprecated fields in the new Compressor field.
+	if containsOldFields {
+		envoyCompressor.ContentType = contentType
+		envoyCompressor.DisableOnEtagHeader = disableOnEtagHeader
+		envoyCompressor.RemoveAcceptEncodingHeader = removeAcceptEncodingHeader
+	}
+
+	if contentLength != nil {
+		envoyCompressor.ContentLength = &wrappers.UInt32Value{Value: contentLength.GetValue()}
+	}
 
 	return envoyCompressor, envoyCompressor.Validate()
 }
@@ -84,22 +101,22 @@ func glooToEnvoyGzip(gzip *v2.Gzip) (*envoygzip.Gzip, error) {
 
 	switch gzip.GetCompressionLevel() {
 	case v2.Gzip_CompressionLevel_DEFAULT:
-		envoyGzip.CompressionLevel = envoygzip.Gzip_CompressionLevel_DEFAULT
+		envoyGzip.CompressionLevel = envoygzip.Gzip_DEFAULT_COMPRESSION
 	case v2.Gzip_CompressionLevel_BEST:
-		envoyGzip.CompressionLevel = envoygzip.Gzip_CompressionLevel_BEST
+		envoyGzip.CompressionLevel = envoygzip.Gzip_BEST_COMPRESSION
 	case v2.Gzip_CompressionLevel_SPEED:
-		envoyGzip.CompressionLevel = envoygzip.Gzip_CompressionLevel_SPEED
+		envoyGzip.CompressionLevel = envoygzip.Gzip_BEST_SPEED
 	default:
 		return &envoygzip.Gzip{}, eris.Errorf("invalid CompressionLevel %v", gzip.GetCompressionLevel())
 	}
 
 	switch gzip.GetCompressionStrategy() {
 	case v2.Gzip_DEFAULT:
-		envoyGzip.CompressionStrategy = envoygzip.Gzip_DEFAULT
+		envoyGzip.CompressionStrategy = envoygzip.Gzip_DEFAULT_STRATEGY
 	case v2.Gzip_FILTERED:
 		envoyGzip.CompressionStrategy = envoygzip.Gzip_FILTERED
 	case v2.Gzip_HUFFMAN:
-		envoyGzip.CompressionStrategy = envoygzip.Gzip_HUFFMAN
+		envoyGzip.CompressionStrategy = envoygzip.Gzip_HUFFMAN_ONLY
 	case v2.Gzip_RLE:
 		envoyGzip.CompressionStrategy = envoygzip.Gzip_RLE
 	default:
@@ -108,26 +125,6 @@ func glooToEnvoyGzip(gzip *v2.Gzip) (*envoygzip.Gzip, error) {
 
 	if gzip.GetWindowBits() != nil {
 		envoyGzip.WindowBits = &wrappers.UInt32Value{Value: gzip.GetWindowBits().GetValue()}
-	}
-
-	contentLength := gzip.GetContentLength()
-	contentType := gzip.GetContentType()
-	disableOnEtagHeader := gzip.GetDisableOnEtagHeader()
-	removeAcceptEncodingHeader := gzip.GetRemoveAcceptEncodingHeader()
-
-	// Envoy API has changed. v2.Gzip is based on an old Envoy API with several now deprecated fields.
-	containsOldFields := contentLength != nil || contentType != nil || disableOnEtagHeader || removeAcceptEncodingHeader
-
-	// Include the data from deprecated fields in the new Compressor field.
-	if containsOldFields {
-		envoyGzip.Compressor = &envoycompressor.Compressor{
-			ContentType:                contentType,
-			DisableOnEtagHeader:        disableOnEtagHeader,
-			RemoveAcceptEncodingHeader: removeAcceptEncodingHeader,
-		}
-		if contentLength != nil {
-			envoyGzip.Compressor.ContentLength = &wrappers.UInt32Value{Value: contentLength.GetValue()}
-		}
 	}
 
 	// ChunkSize field isn't used in v2.Gzip, so it should always be nil
