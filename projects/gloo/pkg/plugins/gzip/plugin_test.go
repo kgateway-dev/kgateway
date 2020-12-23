@@ -1,6 +1,7 @@
 package gzip_test
 
 import (
+	v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoycompressor "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	envoygzip "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/gzip/v3"
 	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -35,14 +36,20 @@ var _ = Describe("Plugin", func() {
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
 				HttpFilter: &envoyhcm.HttpFilter{
-					Name: wellknown.Gzip,
+					Name: FilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
-							MemoryLevel:         &wrappers.UInt32Value{Value: 10.000000},
-							CompressionLevel:    envoygzip.Gzip_CompressionLevel_SPEED,
-							CompressionStrategy: envoygzip.Gzip_HUFFMAN,
-							WindowBits:          &wrappers.UInt32Value{Value: 10.000000},
-						}),
+						TypedConfig: utils.MustMessageToAny(
+							&envoycompressor.Compressor{
+								CompressorLibrary: &v3.TypedExtensionConfig{
+									Name: wellknown.Gzip,
+									TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
+										MemoryLevel:         &wrappers.UInt32Value{Value: 10.000000},
+										CompressionLevel:    envoygzip.Gzip_CompressionLevel_SPEED,
+										CompressionStrategy: envoygzip.Gzip_HUFFMAN,
+										WindowBits:          &wrappers.UInt32Value{Value: 10.000000},
+									}),
+								},
+							}),
 					},
 				},
 				Stage: plugins.DuringStage(plugins.RouteStage),
@@ -59,12 +66,18 @@ var _ = Describe("Plugin", func() {
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
 				HttpFilter: &envoyhcm.HttpFilter{
-					Name: wellknown.Gzip,
+					Name: FilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
-							CompressionLevel:    envoygzip.Gzip_CompressionLevel_DEFAULT,
-							CompressionStrategy: envoygzip.Gzip_DEFAULT,
-						}),
+						TypedConfig: utils.MustMessageToAny(
+							&envoycompressor.Compressor{
+								CompressorLibrary: &v3.TypedExtensionConfig{
+									Name: wellknown.Gzip,
+									TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
+										CompressionLevel:    envoygzip.Gzip_CompressionLevel_DEFAULT,
+										CompressionStrategy: envoygzip.Gzip_DEFAULT,
+									}),
+								},
+							}),
 					},
 				},
 				Stage: plugins.DuringStage(plugins.RouteStage),
@@ -90,16 +103,22 @@ var _ = Describe("Plugin", func() {
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
 				HttpFilter: &envoyhcm.HttpFilter{
-					Name: wellknown.Gzip,
+					Name: FilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
-							Compressor: &envoycompressor.Compressor{
-								ContentLength:              &wrappers.UInt32Value{Value: 10.000000},
-								ContentType:                []string{"type1", "type2"},
-								DisableOnEtagHeader:        true,
-								RemoveAcceptEncodingHeader: true,
-							},
-						}),
+						TypedConfig: utils.MustMessageToAny(
+							&envoycompressor.Compressor{
+								CompressorLibrary: &v3.TypedExtensionConfig{
+									Name: wellknown.Gzip,
+									TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
+										Compressor: &envoycompressor.Compressor{
+											ContentLength:              &wrappers.UInt32Value{Value: 10.000000},
+											ContentType:                []string{"type1", "type2"},
+											DisableOnEtagHeader:        true,
+											RemoveAcceptEncodingHeader: true,
+										},
+									}),
+								},
+							}),
 					},
 				},
 				Stage: plugins.DuringStage(plugins.RouteStage),
@@ -118,13 +137,19 @@ var _ = Describe("Plugin", func() {
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
 				HttpFilter: &envoyhcm.HttpFilter{
-					Name: wellknown.Gzip,
+					Name: FilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
-							Compressor: &envoycompressor.Compressor{
-								RemoveAcceptEncodingHeader: true,
-							},
-						}),
+						TypedConfig: utils.MustMessageToAny(
+							&envoycompressor.Compressor{
+								CompressorLibrary: &v3.TypedExtensionConfig{
+									Name: wellknown.Gzip,
+									TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
+										Compressor: &envoycompressor.Compressor{
+											RemoveAcceptEncodingHeader: true,
+										},
+									}),
+								},
+							}),
 					},
 				},
 				Stage: plugins.DuringStage(plugins.RouteStage),

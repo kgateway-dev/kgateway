@@ -1,6 +1,7 @@
 package gzip
 
 import (
+	v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoycompressor "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	envoygzip "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/gzip/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -9,6 +10,7 @@ import (
 	v2 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 // filter should be called after routing decision has been made
@@ -17,6 +19,9 @@ var pluginStage = plugins.DuringStage(plugins.RouteStage)
 func NewPlugin() *Plugin {
 	return &Plugin{}
 }
+
+// Compressor not in wellknown names
+const FilterName = "envoy.filters.http.compressor"
 
 var _ plugins.Plugin = new(Plugin)
 var _ plugins.HttpFilterPlugin = new(Plugin)
@@ -36,16 +41,32 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 		return nil, nil
 	}
 
-	envoyGzipConfig, err := glooToEnvoyGzip(gzipConfig)
+	envoyGzipConfig, err := glooToEnvoyCompressor(gzipConfig)
 	if err != nil {
 		return nil, eris.Wrapf(err, "converting gzip config")
 	}
-	gzipFilter, err := plugins.NewStagedFilterWithConfig(wellknown.Gzip, envoyGzipConfig, pluginStage)
+	gzipFilter, err := plugins.NewStagedFilterWithConfig(FilterName, envoyGzipConfig, pluginStage)
 	if err != nil {
 		return nil, eris.Wrapf(err, "generating filter config")
 	}
 
 	return []plugins.StagedHttpFilter{gzipFilter}, nil
+}
+
+func glooToEnvoyCompressor(gzip *v2.Gzip) (*envoycompressor.Compressor, error) {
+	envoyGzip, err := glooToEnvoyGzip(gzip)
+	if err != nil {
+		return nil, err
+	}
+
+	envoyCompressor := &envoycompressor.Compressor{
+		CompressorLibrary: &v3.TypedExtensionConfig{
+			Name:        wellknown.Gzip,
+			TypedConfig: utils.MustMessageToAny(envoyGzip),
+		},
+	}
+
+	return envoyCompressor, envoyCompressor.Validate()
 }
 
 func glooToEnvoyGzip(gzip *v2.Gzip) (*envoygzip.Gzip, error) {
