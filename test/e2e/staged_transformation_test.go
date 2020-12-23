@@ -25,7 +25,7 @@ import (
 	"github.com/solo-io/gloo/test/v1helpers"
 )
 
-var _ = FDescribe("Staged Transformation", func() {
+var _ = Describe("Staged Transformation", func() {
 
 	var (
 		ctx           context.Context
@@ -214,7 +214,7 @@ var _ = FDescribe("Staged Transformation", func() {
 			v1helpers.ExpectHttpOK(body, nil, envoyPort, "test")
 		})
 
-		FIt("should allow multiple header values using HeadersToAppend", func() {
+		It("should allow multiple header values using HeadersToAppend", func() {
 			setProxy(&transformation.TransformationStages{
 				Regular: &transformation.RequestResponseTransformations{
 					ResponseTransforms: []*transformation.ResponseMatch{{
@@ -248,8 +248,7 @@ var _ = FDescribe("Staged Transformation", func() {
 			res, err := http.Get(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort))
 			Expect(err).NotTo(HaveOccurred())
 			customHeaderValues := res.Header["x-custom-header"]
-			fmt.Printf("%+vaasdf\n", customHeaderValues)
-			Expect(customHeaderValues).To(Equal("original value"))
+			Expect(customHeaderValues).To(Equal("original value,appended value 1,appended value 2"))
 		})
 	})
 
