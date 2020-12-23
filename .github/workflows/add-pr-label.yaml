@@ -8,7 +8,7 @@ jobs:
     name: Add `keep pr updated` Label
     runs-on: ubuntu-latest
     steps:
-      - name: Detect Communinty PR
+      - name: Detect Community PR
         id: community-pr-check
         if: ${{ github.event.pull_request.head.repo.full_name != 'solo-io/gloo' }}
         shell: bash
