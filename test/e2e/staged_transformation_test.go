@@ -214,7 +214,7 @@ var _ = Describe("Staged Transformation", func() {
 			v1helpers.ExpectHttpOK(body, nil, envoyPort, "test")
 		})
 
-		FIt("should not transform when auth succeeds", func() {
+		It("should not transform when auth succeeds", func() {
 			setProxy(&transformation.TransformationStages{
 				Early: &transformation.RequestResponseTransformations{
 					ResponseTransforms: []*transformation.ResponseMatch{{
