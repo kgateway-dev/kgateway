@@ -249,7 +249,7 @@ var _ = Describe("Staged Transformation", func() {
 			var client http.Client
 			res, err := client.Post(url, "application/octet-stream", nil)
 			Expect(err).NotTo(HaveOccurred())
-			customHeaderValues := res.Header["x-custom-header"]
+			customHeaderValues := res.Header.Values("x-custom-header")
 			Expect(customHeaderValues).To(Equal("original value,appended value 1,appended value 2"))
 		})
 	})
