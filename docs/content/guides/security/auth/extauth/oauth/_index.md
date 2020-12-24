@@ -37,18 +37,19 @@ metadata:
   namespace: gloo-system
 spec:
   configs:
-  - oauth:
-      issuer_url: theissuer.com
-      auth_endpoint_query_params:
-        paramKey: paramValue
-      app_url: myapp.com
-      callback_path: /my/callback/path/
-      client_id: myclientid
-      client_secret_ref:
-        name: my-oauth-secret
-        namespace: gloo-system
-      scopes:
-      - email
+  - oauth2:
+      oidcAuthorizationCode:
+        issuer_url: theissuer.com
+        app_url: https://myapp.com
+        auth_endpoint_query_params:
+          paramKey: paramValue
+        callback_path: /my/callback/path/
+        client_id: myclientid
+        client_secret_ref:
+          name: my-oauth-secret
+          namespace: gloo-system
+        scopes:
+        - email
 {{< /highlight >}}
 
 The `AuthConfig` consists of a single `config` of type `oauth`. Let's go through each of its attributes:

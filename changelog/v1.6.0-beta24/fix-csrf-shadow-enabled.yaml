@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3898
+    description: >
+      Csrf envoy filter shadow mode now gets correctly applied to the envoy config.
