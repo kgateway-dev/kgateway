@@ -214,9 +214,9 @@ var _ = Describe("Staged Transformation", func() {
 			v1helpers.ExpectHttpOK(body, nil, envoyPort, "test")
 		})
 
-		It("should not transform when auth succeeds", func() {
+		It("should allow multiple header values for the same header when using HeadersToAppend", func() {
 			setProxy(&transformation.TransformationStages{
-				Early: &transformation.RequestResponseTransformations{
+				Regular: &transformation.RequestResponseTransformations{
 					ResponseTransforms: []*transformation.ResponseMatch{{
 						ResponseTransformation: &envoytransformation.Transformation{
 							TransformationType: &envoytransformation.Transformation_TransformationTemplate{
@@ -246,6 +246,7 @@ var _ = Describe("Staged Transformation", func() {
 			var client http.Client
 			res, err := client.Post(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), "application/octet-stream", nil)
 			Expect(err).NotTo(HaveOccurred())
+			fmt.Printf("%+v\n", res.Header)
 			Expect(res.Header["X-Custom-Header"]).To(ContainElements("original header", "APPENDED HEADER 1", "APPENDED HEADER 2"))
 		})
 	})
