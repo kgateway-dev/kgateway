@@ -113,7 +113,7 @@ func translateCsrfConfig(csrf *csrf.CsrfPolicy) (*envoycsrf.CsrfPolicy, error) {
 	} else if csrf.GetShadowEnabled() != nil {
 		csrfPolicy := &envoycsrf.CsrfPolicy{
 			FilterEnabled:     translateFilterEnabled(csrf.GetFilterEnabled()),
-			ShadowEnabled:     translateFilterEnabled(csrf.GetShadowEnabled()),
+			ShadowEnabled:     translateShadowEnabled(csrf.GetShadowEnabled()),
 			AdditionalOrigins: translateAdditionalOrigins(csrf.GetAdditionalOrigins()),
 		}
 
