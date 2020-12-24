@@ -218,7 +218,12 @@ var _ = Describe("Staged Transformation", func() {
 			setProxy(&transformation.TransformationStages{
 				Regular: &transformation.RequestResponseTransformations{
 					ResponseTransforms: []*transformation.ResponseMatch{{
-						ResponseCodeDetails: "ext_authz_error",
+						Matchers: []*matchers.HeaderMatcher{
+							{
+								Name:  ":status",
+								Value: "200",
+							},
+						},
 						ResponseTransformation: &envoytransformation.Transformation{
 							TransformationType: &envoytransformation.Transformation_TransformationTemplate{
 								TransformationTemplate: &envoytransformation.TransformationTemplate{
@@ -245,6 +250,7 @@ var _ = Describe("Staged Transformation", func() {
 				},
 			})
 			TestUpstreamReachable()
+
 			url := fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort)
 			var client http.Client
 			res, err := client.Post(url, "application/octet-stream", nil)
