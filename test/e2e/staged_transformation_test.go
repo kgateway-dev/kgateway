@@ -214,35 +214,27 @@ var _ = Describe("Staged Transformation", func() {
 			v1helpers.ExpectHttpOK(body, nil, envoyPort, "test")
 		})
 
-		It("should allow multiple header values using HeadersToAppend", func() {
+		FIt("should not transform when auth succeeds", func() {
 			setProxy(&transformation.TransformationStages{
-				Regular: &transformation.RequestResponseTransformations{
+				Early: &transformation.RequestResponseTransformations{
 					ResponseTransforms: []*transformation.ResponseMatch{{
-						Matchers: []*matchers.HeaderMatcher{
-							{
-								Name:  ":status",
-								Value: "200",
-							},
-						},
 						ResponseTransformation: &envoytransformation.Transformation{
 							TransformationType: &envoytransformation.Transformation_TransformationTemplate{
 								TransformationTemplate: &envoytransformation.TransformationTemplate{
+									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
 									Headers: map[string]*envoytransformation.InjaTemplate{
-										"x-custom-header": {
-											Text: "original value",
+										"x-custom-header": {Text: "original header"},
+									},
+									HeadersToAppend: []*envoytransformation.TransformationTemplate_HeaderToAppend{
+										{
+											Key:   "x-custom-header",
+											Value: &envoytransformation.InjaTemplate{Text: "{{upper(\"appended header 1\")}}"},
+										},
+										{
+											Key:   "x-custom-header",
+											Value: &envoytransformation.InjaTemplate{Text: "{{upper(\"appended header 2\")}}"},
 										},
 									},
-									HeadersToAppend: []*envoytransformation.TransformationTemplate_HeaderToAppend{{
-										Key: "x-custom-header",
-										Value: &envoytransformation.InjaTemplate{
-											Text: "appended value 1",
-										},
-									}, {
-										Key: "x-custom-header",
-										Value: &envoytransformation.InjaTemplate{
-											Text: "appended value 2",
-										},
-									}},
 								},
 							},
 						},
@@ -251,13 +243,10 @@ var _ = Describe("Staged Transformation", func() {
 			})
 			TestUpstreamReachable()
 
-			url := fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort)
 			var client http.Client
-			res, err := client.Post(url, "application/octet-stream", nil)
+			res, err := client.Post(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), "application/octet-stream", nil)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Printf("asdf%+v\n", res.Header)
-			customHeaderValues := res.Header.Get("x-custom-header")
-			Expect(customHeaderValues).To(Equal("original value,appended value 1,appended value 2"))
+			Expect(res.Header["X-Custom-Header"]).To(ContainElements("original header", "APPENDED HEADER 1", "APPENDED HEADER 2"))
 		})
 	})
 
