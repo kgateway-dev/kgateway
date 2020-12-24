@@ -244,6 +244,7 @@ var _ = Describe("Staged Transformation", func() {
 					}},
 				},
 			})
+			TestUpstreamReachable()
 			url := fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort)
 			var client http.Client
 			res, err := client.Post(url, "application/octet-stream", nil)
