@@ -214,7 +214,7 @@ var _ = Describe("Staged Transformation", func() {
 			v1helpers.ExpectHttpOK(body, nil, envoyPort, "test")
 		})
 
-		FIt("should allow multiple header values using HeadersToAppend", func() {
+		It("should allow multiple header values using HeadersToAppend", func() {
 			setProxy(&transformation.TransformationStages{
 				Regular: &transformation.RequestResponseTransformations{
 					ResponseTransforms: []*transformation.ResponseMatch{{
@@ -249,7 +249,8 @@ var _ = Describe("Staged Transformation", func() {
 			var client http.Client
 			res, err := client.Post(url, "application/octet-stream", nil)
 			Expect(err).NotTo(HaveOccurred())
-			customHeaderValues := res.Header.Values("x-custom-header")
+			fmt.Printf("asdf%+v\n", res.Header)
+			customHeaderValues := res.Header.Get("x-custom-header")
 			Expect(customHeaderValues).To(Equal("original value,appended value 1,appended value 2"))
 		})
 	})
