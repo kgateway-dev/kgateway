@@ -5,11 +5,10 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"io"
 	"io/ioutil"
 	"net/http"
-	"time"
-
-	"github.com/golang/protobuf/ptypes/wrappers"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -96,24 +95,30 @@ var _ = Describe("gzip", func() {
 		}, "5s", "0.1s").ShouldNot(BeNil())
 	}
 
-	testRequest := func(jsonStr string) func() (string, error) {
-		return func() (string, error) {
+	testRequest := func(jsonStr string) string {
+		By("Make request")
+		responseBody := ""
+		EventuallyWithOffset(1, func() error {
 			var json = []byte(jsonStr)
 			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
 			req.Header.Set("Accept-Encoding", "gzip")
 			req.Header.Set("Content-Type", "application/json")
 			if err != nil {
-				return "", err
+				return err
 			}
-
 			res, err := http.DefaultClient.Do(req)
 			if err != nil {
-				return "", err
+				return err
+			}
+			p := new(bytes.Buffer)
+			if _, err := io.Copy(p, res.Body); err != nil {
+				return err
 			}
 			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
-			return string(body), err
-		}
+			responseBody = p.String()
+			return nil
+		}, "10s", ".1s").Should(BeNil())
+		return responseBody
 	}
 
 	Context("filter undefined", func() {
@@ -132,7 +137,7 @@ var _ = Describe("gzip", func() {
 			// json needs to be longer than default content length to trigger
 			jsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
 			testReq := testRequest(jsonStr)
-			Eventually(testReq, 10*time.Second, 1*time.Second).Should(Equal(jsonStr))
+			Expect(testReq).Should(Equal(jsonStr))
 		})
 	})
 
@@ -149,7 +154,7 @@ var _ = Describe("gzip", func() {
 					Value: 5,
 				},
 				CompressionLevel:    gloogzip.Gzip_CompressionLevel_SPEED,
-				CompressionStrategy: gloogzip.Gzip_DEFAULT,
+				CompressionStrategy: gloogzip.Gzip_HUFFMAN,
 				WindowBits: &wrappers.UInt32Value{
 					Value: 12,
 				},
@@ -174,21 +179,23 @@ var _ = Describe("gzip", func() {
 
 		It("should return compressed json", func() {
 			// json needs to be longer than default content length to trigger
-			shortJsonStr := `{"value":"Hello, world!"}`
-			jsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
-			var gzipJson bytes.Buffer
-			gz := gzip.NewWriter(&gzipJson)
-			gz.Write([]byte(jsonStr))
-			gz.Close()
-
 			// len(short json) < 30
+			shortJsonStr := `{"value":"Hello, world!"}`
 			testShortReq := testRequest(shortJsonStr)
-			Eventually(testShortReq, 10*time.Second, 1*time.Second).Should(Equal(shortJsonStr))
+			Expect(testShortReq).Should(Equal(shortJsonStr))
 
 			// raw json should be compressed
-			testReq := testRequest(jsonStr)
-			Eventually(testReq, 10*time.Second, 1*time.Second).ShouldNot(Equal(jsonStr))
+			jsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
+			testReqBody := testRequest(jsonStr)
+			Expect(testReqBody).ShouldNot(Equal(jsonStr))
 
+			// decompressed json from response should equal original
+			reader, err := gzip.NewReader(bytes.NewBuffer([]byte(testReqBody)))
+			reader.Close()
+			Expect(err).NotTo(HaveOccurred())
+			body, err := ioutil.ReadAll(reader)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(body)).To(Equal(jsonStr))
 		})
 	})
 })
