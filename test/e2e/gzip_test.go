@@ -134,7 +134,8 @@ var _ = Describe("gzip", func() {
 		})
 
 		It("should return uncompressed json", func() {
-			jsonStr := `{"value":"test"}`
+			// json needs to be longer than default content length to trigger
+			jsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
 			testReq, err := testRequest(jsonStr)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(testReq, 10*time.Second, 1*time.Second).Should(Equal(jsonStr))
@@ -178,7 +179,8 @@ var _ = Describe("gzip", func() {
 		})
 
 		It("should return compressed json", func() {
-			jsonStr := `{"value":"test"}`
+			// json needs to be longer than default content length to trigger
+			jsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
 			var gzipJson bytes.Buffer
 			gz := gzip.NewWriter(&gzipJson)
 			gz.Write([]byte(jsonStr))
