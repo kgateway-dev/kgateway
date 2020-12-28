@@ -5,10 +5,11 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"io"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
