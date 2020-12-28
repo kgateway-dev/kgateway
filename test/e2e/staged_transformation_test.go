@@ -213,6 +213,42 @@ var _ = Describe("Staged Transformation", func() {
 			body := []byte("test")
 			v1helpers.ExpectHttpOK(body, nil, envoyPort, "test")
 		})
+
+		It("should allow multiple header values for the same header when using HeadersToAppend", func() {
+			setProxy(&transformation.TransformationStages{
+				Regular: &transformation.RequestResponseTransformations{
+					ResponseTransforms: []*transformation.ResponseMatch{{
+						ResponseTransformation: &envoytransformation.Transformation{
+							TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+								TransformationTemplate: &envoytransformation.TransformationTemplate{
+									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
+									Headers: map[string]*envoytransformation.InjaTemplate{
+										"x-custom-header": {Text: "original header"},
+									},
+									HeadersToAppend: []*envoytransformation.TransformationTemplate_HeaderToAppend{
+										{
+											Key:   "x-custom-header",
+											Value: &envoytransformation.InjaTemplate{Text: "{{upper(\"appended header 1\")}}"},
+										},
+										{
+											Key:   "x-custom-header",
+											Value: &envoytransformation.InjaTemplate{Text: "{{upper(\"appended header 2\")}}"},
+										},
+									},
+								},
+							},
+						},
+					}},
+				},
+			})
+			TestUpstreamReachable()
+
+			var client http.Client
+			res, err := client.Post(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), "application/octet-stream", nil)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Printf("%+v\n", res.Header)
+			Expect(res.Header["X-Custom-Header"]).To(ContainElements("original header", "APPENDED HEADER 1", "APPENDED HEADER 2"))
+		})
 	})
 
 	Context("with auth", func() {
