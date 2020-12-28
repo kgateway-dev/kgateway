@@ -3,6 +3,11 @@ package translator
 import (
 	"context"
 	"fmt"
+	"regexp"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	"github.com/solo-io/go-utils/hashutils"
 
@@ -38,6 +43,15 @@ var (
 		}
 		return errors.Errorf("domain conflict: the following domains are present in more than one of the "+
 			"virtual services associated with this gateway: %v", loggedDomains)
+	}
+	ConflictingMatcherErr = func(vh string, matcher *matchers.Matcher) error {
+		return errors.Errorf("virtual host [%s] has conflicting matcher: %v", vh, matcher)
+	}
+	MisorderedRoutesErr = func(vh, rt1Name, rt2Name string) error {
+		return errors.Errorf("virtual host [%s] has misordered routes; expected route named [%s] to come before route named [%s]", vh, rt1Name, rt2Name)
+	}
+	MisorderedRegexErr = func(vh, regex string, matcher *matchers.Matcher) error {
+		return errors.Errorf("virtual host [%s] has misordered regex routes, earlier regex [%s] matched later route [%v]", vh, regex, matcher)
 	}
 )
 
@@ -236,6 +250,8 @@ func virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList
 		Options: vs.VirtualHost.Options,
 	}
 
+	validateRoutes(vs, vh, reports)
+
 	if err := appendSource(vh, vs); err != nil {
 		// should never happen
 		return nil, err
@@ -246,4 +262,74 @@ func virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList
 
 func VirtualHostName(vs *v1.VirtualService) string {
 	return fmt.Sprintf("%v.%v", vs.Metadata.Namespace, vs.Metadata.Name)
+}
+
+// this function is written with the assumption that the routes will not be modified afterwards,
+// and are in their final sorted form
+func validateRoutes(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
+	validateAnyDuplicateMatchers(vs, vh, reports)
+	validateRouteOrder(vs, vh, reports)
+	validateRegexHijacking(vs, vh, reports)
+}
+
+func validateAnyDuplicateMatchers(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
+	// warn on duplicate matchers
+	seenMatchers := make(map[uint64]bool)
+	for _, rt := range vh.Routes {
+		for _, matcher := range rt.Matchers {
+			hash := hashutils.MustHash(matcher)
+			if _, ok := seenMatchers[hash]; ok == true {
+				reports.AddWarning(vs, ConflictingMatcherErr(vh.GetName(), matcher).Error())
+			} else {
+				seenMatchers[hash] = true
+			}
+		}
+	}
+}
+
+func validateRouteOrder(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
+	// warn on misordered routes
+	var routesCopy []*gloov1.Route
+	for _, rt := range vh.GetRoutes() {
+		rtCopy := *rt
+		routesCopy = append(routesCopy, &rtCopy)
+	}
+
+	utils.SortRoutesByPath(routesCopy)
+
+	for idx, rt := range routesCopy {
+		if !rt.Equal(vh.GetRoutes()[idx]) {
+			reports.AddWarning(vs, MisorderedRoutesErr(vh.GetName(), rt.GetName(), vh.GetRoutes()[idx].GetName()).Error())
+		}
+	}
+}
+
+func validateRegexHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
+	// warn on early regex matchers that catch-all on later routes
+
+	seenRegexMatchers := []string{}
+	for _, rt := range vh.Routes {
+		for _, matcher := range rt.Matchers {
+			if matcher.GetRegex() != "" {
+				seenRegexMatchers = append(seenRegexMatchers, matcher.GetRegex())
+			} else {
+				// make sure the current matcher doesn't match any previously defined regex.
+				// this code is written with the assumption that the routes are already in their final order;
+				// we are trying to help users avoid misconfiguration and short-circuiting errors
+				path := utils.PathAsString(matcher)
+				for _, regex := range seenRegexMatchers {
+					re := regexp.MustCompile(regex)
+					foundIndex := re.FindStringIndex(path)
+					if foundIndex != nil {
+						// we opt to warn on conflicting regexes even if the methods, query parameters, etc on the
+						// "conflicting" matchers do not form a conflict because:
+						//  - updating the regex to be less permissive is generally preferable to adding/removing methods/query parameter matchers
+						//  - accounting for it would be more difficult to maintain as we add new matcher fields
+						//  - such a conflict would be rare, and likely unintentional anyways
+						reports.AddWarning(vs, MisorderedRegexErr(vh.GetName(), regex, matcher).Error())
+					}
+				}
+			}
+		}
+	}
 }

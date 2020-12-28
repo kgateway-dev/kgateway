@@ -590,6 +590,158 @@ var _ = Describe("Translator", func() {
 					Expect(errs.Error()).To(ContainSubstring(NoVirtualHostErr(snap.VirtualServices[0]).Error()))
 				})
 			})
+
+			Context("validate matchers", func() {
+				It("should warn when a virtual host has overlapping matchers", func() {
+
+					vs := &v1.VirtualService{
+						Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
+						VirtualHost: &v1.VirtualHost{
+							Domains: []string{"d1.com"},
+							Routes: []*v1.Route{
+								{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
+											Prefix: "/1",
+										},
+									}},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d1",
+										},
+									},
+								},
+								// second route has the same matcher but different route destination.
+								// such a configuration is almost certainly an error, provide warning to the user.
+								{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
+											Prefix: "/1",
+										},
+									}},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d2",
+										},
+									},
+								},
+							},
+						},
+					}
+
+					Expect(vs.VirtualHost.Routes[0].Matchers).To(Equal(vs.VirtualHost.Routes[1].Matchers))
+					snap.VirtualServices = v1.VirtualServiceList{vs}
+
+					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+					errs := reports.ValidateStrict()
+					Expect(errs).To(HaveOccurred())
+
+					multiErr, ok := errs.(*multierror.Error)
+					Expect(ok).To(BeTrue())
+
+					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(ConflictingMatcherErr("gloo-system.name1", vs.VirtualHost.Routes[0].Matchers[0]).Error())))
+				})
+
+				It("should warn when a virtual host has misordered matchers", func() {
+
+					vs := &v1.VirtualService{
+						Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
+						VirtualHost: &v1.VirtualHost{
+							Domains: []string{"d1.com"},
+							Routes: []*v1.Route{
+								{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
+											Prefix: "/1",
+										},
+									}},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d1",
+										},
+									},
+									Name: "rt1",
+								},
+								// second route has a similar, more-specific matcher and a different route destination.
+								// such a configuration is almost certainly an error (this route is always
+								// short-circuited by the one above), provide warning to the user.
+								{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
+											Prefix: "/1/2",
+										},
+									}},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d2",
+										},
+									},
+									Name: "rt2",
+								},
+							},
+						},
+					}
+
+					snap.VirtualServices = v1.VirtualServiceList{vs}
+
+					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+					errs := reports.ValidateStrict()
+					Expect(errs).To(HaveOccurred())
+
+					multiErr, ok := errs.(*multierror.Error)
+					Expect(ok).To(BeTrue())
+
+					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(MisorderedRoutesErr("gloo-system.name1", "vs:name1_route:rt2", "vs:name1_route:rt1").Error())))
+				})
+
+				It("should warn when a virtual host has misordered regex matchers (i.e., regex 'hijacking' earlier routes)", func() {
+
+					vs := &v1.VirtualService{
+						Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
+						VirtualHost: &v1.VirtualHost{
+							Domains: []string{"d1.com"},
+							Routes: []*v1.Route{
+								{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Regex{
+											Regex: "/foo/.*/bar",
+										},
+									}},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d1",
+										},
+									},
+								},
+								// second route has a prefix matcher that will be short circuited by the above regex
+								{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
+											Prefix: "/foo/user/info/bar",
+										},
+									}},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d2",
+										},
+									},
+								},
+							},
+						},
+					}
+
+					snap.VirtualServices = v1.VirtualServiceList{vs}
+
+					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+					errs := reports.ValidateStrict()
+					Expect(errs).To(HaveOccurred())
+
+					multiErr, ok := errs.(*multierror.Error)
+					Expect(ok).To(BeTrue())
+
+					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(MisorderedRegexErr("gloo-system.name1", "/foo/.*/bar", vs.VirtualHost.Routes[1].Matchers[0]).Error())))
+				})
+			})
 		})
 
 		Context("using RouteTables and delegation", func() {
