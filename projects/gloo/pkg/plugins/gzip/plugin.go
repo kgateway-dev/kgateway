@@ -68,23 +68,13 @@ func glooToEnvoyCompressor(gzip *v2.Gzip) (*envoycompressor.Compressor, error) {
 		},
 	}
 
-	contentLength := gzip.GetContentLength()
-	contentType := gzip.GetContentType()
-	disableOnEtagHeader := gzip.GetDisableOnEtagHeader()
-	removeAcceptEncodingHeader := gzip.GetRemoveAcceptEncodingHeader()
+	// Include the data from deprecated gzip v2 fields in the new Compressor field.
+	envoyCompressor.ContentType = gzip.GetContentType()
+	envoyCompressor.DisableOnEtagHeader = gzip.GetDisableOnEtagHeader()
+	envoyCompressor.RemoveAcceptEncodingHeader = gzip.GetRemoveAcceptEncodingHeader()
 
-	// Envoy API has changed. v2.Gzip is based on an old Envoy API with several now deprecated fields.
-	containsOldFields := contentLength != nil || contentType != nil || disableOnEtagHeader || removeAcceptEncodingHeader
-
-	// Include the data from deprecated fields in the new Compressor field.
-	if containsOldFields {
-		envoyCompressor.ContentType = contentType
-		envoyCompressor.DisableOnEtagHeader = disableOnEtagHeader
-		envoyCompressor.RemoveAcceptEncodingHeader = removeAcceptEncodingHeader
-	}
-
-	if contentLength != nil {
-		envoyCompressor.ContentLength = &wrappers.UInt32Value{Value: contentLength.GetValue()}
+	if gzip.GetContentLength() != nil {
+		envoyCompressor.ContentLength = &wrappers.UInt32Value{Value: gzip.GetContentLength().GetValue()}
 	}
 
 	return envoyCompressor, envoyCompressor.Validate()

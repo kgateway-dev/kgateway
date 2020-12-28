@@ -96,6 +96,51 @@ var _ = Describe("gzip", func() {
 		}, "5s", "0.1s").ShouldNot(BeNil())
 	}
 
+	testRequest := func(jsonStr string) (string, error) {
+		req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer([]byte(jsonStr)))
+		if err != nil {
+			return "", err
+		}
+		req.Header.Set("Accept-Encoding", "gzip")
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return "", err
+		}
+		defer res.Body.Close()
+
+		// decompress response body
+		reader, err := gzip.NewReader(res.Body)
+		if err != nil {
+			return "", err
+		}
+		defer reader.Close()
+		body, err := ioutil.ReadAll(reader)
+		if err != nil {
+			return "", err
+		}
+		return string(body), err
+	}
+
+	Context("filter undefined", func() {
+
+		JustBeforeEach(func() {
+			// write a virtual service so we have a proxy to our test upstream
+			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
+			_, err := testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			checkProxy()
+			checkVirtualService(testVs)
+		})
+
+		It("should return uncompressed json", func() {
+			jsonStr := `{"value":"test"}`
+			testReq, err := testRequest(jsonStr)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(testReq, 10*time.Second, 1*time.Second).Should(Equal(jsonStr))
+		})
+	})
+
 	Context("filter defined", func() {
 
 		JustBeforeEach(func() {
@@ -134,38 +179,14 @@ var _ = Describe("gzip", func() {
 
 		It("should return uncompressed json", func() {
 			jsonStr := `{"value":"test"}`
+			var gzipJson bytes.Buffer
+			gz := gzip.NewWriter(&gzipJson)
+			gz.Write([]byte(jsonStr))
+			gz.Close()
 
-			testReq := func() (string, error) {
-				// compress json with gzip
-				var gzipJson bytes.Buffer
-				gz := gzip.NewWriter(&gzipJson)
-				gz.Write([]byte(jsonStr))
-				gz.Close()
-
-				req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), &gzipJson)
-				if err != nil {
-					return "", err
-				}
-				req.Header.Set("Accept-Encoding", "gzip")
-				res, err := http.DefaultClient.Do(req)
-				if err != nil {
-					return "", err
-				}
-				defer res.Body.Close()
-
-				// decompress response body
-				reader, err := gzip.NewReader(res.Body)
-				if err != nil {
-					return "", err
-				}
-				defer reader.Close()
-				body, err := ioutil.ReadAll(reader)
-				if err != nil {
-					return "", err
-				}
-				return string(body), err
-			}
-			Eventually(testReq, 10*time.Second, 1*time.Second).Should(Equal(jsonStr))
+			testReq, err := testRequest(jsonStr)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(testReq, 10*time.Second, 1*time.Second).Should(Equal(gzipJson.String()))
 		})
 	})
 })
