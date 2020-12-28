@@ -1,9 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/4025
-    ressolvesIssue: false
-    description: >
-      Update to plugin loading logic to allow upgrading the
-      built-in Gloo Edge plugins with new versions from other
-      sources. Also updates Gloo Edge docs to note wasm is a
-      feature of Gloo Edge Enterprise.
