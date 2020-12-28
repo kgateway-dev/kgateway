@@ -1,0 +1,10 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3901
+    description: >
+      Adds a new `headers_to_append` field to the HTTP request transformation API.
+      This allows users to specify headers which can contain multiple values and to specify transformations for each of the values.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: v1.17.0-rc3

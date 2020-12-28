@@ -23,6 +23,7 @@ weight: 5
 - [Transformation](#transformation)
 - [Extraction](#extraction)
 - [TransformationTemplate](#transformationtemplate)
+- [HeaderToAppend](#headertoappend)
 - [DynamicMetadataValue](#dynamicmetadatavalue)
 - [RequestBodyParse](#requestbodyparse)
 - [InjaTemplate](#injatemplate)
@@ -277,6 +278,7 @@ Defines a transformation template.
 "advancedTemplates": bool
 "extractors": map<string, .envoy.api.v2.filter.http.Extraction>
 "headers": map<string, .envoy.api.v2.filter.http.InjaTemplate>
+"headersToAppend": []envoy.api.v2.filter.http.TransformationTemplate.HeaderToAppend
 "body": .envoy.api.v2.filter.http.InjaTemplate
 "passthrough": .envoy.api.v2.filter.http.Passthrough
 "mergeExtractorsToBody": .envoy.api.v2.filter.http.MergeExtractorsToBody
@@ -290,13 +292,34 @@ Defines a transformation template.
 | ----- | ---- | ----------- | 
 | `advancedTemplates` | `bool` | If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false. Please note that, if set to 'true', you will need to use the `extraction` function to access extractors in the template (e.g. '{{ extraction("my_extractor") }}'); if the default value of 'false' is used, extractors will simply be available by their name (e.g. '{{ my_extractor }}'). |
 | `extractors` | `map<string, .envoy.api.v2.filter.http.Extraction>` | Use this attribute to extract information from the request. It consists of a map of strings to extractors. The extractor will defines which information will be extracted, while the string key will provide the extractor with a name. You can reference extractors by their name in templates, e.g. "{{ my-extractor }}" will render to the value of the "my-extractor" extractor. |
-| `headers` | `map<string, .envoy.api.v2.filter.http.InjaTemplate>` | Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. |
+| `headers` | `map<string, .envoy.api.v2.filter.http.InjaTemplate>` | Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. Any existing headers with the same header name will be replaced by the transformed header. If a header name is included in `headers` and `headers_to_append`, it will first be replaced the template in `headers`, then additional header values will be appended by the templates defined in `headers_to_append`. For example, the following header transformation configuration: ```yaml headers: x-header-one: {"text": "first {{inja}} template"} x-header-one: {"text": "second {{inja}} template"} headersToAppend: - key: x-header-one value: {"text": "first appended {{inja}} template"} - key: x-header-one value: {"text": "second appended {{inja}} template"} ``` will result in the following headers on the HTTP message: ``` x-header-one: first inja template x-header-one: first appended inja template x-header-one: second appended inja template ```. |
+| `headersToAppend` | [[]envoy.api.v2.filter.http.TransformationTemplate.HeaderToAppend](../transformation.proto.sk/#headertoappend) | Use this attribute to transform request/response headers. It consists of an array of string/template objects. Use this attribute to define multiple templates for a single header. Header template(s) defined here will be appended to any existing headers with the same header name, not replace existing ones. See `headers` documentation to see an example of usage. |
 | `body` | [.envoy.api.v2.filter.http.InjaTemplate](../transformation.proto.sk/#injatemplate) | Apply a template to the body. Only one of `body`, or `mergeExtractorsToBody` can be set. |
 | `passthrough` | [.envoy.api.v2.filter.http.Passthrough](../transformation.proto.sk/#passthrough) | This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it. Only one of `passthrough`, or `mergeExtractorsToBody` can be set. |
 | `mergeExtractorsToBody` | [.envoy.api.v2.filter.http.MergeExtractorsToBody](../transformation.proto.sk/#mergeextractorstobody) | Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name. Only one of `mergeExtractorsToBody`, or `passthrough` can be set. |
 | `parseBodyBehavior` | [.envoy.api.v2.filter.http.TransformationTemplate.RequestBodyParse](../transformation.proto.sk/#requestbodyparse) |  |
 | `ignoreErrorOnParse` | `bool` | If set to true, Envoy will not throw an exception in case the body parsing fails. |
 | `dynamicMetadataValues` | [[]envoy.api.v2.filter.http.TransformationTemplate.DynamicMetadataValue](../transformation.proto.sk/#dynamicmetadatavalue) | Use this field to set Dynamic Metadata. |
+
+
+
+
+---
+### HeaderToAppend
+
+ 
+Defines a header-template pair to be used in `headers_to_append`
+
+```yaml
+"key": string
+"value": .envoy.api.v2.filter.http.InjaTemplate
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `key` | `string` | Header name. |
+| `value` | [.envoy.api.v2.filter.http.InjaTemplate](../transformation.proto.sk/#injatemplate) | Apply a template to the header value. |
 
 
 
