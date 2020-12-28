@@ -4,7 +4,7 @@ weight: 70
 description: Using WASM filters in Envoy with Gloo Edge
 ---
 
-Support for Envoy WASM filters has been added to Gloo Edge Enterprise as of version 1.6.0-beta13+. This guide is specifically for Gloo Edge 1.6.0-beta13, as there have been some changes to the configuration API since prior versions.
+Support for Envoy WASM filters has been added to Gloo Edge Enterprise as of version 1.6.0+. This guide is specifically for Gloo Edge 1.6.0. Note, there may have been some changes to the configuration API since prior experimental versions.
 
 {{% notice note %}}
 This feature is considered to be in a tech preview state of stability. While wasm functionality has
