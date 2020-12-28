@@ -14,7 +14,7 @@ func SetEdsOnCluster(out *envoy_config_cluster_v3.Cluster, settings *v1.Settings
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_EDS,
 	}
-	// The default value for enableRestEds should be set to true via helm.
+	// The default value for enableRestEds should be set to false via helm.
 	// If nil will not enable rest eds.
 	if settings.GetGloo().GetEnableRestEds().GetValue() {
 		out.EdsClusterConfig = &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
