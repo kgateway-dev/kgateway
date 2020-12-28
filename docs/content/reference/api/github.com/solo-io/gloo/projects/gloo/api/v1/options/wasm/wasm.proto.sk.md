@@ -53,6 +53,7 @@ This message defines a single Envoy WASM filter to be placed into the filter cha
 
 ```yaml
 "image": string
+"filePath": string
 "config": .google.protobuf.Any
 "filterStage": .wasm.options.gloo.solo.io.FilterStage
 "name": string
@@ -63,7 +64,8 @@ This message defines a single Envoy WASM filter to be placed into the filter cha
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `image` | `string` | name of image which houses the compiled wasm filter. |
+| `image` | `string` | name of image which houses the compiled wasm filter. Only one of `image` or `filePath` can be set. |
+| `filePath` | `string` | path from which to load wasm filter from disk. Only one of `filePath` or `image` can be set. |
 | `config` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | Filter/service configuration used to configure or reconfigure a plugin (proxy_on_configuration). `google.protobuf.Struct` is serialized as JSON before passing it to the plugin. `google.protobuf.BytesValue` and `google.protobuf.StringValue` are passed directly without the wrapper. |
 | `filterStage` | [.wasm.options.gloo.solo.io.FilterStage](../wasm.proto.sk/#filterstage) | the stage in the filter chain where this filter should be placed. |
 | `name` | `string` | the name of the filter, used for logging. |
