@@ -177,7 +177,7 @@ var _ = Describe("gzip", func() {
 			checkVirtualService(testVs)
 		})
 
-		It("should return uncompressed json", func() {
+		It("should return compressed json", func() {
 			jsonStr := `{"value":"test"}`
 			var gzipJson bytes.Buffer
 			gz := gzip.NewWriter(&gzipJson)
