@@ -23,7 +23,6 @@ func NewPlugin() *Plugin {
 const (
 	FilterName  = "envoy.filters.http.compressor"
 	GzipLibrary = "envoy.compression.gzip.compressor"
-	TypeURL     = "type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip"
 )
 
 var _ plugins.Plugin = new(Plugin)
