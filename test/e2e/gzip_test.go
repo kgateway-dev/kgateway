@@ -96,20 +96,24 @@ var _ = Describe("gzip", func() {
 		}, "5s", "0.1s").ShouldNot(BeNil())
 	}
 
-	testRequest := func(jsonStr string) (string, error) {
-		req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer([]byte(jsonStr)))
-		if err != nil {
-			return "", err
-		}
-		req.Header.Set("Accept-Encoding", "gzip")
-		res, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return "", err
-		}
-		defer res.Body.Close()
+	testRequest := func(jsonStr string) func() (string, error) {
+		return func() (string, error) {
+			var json = []byte(jsonStr)
+			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
+			req.Header.Set("Accept-Encoding", "gzip")
+			req.Header.Set("Content-Type", "application/json")
+			if err != nil {
+				return "", err
+			}
 
-		body, err := ioutil.ReadAll(res.Body)
-		return string(body), err
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return "", err
+			}
+			defer res.Body.Close()
+			body, err := ioutil.ReadAll(res.Body)
+			return string(body), err
+		}
 	}
 
 	Context("filter undefined", func() {
@@ -127,8 +131,7 @@ var _ = Describe("gzip", func() {
 		It("should return uncompressed json", func() {
 			// json needs to be longer than default content length to trigger
 			jsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
-			testReq, err := testRequest(jsonStr)
-			Expect(err).NotTo(HaveOccurred())
+			testReq := testRequest(jsonStr)
 			Eventually(testReq, 10*time.Second, 1*time.Second).Should(Equal(jsonStr))
 		})
 	})
@@ -146,7 +149,7 @@ var _ = Describe("gzip", func() {
 					Value: 5,
 				},
 				CompressionLevel:    gloogzip.Gzip_CompressionLevel_SPEED,
-				CompressionStrategy: gloogzip.Gzip_HUFFMAN,
+				CompressionStrategy: gloogzip.Gzip_DEFAULT,
 				WindowBits: &wrappers.UInt32Value{
 					Value: 12,
 				},
@@ -169,7 +172,7 @@ var _ = Describe("gzip", func() {
 			checkVirtualService(testVs)
 		})
 
-		It("should return compressed json", func() {
+		FIt("should return compressed json", func() {
 			// json needs to be longer than default content length to trigger
 			jsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
 			var gzipJson bytes.Buffer
@@ -177,8 +180,12 @@ var _ = Describe("gzip", func() {
 			gz.Write([]byte(jsonStr))
 			gz.Close()
 
-			testReq, err := testRequest(jsonStr)
-			Expect(err).NotTo(HaveOccurred())
+			// len(compressed json) < 30
+			testCompressedReq := testRequest(gzipJson.String())
+			Eventually(testCompressedReq, 10*time.Second, 1*time.Second).Should(Equal(gzipJson.String()))
+
+			// raw json should be compressed
+			testReq := testRequest(jsonStr)
 			Eventually(testReq, 10*time.Second, 1*time.Second).Should(Equal(gzipJson.String()))
 		})
 	})
