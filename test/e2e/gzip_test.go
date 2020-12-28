@@ -108,16 +108,7 @@ var _ = Describe("gzip", func() {
 		}
 		defer res.Body.Close()
 
-		// decompress response body
-		reader, err := gzip.NewReader(res.Body)
-		if err != nil {
-			return "", err
-		}
-		defer reader.Close()
-		body, err := ioutil.ReadAll(reader)
-		if err != nil {
-			return "", err
-		}
+		body, err := ioutil.ReadAll(res.Body)
 		return string(body), err
 	}
 
