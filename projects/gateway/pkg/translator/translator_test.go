@@ -594,6 +594,11 @@ var _ = Describe("Translator", func() {
 			})
 
 			Context("validate matchers", func() {
+
+				BeforeEach(func() {
+					translator = NewTranslator([]ListenerFactory{&HttpTranslator{WarnOnRouteShortCircuiting: true}, &TcpTranslator{}}, Opts{Validation: &ValidationOpts{WarnOnRouteShortCircuiting: true}})
+				})
+
 				It("should warn when a virtual host has overlapping matchers", func() {
 
 					vs := &v1.VirtualService{

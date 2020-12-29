@@ -58,7 +58,7 @@ var (
 )
 
 type HttpTranslator struct {
-	warnOnRouteShortCircuiting bool
+	WarnOnRouteShortCircuiting bool
 }
 
 func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
@@ -254,7 +254,7 @@ func (t *HttpTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, tabl
 		Options: vs.VirtualHost.Options,
 	}
 
-	if t.warnOnRouteShortCircuiting {
+	if t.WarnOnRouteShortCircuiting {
 		validateRoutes(vs, vh, reports)
 	}
 
