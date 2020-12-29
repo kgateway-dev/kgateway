@@ -47,10 +47,10 @@ var (
 	ConflictingMatcherErr = func(vh string, matcher *matchers.Matcher) error {
 		return errors.Errorf("virtual host [%s] has conflicting matcher: %v", vh, matcher)
 	}
-	MisorderedRoutesErr = func(vh, rt1Name, rt2Name string, rt1Matcher, rt2Matcher *matchers.Matcher) error {
+	UnorderedRoutesErr = func(vh, rt1Name, rt2Name string, rt1Matcher, rt2Matcher *matchers.Matcher) error {
 		return errors.Errorf("virtual host [%s] has unordered routes; expected route named [%s] with matcher [%v] to come before route named [%s] with matcher [%v]", vh, rt1Name, rt1Matcher, rt2Name, rt2Matcher)
 	}
-	MisorderedRegexErr = func(vh, regex string, matcher *matchers.Matcher) error {
+	UnorderedRegexErr = func(vh, regex string, matcher *matchers.Matcher) error {
 		return errors.Errorf("virtual host [%s] has unordered regex routes, earlier regex [%s] matched later route [%v]", vh, regex, matcher)
 	}
 )
@@ -288,7 +288,7 @@ func validateAnyDuplicateMatchers(vs *v1.VirtualService, vh *gloov1.VirtualHost,
 }
 
 func validateRouteOrder(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
-	// warn on misordered routes
+	// warn on unordered routes
 	var routesCopy []*gloov1.Route
 	for _, rt := range vh.GetRoutes() {
 		rtCopy := *rt
@@ -300,7 +300,7 @@ func validateRouteOrder(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports r
 	for idx, rt := range routesCopy {
 		other := vh.GetRoutes()[idx]
 		if !rt.Equal(other) {
-			reports.AddWarning(vs, MisorderedRoutesErr(vh.GetName(), rt.GetName(), vh.GetRoutes()[idx].GetName(),
+			reports.AddWarning(vs, UnorderedRoutesErr(vh.GetName(), rt.GetName(), vh.GetRoutes()[idx].GetName(),
 				utils.GetSmallestMatcher(rt.Matchers), utils.GetSmallestMatcher(other.Matchers)).Error())
 		}
 	}
@@ -328,7 +328,7 @@ func validateRegexHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, repor
 						//  - updating the regex to be less permissive is generally preferable to adding/removing methods/query parameter matchers
 						//  - accounting for it would be more difficult to maintain as we add new matcher fields
 						//  - such a conflict would be rare, and likely unintentional anyways
-						reports.AddWarning(vs, MisorderedRegexErr(vh.GetName(), regex, matcher).Error())
+						reports.AddWarning(vs, UnorderedRegexErr(vh.GetName(), regex, matcher).Error())
 					}
 				}
 			}

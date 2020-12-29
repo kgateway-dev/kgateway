@@ -646,7 +646,7 @@ var _ = Describe("Translator", func() {
 					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(ConflictingMatcherErr("gloo-system.name1", vs.VirtualHost.Routes[0].Matchers[0]).Error())))
 				})
 
-				It("should warn when a virtual host has misordered matchers", func() {
+				It("should warn when a virtual host has unordered matchers", func() {
 
 					vs := &v1.VirtualService{
 						Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
@@ -695,14 +695,14 @@ var _ = Describe("Translator", func() {
 					multiErr, ok := errs.(*multierror.Error)
 					Expect(ok).To(BeTrue())
 
-					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(MisorderedRoutesErr("gloo-system.name1",
+					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(UnorderedRoutesErr("gloo-system.name1",
 						"vs:name1_route:rt2",
 						"vs:name1_route:rt1",
 						vs.VirtualHost.Routes[1].Matchers[0],
 						vs.VirtualHost.Routes[0].Matchers[0]).Error())))
 				})
 
-				It("should warn when a virtual host has misordered regex matchers (i.e., regex 'hijacking' earlier routes)", func() {
+				It("should warn when a virtual host has unordered regex matchers (i.e., regex 'hijacking' earlier routes)", func() {
 
 					vs := &v1.VirtualService{
 						Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
@@ -747,7 +747,7 @@ var _ = Describe("Translator", func() {
 					multiErr, ok := errs.(*multierror.Error)
 					Expect(ok).To(BeTrue())
 
-					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(MisorderedRegexErr("gloo-system.name1", "/foo/.*/bar", vs.VirtualHost.Routes[1].Matchers[0]).Error())))
+					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(UnorderedRegexErr("gloo-system.name1", "/foo/.*/bar", vs.VirtualHost.Routes[1].Matchers[0]).Error())))
 				})
 			})
 		})
