@@ -76,22 +76,25 @@ settings:
 	Expect(err).NotTo(HaveOccurred())
 	f2.Close()
 
-	// Make sure all crds are included
+	// Check all gloo crds are included in GlooCrdNames
 	crdDir := filepath.Join(RootDir, "/install/helm/gloo/crds")
 	files, err := ioutil.ReadDir(crdDir)
 	Expect(err).NotTo(HaveOccurred())
 	var crdNames []string
-	for _, f := range files {
-		ext := filepath.Ext(f.Name())
-		if !f.IsDir() && (strings.EqualFold(ext, ".yaml") || strings.EqualFold(ext, ".yml") || strings.EqualFold(ext, ".json")) {
-			manifest, err := ioutil.ReadFile(crdDir + "/" + f.Name())
+	for _, f3 := range files {
+		ext := filepath.Ext(f3.Name())
+		// check file has manifest extension
+		if !f3.IsDir() && (strings.EqualFold(ext, ".yaml") || strings.EqualFold(ext, ".yml") || strings.EqualFold(ext, ".json")) {
+			manifest, err := ioutil.ReadFile(crdDir + "/" + f3.Name())
 			Expect(err).NotTo(HaveOccurred())
 			jsn, err := yaml.YAMLToJSON(manifest)
 			Expect(err).NotTo(HaveOccurred())
 			runtimeObj, err := runtime.Decode(unstructured.UnstructuredJSONScheme, jsn)
 			Expect(err).NotTo(HaveOccurred())
 
+			// get crd name from yaml
 			resource := runtimeObj.(*unstructured.Unstructured)
+			Expect(resource.GetName()).NotTo(BeNil())
 			crdNames = append(crdNames, resource.GetName())
 		}
 	}
