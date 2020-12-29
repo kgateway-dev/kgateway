@@ -315,13 +315,45 @@ func GetPluginsWithExtensionsAndRegistry(opts bootstrap.Opts, registryPlugins fu
 		pluginfuncs = append(pluginfuncs, func() plugins.Plugin { return p })
 	}
 	return func() []plugins.Plugin {
-		plugins := registryPlugins(opts)
+		upgradedPlugins := make(map[string]bool)
+		plugs := registryPlugins(opts)
 		for _, pluginExtension := range pluginfuncs {
-			plugins = append(plugins, pluginExtension())
+			pe := pluginExtension()
+			if uPlug, ok := pe.(plugins.Upgradable); ok && uPlug.IsUpgrade() {
+				upgradedPlugins[uPlug.PluginName()] = true
+			}
+
+			plugs = append(plugs, pe)
 		}
-		return plugins
+		plugs = reconcileUpgradedPlugins(plugs, upgradedPlugins)
+
+		return plugs
 	}
 }
+
+// removes any redundant plugins from the pluginList, if we have added an upgraded version to replace them
+func reconcileUpgradedPlugins(pluginList []plugins.Plugin, upgradedPlugins map[string]bool) []plugins.Plugin {
+	var pluginsToDrop []int
+	for i, plugin := range pluginList {
+		uPlug, upgradable := plugin.(plugins.Upgradable)
+		if upgradable {
+			_, inMap := upgradedPlugins[uPlug.PluginName()]
+			if inMap && !uPlug.IsUpgrade() {
+				// An upgraded version of this plug exists,
+				// mark this one for removal
+				pluginsToDrop = append(pluginsToDrop, i)
+			}
+		}
+	}
+
+	// Walk back through the pluginList and remove the redundant plugins
+	for i := len(pluginsToDrop) - 1; i >= 0; i-- {
+		badIndex := pluginsToDrop[i]
+		pluginList = append(pluginList[:badIndex], pluginList[badIndex+1:]...)
+	}
+	return pluginList
+}
+
 func GetPluginsWithExtensions(opts bootstrap.Opts, extensions Extensions) func() []plugins.Plugin {
 	return GetPluginsWithExtensionsAndRegistry(opts, registry.Plugins, extensions)
 }

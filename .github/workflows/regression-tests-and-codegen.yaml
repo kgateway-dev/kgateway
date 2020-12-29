@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        kube-e2e-test-type: ['gateway', 'ingress', 'knative', 'helm', 'wasm', 'gloomtls']
+        kube-e2e-test-type: ['gateway', 'ingress', 'knative', 'helm', 'gloomtls']
     steps:
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.4.1
