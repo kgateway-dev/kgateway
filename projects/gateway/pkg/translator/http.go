@@ -47,11 +47,11 @@ var (
 	ConflictingMatcherErr = func(vh string, matcher *matchers.Matcher) error {
 		return errors.Errorf("virtual host [%s] has conflicting matcher: %v", vh, matcher)
 	}
-	MisorderedRoutesErr = func(vh, rt1Name, rt2Name string) error {
-		return errors.Errorf("virtual host [%s] has misordered routes; expected route named [%s] to come before route named [%s]", vh, rt1Name, rt2Name)
+	MisorderedRoutesErr = func(vh, rt1Name, rt2Name string, rt1Matcher, rt2Matcher *matchers.Matcher) error {
+		return errors.Errorf("virtual host [%s] has unordered routes; expected route named [%s] with matcher [%v] to come before route named [%s] with matcher [%v]", vh, rt1Name, rt1Matcher, rt2Name, rt2Matcher)
 	}
 	MisorderedRegexErr = func(vh, regex string, matcher *matchers.Matcher) error {
-		return errors.Errorf("virtual host [%s] has misordered regex routes, earlier regex [%s] matched later route [%v]", vh, regex, matcher)
+		return errors.Errorf("virtual host [%s] has unordered regex routes, earlier regex [%s] matched later route [%v]", vh, regex, matcher)
 	}
 )
 
@@ -298,8 +298,10 @@ func validateRouteOrder(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports r
 	utils.SortRoutesByPath(routesCopy)
 
 	for idx, rt := range routesCopy {
-		if !rt.Equal(vh.GetRoutes()[idx]) {
-			reports.AddWarning(vs, MisorderedRoutesErr(vh.GetName(), rt.GetName(), vh.GetRoutes()[idx].GetName()).Error())
+		other := vh.GetRoutes()[idx]
+		if !rt.Equal(other) {
+			reports.AddWarning(vs, MisorderedRoutesErr(vh.GetName(), rt.GetName(), vh.GetRoutes()[idx].GetName(),
+				utils.GetSmallestMatcher(rt.Matchers), utils.GetSmallestMatcher(other.Matchers)).Error())
 		}
 	}
 }

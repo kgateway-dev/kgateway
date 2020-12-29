@@ -17,7 +17,7 @@ import (
 
 // Matchers sort according to the following rules:
 // 1. exact path < regex path < prefix path
-// 2. lexicographically greater path string < lexicographically greater path string
+// 2. lexicographically greater path string < lexicographically smaller path string
 func SortRoutesByPath(routes []*v1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
 		smallest1 := *defaults.DefaultMatcher()
@@ -64,6 +64,19 @@ func SortGatewayRoutesByPath(routes []*gatewayv1.Route) {
 		}
 		return lessMatcher(&smallest1, &smallest2)
 	})
+}
+
+func GetSmallestMatcher(matchers []*matchers.Matcher) *matchers.Matcher {
+	smallest1 := defaults.DefaultMatcher()
+	if len(matchers) > 0 {
+		smallest1 = matchers[0]
+	}
+	for _, m := range matchers {
+		if lessMatcher(m, smallest1) {
+			smallest1 = m
+		}
+	}
+	return smallest1
 }
 
 func lessMatcher(m1, m2 *matchers.Matcher) bool {
