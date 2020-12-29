@@ -21,8 +21,8 @@ func NewPlugin() *Plugin {
 
 // Compressor not in wellknown names
 const (
-	FilterName  = "envoy.filters.http.compressor"
-	GzipLibrary = "envoy.compression.gzip.compressor"
+	CompressorFilterName = "envoy.filters.http.compressor"
+	GzipLibrary          = "envoy.compression.gzip.compressor"
 )
 
 var _ plugins.Plugin = new(Plugin)
@@ -47,7 +47,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 	if err != nil {
 		return nil, eris.Wrapf(err, "converting gzip config")
 	}
-	gzipFilter, err := plugins.NewStagedFilterWithConfig(FilterName, envoyGzipConfig, pluginStage)
+	gzipFilter, err := plugins.NewStagedFilterWithConfig(CompressorFilterName, envoyGzipConfig, pluginStage)
 	if err != nil {
 		return nil, eris.Wrapf(err, "generating filter config")
 	}
@@ -95,7 +95,7 @@ func glooToEnvoyGzip(gzip *v2.Gzip) (*envoygzip.Gzip, error) {
 	case v2.Gzip_CompressionLevel_SPEED:
 		envoyGzip.CompressionLevel = envoygzip.Gzip_BEST_SPEED
 	default:
-		return &envoygzip.Gzip{}, eris.Errorf("invalid CompressionLevel %v", gzip.GetCompressionLevel())
+		return nil, eris.Errorf("invalid CompressionLevel %v", gzip.GetCompressionLevel())
 	}
 
 	switch gzip.GetCompressionStrategy() {
@@ -108,7 +108,7 @@ func glooToEnvoyGzip(gzip *v2.Gzip) (*envoygzip.Gzip, error) {
 	case v2.Gzip_RLE:
 		envoyGzip.CompressionStrategy = envoygzip.Gzip_RLE
 	default:
-		return &envoygzip.Gzip{}, eris.Errorf("invalid CompressionStrategy %v", gzip.GetCompressionStrategy())
+		return nil, eris.Errorf("invalid CompressionStrategy %v", gzip.GetCompressionStrategy())
 	}
 
 	if gzip.GetWindowBits() != nil {
