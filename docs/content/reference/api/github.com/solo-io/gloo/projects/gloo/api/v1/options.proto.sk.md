@@ -138,6 +138,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "rateLimitConfigs": .ratelimit.options.gloo.solo.io.RateLimitConfigRefs
 "waf": .waf.options.gloo.solo.io.Settings
 "jwt": .jwt.options.gloo.solo.io.VhostExtension
+"jwtStagedVhostConfig": .jwt.options.gloo.solo.io.JwtStagedVhostExtension
 "rbac": .rbac.options.gloo.solo.io.ExtensionSettings
 "extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 "dlp": .dlp.options.gloo.solo.io.Config
@@ -146,7 +147,6 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "includeRequestAttemptCount": .google.protobuf.BoolValue
 "includeAttemptCountInResponse": .google.protobuf.BoolValue
 "stagedTransformations": .transformation.options.gloo.solo.io.TransformationStages
-"jwtStagedVhostConfig": .jwt.options.gloo.solo.io.JwtStagedVhostExtension
 
 ```
 
@@ -162,7 +162,8 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `ratelimit` | [.ratelimit.options.gloo.solo.io.RateLimitVhostExtension](../enterprise/options/ratelimit/ratelimit.proto.sk/#ratelimitvhostextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. Only one of `ratelimit` or `rate_limit_configs` can be set. Only one of `ratelimit` or `rateLimitConfigs` can be set. |
 | `rateLimitConfigs` | [.ratelimit.options.gloo.solo.io.RateLimitConfigRefs](../enterprise/options/ratelimit/ratelimit.proto.sk/#ratelimitconfigrefs) | References to RateLimitConfig resources. This is used to configure the GlooE rate limit server. Only one of `ratelimit` or `rate_limit_configs` can be set. Only one of `rateLimitConfigs` or `ratelimit` can be set. |
 | `waf` | [.waf.options.gloo.solo.io.Settings](../enterprise/options/waf/waf.proto.sk/#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |
-| `jwt` | [.jwt.options.gloo.solo.io.VhostExtension](../enterprise/options/jwt/jwt.proto.sk/#vhostextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. |
+| `jwt` | [.jwt.options.gloo.solo.io.VhostExtension](../enterprise/options/jwt/jwt.proto.sk/#vhostextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. Only one of `jwt` or `jwtStagedVhostConfig` can be set. |
+| `jwtStagedVhostConfig` | [.jwt.options.gloo.solo.io.JwtStagedVhostExtension](../enterprise/options/jwt/jwt.proto.sk/#jwtstagedvhostextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. JWT configuration has stages "BeforExtAuth" and "AfterExtAuth". BeforeExtAuth JWT validation runs before the external authentication service. This is useful when JWT is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig). Only one of `jwtStagedVhostConfig` or `jwt` can be set. |
 | `rbac` | [.rbac.options.gloo.solo.io.ExtensionSettings](../enterprise/options/rbac/rbac.proto.sk/#extensionsettings) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |
 | `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/options/extauth/v1/extauth.proto.sk/#extauthextension) | Enterprise-only: Authentication configuration. |
 | `dlp` | [.dlp.options.gloo.solo.io.Config](../enterprise/options/dlp/dlp.proto.sk/#config) | Enterprise-only: Config for data loss prevention. |
@@ -171,7 +172,6 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `includeRequestAttemptCount` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | IncludeRequestAttemptCount decides whether the x-envoy-attempt-count header should be included in the upstream request. Setting this option will cause it to override any existing header value, so in the case of two Envoys on the request path with this option enabled, the upstream will see the attempt count as perceived by the second Envoy. Defaults to false. |
 | `includeAttemptCountInResponse` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | IncludeAttemptCountInResponse decides whether the x-envoy-attempt-count header should be included in the downstream response. Setting this option will cause the router to override any existing header value, so in the case of two Envoys on the request path with this option enabled, the downstream will see the attempt count as perceived by the Envoy closest upstream from itself. Defaults to false. |
 | `stagedTransformations` | [.transformation.options.gloo.solo.io.TransformationStages](../options/transformation/transformation.proto.sk/#transformationstages) | Early transformations stage. These transformations run before most other options are processed. If the `regular` field is set in here, the `transformations` field is ignored. |
-| `jwtStagedVhostConfig` | [.jwt.options.gloo.solo.io.JwtStagedVhostExtension](../enterprise/options/jwt/jwt.proto.sk/#jwtstagedvhostextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. JWT configuration has stages "BeforExtAuth" and "AfterExtAuth". BeforeExtAuth JWT validation runs before the external authentication service. This is useful when JWT is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig). |
 
 
 
