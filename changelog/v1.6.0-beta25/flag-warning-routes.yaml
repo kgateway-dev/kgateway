@@ -1,0 +1,9 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3334
+    description: |
+      Gloo Edge now more proactively reports warnings on virtual services that are likely misconfigured.
+      The cases now additionally covered are:
+        - routes on the same virtual host that have the same matcher;
+        - routes that get short-circuited by regex matchers in earlier routes;
+        - and routes that aren't sorted (make use of `glooctl route sort`), which can also lead to unintended errors
