@@ -695,16 +695,6 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetJwt()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetJwt(), target.GetJwt()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetRbac()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetRbac()) {
 			return false
@@ -765,16 +755,6 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetJwtStagedRouteConfig()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetJwtStagedRouteConfig()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetJwtStagedRouteConfig(), target.GetJwtStagedRouteConfig()) {
-			return false
-		}
-	}
-
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:
@@ -819,6 +799,34 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetRateLimitConfigs(), target.GetRateLimitConfigs()) {
+				return false
+			}
+		}
+
+	}
+
+	switch m.JwtConfig.(type) {
+
+	case *RouteOptions_Jwt:
+
+		if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetJwt()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetJwt(), target.GetJwt()) {
+				return false
+			}
+		}
+
+	case *RouteOptions_JwtStagedRouteConfig:
+
+		if h, ok := interface{}(m.GetJwtStagedRouteConfig()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetJwtStagedRouteConfig()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetJwtStagedRouteConfig(), target.GetJwtStagedRouteConfig()) {
 				return false
 			}
 		}

@@ -205,13 +205,13 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "rateLimitConfigs": .ratelimit.options.gloo.solo.io.RateLimitConfigRefs
 "waf": .waf.options.gloo.solo.io.Settings
 "jwt": .jwt.options.gloo.solo.io.RouteExtension
+"jwtStagedRouteConfig": .jwt.options.gloo.solo.io.JwtStagedRouteExtension
 "rbac": .rbac.options.gloo.solo.io.ExtensionSettings
 "extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 "dlp": .dlp.options.gloo.solo.io.Config
 "bufferPerRoute": .solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute
 "csrf": .solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy
 "stagedTransformations": .transformation.options.gloo.solo.io.TransformationStages
-"jwtStagedRouteConfig": .jwt.options.gloo.solo.io.JwtStagedRouteExtension
 
 ```
 
@@ -235,14 +235,14 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `ratelimit` | [.ratelimit.options.gloo.solo.io.RateLimitRouteExtension](../enterprise/options/ratelimit/ratelimit.proto.sk/#ratelimitrouteextension) | Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *actions* here, which define how request characteristics get translated into descriptors used by the rate-limit service for rate-limiting. Configure rate-limit *descriptors* and their associated limits on the Gloo settings. Only one of `ratelimit` or `rate_limit_configs` can be set. Only one of `ratelimit` or `rateLimitConfigs` can be set. |
 | `rateLimitConfigs` | [.ratelimit.options.gloo.solo.io.RateLimitConfigRefs](../enterprise/options/ratelimit/ratelimit.proto.sk/#ratelimitconfigrefs) | References to RateLimitConfig resources. This is used to configure the GlooE rate limit server. Only one of `ratelimit` or `rate_limit_configs` can be set. Only one of `rateLimitConfigs` or `ratelimit` can be set. |
 | `waf` | [.waf.options.gloo.solo.io.Settings](../enterprise/options/waf/waf.proto.sk/#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |
-| `jwt` | [.jwt.options.gloo.solo.io.RouteExtension](../enterprise/options/jwt/jwt.proto.sk/#routeextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. |
+| `jwt` | [.jwt.options.gloo.solo.io.RouteExtension](../enterprise/options/jwt/jwt.proto.sk/#routeextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. Only one of `jwt` or `jwtStagedRouteConfig` can be set. |
+| `jwtStagedRouteConfig` | [.jwt.options.gloo.solo.io.JwtStagedRouteExtension](../enterprise/options/jwt/jwt.proto.sk/#jwtstagedrouteextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. JWT configuration has stages "BeforExtAuth" and "AfterExtAuth". BeforeExtAuth JWT validation runs before the external authentication service. This is useful when JWT is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig). Only one of `jwtStagedRouteConfig` or `jwt` can be set. |
 | `rbac` | [.rbac.options.gloo.solo.io.ExtensionSettings](../enterprise/options/rbac/rbac.proto.sk/#extensionsettings) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |
 | `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/options/extauth/v1/extauth.proto.sk/#extauthextension) | Enterprise-only: Authentication configuration. |
 | `dlp` | [.dlp.options.gloo.solo.io.Config](../enterprise/options/dlp/dlp.proto.sk/#config) | Enterprise-only: Config for data loss prevention. |
 | `bufferPerRoute` | [.solo.io.envoy.extensions.filters.http.buffer.v3.BufferPerRoute](../../external/envoy/extensions/filters/http/buffer/v3/buffer.proto.sk/#bufferperroute) | BufferPerRoute can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response. Note: If you have not set a global config (at the gateway level), this override will not do anything by itself. |
 | `csrf` | [.solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy](../../external/envoy/extensions/filters/http/csrf/v3/csrf.proto.sk/#csrfpolicy) | Csrf can be used to set percent of requests for which the CSRF filter is enabled, enable shadow-only mode where policies will be evaluated and tracked, but not enforced and add additional source origins that will be allowed in addition to the destination origin. For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/csrf/v2/csrf.proto. |
 | `stagedTransformations` | [.transformation.options.gloo.solo.io.TransformationStages](../options/transformation/transformation.proto.sk/#transformationstages) | Early transformations stage. These transformations run before most other options are processed. If the `regular` field is set in here, the `transformations` field is ignored. |
-| `jwtStagedRouteConfig` | [.jwt.options.gloo.solo.io.JwtStagedRouteExtension](../enterprise/options/jwt/jwt.proto.sk/#jwtstagedrouteextension) | Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other headers to make routing decisions or combine with RBAC for fine-grained access control. JWT configuration has stages "BeforExtAuth" and "AfterExtAuth". BeforeExtAuth JWT validation runs before the external authentication service. This is useful when JWT is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig). |
 
 
 
