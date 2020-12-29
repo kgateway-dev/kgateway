@@ -61,7 +61,6 @@ require (
 	github.com/opencontainers/go-digest v1.0.0-rc1
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
-	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.8.0
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/rotisserie/eris v0.4.0
