@@ -300,10 +300,10 @@ func validateRouteOrder(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports r
 	utils.SortRoutesByPath(routesCopy)
 
 	for idx, rt := range routesCopy {
-		other := vh.GetRoutes()[idx]
-		if !rt.Equal(other) {
-			reports.AddWarning(vs, UnorderedRoutesErr(vh.GetName(), rt.GetName(), vh.GetRoutes()[idx].GetName(),
-				utils.GetSmallestOrDefaultMatcher(rt.Matchers), utils.GetSmallestOrDefaultMatcher(other.Matchers)).Error())
+		otherRt := vh.GetRoutes()[idx]
+		if !rt.Equal(otherRt) {
+			reports.AddWarning(vs, UnorderedRoutesErr(vh.GetName(), rt.GetName(), otherRt.GetName(),
+				utils.GetSmallestOrDefaultMatcher(rt.Matchers), utils.GetSmallestOrDefaultMatcher(otherRt.Matchers)).Error())
 		}
 	}
 }

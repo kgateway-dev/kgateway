@@ -106,7 +106,7 @@ func SimpleRoute(us *core.ResourceRef) []*gwv1.Route {
 	return []*gwv1.Route{{
 		Matchers: []*matchers.Matcher{{
 			PathSpecifier: &matchers.Matcher_Prefix{
-				Prefix: "/",
+				Prefix: "/test",
 			},
 		}},
 		Action: &gwv1.Route_RouteAction{
