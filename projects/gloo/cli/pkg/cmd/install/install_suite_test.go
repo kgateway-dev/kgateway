@@ -98,7 +98,7 @@ settings:
 			crdNames = append(crdNames, resource.GetName())
 		}
 	}
-	Expect(crdNames).To(ContainElements(install.GlooCrdNames))
+	Expect(crdNames).To(ConsistOf(install.GlooCrdNames))
 })
 
 var _ = AfterSuite(func() {
