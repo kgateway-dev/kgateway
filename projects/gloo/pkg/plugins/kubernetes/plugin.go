@@ -67,7 +67,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	lister := p.kubeCoreCache.NamespacedServiceLister(kube.Kube.ServiceNamespace)
 	if lister == nil {
 		return errors.Errorf("Upstream %s references the service \"%s\" which has an invalid ServiceNamespace \"%s\".",
-			upstreamRef.String(),  kube.Kube.ServiceName, kube.Kube.ServiceNamespace)
+			upstreamRef.String(), kube.Kube.ServiceName, kube.Kube.ServiceNamespace)
 	}
 
 	svcs, err := lister.List(labels.NewSelector())
