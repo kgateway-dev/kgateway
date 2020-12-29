@@ -20,63 +20,31 @@ import (
 // 2. lexicographically greater path string < lexicographically smaller path string
 func SortRoutesByPath(routes []*v1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
-		smallest1 := *defaults.DefaultMatcher()
-		if len(routes[i].Matchers) > 0 {
-			smallest1 = *routes[i].Matchers[0]
-		}
-		for _, m := range routes[i].Matchers {
-			if lessMatcher(m, &smallest1) {
-				smallest1 = *m
-			}
-		}
-		smallest2 := *defaults.DefaultMatcher()
-		if len(routes[j].Matchers) > 0 {
-			smallest2 = *routes[j].Matchers[0]
-		}
-		for _, m := range routes[j].Matchers {
-			if lessMatcher(m, &smallest2) {
-				smallest2 = *m
-			}
-		}
-		return lessMatcher(&smallest1, &smallest2)
+		smallest1 := GetSmallestOrDefaultMatcher(routes[i].Matchers)
+		smallest2 := GetSmallestOrDefaultMatcher(routes[j].Matchers)
+		return lessMatcher(smallest1, smallest2)
 	})
 }
 
 func SortGatewayRoutesByPath(routes []*gatewayv1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
-		smallest1 := *defaults.DefaultMatcher()
-		if len(routes[i].Matchers) > 0 {
-			smallest1 = *routes[i].Matchers[0]
-		}
-		for _, m := range routes[i].Matchers {
-			if lessMatcher(m, &smallest1) {
-				smallest1 = *m
-			}
-		}
-		smallest2 := *defaults.DefaultMatcher()
-		if len(routes[j].Matchers) > 0 {
-			smallest2 = *routes[j].Matchers[0]
-		}
-		for _, m := range routes[j].Matchers {
-			if lessMatcher(m, &smallest2) {
-				smallest2 = *m
-			}
-		}
-		return lessMatcher(&smallest1, &smallest2)
+		smallest1 := GetSmallestOrDefaultMatcher(routes[i].Matchers)
+		smallest2 := GetSmallestOrDefaultMatcher(routes[j].Matchers)
+		return lessMatcher(smallest1, smallest2)
 	})
 }
 
-func GetSmallestMatcher(matchers []*matchers.Matcher) *matchers.Matcher {
-	smallest1 := defaults.DefaultMatcher()
+func GetSmallestOrDefaultMatcher(matchers []*matchers.Matcher) *matchers.Matcher {
+	smallest := defaults.DefaultMatcher()
 	if len(matchers) > 0 {
-		smallest1 = matchers[0]
+		smallest = matchers[0]
 	}
 	for _, m := range matchers {
-		if lessMatcher(m, smallest1) {
-			smallest1 = m
+		if lessMatcher(m, smallest) {
+			smallest = m
 		}
 	}
-	return smallest1
+	return smallest
 }
 
 func lessMatcher(m1, m2 *matchers.Matcher) bool {

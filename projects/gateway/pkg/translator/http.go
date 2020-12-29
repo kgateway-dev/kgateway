@@ -303,7 +303,7 @@ func validateRouteOrder(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports r
 		other := vh.GetRoutes()[idx]
 		if !rt.Equal(other) {
 			reports.AddWarning(vs, UnorderedRoutesErr(vh.GetName(), rt.GetName(), vh.GetRoutes()[idx].GetName(),
-				utils.GetSmallestMatcher(rt.Matchers), utils.GetSmallestMatcher(other.Matchers)).Error())
+				utils.GetSmallestOrDefaultMatcher(rt.Matchers), utils.GetSmallestOrDefaultMatcher(other.Matchers)).Error())
 		}
 	}
 }
