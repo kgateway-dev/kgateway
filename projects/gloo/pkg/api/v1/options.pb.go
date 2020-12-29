@@ -161,9 +161,7 @@ type HttpListenerOptions struct {
 	Waf *waf.Settings `protobuf:"bytes,5,opt,name=waf,proto3" json:"waf,omitempty"`
 	// Enterprise-only: Config for data loss prevention
 	Dlp *dlp.FilterConfig `protobuf:"bytes,6,opt,name=dlp,proto3" json:"dlp,omitempty"`
-	// Wasm filter config [very-experimental!]
-	// Currently these extensions will only work if Gloo deployed using the helm flag, wasm.enabled=true
-	// These require a special nightly version of envoy which is not deployed by default
+	// Enterprise-only: WASM related configuration [experimental!]
 	Wasm *wasm.PluginSource `protobuf:"bytes,7,opt,name=wasm,proto3" json:"wasm,omitempty"`
 	// Enterprise-only: External auth related settings
 	Extauth *v1.Settings `protobuf:"bytes,10,opt,name=extauth,proto3" json:"extauth,omitempty"`

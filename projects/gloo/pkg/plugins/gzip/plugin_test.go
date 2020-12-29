@@ -1,10 +1,10 @@
 package gzip_test
 
 import (
+	v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoygzip "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/compressor/v3"
 	envoycompressor "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
-	envoygzip "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/gzip/v3"
 	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -21,7 +21,7 @@ var _ = Describe("Plugin", func() {
 			Options: &v1.HttpListenerOptions{
 				Gzip: &v2.Gzip{
 					MemoryLevel: &wrappers.UInt32Value{
-						Value: 10,
+						Value: 9,
 					},
 					CompressionLevel:    v2.Gzip_CompressionLevel_SPEED,
 					CompressionStrategy: v2.Gzip_HUFFMAN,
@@ -32,17 +32,25 @@ var _ = Describe("Plugin", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
+
+		compressorConfig := &envoycompressor.Compressor{
+			CompressorLibrary: &v3.TypedExtensionConfig{
+				Name: GzipLibrary,
+				TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
+					MemoryLevel:         &wrappers.UInt32Value{Value: 9},
+					CompressionLevel:    envoygzip.Gzip_BEST_SPEED,
+					CompressionStrategy: envoygzip.Gzip_HUFFMAN_ONLY,
+					WindowBits:          &wrappers.UInt32Value{Value: 10},
+				}),
+			},
+		}
+
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
 				HttpFilter: &envoyhcm.HttpFilter{
-					Name: wellknown.Gzip,
+					Name: CompressorFilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
-							MemoryLevel:         &wrappers.UInt32Value{Value: 10.000000},
-							CompressionLevel:    envoygzip.Gzip_CompressionLevel_SPEED,
-							CompressionStrategy: envoygzip.Gzip_HUFFMAN,
-							WindowBits:          &wrappers.UInt32Value{Value: 10.000000},
-						}),
+						TypedConfig: utils.MustMessageToAny(compressorConfig),
 					},
 				},
 				Stage: plugins.DuringStage(plugins.RouteStage),
@@ -56,15 +64,23 @@ var _ = Describe("Plugin", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
+
+		compressorConfig = &envoycompressor.Compressor{
+			CompressorLibrary: &v3.TypedExtensionConfig{
+				Name: GzipLibrary,
+				TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
+					CompressionLevel:    envoygzip.Gzip_DEFAULT_COMPRESSION,
+					CompressionStrategy: envoygzip.Gzip_DEFAULT_STRATEGY,
+				}),
+			},
+		}
+
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
 				HttpFilter: &envoyhcm.HttpFilter{
-					Name: wellknown.Gzip,
+					Name: CompressorFilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
-							CompressionLevel:    envoygzip.Gzip_CompressionLevel_DEFAULT,
-							CompressionStrategy: envoygzip.Gzip_DEFAULT,
-						}),
+						TypedConfig: utils.MustMessageToAny(compressorConfig),
 					},
 				},
 				Stage: plugins.DuringStage(plugins.RouteStage),
@@ -72,7 +88,7 @@ var _ = Describe("Plugin", func() {
 		}))
 	})
 
-	It("copies the gzip config from the listener to the filter when deprecated fields are present", func() {
+	It("copies the gzip configs from the listener to the compressor filter", func() {
 		By("when all deprecated fields are present")
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
@@ -87,26 +103,31 @@ var _ = Describe("Plugin", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
+
+		compressorConfig := &envoycompressor.Compressor{
+			ContentLength:              &wrappers.UInt32Value{Value: 10},
+			ContentType:                []string{"type1", "type2"},
+			DisableOnEtagHeader:        true,
+			RemoveAcceptEncodingHeader: true,
+			CompressorLibrary: &v3.TypedExtensionConfig{
+				Name:        GzipLibrary,
+				TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{}),
+			},
+		}
+
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
 				HttpFilter: &envoyhcm.HttpFilter{
-					Name: wellknown.Gzip,
+					Name: CompressorFilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
-							Compressor: &envoycompressor.Compressor{
-								ContentLength:              &wrappers.UInt32Value{Value: 10.000000},
-								ContentType:                []string{"type1", "type2"},
-								DisableOnEtagHeader:        true,
-								RemoveAcceptEncodingHeader: true,
-							},
-						}),
+						TypedConfig: utils.MustMessageToAny(compressorConfig),
 					},
 				},
 				Stage: plugins.DuringStage(plugins.RouteStage),
 			},
 		}))
 
-		By("when some deprecated fields are present")
+		By("copies a single gzip config field")
 		filters, err = NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Gzip: &v2.Gzip{
@@ -115,16 +136,21 @@ var _ = Describe("Plugin", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
+
+		compressorConfig = &envoycompressor.Compressor{
+			RemoveAcceptEncodingHeader: true,
+			CompressorLibrary: &v3.TypedExtensionConfig{
+				Name:        GzipLibrary,
+				TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{}),
+			},
+		}
+
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
 				HttpFilter: &envoyhcm.HttpFilter{
-					Name: wellknown.Gzip,
+					Name: CompressorFilterName,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
-							Compressor: &envoycompressor.Compressor{
-								RemoveAcceptEncodingHeader: true,
-							},
-						}),
+						TypedConfig: utils.MustMessageToAny(compressorConfig),
 					},
 				},
 				Stage: plugins.DuringStage(plugins.RouteStage),

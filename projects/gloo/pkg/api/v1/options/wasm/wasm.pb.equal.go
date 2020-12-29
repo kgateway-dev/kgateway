@@ -87,10 +87,6 @@ func (m *WasmFilter) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetImage(), target.GetImage()) != 0 {
-		return false
-	}
-
 	if h, ok := interface{}(m.GetConfig()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetConfig()) {
 			return false
@@ -121,6 +117,22 @@ func (m *WasmFilter) Equal(that interface{}) bool {
 
 	if m.GetVmType() != target.GetVmType() {
 		return false
+	}
+
+	switch m.Src.(type) {
+
+	case *WasmFilter_Image:
+
+		if strings.Compare(m.GetImage(), target.GetImage()) != 0 {
+			return false
+		}
+
+	case *WasmFilter_FilePath:
+
+		if strings.Compare(m.GetFilePath(), target.GetFilePath()) != 0 {
+			return false
+		}
+
 	}
 
 	return true

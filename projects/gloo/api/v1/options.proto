@@ -87,9 +87,7 @@ message HttpListenerOptions {
     waf.options.gloo.solo.io.Settings waf = 5;
     // Enterprise-only: Config for data loss prevention
     dlp.options.gloo.solo.io.FilterConfig dlp = 6;
-    // Wasm filter config [very-experimental!]
-    // Currently these extensions will only work if Gloo deployed using the helm flag, wasm.enabled=true
-    // These require a special nightly version of envoy which is not deployed by default
+    // Enterprise-only: WASM related configuration [experimental!]
     wasm.options.gloo.solo.io.PluginSource wasm = 7;
     // Enterprise-only: External auth related settings
     enterprise.gloo.solo.io.Settings extauth = 10;

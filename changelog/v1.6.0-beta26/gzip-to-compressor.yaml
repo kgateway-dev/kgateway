@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4016
+    description: >
+      Envoy has deprecated gzip filter support in favor of the HTTP Compressor filter. Fixes gloo gzip filter to work
+      with envoy's compressor filter.

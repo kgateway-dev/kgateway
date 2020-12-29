@@ -1788,12 +1788,12 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
-					It("correctly sets the `gloo.enableRestEds` to false in the settings", func() {
-						settings := makeUnstructureFromTemplateFile("fixtures/settings/disable_rest_eds.yaml", namespace)
+					It("correctly sets the `gloo.enableRestEds` to true in the settings", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/enable_rest_eds.yaml", namespace)
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"settings.enableRestEds=false",
+								"settings.enableRestEds=true",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
@@ -1823,7 +1823,7 @@ spec:
   gloo:
     xdsBindAddr: "0.0.0.0:9977"
     restXdsBindAddr: "0.0.0.0:9976"
-    enableRestEds: true
+    enableRestEds: false
     disableKubernetesDestinations: false
     disableProxyGarbageCollection: false
   discoveryNamespace: gloo-system

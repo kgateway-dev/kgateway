@@ -1,0 +1,15 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4020
+    ressolvesIssue: false
+    description: >
+      Update to plugin loading logic to allow upgrading the
+      built-in Gloo Edge plugins with new versions from other
+      sources.
+  - type: UPGRADE
+    issueLink: https://github.com/solo-io/gloo/issues/4025
+    ressolvesIssue: false
+    description: >
+      Experimental wasm features have been removed
+      from Gloo Edge. Wasm support is now a feature
+      of Gloo Edge Enterprise.
