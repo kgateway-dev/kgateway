@@ -1,10 +1,13 @@
 package install_test
 
 import (
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"io/ioutil"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"os"
 	"path/filepath"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"strings"
 
 	"testing"
 
@@ -12,6 +15,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	gotestutils "github.com/solo-io/go-utils/testutils"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/yaml"
 )
 
 func TestInstall(t *testing.T) {
@@ -70,6 +75,27 @@ settings:
  writeNamespace: test-namespace-2`)
 	Expect(err).NotTo(HaveOccurred())
 	f2.Close()
+
+	// Make sure all crds are included
+	crdDir := filepath.Join(RootDir, "/install/helm/gloo/crds")
+	files, err := ioutil.ReadDir(crdDir)
+	Expect(err).NotTo(HaveOccurred())
+	var crdNames []string
+	for _, f := range files {
+		ext := filepath.Ext(f.Name())
+		if !f.IsDir() && (strings.EqualFold(ext, ".yaml") || strings.EqualFold(ext, ".yml") || strings.EqualFold(ext, ".json")) {
+			manifest, err := ioutil.ReadFile(crdDir + "/" + f.Name())
+			Expect(err).NotTo(HaveOccurred())
+			jsn, err := yaml.YAMLToJSON(manifest)
+			Expect(err).NotTo(HaveOccurred())
+			runtimeObj, err := runtime.Decode(unstructured.UnstructuredJSONScheme, jsn)
+			Expect(err).NotTo(HaveOccurred())
+
+			resource := runtimeObj.(*unstructured.Unstructured)
+			crdNames = append(crdNames, resource.GetName())
+		}
+	}
+	Expect(crdNames).To(ContainElements(install.GlooCrdNames))
 })
 
 var _ = AfterSuite(func() {
