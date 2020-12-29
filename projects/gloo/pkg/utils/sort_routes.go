@@ -20,21 +20,21 @@ import (
 // 2. lexicographically greater path string < lexicographically smaller path string
 func SortRoutesByPath(routes []*v1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
-		smallest1 := GetSmallestOrDefaultMatcher(routes[i].Matchers)
-		smallest2 := GetSmallestOrDefaultMatcher(routes[j].Matchers)
+		smallest1 := getSmallestOrDefaultMatcher(routes[i].Matchers)
+		smallest2 := getSmallestOrDefaultMatcher(routes[j].Matchers)
 		return lessMatcher(smallest1, smallest2)
 	})
 }
 
 func SortGatewayRoutesByPath(routes []*gatewayv1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
-		smallest1 := GetSmallestOrDefaultMatcher(routes[i].Matchers)
-		smallest2 := GetSmallestOrDefaultMatcher(routes[j].Matchers)
+		smallest1 := getSmallestOrDefaultMatcher(routes[i].Matchers)
+		smallest2 := getSmallestOrDefaultMatcher(routes[j].Matchers)
 		return lessMatcher(smallest1, smallest2)
 	})
 }
 
-func GetSmallestOrDefaultMatcher(matchers []*matchers.Matcher) *matchers.Matcher {
+func getSmallestOrDefaultMatcher(matchers []*matchers.Matcher) *matchers.Matcher {
 	smallest := defaults.DefaultMatcher()
 	if len(matchers) > 0 {
 		smallest = matchers[0]
