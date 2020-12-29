@@ -48,10 +48,12 @@ var (
 		return errors.Errorf("virtual host [%s] has conflicting matcher: %v", vh, matcher)
 	}
 	UnorderedRoutesErr = func(vh, rt1Name, rt2Name string, rt1Matcher, rt2Matcher *matchers.Matcher) error {
-		return errors.Errorf("virtual host [%s] has unordered routes; expected route named [%s] with matcher [%v] to come before route named [%s] with matcher [%v]", vh, rt1Name, rt1Matcher, rt2Name, rt2Matcher)
+		return errors.Errorf("virtual host [%s] has unordered routes; expected route named [%s] with matcher "+
+			"[%v] to come before route named [%s] with matcher [%v]", vh, rt1Name, rt1Matcher, rt2Name, rt2Matcher)
 	}
 	UnorderedRegexErr = func(vh, regex string, matcher *matchers.Matcher) error {
-		return errors.Errorf("virtual host [%s] has unordered regex routes, earlier regex [%s] matched later route [%v]", vh, regex, matcher)
+		return errors.Errorf("virtual host [%s] has unordered regex routes, earlier regex [%s] matched later "+
+			"route [%v]", vh, regex, matcher)
 	}
 )
 
