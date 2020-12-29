@@ -463,7 +463,7 @@ type VirtualHostOptions struct {
 	StagedTransformations *transformation.TransformationStages `protobuf:"bytes,17,opt,name=staged_transformations,json=stagedTransformations,proto3" json:"staged_transformations,omitempty"`
 	// Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other
 	// headers to make routing decisions or combine with RBAC for fine-grained access control.
-	// This JWT configuration that includes stages "BeforExtAuth" and "AfterExtAuth". BeforeExtAuth JWT
+	// JWT configuration has stages "BeforExtAuth" and "AfterExtAuth". BeforeExtAuth JWT
 	// validation runs before the external authentication service. This is useful when JWT
 	// is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig).
 	JwtStagedVhostConfig *jwt.JwtStagedVhostExtension `protobuf:"bytes,19,opt,name=jwt_staged_vhost_config,json=jwtStagedVhostConfig,proto3" json:"jwt_staged_vhost_config,omitempty"`
@@ -764,7 +764,7 @@ type RouteOptions struct {
 	StagedTransformations *transformation.TransformationStages `protobuf:"bytes,23,opt,name=staged_transformations,json=stagedTransformations,proto3" json:"staged_transformations,omitempty"`
 	// Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other
 	// headers to make routing decisions or combine with RBAC for fine-grained access control.
-	// This JWT configuration that includes stages "BeforExtAuth" and "AfterExtAuth". BeforeExtAuth JWT
+	// JWT configuration has stages "BeforExtAuth" and "AfterExtAuth". BeforeExtAuth JWT
 	// validation runs before the external authentication service. This is useful when JWT
 	// is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig).
 	JwtStagedRouteConfig *jwt.JwtStagedRouteExtension `protobuf:"bytes,25,opt,name=jwt_staged_route_config,json=jwtStagedRouteConfig,proto3" json:"jwt_staged_route_config,omitempty"`
