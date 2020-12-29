@@ -734,6 +734,12 @@ apis:
   jwt.options.gloo.solo.io.Jwks:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto.sk/#Jwks
     package: jwt.options.gloo.solo.io
+  jwt.options.gloo.solo.io.JwtStagedRouteExtension:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto.sk/#JwtStagedRouteExtension
+    package: jwt.options.gloo.solo.io
+  jwt.options.gloo.solo.io.JwtStagedVhostExtension:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto.sk/#JwtStagedVhostExtension
+    package: jwt.options.gloo.solo.io
   jwt.options.gloo.solo.io.LocalJwks:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto.sk/#LocalJwks
     package: jwt.options.gloo.solo.io

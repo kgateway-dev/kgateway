@@ -478,6 +478,16 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetJwtStagedVhostConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetJwtStagedVhostConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetJwtStagedVhostConfig(), target.GetJwtStagedVhostConfig()) {
+			return false
+		}
+	}
+
 	switch m.RateLimitConfigType.(type) {
 
 	case *VirtualHostOptions_Ratelimit:
@@ -743,6 +753,16 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetStagedTransformations(), target.GetStagedTransformations()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetJwtStagedRouteConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetJwtStagedRouteConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetJwtStagedRouteConfig(), target.GetJwtStagedRouteConfig()) {
 			return false
 		}
 	}
