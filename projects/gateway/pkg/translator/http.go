@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
@@ -47,9 +48,9 @@ var (
 	ConflictingMatcherErr = func(vh string, matcher *matchers.Matcher) error {
 		return errors.Errorf("virtual host [%s] has conflicting matcher: %v", vh, matcher)
 	}
-	UnorderedRoutesErr = func(vh, rt1Name, rt2Name string, rt1Matcher, rt2Matcher *matchers.Matcher) error {
-		return errors.Errorf("virtual host [%s] has unordered routes; expected route named [%s] with matcher "+
-			"[%v] to come before route named [%s] with matcher [%v]", vh, rt1Name, rt1Matcher, rt2Name, rt2Matcher)
+	UnorderedPrefixErr = func(vh, prefix string, matcher *matchers.Matcher) error {
+		return errors.Errorf("virtual host [%s] has unordered prefix routes, earlier prefix [%s] matched later "+
+			"route [%v]", vh, prefix, matcher)
 	}
 	UnorderedRegexErr = func(vh, regex string, matcher *matchers.Matcher) error {
 		return errors.Errorf("virtual host [%s] has unordered regex routes, earlier regex [%s] matched later "+
@@ -274,7 +275,7 @@ func VirtualHostName(vs *v1.VirtualService) string {
 // and are in their final sorted form
 func validateRoutes(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
 	validateAnyDuplicateMatchers(vs, vh, reports)
-	validateRouteOrder(vs, vh, reports)
+	validatePrefixHijacking(vs, vh, reports)
 	validateRegexHijacking(vs, vh, reports)
 }
 
@@ -293,29 +294,37 @@ func validateAnyDuplicateMatchers(vs *v1.VirtualService, vh *gloov1.VirtualHost,
 	}
 }
 
-func validateRouteOrder(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
-	// warn on unordered routes
-	var routesCopy []*gloov1.Route
-	for _, rt := range vh.GetRoutes() {
-		rtCopy := *rt
-		routesCopy = append(routesCopy, &rtCopy)
-	}
+func validatePrefixHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
+	// warn on early prefix matchers that short-circuit later routes
 
-	utils.SortRoutesByPath(routesCopy)
-
-	for idx, rt := range routesCopy {
-		otherRt := vh.GetRoutes()[idx]
-		if !rt.Equal(otherRt) {
-			reports.AddWarning(vs, UnorderedRoutesErr(vh.GetName(), rt.GetName(), otherRt.GetName(),
-				utils.GetSmallestOrDefaultMatcher(rt.Matchers), utils.GetSmallestOrDefaultMatcher(otherRt.Matchers)).Error())
+	var seenPrefixMatchers []string
+	for _, rt := range vh.Routes {
+		for _, matcher := range rt.Matchers {
+			if matcher.GetPrefix() != "" {
+				seenPrefixMatchers = append(seenPrefixMatchers, matcher.GetPrefix())
+			}
+			// make sure the current matcher doesn't match any previously defined prefix.
+			// this code is written with the assumption that the routes are already in their final order;
+			// we are trying to help users avoid misconfiguration and short-circuiting errors
+			path := utils.PathAsString(matcher)
+			for _, prefix := range seenPrefixMatchers {
+				if strings.HasPrefix(path, prefix) {
+					// we opt to warn on conflicting prefixes even if the methods, query parameters, etc on the
+					// "conflicting" matchers do not form a conflict because:
+					//  - updating the prefix to be less permissive is generally preferable to adding/removing methods/query parameter matchers
+					//  - accounting for it would be more difficult to maintain as we add new matcher fields
+					//  - such a conflict would be rare, and likely unintentional anyways
+					reports.AddWarning(vs, UnorderedPrefixErr(vh.GetName(), prefix, matcher).Error())
+				}
+			}
 		}
 	}
 }
 
 func validateRegexHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
-	// warn on early regex matchers that catch-all on later routes
+	// warn on early regex matchers that short-circuit later routes
 
-	seenRegexMatchers := []string{}
+	var seenRegexMatchers []string
 	for _, rt := range vh.Routes {
 		for _, matcher := range rt.Matchers {
 			if matcher.GetRegex() != "" {
