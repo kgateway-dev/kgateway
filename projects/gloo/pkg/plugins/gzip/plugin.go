@@ -68,7 +68,6 @@ func glooToEnvoyCompressor(gzip *v2.Gzip) (*envoycompressor.Compressor, error) {
 		},
 	}
 
-	// Include the data from deprecated gzip v2 fields in the new Compressor field.
 	envoyCompressor.ContentType = gzip.GetContentType()
 	envoyCompressor.DisableOnEtagHeader = gzip.GetDisableOnEtagHeader()
 	envoyCompressor.RemoveAcceptEncodingHeader = gzip.GetRemoveAcceptEncodingHeader()
@@ -116,7 +115,7 @@ func glooToEnvoyGzip(gzip *v2.Gzip) (*envoygzip.Gzip, error) {
 		envoyGzip.WindowBits = &wrappers.UInt32Value{Value: gzip.GetWindowBits().GetValue()}
 	}
 
-	// ChunkSize field isn't used in v2.Gzip, so it should always be nil
+	// ChunkSize field isn't used in compressor.Gzip, so it should always be nil
 
-	return envoyGzip, nil
+	return envoyGzip, envoyGzip.Validate()
 }

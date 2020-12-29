@@ -44,7 +44,6 @@ var _ = Describe("gzip", func() {
 		defaults.HttpPort = services.NextBindPort()
 
 		// run gloo
-		writeNamespace = defaults.GlooSystem
 		ro := &services.RunOptions{
 			NsToWrite: writeNamespace,
 			NsToWatch: []string{"default", writeNamespace},
@@ -84,7 +83,7 @@ var _ = Describe("gzip", func() {
 	})
 
 	checkProxy := func() {
-		// ensure the proxy and virtual service are created
+		// ensure the proxy is created
 		Eventually(func() (*gloov1.Proxy, error) {
 			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 		}, "5s", "0.1s").ShouldNot(BeNil())
@@ -102,11 +101,11 @@ var _ = Describe("gzip", func() {
 		EventuallyWithOffset(1, func() error {
 			var json = []byte(jsonStr)
 			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
-			req.Header.Set("Accept-Encoding", "gzip")
-			req.Header.Set("Content-Type", "application/json")
 			if err != nil {
 				return err
 			}
+			req.Header.Set("Accept-Encoding", "gzip")
+			req.Header.Set("Content-Type", "application/json")
 			res, err := http.DefaultClient.Do(req)
 			if err != nil {
 				return err
@@ -192,7 +191,7 @@ var _ = Describe("gzip", func() {
 
 			// decompressed json from response should equal original
 			reader, err := gzip.NewReader(bytes.NewBuffer([]byte(testReqBody)))
-			reader.Close()
+			defer reader.Close()
 			Expect(err).NotTo(HaveOccurred())
 			body, err := ioutil.ReadAll(reader)
 			Expect(err).NotTo(HaveOccurred())

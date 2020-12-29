@@ -21,7 +21,7 @@ var _ = Describe("Plugin", func() {
 			Options: &v1.HttpListenerOptions{
 				Gzip: &v2.Gzip{
 					MemoryLevel: &wrappers.UInt32Value{
-						Value: 10,
+						Value: 9,
 					},
 					CompressionLevel:    v2.Gzip_CompressionLevel_SPEED,
 					CompressionStrategy: v2.Gzip_HUFFMAN,
@@ -37,10 +37,10 @@ var _ = Describe("Plugin", func() {
 			CompressorLibrary: &v3.TypedExtensionConfig{
 				Name: GzipLibrary,
 				TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
-					MemoryLevel:         &wrappers.UInt32Value{Value: 10.000000},
+					MemoryLevel:         &wrappers.UInt32Value{Value: 9},
 					CompressionLevel:    envoygzip.Gzip_BEST_SPEED,
 					CompressionStrategy: envoygzip.Gzip_HUFFMAN_ONLY,
-					WindowBits:          &wrappers.UInt32Value{Value: 10.000000},
+					WindowBits:          &wrappers.UInt32Value{Value: 10},
 				}),
 			},
 		}
@@ -88,7 +88,7 @@ var _ = Describe("Plugin", func() {
 		}))
 	})
 
-	It("copies the gzip config from the listener to the filter when deprecated fields are present", func() {
+	It("copies the gzip configs from the listener to the compressor filter", func() {
 		By("when all deprecated fields are present")
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
@@ -127,7 +127,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}))
 
-		By("when some deprecated fields are present")
+		By("copies a single gzip config field")
 		filters, err = NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Gzip: &v2.Gzip{
