@@ -2,10 +2,8 @@ package translator_test
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	"github.com/solo-io/gloo/test/debugprint"
 	matchers2 "github.com/solo-io/solo-kit/test/matchers"
 
 	"github.com/golang/protobuf/ptypes/duration"
@@ -988,7 +986,6 @@ var _ = Describe("Translator", func() {
 
 				It("merges the vs and route tables to a single gloov1.VirtualHost", func() {
 					proxy, errs := translator.Translate(context.TODO(), "", ns, snap, snap.Gateways)
-					fmt.Println(debugprint.SprintYaml(proxy)) //TODO(kdorosh) remove this
 					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 					Expect(proxy.Listeners).To(HaveLen(1))
 					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
