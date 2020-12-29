@@ -115,7 +115,7 @@ func glooToEnvoyGzip(gzip *v2.Gzip) (*envoygzip.Gzip, error) {
 		envoyGzip.WindowBits = &wrappers.UInt32Value{Value: gzip.GetWindowBits().GetValue()}
 	}
 
-	// ChunkSize field isn't used in compressor.Gzip, so it should always be nil
+	// ChunkSize field isn't used in gloo v2 gzip so it should always be nil
 
 	return envoyGzip, envoyGzip.Validate()
 }
