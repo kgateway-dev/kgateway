@@ -701,22 +701,6 @@ var _ = Describe("Translator", func() {
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/foo/.*/bar"}},
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}},
 						UnorderedRegexErr("gloo-system.name1", "/foo/.*/bar", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}})),
-					Entry("inverted header matcher hijacks possible method matchers",
-						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"},
-							Headers: []*matchers.HeaderMatcher{
-								{
-									Name:        ":method",
-									Value:       "GET",
-									InvertMatch: true,
-								},
-							},
-						},
-						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"},
-							Methods: []string{"GET", "POST"}, // The POST method here is unreachable
-						},
-						UnorderedPrefixErr("gloo-system.name1", "/foo", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"},
-							Methods: []string{"GET", "POST"},
-						})),
 				)
 			})
 		})

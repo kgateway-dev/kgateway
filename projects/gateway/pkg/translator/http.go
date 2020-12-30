@@ -454,34 +454,6 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 					//   - or early header match is not regex but late header match is regex
 					// in both cases, we can't validate the constraint properly, so we mark
 					// the route as not short-circuited to avoid reporting flawed warnings.
-
-					if !earlyHeaderMatcher.Regex && earlyHeaderMatcher.InvertMatch && laterHeaderMatcher.Regex {
-						// special case to catch the following:
-						//	- matchers:
-						//	  - prefix: /foo
-						//      headers:
-						//	    - name: :method
-						//        value: GET
-						//        invertMatch: true
-						//    directResponseAction:
-						//      status: 405
-						//      body: 'Invalid HTTP Method'
-						//	...
-						//	- matchers:
-						//	  - methods:
-						//	    - GET
-						//	    - POST # this one cannot be reached
-						//      prefix: /foo
-						//    routeAction:
-						//	    ....
-
-						// The assumption built in here is that if the inverse matches the regex, then the regex must
-						// be invalid because it can only match the inverse value
-						re := regexp.MustCompile(laterHeaderMatcher.Value)
-						if re.FindStringIndex(earlyHeaderMatcher.Value) != nil {
-							continue
-						}
-					}
 					return false
 				}
 			}
