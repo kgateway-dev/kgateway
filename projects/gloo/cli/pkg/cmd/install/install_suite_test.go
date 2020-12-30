@@ -1,13 +1,14 @@
 package install_test
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"testing"
 
