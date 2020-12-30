@@ -12,7 +12,7 @@ Header Manipulation is configured via the
 
 This struct can be added to {{< protobuf name="gloo.solo.io.RouteOptions" display="Route Options">}}, {{< protobuf name="gloo.solo.io.VirtualHostOptions" display="Virtual Host Options">}}, and {{< protobuf name="gloo.solo.io.WeightedDestinationOptions" display="Weighted Destination Options" >}}.
 
-The `headerManipulation` struct contains four optional fields `requestHeadersToAdd`, `requestHeadersToRemove`,  `responseHeadersToAdd`, and `responseHeadersToRemove` :
+The `headerManipulation` struct contains four optional fields `requestHeadersToAdd`, `requestHeadersToRemove`,  `responseHeadersToAdd`, and `responseHeadersToRemove`. The key and value for the header can be specified directly in the manifest, or in the case of `requestHeadersToAdd` it can be a reference to a secret of the type `gloo.solo.io/header`.
 
 ```yaml
 headerManipulation:
@@ -31,6 +31,11 @@ headerManipulation:
     # if the header HEADER_NAME is already present,
     # overwrite the value.
     append: false
+  - headerSecretRef:
+      name: SECRET_NAME
+      namespace: SECRET_NAMESPACE
+    # The type of the secret must be gloo.solo.io/header
+    # Each key/value pair in the secret will be added
 
   # remove headers from request
   requestHeadersToRemove:
@@ -74,6 +79,14 @@ headers will be manipulated for all traffic that is sent to the specific destina
 Envoy supports adding dynamic values to request and response headers. The percent symbol (%) is used to 
 delimit variable names. See a list of the dynamic variables supported by Envoy in the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#custom-request-response-headers).
 
+If you would like to use the `headerSecretRef` with `requestHeadersToAdd`, you can create the correct Secret type by using `glooctl`. For example, the following command will create a secret named `my-headers`:
+
+```bash
+glooctl create secret header my-headers --headers x-header-1=one,x-header-2=two
+```
+
+The secret will be created in the same namespace as the Gloo Edge installation by default. Inspecting the secret will show that the type is set to `gloo.solo.io/header`. Each key/value pair in the secret will be added as a header to the request.
+
 ## Example: Manipulating Headers on a Route
 
 
@@ -105,6 +118,9 @@ spec:
           - header:
               key: HEADER_NAME
               value: HEADER_VALUE
+          - headerSecretRef
+              name: my-headers
+              namespace: gloo-system
 status: {}
 {{< /highlight >}}
 
