@@ -31,7 +31,7 @@ var dir string
 var file, values1, values2 string
 
 const (
-	unitTestingTaggedVersion = "v1.6.0-vunit-testing"
+	unitTestingTaggedVersion = "vunit-testing"
 	expectedHelmFilename     = "gloo-unit-testing.tgz"
 )
 
