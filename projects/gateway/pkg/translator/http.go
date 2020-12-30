@@ -343,13 +343,38 @@ func validateRegexHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, repor
 
 // As future matcher APIs get added, this validation will need to be updated as well.
 // If it gets too complex, consider modeling as a constraint satisfaction problem.
+
+// This code is written with the assumption that header/query matchers for each header/query param shows up once
+// If it shows up more than once, then we just use the latest condition. This may cause extra warnings that were
+// unnecessary in rare cases.
 func nonPathEarlyMatcherShortCircuitsLateMatcher(laterMatcher, earlierMatcher *matchers.Matcher) bool {
-	queryParamsShortCircuited := earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlierMatcher)
-	headersShortCircuited := earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlierMatcher)
+
+	// we play a trick here to validate the methods by writing them as header
+	// matchers and just reusing the header matcher logic
+	earlyMatcher := *earlierMatcher
+	if len(earlyMatcher.Methods) > 0 {
+		earlyMatcher.Headers = append(earlyMatcher.Headers, &matchers.HeaderMatcher{
+			Name:  ":method",
+			Value: fmt.Sprintf("(%s)", strings.Join(earlyMatcher.Methods, "|")),
+			Regex: true,
+		})
+	}
+
+	lateMatcher := *laterMatcher
+	if len(lateMatcher.Methods) > 0 {
+		lateMatcher.Headers = append(lateMatcher.Headers, &matchers.HeaderMatcher{
+			Name:  ":method",
+			Value: fmt.Sprintf("(%s)", strings.Join(lateMatcher.Methods, "|")),
+			Regex: true,
+		})
+	}
+
+	queryParamsShortCircuited := earlyQueryParametersShortCircuitedLaterOnes(lateMatcher, earlyMatcher)
+	headersShortCircuited := earlyHeaderMatchersShortCircuitLaterOnes(lateMatcher, earlyMatcher)
 	return queryParamsShortCircuited && headersShortCircuited
 }
 
-func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher *matchers.Matcher) bool {
+func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matchers.Matcher) bool {
 	earlyQpmMap := map[string]*matchers.QueryParameterMatcher{}
 	for _, earlyQpm := range earlyMatcher.QueryParameters {
 		earlyQpmMap[earlyQpm.Name] = earlyQpm
@@ -383,13 +408,18 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher *mat
 // returns true if every header matcher specified on the later matcher is also specified on the earlier matcher,
 // and the earlier header matcher doesn't have any extra header matchers for headers the later one lacks:
 // thus, in terms of header matchers, the later header matcher is unreachable.
-func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher *matchers.Matcher) bool {
+func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matchers.Matcher) bool {
 	earlyHeadersMap := map[string]*matchers.HeaderMatcher{}
 	for _, earlyHeader := range earlyMatcher.Headers {
 		earlyHeadersMap[earlyHeader.Name] = earlyHeader
 	}
 
+	laterHeadersMap := map[string]*matchers.HeaderMatcher{}
 	for _, laterHeader := range laterMatcher.Headers {
+		laterHeadersMap[laterHeader.Name] = laterHeader
+	}
+
+	for _, laterHeader := range laterHeadersMap {
 		earlyHeader, ok := earlyHeadersMap[laterHeader.Name]
 		if !ok {
 			// later header matcher doesn't have an equivalent early one to short-circuit
@@ -406,6 +436,10 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher *matche
 				t := true
 				match = &t
 			}
+		} else if !earlyHeader.Regex && laterHeader.Regex {
+			// if the regex has format (A|B|C) ensure each condition can be reached
+			// TODO(kdorosh) implement me
+			continue
 		} else if !earlyHeader.Regex && !laterHeader.Regex {
 			f := false
 			match = &f
@@ -425,7 +459,6 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher *matche
 			// early header matcher doesn't properly short-circuit the later one
 			return false
 		}
-
 	}
 	// every single header matcher defined on the later matcher was short-circuited
 	return true

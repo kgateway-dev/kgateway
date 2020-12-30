@@ -774,21 +774,14 @@ var _ = Describe("Translator", func() {
 										},
 									},
 								},
-								// second route has a prefix matcher that will be short circuited by the above regex,
-								// which has matching path as well as an inverse requirement on the :method matcher
+								// second route has a prefix matcher that will be short circuited by the above prefix,
+								// which has matching path as well as an impossible to reach POST method matcher
 								{
 									Matchers: []*matchers.Matcher{{
 										PathSpecifier: &matchers.Matcher_Prefix{
 											Prefix: "/foo",
 										},
-										Headers: []*matchers.HeaderMatcher{
-											{
-												Name:        ":method",
-												Value:       "POST",
-												Regex:       false,
-												InvertMatch: false,
-											},
-										},
+										Methods: []string{"GET", "POST"},
 									}},
 									Action: &v1.Route_DirectResponseAction{
 										DirectResponseAction: &gloov1.DirectResponseAction{
