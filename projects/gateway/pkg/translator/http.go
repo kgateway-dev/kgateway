@@ -370,21 +370,16 @@ func nonPathEarlyMatcherShortCircuitsLateMatcher(laterMatcher, earlierMatcher *m
 	return queryParamsShortCircuited && headersShortCircuited
 }
 
-// returns true if the query parameter matcher conditions (or lack thereof) on the early matcher can completetly
-// short-circuit the query parameter matcher conditions of the latter. This can happen if every condition specified
-// on the early matcher can also be satisfied by a condition on the same query parameter in a later matcher.
+// returns true if the query parameter matcher conditions (or lack thereof) on the early matcher can completely
+// short-circuit the query parameter matcher conditions of the latter.
 func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matchers.Matcher) bool {
 	for _, earlyQpm := range earlyMatcher.QueryParameters {
 
-		// for each early QPM, we see if there is a constraint on the later QPM that means we cannot satisfy
-		// both at the same time. If we have an unsatisfiable constraint, then we know the earlier matcher cannot
-		// short-circuit the later one.
-		unsatisfiableConstraint := true
-
+		foundOverlappingCondition := false
 		for _, laterQpm := range laterMatcher.QueryParameters {
 			if earlyQpm.Name == laterQpm.Name {
 				// we found an overlapping condition
-				unsatisfiableConstraint = false
+				foundOverlappingCondition = true
 
 				// let's check if the early condition overlaps the later one
 				if earlyQpm.Regex && !laterQpm.Regex {
@@ -392,27 +387,26 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matc
 					foundIndex := re.FindStringIndex(laterQpm.Value)
 					if foundIndex == nil {
 						// early regex doesn't capture the later matcher
-						unsatisfiableConstraint = true
+						return false
 					}
 				} else if !earlyQpm.Regex && !laterQpm.Regex {
 					if earlyQpm.Value != laterQpm.Value {
-						// early and late both have conditions on query parameter matcher
-						unsatisfiableConstraint = true
+						// early and late have non-compatible conditions on the same query parameter matcher
+						return false
 					}
 				} else {
 					// either:
 					//   - early header match is regex and late header match is regex
 					//   - or early header match is not regex but late header match is regex
-					// in both cases, we can't validate the constraint properly, so we opt
-					// to mark the constraint as unsatisfiable to be safe, and do not mark with warning
-					unsatisfiableConstraint = true
+					// in both cases, we can't validate the constraint properly, so we mark
+					// the route as not short-circuited to avoid reporting flawed warnings.
+					return false
 				}
 			}
 		}
 
-		if unsatisfiableConstraint {
-			// since both constraints can't be satisfied at the same time, we know that the
-			// later route cannot be short-circuited by the earlier one
+		if !foundOverlappingCondition {
+			// by default, this matcher cannot short-circuit because it is more specific
 			return false
 		}
 	}
@@ -422,20 +416,16 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matc
 }
 
 // returns true if the header matcher conditions (or lack thereof) on the early matcher can completely short-circuit
-// the header matcher conditions of the latter. This can happen if every condition specified on the early matcher
-// can also be satisfied by a condition on the same header in a later matcher.
+// the header matcher conditions of the latter.
 func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matchers.Matcher) bool {
 	for _, earlyHeaderMatcher := range earlyMatcher.Headers {
 
-		// for each early header matcher, we see if there is a constraint on the later header matcher that means we
-		// cannot satisfy both at the same time. If we have an unsatisfiable constraint, then we know the earlier
-		// matcher cannot short-circuit the later one.
-		unsatisfiableConstraint := true
+		foundOverlappingCondition := false
 
 		for _, laterHeaderMatcher := range laterMatcher.Headers {
 			if earlyHeaderMatcher.Name == laterHeaderMatcher.Name {
 				// we found an overlapping condition
-				unsatisfiableConstraint = false
+				foundOverlappingCondition = true
 
 				// let's check if the early condition overlaps the later one
 				if earlyHeaderMatcher.Regex && !laterHeaderMatcher.Regex {
@@ -443,25 +433,25 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 					foundIndex := re.FindStringIndex(laterHeaderMatcher.Value)
 					if foundIndex == nil && !earlyHeaderMatcher.InvertMatch {
 						// early regex doesn't capture the later matcher
-						unsatisfiableConstraint = true
+						return false
 					} else if foundIndex != nil && earlyHeaderMatcher.InvertMatch {
 						// early regex doesn't capture the later matcher
-						unsatisfiableConstraint = true
+						return false
 					}
 				} else if !earlyHeaderMatcher.Regex && !laterHeaderMatcher.Regex {
 					if earlyHeaderMatcher.Value != laterHeaderMatcher.Value && !earlyHeaderMatcher.InvertMatch {
-						// early and late both have conditions on header matcher
-						unsatisfiableConstraint = true
+						// early and late have non-compatible conditions on the same header matcher
+						return false
 					} else if earlyHeaderMatcher.Value == laterHeaderMatcher.Value && earlyHeaderMatcher.InvertMatch {
-						// early and late both have conditions on header matcher
-						unsatisfiableConstraint = true
+						// early and late have non-compatible conditions on the same header matcher
+						return false
 					}
 				} else {
 					// either:
 					//   - early header match is regex and late header match is regex
 					//   - or early header match is not regex but late header match is regex
-					// in both cases, we can't validate the constraint properly, so we opt
-					// to mark the constraint as unsatisfiable to be safe, and do not mark with warning
+					// in both cases, we can't validate the constraint properly, so we mark
+					// the route as not short-circuited to avoid reporting flawed warnings.
 
 					if !earlyHeaderMatcher.Regex && earlyHeaderMatcher.InvertMatch && laterHeaderMatcher.Regex {
 						// special case to catch the following:
@@ -490,14 +480,13 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 							continue
 						}
 					}
-					unsatisfiableConstraint = true
+					return false
 				}
 			}
 		}
 
-		if unsatisfiableConstraint {
-			// since both constraints can't be satisfied at the same time, we know that the
-			// later route cannot be short-circuited by the earlier one
+		if !foundOverlappingCondition {
+			// by default, this matcher cannot short-circuit because it is more specific
 			return false
 		}
 	}
