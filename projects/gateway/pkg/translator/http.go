@@ -370,9 +370,9 @@ func nonPathEarlyMatcherShortCircuitsLateMatcher(laterMatcher, earlierMatcher *m
 	return queryParamsShortCircuited && headersShortCircuited
 }
 
-// returns true if the query parameter matcher conditions (or lack thereof) on the early matcher can short-circuit the
-// query parameter matcher conditions of the latter. This can happen if every condition specified on the early matcher
-// can also be satisfied by a condition on the same query parameter in a later matcher.
+// returns true if the query parameter matcher conditions (or lack thereof) on the early matcher can completetly
+// short-circuit the query parameter matcher conditions of the latter. This can happen if every condition specified
+// on the early matcher can also be satisfied by a condition on the same query parameter in a later matcher.
 func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matchers.Matcher) bool {
 	for _, earlyQpm := range earlyMatcher.QueryParameters {
 
@@ -385,7 +385,7 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matc
 			if earlyQpm.Name == laterQpm.Name {
 				// we found an overlapping condition
 
-				// let's check if the early one is a subset of the later one
+				// let's check if the early condition overlaps the later one
 				if earlyQpm.Regex && !laterQpm.Regex {
 					re := regexp.MustCompile(earlyQpm.Value)
 					foundIndex := re.FindStringIndex(laterQpm.Value)
@@ -399,7 +399,12 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matc
 						unsatisfiableConstraint = true
 					}
 				} else {
-					// TODO(kdorosh) what to do here?
+					// either:
+					//   - early header match is regex and late header match is regex
+					//   - or early header match is not regex but late header match is regex
+					// in both cases, we can't validate the constraint properly, so we opt
+					// to mark the constraint as unsatisfiable to be safe, and do not mark with warning
+					unsatisfiableConstraint = true
 				}
 			}
 		}
@@ -415,8 +420,8 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matc
 	return true
 }
 
-// returns true if the header matcher conditions (or lack thereof) on the early matcher can short-circuit the
-// header matcher conditions of the latter. This can happen if every condition specified on the early matcher
+// returns true if the header matcher conditions (or lack thereof) on the early matcher can completely short-circuit
+// the header matcher conditions of the latter. This can happen if every condition specified on the early matcher
 // can also be satisfied by a condition on the same header in a later matcher.
 func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matchers.Matcher) bool {
 	for _, earlyHeaderMatcher := range earlyMatcher.Headers {
@@ -430,7 +435,7 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 			if earlyHeaderMatcher.Name == laterHeaderMatcher.Name {
 				// we found an overlapping condition
 
-				// let's check if the early one is a subset of the later one
+				// let's check if the early condition overlaps the later one
 				if earlyHeaderMatcher.Regex && !laterHeaderMatcher.Regex {
 					re := regexp.MustCompile(earlyHeaderMatcher.Value)
 					foundIndex := re.FindStringIndex(laterHeaderMatcher.Value)
@@ -450,16 +455,41 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 						unsatisfiableConstraint = true
 					}
 				} else {
-					// TODO(kdorosh) what to do here?
-					// TODO(kdorosh) how is methods matching working?
-					// TODO(kdorosh) add tests for multi conditions
-				}
+					// either:
+					//   - early header match is regex and late header match is regex
+					//   - or early header match is not regex but late header match is regex
+					// in both cases, we can't validate the constraint properly, so we opt
+					// to mark the constraint as unsatisfiable to be safe, and do not mark with warning
 
-				//else {
-				//	// unsure how to validate here, as both early and late header matcher is regex
-				//	// opt towards
-				//	unsatisfiableConstraint = true
-				//}
+					if !earlyHeaderMatcher.Regex && earlyHeaderMatcher.InvertMatch && laterHeaderMatcher.Regex {
+						// special case to catch the following:
+						//	- matchers:
+						//	  - prefix: /foo
+						//    headers:
+						//	  - name: :method
+						//      value: GET
+						//      invertMatch: true
+						//    directResponseAction:
+						//    status: 405
+						//    body: 'Invalid HTTP Method'
+						//	...
+						//	- matchers:
+						//	  - methods:
+						//	    - GET
+						//	    - POST # this one cannot be reached
+						//    prefix: /foo
+						//      routeAction:
+						//	      ....
+
+						// The assumption built in here is that if the inverse matches the regex, then the regex must
+						// be invalid because it can only match the inverse value
+						re := regexp.MustCompile(laterHeaderMatcher.Value)
+						if re.FindStringIndex(earlyHeaderMatcher.Value) != nil {
+							continue
+						}
+					}
+					unsatisfiableConstraint = true
+				}
 			}
 		}
 
