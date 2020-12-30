@@ -39,7 +39,7 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 	discoverUpstreams := func() {
 		var serviceList []*kubev1.Service
 		for _, ns := range watchNamespaces {
-			
+
 			lister := p.kubeCoreCache.NamespacedServiceLister(ns)
 			if lister == nil {
 				errs <- errors.Errorf("Kubernetes upstream discovery: Tried to discover upstreams in invalid namespace \"%s\".", ns)
