@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	. "github.com/onsi/ginkgo/extensions/table"
+
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/hashicorp/go-multierror"
@@ -591,140 +593,29 @@ var _ = Describe("Translator", func() {
 				})
 			})
 
-			Context("validate matchers", func() {
+			Context("validate matcher short-circuiting warnings", func() {
 
 				BeforeEach(func() {
 					translator = NewTranslator([]ListenerFactory{&HttpTranslator{WarnOnRouteShortCircuiting: true}, &TcpTranslator{}}, Opts{})
 				})
 
-				It("should warn when a virtual host has overlapping matchers", func() {
-
+				DescribeTable("warns on route short-circuiting", func(earlyMatcher, lateMatcher *matchers.Matcher, expectedErr error) {
 					vs := &v1.VirtualService{
 						Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
 						VirtualHost: &v1.VirtualHost{
 							Domains: []string{"d1.com"},
 							Routes: []*v1.Route{
 								{
-									Matchers: []*matchers.Matcher{{
-										PathSpecifier: &matchers.Matcher_Prefix{
-											Prefix: "/1",
-										},
-									}},
+									Matchers: []*matchers.Matcher{earlyMatcher},
 									Action: &v1.Route_DirectResponseAction{
 										DirectResponseAction: &gloov1.DirectResponseAction{
 											Body: "d1",
 										},
 									},
 								},
-								// second route has the same matcher but different route destination.
-								// such a configuration is almost certainly an error, provide warning to the user.
+								// second route will be short-circuited by the first one
 								{
-									Matchers: []*matchers.Matcher{{
-										PathSpecifier: &matchers.Matcher_Prefix{
-											Prefix: "/1",
-										},
-									}},
-									Action: &v1.Route_DirectResponseAction{
-										DirectResponseAction: &gloov1.DirectResponseAction{
-											Body: "d2",
-										},
-									},
-								},
-							},
-						},
-					}
-
-					Expect(vs.VirtualHost.Routes[0].Matchers).To(Equal(vs.VirtualHost.Routes[1].Matchers))
-					snap.VirtualServices = v1.VirtualServiceList{vs}
-
-					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
-					errs := reports.ValidateStrict()
-					Expect(errs).To(HaveOccurred())
-
-					multiErr, ok := errs.(*multierror.Error)
-					Expect(ok).To(BeTrue())
-
-					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(ConflictingMatcherErr("gloo-system.name1", vs.VirtualHost.Routes[0].Matchers[0]).Error())))
-				})
-
-				It("should warn when a virtual host has unordered prefix matchers (i.e., prefix 'hijacking' earlier routes)", func() {
-
-					vs := &v1.VirtualService{
-						Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
-						VirtualHost: &v1.VirtualHost{
-							Domains: []string{"d1.com"},
-							Routes: []*v1.Route{
-								{
-									Matchers: []*matchers.Matcher{{
-										PathSpecifier: &matchers.Matcher_Prefix{
-											Prefix: "/1",
-										},
-									}},
-									Action: &v1.Route_DirectResponseAction{
-										DirectResponseAction: &gloov1.DirectResponseAction{
-											Body: "d1",
-										},
-									},
-									Name: "rt1",
-								},
-								// second route has a similar, more-specific matcher and a different route destination.
-								// such a configuration is almost certainly an error (this route is always
-								// short-circuited by the one above), provide warning to the user.
-								{
-									Matchers: []*matchers.Matcher{{
-										PathSpecifier: &matchers.Matcher_Prefix{
-											Prefix: "/1/2",
-										},
-									}},
-									Action: &v1.Route_DirectResponseAction{
-										DirectResponseAction: &gloov1.DirectResponseAction{
-											Body: "d2",
-										},
-									},
-									Name: "rt2",
-								},
-							},
-						},
-					}
-
-					snap.VirtualServices = v1.VirtualServiceList{vs}
-
-					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
-					errs := reports.ValidateStrict()
-					Expect(errs).To(HaveOccurred())
-
-					multiErr, ok := errs.(*multierror.Error)
-					Expect(ok).To(BeTrue())
-
-					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(UnorderedPrefixErr("gloo-system.name1", "/1", vs.VirtualHost.Routes[1].Matchers[0]).Error())))
-				})
-
-				It("should warn when a virtual host has unordered regex matchers (i.e., regex 'hijacking' earlier routes)", func() {
-
-					vs := &v1.VirtualService{
-						Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
-						VirtualHost: &v1.VirtualHost{
-							Domains: []string{"d1.com"},
-							Routes: []*v1.Route{
-								{
-									Matchers: []*matchers.Matcher{{
-										PathSpecifier: &matchers.Matcher_Regex{
-											Regex: "/foo/.*/bar",
-										},
-									}},
-									Action: &v1.Route_DirectResponseAction{
-										DirectResponseAction: &gloov1.DirectResponseAction{
-											Body: "d1",
-										},
-									},
-								},
-								// second route has a prefix matcher that will be short circuited by the above regex
-								{
-									Matchers: []*matchers.Matcher{{
-										PathSpecifier: &matchers.Matcher_Prefix{
-											Prefix: "/foo/user/info/bar",
-										},
-									}},
+									Matchers: []*matchers.Matcher{lateMatcher},
 									Action: &v1.Route_DirectResponseAction{
 										DirectResponseAction: &gloov1.DirectResponseAction{
 											Body: "d2",
@@ -744,67 +635,37 @@ var _ = Describe("Translator", func() {
 					multiErr, ok := errs.(*multierror.Error)
 					Expect(ok).To(BeTrue())
 
-					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(UnorderedRegexErr("gloo-system.name1", "/foo/.*/bar", vs.VirtualHost.Routes[1].Matchers[0]).Error())))
-				})
-
-				It("should warn when a virtual host has early inverted header matcher that short-circuits later ones", func() {
-
-					vs := &v1.VirtualService{
-						Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
-						VirtualHost: &v1.VirtualHost{
-							Domains: []string{"d1.com"},
-							Routes: []*v1.Route{
+					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(expectedErr.Error())))
+				},
+					Entry("duplicate matchers",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}},
+						ConflictingMatcherErr("gloo-system.name1", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}})),
+					Entry("prefix hijacking",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1/2"}},
+						UnorderedPrefixErr("gloo-system.name1", "/1", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1/2"}})),
+					Entry("regex hijacking",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/foo/.*/bar"}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}},
+						UnorderedRegexErr("gloo-system.name1", "/foo/.*/bar", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}})),
+					Entry("inverted header matcher hijacks possible method matchers",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"},
+							Headers: []*matchers.HeaderMatcher{
 								{
-									Matchers: []*matchers.Matcher{{
-										PathSpecifier: &matchers.Matcher_Prefix{
-											Prefix: "/foo",
-										},
-										Headers: []*matchers.HeaderMatcher{
-											{
-												Name:        ":method",
-												Value:       "GET",
-												Regex:       false,
-												InvertMatch: true,
-											},
-										},
-									}},
-									Action: &v1.Route_DirectResponseAction{
-										DirectResponseAction: &gloov1.DirectResponseAction{
-											Body: "d1",
-										},
-									},
-								},
-								// second route has a prefix matcher that will be short circuited by the above prefix,
-								// which has matching path as well as an impossible to reach POST method matcher
-								{
-									Matchers: []*matchers.Matcher{{
-										PathSpecifier: &matchers.Matcher_Prefix{
-											Prefix: "/foo",
-										},
-										Methods: []string{"GET", "POST"},
-									}},
-									Action: &v1.Route_DirectResponseAction{
-										DirectResponseAction: &gloov1.DirectResponseAction{
-											Body: "d2",
-										},
-									},
+									Name:        ":method",
+									Value:       "GET",
+									InvertMatch: true,
 								},
 							},
 						},
-					}
-
-					snap.VirtualServices = v1.VirtualServiceList{vs}
-
-					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
-					errs := reports.ValidateStrict()
-					Expect(errs).To(HaveOccurred())
-
-					multiErr, ok := errs.(*multierror.Error)
-					Expect(ok).To(BeTrue())
-
-					//TODO(kdorosh) add a new error type here and improve readability
-					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(UnorderedPrefixErr("gloo-system.name1", "/foo", vs.VirtualHost.Routes[1].Matchers[0]).Error())))
-				})
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"},
+							Methods: []string{"GET", "POST"}, // The POST method here is unreachable
+						},
+						UnorderedPrefixErr("gloo-system.name1", "/foo", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"},
+							Methods: []string{"GET", "POST"}, // The POST method here is unreachable
+						})),
+				)
 			})
 		})
 
