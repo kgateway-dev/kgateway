@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4006
+    description: >
+      Kubernetes plugin reports error when encountering upstream with nonexistant ServiceNamespace 
+      instead of crashing.
+
+
