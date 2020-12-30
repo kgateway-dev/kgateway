@@ -379,11 +379,12 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matc
 		// for each early QPM, we see if there is a constraint on the later QPM that means we cannot satisfy
 		// both at the same time. If we have an unsatisfiable constraint, then we know the earlier matcher cannot
 		// short-circuit the later one.
-		unsatisfiableConstraint := len(laterMatcher.QueryParameters) == 0
+		unsatisfiableConstraint := true
 
 		for _, laterQpm := range laterMatcher.QueryParameters {
 			if earlyQpm.Name == laterQpm.Name {
 				// we found an overlapping condition
+				unsatisfiableConstraint = false
 
 				// let's check if the early condition overlaps the later one
 				if earlyQpm.Regex && !laterQpm.Regex {
