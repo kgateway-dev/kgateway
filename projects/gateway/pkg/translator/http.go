@@ -343,10 +343,6 @@ func validateRegexHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, repor
 
 // As future matcher APIs get added, this validation will need to be updated as well.
 // If it gets too complex, consider modeling as a constraint satisfaction problem.
-
-// This code is written with the assumption that header/query matchers for each header/query param shows up once
-// If it shows up more than once, then we just use the latest condition. This may cause extra warnings that were
-// unnecessary in rare cases.
 func nonPathEarlyMatcherShortCircuitsLateMatcher(laterMatcher, earlierMatcher *matchers.Matcher) bool {
 
 	// we play a trick here to validate the methods by writing them as header
@@ -402,6 +398,8 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matc
 						// early and late both have conditions on query parameter matcher
 						unsatisfiableConstraint = true
 					}
+				} else {
+					// TODO(kdorosh) what to do here?
 				}
 			}
 		}
@@ -417,68 +415,57 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matc
 	return true
 }
 
-// returns true if every header matcher specified on the later matcher is also specified on the earlier matcher,
-// and the earlier header matcher doesn't have any extra header matchers for headers the later one lacks:
-// thus, in terms of header matchers, the later header matcher is unreachable.
+// returns true if the header matcher conditions (or lack thereof) on the early matcher can short-circuit the
+// header matcher conditions of the latter. This can happen if every condition specified on the early matcher
+// can also be satisfied by a condition on the same header in a later matcher.
 func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matchers.Matcher) bool {
-	earlyHeadersMap := map[string]*matchers.HeaderMatcher{}
-	earlyHeadersSeen := map[string]bool{}
-	for _, earlyHeader := range earlyMatcher.Headers {
-		earlyHeadersMap[earlyHeader.Name] = earlyHeader
-		earlyHeadersSeen[earlyHeader.Name] = false
-	}
+	for _, earlyHeaderMatcher := range earlyMatcher.Headers {
 
-	laterHeadersMap := map[string]*matchers.HeaderMatcher{}
-	for _, laterHeader := range laterMatcher.Headers {
-		laterHeadersMap[laterHeader.Name] = laterHeader
-	}
+		// for each early header matcher, we see if there is a constraint on the later header matcher that means we
+		// cannot satisfy both at the same time. If we have an unsatisfiable constraint, then we know the earlier
+		// matcher cannot short-circuit the later one.
+		unsatisfiableConstraint := len(laterMatcher.Headers) == 0
 
-	for _, laterHeader := range laterHeadersMap {
-		earlyHeader, ok := earlyHeadersMap[laterHeader.Name]
-		if !ok {
-			// later header matcher doesn't have an equivalent early one to short-circuit
-			continue
-		}
-		earlyHeadersSeen[earlyHeader.Name] = true
+		for _, laterHeaderMatcher := range laterMatcher.Headers {
+			if earlyHeaderMatcher.Name == laterHeaderMatcher.Name {
+				// we found an overlapping condition
 
-		var match *bool
-		if earlyHeader.Regex && !laterHeader.Regex {
-			f := false
-			match = &f
-			re := regexp.MustCompile(earlyHeader.Value)
-			foundIndex := re.FindStringIndex(laterHeader.Value)
-			if foundIndex != nil {
-				t := true
-				match = &t
+				// let's check if the early one is a subset of the later one
+				if earlyHeaderMatcher.Regex && !laterHeaderMatcher.Regex {
+					re := regexp.MustCompile(earlyHeaderMatcher.Value)
+					foundIndex := re.FindStringIndex(laterHeaderMatcher.Value)
+					if foundIndex == nil && !earlyHeaderMatcher.InvertMatch {
+						// early regex doesn't capture the later matcher
+						unsatisfiableConstraint = true
+					} else if foundIndex != nil && earlyHeaderMatcher.InvertMatch {
+						// early regex doesn't capture the later matcher
+						unsatisfiableConstraint = true
+					}
+				} else if !earlyHeaderMatcher.Regex && !laterHeaderMatcher.Regex {
+					if earlyHeaderMatcher.Value != laterHeaderMatcher.Value && !earlyHeaderMatcher.InvertMatch {
+						// early and late both have conditions on header matcher
+						unsatisfiableConstraint = true
+					} else if earlyHeaderMatcher.Value == laterHeaderMatcher.Value && earlyHeaderMatcher.InvertMatch {
+						// early and late both have conditions on header matcher
+						unsatisfiableConstraint = true
+					}
+				} else {
+					// TODO(kdorosh) what to do here?
+					// TODO(kdorosh) how is methods matching working?
+					// TODO(kdorosh) add tests for multi conditions
+				}
+
+				//else {
+				//	// unsure how to validate here, as both early and late header matcher is regex
+				//	// opt towards
+				//	unsatisfiableConstraint = true
+				//}
 			}
-		} else if !earlyHeader.Regex && laterHeader.Regex {
-			// if the regex has format (A|B|C) ensure each condition can be reached
-			// TODO(kdorosh) implement me
-			continue
-		} else if !earlyHeader.Regex && !laterHeader.Regex {
-			f := false
-			match = &f
-			if earlyHeader.Value == laterHeader.Value {
-				t := true
-				match = &t
-			}
-		}
-		if match != nil && earlyHeader.InvertMatch {
-			// if we evaluated the header for match (non nil), then invert the match result
-			tmp := *match
-			swap := !tmp
-			match = &swap
 		}
 
-		if match != nil && !*match {
-			// early header matcher doesn't properly short-circuit the later one
-			return false
-		}
-	}
-
-	for _, seen := range earlyHeadersSeen {
-		if seen == false {
-			// early matcher had header condition more specific than the latter, doesn't short-circuit
+		if unsatisfiableConstraint {
+			// since both constraints can't be satisfied at the same time, we know that the
+			// later route cannot be short-circuited by the earlier one
 			return false
 		}
 	}
