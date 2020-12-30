@@ -350,7 +350,33 @@ func nonPathEarlyMatcherShortCircuitsLateMatcher(laterMatcher, earlierMatcher *m
 }
 
 func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher *matchers.Matcher) bool {
-	// TODO(kdorosh) implement me
+	earlyQpmMap := map[string]*matchers.QueryParameterMatcher{}
+	for _, earlyQpm := range earlyMatcher.QueryParameters {
+		earlyQpmMap[earlyQpm.Name] = earlyQpm
+	}
+
+	for _, laterQpm := range laterMatcher.QueryParameters {
+		earlyQpm, ok := earlyQpmMap[laterQpm.Name]
+		if !ok {
+			// later qpm matcher doesn't have an equivalent early one to short-circuit
+			return false
+		}
+
+		if earlyQpm.Regex && !laterQpm.Regex {
+			re := regexp.MustCompile(earlyQpm.Value)
+			foundIndex := re.FindStringIndex(laterQpm.Value)
+			if foundIndex == nil {
+				// early qpm matcher doesn't properly short-circuit the later one
+				return false
+			}
+		} else if !earlyQpm.Regex && !laterQpm.Regex {
+			if earlyQpm.Value != laterQpm.Value {
+				// early qpm matcher doesn't properly short-circuit the later one
+				return false
+			}
+		}
+	}
+	// every single qpm matcher defined on the later matcher was short-circuited
 	return true
 }
 
