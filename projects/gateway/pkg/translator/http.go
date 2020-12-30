@@ -390,7 +390,8 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matc
 						return false
 					}
 				} else if !earlyQpm.Regex && !laterQpm.Regex {
-					if earlyQpm.Value != laterQpm.Value {
+					matches := earlyQpm.Value == laterQpm.Value || earlyQpm.Value == ""
+					if !matches {
 						// early and late have non-compatible conditions on the same query parameter matcher
 						return false
 					}
@@ -440,10 +441,11 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 						return false
 					}
 				} else if !earlyHeaderMatcher.Regex && !laterHeaderMatcher.Regex {
-					if earlyHeaderMatcher.Value != laterHeaderMatcher.Value && !earlyHeaderMatcher.InvertMatch {
+					matches := earlyHeaderMatcher.Value == laterHeaderMatcher.Value || earlyHeaderMatcher.Value == ""
+					if !matches && !earlyHeaderMatcher.InvertMatch {
 						// early and late have non-compatible conditions on the same header matcher
 						return false
-					} else if earlyHeaderMatcher.Value == laterHeaderMatcher.Value && earlyHeaderMatcher.InvertMatch {
+					} else if matches && earlyHeaderMatcher.InvertMatch {
 						// early and late have compatible conditions on the same header matcher, but we invert
 						// the result. so there are conflicting conditions here on the same matcher
 						return false

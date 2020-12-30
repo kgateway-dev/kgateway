@@ -701,6 +701,14 @@ var _ = Describe("Translator", func() {
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/foo/.*/bar"}},
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}},
 						UnorderedRegexErr("gloo-system.name1", "/foo/.*/bar", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}})),
+					Entry("regex hijacking - with match all header matcher",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/foo/.*/bar"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: ""}}}, // empty value will match anything
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: "bar"}}},
+						UnorderedRegexErr("gloo-system.name1", "/foo/.*/bar", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: "bar"}}})),
+					Entry("regex hijacking - with match all query parameter matcher",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/foo/.*/bar"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: ""}}}, // empty value will match anything
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}}},
+						UnorderedRegexErr("gloo-system.name1", "/foo/.*/bar", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}}})),
 				)
 			})
 		})
