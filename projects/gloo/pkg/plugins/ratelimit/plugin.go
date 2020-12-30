@@ -21,6 +21,7 @@ const (
 	requestType        = "both"
 
 	CustomStage = 1
+ 	errEnterpriseOnly = "Could not load ratelimit plugin - this is an Enterprise feature"
 )
 
 var (

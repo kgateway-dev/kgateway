@@ -4,6 +4,7 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -13,6 +14,7 @@ import (
 const (
 	DefaultAuthHeader = "x-user-id"
 	HttpServerUri     = "http://not-used.example.com/"
+	errEnterpriseOnly = "Could not load extauth plugin - this is an Enterprise feature"
 )
 
 // Note that although this configures the "envoy.filters.http.ext_authz" filter, we still want the ordering to be within the
@@ -56,7 +58,7 @@ func (p *Plugin) ProcessVirtualHost(
 
 	// Ext_authz filter is not configured on listener, do nothing
 	if !p.isExtAuthzFilterConfigured(params.Listener.GetHttpListener(), params.Snapshot.Upstreams) {
-		return nil
+		return eris.New(errEnterpriseOnly)
 	}
 
 	// If extauth is explicitly disabled on this virtual host, disable it
@@ -90,7 +92,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 	// Ext_authz filter is not configured on listener, do nothing
 	if !p.isExtAuthzFilterConfigured(params.Listener.GetHttpListener(), params.Snapshot.Upstreams) {
-		return nil
+		return eris.New(errEnterpriseOnly)
 	}
 
 	// Extauth is explicitly disabled, disable it on route
@@ -102,7 +104,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 	// No custom config, do nothing
 	if customAuthConfig == nil {
-		return nil
+		return eris.New(errEnterpriseOnly)
 	}
 
 	config := &envoyauth.ExtAuthzPerRoute{
@@ -140,7 +142,7 @@ func (p *Plugin) ProcessWeightedDestination(
 
 	// No custom config, do nothing
 	if customAuthConfig == nil {
-		return nil
+		return eris.New(errEnterpriseOnly)
 	}
 
 	config := &envoyauth.ExtAuthzPerRoute{
