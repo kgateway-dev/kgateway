@@ -17,13 +17,13 @@ var _ = Describe("sanitize cluster header plugin", func() {
 		p = NewPlugin()
 	})
 
-	It("should not add filter if wasm config is nil", func() {
+	It("should not add filter if sanitize cluster header config is nil", func() {
 		f, err := p.HttpFilters(plugins.Params{}, nil)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(f).To(BeNil())
 	})
 
-	It("will err if wasm is configured", func() {
+	It("will err if sanitize cluster header is configured", func() {
 		hl := &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				SanitizeClusterHeader: &wrappers.BoolValue{},
