@@ -359,7 +359,7 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher *mat
 		earlyQpm, ok := earlyQpmMap[laterQpm.Name]
 		if !ok {
 			// later qpm matcher doesn't have an equivalent early one to short-circuit
-			return false
+			continue
 		}
 
 		if earlyQpm.Regex && !laterQpm.Regex {
@@ -393,7 +393,7 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher *matche
 		earlyHeader, ok := earlyHeadersMap[laterHeader.Name]
 		if !ok {
 			// later header matcher doesn't have an equivalent early one to short-circuit
-			return false
+			continue
 		}
 
 		var match *bool
