@@ -523,8 +523,6 @@ message GatewayOptions {
         //   - prefix routes that make later routes unreachable
         //   - regex routes that make later routes unreachable
         //   - duplicate matchers
-        //   - earlier catch-all / assertion-style routes that prevent later routes from being hit (e.g, an earlier
-        //     route asserting requests have the method GET for `/`, then a later route allowing POSTs to `/`)
         google.protobuf.BoolValue warn_route_short_circuiting = 8;
     }
 

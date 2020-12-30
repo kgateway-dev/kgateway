@@ -1990,8 +1990,6 @@ type GatewayOptions_ValidationOptions struct {
 	//   - prefix routes that make later routes unreachable
 	//   - regex routes that make later routes unreachable
 	//   - duplicate matchers
-	//   - earlier catch-all / assertion-style routes that prevent later routes from being hit (e.g, an earlier
-	//     route asserting requests have the method GET for `/`, then a later route allowing POSTs to `/`)
 	WarnRouteShortCircuiting *wrappers.BoolValue `protobuf:"bytes,8,opt,name=warn_route_short_circuiting,json=warnRouteShortCircuiting,proto3" json:"warn_route_short_circuiting,omitempty"`
 }
 
