@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/solo-io/go-utils/contextutils"
+	errors "github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -38,7 +39,14 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 	discoverUpstreams := func() {
 		var serviceList []*kubev1.Service
 		for _, ns := range watchNamespaces {
-			services, err := p.kubeCoreCache.NamespacedServiceLister(ns).List(labels.SelectorFromSet(opts.Selector))
+			
+			lister := p.kubeCoreCache.NamespacedServiceLister(ns)
+			if lister == nil {
+				errs <- errors.Errorf("Kubernetes upstream discovery: Tried to discover upstreams in invalid namespace \"%s\".", ns)
+				return
+			}
+
+			services, err := lister.List(labels.SelectorFromSet(opts.Selector))
 			if err != nil {
 				errs <- err
 				return
