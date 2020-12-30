@@ -172,7 +172,7 @@ func (u *uninstaller) deleteGlooCrds(crdNames []string) {
 		args = append(args, crdName)
 	}
 	if err := u.kubeCli.Kubectl(nil, args...); err != nil {
-		_, _ = fmt.Fprintf(u.output, "Unable to delete all Gloo CRDs. Continuing...\n")
+		_, _ = fmt.Fprintf(u.output, "Unable to delete Gloo CRDs. Continuing...\n")
 	}
 }
 
