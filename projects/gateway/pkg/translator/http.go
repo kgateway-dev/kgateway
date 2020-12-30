@@ -49,12 +49,12 @@ var (
 		return errors.Errorf("virtual host [%s] has conflicting matcher: %v", vh, matcher)
 	}
 	UnorderedPrefixErr = func(vh, prefix string, matcher *matchers.Matcher) error {
-		return errors.Errorf("virtual host [%s] has unordered prefix routes, earlier prefix [%s] matched later "+
-			"route [%v]", vh, prefix, matcher)
+		return errors.Errorf("virtual host [%s] has unordered prefix routes, earlier prefix [%s] short-circuited "+
+			"later route [%v]", vh, prefix, matcher)
 	}
 	UnorderedRegexErr = func(vh, regex string, matcher *matchers.Matcher) error {
-		return errors.Errorf("virtual host [%s] has unordered regex routes, earlier regex [%s] matched later "+
-			"route [%v]", vh, regex, matcher)
+		return errors.Errorf("virtual host [%s] has unordered regex routes, earlier regex [%s] short-circuited "+
+			"later route [%v]", vh, regex, matcher)
 	}
 )
 
@@ -297,25 +297,20 @@ func validateAnyDuplicateMatchers(vs *v1.VirtualService, vh *gloov1.VirtualHost,
 func validatePrefixHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
 	// warn on early prefix matchers that short-circuit later routes
 
-	var seenPrefixMatchers []string
+	var seenPrefixMatchers []*matchers.Matcher
 	for _, rt := range vh.Routes {
 		for _, matcher := range rt.Matchers {
-			if matcher.GetPrefix() != "" {
-				seenPrefixMatchers = append(seenPrefixMatchers, matcher.GetPrefix())
-			}
 			// make sure the current matcher doesn't match any previously defined prefix.
 			// this code is written with the assumption that the routes are already in their final order;
 			// we are trying to help users avoid misconfiguration and short-circuiting errors
 			path := utils.PathAsString(matcher)
 			for _, prefix := range seenPrefixMatchers {
-				if strings.HasPrefix(path, prefix) {
-					// we opt to warn on conflicting prefixes even if the methods, query parameters, etc on the
-					// "conflicting" matchers do not form a conflict because:
-					//  - updating the prefix to be less permissive is generally preferable to adding/removing methods/query parameter matchers
-					//  - accounting for it would be more difficult to maintain as we add new matcher fields
-					//  - such a conflict would be rare, and likely unintentional anyways
-					reports.AddWarning(vs, UnorderedPrefixErr(vh.GetName(), prefix, matcher).Error())
+				if strings.HasPrefix(path, prefix.GetPrefix()) && nonPathEarlyMatcherShortCircuitsLateMatcher(matcher, prefix) {
+					reports.AddWarning(vs, UnorderedPrefixErr(vh.GetName(), prefix.GetPrefix(), matcher).Error())
 				}
+			}
+			if matcher.GetPrefix() != "" {
+				seenPrefixMatchers = append(seenPrefixMatchers, matcher)
 			}
 		}
 	}
@@ -324,29 +319,88 @@ func validatePrefixHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, repo
 func validateRegexHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
 	// warn on early regex matchers that short-circuit later routes
 
-	var seenRegexMatchers []string
+	var seenRegexMatchers []*matchers.Matcher
 	for _, rt := range vh.Routes {
 		for _, matcher := range rt.Matchers {
 			if matcher.GetRegex() != "" {
-				seenRegexMatchers = append(seenRegexMatchers, matcher.GetRegex())
+				seenRegexMatchers = append(seenRegexMatchers, matcher)
 			} else {
 				// make sure the current matcher doesn't match any previously defined regex.
 				// this code is written with the assumption that the routes are already in their final order;
 				// we are trying to help users avoid misconfiguration and short-circuiting errors
 				path := utils.PathAsString(matcher)
 				for _, regex := range seenRegexMatchers {
-					re := regexp.MustCompile(regex)
+					re := regexp.MustCompile(regex.GetRegex())
 					foundIndex := re.FindStringIndex(path)
-					if foundIndex != nil {
-						// we opt to warn on conflicting regexes even if the methods, query parameters, etc on the
-						// "conflicting" matchers do not form a conflict because:
-						//  - updating the regex to be less permissive is generally preferable to adding/removing methods/query parameter matchers
-						//  - accounting for it would be more difficult to maintain as we add new matcher fields
-						//  - such a conflict would be rare, and likely unintentional anyways
-						reports.AddWarning(vs, UnorderedRegexErr(vh.GetName(), regex, matcher).Error())
+					if foundIndex != nil && nonPathEarlyMatcherShortCircuitsLateMatcher(matcher, regex) {
+						reports.AddWarning(vs, UnorderedRegexErr(vh.GetName(), regex.GetRegex(), matcher).Error())
 					}
 				}
 			}
 		}
 	}
+}
+
+// As future matcher APIs get added, this validation will need to be updated as well.
+// If it gets too complex, consider modeling as a constraint satisfaction problem.
+func nonPathEarlyMatcherShortCircuitsLateMatcher(laterMatcher, earlierMatcher *matchers.Matcher) bool {
+	queryParamsShortCircuited := earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlierMatcher)
+	headersShortCircuited := earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlierMatcher)
+	return queryParamsShortCircuited && headersShortCircuited
+}
+
+func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher *matchers.Matcher) bool {
+	// TODO(kdorosh) implement me
+	return true
+}
+
+// returns true if every header matcher specified on the later matcher is also specified on the earlier matcher,
+// and the earlier header matcher doesn't have any extra header matchers for headers the later one lacks:
+// thus, in terms of header matchers, the later header matcher is unreachable.
+func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher *matchers.Matcher) bool {
+	earlyHeadersMap := map[string]*matchers.HeaderMatcher{}
+	for _, earlyHeader := range earlyMatcher.Headers {
+		earlyHeadersMap[earlyHeader.Name] = earlyHeader
+	}
+
+	for _, laterHeader := range laterMatcher.Headers {
+		earlyHeader, ok := earlyHeadersMap[laterHeader.Name]
+		if !ok {
+			// later header matcher doesn't have an equivalent early one to short-circuit
+			return false
+		}
+
+		var match *bool
+		if earlyHeader.Regex && !laterHeader.Regex {
+			f := false
+			match = &f
+			re := regexp.MustCompile(earlyHeader.Value)
+			foundIndex := re.FindStringIndex(laterHeader.Value)
+			if foundIndex != nil {
+				t := true
+				match = &t
+			}
+		} else if !earlyHeader.Regex && !laterHeader.Regex {
+			f := false
+			match = &f
+			if earlyHeader.Value == laterHeader.Value {
+				t := true
+				match = &t
+			}
+		}
+		if match != nil && earlyHeader.InvertMatch {
+			// if we evaluated the header for match (non nil), then invert the match result
+			tmp := *match
+			swap := !tmp
+			match = &swap
+		}
+
+		if match != nil && !*match {
+			// early header matcher doesn't properly short-circuit the later one
+			return false
+		}
+
+	}
+	// every single header matcher defined on the later matcher was short-circuited
+	return true
 }

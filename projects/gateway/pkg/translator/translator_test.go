@@ -696,7 +696,7 @@ var _ = Describe("Translator", func() {
 					multiErr, ok := errs.(*multierror.Error)
 					Expect(ok).To(BeTrue())
 
-					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(UnorderedPrefixErr("gloo-system.name1", "/1/2", vs.VirtualHost.Routes[1].Matchers[0]).Error())))
+					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(UnorderedPrefixErr("gloo-system.name1", "/1", vs.VirtualHost.Routes[1].Matchers[0]).Error())))
 				})
 
 				It("should warn when a virtual host has unordered regex matchers (i.e., regex 'hijacking' earlier routes)", func() {
@@ -745,6 +745,72 @@ var _ = Describe("Translator", func() {
 					Expect(ok).To(BeTrue())
 
 					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(UnorderedRegexErr("gloo-system.name1", "/foo/.*/bar", vs.VirtualHost.Routes[1].Matchers[0]).Error())))
+				})
+
+				It("should warn when a virtual host has early inverted header matcher that short-circuits later ones", func() {
+
+					vs := &v1.VirtualService{
+						Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
+						VirtualHost: &v1.VirtualHost{
+							Domains: []string{"d1.com"},
+							Routes: []*v1.Route{
+								{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
+											Prefix: "/foo",
+										},
+										Headers: []*matchers.HeaderMatcher{
+											{
+												Name:        ":method",
+												Value:       "GET",
+												Regex:       false,
+												InvertMatch: true,
+											},
+										},
+									}},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d1",
+										},
+									},
+								},
+								// second route has a prefix matcher that will be short circuited by the above regex,
+								// which has matching path as well as an inverse requirement on the :method matcher
+								{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
+											Prefix: "/foo",
+										},
+										Headers: []*matchers.HeaderMatcher{
+											{
+												Name:        ":method",
+												Value:       "POST",
+												Regex:       false,
+												InvertMatch: false,
+											},
+										},
+									}},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d2",
+										},
+									},
+								},
+							},
+						},
+					}
+
+					snap.VirtualServices = v1.VirtualServiceList{vs}
+
+					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+					errs := reports.ValidateStrict()
+					Expect(errs).To(HaveOccurred())
+
+					multiErr, ok := errs.(*multierror.Error)
+					Expect(ok).To(BeTrue())
+
+					//TODO(kdorosh) add a new error type here and improve readability
+					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(UnorderedPrefixErr("gloo-system.name1", "/foo", vs.VirtualHost.Routes[1].Matchers[0]).Error())))
 				})
 			})
 		})
