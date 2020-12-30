@@ -388,6 +388,7 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matc
 			// later qpm matcher doesn't have an equivalent early one to short-circuit
 			continue
 		}
+		earlyQpmMapSeen[earlyQpm.Name] = true
 
 		if earlyQpm.Regex && !laterQpm.Regex {
 			re := regexp.MustCompile(earlyQpm.Value)
@@ -420,8 +421,10 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matc
 // thus, in terms of header matchers, the later header matcher is unreachable.
 func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matchers.Matcher) bool {
 	earlyHeadersMap := map[string]*matchers.HeaderMatcher{}
+	earlyHeadersSeen := map[string]bool{}
 	for _, earlyHeader := range earlyMatcher.Headers {
 		earlyHeadersMap[earlyHeader.Name] = earlyHeader
+		earlyHeadersSeen[earlyHeader.Name] = false
 	}
 
 	laterHeadersMap := map[string]*matchers.HeaderMatcher{}
@@ -435,6 +438,7 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 			// later header matcher doesn't have an equivalent early one to short-circuit
 			continue
 		}
+		earlyHeadersSeen[earlyHeader.Name] = true
 
 		var match *bool
 		if earlyHeader.Regex && !laterHeader.Regex {
@@ -470,6 +474,14 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 			return false
 		}
 	}
+
+	for _, seen := range earlyHeadersSeen {
+		if seen == false {
+			// early matcher had header condition more specific than the latter, doesn't short-circuit
+			return false
+		}
+	}
+
 	// every single header matcher defined on the later matcher was short-circuited
 	return true
 }
