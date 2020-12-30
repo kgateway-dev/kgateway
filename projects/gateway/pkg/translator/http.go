@@ -374,40 +374,41 @@ func nonPathEarlyMatcherShortCircuitsLateMatcher(laterMatcher, earlierMatcher *m
 	return queryParamsShortCircuited && headersShortCircuited
 }
 
+// returns true if the query parameter matcher conditions (or lack thereof) on the early matcher can short-circuit the
+// query parameter matcher conditions of the latter. This can happen if every condition specified on the early matcher
+// can also be satisfied by a condition on the same query parameter in a later matcher.
 func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matchers.Matcher) bool {
-	earlyQpmMap := map[string]*matchers.QueryParameterMatcher{}
-	earlyQpmMapSeen := map[string]bool{}
 	for _, earlyQpm := range earlyMatcher.QueryParameters {
-		earlyQpmMap[earlyQpm.Name] = earlyQpm
-		earlyQpmMapSeen[earlyQpm.Name] = false
-	}
 
-	for _, laterQpm := range laterMatcher.QueryParameters {
-		earlyQpm, ok := earlyQpmMap[laterQpm.Name]
-		if !ok {
-			// later qpm matcher doesn't have an equivalent early one to short-circuit
-			continue
-		}
-		earlyQpmMapSeen[earlyQpm.Name] = true
+		// for each early QPM, we see if there is a constraint on the later QPM that means we cannot satisfy
+		// both at the same time. If we have an unsatisfiable constraint, then we know the earlier matcher cannot
+		// short-circuit the later one.
+		unsatisfiableConstraint := len(laterMatcher.QueryParameters) == 0
 
-		if earlyQpm.Regex && !laterQpm.Regex {
-			re := regexp.MustCompile(earlyQpm.Value)
-			foundIndex := re.FindStringIndex(laterQpm.Value)
-			if foundIndex == nil {
-				// early qpm matcher doesn't properly short-circuit the later one
-				return false
+		for _, laterQpm := range laterMatcher.QueryParameters {
+			if earlyQpm.Name == laterQpm.Name {
+				// we found an overlapping condition
+
+				// let's check if the early one is a subset of the later one
+				if earlyQpm.Regex && !laterQpm.Regex {
+					re := regexp.MustCompile(earlyQpm.Value)
+					foundIndex := re.FindStringIndex(laterQpm.Value)
+					if foundIndex == nil {
+						// early regex doesn't capture the later matcher
+						unsatisfiableConstraint = true
+					}
+				} else if !earlyQpm.Regex && !laterQpm.Regex {
+					if earlyQpm.Value != laterQpm.Value {
+						// early and late both have conditions on query parameter matcher
+						unsatisfiableConstraint = true
+					}
+				}
 			}
-		} else if !earlyQpm.Regex && !laterQpm.Regex {
-			if earlyQpm.Value != laterQpm.Value {
-				// early qpm matcher doesn't properly short-circuit the later one
-				return false
-			}
 		}
-	}
 
-	for _, seen := range earlyQpmMapSeen {
-		if seen == false {
-			// early matcher had QPM condition more specific than the latter, doesn't short-circuit
+		if unsatisfiableConstraint {
+			// since both constraints can't be satisfied at the same time, we know that the
+			// later route cannot be short-circuited by the earlier one
 			return false
 		}
 	}
