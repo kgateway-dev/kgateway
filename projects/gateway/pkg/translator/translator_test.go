@@ -630,6 +630,10 @@ var _ = Describe("Translator", func() {
 
 					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 					errs := reports.ValidateStrict()
+					if expectedErr == nil {
+						Expect(errs).ToNot(HaveOccurred())
+						return
+					}
 					Expect(errs).To(HaveOccurred())
 
 					multiErr, ok := errs.(*multierror.Error)
@@ -641,6 +645,10 @@ var _ = Describe("Translator", func() {
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}},
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}},
 						ConflictingMatcherErr("gloo-system.name1", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}})),
+					Entry("duplicate paths but earlier has query parameter matcher",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}},
+						nil),
 					Entry("prefix hijacking",
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}},
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1/2"}},
@@ -663,7 +671,7 @@ var _ = Describe("Translator", func() {
 							Methods: []string{"GET", "POST"}, // The POST method here is unreachable
 						},
 						UnorderedPrefixErr("gloo-system.name1", "/foo", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"},
-							Methods: []string{"GET", "POST"}, // The POST method here is unreachable
+							Methods: []string{"GET", "POST"},
 						})),
 				)
 			})

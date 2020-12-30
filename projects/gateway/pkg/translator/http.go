@@ -376,8 +376,10 @@ func nonPathEarlyMatcherShortCircuitsLateMatcher(laterMatcher, earlierMatcher *m
 
 func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matchers.Matcher) bool {
 	earlyQpmMap := map[string]*matchers.QueryParameterMatcher{}
+	earlyQpmMapSeen := map[string]bool{}
 	for _, earlyQpm := range earlyMatcher.QueryParameters {
 		earlyQpmMap[earlyQpm.Name] = earlyQpm
+		earlyQpmMapSeen[earlyQpm.Name] = false
 	}
 
 	for _, laterQpm := range laterMatcher.QueryParameters {
@@ -401,6 +403,14 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matc
 			}
 		}
 	}
+
+	for _, seen := range earlyQpmMapSeen {
+		if seen == false {
+			// early matcher had QPM condition more specific than the latter, doesn't short-circuit
+			return false
+		}
+	}
+
 	// every single qpm matcher defined on the later matcher was short-circuited
 	return true
 }
