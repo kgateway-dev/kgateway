@@ -435,7 +435,8 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 						// early regex doesn't capture the later matcher
 						return false
 					} else if foundIndex != nil && earlyHeaderMatcher.InvertMatch {
-						// early regex doesn't capture the later matcher
+						// early regex captures the later matcher, but we invert the result.
+						// so there are conflicting conditions here on the same matcher
 						return false
 					}
 				} else if !earlyHeaderMatcher.Regex && !laterHeaderMatcher.Regex {
@@ -443,7 +444,8 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 						// early and late have non-compatible conditions on the same header matcher
 						return false
 					} else if earlyHeaderMatcher.Value == laterHeaderMatcher.Value && earlyHeaderMatcher.InvertMatch {
-						// early and late have non-compatible conditions on the same header matcher
+						// early and late have compatible conditions on the same header matcher, but we invert
+						// the result. so there are conflicting conditions here on the same matcher
 						return false
 					}
 				} else {
@@ -457,21 +459,21 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 						// special case to catch the following:
 						//	- matchers:
 						//	  - prefix: /foo
-						//    headers:
-						//	  - name: :method
-						//      value: GET
-						//      invertMatch: true
+						//      headers:
+						//	    - name: :method
+						//        value: GET
+						//        invertMatch: true
 						//    directResponseAction:
-						//    status: 405
-						//    body: 'Invalid HTTP Method'
+						//      status: 405
+						//      body: 'Invalid HTTP Method'
 						//	...
 						//	- matchers:
 						//	  - methods:
 						//	    - GET
 						//	    - POST # this one cannot be reached
-						//    prefix: /foo
-						//      routeAction:
-						//	      ....
+						//      prefix: /foo
+						//    routeAction:
+						//	    ....
 
 						// The assumption built in here is that if the inverse matches the regex, then the regex must
 						// be invalid because it can only match the inverse value
