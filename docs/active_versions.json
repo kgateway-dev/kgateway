@@ -1,11 +1,10 @@
 {
-  "latest": "1.5.12",
+  "latest": "1.6.0",
   "versions": [
-    "master",
-    "1.6.0-beta14",
-    "1.5.12"
+    "master"
   ],
   "oldVersions": [
+    "1.5.14",
     "1.4.15",
     "1.3.32"
   ]
