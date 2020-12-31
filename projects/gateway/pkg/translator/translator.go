@@ -41,7 +41,12 @@ func NewTranslator(factories []ListenerFactory, opts Opts) *translator {
 }
 
 func NewDefaultTranslator(opts Opts) *translator {
-	return NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}}, opts)
+	warnOnRouteShortCircuiting := false
+	if opts.Validation != nil {
+		warnOnRouteShortCircuiting = opts.Validation.WarnOnRouteShortCircuiting
+	}
+
+	return NewTranslator([]ListenerFactory{&HttpTranslator{WarnOnRouteShortCircuiting: warnOnRouteShortCircuiting}, &TcpTranslator{}}, opts)
 }
 
 func (t *translator) Translate(ctx context.Context, proxyName, namespace string, snap *v1.ApiSnapshot, gatewaysByProxy v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
