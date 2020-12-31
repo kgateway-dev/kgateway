@@ -709,6 +709,18 @@ var _ = Describe("Translator", func() {
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/foo/.*/bar"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: ""}}}, // empty value will match anything
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}}},
 						UnorderedRegexErr("gloo-system.name1", "/foo/.*/bar", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}}})),
+					Entry("prefix hijacking - handles case sensitive",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"}, CaseSensitive: &wrappers.BoolValue{Value: true}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"}, CaseSensitive: &wrappers.BoolValue{Value: false}},
+						nil),
+					Entry("regex hijacking - handles case sensitive (by ignoring it if set on the regex, since envoy will ignore case sensitive on regex routes)",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/foo/.*/bar"}, CaseSensitive: &wrappers.BoolValue{Value: true}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, CaseSensitive: &wrappers.BoolValue{Value: false}},
+						UnorderedRegexErr("gloo-system.name1", "/foo/.*/bar", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, CaseSensitive: &wrappers.BoolValue{Value: false}})),
+					Entry("regex hijacking - handles case sensitive (by skipping validation; we can't validate case insensitive against a regex)",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/foo/.*/bar"}, CaseSensitive: &wrappers.BoolValue{Value: true}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, CaseSensitive: &wrappers.BoolValue{Value: true}},
+						nil),
 				)
 			})
 		})

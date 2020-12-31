@@ -303,9 +303,8 @@ func validatePrefixHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, repo
 			// make sure the current matcher doesn't match any previously defined prefix.
 			// this code is written with the assumption that the routes are already in their final order;
 			// we are trying to help users avoid misconfiguration and short-circuiting errors
-			path := utils.PathAsString(matcher)
 			for _, prefix := range seenPrefixMatchers {
-				if strings.HasPrefix(path, prefix.GetPrefix()) && nonPathEarlyMatcherShortCircuitsLateMatcher(matcher, prefix) {
+				if prefixShortCircuits(matcher, prefix) && nonPathEarlyMatcherShortCircuitsLateMatcher(matcher, prefix) {
 					reports.AddWarning(vs, UnorderedPrefixErr(vh.GetName(), prefix.GetPrefix(), matcher).Error())
 				}
 			}
@@ -314,6 +313,11 @@ func validatePrefixHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, repo
 			}
 		}
 	}
+}
+
+func prefixShortCircuits(laterMatcher, earlierMatcher *matchers.Matcher) bool {
+	laterPath := utils.PathAsString(laterMatcher)
+	return strings.HasPrefix(laterPath, earlierMatcher.GetPrefix()) && laterMatcher.CaseSensitive == earlierMatcher.CaseSensitive
 }
 
 func validateRegexHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
@@ -328,17 +332,23 @@ func validateRegexHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, repor
 				// make sure the current matcher doesn't match any previously defined regex.
 				// this code is written with the assumption that the routes are already in their final order;
 				// we are trying to help users avoid misconfiguration and short-circuiting errors
-				path := utils.PathAsString(matcher)
 				for _, regex := range seenRegexMatchers {
-					re := regexp.MustCompile(regex.GetRegex())
-					foundIndex := re.FindStringIndex(path)
-					if foundIndex != nil && nonPathEarlyMatcherShortCircuitsLateMatcher(matcher, regex) {
+					if regexShortCircuits(matcher, regex) && nonPathEarlyMatcherShortCircuitsLateMatcher(matcher, regex) {
 						reports.AddWarning(vs, UnorderedRegexErr(vh.GetName(), regex.GetRegex(), matcher).Error())
 					}
 				}
 			}
 		}
 	}
+}
+
+func regexShortCircuits(laterMatcher, earlierMatcher *matchers.Matcher) bool {
+	laterPath := utils.PathAsString(laterMatcher)
+	re := regexp.MustCompile(earlierMatcher.GetRegex())
+	foundIndex := re.FindStringIndex(laterPath)
+	// later matcher is always non-regex. to validate against the regex, we need to ensure that it's either
+	// unset or set to false
+	return foundIndex != nil && laterMatcher.CaseSensitive == nil || laterMatcher.CaseSensitive.GetValue() == false
 }
 
 // As future matcher APIs get added, this validation will need to be updated as well.
