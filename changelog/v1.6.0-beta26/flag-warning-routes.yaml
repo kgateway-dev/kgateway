@@ -1,0 +1,10 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3334
+    resolvesIssue: false
+    description: |
+      Gloo Edge can now more proactively report warnings on virtual services that are likely misconfigured.
+      To enable, update the Gloo `Settings` such that `spec.gateway.validation.warnRouteShortCircuiting=true`
+      The cases now additionally covered are:
+        - routes on the same virtual host that have the same matcher
+        - routes that get short-circuited by prefix/regex matchers in earlier routes

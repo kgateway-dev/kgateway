@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	. "github.com/onsi/ginkgo/extensions/table"
+
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/hashicorp/go-multierror"
@@ -589,6 +591,137 @@ var _ = Describe("Translator", func() {
 
 					Expect(errs.Error()).To(ContainSubstring(NoVirtualHostErr(snap.VirtualServices[0]).Error()))
 				})
+			})
+
+			Context("validate matcher short-circuiting warnings", func() {
+
+				BeforeEach(func() {
+					translator = NewTranslator([]ListenerFactory{&HttpTranslator{WarnOnRouteShortCircuiting: true}, &TcpTranslator{}}, Opts{})
+				})
+
+				DescribeTable("warns on route short-circuiting", func(earlyMatcher, lateMatcher *matchers.Matcher, expectedErr error) {
+					vs := &v1.VirtualService{
+						Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSet},
+						VirtualHost: &v1.VirtualHost{
+							Domains: []string{"d1.com"},
+							Routes: []*v1.Route{
+								{
+									Matchers: []*matchers.Matcher{earlyMatcher},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d1",
+										},
+									},
+								},
+								// second route will be short-circuited by the first one
+								{
+									Matchers: []*matchers.Matcher{lateMatcher},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d2",
+										},
+									},
+								},
+							},
+						},
+					}
+
+					snap.VirtualServices = v1.VirtualServiceList{vs}
+
+					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+					errs := reports.ValidateStrict()
+					if expectedErr == nil {
+						Expect(errs).ToNot(HaveOccurred())
+						return
+					}
+					Expect(errs).To(HaveOccurred())
+
+					multiErr, ok := errs.(*multierror.Error)
+					Expect(ok).To(BeTrue())
+
+					Expect(multiErr.ErrorOrNil()).To(MatchError(ContainSubstring(expectedErr.Error())))
+				},
+					Entry("duplicate matchers",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}},
+						ConflictingMatcherErr("gloo-system.name1", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}})),
+					Entry("duplicate paths but earlier has query parameter matcher",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}},
+						nil),
+					Entry("duplicate paths but later has query parameter matcher (prefix hijacking)",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}}},
+						UnorderedPrefixErr("gloo-system.name1", "/1", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}}})),
+					Entry("duplicate paths but earlier has header matcher",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: "bar"}}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}},
+						nil),
+					Entry("duplicate paths but later has header matcher (prefix hijacking)",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: "bar"}}},
+						UnorderedPrefixErr("gloo-system.name1", "/1", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: "bar"}}})),
+					Entry("duplicate paths but earlier has query parameter matchers that don't short circuit the latter",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "baz"}}},
+						nil),
+					Entry("duplicate paths but earlier has query parameter matchers that don't short circuit the latter, with extras first",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}, {Name: "foo2", Value: "bar2"}}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}}},
+						nil),
+					Entry("duplicate paths but earlier has query parameter matchers that don't short circuit the latter, with extras second",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}, {Name: "foo2", Value: "bar2"}}},
+						UnorderedPrefixErr("gloo-system.name1", "/1", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}, {Name: "foo2", Value: "bar2"}}})),
+					Entry("duplicate paths but earlier has header matchers that don't short circuit the latter",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: "bar"}}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: "baz"}}},
+						nil),
+					Entry("duplicate paths but earlier has header matchers that don't short circuit the latter, with extras first",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: "bar"}, {Name: "foo2", Value: "bar2"}}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: "bar"}}},
+						nil),
+					Entry("duplicate paths but earlier has header matchers that don't short circuit the latter, with extras second",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: "bar"}}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: "bar"}, {Name: "foo2", Value: "bar2"}}},
+						UnorderedPrefixErr("gloo-system.name1", "/1", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: "bar"}, {Name: "foo2", Value: "bar2"}}})),
+					Entry("prefix hijacking",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1/2"}},
+						UnorderedPrefixErr("gloo-system.name1", "/1", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1/2"}})),
+					Entry("prefix hijacking with inverted header matcher, late matcher unreachable",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: ":method", Value: "GET", InvertMatch: true}}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: ":method", Value: "POST"}}},
+						UnorderedPrefixErr("gloo-system.name1", "/1", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: ":method", Value: "POST"}}})),
+					Entry("prefix hijacking with inverted header matcher, late matcher reachable",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: ":method", Value: "GET", InvertMatch: true}}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: ":method", Value: "GET"}}},
+						nil),
+					Entry("regex hijacking",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/foo/.*/bar"}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}},
+						UnorderedRegexErr("gloo-system.name1", "/foo/.*/bar", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}})),
+					Entry("regex hijacking - with match all header matcher",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/foo/.*/bar"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: ""}}}, // empty value will match anything
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: "bar"}}},
+						UnorderedRegexErr("gloo-system.name1", "/foo/.*/bar", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, Headers: []*matchers.HeaderMatcher{{Name: "foo", Value: "bar"}}})),
+					Entry("regex hijacking - with match all query parameter matcher",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/foo/.*/bar"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: ""}}}, // empty value will match anything
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}}},
+						UnorderedRegexErr("gloo-system.name1", "/foo/.*/bar", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, QueryParameters: []*matchers.QueryParameterMatcher{{Name: "foo", Value: "bar"}}})),
+					Entry("prefix hijacking - handles case sensitive",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"}, CaseSensitive: &wrappers.BoolValue{Value: true}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"}, CaseSensitive: &wrappers.BoolValue{Value: false}},
+						nil),
+					Entry("regex hijacking - handles case sensitive (by ignoring it if set on the regex, since envoy will ignore case sensitive on regex routes)",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/foo/.*/bar"}, CaseSensitive: &wrappers.BoolValue{Value: true}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, CaseSensitive: &wrappers.BoolValue{Value: false}},
+						UnorderedRegexErr("gloo-system.name1", "/foo/.*/bar", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, CaseSensitive: &wrappers.BoolValue{Value: false}})),
+					Entry("regex hijacking - handles case sensitive (by skipping validation; we can't validate case insensitive against a regex)",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/foo/.*/bar"}, CaseSensitive: &wrappers.BoolValue{Value: true}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, CaseSensitive: &wrappers.BoolValue{Value: true}},
+						nil),
+				)
 			})
 		})
 
