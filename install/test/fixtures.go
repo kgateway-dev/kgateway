@@ -5,6 +5,7 @@ layered_runtime:
   layers:
   - name: static_layer
     static_layer:
+      envoy.reloadable_features.enable_deprecated_v2_api: true
       overload:
         global_downstream_max_connections: 250000
       upstream:
@@ -182,6 +183,7 @@ layered_runtime:
   layers:
   - name: static_layer
     static_layer:
+      envoy.reloadable_features.enable_deprecated_v2_api: true
       overload:
         global_downstream_max_connections: 250000
       upstream:
@@ -320,6 +322,7 @@ layered_runtime:
   layers:
   - name: static_layer
     static_layer:
+      envoy.reloadable_features.enable_deprecated_v2_api: true
       overload:
         global_downstream_max_connections: 250000
       upstream:
@@ -462,6 +465,7 @@ layered_runtime:
   layers:
   - name: static_layer
     static_layer:
+      envoy.reloadable_features.enable_deprecated_v2_api: true
       overload:
         global_downstream_max_connections: 250000
       upstream:
@@ -614,6 +618,7 @@ layered_runtime:
   layers:
   - name: static_layer
     static_layer:
+      envoy.reloadable_features.enable_deprecated_v2_api: true
       overload:
         global_downstream_max_connections: 250000
       upstream:
@@ -794,6 +799,7 @@ layered_runtime:
   layers:
   - name: static_layer
     static_layer:
+      envoy.reloadable_features.enable_deprecated_v2_api: true
       overload:
         global_downstream_max_connections: 250000
       upstream:
