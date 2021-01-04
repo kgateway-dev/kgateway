@@ -9,7 +9,7 @@ import (
 
 const (
 	errEnterpriseOnly = "Could not load waf plugin - this is an Enterprise feature"
-	ExtensionName = "waf"
+	ExtensionName     = "waf"
 )
 
 type plugin struct {

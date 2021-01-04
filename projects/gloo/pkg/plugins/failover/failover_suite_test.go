@@ -11,4 +11,3 @@ func TestFailover(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Failover Suite")
 }
-

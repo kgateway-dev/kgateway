@@ -1,12 +1,12 @@
 package rbac
 
 import (
-envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-. "github.com/onsi/ginkgo"
-. "github.com/onsi/gomega"
-v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac"
-"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
 var _ = Describe("rbac plugin", func() {
@@ -39,7 +39,7 @@ var _ = Describe("rbac plugin", func() {
 
 	It("will err if rbac is configured on route", func() {
 		virtualHost := &v1.Route{
-			Name:    "route1",
+			Name: "route1",
 			Options: &v1.RouteOptions{
 				Rbac: &rbac.ExtensionSettings{},
 			},
@@ -51,4 +51,3 @@ var _ = Describe("rbac plugin", func() {
 	})
 
 })
-

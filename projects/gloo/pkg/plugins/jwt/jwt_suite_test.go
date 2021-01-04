@@ -11,4 +11,3 @@ func TestJwt(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Jwt Suite")
 }
-

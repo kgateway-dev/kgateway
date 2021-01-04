@@ -53,7 +53,7 @@ var _ = Describe("waf plugin", func() {
 
 	It("will err if waf is configured on route", func() {
 		virtualHost := &v1.Route{
-			Name:    "route1",
+			Name: "route1",
 			Options: &v1.RouteOptions{
 				Waf: &waf.Settings{},
 			},

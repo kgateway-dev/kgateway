@@ -1,10 +1,10 @@
 package proxylatency_test
 
 import (
-"testing"
+	"testing"
 
-. "github.com/onsi/ginkgo"
-. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 func TestProxylatency(t *testing.T) {

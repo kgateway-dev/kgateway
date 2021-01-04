@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	ExtensionName = "rbac"
+	ExtensionName     = "rbac"
 	errEnterpriseOnly = "Could not load rbac plugin - this is an Enterprise feature"
 )
 
@@ -58,5 +58,3 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 	return nil
 }
-
-

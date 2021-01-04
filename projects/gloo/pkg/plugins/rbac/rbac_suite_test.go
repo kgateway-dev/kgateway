@@ -1,10 +1,10 @@
 package rbac_test
 
 import (
-"testing"
+	"testing"
 
-. "github.com/onsi/ginkgo"
-. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 func TestRbac(t *testing.T) {

@@ -1,21 +1,21 @@
 package dlp
 
 import (
-v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 
-"github.com/rotisserie/eris"
+	"github.com/rotisserie/eris"
 )
 
 // Compile-time assertion
 var (
-	_ plugins.Plugin = &plugin{}
+	_ plugins.Plugin           = &plugin{}
 	_ plugins.HttpFilterPlugin = &plugin{}
 )
 
 const (
 	errEnterpriseOnly = "Could not load dlp plugin - this is an Enterprise feature"
-	ExtensionName = "dlp"
+	ExtensionName     = "dlp"
 )
 
 type plugin struct{}
@@ -43,4 +43,3 @@ func (p *plugin) HttpFilters(params plugins.Params, l *v1.HttpListener) ([]plugi
 	}
 	return nil, nil
 }
-

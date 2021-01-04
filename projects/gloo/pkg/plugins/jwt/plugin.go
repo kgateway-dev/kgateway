@@ -9,13 +9,13 @@ import (
 
 // Compile-time assertion
 var (
-	_ plugins.Plugin = &plugin{}
+	_ plugins.Plugin            = &plugin{}
 	_ plugins.VirtualHostPlugin = &plugin{}
 )
 
 const (
 	errEnterpriseOnly = "Could not load jwt plugin - this is an Enterprise feature"
-	pluginName = "jwt"
+	pluginName        = "jwt"
 )
 
 type plugin struct{}

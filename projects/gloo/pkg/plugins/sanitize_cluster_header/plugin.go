@@ -8,7 +8,7 @@ import (
 
 const (
 	errEnterpriseOnly = "Could not load sanitize_cluster_header plugin - this is an Enterprise feature"
-	pluginName = "sanitize_cluster_header"
+	pluginName        = "sanitize_cluster_header"
 )
 
 var (

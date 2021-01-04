@@ -12,14 +12,14 @@ import (
 
 // Compile-time assertion
 var (
-	_ plugins.Plugin = new(plugin)
+	_ plugins.Plugin         = new(plugin)
 	_ plugins.UpstreamPlugin = new(plugin)
 	_ plugins.EndpointPlugin = new(plugin)
 )
 
 const (
 	errEnterpriseOnly = "Could not load failover plugin - this is an Enterprise feature"
-	pluginName = "failover"
+	pluginName        = "failover"
 )
 
 type plugin struct {

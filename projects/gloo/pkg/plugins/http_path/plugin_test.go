@@ -11,20 +11,19 @@ import (
 
 var _ = Describe("http_path plugin", func() {
 	var (
-		p               *plugin
-		upstream        *v1.Upstream
-		upstreamSpec    *v1static.UpstreamSpec
+		p            *plugin
+		upstream     *v1.Upstream
+		upstreamSpec *v1static.UpstreamSpec
 	)
 
 	BeforeEach(func() {
-			p = NewPlugin()
+		p = NewPlugin()
 	})
 
 	It("should not process upstream if http_path config is nil", func() {
 		err := p.ProcessUpstream(plugins.Params{}, &v1.Upstream{}, nil)
 		Expect(err).NotTo(HaveOccurred())
 	})
-
 
 	It("will err if http_path is configured on process upstream", func() {
 		upstreamSpec = &v1static.UpstreamSpec{
@@ -52,4 +51,3 @@ var _ = Describe("http_path plugin", func() {
 	})
 
 })
-

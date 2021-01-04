@@ -26,7 +26,6 @@ var _ = Describe("failover plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-
 	It("will err if failover is configured on process upstream", func() {
 		err := p.ProcessUpstream(plugins.Params{}, &v1.Upstream{Failover: &v1.Failover{}}, nil)
 		Expect(err).To(HaveOccurred())

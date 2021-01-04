@@ -531,14 +531,20 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 			SetDescriptors: opts.Settings.GetRatelimit().GetSetDescriptors(),
 		},
 	}
+
+	upgradedExtensions := make(map[string]bool)
 	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
 		syncerExtension, err := syncerExtensionFactory(watchOpts.Ctx, params)
 		if err != nil {
 			logger.Errorw("Error initializing extension", "error", err)
 			continue
 		}
+		if extension, ok := syncerExtension.(UpgradeableTranslatorSyncerExtension); ok && extension.IsUpgrade() {
+			upgradedExtensions[extension.ExtensionName()] = true
+		}
 		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
+	syncerExtensions = reconcileUpgradedTranslatorSyncerExtensions(syncerExtensions, upgradedExtensions)
 
 	translationSync := NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions, opts.Settings)
 
@@ -622,6 +628,29 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}()
 
 	return nil
+}
+
+// removes any redundant syncers, if we have added an upgraded version to replace them
+func reconcileUpgradedTranslatorSyncerExtensions(syncerList []TranslatorSyncerExtension, upgradedSyncers map[string]bool) []TranslatorSyncerExtension {
+	var syncersToDrop []int
+	for i, syncerExtension := range syncerList {
+		extension, upgradable := syncerExtension.(UpgradeableTranslatorSyncerExtension)
+		if upgradable {
+			_, inMap := upgradedSyncers[extension.ExtensionName()]
+			if inMap && !extension.IsUpgrade() {
+				// An upgraded version of this syncer exists,
+				// mark this one for removal
+				syncersToDrop = append(syncersToDrop, i)
+			}
+		}
+	}
+
+	// Walk back through the syncerList and remove the redundant syncers
+	for i := len(syncersToDrop) - 1; i >= 0; i-- {
+		badIndex := syncersToDrop[i]
+		syncerList = append(syncerList[:badIndex], syncerList[badIndex+1:]...)
+	}
+	return syncerList
 }
 
 func startRestXdsServer(opts bootstrap.Opts) {
