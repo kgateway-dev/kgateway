@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	errEnterpriseOnly = "Could not load jwt plugin - this is an Enterprise feature"
+	errEnterpriseOnly = "Could not load waf plugin - this is an Enterprise feature"
 	ExtensionName = "waf"
 )
 
