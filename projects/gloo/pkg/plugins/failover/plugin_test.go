@@ -9,11 +9,11 @@ import (
 
 var _ = Describe("failover plugin", func() {
 	var (
-		p *failoverPluginImpl
+		p *plugin
 	)
 
 	BeforeEach(func() {
-		p = new(failoverPluginImpl)
+		p = new(plugin)
 	})
 
 	It("should not process endpoints if failover config is nil", func() {

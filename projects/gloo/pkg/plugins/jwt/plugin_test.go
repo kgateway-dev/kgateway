@@ -19,9 +19,8 @@ var _ = Describe("jwt plugin", func() {
 	})
 
 	It("should not add filter if jwt config is nil", func() {
-		f, err := p.HttpFilters(plugins.Params{}, nil)
+		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{}, &envoy_config_route.VirtualHost{})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(f).To(BeNil())
 	})
 
 	It("will err if jwt is configured", func() {

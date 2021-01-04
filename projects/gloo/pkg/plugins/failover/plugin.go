@@ -12,9 +12,9 @@ import (
 
 // Compile-time assertion
 var (
-	_ plugins.Plugin = new(failoverPluginImpl)
-	_ plugins.UpstreamPlugin = new(failoverPluginImpl)
-	_ plugins.EndpointPlugin = new(failoverPluginImpl)
+	_ plugins.Plugin = new(plugin)
+	_ plugins.UpstreamPlugin = new(plugin)
+	_ plugins.EndpointPlugin = new(plugin)
 )
 
 const (
@@ -22,13 +22,13 @@ const (
 	pluginName = "failover"
 )
 
-type failoverPluginImpl struct {
+type plugin struct {
 	sslConfigTranslator utils.SslConfigTranslator
 	endpoints           map[string][]*envoy_config_endpoint_v3.LocalityLbEndpoints
 	dnsResolver         consul.DnsResolver
 }
 
-func (p *failoverPluginImpl) ProcessEndpoints(params plugins.Params, in *v1.Upstream, out *envoy_config_endpoint_v3.ClusterLoadAssignment) error {
+func (p *plugin) ProcessEndpoints(params plugins.Params, in *v1.Upstream, out *envoy_config_endpoint_v3.ClusterLoadAssignment) error {
 	failoverCfg := in.GetFailover()
 	if failoverCfg != nil {
 		return eris.New(errEnterpriseOnly)
@@ -36,7 +36,7 @@ func (p *failoverPluginImpl) ProcessEndpoints(params plugins.Params, in *v1.Upst
 	return nil
 }
 
-func (p *failoverPluginImpl) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
+func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 	failoverCfg := in.GetFailover()
 	if failoverCfg != nil {
 		return eris.New(errEnterpriseOnly)
@@ -44,14 +44,14 @@ func (p *failoverPluginImpl) ProcessUpstream(params plugins.Params, in *v1.Upstr
 	return nil
 }
 
-func (p *failoverPluginImpl) PluginName() string {
+func (p *plugin) PluginName() string {
 	return pluginName
 }
 
-func (p *failoverPluginImpl) IsUpgrade() bool {
+func (p *plugin) IsUpgrade() bool {
 	return false
 }
 
-func (p *failoverPluginImpl) Init(params plugins.InitParams) error {
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }

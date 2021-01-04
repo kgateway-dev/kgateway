@@ -10,7 +10,6 @@ import (
 // Compile-time assertion
 var (
 	_ plugins.Plugin = &plugin{}
-	_ plugins.HttpFilterPlugin = &plugin{}
 	_ plugins.VirtualHostPlugin = &plugin{}
 )
 
@@ -35,10 +34,6 @@ func (p *plugin) IsUpgrade() bool {
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
-}
-
-func (p *plugin) HttpFilters(params plugins.Params, l *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	return nil, nil
 }
 
 func (p *plugin) ProcessVirtualHost(

@@ -12,36 +12,40 @@ const (
 	ExtensionName = "waf"
 )
 
-type Plugin struct {
+type plugin struct {
 	listenerEnabled map[*v1.HttpListener]bool
 }
 
 var (
-	_ plugins.Plugin            = new(Plugin)
-	_ plugins.VirtualHostPlugin = new(Plugin)
-	_ plugins.RoutePlugin       = new(Plugin)
-	_ plugins.HttpFilterPlugin  = new(Plugin)
+	_ plugins.Plugin            = new(plugin)
+	_ plugins.VirtualHostPlugin = new(plugin)
+	_ plugins.RoutePlugin       = new(plugin)
+	_ plugins.HttpFilterPlugin  = new(plugin)
 
 	// waf should happen before any code is run
 	filterStage = plugins.DuringStage(plugins.WafStage)
 )
 
-func NewPlugin() *Plugin {
-	return &Plugin{
+func NewPlugin() *plugin {
+	return &plugin{
 		listenerEnabled: make(map[*v1.HttpListener]bool),
 	}
 }
 
-func (p *Plugin) PluginName() string {
+func (p *plugin) PluginName() string {
 	return ExtensionName
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *plugin) IsUpgrade() bool {
+	return false
+}
+
+func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
 // Process virtual host plugin
-func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoy_config_route_v3.VirtualHost) error {
+func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoy_config_route_v3.VirtualHost) error {
 	wafConfig := in.Options.GetWaf()
 	if wafConfig != nil {
 		return eris.New(errEnterpriseOnly)
@@ -51,7 +55,7 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 }
 
 // Process route plugin
-func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	wafConfig := in.GetOptions().GetWaf()
 	if wafConfig != nil {
 		return eris.New(errEnterpriseOnly)
@@ -61,7 +65,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 }
 
 // Http Filter to return the waf filter
-func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
+func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	waf := listener.GetOptions().GetWaf()
 	if waf != nil {
 		return nil, eris.New(errEnterpriseOnly)

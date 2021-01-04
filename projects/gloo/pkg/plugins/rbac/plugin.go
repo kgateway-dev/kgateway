@@ -32,6 +32,10 @@ func (p *plugin) PluginName() string {
 	return ExtensionName
 }
 
+func (p *plugin) IsUpgrade() bool {
+	return false
+}
+
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.settings = params.Settings.GetRbac()
 	return nil

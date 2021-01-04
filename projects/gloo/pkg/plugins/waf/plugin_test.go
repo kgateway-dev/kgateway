@@ -11,7 +11,7 @@ import (
 
 var _ = Describe("waf plugin", func() {
 	var (
-		p *Plugin
+		p *plugin
 	)
 
 	BeforeEach(func() {
