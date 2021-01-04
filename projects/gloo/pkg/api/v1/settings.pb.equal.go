@@ -1242,5 +1242,15 @@ func (m *GatewayOptions_ValidationOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetWarnRouteShortCircuiting()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetWarnRouteShortCircuiting()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetWarnRouteShortCircuiting(), target.GetWarnRouteShortCircuiting()) {
+			return false
+		}
+	}
+
 	return true
 }

@@ -51,6 +51,7 @@ func init() {
 		"virtualservices.gateway.solo.io",
 		"routetables.gateway.solo.io",
 		"authconfigs.enterprise.gloo.solo.io",
+		"ratelimitconfigs.ratelimit.solo.io",
 	}
 
 	GlooFedCrdNames = []string{

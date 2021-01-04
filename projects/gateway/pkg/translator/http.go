@@ -3,6 +3,12 @@ package translator
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	"github.com/solo-io/go-utils/hashutils"
 
@@ -39,9 +45,22 @@ var (
 		return errors.Errorf("domain conflict: the following domains are present in more than one of the "+
 			"virtual services associated with this gateway: %v", loggedDomains)
 	}
+	ConflictingMatcherErr = func(vh string, matcher *matchers.Matcher) error {
+		return errors.Errorf("virtual host [%s] has conflicting matcher: %v", vh, matcher)
+	}
+	UnorderedPrefixErr = func(vh, prefix string, matcher *matchers.Matcher) error {
+		return errors.Errorf("virtual host [%s] has unordered prefix routes, earlier prefix [%s] short-circuited "+
+			"later route [%v]", vh, prefix, matcher)
+	}
+	UnorderedRegexErr = func(vh, regex string, matcher *matchers.Matcher) error {
+		return errors.Errorf("virtual host [%s] has unordered regex routes, earlier regex [%s] short-circuited "+
+			"later route [%v]", vh, regex, matcher)
+	}
 )
 
-type HttpTranslator struct{}
+type HttpTranslator struct {
+	WarnOnRouteShortCircuiting bool
+}
 
 func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
 	if len(snap.VirtualServices) == 0 {
@@ -57,7 +76,7 @@ func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnap
 
 		virtualServices := getVirtualServicesForGateway(gateway, snap.VirtualServices)
 		validateVirtualServiceDomains(gateway, virtualServices, reports)
-		listener := desiredListenerForHttp(gateway, virtualServices, snap.RouteTables, reports)
+		listener := t.desiredListenerForHttp(gateway, virtualServices, snap.RouteTables, reports)
 		result = append(result, listener)
 	}
 	return result
@@ -179,7 +198,7 @@ func hasSsl(vs *v1.VirtualService) bool {
 	return vs.SslConfig != nil
 }
 
-func desiredListenerForHttp(gateway *v1.Gateway, virtualServicesForGateway v1.VirtualServiceList, tables v1.RouteTableList, reports reporter.ResourceReports) *gloov1.Listener {
+func (t *HttpTranslator) desiredListenerForHttp(gateway *v1.Gateway, virtualServicesForGateway v1.VirtualServiceList, tables v1.RouteTableList, reports reporter.ResourceReports) *gloov1.Listener {
 	var (
 		virtualHosts []*gloov1.VirtualHost
 		sslConfigs   []*gloov1.SslConfig
@@ -189,7 +208,7 @@ func desiredListenerForHttp(gateway *v1.Gateway, virtualServicesForGateway v1.Vi
 		if virtualService.VirtualHost == nil {
 			virtualService.VirtualHost = &v1.VirtualHost{}
 		}
-		vh, err := virtualServiceToVirtualHost(virtualService, tables, reports)
+		vh, err := t.virtualServiceToVirtualHost(virtualService, tables, reports)
 		if err != nil {
 			reports.AddError(virtualService, err)
 			continue
@@ -221,7 +240,7 @@ func desiredListenerForHttp(gateway *v1.Gateway, virtualServicesForGateway v1.Vi
 	return listener
 }
 
-func virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
+func (t *HttpTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
 	converter := NewRouteConverter(NewRouteTableSelector(tables), NewRouteTableIndexer())
 	routes, err := converter.ConvertVirtualService(vs, reports)
 	if err != nil {
@@ -236,6 +255,10 @@ func virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList
 		Options: vs.VirtualHost.Options,
 	}
 
+	if t.WarnOnRouteShortCircuiting {
+		validateRoutes(vs, vh, reports)
+	}
+
 	if err := appendSource(vh, vs); err != nil {
 		// should never happen
 		return nil, err
@@ -246,4 +269,214 @@ func virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList
 
 func VirtualHostName(vs *v1.VirtualService) string {
 	return fmt.Sprintf("%v.%v", vs.Metadata.Namespace, vs.Metadata.Name)
+}
+
+// this function is written with the assumption that the routes will not be modified afterwards,
+// and are in their final sorted form
+func validateRoutes(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
+	validateAnyDuplicateMatchers(vs, vh, reports)
+	validatePrefixHijacking(vs, vh, reports)
+	validateRegexHijacking(vs, vh, reports)
+}
+
+func validateAnyDuplicateMatchers(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
+	// warn on duplicate matchers
+	seenMatchers := make(map[uint64]bool)
+	for _, rt := range vh.Routes {
+		for _, matcher := range rt.Matchers {
+			hash := hashutils.MustHash(matcher)
+			if _, ok := seenMatchers[hash]; ok == true {
+				reports.AddWarning(vs, ConflictingMatcherErr(vh.GetName(), matcher).Error())
+			} else {
+				seenMatchers[hash] = true
+			}
+		}
+	}
+}
+
+func validatePrefixHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
+	// warn on early prefix matchers that short-circuit later routes
+
+	var seenPrefixMatchers []*matchers.Matcher
+	for _, rt := range vh.Routes {
+		for _, matcher := range rt.Matchers {
+			// make sure the current matcher doesn't match any previously defined prefix.
+			// this code is written with the assumption that the routes are already in their final order;
+			// we are trying to help users avoid misconfiguration and short-circuiting errors
+			for _, prefix := range seenPrefixMatchers {
+				if prefixShortCircuits(matcher, prefix) && nonPathEarlyMatcherShortCircuitsLateMatcher(matcher, prefix) {
+					reports.AddWarning(vs, UnorderedPrefixErr(vh.GetName(), prefix.GetPrefix(), matcher).Error())
+				}
+			}
+			if matcher.GetPrefix() != "" {
+				seenPrefixMatchers = append(seenPrefixMatchers, matcher)
+			}
+		}
+	}
+}
+
+func prefixShortCircuits(laterMatcher, earlierMatcher *matchers.Matcher) bool {
+	laterPath := utils.PathAsString(laterMatcher)
+	return strings.HasPrefix(laterPath, earlierMatcher.GetPrefix()) && laterMatcher.CaseSensitive == earlierMatcher.CaseSensitive
+}
+
+func validateRegexHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
+	// warn on early regex matchers that short-circuit later routes
+
+	var seenRegexMatchers []*matchers.Matcher
+	for _, rt := range vh.Routes {
+		for _, matcher := range rt.Matchers {
+			if matcher.GetRegex() != "" {
+				seenRegexMatchers = append(seenRegexMatchers, matcher)
+			} else {
+				// make sure the current matcher doesn't match any previously defined regex.
+				// this code is written with the assumption that the routes are already in their final order;
+				// we are trying to help users avoid misconfiguration and short-circuiting errors
+				for _, regex := range seenRegexMatchers {
+					if regexShortCircuits(matcher, regex) && nonPathEarlyMatcherShortCircuitsLateMatcher(matcher, regex) {
+						reports.AddWarning(vs, UnorderedRegexErr(vh.GetName(), regex.GetRegex(), matcher).Error())
+					}
+				}
+			}
+		}
+	}
+}
+
+func regexShortCircuits(laterMatcher, earlierMatcher *matchers.Matcher) bool {
+	laterPath := utils.PathAsString(laterMatcher)
+	re := regexp.MustCompile(earlierMatcher.GetRegex())
+	foundIndex := re.FindStringIndex(laterPath)
+	// later matcher is always non-regex. to validate against the regex, we need to ensure that it's either
+	// unset or set to false
+	return foundIndex != nil && laterMatcher.CaseSensitive == nil || laterMatcher.CaseSensitive.GetValue() == false
+}
+
+// As future matcher APIs get added, this validation will need to be updated as well.
+// If it gets too complex, consider modeling as a constraint satisfaction problem.
+func nonPathEarlyMatcherShortCircuitsLateMatcher(laterMatcher, earlierMatcher *matchers.Matcher) bool {
+
+	// we play a trick here to validate the methods by writing them as header
+	// matchers and just reusing the header matcher logic
+	earlyMatcher := *earlierMatcher
+	if len(earlyMatcher.Methods) > 0 {
+		earlyMatcher.Headers = append(earlyMatcher.Headers, &matchers.HeaderMatcher{
+			Name:  ":method",
+			Value: fmt.Sprintf("(%s)", strings.Join(earlyMatcher.Methods, "|")),
+			Regex: true,
+		})
+	}
+
+	lateMatcher := *laterMatcher
+	if len(lateMatcher.Methods) > 0 {
+		lateMatcher.Headers = append(lateMatcher.Headers, &matchers.HeaderMatcher{
+			Name:  ":method",
+			Value: fmt.Sprintf("(%s)", strings.Join(lateMatcher.Methods, "|")),
+			Regex: true,
+		})
+	}
+
+	queryParamsShortCircuited := earlyQueryParametersShortCircuitedLaterOnes(lateMatcher, earlyMatcher)
+	headersShortCircuited := earlyHeaderMatchersShortCircuitLaterOnes(lateMatcher, earlyMatcher)
+	return queryParamsShortCircuited && headersShortCircuited
+}
+
+// returns true if the query parameter matcher conditions (or lack thereof) on the early matcher can completely
+// short-circuit the query parameter matcher conditions of the latter.
+func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matchers.Matcher) bool {
+	for _, earlyQpm := range earlyMatcher.QueryParameters {
+
+		foundOverlappingCondition := false
+		for _, laterQpm := range laterMatcher.QueryParameters {
+			if earlyQpm.Name == laterQpm.Name {
+				// we found an overlapping condition
+				foundOverlappingCondition = true
+
+				// let's check if the early condition overlaps the later one
+				if earlyQpm.Regex && !laterQpm.Regex {
+					re := regexp.MustCompile(earlyQpm.Value)
+					foundIndex := re.FindStringIndex(laterQpm.Value)
+					if foundIndex == nil {
+						// early regex doesn't capture the later matcher
+						return false
+					}
+				} else if !earlyQpm.Regex && !laterQpm.Regex {
+					matches := earlyQpm.Value == laterQpm.Value || earlyQpm.Value == ""
+					if !matches {
+						// early and late have non-compatible conditions on the same query parameter matcher
+						return false
+					}
+				} else {
+					// either:
+					//   - early header match is regex and late header match is regex
+					//   - or early header match is not regex but late header match is regex
+					// in both cases, we can't validate the constraint properly, so we mark
+					// the route as not short-circuited to avoid reporting flawed warnings.
+					return false
+				}
+			}
+		}
+
+		if !foundOverlappingCondition {
+			// by default, this matcher cannot short-circuit because it is more specific
+			return false
+		}
+	}
+
+	// every single qpm matcher defined on the later matcher was short-circuited
+	return true
+}
+
+// returns true if the header matcher conditions (or lack thereof) on the early matcher can completely short-circuit
+// the header matcher conditions of the latter.
+func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matchers.Matcher) bool {
+	for _, earlyHeaderMatcher := range earlyMatcher.Headers {
+
+		foundOverlappingCondition := false
+
+		for _, laterHeaderMatcher := range laterMatcher.Headers {
+			if earlyHeaderMatcher.Name == laterHeaderMatcher.Name {
+				// we found an overlapping condition
+				foundOverlappingCondition = true
+
+				// let's check if the early condition overlaps the later one
+				if earlyHeaderMatcher.Regex && !laterHeaderMatcher.Regex {
+					re := regexp.MustCompile(earlyHeaderMatcher.Value)
+					foundIndex := re.FindStringIndex(laterHeaderMatcher.Value)
+					if foundIndex == nil && !earlyHeaderMatcher.InvertMatch {
+						// early regex doesn't capture the later matcher
+						return false
+					} else if foundIndex != nil && earlyHeaderMatcher.InvertMatch {
+						// early regex captures the later matcher, but we invert the result.
+						// so there are conflicting conditions here on the same matcher
+						return false
+					}
+				} else if !earlyHeaderMatcher.Regex && !laterHeaderMatcher.Regex {
+					matches := earlyHeaderMatcher.Value == laterHeaderMatcher.Value || earlyHeaderMatcher.Value == ""
+					if !matches && !earlyHeaderMatcher.InvertMatch {
+						// early and late have non-compatible conditions on the same header matcher
+						return false
+					} else if matches && earlyHeaderMatcher.InvertMatch {
+						// early and late have compatible conditions on the same header matcher, but we invert
+						// the result. so there are conflicting conditions here on the same matcher
+						return false
+					}
+				} else {
+					// either:
+					//   - early header match is regex and late header match is regex
+					//   - or early header match is not regex but late header match is regex
+					// in both cases, we can't validate the constraint properly, so we mark
+					// the route as not short-circuited to avoid reporting flawed warnings.
+					return false
+				}
+			}
+		}
+
+		if !foundOverlappingCondition {
+			// by default, this matcher cannot short-circuit because it is more specific
+			return false
+		}
+	}
+
+	// every single header matcher defined on the later matcher was short-circuited
+	return true
 }

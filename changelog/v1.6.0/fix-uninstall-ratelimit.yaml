@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4010
+    description: >
+      RateLimitConfig CRD is now removed with glooctl uninstall command.
