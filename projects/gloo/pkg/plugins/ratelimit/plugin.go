@@ -52,6 +52,14 @@ func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
+func (p *Plugin) IsUpgrade() bool {
+	return false
+}
+
+func (p *Plugin) PluginName() string {
+	return ExtensionName
+}
+
 func (p *Plugin) Init(params plugins.InitParams) error {
 	if rlServer := params.Settings.GetRatelimitServer(); rlServer != nil {
 		p.upstreamRef = rlServer.RatelimitServerRef

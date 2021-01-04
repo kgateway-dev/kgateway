@@ -15,6 +15,7 @@ const (
 	DefaultAuthHeader = "x-user-id"
 	HttpServerUri     = "http://not-used.example.com/"
 	errEnterpriseOnly = "Could not load extauth plugin - this is an Enterprise feature"
+	ExtensionName = "extauth"
 )
 
 // Note that although this configures the "envoy.filters.http.ext_authz" filter, we still want the ordering to be within the
@@ -40,6 +41,14 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
+func (p *Plugin) PluginName() string {
+	return ExtensionName
+}
+
+func (p *Plugin) IsUpgrade() bool {
+	return false
+}
+
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	// Delegate to a function with a simpler signature, will make it easier to reuse
 	return BuildHttpFilters(p.extAuthSettings, listener, params.Snapshot.Upstreams)
@@ -58,7 +67,7 @@ func (p *Plugin) ProcessVirtualHost(
 
 	// Ext_authz filter is not configured on listener, do nothing
 	if !p.isExtAuthzFilterConfigured(params.Listener.GetHttpListener(), params.Snapshot.Upstreams) {
-		return eris.New(errEnterpriseOnly)
+		return nil
 	}
 
 	// If extauth is explicitly disabled on this virtual host, disable it
@@ -92,7 +101,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 	// Ext_authz filter is not configured on listener, do nothing
 	if !p.isExtAuthzFilterConfigured(params.Listener.GetHttpListener(), params.Snapshot.Upstreams) {
-		return eris.New(errEnterpriseOnly)
+		return nil
 	}
 
 	// Extauth is explicitly disabled, disable it on route
@@ -100,11 +109,15 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return markRouteNoAuth(out)
 	}
 
+	if in.GetOptions().GetExtauth().GetConfigRef() != nil {
+		return eris.New(errEnterpriseOnly)
+	}
+
 	customAuthConfig := in.GetOptions().GetExtauth().GetCustomAuth()
 
 	// No custom config, do nothing
 	if customAuthConfig == nil {
-		return eris.New(errEnterpriseOnly)
+		return nil
 	}
 
 	config := &envoyauth.ExtAuthzPerRoute{
@@ -140,9 +153,13 @@ func (p *Plugin) ProcessWeightedDestination(
 
 	customAuthConfig := in.GetOptions().GetExtauth().GetCustomAuth()
 
+	if in.GetOptions().GetExtauth().GetConfigRef() != nil {
+		return eris.New(errEnterpriseOnly)
+	}
+
 	// No custom config, do nothing
 	if customAuthConfig == nil {
-		return eris.New(errEnterpriseOnly)
+		return nil
 	}
 
 	config := &envoyauth.ExtAuthzPerRoute{

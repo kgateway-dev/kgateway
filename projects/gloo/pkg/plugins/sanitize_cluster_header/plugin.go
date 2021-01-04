@@ -8,6 +8,7 @@ import (
 
 const (
 	errEnterpriseOnly = "Could not load sanitize_cluster_header plugin - this is an Enterprise feature"
+	pluginName = "sanitize_cluster_header"
 )
 
 var (
@@ -28,6 +29,10 @@ func NewPlugin() *plugin {
 
 func (p *plugin) IsUpgrade() bool {
 	return false
+}
+
+func (p *plugin) PluginName() string {
+	return pluginName
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
