@@ -10,7 +10,7 @@ import (
 
 const (
 	ExtensionName = "rbac"
-	errEnterpriseOnly = "Could not load jwt plugin - this is an Enterprise feature"
+	errEnterpriseOnly = "Could not load rbac plugin - this is an Enterprise feature"
 )
 
 var (
