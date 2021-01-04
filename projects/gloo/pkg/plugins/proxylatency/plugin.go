@@ -8,8 +8,8 @@ import (
 
 const (
 	FilterName = "io.solo.filters.http.proxy_latency"
-    errEnterpriseOnly = "Could not load dlp plugin - this is an Enterprise feature"
-	pluginName = "dlp"
+    errEnterpriseOnly = "Could not load proxylatency plugin - this is an Enterprise feature"
+	pluginName = "proxylatency"
 )
 
 var (
