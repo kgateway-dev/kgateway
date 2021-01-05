@@ -18,6 +18,7 @@ weight: 5
 - [RingHashConfig](#ringhashconfig)
 - [RingHash](#ringhash)
 - [Maglev](#maglev)
+- [LocalityWeightedLbConfig](#localityweightedlbconfig)
   
 
 
@@ -43,6 +44,7 @@ endpoints.
 "random": .gloo.solo.io.LoadBalancerConfig.Random
 "ringHash": .gloo.solo.io.LoadBalancerConfig.RingHash
 "maglev": .gloo.solo.io.LoadBalancerConfig.Maglev
+"localityWeightedLbConfig": .gloo.solo.io.LoadBalancerConfig.LocalityWeightedLbConfig
 
 ```
 
@@ -55,6 +57,7 @@ endpoints.
 | `random` | [.gloo.solo.io.LoadBalancerConfig.Random](../load_balancer.proto.sk/#random) | Use random for load balancing. Only one of `random`, `roundRobin`, `leastRequest`, or `maglev` can be set. |
 | `ringHash` | [.gloo.solo.io.LoadBalancerConfig.RingHash](../load_balancer.proto.sk/#ringhash) | Use ring hash for load balancing. Only one of `ringHash`, `roundRobin`, `leastRequest`, or `maglev` can be set. |
 | `maglev` | [.gloo.solo.io.LoadBalancerConfig.Maglev](../load_balancer.proto.sk/#maglev) | Use maglev for load balancing. Only one of `maglev`, `roundRobin`, `leastRequest`, or `ringHash` can be set. |
+| `localityWeightedLbConfig` | [.gloo.solo.io.LoadBalancerConfig.LocalityWeightedLbConfig](../load_balancer.proto.sk/#localityweightedlbconfig) | https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/locality_weight#locality-weighted-load-balancing Locality weighted load balancing enables weighting assignments across different zones and geographical locations buy using explicit weights. This field is required to enable locality weighted load balancing. |
 
 
 
@@ -145,6 +148,21 @@ Customizes the parameters used in the hashing algorithm to refine performance or
 
 ---
 ### Maglev
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### LocalityWeightedLbConfig
 
 
 

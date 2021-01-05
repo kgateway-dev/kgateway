@@ -130,6 +130,22 @@ func (m *LoadBalancerConfig) Equal(that interface{}) bool {
 
 	}
 
+	switch m.LocalityConfig.(type) {
+
+	case *LoadBalancerConfig_LocalityWeightedLbConfig_:
+
+		if h, ok := interface{}(m.GetLocalityWeightedLbConfig()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetLocalityWeightedLbConfig()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetLocalityWeightedLbConfig(), target.GetLocalityWeightedLbConfig()) {
+				return false
+			}
+		}
+
+	}
+
 	return true
 }
 
@@ -284,6 +300,30 @@ func (m *LoadBalancerConfig_Maglev) Equal(that interface{}) bool {
 	target, ok := that.(*LoadBalancerConfig_Maglev)
 	if !ok {
 		that2, ok := that.(LoadBalancerConfig_Maglev)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *LoadBalancerConfig_LocalityWeightedLbConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*LoadBalancerConfig_LocalityWeightedLbConfig)
+	if !ok {
+		that2, ok := that.(LoadBalancerConfig_LocalityWeightedLbConfig)
 		if ok {
 			target = &that2
 		} else {

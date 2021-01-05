@@ -150,6 +150,26 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	switch m.LocalityConfig.(type) {
+
+	case *LoadBalancerConfig_LocalityWeightedLbConfig_:
+
+		if h, ok := interface{}(m.GetLocalityWeightedLbConfig()).(safe_hasher.SafeHasher); ok {
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if val, err := hashstructure.Hash(m.GetLocalityWeightedLbConfig(), nil); err != nil {
+				return 0, err
+			} else {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -272,6 +292,22 @@ func (m *LoadBalancerConfig_Maglev) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.LoadBalancerConfig_Maglev")); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *LoadBalancerConfig_LocalityWeightedLbConfig) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.LoadBalancerConfig_LocalityWeightedLbConfig")); err != nil {
 		return 0, err
 	}
 
