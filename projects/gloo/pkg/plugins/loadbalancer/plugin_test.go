@@ -197,6 +197,30 @@ status: {}
 		Expect(out.LbConfig).To(BeNil())
 	})
 
+	It("should set locality config - locality weighted lb config", func() {
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			LocalityConfig: &v1.LoadBalancerConfig_LocalityWeightedLbConfig_{
+				LocalityWeightedLbConfig: &v1.LoadBalancerConfig_LocalityWeightedLbConfig{},
+			},
+		}
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.CommonLbConfig.LocalityConfigSpecifier).To(Equal(envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{}))
+	})
+
+	It("should not set locality config if no config", func() {
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			// We include this, so that the plugin generates a CommonLbConfig object
+			HealthyPanicThreshold: &wrappers.DoubleValue{
+				Value: 50,
+			},
+			LocalityConfig: nil,
+		}
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.CommonLbConfig.LocalityConfigSpecifier).To(BeNil())
+	})
+
 	Context("route plugin", func() {
 		var (
 			routeParams plugins.RouteParams
