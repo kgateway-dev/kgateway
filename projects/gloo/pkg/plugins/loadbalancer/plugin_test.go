@@ -205,7 +205,11 @@ status: {}
 		}
 		err := plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.CommonLbConfig.LocalityConfigSpecifier).To(Equal(envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{}))
+		Expect(out.CommonLbConfig.LocalityConfigSpecifier).To(Equal(
+			&envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+				LocalityWeightedLbConfig: &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{
+				},
+			}))
 	})
 
 	It("should not set locality config if no config", func() {
