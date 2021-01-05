@@ -207,8 +207,7 @@ status: {}
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out.CommonLbConfig.LocalityConfigSpecifier).To(Equal(
 			&envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
-				LocalityWeightedLbConfig: &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{
-				},
+				LocalityWeightedLbConfig: &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
 			}))
 	})
 
