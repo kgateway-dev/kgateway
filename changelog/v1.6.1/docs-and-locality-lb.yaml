@@ -1,7 +1,7 @@
 changelog:
   - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/gloo/issues/4059
-    resolvesIssue: false
+    resolvesIssue: true
     description: >
       Update to tracing docs, so that example yaml does not
       throw a parsing error
