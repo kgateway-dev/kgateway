@@ -466,6 +466,11 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 					//   - or early header match is not regex but late header match is regex
 					// in both cases, we can't validate the constraint properly, so we mark
 					// the route as not short-circuited to avoid reporting flawed warnings.
+
+					if laterOrRegexPartiallyShortCircuited(laterHeaderMatcher, earlyHeaderMatcher) {
+						continue
+					}
+
 					return false
 				}
 			}
@@ -479,4 +484,59 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 
 	// every single header matcher defined on the later matcher was short-circuited
 	return true
+}
+
+// special case to catch the following:
+//	- matchers:
+//	  - prefix: /foo
+//      headers:
+//	    - name: :method
+//        value: GET
+//        invertMatch: true
+//    directResponseAction:
+//      status: 405
+//      body: 'Invalid HTTP Method'
+//	...
+//	- matchers:
+//	  - methods:
+//	    - GET
+//	    - POST # this one cannot be reached
+//      prefix: /foo
+//    routeAction:
+//	    ....
+func laterOrRegexPartiallyShortCircuited(laterHeaderMatcher, earlyHeaderMatcher *matchers.HeaderMatcher) bool {
+
+	// regex matches simple OR regex, e.g. (GET|POST|...)
+	re := regexp.MustCompile("^\\([\\w]*[|]+[\\w]*\\)$")
+	foundIndex := re.FindStringIndex(laterHeaderMatcher.Value)
+	if foundIndex != nil {
+
+		// regex matches, is a simple OR. we can try to do some additional validation
+
+		matches := strings.Split(laterHeaderMatcher.Value[1:len(laterHeaderMatcher.Value)-1], "|")
+		shortCircuitedMatchExists := false
+
+		for _, match := range matches {
+			if earlyHeaderMatcher.Regex {
+				re := regexp.MustCompile(earlyHeaderMatcher.Value)
+				foundIndex := re.FindStringIndex(match)
+				if foundIndex != nil && !earlyHeaderMatcher.InvertMatch ||
+					foundIndex == nil && earlyHeaderMatcher.InvertMatch {
+					// one of the OR'ed conditions cannot be reached, likely an error!
+					shortCircuitedMatchExists = true
+				}
+			} else {
+				if match == earlyHeaderMatcher.Value && !earlyHeaderMatcher.InvertMatch ||
+					match != earlyHeaderMatcher.Value && earlyHeaderMatcher.InvertMatch {
+					// one of the OR'ed conditions cannot be reached, likely an error!
+					shortCircuitedMatchExists = true
+				}
+			}
+		}
+
+		if shortCircuitedMatchExists {
+			return true
+		}
+	}
+	return false
 }

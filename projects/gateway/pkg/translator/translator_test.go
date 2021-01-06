@@ -593,7 +593,7 @@ var _ = Describe("Translator", func() {
 				})
 			})
 
-			Context("validate matcher short-circuiting warnings", func() {
+			FContext("validate matcher short-circuiting warnings", func() {
 
 				BeforeEach(func() {
 					translator = NewTranslator([]ListenerFactory{&HttpTranslator{WarnOnRouteShortCircuiting: true}, &TcpTranslator{}}, Opts{})
@@ -721,6 +721,26 @@ var _ = Describe("Translator", func() {
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/foo/.*/bar"}, CaseSensitive: &wrappers.BoolValue{Value: true}},
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, CaseSensitive: &wrappers.BoolValue{Value: true}},
 						nil),
+					Entry("inverted header matcher hijacks possible method matchers",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"},
+							Headers: []*matchers.HeaderMatcher{
+								{
+									Name:        ":method",
+									Value:       "GET",
+									InvertMatch: true,
+								},
+							},
+						},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"},
+							Methods: []string{"GET", "POST"}, // The POST method here is unreachable
+						},
+						UnorderedPrefixErr("gloo-system.name1", "/foo", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"},
+							Methods: []string{"GET", "POST"},
+						})),
+					Entry("prefix hijacking with inverted header matcher, late matcher partially unreachable",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: ":method", Value: "GET", InvertMatch: true}}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Methods: []string{"GET", "POST"}}, // The POST method here is unreachable
+						UnorderedPrefixErr("gloo-system.name1", "/1", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Methods: []string{"GET", "POST"}})),
 				)
 			})
 		})
