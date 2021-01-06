@@ -8,3 +8,5 @@ changelog:
       The cases now additionally covered are:
         - routes that have simple OR regex header matchers, ensuring each one of the OR'ed matchers can be reached
         - the same logic, but with method matchers
+      In addition, we support aggressively reporting errors on virtual services with invalid regex matchers. (no need
+      to enable short-circuiting reporting)
