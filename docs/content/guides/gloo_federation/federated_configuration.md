@@ -78,7 +78,7 @@ NAME              AGE
 fed-upstream      97m
 ```
 
-Now we can created a Virtual Service for the Upstream.
+Now we can create a Virtual Service for the Upstream.
 
 ### Create a Federated Virtual Service
 

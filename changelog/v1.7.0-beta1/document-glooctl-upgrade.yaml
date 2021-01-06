@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4037
+    description: Document the process for upgrading/downgrading glooctl CLI
+    resolvesIssue: false
