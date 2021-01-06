@@ -593,7 +593,7 @@ var _ = Describe("Translator", func() {
 				})
 			})
 
-			FContext("validate matcher short-circuiting warnings", func() {
+			Context("validate matcher short-circuiting warnings", func() {
 
 				BeforeEach(func() {
 					translator = NewTranslator([]ListenerFactory{&HttpTranslator{WarnOnRouteShortCircuiting: true}, &TcpTranslator{}}, Opts{})
