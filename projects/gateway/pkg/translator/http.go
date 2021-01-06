@@ -344,7 +344,11 @@ func validateRegexHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, repor
 
 func regexShortCircuits(laterMatcher, earlierMatcher *matchers.Matcher) bool {
 	laterPath := utils.PathAsString(laterMatcher)
-	re := regexp.MustCompile(earlierMatcher.GetRegex())
+	re, err := regexp.Compile(earlierMatcher.GetRegex())
+	if err != nil {
+		// invalid regex should already be reported on the virtual service
+		return false
+	}
 	foundIndex := re.FindStringIndex(laterPath)
 	// later matcher is always non-regex. to validate against the regex, we need to ensure that it's either
 	// unset or set to false
@@ -393,7 +397,11 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matc
 
 				// let's check if the early condition overlaps the later one
 				if earlyQpm.Regex && !laterQpm.Regex {
-					re := regexp.MustCompile(earlyQpm.Value)
+					re, err := regexp.Compile(earlyQpm.Value)
+					if err != nil {
+						// invalid regex should already be reported on the virtual service
+						return false
+					}
 					foundIndex := re.FindStringIndex(laterQpm.Value)
 					if foundIndex == nil {
 						// early regex doesn't capture the later matcher
@@ -440,7 +448,11 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 
 				// let's check if the early condition overlaps the later one
 				if earlyHeaderMatcher.Regex && !laterHeaderMatcher.Regex {
-					re := regexp.MustCompile(earlyHeaderMatcher.Value)
+					re, err := regexp.Compile(earlyHeaderMatcher.Value)
+					if err != nil {
+						// invalid regex should already be reported on the virtual service
+						return false
+					}
 					foundIndex := re.FindStringIndex(laterHeaderMatcher.Value)
 					if foundIndex == nil && !earlyHeaderMatcher.InvertMatch {
 						// early regex doesn't capture the later matcher
@@ -507,7 +519,11 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 func laterOrRegexPartiallyShortCircuited(laterHeaderMatcher, earlyHeaderMatcher *matchers.HeaderMatcher) bool {
 
 	// regex matches simple OR regex, e.g. (GET|POST|...)
-	re := regexp.MustCompile("^\\([\\w]+([|[\\w]+)+\\)$")
+	re, err := regexp.Compile("^\\([\\w]+([|[\\w]+)+\\)$")
+	if err != nil {
+		// invalid regex should already be reported on the virtual service
+		return false
+	}
 	foundIndex := re.FindStringIndex(laterHeaderMatcher.Value)
 	if foundIndex != nil {
 
@@ -518,7 +534,11 @@ func laterOrRegexPartiallyShortCircuited(laterHeaderMatcher, earlyHeaderMatcher 
 
 		for _, match := range matches {
 			if earlyHeaderMatcher.Regex {
-				re := regexp.MustCompile(earlyHeaderMatcher.Value)
+				re, err := regexp.Compile(earlyHeaderMatcher.Value)
+				if err != nil {
+					// invalid regex should already be reported on the virtual service
+					return false
+				}
 				foundIndex := re.FindStringIndex(match)
 				if foundIndex != nil && !earlyHeaderMatcher.InvertMatch ||
 					foundIndex == nil && earlyHeaderMatcher.InvertMatch {
