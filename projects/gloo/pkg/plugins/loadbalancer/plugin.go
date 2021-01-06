@@ -97,7 +97,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		}
 		if cfg.LocalityConfig != nil {
 			switch cfg.LocalityConfig.(type) {
-			case *v1.LoadBalancerConfig_LocalityWeightedLbConfig_:
+			case *v1.LoadBalancerConfig_LocalityWeightedLbConfig:
 				out.CommonLbConfig.LocalityConfigSpecifier = &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
 					LocalityWeightedLbConfig: &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
 				}

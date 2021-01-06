@@ -3,6 +3,8 @@ package loadbalancer_test
 import (
 	"time"
 
+	"github.com/golang/protobuf/ptypes/empty"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -199,8 +201,8 @@ status: {}
 
 	It("should set locality config - locality weighted lb config", func() {
 		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
-			LocalityConfig: &v1.LoadBalancerConfig_LocalityWeightedLbConfig_{
-				LocalityWeightedLbConfig: &v1.LoadBalancerConfig_LocalityWeightedLbConfig{},
+			LocalityConfig: &v1.LoadBalancerConfig_LocalityWeightedLbConfig{
+				LocalityWeightedLbConfig: &empty.Empty{},
 			},
 		}
 		err := plugin.ProcessUpstream(params, upstream, out)

@@ -4,6 +4,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
 
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
@@ -63,14 +64,11 @@ message LoadBalancerConfig {
         Maglev maglev = 7;
     }
 
-    message LocalityWeightedLbConfig {
-    }
-
     oneof locality_config {
         // https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/locality_weight#locality-weighted-load-balancing
         // Locality weighted load balancing enables weighting assignments across different zones and geographical locations buy using explicit weights.
         // This field is required to enable locality weighted load balancing
-        LocalityWeightedLbConfig locality_weighted_lb_config = 8;
+        google.protobuf.Empty locality_weighted_lb_config = 8;
     }
 
 }
