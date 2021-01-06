@@ -507,7 +507,7 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 func laterOrRegexPartiallyShortCircuited(laterHeaderMatcher, earlyHeaderMatcher *matchers.HeaderMatcher) bool {
 
 	// regex matches simple OR regex, e.g. (GET|POST|...)
-	re := regexp.MustCompile("^\\([\\w]*[|]+[\\w]*\\)$")
+	re := regexp.MustCompile("^\\([\\w]+([|[\\w]+)+\\)$")
 	foundIndex := re.FindStringIndex(laterHeaderMatcher.Value)
 	if foundIndex != nil {
 
