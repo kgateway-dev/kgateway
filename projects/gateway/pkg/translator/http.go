@@ -26,6 +26,10 @@ var (
 	NoVirtualHostErr = func(vs *v1.VirtualService) error {
 		return errors.Errorf("virtual service [%s] does not specify a virtual host", vs.Metadata.Ref().Key())
 	}
+	InvalidRegexErr = func(vsRef, regexErr string) error {
+		return errors.Errorf("virtual service [%s] has a regex matcher with invalid regex, %s",
+			vsRef, regexErr)
+	}
 	DomainInOtherVirtualServicesErr = func(domain string, conflictingVsRefs []string) error {
 		if domain == "" {
 			return errors.Errorf("domain conflict: other virtual services that belong to the same Gateway"+
@@ -255,8 +259,10 @@ func (t *HttpTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, tabl
 		Options: vs.VirtualHost.Options,
 	}
 
+	validateRoutes(vs, vh, reports)
+
 	if t.WarnOnRouteShortCircuiting {
-		validateRoutes(vs, vh, reports)
+		validateRouteShortCircuiting(vs, vh, reports)
 	}
 
 	if err := appendSource(vh, vs); err != nil {
@@ -274,6 +280,19 @@ func VirtualHostName(vs *v1.VirtualService) string {
 // this function is written with the assumption that the routes will not be modified afterwards,
 // and are in their final sorted form
 func validateRoutes(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
+	for _, rt := range vh.Routes {
+		for _, matcher := range rt.Matchers {
+			_, err := regexp.Compile(matcher.GetRegex())
+			if matcher.GetRegex() != "" && err != nil {
+				reports.AddError(vs, InvalidRegexErr(vs.Metadata.Ref().Key(), err.Error()))
+			}
+		}
+	}
+}
+
+// this function is written with the assumption that the routes will not be modified afterwards,
+// and are in their final sorted form
+func validateRouteShortCircuiting(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
 	validateAnyDuplicateMatchers(vs, vh, reports)
 	validatePrefixHijacking(vs, vh, reports)
 	validateRegexHijacking(vs, vh, reports)

@@ -591,6 +591,18 @@ var _ = Describe("Translator", func() {
 
 					Expect(errs.Error()).To(ContainSubstring(NoVirtualHostErr(snap.VirtualServices[0]).Error()))
 				})
+
+				It("should error when a virtual services has invalid regex", func() {
+					snap.VirtualServices[0].VirtualHost.Routes[0].Matchers[0] = &matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "["}}
+
+					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+					Expect(reports.Validate()).To(HaveOccurred())
+
+					errs := reports.ValidateStrict()
+					Expect(errs).To(HaveOccurred())
+
+					Expect(errs.Error()).To(ContainSubstring("missing closing ]: `[`"))
+				})
 			})
 
 			Context("validate matcher short-circuiting warnings", func() {
@@ -744,7 +756,7 @@ var _ = Describe("Translator", func() {
 					Entry("invalid regex doesn't crash",
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "["}},
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/"}},
-						nil),
+						InvalidRegexErr("gloo-system.name1", "error parsing regexp: missing closing ]: `[`")),
 				)
 			})
 		})
