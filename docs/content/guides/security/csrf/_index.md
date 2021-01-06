@@ -440,4 +440,4 @@ x-envoy-upstream-service-time: 2
 
 In this guide, we described what is Cross Site Request Forgery (CSRF) and approaches for dealing with these attacks.  We delved into one Gloo Edge approach that directly uses an integrated Envoy filter.
 
-For more information, check out both the [Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/csrf_filter#config-http-filters-csrf) and [Gloo docs](({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto.sk/" %}})).
+For more information, check out both the [Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/csrf_filter#config-http-filters-csrf) and [Gloo docs]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto.sk/" %}}).
