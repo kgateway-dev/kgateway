@@ -317,6 +317,8 @@ var _ = Describe("CSRF", func() {
 
 				// build a csrf policy
 				csrfPolicy := getCsrfPolicyWithShadowEnabled(allowedOrigin)
+				csrfPolicy.FilterEnabled = &gloo_config_core.RuntimeFractionalPercent{}
+				//csrfPolicy := getCsrfPolicyTest(allowedOrigin)
 
 				p := checkProxy()
 				l := getNonSSLListener(p)
@@ -379,6 +381,7 @@ var _ = Describe("CSRF", func() {
 
 				// build a csrf policy
 				csrfPolicy := getCsrfPolicyWithShadowEnabled(allowedOrigin)
+				csrfPolicy.FilterEnabled = &gloo_config_core.RuntimeFractionalPercent{}
 
 				// update the listener to include the csrf policy
 				httpGateway := gw.GetHttpGateway()
@@ -414,6 +417,7 @@ var _ = Describe("CSRF", func() {
 
 				// build a csrf policy
 				csrfPolicy := getCsrfPolicyWithFilterEnabled(allowedOrigin)
+				//csrfPolicy := getCsrfPolicyTestShadow(allowedOrigin)
 
 				p := checkProxy()
 				l := getNonSSLListener(p)
@@ -1025,6 +1029,48 @@ func getCsrfPolicyWithFilterEnabled(origin string) *csrf.CsrfPolicy {
 		FilterEnabled: &gloo_config_core.RuntimeFractionalPercent{
 			DefaultValue: &glootype.FractionalPercent{
 				Numerator:   uint32(100),
+				Denominator: glootype.FractionalPercent_HUNDRED,
+			},
+		},
+		AdditionalOrigins: []*gloo_type_matcher.StringMatcher{{
+			MatchPattern: &gloo_type_matcher.StringMatcher_SafeRegex{
+				SafeRegex: &gloo_type_matcher.RegexMatcher{
+					EngineType: &gloo_type_matcher.RegexMatcher_GoogleRe2{
+						GoogleRe2: &gloo_type_matcher.RegexMatcher_GoogleRE2{},
+					},
+					Regex: origin,
+				},
+			},
+		}},
+	}
+}
+
+func getCsrfPolicyTestShadow(origin string) *csrf.CsrfPolicy {
+	return &csrf.CsrfPolicy{
+		ShadowEnabled: &gloo_config_core.RuntimeFractionalPercent{
+			DefaultValue: &glootype.FractionalPercent{
+				Numerator:   uint32(1),
+				Denominator: glootype.FractionalPercent_HUNDRED,
+			},
+		},
+		AdditionalOrigins: []*gloo_type_matcher.StringMatcher{{
+			MatchPattern: &gloo_type_matcher.StringMatcher_SafeRegex{
+				SafeRegex: &gloo_type_matcher.RegexMatcher{
+					EngineType: &gloo_type_matcher.RegexMatcher_GoogleRe2{
+						GoogleRe2: &gloo_type_matcher.RegexMatcher_GoogleRE2{},
+					},
+					Regex: origin,
+				},
+			},
+		}},
+	}
+}
+
+func getCsrfPolicyTest(origin string) *csrf.CsrfPolicy {
+	return &csrf.CsrfPolicy{
+		FilterEnabled: &gloo_config_core.RuntimeFractionalPercent{
+			DefaultValue: &glootype.FractionalPercent{
+				Numerator:   uint32(1),
 				Denominator: glootype.FractionalPercent_HUNDRED,
 			},
 		},
