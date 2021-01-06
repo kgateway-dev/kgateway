@@ -3,6 +3,8 @@ package loadbalancer_test
 import (
 	"time"
 
+	"github.com/golang/protobuf/ptypes/empty"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -195,6 +197,33 @@ status: {}
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_MAGLEV))
 		Expect(out.LbConfig).To(BeNil())
+	})
+
+	It("should set locality config - locality weighted lb config", func() {
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			LocalityConfig: &v1.LoadBalancerConfig_LocalityWeightedLbConfig{
+				LocalityWeightedLbConfig: &empty.Empty{},
+			},
+		}
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.CommonLbConfig.LocalityConfigSpecifier).To(Equal(
+			&envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+				LocalityWeightedLbConfig: &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
+			}))
+	})
+
+	It("should not set locality config if no config", func() {
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			// We include this, so that the plugin generates a CommonLbConfig object
+			HealthyPanicThreshold: &wrappers.DoubleValue{
+				Value: 50,
+			},
+			LocalityConfig: nil,
+		}
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.CommonLbConfig.LocalityConfigSpecifier).To(BeNil())
 	})
 
 	Context("route plugin", func() {
