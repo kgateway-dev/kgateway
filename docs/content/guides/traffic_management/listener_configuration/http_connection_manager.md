@@ -40,10 +40,9 @@ spec:
           zipkinConfig:
             collectorEndpoint: /api/v2/spans
             collectorEndpointVersion: HTTP_JSON
-            collectorCluster:
-              collectorUpstreamRef:
-                name: zipkin
-                namespace: default
+            collectorUpstreamRef:
+              name: zipkin
+              namespace: default
 status: # collapsed for brevity
 {{< /highlight >}}
 
@@ -67,8 +66,7 @@ spec:
           zipkinConfig:
             collectorEndpoint: /api/v2/spans
             collectorEndpointVersion: HTTP_JSON
-            collectorCluster:
-              clusterName: zipkin
+            clusterName: zipkin
 status: # collapsed for brevity
 {{< /highlight >}}
 
