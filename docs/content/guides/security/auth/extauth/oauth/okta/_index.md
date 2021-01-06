@@ -74,7 +74,7 @@ spec:
 
 ### Verify the Upstream
 
-Gloo Edge automatically discovers Kubernetes services automatically.  So, running the `glooctl get upstreams` command, you should be able to see a new Gloo Edge Upstream `default-httpbin-8000`, based on the naming convention `namespace-serviceName-portNumber`:
+Gloo Edge discovers Kubernetes services automatically.  So, running the `glooctl get upstreams` command, you should be able to see a new Gloo Edge Upstream `default-httpbin-8000`, based on the naming convention `namespace-serviceName-portNumber`:
 
 ```shell
 % glooctl get upstreams default-httpbin-8000
