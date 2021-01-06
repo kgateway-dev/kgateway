@@ -76,7 +76,7 @@ and change the `httpGateway` object to the following:
         - config:
             '@type': type.googleapis.com/google.protobuf.StringValue
             value: "world"
-          image: webassemblyhub.io/sodman/example-filter:v0.3
+          image: webassemblyhub.io/sodman/example-filter:v0.5
           name: myfilter
           root_id: add_header_root_id
 ```
