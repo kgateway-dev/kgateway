@@ -203,8 +203,9 @@ type isLoadBalancerConfig_LocalityConfig interface {
 }
 
 type LoadBalancerConfig_LocalityWeightedLbConfig struct {
+	// (Enterprise Only)
 	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/locality_weight#locality-weighted-load-balancing
-	// Locality weighted load balancing enables weighting assignments across different zones and geographical locations buy using explicit weights.
+	// Locality weighted load balancing enables weighting assignments across different zones and geographical locations by using explicit weights.
 	// This field is required to enable locality weighted load balancing
 	LocalityWeightedLbConfig *empty.Empty `protobuf:"bytes,8,opt,name=locality_weighted_lb_config,json=localityWeightedLbConfig,proto3,oneof"`
 }
