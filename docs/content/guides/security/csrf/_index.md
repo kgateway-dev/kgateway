@@ -1,7 +1,7 @@
 ---
 title: CSRF
 weight: 10
-description: Enforce client-side access controls by specifying external domains to access certain routes of your domain
+description: Shield your applications from session-riding attacks.
 ---
 
 ### Understanding CSRF
@@ -16,7 +16,7 @@ A primary benefit of API Gateways like Gloo Edge is that they provide these weap
 
 One option for Gloo Edge Enterprise users is to  activate its [Web Application Framework]({{% versioned_link_path fromRoot="/guides/security/waf/" %}}) based on Apache ModSecurity.  It supports use of CSRF rules in the OWASP [Core Rule Set](https://coreruleset.org/).
 
-Alternatively, Envoy provides a simple [CSRF filter](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/csrf/v2/csrf.proto) that may be deployed to an entire Gloo `Gateway` or to individual components of a `VirtualService`.  To understand more about how this filter works in Envoy, we recommend playing in their CSRF [sandbox](https://www.envoyproxy.io/docs/envoy/latest/start/sandboxes/csrf).
+Alternatively, Envoy provides a simple [CSRF filter](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/csrf/v2/csrf.proto) that may be applied to an entire Gloo `Gateway`, a `VirtualService`, or even individual `Routes` within a `VirtualService`.  To understand more about how this filter works in Envoy, we recommend playing in their CSRF [sandbox](https://www.envoyproxy.io/docs/envoy/latest/start/sandboxes/csrf).
 
 The purpose of this guide is to demonstrate how to apply the Envoy CSRF filter to a Gloo Edge `VirtualService`.
 
