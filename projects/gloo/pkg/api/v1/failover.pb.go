@@ -111,6 +111,7 @@ type LocalityLbEndpoints struct {
 	// balancing weight for a locality is divided by the sum of the weights of all
 	// localities at the same priority level to produce the effective percentage
 	// of traffic for the locality.
+	// To enable locality weighted load balancing, load_balancer_config.locality_weighted_lb_config must be set as well
 	LoadBalancingWeight *wrappers.UInt32Value `protobuf:"bytes,3,opt,name=load_balancing_weight,json=loadBalancingWeight,proto3" json:"load_balancing_weight,omitempty"`
 }
 
