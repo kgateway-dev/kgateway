@@ -26,6 +26,10 @@ var (
 	NoVirtualHostErr = func(vs *v1.VirtualService) error {
 		return errors.Errorf("virtual service [%s] does not specify a virtual host", vs.Metadata.Ref().Key())
 	}
+	InvalidRegexErr = func(vsRef, regexErr string) error {
+		return errors.Errorf("virtual service [%s] has a regex matcher with invalid regex, %s",
+			vsRef, regexErr)
+	}
 	DomainInOtherVirtualServicesErr = func(domain string, conflictingVsRefs []string) error {
 		if domain == "" {
 			return errors.Errorf("domain conflict: other virtual services that belong to the same Gateway"+
@@ -255,8 +259,10 @@ func (t *HttpTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, tabl
 		Options: vs.VirtualHost.Options,
 	}
 
+	validateRoutes(vs, vh, reports)
+
 	if t.WarnOnRouteShortCircuiting {
-		validateRoutes(vs, vh, reports)
+		validateRouteShortCircuiting(vs, vh, reports)
 	}
 
 	if err := appendSource(vh, vs); err != nil {
@@ -274,6 +280,19 @@ func VirtualHostName(vs *v1.VirtualService) string {
 // this function is written with the assumption that the routes will not be modified afterwards,
 // and are in their final sorted form
 func validateRoutes(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
+	for _, rt := range vh.Routes {
+		for _, matcher := range rt.Matchers {
+			_, err := regexp.Compile(matcher.GetRegex())
+			if matcher.GetRegex() != "" && err != nil {
+				reports.AddError(vs, InvalidRegexErr(vs.Metadata.Ref().Key(), err.Error()))
+			}
+		}
+	}
+}
+
+// this function is written with the assumption that the routes will not be modified afterwards,
+// and are in their final sorted form
+func validateRouteShortCircuiting(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
 	validateAnyDuplicateMatchers(vs, vh, reports)
 	validatePrefixHijacking(vs, vh, reports)
 	validateRegexHijacking(vs, vh, reports)
@@ -344,7 +363,11 @@ func validateRegexHijacking(vs *v1.VirtualService, vh *gloov1.VirtualHost, repor
 
 func regexShortCircuits(laterMatcher, earlierMatcher *matchers.Matcher) bool {
 	laterPath := utils.PathAsString(laterMatcher)
-	re := regexp.MustCompile(earlierMatcher.GetRegex())
+	re, err := regexp.Compile(earlierMatcher.GetRegex())
+	if err != nil {
+		// invalid regex should already be reported on the virtual service
+		return false
+	}
 	foundIndex := re.FindStringIndex(laterPath)
 	// later matcher is always non-regex. to validate against the regex, we need to ensure that it's either
 	// unset or set to false
@@ -393,7 +416,11 @@ func earlyQueryParametersShortCircuitedLaterOnes(laterMatcher, earlyMatcher matc
 
 				// let's check if the early condition overlaps the later one
 				if earlyQpm.Regex && !laterQpm.Regex {
-					re := regexp.MustCompile(earlyQpm.Value)
+					re, err := regexp.Compile(earlyQpm.Value)
+					if err != nil {
+						// invalid regex should already be reported on the virtual service
+						return false
+					}
 					foundIndex := re.FindStringIndex(laterQpm.Value)
 					if foundIndex == nil {
 						// early regex doesn't capture the later matcher
@@ -440,7 +467,11 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 
 				// let's check if the early condition overlaps the later one
 				if earlyHeaderMatcher.Regex && !laterHeaderMatcher.Regex {
-					re := regexp.MustCompile(earlyHeaderMatcher.Value)
+					re, err := regexp.Compile(earlyHeaderMatcher.Value)
+					if err != nil {
+						// invalid regex should already be reported on the virtual service
+						return false
+					}
 					foundIndex := re.FindStringIndex(laterHeaderMatcher.Value)
 					if foundIndex == nil && !earlyHeaderMatcher.InvertMatch {
 						// early regex doesn't capture the later matcher
@@ -466,6 +497,11 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 					//   - or early header match is not regex but late header match is regex
 					// in both cases, we can't validate the constraint properly, so we mark
 					// the route as not short-circuited to avoid reporting flawed warnings.
+
+					if laterOrRegexPartiallyShortCircuited(laterHeaderMatcher, earlyHeaderMatcher) {
+						continue
+					}
+
 					return false
 				}
 			}
@@ -479,4 +515,67 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 
 	// every single header matcher defined on the later matcher was short-circuited
 	return true
+}
+
+// special case to catch the following:
+//	- matchers:
+//	  - prefix: /foo
+//      headers:
+//	    - name: :method
+//        value: GET
+//        invertMatch: true
+//    directResponseAction:
+//      status: 405
+//      body: 'Invalid HTTP Method'
+//	...
+//	- matchers:
+//	  - methods:
+//	    - GET
+//	    - POST # this one cannot be reached
+//      prefix: /foo
+//    routeAction:
+//	    ....
+func laterOrRegexPartiallyShortCircuited(laterHeaderMatcher, earlyHeaderMatcher *matchers.HeaderMatcher) bool {
+
+	// regex matches simple OR regex, e.g. (GET|POST|...)
+	re, err := regexp.Compile("^\\([\\w]+([|[\\w]+)+\\)$")
+	if err != nil {
+		// invalid regex should already be reported on the virtual service
+		return false
+	}
+	foundIndex := re.FindStringIndex(laterHeaderMatcher.Value)
+	if foundIndex != nil {
+
+		// regex matches, is a simple OR. we can try to do some additional validation
+
+		matches := strings.Split(laterHeaderMatcher.Value[1:len(laterHeaderMatcher.Value)-1], "|")
+		shortCircuitedMatchExists := false
+
+		for _, match := range matches {
+			if earlyHeaderMatcher.Regex {
+				re, err := regexp.Compile(earlyHeaderMatcher.Value)
+				if err != nil {
+					// invalid regex should already be reported on the virtual service
+					return false
+				}
+				foundIndex := re.FindStringIndex(match)
+				if foundIndex != nil && !earlyHeaderMatcher.InvertMatch ||
+					foundIndex == nil && earlyHeaderMatcher.InvertMatch {
+					// one of the OR'ed conditions cannot be reached, likely an error!
+					shortCircuitedMatchExists = true
+				}
+			} else {
+				if match == earlyHeaderMatcher.Value && !earlyHeaderMatcher.InvertMatch ||
+					match != earlyHeaderMatcher.Value && earlyHeaderMatcher.InvertMatch {
+					// one of the OR'ed conditions cannot be reached, likely an error!
+					shortCircuitedMatchExists = true
+				}
+			}
+		}
+
+		if shortCircuitedMatchExists {
+			return true
+		}
+	}
+	return false
 }
