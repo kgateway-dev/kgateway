@@ -703,7 +703,7 @@ var _ = Describe("Helm Test", func() {
 					})
 				})
 
-				It("Most pods have an anti-injection annotation when disableAutoinjection is enabled", func() {
+				It("should add an anti-injection annotation to all pods when disableAutoinjection is enabled", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
 							"global.internalIstio.disableAutoinjection=true",
@@ -727,7 +727,7 @@ var _ = Describe("Helm Test", func() {
 					})
 				})
 
-				It("The discovery pod can be annotated for istio injection", func() {
+				It("should add an Istio injection annotation for pods that can be configured for it", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"global.internalIstio.whitelistDiscovery=true",
 							"global.internalIstio.disableAutoinjection=false"},
@@ -742,14 +742,11 @@ var _ = Describe("Helm Test", func() {
 						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
 						// Ensure that the discovery pod has a true annotation, gateway-proxy has a false annotation (default), and nothing else has any annoation.
+						// todo if we ever decide to add more pods to the list of 'allow istio injection' pods, then change this to a whitelist check
 						if structuredDeployment.GetName() == "discovery" {
 							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deployment.GetName()))
 							Expect(val).To(Equal("true"), fmt.Sprintf("Deployment %s should have an istio annotation with value of 'true'", deployment.GetName()))
-						} else if structuredDeployment.GetName() == "gateway-proxy" {
-							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
-							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deployment.GetName()))
-							Expect(val).To(Equal("false"), fmt.Sprintf("Deployment %s should have an istio annotation with value of 'false'", deployment.GetName()))
 						} else {
 							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
 							Expect(ok).To(BeFalse(), fmt.Sprintf("Deployment %s should not contain an istio injection annotation", deployment.GetName()))
@@ -2143,6 +2140,8 @@ spec:
     metadata:
       labels:
         gloo: gateway-certgen
+      annotations:
+        sidecar.istio.io/inject: "false"
     spec:
       serviceAccountName: certgen
       containers:
