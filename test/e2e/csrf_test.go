@@ -141,14 +141,12 @@ var _ = Describe("CSRF", func() {
 		return envoyStats
 	}
 
-	checkProxy := func() *gloov1.Proxy {
+	checkProxy := func() {
 		// ensure the proxy and virtual service are created
-		var p *gloov1.Proxy
 		Eventually(func() (*gloov1.Proxy, error) {
-			p, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+			p, err := testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 			return p, err
 		}, "5s", "0.1s").ShouldNot(BeNil())
-		return p
 	}
 
 	checkVirtualService := func(testVs *gatewayv1.VirtualService) {
@@ -259,15 +257,17 @@ var _ = Describe("CSRF", func() {
 			It("should succeed with allowed origin, unsafe request", func() {
 				spoofedRequest := buildRequestFromOrigin(allowedOrigin)
 				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 0"))
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 1"))
+				statistics := getEnvoyStats()
+				Expect(statistics).To(matchInvalidRequestEqualTo(0))
+				Expect(statistics).To(matchValidRequestEqualTo(1))
 			})
 
 			It("should succeed with un-allowed origin and update invalid count", func() {
 				spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
 				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 1"))
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 0"))
+				statistics := getEnvoyStats()
+				Expect(statistics).To(matchInvalidRequestEqualTo(1))
+				Expect(statistics).To(matchValidRequestEqualTo(0))
 			})
 		})
 
@@ -300,16 +300,18 @@ var _ = Describe("CSRF", func() {
 			It("should succeed with allowed origin, unsafe request", func() {
 				spoofedRequest := buildRequestFromOrigin(allowedOrigin)
 				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 0"))
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 1"))
+				statistics := getEnvoyStats()
+				Expect(statistics).To(matchInvalidRequestEqualTo(0))
+				Expect(statistics).To(matchValidRequestEqualTo(1))
 			})
 
 			It("should fail with un-allowed origin and update invalid count", func() {
 				// shadow mode is ignored when filter is enabled
 				spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
 				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(invalidOriginResponseMatcher)
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 1"))
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 0"))
+				statistics := getEnvoyStats()
+				Expect(statistics).To(matchInvalidRequestEqualTo(1))
+				Expect(statistics).To(matchValidRequestEqualTo(0))
 			})
 		})
 
