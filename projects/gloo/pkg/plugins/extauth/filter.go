@@ -165,6 +165,7 @@ func translateRequestBody(in *extauthv1.BufferSettings) *envoyauth.BufferSetting
 	return &envoyauth.BufferSettings{
 		AllowPartialMessage: in.AllowPartialMessage,
 		MaxRequestBytes:     maxBytes,
+		PackAsBytes:         in.PackAsBytes,
 	}
 }
 
