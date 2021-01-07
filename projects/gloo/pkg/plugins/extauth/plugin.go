@@ -4,7 +4,6 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -14,8 +13,6 @@ import (
 const (
 	DefaultAuthHeader = "x-user-id"
 	HttpServerUri     = "http://not-used.example.com/"
-	errEnterpriseOnly = "Could not load extauth plugin - this is an Enterprise feature"
-	ExtensionName = "extauth"
 )
 
 // Note that although this configures the "envoy.filters.http.ext_authz" filter, we still want the ordering to be within the
@@ -39,14 +36,6 @@ type Plugin struct {
 func (p *Plugin) Init(params plugins.InitParams) error {
 	p.extAuthSettings = params.Settings.GetExtauth()
 	return nil
-}
-
-func (p *Plugin) PluginName() string {
-	return ExtensionName
-}
-
-func (p *Plugin) IsUpgrade() bool {
-	return false
 }
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
@@ -109,10 +98,6 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return markRouteNoAuth(out)
 	}
 
-	if in.GetOptions().GetExtauth().GetConfigRef() != nil {
-		return eris.New(errEnterpriseOnly)
-	}
-
 	customAuthConfig := in.GetOptions().GetExtauth().GetCustomAuth()
 
 	// No custom config, do nothing
@@ -152,10 +137,6 @@ func (p *Plugin) ProcessWeightedDestination(
 	}
 
 	customAuthConfig := in.GetOptions().GetExtauth().GetCustomAuth()
-
-	if in.GetOptions().GetExtauth().GetConfigRef() != nil {
-		return eris.New(errEnterpriseOnly)
-	}
 
 	// No custom config, do nothing
 	if customAuthConfig == nil {

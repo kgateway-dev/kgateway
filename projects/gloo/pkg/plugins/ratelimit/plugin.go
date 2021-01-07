@@ -21,7 +21,6 @@ const (
 	requestType        = "both"
 
 	CustomStage = 1
- 	errEnterpriseOnly = "Could not load ratelimit plugin - this is an Enterprise feature"
 )
 
 var (
@@ -50,14 +49,6 @@ type Plugin struct {
 
 func NewPlugin() *Plugin {
 	return &Plugin{}
-}
-
-func (p *Plugin) IsUpgrade() bool {
-	return false
-}
-
-func (p *Plugin) PluginName() string {
-	return ExtensionName
 }
 
 func (p *Plugin) Init(params plugins.InitParams) error {
