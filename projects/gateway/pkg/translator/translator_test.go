@@ -591,6 +591,18 @@ var _ = Describe("Translator", func() {
 
 					Expect(errs.Error()).To(ContainSubstring(NoVirtualHostErr(snap.VirtualServices[0]).Error()))
 				})
+
+				It("should error when a virtual services has invalid regex", func() {
+					snap.VirtualServices[0].VirtualHost.Routes[0].Matchers[0] = &matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "["}}
+
+					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+					Expect(reports.Validate()).To(HaveOccurred())
+
+					errs := reports.ValidateStrict()
+					Expect(errs).To(HaveOccurred())
+
+					Expect(errs.Error()).To(ContainSubstring("missing closing ]: `[`"))
+				})
 			})
 
 			Context("validate matcher short-circuiting warnings", func() {
@@ -721,6 +733,30 @@ var _ = Describe("Translator", func() {
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "/foo/.*/bar"}, CaseSensitive: &wrappers.BoolValue{Value: true}},
 						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/user/info/bar"}, CaseSensitive: &wrappers.BoolValue{Value: true}},
 						nil),
+					Entry("inverted header matcher hijacks possible method matchers",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"},
+							Headers: []*matchers.HeaderMatcher{
+								{
+									Name:        ":method",
+									Value:       "GET",
+									InvertMatch: true,
+								},
+							},
+						},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"},
+							Methods: []string{"GET", "POST"}, // The POST method here is unreachable
+						},
+						UnorderedPrefixErr("gloo-system.name1", "/foo", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"},
+							Methods: []string{"GET", "POST"},
+						})),
+					Entry("prefix hijacking with inverted header matcher, late matcher partially unreachable",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Headers: []*matchers.HeaderMatcher{{Name: ":method", Value: "GET", InvertMatch: true}}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Methods: []string{"GET", "POST"}}, // The POST method here is unreachable
+						UnorderedPrefixErr("gloo-system.name1", "/1", &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/1"}, Methods: []string{"GET", "POST"}})),
+					Entry("invalid regex doesn't crash",
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "["}},
+						&matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/"}},
+						InvalidRegexErr("gloo-system.name1", "error parsing regexp: missing closing ]: `[`")),
 				)
 			})
 		})
