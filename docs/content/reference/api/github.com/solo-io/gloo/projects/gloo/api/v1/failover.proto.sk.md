@@ -93,7 +93,7 @@ balancing weights or different priorities.
 | ----- | ---- | ----------- | 
 | `locality` | [.gloo.solo.io.Locality](../failover.proto.sk/#locality) | Identifies where the parent upstream hosts run. |
 | `lbEndpoints` | [[]gloo.solo.io.LbEndpoint](../failover.proto.sk/#lbendpoint) | The group of endpoints belonging to the locality specified. Note: If any address is DNS resolvable than `lb_endpoints[].load_balancing_weight` is not allowed on any of this locality's endpoints. |
-| `loadBalancingWeight` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Optional: Per priority/region/zone/sub_zone weight; at least 1. The load balancing weight for a locality is divided by the sum of the weights of all localities at the same priority level to produce the effective percentage of traffic for the locality. |
+| `loadBalancingWeight` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Optional: Per priority/region/zone/sub_zone weight; at least 1. The load balancing weight for a locality is divided by the sum of the weights of all localities at the same priority level to produce the effective percentage of traffic for the locality. To enable locality weighted load balancing, load_balancer_config.locality_weighted_lb_config must be set as well. |
 
 
 
