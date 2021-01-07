@@ -311,6 +311,10 @@ func (m *BufferSettings) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetPackAsBytes() != target.GetPackAsBytes() {
+		return false
+	}
+
 	return true
 }
 
