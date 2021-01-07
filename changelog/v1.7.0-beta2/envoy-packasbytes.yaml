@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3937
+    description: Possibility to configure custom auth server to retrieve request body as bytes (Support Envoys packAsBytes)
