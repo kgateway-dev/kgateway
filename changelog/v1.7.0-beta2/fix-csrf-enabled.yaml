@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4053
+    resolvesIssue: false
+    description: >
+      Switching CSRF mode from enabled to shadow mode does not apply default enabled value to filter.
