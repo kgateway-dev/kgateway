@@ -28,4 +28,5 @@ type ValidationOpts struct {
 	IgnoreProxyValidationFailure bool
 	AlwaysAcceptResources        bool
 	AllowWarnings                bool
+	WarnOnRouteShortCircuiting   bool
 }

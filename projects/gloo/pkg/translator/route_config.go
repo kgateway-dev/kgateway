@@ -1,6 +1,7 @@
 package translator
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"unicode"
@@ -187,7 +188,7 @@ func initRoutes(
 				"no path specifier provided",
 			)
 		}
-		match := GlooMatcherToEnvoyMatcher(params.Params, matcher)
+		match := GlooMatcherToEnvoyMatcher(params.Params.Ctx, matcher)
 		out[i] = &envoy_config_route_v3.Route{
 			Match: &match,
 		}
@@ -200,22 +201,22 @@ func initRoutes(
 }
 
 // utility function to transform gloo matcher to envoy route matcher
-func GlooMatcherToEnvoyMatcher(params plugins.Params, matcher *matchers.Matcher) envoy_config_route_v3.RouteMatch {
+func GlooMatcherToEnvoyMatcher(ctx context.Context, matcher *matchers.Matcher) envoy_config_route_v3.RouteMatch {
 	match := envoy_config_route_v3.RouteMatch{
-		Headers:         envoyHeaderMatcher(params, matcher.GetHeaders()),
-		QueryParameters: envoyQueryMatcher(params, matcher.GetQueryParameters()),
+		Headers:         envoyHeaderMatcher(ctx, matcher.GetHeaders()),
+		QueryParameters: envoyQueryMatcher(ctx, matcher.GetQueryParameters()),
 	}
 	if len(matcher.GetMethods()) > 0 {
 		match.Headers = append(match.Headers, &envoy_config_route_v3.HeaderMatcher{
 			Name: ":method",
 			HeaderMatchSpecifier: &envoy_config_route_v3.HeaderMatcher_SafeRegexMatch{
-				SafeRegexMatch: regexutils.NewRegex(params.Ctx, strings.Join(matcher.Methods, "|")),
+				SafeRegexMatch: regexutils.NewRegex(ctx, strings.Join(matcher.Methods, "|")),
 			},
 		})
 	}
 	// need to do this because Go's proto implementation makes oneofs private
 	// which genius thought of that?
-	setEnvoyPathMatcher(params, matcher, &match)
+	setEnvoyPathMatcher(ctx, matcher, &match)
 	match.CaseSensitive = matcher.GetCaseSensitive()
 	return match
 }
@@ -511,7 +512,7 @@ func getSubsets(upstream *v1.Upstream) *v1plugins.SubsetSpec {
 
 }
 
-func setEnvoyPathMatcher(params plugins.Params, in *matchers.Matcher, out *envoy_config_route_v3.RouteMatch) {
+func setEnvoyPathMatcher(ctx context.Context, in *matchers.Matcher, out *envoy_config_route_v3.RouteMatch) {
 	switch path := in.GetPathSpecifier().(type) {
 	case *matchers.Matcher_Exact:
 		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_Path{
@@ -519,7 +520,7 @@ func setEnvoyPathMatcher(params plugins.Params, in *matchers.Matcher, out *envoy
 		}
 	case *matchers.Matcher_Regex:
 		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_SafeRegex{
-			SafeRegex: regexutils.NewRegex(params.Ctx, path.Regex),
+			SafeRegex: regexutils.NewRegex(ctx, path.Regex),
 		}
 	case *matchers.Matcher_Prefix:
 		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_Prefix{
@@ -528,7 +529,7 @@ func setEnvoyPathMatcher(params plugins.Params, in *matchers.Matcher, out *envoy
 	}
 }
 
-func envoyHeaderMatcher(params plugins.Params, in []*matchers.HeaderMatcher) []*envoy_config_route_v3.HeaderMatcher {
+func envoyHeaderMatcher(ctx context.Context, in []*matchers.HeaderMatcher) []*envoy_config_route_v3.HeaderMatcher {
 	var out []*envoy_config_route_v3.HeaderMatcher
 	for _, matcher := range in {
 
@@ -542,7 +543,7 @@ func envoyHeaderMatcher(params plugins.Params, in []*matchers.HeaderMatcher) []*
 		} else {
 			if matcher.Regex {
 				envoyMatch.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_SafeRegexMatch{
-					SafeRegexMatch: regexutils.NewRegex(params.Ctx, matcher.Value),
+					SafeRegexMatch: regexutils.NewRegex(ctx, matcher.Value),
 				}
 			} else {
 				envoyMatch.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_ExactMatch{
@@ -560,7 +561,7 @@ func envoyHeaderMatcher(params plugins.Params, in []*matchers.HeaderMatcher) []*
 	return out
 }
 
-func envoyQueryMatcher(params plugins.Params, in []*matchers.QueryParameterMatcher) []*envoy_config_route_v3.QueryParameterMatcher {
+func envoyQueryMatcher(ctx context.Context, in []*matchers.QueryParameterMatcher) []*envoy_config_route_v3.QueryParameterMatcher {
 	var out []*envoy_config_route_v3.QueryParameterMatcher
 	for _, matcher := range in {
 		envoyMatch := &envoy_config_route_v3.QueryParameterMatcher{
@@ -576,7 +577,7 @@ func envoyQueryMatcher(params plugins.Params, in []*matchers.QueryParameterMatch
 				envoyMatch.QueryParameterMatchSpecifier = &envoy_config_route_v3.QueryParameterMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher_v3.StringMatcher{
 						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
-							SafeRegex: regexutils.NewRegex(params.Ctx, matcher.Value),
+							SafeRegex: regexutils.NewRegex(ctx, matcher.Value),
 						},
 					},
 				}

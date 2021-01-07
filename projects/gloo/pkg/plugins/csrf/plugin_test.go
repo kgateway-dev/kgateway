@@ -130,7 +130,7 @@ var _ = Describe("plugin", func() {
 		Expect(filters[0].Stage).To(Equal(expectedStageFilter.Stage))
 	})
 
-	It("copies the csrf config from the listener to the filter with enabled filters and shadow ignored", func() {
+	It("copies the csrf config from the listener to the filter with both enabled and shadow mode fields", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Csrf: &gloocsrf.CsrfPolicy{
@@ -149,6 +149,7 @@ var _ = Describe("plugin", func() {
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 						TypedConfig: utils.MustMessageToAny(&envoycsrf.CsrfPolicy{
 							FilterEnabled:     &envoyFilter,
+							ShadowEnabled:     &envoyFilter,
 							AdditionalOrigins: envoyAdditionalOrigins,
 						}),
 					},

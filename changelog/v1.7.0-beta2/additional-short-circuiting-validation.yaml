@@ -1,0 +1,12 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3334
+    resolvesIssue: true
+    description: |
+      Gloo Edge now proactively reports warnings on virtual services that have matchers that are short-circuited.
+      To enable, update the Gloo `Settings` such that `spec.gateway.validation.warnRouteShortCircuiting=true`
+      The cases now additionally covered are:
+        - routes that have simple OR regex header matchers, ensuring each one of the OR'ed matchers can be reached
+        - the same logic, but with method matchers
+      In addition, we support aggressively reporting errors on virtual services with invalid regex matchers. (no need
+      to enable short-circuiting reporting)

@@ -245,6 +245,7 @@ Configuration for buffering the request data.
 ```yaml
 "maxRequestBytes": int
 "allowPartialMessage": bool
+"packAsBytes": bool
 
 ```
 
@@ -252,6 +253,7 @@ Configuration for buffering the request data.
 | ----- | ---- | ----------- | 
 | `maxRequestBytes` | `int` | Sets the maximum size of a message body that the filter will hold in memory. Envoy will return *HTTP 413* and will *not* initiate the authorization process when buffer reaches the number set in this field. Note that this setting will have precedence over failure_mode_allow. Defaults to 4KB. |
 | `allowPartialMessage` | `bool` | When this field is true, Envoy will buffer the message until *max_request_bytes* is reached. The authorization request will be dispatched and no 413 HTTP error will be returned by the filter. |
+| `packAsBytes` | `bool` | When this field is true, Envoy will send the body sent to the external authorization service with raw bytes. |
 
 
 

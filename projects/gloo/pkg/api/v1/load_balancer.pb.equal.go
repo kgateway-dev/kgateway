@@ -130,6 +130,22 @@ func (m *LoadBalancerConfig) Equal(that interface{}) bool {
 
 	}
 
+	switch m.LocalityConfig.(type) {
+
+	case *LoadBalancerConfig_LocalityWeightedLbConfig:
+
+		if h, ok := interface{}(m.GetLocalityWeightedLbConfig()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetLocalityWeightedLbConfig()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetLocalityWeightedLbConfig(), target.GetLocalityWeightedLbConfig()) {
+				return false
+			}
+		}
+
+	}
+
 	return true
 }
 

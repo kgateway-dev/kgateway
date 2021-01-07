@@ -61,8 +61,16 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	// configure the cluster to use EDS:ADS and call it a day
 	xds.SetEdsOnCluster(out, p.settings)
+	upstreamRef := in.GetMetadata().Ref()
 
-	svcs, err := p.kubeCoreCache.NamespacedServiceLister(kube.Kube.ServiceNamespace).List(labels.NewSelector())
+	// Lister functions obfuscate the typical (val, ok) pair returned values of maps, so we have to do a nil check instead.
+	lister := p.kubeCoreCache.NamespacedServiceLister(kube.Kube.ServiceNamespace)
+	if lister == nil {
+		return errors.Errorf("Upstream %s references the service \"%s\" which has an invalid ServiceNamespace \"%s\".",
+			upstreamRef.String(), kube.Kube.ServiceName, kube.Kube.ServiceNamespace)
+	}
+
+	svcs, err := lister.List(labels.NewSelector())
 	if err != nil {
 		return err
 	}
@@ -72,7 +80,6 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		}
 	}
 
-	upstreamRef := in.GetMetadata().Ref()
 	return errors.Errorf("Upstream %s references the service \"%s\" which does not exist in namespace \"%s\"",
 		upstreamRef.String(), kube.Kube.ServiceName, kube.Kube.ServiceNamespace)
 
