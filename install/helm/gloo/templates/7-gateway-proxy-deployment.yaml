@@ -65,6 +65,7 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: "8081"
         prometheus.io/scrape: "true"
+        sidecar.istio.io/inject: "false" # this deployment has custom logic related to istio sidecars, and shouldn't be blanket-injected ever
 {{- end}}
 {{- if $spec.readConfig }}
 {{- if not $annotationExist }}
@@ -74,6 +75,7 @@ spec:
         readconfig-ready: /ready
         readconfig-config_dump: /config_dump
         readconfig-port: "8082"
+        sidecar.istio.io/inject: "false"
 {{- end}}
     spec:
 

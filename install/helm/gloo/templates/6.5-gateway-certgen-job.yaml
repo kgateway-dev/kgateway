@@ -21,6 +21,10 @@ spec:
     metadata:
       labels:
         gloo: gateway-certgen
+      # certgen is a transient deployment that runs into problems if we try to inject istio into it.
+      # todo verify that this is the correct course of action.
+      annotations:
+        sidecar.istio.io/inject: "false"
     spec:
       serviceAccountName: certgen
       containers:

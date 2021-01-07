@@ -26,6 +26,10 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
+      {{- if .Values.global.internalIstio.disableAutoinjection }}
+      annotations:
+        sidecar.istio.io/inject: "false"
+    {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 }}
       containers:
