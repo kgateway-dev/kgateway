@@ -17,53 +17,34 @@ import (
 
 // Matchers sort according to the following rules:
 // 1. exact path < regex path < prefix path
-// 2. lexicographically greater path string < lexicographically greater path string
+// 2. lexicographically greater path string < lexicographically smaller path string
 func SortRoutesByPath(routes []*v1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
-		smallest1 := *defaults.DefaultMatcher()
-		if len(routes[i].Matchers) > 0 {
-			smallest1 = *routes[i].Matchers[0]
-		}
-		for _, m := range routes[i].Matchers {
-			if lessMatcher(m, &smallest1) {
-				smallest1 = *m
-			}
-		}
-		smallest2 := *defaults.DefaultMatcher()
-		if len(routes[j].Matchers) > 0 {
-			smallest2 = *routes[j].Matchers[0]
-		}
-		for _, m := range routes[j].Matchers {
-			if lessMatcher(m, &smallest2) {
-				smallest2 = *m
-			}
-		}
-		return lessMatcher(&smallest1, &smallest2)
+		smallest1 := getSmallestOrDefaultMatcher(routes[i].Matchers)
+		smallest2 := getSmallestOrDefaultMatcher(routes[j].Matchers)
+		return lessMatcher(smallest1, smallest2)
 	})
 }
 
 func SortGatewayRoutesByPath(routes []*gatewayv1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
-		smallest1 := *defaults.DefaultMatcher()
-		if len(routes[i].Matchers) > 0 {
-			smallest1 = *routes[i].Matchers[0]
-		}
-		for _, m := range routes[i].Matchers {
-			if lessMatcher(m, &smallest1) {
-				smallest1 = *m
-			}
-		}
-		smallest2 := *defaults.DefaultMatcher()
-		if len(routes[j].Matchers) > 0 {
-			smallest2 = *routes[j].Matchers[0]
-		}
-		for _, m := range routes[j].Matchers {
-			if lessMatcher(m, &smallest2) {
-				smallest2 = *m
-			}
-		}
-		return lessMatcher(&smallest1, &smallest2)
+		smallest1 := getSmallestOrDefaultMatcher(routes[i].Matchers)
+		smallest2 := getSmallestOrDefaultMatcher(routes[j].Matchers)
+		return lessMatcher(smallest1, smallest2)
 	})
+}
+
+func getSmallestOrDefaultMatcher(matchers []*matchers.Matcher) *matchers.Matcher {
+	smallest := defaults.DefaultMatcher()
+	if len(matchers) > 0 {
+		smallest = matchers[0]
+	}
+	for _, m := range matchers {
+		if lessMatcher(m, smallest) {
+			smallest = m
+		}
+	}
+	return smallest
 }
 
 func lessMatcher(m1, m2 *matchers.Matcher) bool {

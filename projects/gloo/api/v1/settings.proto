@@ -513,9 +513,17 @@ message GatewayOptions {
         google.protobuf.BoolValue always_accept = 6;
 
         // Accept resources if validation produced a warning (defaults to true).
-        // By settings to false, this means that validation will start rejecting resources that would result
+        // By setting to false, this means that validation will start rejecting resources that would result
         // in warnings, rather than just those that would result in errors.
         google.protobuf.BoolValue allow_warnings = 7;
+
+        // Write a warning to route resources if validation produced a route ordering warning (defaults to false).
+        // By setting to true, this means that Gloo will start assigning warnings to resources that would result
+        // in route short-circuiting within a virtual host, for example:
+        //   - prefix routes that make later routes unreachable
+        //   - regex routes that make later routes unreachable
+        //   - duplicate matchers
+        google.protobuf.BoolValue warn_route_short_circuiting = 8;
     }
 
     // If provided, the Gateway will perform [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)

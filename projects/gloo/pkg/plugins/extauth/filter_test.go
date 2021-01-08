@@ -195,6 +195,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 					RequestBody: &extauthv1.BufferSettings{
 						AllowPartialMessage: true,
 						MaxRequestBytes:     54,
+						PackAsBytes:         true,
 					},
 					ClearRouteCache: true,
 					StatusOnError:   400,
@@ -216,6 +217,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 					WithRequestBody: &envoyauth.BufferSettings{
 						AllowPartialMessage: true,
 						MaxRequestBytes:     54,
+						PackAsBytes:         true,
 					},
 					ClearRouteCache: true,
 					StatusOnError:   &envoytype.HttpStatus{Code: envoytype.StatusCode_BadRequest},

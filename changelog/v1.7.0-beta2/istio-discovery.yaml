@@ -4,5 +4,5 @@ changelog:
     description: |
       Add 3 configuration values under global.internalIstio to control automatic discovery and sidecar
       injection for Gloo pods by Istio. LabelNewNamespace adds a label to mark the namespace for Istio discovery if it's
-      designated to be created in the chart.WhitelistDiscovery explicity annotates Gloo's discovery pod for Istio sidecar injection.
+      designated to be created in the chart. WhitelistDiscovery explicitly annotates Gloo's discovery pod for Istio sidecar injection.
       DisableAutoinjection annotates all pods that aren't more specifically noted elsewhere to be exempt from Istio sidecar injection.
