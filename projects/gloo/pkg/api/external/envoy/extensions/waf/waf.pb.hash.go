@@ -34,7 +34,7 @@ func (m *AuditLogging) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.config.filter.http.modsecurity.v2.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf.AuditLogging")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.filter.http.modsecurity.v2.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf.AuditLogging")); err != nil {
 		return 0, err
 	}
 
@@ -60,7 +60,7 @@ func (m *ModSecurity) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.config.filter.http.modsecurity.v2.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf.ModSecurity")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.filter.http.modsecurity.v2.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf.ModSecurity")); err != nil {
 		return 0, err
 	}
 
@@ -132,7 +132,7 @@ func (m *RuleSet) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.config.filter.http.modsecurity.v2.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf.RuleSet")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.filter.http.modsecurity.v2.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf.RuleSet")); err != nil {
 		return 0, err
 	}
 
@@ -164,7 +164,7 @@ func (m *ModSecurityPerRoute) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.config.filter.http.modsecurity.v2.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf.ModSecurityPerRoute")); err != nil {
+	if _, err = hasher.Write([]byte("solo.io.envoy.config.filter.http.modsecurity.v2.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf.ModSecurityPerRoute")); err != nil {
 		return 0, err
 	}
 

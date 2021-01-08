@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package envoy.api.v2.filter.http;
+package solo.io.envoy.api.v2.filter.http;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation";
 import "extproto/ext.proto";

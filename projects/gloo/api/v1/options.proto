@@ -107,7 +107,7 @@ message HttpListenerOptions {
     .solo.io.envoy.config.filter.http.gzip.v2.Gzip gzip = 8;
 
     // Enterprise-only: Proxy latency
-    envoy.config.filter.http.proxylatency.v2.ProxyLatency proxy_latency = 9;
+    .solo.io.envoy.config.filter.http.proxylatency.v2.ProxyLatency proxy_latency = 9;
 
     // Buffer can be used to set the maximum request size
     // that the filter will buffer before the connection

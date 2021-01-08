@@ -3,7 +3,7 @@ syntax = "proto3";
 // TODO(yuval-k): use submodule and not copy pasted version.
 
 
-package envoy.config.filter.http.aws_lambda.v2;
+package solo.io.envoy.config.filter.http.aws_lambda.v2;
 
 option java_package = "io.envoyproxy.envoy.config.filter.http.aws_lambda.v2";
 option java_outer_classname = "AwsLambdaProto";

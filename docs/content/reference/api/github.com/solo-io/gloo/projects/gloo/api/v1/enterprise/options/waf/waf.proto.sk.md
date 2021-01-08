@@ -32,8 +32,8 @@ weight: 5
 "disabled": bool
 "customInterventionMessage": string
 "coreRuleSet": .waf.options.gloo.solo.io.CoreRuleSet
-"ruleSets": []envoy.config.filter.http.modsecurity.v2.RuleSet
-"auditLogging": .envoy.config.filter.http.modsecurity.v2.AuditLogging
+"ruleSets": []solo.io.envoy.config.filter.http.modsecurity.v2.RuleSet
+"auditLogging": .solo.io.envoy.config.filter.http.modsecurity.v2.AuditLogging
 "requestHeadersOnly": bool
 "responseHeadersOnly": bool
 
@@ -44,8 +44,8 @@ weight: 5
 | `disabled` | `bool` | Disable waf on this resource (if omitted defaults to false). If a route/virtual host is configured with WAF, you must explicitly disable its WAF, i.e., it will not inherit the disabled status of its parent. |
 | `customInterventionMessage` | `string` | Custom massage to display if an intervention occurs. |
 | `coreRuleSet` | [.waf.options.gloo.solo.io.CoreRuleSet](../waf.proto.sk/#coreruleset) | Add OWASP core rule set if nil will not be added. |
-| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk/#ruleset) | Custom rule sets rules to add. |
-| `auditLogging` | [.envoy.config.filter.http.modsecurity.v2.AuditLogging](../../../../../external/envoy/extensions/waf/waf.proto.sk/#auditlogging) | Audit Log settings. |
+| `ruleSets` | [[]solo.io.envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk/#ruleset) | Custom rule sets rules to add. |
+| `auditLogging` | [.solo.io.envoy.config.filter.http.modsecurity.v2.AuditLogging](../../../../../external/envoy/extensions/waf/waf.proto.sk/#auditlogging) | Audit Log settings. |
 | `requestHeadersOnly` | `bool` | Only process request headers, not buffering the request body. |
 | `responseHeadersOnly` | `bool` | Only process response headers, not buffering the response body. |
 

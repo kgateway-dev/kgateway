@@ -11,7 +11,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/tran
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/parameters.proto";
 
 message ServiceSpec {
-    map<string, envoy.api.v2.filter.http.TransformationTemplate> transformations = 1;
+    map<string, .solo.io.envoy.api.v2.filter.http.TransformationTemplate> transformations = 1;
     message SwaggerInfo {
         oneof swagger_spec {
             string url = 1;
@@ -27,5 +27,5 @@ message DestinationSpec {
 
     transformation.options.gloo.solo.io.Parameters parameters = 2;
 
-    envoy.api.v2.filter.http.TransformationTemplate response_transformation = 3;
+    .solo.io.envoy.api.v2.filter.http.TransformationTemplate response_transformation = 3;
 }

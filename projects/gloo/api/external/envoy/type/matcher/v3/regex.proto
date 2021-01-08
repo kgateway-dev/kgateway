@@ -11,13 +11,13 @@ import "validate/validate.proto";
 option java_package = "io.envoyproxy.solo.io.envoy.type.matcher.v3";
 option java_outer_classname = "RegexProto";
 option java_multiple_files = true;
-option (udpa.annotations.file_status).package_version_status = ACTIVE;
+option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // [#protodoc-title: Regex matcher]
 
 // A regex matcher designed for safety when used with untrusted input.
 message RegexMatcher {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.type.matcher.RegexMatcher";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.type.matcher.RegexMatcher";
 
   // Google's `RE2 <https://github.com/google/re2>`_ regex engine. The regex string must adhere to
   // the documented `syntax <https://github.com/google/re2/wiki/Syntax>`_. The engine is designed
@@ -33,7 +33,7 @@ message RegexMatcher {
   // which records the program size, and the counter `re2.exceeded_warn_level`, which is incremented
   // each time the program size exceeds the warn level threshold.
   message GoogleRE2 {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "envoy.type.matcher.RegexMatcher.GoogleRE2";
 
     // This field controls the RE2 "program size" which is a rough estimate of how complex a
@@ -60,7 +60,7 @@ message RegexMatcher {
 // Describes how to match a string and then produce a new string using a regular
 // expression and a substitution string.
 message RegexMatchAndSubstitute {
-  option (udpa.annotations.versioning).previous_message_type =
+  option (solo.io.udpa.annotations.versioning).previous_message_type =
       "envoy.type.matcher.RegexMatchAndSubstitute";
 
   // The regular expression used to find portions of a string (hereafter called

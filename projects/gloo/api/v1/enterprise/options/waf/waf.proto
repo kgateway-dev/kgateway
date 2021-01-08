@@ -20,9 +20,9 @@ message Settings {
     // if nil will not be added
     CoreRuleSet core_rule_set = 3;
     // Custom rule sets rules to add
-    repeated envoy.config.filter.http.modsecurity.v2.RuleSet rule_sets = 4;
+    repeated .solo.io.envoy.config.filter.http.modsecurity.v2.RuleSet rule_sets = 4;
     // Audit Log settings
-    envoy.config.filter.http.modsecurity.v2.AuditLogging audit_logging = 5;
+    .solo.io.envoy.config.filter.http.modsecurity.v2.AuditLogging audit_logging = 5;
 
     // Only process request headers, not buffering the request body
     bool request_headers_only = 6;

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package udpa.annotations;
+package solo.io.udpa.annotations;
 
 import "google/protobuf/descriptor.proto";
 
