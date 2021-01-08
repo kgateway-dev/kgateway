@@ -25,7 +25,7 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
-      {{- if .Values.global.internalIstio.disableAutoinjection }}
+      {{- if .Values.global.istioIntegration.disableAutoinjection }}
       annotations:
         sidecar.istio.io/inject: "false"
       {{- end }}

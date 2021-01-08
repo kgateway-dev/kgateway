@@ -628,6 +628,6 @@
 |global.glooMtls.sdsResources.requests.cpu|string||amount of CPUs|
 |global.istioSDS.enabled|bool|false|Enables SDS cert-rotator sidecar for istio mTLS cert rotation|
 |global.istioSDS.customSidecars[]|interface||Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if IstioSDS.enabled is false|
-|global.internalIstio.labelNewNamespace|bool|false|If creating a namespace for Gloo, include the 'istio-injection: enabled' label to allow Istio sidecar injection for most Gloo pods. Keep in mind that Istio's default behavior' will auto-inject its sidecar into all pods in such a marked namespace. Disabling this behavior in Istio or using the global.internalIstio.disableAutoinjection flag is recommended.|
-|global.internalIstio.whitelistDiscovery|bool|false|Mark the discovery pod for istio sidecar injection.|
-|global.internalIstio.disableAutoinjection|bool|false|Mark all pods (excluding those whitelisted by other config values) to avoid injecting Istio sidecars when Istio's auto-injection is enabled'|
+|global.istioIntegration.labelNewNamespace|bool|false|If creating a namespace for Gloo, include the 'istio-injection: enabled' label to allow Istio sidecar injection for most Gloo pods. Keep in mind that Istio's default behavior' will auto-inject a sidecar into all pods in such a marked namespace. Disabling this behavior in Istio or using the global.istioIntegration.disableAutoinjection flag is recommended.|
+|global.istioIntegration.whitelistDiscovery|bool|false|Mark the discovery pod for istio sidecar injection.|
+|global.istioIntegration.disableAutoinjection|bool|false|Mark all pods (excluding those whitelisted by other config values) to avoid injecting Istio sidecars when Istio's auto-injection is enabled. It's recommended that this be set to false if Gloo's namespace is marked for Istio discovery, as most pods don't play well with injection with extra manual configuration.|

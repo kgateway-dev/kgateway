@@ -32,9 +32,9 @@ spec:
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
         {{- end}}
-        {{- if .Values.global.internalIstio.whitelistDiscovery }}
+        {{- if .Values.global.istioIntegration.whitelistDiscovery }}
         sidecar.istio.io/inject: "true"
-        {{- else if .Values.global.internalIstio.disableAutoinjection }}
+        {{- else if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"
         {{- end }}
     spec:

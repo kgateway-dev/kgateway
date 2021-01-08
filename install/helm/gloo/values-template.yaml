@@ -183,7 +183,7 @@ global:
         repository: gloo-envoy-wrapper
   istioSDS:
     enabled: false
-  internalIstio:
+  istioIntegration:
     labelNewNamespace: false
     whitelistDiscovery: false
     disableAutoinjection: false

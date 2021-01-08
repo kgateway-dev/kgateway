@@ -31,7 +31,7 @@ spec:
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
-        {{- if .Values.global.internalIstio.disableAutoinjection }}
+        {{- if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"
         {{- end }}
       {{- end}}

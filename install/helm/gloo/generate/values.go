@@ -25,13 +25,13 @@ type Config struct {
 }
 
 type Global struct {
-	Image         *Image        `json:"image,omitempty"`
-	Extensions    interface{}   `json:"extensions,omitempty"`
-	GlooRbac      *Rbac         `json:"glooRbac,omitempty"`
-	GlooStats     Stats         `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo Edge pods. Can be overridden by individual deployments"`
-	GlooMtls      Mtls          `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication"`
-	IstioSDS      IstioSDS      `json:"istioSDS,omitempty" desc:"Config used for installing Gloo Edge with Istio SDS cert rotation features to facilitate Istio mTLS"`
-	InternalIstio InternalIstio `json:"internalIstio,omitempty" desc:"Configs used for controlling Gloo's pods' visibility to Istio's automatic discovery and sidecar injection."`
+	Image            *Image           `json:"image,omitempty"`
+	Extensions       interface{}      `json:"extensions,omitempty"`
+	GlooRbac         *Rbac            `json:"glooRbac,omitempty"`
+	GlooStats        Stats            `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo Edge pods. Can be overridden by individual deployments"`
+	GlooMtls         Mtls             `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication"`
+	IstioSDS         IstioSDS         `json:"istioSDS,omitempty" desc:"Config used for installing Gloo Edge with Istio SDS cert rotation features to facilitate Istio mTLS"`
+	IstioIntegration IstioIntegration `json:"istioIntegration,omitempty" desc:"Configs user to manage Gloo pod visibility for Istio's' automatic discovery and sidecar injection."`
 }
 
 type Namespace struct {
@@ -469,8 +469,8 @@ type IstioSDS struct {
 	CustomSidecars []interface{} `json:"customSidecars,omitempty" desc:"Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if IstioSDS.enabled is false"`
 }
 
-type InternalIstio struct {
-	LabelNewNamespace    bool `json:"labelNewNamespace,omitempty" desc:"If creating a namespace for Gloo, include the 'istio-injection: enabled' label to allow Istio sidecar injection for most Gloo pods. Keep in mind that Istio's default behavior' will auto-inject its sidecar into all pods in such a marked namespace. Disabling this behavior in Istio or using the global.internalIstio.disableAutoinjection flag is recommended."`
+type IstioIntegration struct {
+	LabelNewNamespace    bool `json:"labelNewNamespace,omitempty" desc:"If creating a namespace for Gloo, include the 'istio-injection: enabled' label to allow Istio sidecar injection for most Gloo pods. Keep in mind that Istio's default behavior' will auto-inject a sidecar into all pods in such a marked namespace. Disabling this behavior in Istio or using the global.istioIntegration.disableAutoinjection flag is recommended."`
 	WhitelistDiscovery   bool `json:"whitelistDiscovery,omitempty" desc:"Mark the discovery pod for istio sidecar injection."`
-	DisableAutoinjection bool `json:"disableAutoinjection,omitempty" desc:"Mark all pods (excluding those whitelisted by other config values) to avoid injecting Istio sidecars when Istio's auto-injection is enabled'"`
+	DisableAutoinjection bool `json:"disableAutoinjection,omitempty" desc:"Mark all pods (excluding those whitelisted by other config values) to avoid injecting Istio sidecars when Istio's auto-injection is enabled. It's recommended that this be set to false if Gloo's namespace is marked for Istio discovery, as most pods don't play well with injection with extra manual configuration."`
 }

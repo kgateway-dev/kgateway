@@ -706,7 +706,7 @@ var _ = Describe("Helm Test", func() {
 				It("should add an anti-injection annotation to all pods when disableAutoinjection is enabled", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
-							"global.internalIstio.disableAutoinjection=true",
+							"global.istioIntegration.disableAutoinjection=true",
 							"settings.integrations.knative.enabled=true", // ensure that as many pods as possible are checked
 							"ingress.enabled=true",
 						},
@@ -729,8 +729,8 @@ var _ = Describe("Helm Test", func() {
 
 				It("should add an Istio injection annotation for pods that can be configured for it", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"global.internalIstio.whitelistDiscovery=true",
-							"global.internalIstio.disableAutoinjection=false"},
+						valuesArgs: []string{"global.istioIntegration.whitelistDiscovery=true",
+							"global.istioIntegration.disableAutoinjection=false"},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -757,7 +757,7 @@ var _ = Describe("Helm Test", func() {
 				It("The created namespace can be labeled for Istio discovery", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"namespace.create=true",
-							"global.internalIstio.labelNewNamespace=true"},
+							"global.istioIntegration.labelNewNamespace=true"},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -2140,8 +2140,6 @@ spec:
     metadata:
       labels:
         gloo: gateway-certgen
-      annotations:
-        sidecar.istio.io/inject: "false"
     spec:
       serviceAccountName: certgen
       containers:
