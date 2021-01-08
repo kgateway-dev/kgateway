@@ -556,10 +556,6 @@ You should see the following output. Note the message is "green-pod" instead of 
 * Connection #0 to host 52.154.156.176 left intact
 ```
 
-{{< notice note >}}
-If you receive a 503 error, it may be caused by a known issue. Delete the echo-blue pod and wait for it to be recreated. The "blue-pod" should be active again. Repeat the steps to fail the healthcheck service on the echo-blue pod and the failover will occur. This only needs to be done once.
-{{< /notice >}}
-
 You can switch between the two services by enabling and disabling the Blue Upstream service using the following commands:
 
 ```

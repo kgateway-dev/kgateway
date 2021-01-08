@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/onsi/gomega/types"
+
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloo_config_core "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
@@ -30,8 +32,13 @@ import (
 )
 
 const (
-	allowedOriginRegex   = "allowThisOne.solo.io"
-	unAllowedOriginRegex = "doNot.allowThisOne.solo.io"
+	allowedOrigin   = "allowThisOne.solo.io"
+	unAllowedOrigin = "doNot.allowThisOne.solo.io"
+)
+
+var (
+	invalidOriginResponseMatcher = Equal("Invalid origin")
+	validOriginResponseMatcher   = BeEmpty()
 )
 
 var _ = Describe("CSRF", func() {
@@ -94,13 +101,9 @@ var _ = Describe("CSRF", func() {
 	// A safe http method is one that doesn't alter the state of the server (ie read only)
 	// A CSRF attack targets state changing requests, so the filter only acts on unsafe methods (ones that change state)
 	// This is used to spoof requests from various origins
-	buildRequestFromOrigin := func(origin string, safeRequest bool) func() (string, error) {
+	buildRequestFromOrigin := func(origin string) func() (string, error) {
 		return func() (string, error) {
-			method := "POST"
-			if safeRequest {
-				method = "GET"
-			}
-			req, err := http.NewRequest(method, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), nil)
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), nil)
 			if err != nil {
 				return "", err
 			}
@@ -141,7 +144,8 @@ var _ = Describe("CSRF", func() {
 	checkProxy := func() {
 		// ensure the proxy and virtual service are created
 		Eventually(func() (*gloov1.Proxy, error) {
-			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+			p, err := testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+			return p, err
 		}, "5s", "0.1s").ShouldNot(BeNil())
 	}
 
@@ -163,14 +167,14 @@ var _ = Describe("CSRF", func() {
 			checkVirtualService(testVs)
 		})
 
-		It("should succeed with allowed origin, unsafe request", func() {
-			spoofedRequest := buildRequestFromOrigin(allowedOriginRegex, false)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
+		It("should succeed with allowed origin", func() {
+			spoofedRequest := buildRequestFromOrigin(allowedOrigin)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
 		})
 
-		It("should fail with un-allowed origin", func() {
-			spoofedRequest := buildRequestFromOrigin(unAllowedOriginRegex, false)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
+		It("should succeed with un-allowed origin", func() {
+			spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
 		})
 
 	})
@@ -185,7 +189,7 @@ var _ = Describe("CSRF", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// build a csrf policy
-				csrfPolicy := getCsrfPolicyWithAllowedRegex(allowedOriginRegex)
+				csrfPolicy := getCsrfPolicyWithFilterEnabled(allowedOrigin)
 
 				// update the listener to include the csrf policy
 				httpGateway := gw.GetHttpGateway()
@@ -204,33 +208,22 @@ var _ = Describe("CSRF", func() {
 				checkVirtualService(testVs)
 			})
 
-			It("should ignore requests with allowed origin, safe request", func() {
-				spoofedRequest := buildRequestFromOrigin(allowedOriginRegex, true)
-				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 0"))
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 0"))
-			})
+			It("should succeed with allowed origin", func() {
+				spoofedRequest := buildRequestFromOrigin(allowedOrigin)
+				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
 
-			It("should ignore requests with un-allowed origin, safe request", func() {
-				// confirm that a safe (read only) request is not affected by filter
-				spoofedRequest := buildRequestFromOrigin(unAllowedOriginRegex, true)
-				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 0"))
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 0"))
-			})
-
-			It("should succeed with allowed origin, unsafe request", func() {
-				spoofedRequest := buildRequestFromOrigin(allowedOriginRegex, false)
-				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 0"))
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 1"))
+				statistics := getEnvoyStats()
+				Expect(statistics).To(matchInvalidRequestEqualTo(0))
+				Expect(statistics).To(matchValidRequestEqualTo(1))
 			})
 
 			It("should fail with un-allowed origin", func() {
-				spoofedRequest := buildRequestFromOrigin(unAllowedOriginRegex, false)
-				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(Equal("Invalid origin"))
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 1"))
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 0"))
+				spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
+				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(invalidOriginResponseMatcher)
+
+				statistics := getEnvoyStats()
+				Expect(statistics).To(matchInvalidRequestEqualTo(1))
+				Expect(statistics).To(matchValidRequestEqualTo(0))
 			})
 		})
 
@@ -242,7 +235,7 @@ var _ = Describe("CSRF", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// build a csrf policy
-				csrfPolicy := getCsrfPolicyWithShadowEnabled(allowedOriginRegex)
+				csrfPolicy := getCsrfPolicyWithShadowEnabled(allowedOrigin)
 
 				// update the listener to include the csrf policy
 				httpGateway := gw.GetHttpGateway()
@@ -262,28 +255,74 @@ var _ = Describe("CSRF", func() {
 			})
 
 			It("should succeed with allowed origin, unsafe request", func() {
-				spoofedRequest := buildRequestFromOrigin(allowedOriginRegex, false)
-				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 0"))
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 1"))
+				spoofedRequest := buildRequestFromOrigin(allowedOrigin)
+				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
+				statistics := getEnvoyStats()
+				Expect(statistics).To(matchInvalidRequestEqualTo(0))
+				Expect(statistics).To(matchValidRequestEqualTo(1))
 			})
 
 			It("should succeed with un-allowed origin and update invalid count", func() {
-				spoofedRequest := buildRequestFromOrigin(unAllowedOriginRegex, false)
-				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 1"))
-				Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 0"))
+				spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
+				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
+				statistics := getEnvoyStats()
+				Expect(statistics).To(matchInvalidRequestEqualTo(1))
+				Expect(statistics).To(matchValidRequestEqualTo(0))
+			})
+		})
+
+		Context("defined on listener with filter enabled and shadow mode config", func() {
+			JustBeforeEach(func() {
+				gatewayClient := testClients.GatewayClient
+				gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// build a csrf policy
+				csrfPolicy := getCsrfPolicyWithFilterEnabledAndShadow(allowedOrigin)
+
+				// update the listener to include the csrf policy
+				httpGateway := gw.GetHttpGateway()
+				httpGateway.Options = &gloov1.HttpListenerOptions{
+					Csrf: csrfPolicy,
+				}
+				_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+
+				// write a virtual service so we have a proxy to our test upstream
+				testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
+				_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				checkProxy()
+				checkVirtualService(testVs)
+			})
+
+			It("should succeed with allowed origin, unsafe request", func() {
+				spoofedRequest := buildRequestFromOrigin(allowedOrigin)
+				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
+				statistics := getEnvoyStats()
+				Expect(statistics).To(matchInvalidRequestEqualTo(0))
+				Expect(statistics).To(matchValidRequestEqualTo(1))
+			})
+
+			It("should fail with un-allowed origin and update invalid count", func() {
+				// shadow mode is ignored when filter is enabled
+				spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
+				Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(invalidOriginResponseMatcher)
+				statistics := getEnvoyStats()
+				Expect(statistics).To(matchInvalidRequestEqualTo(1))
+				Expect(statistics).To(matchValidRequestEqualTo(0))
 			})
 		})
 
 	})
 
-	Context("defined on route", func() {
+	Context("enabled on route", func() {
 
 		JustBeforeEach(func() {
 
 			// build a csrf policy
-			csrfPolicy := getCsrfPolicyWithAllowedRegex(allowedOriginRegex)
+			csrfPolicy := getCsrfPolicyWithFilterEnabled(allowedOrigin)
 
 			// write a virtual service so we have a proxy to our test upstream
 			vhClient := testClients.VirtualServiceClient
@@ -301,27 +340,29 @@ var _ = Describe("CSRF", func() {
 		})
 
 		It("should succeed with allowed origin, unsafe request", func() {
-			spoofedRequest := buildRequestFromOrigin(allowedOriginRegex, false)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 0"))
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 1"))
+			spoofedRequest := buildRequestFromOrigin(allowedOrigin)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
+			statistics := getEnvoyStats()
+			Expect(statistics).To(matchInvalidRequestEqualTo(0))
+			Expect(statistics).To(matchValidRequestEqualTo(1))
 		})
 
 		It("should fail with un-allowed origin", func() {
-			spoofedRequest := buildRequestFromOrigin(unAllowedOriginRegex, false)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(Equal("Invalid origin"))
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 1"))
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 0"))
+			spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(invalidOriginResponseMatcher)
+			statistics := getEnvoyStats()
+			Expect(statistics).To(matchInvalidRequestEqualTo(1))
+			Expect(statistics).To(matchValidRequestEqualTo(0))
 		})
 
 	})
 
-	Context("defined on vhost", func() {
+	Context("enabled defined on vhost", func() {
 
 		JustBeforeEach(func() {
 
 			// build a csrf policy
-			csrfPolicy := getCsrfPolicyWithAllowedRegex(allowedOriginRegex)
+			csrfPolicy := getCsrfPolicyWithFilterEnabled(allowedOrigin)
 
 			// write a virtual service so we have a proxy to our test upstream
 			vhClient := testClients.VirtualServiceClient
@@ -337,17 +378,19 @@ var _ = Describe("CSRF", func() {
 		})
 
 		It("should succeed with allowed origin, unsafe request", func() {
-			spoofedRequest := buildRequestFromOrigin(allowedOriginRegex, false)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 0"))
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 1"))
+			spoofedRequest := buildRequestFromOrigin(allowedOrigin)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
+			statistics := getEnvoyStats()
+			Expect(statistics).To(matchInvalidRequestEqualTo(0))
+			Expect(statistics).To(matchValidRequestEqualTo(1))
 		})
 
 		It("should fail with un-allowed origin", func() {
-			spoofedRequest := buildRequestFromOrigin(unAllowedOriginRegex, false)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(Equal("Invalid origin"))
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 1"))
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 0"))
+			spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(invalidOriginResponseMatcher)
+			statistics := getEnvoyStats()
+			Expect(statistics).To(matchInvalidRequestEqualTo(1))
+			Expect(statistics).To(matchValidRequestEqualTo(0))
 		})
 
 	})
@@ -357,7 +400,7 @@ var _ = Describe("CSRF", func() {
 		JustBeforeEach(func() {
 
 			// build a csrf policy
-			csrfPolicy := getCsrfPolicyWithAllowedRegex(allowedOriginRegex)
+			csrfPolicy := getCsrfPolicyWithFilterEnabled(allowedOrigin)
 
 			// write a virtual service so we have a proxy to our test upstream
 			vhClient := testClients.VirtualServiceClient
@@ -378,36 +421,34 @@ var _ = Describe("CSRF", func() {
 		})
 
 		It("should succeed with allowed origin, unsafe request", func() {
-			spoofedRequest := buildRequestFromOrigin(allowedOriginRegex, false)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 0"))
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 1"))
+			spoofedRequest := buildRequestFromOrigin(allowedOrigin)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
+			statistics := getEnvoyStats()
+			Expect(statistics).To(matchInvalidRequestEqualTo(0))
+			Expect(statistics).To(matchValidRequestEqualTo(1))
 		})
 
 		It("should fail with un-allowed origin", func() {
-			spoofedRequest := buildRequestFromOrigin(unAllowedOriginRegex, false)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(Equal("Invalid origin"))
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 1"))
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 0"))
+			spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(invalidOriginResponseMatcher)
+			statistics := getEnvoyStats()
+			Expect(statistics).To(matchInvalidRequestEqualTo(1))
+			Expect(statistics).To(matchValidRequestEqualTo(0))
 		})
 
 	})
 
-	Context("defined on listener and vhost", func() {
+	Context("defined on listener and vhost, should use vhost definition", func() {
 
 		JustBeforeEach(func() {
 			gatewayClient := testClients.GatewayClient
 			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			// build a csrf policy
-			csrfPolicyAllowed := getCsrfPolicyWithAllowedRegex(allowedOriginRegex)
-			csrfPolicyUnallowed := getCsrfPolicyWithAllowedRegex(unAllowedOriginRegex)
-
 			// update the listener to include the csrf policy
 			httpGateway := gw.GetHttpGateway()
 			httpGateway.Options = &gloov1.HttpListenerOptions{
-				Csrf: csrfPolicyUnallowed,
+				Csrf: getCsrfPolicyWithFilterEnabled(unAllowedOrigin),
 			}
 			_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
@@ -416,7 +457,7 @@ var _ = Describe("CSRF", func() {
 			vhClient := testClients.VirtualServiceClient
 			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
 			testVs.VirtualHost.Options = &gloov1.VirtualHostOptions{
-				Csrf: csrfPolicyAllowed,
+				Csrf: getCsrfPolicyWithFilterEnabled(allowedOrigin),
 			}
 			_, err = vhClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
@@ -426,24 +467,34 @@ var _ = Describe("CSRF", func() {
 		})
 
 		It("should succeed with allowed origin, unsafe request", func() {
-			spoofedRequest := buildRequestFromOrigin(allowedOriginRegex, false)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(BeEmpty())
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 0"))
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 1"))
+			spoofedRequest := buildRequestFromOrigin(allowedOrigin)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(validOriginResponseMatcher)
+			statistics := getEnvoyStats()
+			Expect(statistics).To(matchInvalidRequestEqualTo(0))
+			Expect(statistics).To(matchValidRequestEqualTo(1))
 		})
 
 		It("should fail with un-allowed origin", func() {
-			spoofedRequest := buildRequestFromOrigin(unAllowedOriginRegex, false)
-			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(Equal("Invalid origin"))
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_invalid: 1"))
-			Expect(getEnvoyStats()).To(MatchRegexp("http.http.csrf.request_valid: 0"))
+			spoofedRequest := buildRequestFromOrigin(unAllowedOrigin)
+			Eventually(spoofedRequest, 10*time.Second, 1*time.Second).Should(invalidOriginResponseMatcher)
+			statistics := getEnvoyStats()
+			Expect(statistics).To(matchInvalidRequestEqualTo(1))
+			Expect(statistics).To(matchValidRequestEqualTo(0))
 		})
 
 	})
 
 })
 
-func getCsrfPolicyWithAllowedRegex(allowedOrigin string) *csrf.CsrfPolicy {
+func matchValidRequestEqualTo(count int) types.GomegaMatcher {
+	return MatchRegexp("http.http.csrf.request_valid: %d", count)
+}
+
+func matchInvalidRequestEqualTo(count int) types.GomegaMatcher {
+	return MatchRegexp("http.http.csrf.request_invalid: %d", count)
+}
+
+func getCsrfPolicyWithFilterEnabled(origin string) *csrf.CsrfPolicy {
 	return &csrf.CsrfPolicy{
 		FilterEnabled: &gloo_config_core.RuntimeFractionalPercent{
 			DefaultValue: &glootype.FractionalPercent{
@@ -457,14 +508,14 @@ func getCsrfPolicyWithAllowedRegex(allowedOrigin string) *csrf.CsrfPolicy {
 					EngineType: &gloo_type_matcher.RegexMatcher_GoogleRe2{
 						GoogleRe2: &gloo_type_matcher.RegexMatcher_GoogleRE2{},
 					},
-					Regex: allowedOrigin,
+					Regex: origin,
 				},
 			},
 		}},
 	}
 }
 
-func getCsrfPolicyWithShadowEnabled(allowedOrigin string) *csrf.CsrfPolicy {
+func getCsrfPolicyWithShadowEnabled(origin string) *csrf.CsrfPolicy {
 	return &csrf.CsrfPolicy{
 		ShadowEnabled: &gloo_config_core.RuntimeFractionalPercent{
 			DefaultValue: &glootype.FractionalPercent{
@@ -478,7 +529,34 @@ func getCsrfPolicyWithShadowEnabled(allowedOrigin string) *csrf.CsrfPolicy {
 					EngineType: &gloo_type_matcher.RegexMatcher_GoogleRe2{
 						GoogleRe2: &gloo_type_matcher.RegexMatcher_GoogleRE2{},
 					},
-					Regex: allowedOrigin,
+					Regex: origin,
+				},
+			},
+		}},
+	}
+}
+
+func getCsrfPolicyWithFilterEnabledAndShadow(origin string) *csrf.CsrfPolicy {
+	return &csrf.CsrfPolicy{
+		FilterEnabled: &gloo_config_core.RuntimeFractionalPercent{
+			DefaultValue: &glootype.FractionalPercent{
+				Numerator:   uint32(100),
+				Denominator: glootype.FractionalPercent_HUNDRED,
+			},
+		},
+		ShadowEnabled: &gloo_config_core.RuntimeFractionalPercent{
+			DefaultValue: &glootype.FractionalPercent{
+				Numerator:   uint32(100),
+				Denominator: glootype.FractionalPercent_HUNDRED,
+			},
+		},
+		AdditionalOrigins: []*gloo_type_matcher.StringMatcher{{
+			MatchPattern: &gloo_type_matcher.StringMatcher_SafeRegex{
+				SafeRegex: &gloo_type_matcher.RegexMatcher{
+					EngineType: &gloo_type_matcher.RegexMatcher_GoogleRe2{
+						GoogleRe2: &gloo_type_matcher.RegexMatcher_GoogleRE2{},
+					},
+					Regex: origin,
 				},
 			},
 		}},

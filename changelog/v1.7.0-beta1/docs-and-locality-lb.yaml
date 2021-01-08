@@ -1,0 +1,13 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4059
+    resolvesIssue: false
+    description: >
+      Update to tracing docs, so that example yaml does not
+      throw a parsing error
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3038
+    resolvesIssue: false
+    description: >
+      Introduce LocalityWeightedLb API. This will be used to support
+      locality weighted load balancing on clusters

@@ -327,6 +327,7 @@
 |gatewayProxies.NAME.gatewaySettings.options.validation.ignore_gloo_validation_failure|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.validation.always_accept.value|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.validation.allow_warnings.value|bool|||
+|gatewayProxies.NAME.gatewaySettings.options.validation.warn_route_short_circuiting.value|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.read_gateways_from_all_namespaces|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.always_sort_route_table_routes|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.compressed_proxy_spec|bool|||
@@ -450,6 +451,7 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.ignore_gloo_validation_failure|bool|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.always_accept.value|bool|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.allow_warnings.value|bool|||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.warn_route_short_circuiting.value|bool|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.read_gateways_from_all_namespaces|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.always_sort_route_table_routes|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.compressed_proxy_spec|bool|false||
@@ -628,3 +630,6 @@
 |global.glooMtls.sdsResources.requests.cpu|string||amount of CPUs|
 |global.istioSDS.enabled|bool|false|Enables SDS cert-rotator sidecar for istio mTLS cert rotation|
 |global.istioSDS.customSidecars[]|interface||Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if IstioSDS.enabled is false|
+|global.istioIntegration.labelInstallNamespace|bool|false|If creating a namespace for Gloo, include the 'istio-injection: enabled' label to allow Istio sidecar injection for Gloo pods. Be aware that Istio's default injection behavior will auto-inject a sidecar into all pods in such a marked namespace. Disabling this behavior in Istio's configs or using gloo's global.istioIntegration.disableAutoinjection flag is recommended.|
+|global.istioIntegration.whitelistDiscovery|bool|false|Annotate the discovery pod for Istio sidecar injection to ensure that it gets a sidecar even when namespace-wide auto-injection is disabled. Generally only needed for FDS is enabled.|
+|global.istioIntegration.disableAutoinjection|bool|false|Annotate all pods (excluding those whitelisted by other config values) to with an explicit 'do not inject' annotation to prevent Istio from adding sidecars to all pods. It's recommended that this be set to true if Gloo's namespace is marked for Istio discovery, as some pods do not immediately work with an Istio sidecar without extra manual configuration.|

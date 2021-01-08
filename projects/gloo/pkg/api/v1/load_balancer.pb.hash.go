@@ -192,6 +192,32 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	switch m.LocalityConfig.(type) {
+
+	case *LoadBalancerConfig_LocalityWeightedLbConfig:
+
+		if h, ok := interface{}(m.GetLocalityWeightedLbConfig()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("LocalityWeightedLbConfig")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetLocalityWeightedLbConfig(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("LocalityWeightedLbConfig")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
 	return hasher.Sum64(), nil
 }
 

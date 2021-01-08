@@ -1,0 +1,8 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/3924
+    description: >-
+      Add 3 configuration values under global.istioIntegration to control automatic discovery and sidecar
+      injection for Gloo pods by Istio. LabelInstallNamespace adds a label to mark the namespace for Istio discovery if the namespace is
+      designated to be created in the chart. WhitelistDiscovery explicitly annotates Gloo's discovery pod for Istio sidecar injection.
+      DisableAutoinjection annotates all pods that aren't more specifically noted elsewhere never receive Istio sidecar injection.
