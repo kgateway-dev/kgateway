@@ -1,8 +1,9 @@
 package ratelimit_test
 
 import (
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"time"
+
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	rlconfig "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
