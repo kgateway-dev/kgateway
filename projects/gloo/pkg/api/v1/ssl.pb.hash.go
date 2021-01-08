@@ -55,14 +55,20 @@ func (m *SslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetParameters()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Parameters")); err != nil {
+			return 0, err
+		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetParameters(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetParameters(), nil); err != nil {
 			return 0, err
 		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+			if _, err = hasher.Write([]byte("Parameters")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 				return 0, err
 			}
 		}
@@ -81,14 +87,20 @@ func (m *SslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *SslConfig_SecretRef:
 
 		if h, ok := interface{}(m.GetSecretRef()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("SecretRef")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetSecretRef(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetSecretRef(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("SecretRef")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -97,14 +109,20 @@ func (m *SslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *SslConfig_SslFiles:
 
 		if h, ok := interface{}(m.GetSslFiles()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("SslFiles")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetSslFiles(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetSslFiles(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("SslFiles")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -113,14 +131,20 @@ func (m *SslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *SslConfig_Sds:
 
 		if h, ok := interface{}(m.GetSds()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Sds")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetSds(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetSds(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("Sds")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -185,14 +209,20 @@ func (m *UpstreamSslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetParameters()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Parameters")); err != nil {
+			return 0, err
+		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetParameters(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetParameters(), nil); err != nil {
 			return 0, err
 		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+			if _, err = hasher.Write([]byte("Parameters")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 				return 0, err
 			}
 		}
@@ -211,14 +241,20 @@ func (m *UpstreamSslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *UpstreamSslConfig_SecretRef:
 
 		if h, ok := interface{}(m.GetSecretRef()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("SecretRef")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetSecretRef(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetSecretRef(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("SecretRef")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -227,14 +263,20 @@ func (m *UpstreamSslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *UpstreamSslConfig_SslFiles:
 
 		if h, ok := interface{}(m.GetSslFiles()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("SslFiles")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetSslFiles(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetSslFiles(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("SslFiles")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -243,14 +285,20 @@ func (m *UpstreamSslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *UpstreamSslConfig_Sds:
 
 		if h, ok := interface{}(m.GetSds()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Sds")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetSds(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetSds(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("Sds")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -291,14 +339,20 @@ func (m *SDSConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *SDSConfig_CallCredentials:
 
 		if h, ok := interface{}(m.GetCallCredentials()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("CallCredentials")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetCallCredentials(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetCallCredentials(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("CallCredentials")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -329,14 +383,20 @@ func (m *CallCredentials) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetFileCredentialSource()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("FileCredentialSource")); err != nil {
+			return 0, err
+		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetFileCredentialSource(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetFileCredentialSource(), nil); err != nil {
 			return 0, err
 		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+			if _, err = hasher.Write([]byte("FileCredentialSource")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 				return 0, err
 			}
 		}
