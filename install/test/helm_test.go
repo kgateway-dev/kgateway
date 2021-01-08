@@ -757,7 +757,7 @@ var _ = Describe("Helm Test", func() {
 				It("The created namespace can be labeled for Istio discovery", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"namespace.create=true",
-							"global.istioIntegration.labelNewNamespace=true"},
+							"global.istioIntegration.labelInstallNamespace=true"},
 					})
 
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {

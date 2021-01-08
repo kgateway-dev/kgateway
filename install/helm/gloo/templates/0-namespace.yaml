@@ -5,7 +5,7 @@ metadata:
   name: {{ .Release.Namespace }}
   labels:
     app: gloo
-    {{- if .Values.global.istioIntegration.labelNewNamespace }}
+    {{- if .Values.global.istioIntegration.labelInstallNamespace }}
     istio-injection: enabled
     {{- end}}
   annotations:

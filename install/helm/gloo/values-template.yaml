@@ -184,6 +184,6 @@ global:
   istioSDS:
     enabled: false
   istioIntegration:
-    labelNewNamespace: false
+    labelInstallNamespace: false
     whitelistDiscovery: false
     disableAutoinjection: false
