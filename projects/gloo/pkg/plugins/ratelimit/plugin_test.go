@@ -209,7 +209,7 @@ var _ = Describe("RateLimit Plugin", func() {
 		})
 	})
 
-	FContext("warning on enterprise features", func() {
+	Context("warning on enterprise features", func() {
 
 		JustBeforeEach(func() {
 			initParams.Settings = &gloov1.Settings{RatelimitServer: rlSettings}
