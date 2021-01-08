@@ -39,14 +39,20 @@ func (m *Secret) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetMetadata()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Metadata")); err != nil {
+			return 0, err
+		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetMetadata(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetMetadata(), nil); err != nil {
 			return 0, err
 		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+			if _, err = hasher.Write([]byte("Metadata")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 				return 0, err
 			}
 		}
@@ -57,14 +63,20 @@ func (m *Secret) Hash(hasher hash.Hash64) (uint64, error) {
 	case *Secret_Aws:
 
 		if h, ok := interface{}(m.GetAws()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Aws")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetAws(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetAws(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("Aws")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -73,14 +85,20 @@ func (m *Secret) Hash(hasher hash.Hash64) (uint64, error) {
 	case *Secret_Azure:
 
 		if h, ok := interface{}(m.GetAzure()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Azure")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetAzure(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetAzure(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("Azure")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -89,14 +107,20 @@ func (m *Secret) Hash(hasher hash.Hash64) (uint64, error) {
 	case *Secret_Tls:
 
 		if h, ok := interface{}(m.GetTls()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Tls")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetTls(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetTls(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("Tls")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -105,14 +129,20 @@ func (m *Secret) Hash(hasher hash.Hash64) (uint64, error) {
 	case *Secret_Oauth:
 
 		if h, ok := interface{}(m.GetOauth()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Oauth")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetOauth(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetOauth(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("Oauth")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -121,14 +151,20 @@ func (m *Secret) Hash(hasher hash.Hash64) (uint64, error) {
 	case *Secret_ApiKey:
 
 		if h, ok := interface{}(m.GetApiKey()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("ApiKey")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetApiKey(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetApiKey(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("ApiKey")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -137,14 +173,20 @@ func (m *Secret) Hash(hasher hash.Hash64) (uint64, error) {
 	case *Secret_Header:
 
 		if h, ok := interface{}(m.GetHeader()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Header")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetHeader(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetHeader(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("Header")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -153,14 +195,20 @@ func (m *Secret) Hash(hasher hash.Hash64) (uint64, error) {
 	case *Secret_Extensions:
 
 		if h, ok := interface{}(m.GetExtensions()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Extensions")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetExtensions(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetExtensions(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("Extensions")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}

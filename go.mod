@@ -71,7 +71,7 @@ require (
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.20.1
 	github.com/solo-io/k8s-utils v0.0.3
-	github.com/solo-io/protoc-gen-ext v0.0.13
+	github.com/solo-io/protoc-gen-ext v0.0.14
 	github.com/solo-io/reporting-client v0.2.0
 	github.com/solo-io/skv2 v0.15.2
 	github.com/solo-io/solo-apis v0.0.0-20201208172621-1ef725df2bff
