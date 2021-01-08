@@ -25,12 +25,17 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
-{{- if .Values.ingressProxy.deployment.extraAnnotations }}
+      {{- if or .Values.ingressProxy.deployment.extraAnnotations .Values.global.istioIntegration.disableAutoinjection }}
       annotations:
-      {{- range $key, $value := .Values.ingressProxy.deployment.extraAnnotations }}
+        {{- if .Values.ingressProxy.deployment.extraAnnotations }}
+        {{- range $key, $value := .Values.ingressProxy.deployment.extraAnnotations }}
         {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.global.istioIntegration.disableAutoinjection }}
+        sidecar.istio.io/inject: "false"
+        {{- end }}
       {{- end }}
-{{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 }}
       containers:
