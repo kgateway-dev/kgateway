@@ -4,6 +4,7 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -13,6 +14,8 @@ import (
 const (
 	DefaultAuthHeader = "x-user-id"
 	HttpServerUri     = "http://not-used.example.com/"
+	ExtensionName     = "extauth"
+	ErrEnterpriseOnly = "Could not load extauth plugin - this is an Enterprise feature"
 )
 
 // Note that although this configures the "envoy.filters.http.ext_authz" filter, we still want the ordering to be within the
@@ -38,6 +41,14 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
+func (p *Plugin) PluginName() string {
+	return ExtensionName
+}
+
+func (p *Plugin) IsUpgrade() bool {
+	return false
+}
+
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	// Delegate to a function with a simpler signature, will make it easier to reuse
 	return BuildHttpFilters(p.extAuthSettings, listener, params.Snapshot.Upstreams)
@@ -53,6 +64,10 @@ func (p *Plugin) ProcessVirtualHost(
 	in *v1.VirtualHost,
 	out *envoy_config_route_v3.VirtualHost,
 ) error {
+
+	if in.GetOptions().GetExtauth().GetConfigRef() != nil {
+		return eris.New(ErrEnterpriseOnly)
+	}
 
 	// Ext_authz filter is not configured on listener, do nothing
 	if !p.isExtAuthzFilterConfigured(params.Listener.GetHttpListener(), params.Snapshot.Upstreams) {
@@ -87,6 +102,10 @@ func (p *Plugin) ProcessVirtualHost(
 // - if auth is explicitly disabled, disable the filter (will apply by default also to WeightedDestinations);
 // - else, do nothing (will inherit config from parent virtual host).
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+
+	if in.GetOptions().GetExtauth().GetConfigRef() != nil {
+		return eris.New(ErrEnterpriseOnly)
+	}
 
 	// Ext_authz filter is not configured on listener, do nothing
 	if !p.isExtAuthzFilterConfigured(params.Listener.GetHttpListener(), params.Snapshot.Upstreams) {
@@ -125,6 +144,10 @@ func (p *Plugin) ProcessWeightedDestination(
 	in *v1.WeightedDestination,
 	out *envoy_config_route_v3.WeightedCluster_ClusterWeight,
 ) error {
+
+	if in.GetOptions().GetExtauth().GetConfigRef() != nil {
+		return eris.New(ErrEnterpriseOnly)
+	}
 
 	// Ext_authz filter is not configured on listener, do nothing
 	if !p.isExtAuthzFilterConfigured(params.Listener.GetHttpListener(), params.Snapshot.Upstreams) {

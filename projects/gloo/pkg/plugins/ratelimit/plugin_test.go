@@ -1,6 +1,7 @@
 package ratelimit_test
 
 import (
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"time"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -205,6 +206,35 @@ var _ = Describe("RateLimit Plugin", func() {
 				cfg := getTypedConfig(f.HttpFilter)
 				Expect(cfg.Timeout).To(matchers.MatchProto(s))
 			}
+		})
+	})
+
+	FContext("warning on enterprise features", func() {
+
+		JustBeforeEach(func() {
+			initParams.Settings = &gloov1.Settings{RatelimitServer: rlSettings}
+			err := rlPlugin.Init(initParams)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("give warning when using enterprise feature in OS", func() {
+			rlConfigs := ratelimitpb.RateLimitConfigRefs{
+				Refs: []*ratelimitpb.RateLimitConfigRef{{
+					Name:      "myRlConfig",
+					Namespace: "gloo-system",
+				}},
+			}
+
+			inVHost := gloov1.VirtualHost{}
+			inVHost.Options = &gloov1.VirtualHostOptions{
+				RateLimitConfigType: &gloov1.VirtualHostOptions_RateLimitConfigs{
+					RateLimitConfigs: &rlConfigs,
+				},
+			}
+
+			err := rlPlugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &inVHost, &envoy_config_route_v3.VirtualHost{})
+			Expect(err).Should(MatchError(ErrEnterpriseOnly))
+
 		})
 	})
 

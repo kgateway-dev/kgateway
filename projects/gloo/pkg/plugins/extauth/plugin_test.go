@@ -105,6 +105,43 @@ var _ = Describe("Process Custom Extauth configuration", func() {
 	Context("with gateway-level extauth settings", func() {
 		allTests(false)
 	})
+
+	Context("give warning on enterprise extauth features", func() {
+		It("should provide warning when using enterprise features in OS", func() {
+			plugin := NewCustomAuthPlugin()
+			err := plugin.Init(plugins.InitParams{})
+			Expect(err).ToNot(HaveOccurred())
+
+			authConfig := &extauthv1.AuthConfig{
+				Metadata: &core.Metadata{
+					Name:      "oauth",
+					Namespace: "gloo-system",
+				},
+				Configs: []*extauthv1.AuthConfig_Config{{
+					AuthConfig: &extauthv1.AuthConfig_Config_Oauth{},
+				}},
+			}
+			authConfigRef := authConfig.Metadata.Ref()
+
+			authExtension := &extauthv1.ExtAuthExtension{
+				Spec: &extauthv1.ExtAuthExtension_ConfigRef{
+					ConfigRef: authConfigRef,
+				},
+			}
+
+			virtualHost := &gloov1.VirtualHost{
+				Name:    "virt1",
+				Domains: []string{"*"},
+				Options: &gloov1.VirtualHostOptions{
+					Extauth: authExtension,
+				},
+				Routes: []*gloov1.Route{},
+			}
+
+			err = plugin.ProcessVirtualHost(plugins.VirtualHostParams{}, virtualHost, &envoy_config_route_v3.VirtualHost{})
+			Expect(err).Should(MatchError(ErrEnterpriseOnly))
+		})
+	})
 })
 
 type pluginContext struct {
