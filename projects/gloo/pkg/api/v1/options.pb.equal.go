@@ -510,14 +510,14 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 			}
 		}
 
-	case *VirtualHostOptions_JwtStagedVhostConfig:
+	case *VirtualHostOptions_JwtStaged:
 
-		if h, ok := interface{}(m.GetJwtStagedVhostConfig()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetJwtStagedVhostConfig()) {
+		if h, ok := interface{}(m.GetJwtStaged()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetJwtStaged()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetJwtStagedVhostConfig(), target.GetJwtStagedVhostConfig()) {
+			if !proto.Equal(m.GetJwtStaged(), target.GetJwtStaged()) {
 				return false
 			}
 		}
@@ -819,14 +819,14 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 			}
 		}
 
-	case *RouteOptions_JwtStagedRouteConfig:
+	case *RouteOptions_JwtStaged:
 
-		if h, ok := interface{}(m.GetJwtStagedRouteConfig()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetJwtStagedRouteConfig()) {
+		if h, ok := interface{}(m.GetJwtStaged()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetJwtStaged()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetJwtStagedRouteConfig(), target.GetJwtStagedRouteConfig()) {
+			if !proto.Equal(m.GetJwtStaged(), target.GetJwtStaged()) {
 				return false
 			}
 		}

@@ -858,20 +858,20 @@ func (m *VirtualHostOptions) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *VirtualHostOptions_JwtStagedVhostConfig:
+	case *VirtualHostOptions_JwtStaged:
 
-		if h, ok := interface{}(m.GetJwtStagedVhostConfig()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("JwtStagedVhostConfig")); err != nil {
+		if h, ok := interface{}(m.GetJwtStaged()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("JwtStaged")); err != nil {
 				return 0, err
 			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetJwtStagedVhostConfig(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetJwtStaged(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("JwtStagedVhostConfig")); err != nil {
+				if _, err = hasher.Write([]byte("JwtStaged")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -1406,20 +1406,20 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *RouteOptions_JwtStagedRouteConfig:
+	case *RouteOptions_JwtStaged:
 
-		if h, ok := interface{}(m.GetJwtStagedRouteConfig()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("JwtStagedRouteConfig")); err != nil {
+		if h, ok := interface{}(m.GetJwtStaged()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("JwtStaged")); err != nil {
 				return 0, err
 			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetJwtStagedRouteConfig(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetJwtStaged(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("JwtStagedRouteConfig")); err != nil {
+				if _, err = hasher.Write([]byte("JwtStaged")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
