@@ -284,11 +284,11 @@ func envoyCacheResourcesListToHash(resources []envoycache.Resource) uint32 {
 		buf := buffer[:0]
 		out, err := mo.MarshalAppend(buf, proto.MessageV2(r.ResourceProto()))
 		if err != nil {
-			panic(err) //TODO(kdorosh)
+			panic(errors.Wrap(err, "marshalling envoy snapshot components"))
 		}
 		_, err = hasher.Write(out)
 		if err != nil {
-			panic(err) //TODO(kdorosh)
+			panic(errors.Wrap(err, "constructing hash for envoy snapshot components"))
 		}
 	}
 	return hasher.Sum32()
