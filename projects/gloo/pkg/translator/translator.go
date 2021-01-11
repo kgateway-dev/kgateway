@@ -252,21 +252,6 @@ func generateXDSSnapshot(
 	clustersVersion := envoyCacheResourcesListToHash(clustersProto)
 	listenersVersion := envoyCacheResourcesListToHash(listenersProto)
 
-	//endpointsVersion, err := hashstructure.Hash(endpointsProto, nil)
-	//if err != nil {
-	//	panic(errors.Wrap(err, "constructing version hash for endpoints envoy snapshot components"))
-	//}
-
-	//clustersVersion, err := hashstructure.Hash(clustersProto, nil)
-	//if err != nil {
-	//	panic(errors.Wrap(err, "constructing version hash for clusters envoy snapshot components"))
-	//}
-	//
-	//listenersVersion, err := hashstructure.Hash(listenersProto, nil)
-	//if err != nil {
-	//	panic(errors.Wrap(err, "constructing version hash for listeners envoy snapshot components"))
-	//}
-
 	// if clusters are updated, provider a new version of the endpoints,
 	// so the clusters are warm
 	return xds.NewSnapshotFromResources(
@@ -278,10 +263,17 @@ func generateXDSSnapshot(
 
 func envoyCacheResourcesListToHash(resources []envoycache.Resource) uint32 {
 	hasher := fnv.New32()
-	buffer := make([]byte, 0, 1024) // maybe more?!
+	// 8kb capacity, consider raising if we find the buffer is frequently being
+	// re-allocated by MarshalAppend to fit larger protos.
+	// the goal is to keep allocations constant for GC, without allocating an
+	// unnecessarily large buffer.
+	buffer := make([]byte, 0, 8*1024)
 	mo := proto2.MarshalOptions{Deterministic: true}
 	for _, r := range resources {
 		buf := buffer[:0]
+		// proto.MessageV2 will create another allocation, updating solo-kit
+		// to use google protos (rather than github protos, i.e. use v2) is
+		// another path to further improve performance here.
 		out, err := mo.MarshalAppend(buf, proto.MessageV2(r.ResourceProto()))
 		if err != nil {
 			panic(errors.Wrap(err, "marshalling envoy snapshot components"))
