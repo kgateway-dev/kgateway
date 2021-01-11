@@ -34,7 +34,8 @@ var (
 )
 
 const (
-	Name = "rate-limit"
+	Name              = "rate-limit"
+	errEnterpriseOnly = "The Gloo Advanced Rate limit API is an enterprise-only feature, please upgrade or use the Envoy rate-limit API instead"
 )
 
 func init() {
@@ -52,8 +53,8 @@ func NewTranslatorSyncerExtension(_ context.Context, params syncer.TranslatorSyn
 func (s *TranslatorSyncerExtension) Sync(ctx context.Context, snap *gloov1.ApiSnapshot, xdsCache envoycache.SnapshotCache) (string, error) {
 	ctx = contextutils.WithLogger(ctx, "rateLimitTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Error("Could not apply ratelimit plugin - this is an Enterprise feature")
-	return "", eris.New("Could not apply ratelimit plugin - this is an Enterprise feature")
+	logger.Error(errEnterpriseOnly)
+	return "", eris.New(errEnterpriseOnly)
 }
 
 func ExtensionName() string {

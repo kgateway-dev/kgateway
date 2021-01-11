@@ -18,7 +18,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = FDescribe("warning when using enterprise features", func() {
+var _ = Describe("warning when using enterprise features", func() {
 
 	var (
 		ctx           context.Context
@@ -113,7 +113,7 @@ var _ = FDescribe("warning when using enterprise features", func() {
 			checkProxy()
 
 			p, err := testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-			Expect(p.GetStatus()).To(MatchRegexp("Could not apply ratelimit plugin - this is an Enterprise feature"))
+			Expect(p.GetStatus()).To(MatchRegexp("The Gloo Advanced Rate limit API is an enterprise-only feature, please upgrade or use the Envoy rate-limit API instead"))
 		})
 
 	})

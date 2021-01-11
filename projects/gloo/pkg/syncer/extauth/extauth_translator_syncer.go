@@ -29,7 +29,8 @@ var (
 )
 
 const (
-	Name = "extauth"
+	Name              = "extauth"
+	errEnterpriseOnly = "The Gloo Advanced Extauth API is an enterprise-only feature, please upgrade or use the Envoy Extauth API instead"
 )
 
 func init() {
@@ -47,8 +48,8 @@ func NewTranslatorSyncerExtension(_ context.Context, params syncer.TranslatorSyn
 func (s *TranslatorSyncerExtension) Sync(ctx context.Context, snap *gloov1.ApiSnapshot, xdsCache envoycache.SnapshotCache) (string, error) {
 	ctx = contextutils.WithLogger(ctx, "extAuthTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Error("Could not load extauth plugin - this is an Enterprise feature")
-	return "", eris.New("Could not load extauth plugin - this is an Enterprise feature")
+	logger.Error(errEnterpriseOnly)
+	return "", eris.New(errEnterpriseOnly)
 }
 
 func ExtensionName() string {
@@ -58,5 +59,3 @@ func ExtensionName() string {
 func IsUpgrade() bool {
 	return false
 }
-
-
