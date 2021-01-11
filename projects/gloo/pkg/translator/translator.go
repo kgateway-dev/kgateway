@@ -1,9 +1,10 @@
 package translator
 
 import (
-	"crypto/sha256"
-	"encoding/binary"
 	"fmt"
+	"hash/fnv"
+
+	proto2 "google.golang.org/protobuf/proto"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -276,17 +277,21 @@ func generateXDSSnapshot(
 }
 
 func envoyCacheResourcesListToSha256(resources []envoycache.Resource) uint32 {
-	var bytes []byte
+	hasher := fnv.New32()
+	buffer := make([]byte, 0, 1024) // maybe more?!
+	mo := proto2.MarshalOptions{Deterministic: true}
 	for _, r := range resources {
-		b, err := proto.Marshal(r.ResourceProto())
+		buf := buffer[:0]
+		out, err := mo.MarshalAppend(buf, proto.MessageV2(r.ResourceProto()))
 		if err != nil {
-			panic(err)
+			panic(err) //TODO(kdorosh)
 		}
-		bytes = append(bytes, b...)
+		_, err = hasher.Write(out)
+		if err != nil {
+			panic(err) //TODO(kdorosh)
+		}
 	}
-	sha := sha256.Sum256(bytes)
-	slice := sha[:]
-	return binary.LittleEndian.Uint32(slice)
+	return hasher.Sum32()
 }
 
 func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) envoycache.Resources {
