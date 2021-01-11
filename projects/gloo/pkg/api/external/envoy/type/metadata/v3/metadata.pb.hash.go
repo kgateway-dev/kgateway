@@ -45,20 +45,14 @@ func (m *MetadataKey) Hash(hasher hash.Hash64) (uint64, error) {
 	for _, v := range m.GetPath() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -87,20 +81,14 @@ func (m *MetadataKind) Hash(hasher hash.Hash64) (uint64, error) {
 	case *MetadataKind_Request_:
 
 		if h, ok := interface{}(m.GetRequest()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Request")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetRequest(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetRequest(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Request")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -109,20 +97,14 @@ func (m *MetadataKind) Hash(hasher hash.Hash64) (uint64, error) {
 	case *MetadataKind_Route_:
 
 		if h, ok := interface{}(m.GetRoute()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Route")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetRoute(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetRoute(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Route")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -131,20 +113,14 @@ func (m *MetadataKind) Hash(hasher hash.Hash64) (uint64, error) {
 	case *MetadataKind_Cluster_:
 
 		if h, ok := interface{}(m.GetCluster()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Cluster")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetCluster(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetCluster(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Cluster")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -153,20 +129,14 @@ func (m *MetadataKind) Hash(hasher hash.Hash64) (uint64, error) {
 	case *MetadataKind_Host_:
 
 		if h, ok := interface{}(m.GetHost()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Host")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetHost(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetHost(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Host")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}

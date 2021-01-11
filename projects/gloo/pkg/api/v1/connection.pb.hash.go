@@ -44,80 +44,56 @@ func (m *ConnectionConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetConnectTimeout()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ConnectTimeout")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetConnectTimeout(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetConnectTimeout(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("ConnectTimeout")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetTcpKeepalive()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("TcpKeepalive")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetTcpKeepalive(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetTcpKeepalive(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("TcpKeepalive")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetPerConnectionBufferLimitBytes()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("PerConnectionBufferLimitBytes")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetPerConnectionBufferLimitBytes(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetPerConnectionBufferLimitBytes(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("PerConnectionBufferLimitBytes")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetCommonHttpProtocolOptions()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("CommonHttpProtocolOptions")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetCommonHttpProtocolOptions(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetCommonHttpProtocolOptions(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("CommonHttpProtocolOptions")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -145,40 +121,28 @@ func (m *ConnectionConfig_TcpKeepAlive) Hash(hasher hash.Hash64) (uint64, error)
 	}
 
 	if h, ok := interface{}(m.GetKeepaliveTime()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("KeepaliveTime")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetKeepaliveTime(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetKeepaliveTime(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("KeepaliveTime")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetKeepaliveInterval()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("KeepaliveInterval")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetKeepaliveInterval(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetKeepaliveInterval(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("KeepaliveInterval")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -201,20 +165,14 @@ func (m *ConnectionConfig_HttpProtocolOptions) Hash(hasher hash.Hash64) (uint64,
 	}
 
 	if h, ok := interface{}(m.GetIdleTimeout()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("IdleTimeout")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetIdleTimeout(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetIdleTimeout(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("IdleTimeout")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -226,20 +184,14 @@ func (m *ConnectionConfig_HttpProtocolOptions) Hash(hasher hash.Hash64) (uint64,
 	}
 
 	if h, ok := interface{}(m.GetMaxStreamDuration()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("MaxStreamDuration")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMaxStreamDuration(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMaxStreamDuration(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("MaxStreamDuration")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}

@@ -39,40 +39,28 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetHealthyPanicThreshold()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("HealthyPanicThreshold")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetHealthyPanicThreshold(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetHealthyPanicThreshold(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("HealthyPanicThreshold")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetUpdateMergeWindow()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("UpdateMergeWindow")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetUpdateMergeWindow(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetUpdateMergeWindow(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("UpdateMergeWindow")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -83,20 +71,14 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *LoadBalancerConfig_RoundRobin_:
 
 		if h, ok := interface{}(m.GetRoundRobin()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("RoundRobin")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetRoundRobin(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetRoundRobin(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("RoundRobin")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -105,20 +87,14 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *LoadBalancerConfig_LeastRequest_:
 
 		if h, ok := interface{}(m.GetLeastRequest()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("LeastRequest")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetLeastRequest(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetLeastRequest(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("LeastRequest")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -127,20 +103,14 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *LoadBalancerConfig_Random_:
 
 		if h, ok := interface{}(m.GetRandom()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Random")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetRandom(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetRandom(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Random")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -149,20 +119,14 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *LoadBalancerConfig_RingHash_:
 
 		if h, ok := interface{}(m.GetRingHash()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("RingHash")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetRingHash(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetRingHash(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("RingHash")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -171,20 +135,14 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *LoadBalancerConfig_Maglev_:
 
 		if h, ok := interface{}(m.GetMaglev()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Maglev")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetMaglev(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetMaglev(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Maglev")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -197,20 +155,14 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *LoadBalancerConfig_LocalityWeightedLbConfig:
 
 		if h, ok := interface{}(m.GetLocalityWeightedLbConfig()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("LocalityWeightedLbConfig")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetLocalityWeightedLbConfig(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetLocalityWeightedLbConfig(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("LocalityWeightedLbConfig")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -314,20 +266,14 @@ func (m *LoadBalancerConfig_RingHash) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetRingHashConfig()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("RingHashConfig")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetRingHashConfig(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetRingHashConfig(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("RingHashConfig")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
