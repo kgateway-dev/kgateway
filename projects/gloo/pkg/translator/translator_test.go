@@ -645,7 +645,7 @@ var _ = Describe("Translator", func() {
 			for _, v := range expectedResult {
 				msgList = append(msgList, v)
 			}
-			Expect(cluster.HealthChecks).To(ConistOfProtos(msgList...))
+			Expect(cluster.HealthChecks).To(ConsistOfProtos(msgList...))
 		})
 
 		It("can translate the grpc health check", func() {
@@ -671,7 +671,7 @@ var _ = Describe("Translator", func() {
 			for _, v := range expectedResult {
 				msgList = append(msgList, v)
 			}
-			Expect(cluster.HealthChecks).To(ConistOfProtos(msgList...))
+			Expect(cluster.HealthChecks).To(ConsistOfProtos(msgList...))
 		})
 
 		It("can properly translate outlier detection config", func() {
@@ -790,7 +790,7 @@ var _ = Describe("Translator", func() {
 			for _, v := range expectedResult {
 				msgList = append(msgList, v)
 			}
-			Expect(cluster.HealthChecks).To(ConistOfProtos(msgList...))
+			Expect(cluster.HealthChecks).To(ConsistOfProtos(msgList...))
 		})
 	})
 
