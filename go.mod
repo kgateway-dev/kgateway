@@ -78,7 +78,6 @@ require (
 	github.com/solo-io/solo-kit v0.17.1
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
-	github.com/deepmind/objecthash-proto v0.0.0-20180608110149-5db4e5a3f4f4
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0

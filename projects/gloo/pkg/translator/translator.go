@@ -246,7 +246,6 @@ func generateXDSSnapshot(
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
-	//hasher := protohash.NewHasher()
 	var epBytes []byte
 	for _, epProto := range endpointsProto {
 		bytes, err := proto.Marshal(epProto.ResourceProto())//hasher.HashProto(epProto.ResourceProto())
