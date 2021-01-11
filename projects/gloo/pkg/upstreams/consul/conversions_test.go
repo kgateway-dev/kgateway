@@ -140,7 +140,7 @@ var _ = Describe("Conversions", func() {
 			},
 		}
 
-		Expect(usList).To(matchers.ConistOfProtos(expectedUpstreams...))
+		Expect(usList).To(matchers.ConsistOfProtos(expectedUpstreams...))
 	})
 
 	It("correctly consolidates service information from different data centers", func() {

@@ -453,7 +453,7 @@ var _ = Describe("Consul EDS", func() {
 			for _, v := range expectedEndpointsFirstAttempt {
 				asProtos = append(asProtos, v)
 			}
-			Eventually(endpointsChan).Should(Receive(proto_matchers.ConistOfProtos(asProtos...)))
+			Eventually(endpointsChan).Should(Receive(proto_matchers.ConsistOfProtos(asProtos...)))
 
 			// Wait for error monitoring routine to stop, we want to simulate an error
 			errRoutineCancel()
