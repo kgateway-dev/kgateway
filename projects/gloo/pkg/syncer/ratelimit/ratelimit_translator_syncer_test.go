@@ -2,6 +2,7 @@ package ratelimit_test
 
 import (
 	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -33,67 +34,66 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 
 	Context("config with enterprise ratelimit feature is set on listener", func() {
 
-	Context("config ratelimitBasic", func() {
-		JustBeforeEach(func() {
-			ctx, cancel = context.WithCancel(context.Background())
-			var err error
-			helpers.UseMemoryClients()
-			resourceClientFactory := &factory.MemoryResourceClientFactory{
-				Cache: memory.NewInMemoryResourceCache(),
-			}
+		Context("config ratelimitBasic", func() {
+			JustBeforeEach(func() {
+				ctx, cancel = context.WithCancel(context.Background())
+				var err error
+				helpers.UseMemoryClients()
+				resourceClientFactory := &factory.MemoryResourceClientFactory{
+					Cache: memory.NewInMemoryResourceCache(),
+				}
 
-			proxyClient, err = resourceClientFactory.NewResourceClient(ctx, factory.NewResourceClientParams{ResourceType: &gloov1.Proxy{}})
-			Expect(err).NotTo(HaveOccurred())
+				proxyClient, err = resourceClientFactory.NewResourceClient(ctx, factory.NewResourceClientParams{ResourceType: &gloov1.Proxy{}})
+				Expect(err).NotTo(HaveOccurred())
 
-			params.Reports = make(reporter.ResourceReports)
-			translator, err = NewTranslatorSyncerExtension(ctx, params)
-			Expect(err).NotTo(HaveOccurred())
+				params.Reports = make(reporter.ResourceReports)
+				translator, err = NewTranslatorSyncerExtension(ctx, params)
+				Expect(err).NotTo(HaveOccurred())
 
-			config := &ratelimit.IngressRateLimit{
-				AuthorizedLimits: nil,
-				AnonymousLimits:  nil,
-			}
+				config := &ratelimit.IngressRateLimit{
+					AuthorizedLimits: nil,
+					AnonymousLimits:  nil,
+				}
 
-			proxy = &gloov1.Proxy{
-				Metadata: &skcore.Metadata{
-					Name:      "proxy",
-					Namespace: "gloo-system",
-				},
-				Listeners: []*gloov1.Listener{{
-					Name: "listener-::-8080",
-					ListenerType: &gloov1.Listener_HttpListener{
-						HttpListener: &gloov1.HttpListener{
-							VirtualHosts: []*gloov1.VirtualHost{
-								&gloov1.VirtualHost{
-									Name: "gloo-system.default",
-									Options: &gloov1.VirtualHostOptions{
-										RatelimitBasic: config,
+				proxy = &gloov1.Proxy{
+					Metadata: &skcore.Metadata{
+						Name:      "proxy",
+						Namespace: "gloo-system",
+					},
+					Listeners: []*gloov1.Listener{{
+						Name: "listener-::-8080",
+						ListenerType: &gloov1.Listener_HttpListener{
+							HttpListener: &gloov1.HttpListener{
+								VirtualHosts: []*gloov1.VirtualHost{
+									&gloov1.VirtualHost{
+										Name: "gloo-system.default",
+										Options: &gloov1.VirtualHostOptions{
+											RatelimitBasic: config,
+										},
 									},
 								},
 							},
 						},
-					},
-				}},
-			}
+					}},
+				}
 
-			proxyClient.Write(proxy, clients.WriteOpts{})
+				proxyClient.Write(proxy, clients.WriteOpts{})
 
-			apiSnapshot = &gloov1.ApiSnapshot{
-				Proxies: []*gloov1.Proxy{proxy},
-			}
+				apiSnapshot = &gloov1.ApiSnapshot{
+					Proxies: []*gloov1.Proxy{proxy},
+				}
+			})
+
+			AfterEach(func() {
+				cancel()
+			})
+
+			It("should error when enterprise ratelimitBasic config is set", func() {
+				_, err := translator.Sync(ctx, apiSnapshot, snapCache)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError("The Gloo Advanced Rate limit API 'ratelimitBasic' resource is an enterprise-only feature, please upgrade or use the Envoy rate-limit API instead"))
+			})
 		})
-
-		AfterEach(func() {
-			cancel()
-		})
-
-		It("should error when enterprise ratelimitBasic config is set", func() {
-			_, err := translator.Sync(ctx, apiSnapshot, snapCache)
-			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError("The Gloo Advanced Rate limit API 'ratelimitBasic' resource is an enterprise-only feature, please upgrade or use the Envoy rate-limit API instead"))
-		})
-	})
-
 
 		Context("config RateLimitConfig", func() {
 			JustBeforeEach(func() {
@@ -164,7 +164,6 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				Expect(err).To(MatchError("The Gloo Advanced Rate limit API 'RateLimitConfig' resource is an enterprise-only feature, please upgrade or use the Envoy rate-limit API instead"))
 			})
 		})
-
 
 		Context("config setActions", func() {
 			JustBeforeEach(func() {

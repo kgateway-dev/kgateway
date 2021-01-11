@@ -2,6 +2,7 @@ package extauth
 
 import (
 	"context"
+
 	"github.com/rotisserie/eris"
 
 	"go.opencensus.io/stats"
