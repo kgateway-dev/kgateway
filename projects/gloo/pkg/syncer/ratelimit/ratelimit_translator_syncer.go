@@ -2,6 +2,7 @@ package ratelimit
 
 import (
 	"context"
+	"fmt"
 	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -15,10 +16,6 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
-
-// TODO(marco): generate these in solo-kit
-//go:generate mockgen -package mocks -destination mocks/cache.go github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache SnapshotCache
-//go:generate mockgen -package mocks -destination mocks/reporter.go github.com/solo-io/solo-kit/pkg/api/v2/reporter Reporter
 
 var (
 	rlConnectedStateDescription = "zero indicates gloo detected an error with the rate limit config and did not update its XDS snapshot, check the gloo logs for errors"
@@ -36,7 +33,6 @@ var (
 const (
 	Name                = "rate-limit"
 	RateLimitServerRole = "ratelimit"
-	ErrEnterpriseOnly   = "The Gloo Advanced Rate limit API is an enterprise-only feature, please upgrade or use the Envoy rate-limit API instead"
 )
 
 func init() {
@@ -67,41 +63,51 @@ func (s *TranslatorSyncerExtension) Sync(ctx context.Context, snap *gloov1.ApiSn
 
 			for _, virtualHost := range virtualHosts {
 
+				// RateLimitConfigs is an enterprise feature https://docs.solo.io/gloo-edge/latest/guides/security/rate_limiting/crds/
 				if virtualHost.GetOptions().GetRateLimitConfigs() != nil {
-					logger.Warnf(ErrEnterpriseOnly)
-
-					reports := s.reports
-					reports.AddError(proxy, eris.New(ErrEnterpriseOnly))
-
-					return RateLimitServerRole, eris.New(ErrEnterpriseOnly)
+					errorMsg := createErrorMsg("RateLimitConfig")
+					logger.Errorf(errorMsg)
+					return RateLimitServerRole, eris.New(errorMsg)
 				}
 
+				// ratelimitBasic is an enterprise feature https://docs.solo.io/gloo-edge/latest/guides/security/rate_limiting/simple/
 				if virtualHost.GetOptions().GetRatelimitBasic() != nil {
-					logger.Warnf(ErrEnterpriseOnly)
+					errorMsg := createErrorMsg("ratelimitBasic")
+					logger.Errorf(errorMsg)
+					return RateLimitServerRole, eris.New(errorMsg)
+				}
 
-					reports := s.reports
-					reports.AddError(proxy, eris.New(ErrEnterpriseOnly))
-
-					return RateLimitServerRole, eris.New(ErrEnterpriseOnly)
+				// check setActions on vhost
+				rlactionsVhost := virtualHost.GetOptions().GetRatelimit().GetRateLimits()
+				for _, rlaction := range rlactionsVhost {
+					if rlaction.GetSetActions() != nil {
+						errorMsg := createErrorMsg("setActions")
+						logger.Errorf(errorMsg)
+						return RateLimitServerRole, eris.New(errorMsg)
+					}
 				}
 
 				for _, route := range virtualHost.Routes {
 					if route.GetOptions().GetRateLimitConfigs() != nil {
-						logger.Warnf(ErrEnterpriseOnly)
-
-						reports := s.reports
-						reports.AddError(proxy, eris.New(ErrEnterpriseOnly))
-
-						return RateLimitServerRole, eris.New(ErrEnterpriseOnly)
+						errorMsg := createErrorMsg("RateLimitConfig")
+						logger.Errorf(errorMsg)
+						return RateLimitServerRole, eris.New(errorMsg)
 					}
 
 					if route.GetOptions().GetRatelimitBasic() != nil {
-						logger.Warnf(ErrEnterpriseOnly)
+						errorMsg := createErrorMsg("ratelimitBasic")
+						logger.Errorf(errorMsg)
+						return RateLimitServerRole, eris.New(errorMsg)
+					}
 
-						reports := s.reports
-						reports.AddError(proxy, eris.New(ErrEnterpriseOnly))
-
-						return RateLimitServerRole, eris.New(ErrEnterpriseOnly)
+					// check setActions on route
+					rlactionsRoute := route.GetOptions().GetRatelimit().GetRateLimits()
+					for _, rlaction := range rlactionsRoute {
+						if rlaction.GetSetActions() != nil {
+							errorMsg := createErrorMsg("setActions")
+							logger.Errorf(errorMsg)
+							return RateLimitServerRole, eris.New(errorMsg)
+						}
 					}
 
 				}
@@ -111,6 +117,10 @@ func (s *TranslatorSyncerExtension) Sync(ctx context.Context, snap *gloov1.ApiSn
 	}
 
 	return RateLimitServerRole, nil
+}
+
+func createErrorMsg(feature string) string {
+	return fmt.Sprintf("The Gloo Advanced Rate limit API '%s' resource is an enterprise-only feature, please upgrade or use the Envoy rate-limit API instead", feature)
 }
 
 func ExtensionName() string {

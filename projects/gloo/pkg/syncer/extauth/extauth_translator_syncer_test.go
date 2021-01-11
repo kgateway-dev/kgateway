@@ -69,16 +69,13 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 		cancel()
 	})
 
-	Context("strongly typed config", func() {
-
-		Context("config that needs to be translated (non-custom)", func() {
-			It("should work with one listener", func() {
-				_, err := translator.Sync(ctx, apiSnapshot, snapCache)
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(ErrEnterpriseOnly))
-			})
-
+	Context("config with enterprise extauth feature is set on listener", func() {
+		It("should error when enterprise extauth config is set", func() {
+			_, err := translator.Sync(ctx, apiSnapshot, snapCache)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ErrEnterpriseOnly))
 		})
+
 	})
 })
 

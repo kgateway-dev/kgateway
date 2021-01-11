@@ -20,14 +20,14 @@ import (
 
 var _ = Describe("RatelimitTranslatorSyncer", func() {
 	var (
-		ctx              context.Context
-		cancel           context.CancelFunc
-		proxy            *gloov1.Proxy
-		params           syncer.TranslatorSyncerExtensionParams
-		translator       syncer.TranslatorSyncerExtension
-		apiSnapshot      *gloov1.ApiSnapshot
-		proxyClient      clients.ResourceClient
-		snapCache        *mockSetSnapshot
+		ctx         context.Context
+		cancel      context.CancelFunc
+		proxy       *gloov1.Proxy
+		params      syncer.TranslatorSyncerExtensionParams
+		translator  syncer.TranslatorSyncerExtension
+		apiSnapshot *gloov1.ApiSnapshot
+		proxyClient clients.ResourceClient
+		snapCache   *mockSetSnapshot
 	)
 	JustBeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
@@ -74,7 +74,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 		proxyClient.Write(proxy, clients.WriteOpts{})
 
 		apiSnapshot = &gloov1.ApiSnapshot{
-			Proxies:     []*gloov1.Proxy{proxy},
+			Proxies: []*gloov1.Proxy{proxy},
 		}
 	})
 
@@ -82,16 +82,13 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 		cancel()
 	})
 
-	Context("strongly typed config", func() {
-
-		Context("config that needs to be translated (non-custom)", func() {
-			It("should work with one listener", func() {
-				_, err := translator.Sync(ctx, apiSnapshot, snapCache)
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(ErrEnterpriseOnly))
-			})
-
+	Context("config with enterprise ratelimit feature is set on listener", func() {
+		It("should error when enterprise ratelimitBasic config is set", func() {
+			_, err := translator.Sync(ctx, apiSnapshot, snapCache)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError("The Gloo Advanced Rate limit API 'ratelimitBasic' resource is an enterprise-only feature, please upgrade or use the Envoy rate-limit API instead"))
 		})
+
 	})
 })
 
@@ -137,6 +134,3 @@ func (m *mockSetSnapshot) SetSnapshot(node string, snapshot envoycache.Snapshot)
 	m.Snapshots[node] = snapshot
 	return nil
 }
-
-
-
