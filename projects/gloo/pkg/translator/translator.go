@@ -1,8 +1,9 @@
 package translator
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
 	"fmt"
-
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -245,20 +246,57 @@ func generateXDSSnapshot(
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
-	endpointsVersion, err := hashstructure.Hash(endpointsProto, nil)
-	if err != nil {
-		panic(errors.Wrap(err, "constructing version hash for endpoints envoy snapshot components"))
+	//hasher := protohash.NewHasher()
+	var epBytes []byte
+	for _, epProto := range endpointsProto {
+		bytes, err := proto.Marshal(epProto.ResourceProto())//hasher.HashProto(epProto.ResourceProto())
+		if err != nil {
+			panic(err)
+		}
+		epBytes = append(epBytes, bytes...)
 	}
+	epSha := sha256.Sum256(epBytes)
+	epSlice := epSha[:]
+	endpointsVersion := binary.LittleEndian.Uint32(epSlice)
 
-	clustersVersion, err := hashstructure.Hash(clustersProto, nil)
-	if err != nil {
-		panic(errors.Wrap(err, "constructing version hash for clusters envoy snapshot components"))
+	var clusterBytes []byte
+	for _, clusterProto := range clustersProto {
+		bytes, err := proto.Marshal(clusterProto.ResourceProto())//hasher.HashProto(clusterProto.ResourceProto())
+		if err != nil {
+			panic(err)
+		}
+		clusterBytes = append(clusterBytes, bytes...)
 	}
+	clustersSha := sha256.Sum256(clusterBytes)
+	clustersSlice := clustersSha[:]
+	clustersVersion := binary.LittleEndian.Uint32(clustersSlice)
 
-	listenersVersion, err := hashstructure.Hash(listenersProto, nil)
-	if err != nil {
-		panic(errors.Wrap(err, "constructing version hash for listeners envoy snapshot components"))
+	var listenersBytes []byte
+	for _, listenerProto := range clustersProto {
+		bytes, err := proto.Marshal(listenerProto.ResourceProto())//hasher.HashProto(listenerProto.ResourceProto())
+		if err != nil {
+			panic(err)
+		}
+		listenersBytes = append(listenersBytes, bytes...)
 	}
+	listenersSha := sha256.Sum256(listenersBytes)
+	listenersSlice := listenersSha[:]
+	listenersVersion := binary.LittleEndian.Uint32(listenersSlice)
+
+	//endpointsVersion, err := hashstructure.Hash(endpointsProto, nil)
+	//if err != nil {
+	//	panic(errors.Wrap(err, "constructing version hash for endpoints envoy snapshot components"))
+	//}
+
+	//clustersVersion, err := hashstructure.Hash(clustersProto, nil)
+	//if err != nil {
+	//	panic(errors.Wrap(err, "constructing version hash for clusters envoy snapshot components"))
+	//}
+	//
+	//listenersVersion, err := hashstructure.Hash(listenersProto, nil)
+	//if err != nil {
+	//	panic(errors.Wrap(err, "constructing version hash for listeners envoy snapshot components"))
+	//}
 
 	// if clusters are updated, provider a new version of the endpoints,
 	// so the clusters are warm
