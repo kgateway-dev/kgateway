@@ -248,9 +248,9 @@ func generateXDSSnapshot(
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
-	endpointsVersion := envoyCacheResourcesListToSha256(endpointsProto)
-	clustersVersion := envoyCacheResourcesListToSha256(clustersProto)
-	listenersVersion := envoyCacheResourcesListToSha256(listenersProto)
+	endpointsVersion := envoyCacheResourcesListToHash(endpointsProto)
+	clustersVersion := envoyCacheResourcesListToHash(clustersProto)
+	listenersVersion := envoyCacheResourcesListToHash(listenersProto)
 
 	//endpointsVersion, err := hashstructure.Hash(endpointsProto, nil)
 	//if err != nil {
@@ -276,7 +276,7 @@ func generateXDSSnapshot(
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
 }
 
-func envoyCacheResourcesListToSha256(resources []envoycache.Resource) uint32 {
+func envoyCacheResourcesListToHash(resources []envoycache.Resource) uint32 {
 	hasher := fnv.New32()
 	buffer := make([]byte, 0, 1024) // maybe more?!
 	mo := proto2.MarshalOptions{Deterministic: true}
