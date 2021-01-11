@@ -1,6 +1,9 @@
 package services
 
 import (
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
+	extauthExt "github.com/solo-io/gloo/projects/gloo/pkg/syncer/extauth"
+	ratelimitExt "github.com/solo-io/gloo/projects/gloo/pkg/syncer/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"net"
 	"time"
@@ -126,6 +129,11 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	glooOpts.Settings = runOptions.Settings
 	if glooOpts.Settings == nil {
 		glooOpts.Settings = &gloov1.Settings{}
+	}
+
+	runOptions.Extensions.SyncerExtensions = []syncer.TranslatorSyncerExtensionFactory{
+		ratelimitExt.NewTranslatorSyncerExtension,
+		extauthExt.NewTranslatorSyncerExtension,
 	}
 
 	glooOpts.ControlPlane.StartGrpcServer = true

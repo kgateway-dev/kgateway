@@ -30,7 +30,8 @@ var (
 
 const (
 	Name              = "extauth"
-	errEnterpriseOnly = "The Gloo Advanced Extauth API is an enterprise-only feature, please upgrade or use the Envoy Extauth API instead"
+	ExtAuthServerRole = "extauth"
+	ErrEnterpriseOnly = "The Gloo Advanced Extauth API is an enterprise-only feature, please upgrade or use the Envoy Extauth API instead"
 )
 
 func init() {
@@ -48,8 +49,42 @@ func NewTranslatorSyncerExtension(_ context.Context, params syncer.TranslatorSyn
 func (s *TranslatorSyncerExtension) Sync(ctx context.Context, snap *gloov1.ApiSnapshot, xdsCache envoycache.SnapshotCache) (string, error) {
 	ctx = contextutils.WithLogger(ctx, "extAuthTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Error(errEnterpriseOnly)
-	return "", eris.New(errEnterpriseOnly)
+
+	for _, proxy := range snap.Proxies {
+		for _, listener := range proxy.Listeners {
+			httpListener, ok := listener.ListenerType.(*gloov1.Listener_HttpListener)
+			if !ok {
+				// not an http listener - skip it as currently ext auth is only supported for http
+				continue
+			}
+
+			virtualHosts := httpListener.HttpListener.VirtualHosts
+
+			for _, virtualHost := range virtualHosts {
+				if virtualHost.GetOptions().GetExtauth().GetConfigRef() != nil {
+					logger.Error(ErrEnterpriseOnly)
+					return ExtAuthServerRole, eris.New(ErrEnterpriseOnly)
+				}
+
+				for _, route := range virtualHost.Routes {
+					if route.GetOptions().GetExtauth().GetConfigRef() != nil {
+						logger.Error(ErrEnterpriseOnly)
+						return ExtAuthServerRole, eris.New(ErrEnterpriseOnly)
+					}
+
+					for _, weightedDestination := range route.GetRouteAction().GetMulti().GetDestinations() {
+						if weightedDestination.GetOptions().GetExtauth().GetConfigRef() != nil {
+							logger.Error(ErrEnterpriseOnly)
+							return ExtAuthServerRole, eris.New(ErrEnterpriseOnly)
+						}
+					}
+				}
+
+			}
+		}
+	}
+
+	return ExtAuthServerRole, nil
 }
 
 func ExtensionName() string {

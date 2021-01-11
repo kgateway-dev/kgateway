@@ -34,8 +34,9 @@ var (
 )
 
 const (
-	Name              = "rate-limit"
-	errEnterpriseOnly = "The Gloo Advanced Rate limit API is an enterprise-only feature, please upgrade or use the Envoy rate-limit API instead"
+	Name                = "rate-limit"
+	RateLimitServerRole = "ratelimit"
+	ErrEnterpriseOnly   = "The Gloo Advanced Rate limit API is an enterprise-only feature, please upgrade or use the Envoy rate-limit API instead"
 )
 
 func init() {
@@ -53,8 +54,63 @@ func NewTranslatorSyncerExtension(_ context.Context, params syncer.TranslatorSyn
 func (s *TranslatorSyncerExtension) Sync(ctx context.Context, snap *gloov1.ApiSnapshot, xdsCache envoycache.SnapshotCache) (string, error) {
 	ctx = contextutils.WithLogger(ctx, "rateLimitTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Error(errEnterpriseOnly)
-	return "", eris.New(errEnterpriseOnly)
+
+	for _, proxy := range snap.Proxies {
+		for _, listener := range proxy.Listeners {
+			httpListener, ok := listener.ListenerType.(*gloov1.Listener_HttpListener)
+			if !ok {
+				// not an http listener - skip it as currently ext auth is only supported for http
+				continue
+			}
+
+			virtualHosts := httpListener.HttpListener.VirtualHosts
+
+			for _, virtualHost := range virtualHosts {
+
+				if virtualHost.GetOptions().GetRateLimitConfigs() != nil {
+					logger.Warnf(ErrEnterpriseOnly)
+
+					reports := s.reports
+					reports.AddError(proxy, eris.New(ErrEnterpriseOnly))
+
+					return RateLimitServerRole, eris.New(ErrEnterpriseOnly)
+				}
+
+				if virtualHost.GetOptions().GetRatelimitBasic() != nil {
+					logger.Warnf(ErrEnterpriseOnly)
+
+					reports := s.reports
+					reports.AddError(proxy, eris.New(ErrEnterpriseOnly))
+
+					return RateLimitServerRole, eris.New(ErrEnterpriseOnly)
+				}
+
+				for _, route := range virtualHost.Routes {
+					if route.GetOptions().GetRateLimitConfigs() != nil {
+						logger.Warnf(ErrEnterpriseOnly)
+
+						reports := s.reports
+						reports.AddError(proxy, eris.New(ErrEnterpriseOnly))
+
+						return RateLimitServerRole, eris.New(ErrEnterpriseOnly)
+					}
+
+					if route.GetOptions().GetRatelimitBasic() != nil {
+						logger.Warnf(ErrEnterpriseOnly)
+
+						reports := s.reports
+						reports.AddError(proxy, eris.New(ErrEnterpriseOnly))
+
+						return RateLimitServerRole, eris.New(ErrEnterpriseOnly)
+					}
+
+				}
+
+			}
+		}
+	}
+
+	return RateLimitServerRole, nil
 }
 
 func ExtensionName() string {
