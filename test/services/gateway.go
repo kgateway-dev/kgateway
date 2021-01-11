@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 	"net"
 	"time"
 
@@ -45,8 +46,6 @@ import (
 	fds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
 	uds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/uds/syncer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
-
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -92,7 +91,7 @@ type RunOptions struct {
 	GlooPort         int32
 	ValidationPort   int32
 	Settings         *gloov1.Settings
-	Extensions       syncer.Extensions
+	Extensions       setup.Extensions
 	Cache            memory.InMemoryResourceCache
 	KubeClient       kubernetes.Interface
 	ConsulClient     consul.ConsulWatcher
@@ -131,7 +130,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 	glooOpts.ControlPlane.StartGrpcServer = true
 	glooOpts.ValidationServer.StartGrpcServer = true
-	go syncer.RunGlooWithExtensions(glooOpts, runOptions.Extensions)
+	go setup.RunGlooWithExtensions(glooOpts, runOptions.Extensions)
 
 	// gloo is dependency of gateway, needs to run second if we want to test validation
 	if !runOptions.WhatToRun.DisableGateway {
@@ -275,11 +274,11 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 			Ctx:         ctx,
 			RefreshRate: time.Second / 10,
 		},
-		ControlPlane: syncer.NewControlPlane(ctx, grpcServer, &net.TCPAddr{
+		ControlPlane: setup.NewControlPlane(ctx, grpcServer, &net.TCPAddr{
 			IP:   net.ParseIP("0.0.0.0"),
 			Port: 8081,
 		}, nil, true),
-		ValidationServer: syncer.NewValidationServer(ctx, grpcServerValidation, &net.TCPAddr{
+		ValidationServer: setup.NewValidationServer(ctx, grpcServerValidation, &net.TCPAddr{
 			IP:   net.ParseIP("0.0.0.0"),
 			Port: 8081,
 		}, true),

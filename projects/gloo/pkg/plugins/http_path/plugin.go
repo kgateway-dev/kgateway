@@ -17,7 +17,7 @@ var (
 )
 
 const (
-	errEnterpriseOnly = "Could not load http_path plugin - this is an Enterprise feature"
+	errEnterpriseOnly = "Could not load http_path plugin to configure custom paths/endpoint - this is an Enterprise feature"
 	pluginName        = "http_path"
 )
 

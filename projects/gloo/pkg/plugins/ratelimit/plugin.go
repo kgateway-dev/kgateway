@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rotisserie/eris"
-
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/duration"
@@ -23,8 +21,6 @@ const (
 	requestType        = "both"
 
 	CustomStage = 1
-
-	ErrEnterpriseOnly = "Could not apply ratelimit plugin - this is an Enterprise feature"
 )
 
 var (
@@ -66,21 +62,10 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) PluginName() string {
-	return ExtensionName
-}
-
-func (p *Plugin) IsUpgrade() bool {
-	return false
-}
-
 func (p *Plugin) ProcessVirtualHost(
 	params plugins.VirtualHostParams,
 	in *v1.VirtualHost, out *envoy_config_route_v3.VirtualHost,
 ) error {
-	if in.GetOptions().GetRatelimitBasic() != nil || in.GetOptions().GetRateLimitConfigs() != nil {
-		return eris.New(ErrEnterpriseOnly)
-	}
 
 	if newRateLimits := in.GetOptions().GetRatelimit().GetRateLimits(); len(newRateLimits) > 0 {
 		out.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, newRateLimits)
@@ -89,9 +74,6 @@ func (p *Plugin) ProcessVirtualHost(
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	if in.GetOptions().GetRatelimitBasic() != nil || in.GetOptions().GetRateLimitConfigs() != nil {
-		return eris.New(ErrEnterpriseOnly)
-	}
 
 	if rateLimits := in.GetOptions().GetRatelimit(); rateLimits != nil {
 		if ra := out.GetRoute(); ra != nil {

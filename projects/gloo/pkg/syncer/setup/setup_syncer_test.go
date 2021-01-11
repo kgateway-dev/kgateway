@@ -1,4 +1,4 @@
-package syncer_test
+package setup
 
 import (
 	"context"
@@ -17,7 +17,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	. "github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
