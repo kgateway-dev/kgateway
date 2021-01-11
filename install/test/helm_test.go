@@ -918,7 +918,7 @@ var _ = Describe("Helm Test", func() {
 							for _, v := range vsList {
 								msgList = append(msgList, v)
 							}
-							Expect(httpGateway.VirtualServices).To(test_matchers.ConistOfProtos(msgList...))
+							Expect(httpGateway.VirtualServices).To(test_matchers.ConsistOfProtos(msgList...))
 							gatewayUns = testManifest.ExpectCustomResource("Gateway", namespace, name+"-ssl")
 							ConvertKubeResource(gatewayUns, &gateway1)
 							Expect(gateway1.UseProxyProto).To(test_matchers.MatchProto(&wrappers.BoolValue{
@@ -928,7 +928,7 @@ var _ = Describe("Helm Test", func() {
 							for _, v := range vsList {
 								msgList = append(msgList, v)
 							}
-							Expect(httpGateway.VirtualServices).To(test_matchers.ConistOfProtos(msgList...))
+							Expect(httpGateway.VirtualServices).To(test_matchers.ConsistOfProtos(msgList...))
 						}
 
 					})
