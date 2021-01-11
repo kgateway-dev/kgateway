@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -246,41 +247,9 @@ func generateXDSSnapshot(
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
-	var epBytes []byte
-	for _, epProto := range endpointsProto {
-		bytes, err := proto.Marshal(epProto.ResourceProto())//hasher.HashProto(epProto.ResourceProto())
-		if err != nil {
-			panic(err)
-		}
-		epBytes = append(epBytes, bytes...)
-	}
-	epSha := sha256.Sum256(epBytes)
-	epSlice := epSha[:]
-	endpointsVersion := binary.LittleEndian.Uint32(epSlice)
-
-	var clusterBytes []byte
-	for _, clusterProto := range clustersProto {
-		bytes, err := proto.Marshal(clusterProto.ResourceProto())//hasher.HashProto(clusterProto.ResourceProto())
-		if err != nil {
-			panic(err)
-		}
-		clusterBytes = append(clusterBytes, bytes...)
-	}
-	clustersSha := sha256.Sum256(clusterBytes)
-	clustersSlice := clustersSha[:]
-	clustersVersion := binary.LittleEndian.Uint32(clustersSlice)
-
-	var listenersBytes []byte
-	for _, listenerProto := range clustersProto {
-		bytes, err := proto.Marshal(listenerProto.ResourceProto())//hasher.HashProto(listenerProto.ResourceProto())
-		if err != nil {
-			panic(err)
-		}
-		listenersBytes = append(listenersBytes, bytes...)
-	}
-	listenersSha := sha256.Sum256(listenersBytes)
-	listenersSlice := listenersSha[:]
-	listenersVersion := binary.LittleEndian.Uint32(listenersSlice)
+	endpointsVersion := envoyCacheResourcesListToSha256(endpointsProto)
+	clustersVersion := envoyCacheResourcesListToSha256(clustersProto)
+	listenersVersion := envoyCacheResourcesListToSha256(listenersProto)
 
 	//endpointsVersion, err := hashstructure.Hash(endpointsProto, nil)
 	//if err != nil {
@@ -304,7 +273,20 @@ func generateXDSSnapshot(
 		envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto),
 		MakeRdsResources(routeConfigs),
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
+}
 
+func envoyCacheResourcesListToSha256(resources []envoycache.Resource) uint32 {
+	var bytes []byte
+	for _, r := range resources {
+		b, err := proto.Marshal(r.ResourceProto())
+		if err != nil {
+			panic(err)
+		}
+		bytes = append(bytes, b...)
+	}
+	sha := sha256.Sum256(bytes)
+	slice := sha[:]
+	return binary.LittleEndian.Uint32(slice)
 }
 
 func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) envoycache.Resources {
