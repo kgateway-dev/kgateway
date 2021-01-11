@@ -18,6 +18,7 @@ const SoloAnnotations = "io.solo.annotations"
 
 func (t *translatorInstance) computeClusterEndpoints(
 	params plugins.Params,
+	upstreamRefKeyToEndpoints map[string][]*v1.Endpoint,
 	reports reporter.ResourceReports,
 ) []*envoy_config_endpoint_v3.ClusterLoadAssignment {
 
@@ -26,7 +27,7 @@ func (t *translatorInstance) computeClusterEndpoints(
 
 	var clusterEndpointAssignments []*envoy_config_endpoint_v3.ClusterLoadAssignment
 	for _, upstream := range params.Snapshot.Upstreams {
-		clusterEndpoints := endpointsForUpstream(upstream, params.Snapshot.Endpoints)
+		clusterEndpoints := upstreamRefKeyToEndpoints[upstream.Metadata.Ref().Key()]
 		// if there are any endpoints for this upstream, it's using eds and we need to create a load assignment for it
 		if len(clusterEndpoints) > 0 {
 			loadAssignment := loadAssignmentForUpstream(upstream, clusterEndpoints)
@@ -91,16 +92,21 @@ func loadAssignmentForUpstream(
 	}
 }
 
-func endpointsForUpstream(upstream *v1.Upstream, endpoints []*v1.Endpoint) []*v1.Endpoint {
-	var clusterEndpoints []*v1.Endpoint
+func createUpstreamToEndpointsMap(upstreams []*v1.Upstream, endpoints []*v1.Endpoint) map[string][]*v1.Endpoint {
+	upstreamRefKeyToEndpoints := map[string][]*v1.Endpoint{}
+	for _, us := range upstreams {
+		var eps []*v1.Endpoint
+		upstreamRefKeyToEndpoints[us.Metadata.Ref().Key()] = eps
+	}
 	for _, ep := range endpoints {
 		for _, upstreamRef := range ep.Upstreams {
-			if upstreamRef.Equal(upstream.Metadata.Ref()) {
-				clusterEndpoints = append(clusterEndpoints, ep)
+			if eps, ok := upstreamRefKeyToEndpoints[upstreamRef.Key()]; ok {
+				eps = append(eps, ep)
+				upstreamRefKeyToEndpoints[upstreamRef.Key()] = eps
 			}
 		}
 	}
-	return clusterEndpoints
+	return upstreamRefKeyToEndpoints
 }
 
 func addAnnotations(metadata *envoy_config_core_v3.Metadata, annotations map[string]string) *envoy_config_core_v3.Metadata {
