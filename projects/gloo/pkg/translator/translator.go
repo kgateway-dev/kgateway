@@ -40,10 +40,20 @@ func NewTranslator(
 	settings *v1.Settings,
 	getPlugins func() []plugins.Plugin,
 ) Translator {
+	return NewTranslatorWithHasher(sslConfigTranslator, settings, getPlugins, EnvoyCacheResourcesListToFnvHash)
+}
+
+func NewTranslatorWithHasher(
+	sslConfigTranslator utils.SslConfigTranslator,
+	settings *v1.Settings,
+	getPlugins func() []plugins.Plugin,
+	hasher func(resources []envoycache.Resource) uint64,
+) Translator {
 	return &translatorFactory{
 		getPlugins:          getPlugins,
 		settings:            settings,
 		sslConfigTranslator: sslConfigTranslator,
+		hasher:              hasher,
 	}
 }
 
@@ -51,6 +61,7 @@ type translatorFactory struct {
 	getPlugins          func() []plugins.Plugin
 	settings            *v1.Settings
 	sslConfigTranslator utils.SslConfigTranslator
+	hasher              func(resources []envoycache.Resource) uint64
 }
 
 func (t *translatorFactory) Translate(
@@ -61,6 +72,7 @@ func (t *translatorFactory) Translate(
 		plugins:             t.getPlugins(),
 		settings:            t.settings,
 		sslConfigTranslator: t.sslConfigTranslator,
+		hasher:              t.hasher,
 	}
 	return instance.Translate(params, proxy)
 }
@@ -70,6 +82,7 @@ type translatorInstance struct {
 	plugins             []plugins.Plugin
 	settings            *v1.Settings
 	sslConfigTranslator utils.SslConfigTranslator
+	hasher              func(resources []envoycache.Resource) uint64
 }
 
 func (t *translatorInstance) Translate(
@@ -175,7 +188,7 @@ ClusterLoop:
 		clusters = append(clusters, generated...)
 	}
 
-	xdsSnapshot := generateXDSSnapshot(clusters, endpoints, routeConfigs, listeners)
+	xdsSnapshot := t.generateXDSSnapshot(clusters, endpoints, routeConfigs, listeners)
 
 	if err := validation.GetProxyError(proxyRpt); err != nil {
 		reports.AddError(proxy, err)
@@ -224,7 +237,7 @@ func (t *translatorInstance) computeListenerResources(
 	}
 }
 
-func generateXDSSnapshot(
+func (t *translatorInstance) generateXDSSnapshot(
 	clusters []*envoy_config_cluster_v3.Cluster,
 	endpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment,
 	routeConfigs []*envoy_config_route_v3.RouteConfiguration,
@@ -248,9 +261,9 @@ func generateXDSSnapshot(
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
-	endpointsVersion := envoyCacheResourcesListToHash(endpointsProto)
-	clustersVersion := envoyCacheResourcesListToHash(clustersProto)
-	listenersVersion := envoyCacheResourcesListToHash(listenersProto)
+	endpointsVersion := t.hasher(endpointsProto)
+	clustersVersion := t.hasher(clustersProto)
+	listenersVersion := t.hasher(listenersProto)
 
 	// if clusters are updated, provider a new version of the endpoints,
 	// so the clusters are warm
@@ -261,7 +274,7 @@ func generateXDSSnapshot(
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
 }
 
-func envoyCacheResourcesListToHash(resources []envoycache.Resource) uint32 {
+func EnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint64 {
 	hasher := fnv.New32()
 	// 8kb capacity, consider raising if we find the buffer is frequently being
 	// re-allocated by MarshalAppend to fit larger protos.
@@ -283,7 +296,16 @@ func envoyCacheResourcesListToHash(resources []envoycache.Resource) uint32 {
 			panic(errors.Wrap(err, "constructing hash for envoy snapshot components"))
 		}
 	}
-	return hasher.Sum32()
+	return uint64(hasher.Sum32())
+}
+
+// deprecated, slower than EnvoyCacheResourcesListToFnvHash
+func EnvoyCacheResourcesListToHash(resources []envoycache.Resource) uint64 {
+	hash, err := hashstructure.Hash(resources, nil)
+	if err != nil {
+		panic(errors.Wrap(err, "constructing version hash for endpoints envoy snapshot components"))
+	}
+	return hash
 }
 
 func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) envoycache.Resources {
