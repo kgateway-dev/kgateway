@@ -52,14 +52,20 @@ func (m *AWSLambdaPerRoute) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetEmptyBodyOverride()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("EmptyBodyOverride")); err != nil {
+			return 0, err
+		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetEmptyBodyOverride(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetEmptyBodyOverride(), nil); err != nil {
 			return 0, err
 		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+			if _, err = hasher.Write([]byte("EmptyBodyOverride")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 				return 0, err
 			}
 		}
@@ -126,14 +132,20 @@ func (m *AWSLambdaConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *AWSLambdaConfig_UseDefaultCredentials:
 
 		if h, ok := interface{}(m.GetUseDefaultCredentials()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("UseDefaultCredentials")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetUseDefaultCredentials(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetUseDefaultCredentials(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("UseDefaultCredentials")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -142,14 +154,20 @@ func (m *AWSLambdaConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *AWSLambdaConfig_ServiceAccountCredentials_:
 
 		if h, ok := interface{}(m.GetServiceAccountCredentials()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("ServiceAccountCredentials")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetServiceAccountCredentials(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetServiceAccountCredentials(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("ServiceAccountCredentials")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -182,14 +200,20 @@ func (m *AWSLambdaConfig_ServiceAccountCredentials) Hash(hasher hash.Hash64) (ui
 	}
 
 	if h, ok := interface{}(m.GetTimeout()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Timeout")); err != nil {
+			return 0, err
+		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetTimeout(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetTimeout(), nil); err != nil {
 			return 0, err
 		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+			if _, err = hasher.Write([]byte("Timeout")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 				return 0, err
 			}
 		}
