@@ -2,6 +2,7 @@ package extauth
 
 import (
 	"context"
+
 	"github.com/rotisserie/eris"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -13,7 +14,7 @@ import (
 
 // Compile-time assertion
 var (
-	_ syncer.TranslatorSyncerExtension           = new(TranslatorSyncerExtension)
+	_ syncer.TranslatorSyncerExtension            = new(TranslatorSyncerExtension)
 	_ syncer.UpgradeableTranslatorSyncerExtension = new(TranslatorSyncerExtension)
 )
 
