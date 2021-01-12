@@ -8,37 +8,16 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
-
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-)
-
-var (
-	rlConnectedStateDescription = "zero indicates gloo detected an error with the rate limit config and did not update its XDS snapshot, check the gloo logs for errors"
-	rlConnectedState            = stats.Int64("glooe.ratelimit/connected_state", rlConnectedStateDescription, "1")
-
-	rlConnectedStateView = &view.View{
-		Name:        "glooe.ratelimit/connected_state",
-		Measure:     rlConnectedState,
-		Description: rlConnectedStateDescription,
-		Aggregation: view.LastValue(),
-		TagKeys:     []tag.Key{},
-	}
 )
 
 const (
 	Name                = "rate-limit"
 	RateLimitServerRole = "ratelimit"
 )
-
-func init() {
-	_ = view.Register(rlConnectedStateView)
-}
 
 type TranslatorSyncerExtension struct {
 	reports reporter.ResourceReports

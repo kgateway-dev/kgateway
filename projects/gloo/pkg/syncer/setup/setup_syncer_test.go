@@ -1,4 +1,4 @@
-package setup
+package setup_test
 
 import (
 	"context"
@@ -19,6 +19,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
+
+	. "github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
 )
 
 var _ = Describe("SetupSyncer", func() {
