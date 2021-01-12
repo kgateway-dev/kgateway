@@ -20,9 +20,6 @@ var (
 	_ plugins.RoutePlugin       = new(plugin)
 	_ plugins.HttpFilterPlugin  = new(plugin)
 	_ plugins.Upgradable        = new(plugin)
-
-	// waf should happen before any code is run
-	filterStage = plugins.DuringStage(plugins.WafStage)
 )
 
 func NewPlugin() *plugin {
@@ -43,8 +40,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 // Process virtual host plugin
 func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoy_config_route_v3.VirtualHost) error {
-	wafConfig := in.Options.GetWaf()
-	if wafConfig != nil {
+	if in.Options.GetWaf() != nil {
 		return eris.New(ErrEnterpriseOnly)
 	}
 
@@ -53,8 +49,7 @@ func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 
 // Process route plugin
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	wafConfig := in.GetOptions().GetWaf()
-	if wafConfig != nil {
+	if in.GetOptions().GetWaf() != nil {
 		return eris.New(ErrEnterpriseOnly)
 	}
 
@@ -63,8 +58,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 // Http Filter to return the waf filter
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	waf := listener.GetOptions().GetWaf()
-	if waf != nil {
+	if listener.GetOptions().GetWaf() != nil {
 		return nil, eris.New(ErrEnterpriseOnly)
 	}
 	return nil, nil

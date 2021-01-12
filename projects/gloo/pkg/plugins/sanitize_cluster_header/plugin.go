@@ -11,10 +11,6 @@ const (
 	ExtensionName     = "sanitize_cluster_header"
 )
 
-var (
-	sanitizeFilterStage = plugins.BeforeStage(plugins.AuthNStage)
-)
-
 type plugin struct {
 }
 
