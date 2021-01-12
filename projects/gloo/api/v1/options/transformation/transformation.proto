@@ -18,7 +18,7 @@ message ResponseMatch {
     // you can use the envoy access log %RESPONSE_CODE_DETAILS% formatter to log it.
     string response_code_details = 2;
     // Transformation to apply on the response.
-    .solo.io.envoy.api.v2.filter.http.Transformation response_transformation = 3;
+    envoy.api.v2.filter.http.Transformation response_transformation = 3;
 }
 
 message RequestMatch {
@@ -27,18 +27,18 @@ message RequestMatch {
     // Should we clear the route cache if a transformation was matched.
     bool clear_route_cache = 2;
     // Transformation to apply on the request.
-    .solo.io.envoy.api.v2.filter.http.Transformation request_transformation = 3;
+    envoy.api.v2.filter.http.Transformation request_transformation = 3;
     // Transformation to apply on the response.
-    .solo.io.envoy.api.v2.filter.http.Transformation response_transformation = 4;
+    envoy.api.v2.filter.http.Transformation response_transformation = 4;
 }
 
 message Transformations {
     // Apply a transformation to requests.
-    .solo.io.envoy.api.v2.filter.http.Transformation request_transformation = 1;
+    envoy.api.v2.filter.http.Transformation request_transformation = 1;
     // Clear the route cache if the request transformation was applied.
     bool clear_route_cache = 3;
     // Apply a transformation to responses.
-    .solo.io.envoy.api.v2.filter.http.Transformation response_transformation = 2;
+    envoy.api.v2.filter.http.Transformation response_transformation = 2;
 }
 
 message RequestResponseTransformations {

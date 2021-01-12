@@ -173,6 +173,60 @@ apis:
   envoy.api.v2.Resource:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#Resource
     package: envoy.api.v2
+  envoy.api.v2.filter.http.Extraction:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#Extraction
+    package: envoy.api.v2.filter.http
+  envoy.api.v2.filter.http.FilterTransformations:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#FilterTransformations
+    package: envoy.api.v2.filter.http
+  envoy.api.v2.filter.http.HeaderBodyTransform:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#HeaderBodyTransform
+    package: envoy.api.v2.filter.http
+  envoy.api.v2.filter.http.InjaTemplate:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#InjaTemplate
+    package: envoy.api.v2.filter.http
+  envoy.api.v2.filter.http.MergeExtractorsToBody:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#MergeExtractorsToBody
+    package: envoy.api.v2.filter.http
+  envoy.api.v2.filter.http.Passthrough:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#Passthrough
+    package: envoy.api.v2.filter.http
+  envoy.api.v2.filter.http.ResponseMatcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#ResponseMatcher
+    package: envoy.api.v2.filter.http
+  envoy.api.v2.filter.http.ResponseTransformationRule:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#ResponseTransformationRule
+    package: envoy.api.v2.filter.http
+  envoy.api.v2.filter.http.RouteTransformations:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#RouteTransformations
+    package: envoy.api.v2.filter.http
+  envoy.api.v2.filter.http.Transformation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#Transformation
+    package: envoy.api.v2.filter.http
+  envoy.api.v2.filter.http.TransformationRule:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#TransformationRule
+    package: envoy.api.v2.filter.http
+  envoy.api.v2.filter.http.TransformationTemplate:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#TransformationTemplate
+    package: envoy.api.v2.filter.http
+  envoy.config.filter.http.transformation_ee.v2.Action:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#Action
+    package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.filter.http.transformation_ee.v2.DlpTransformation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#DlpTransformation
+    package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.filter.http.transformation_ee.v2.FilterTransformations:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#FilterTransformations
+    package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.filter.http.transformation_ee.v2.RouteTransformations:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#RouteTransformations
+    package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.filter.http.transformation_ee.v2.Transformation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#Transformation
+    package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.filter.http.transformation_ee.v2.TransformationRule:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#TransformationRule
+    package: envoy.config.filter.http.transformation_ee.v2
   fault.options.gloo.solo.io.RouteAbort:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/faultinjection/fault.proto.sk/#RouteAbort
     package: fault.options.gloo.solo.io
@@ -857,42 +911,6 @@ apis:
   solo.io.envoy.api.v2.core.TransportSocket:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#TransportSocket
     package: solo.io.envoy.api.v2.core
-  solo.io.envoy.api.v2.filter.http.Extraction:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#Extraction
-    package: solo.io.envoy.api.v2.filter.http
-  solo.io.envoy.api.v2.filter.http.FilterTransformations:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#FilterTransformations
-    package: solo.io.envoy.api.v2.filter.http
-  solo.io.envoy.api.v2.filter.http.HeaderBodyTransform:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#HeaderBodyTransform
-    package: solo.io.envoy.api.v2.filter.http
-  solo.io.envoy.api.v2.filter.http.InjaTemplate:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#InjaTemplate
-    package: solo.io.envoy.api.v2.filter.http
-  solo.io.envoy.api.v2.filter.http.MergeExtractorsToBody:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#MergeExtractorsToBody
-    package: solo.io.envoy.api.v2.filter.http
-  solo.io.envoy.api.v2.filter.http.Passthrough:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#Passthrough
-    package: solo.io.envoy.api.v2.filter.http
-  solo.io.envoy.api.v2.filter.http.ResponseMatcher:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#ResponseMatcher
-    package: solo.io.envoy.api.v2.filter.http
-  solo.io.envoy.api.v2.filter.http.ResponseTransformationRule:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#ResponseTransformationRule
-    package: solo.io.envoy.api.v2.filter.http
-  solo.io.envoy.api.v2.filter.http.RouteTransformations:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#RouteTransformations
-    package: solo.io.envoy.api.v2.filter.http
-  solo.io.envoy.api.v2.filter.http.Transformation:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#Transformation
-    package: solo.io.envoy.api.v2.filter.http
-  solo.io.envoy.api.v2.filter.http.TransformationRule:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#TransformationRule
-    package: solo.io.envoy.api.v2.filter.http
-  solo.io.envoy.api.v2.filter.http.TransformationTemplate:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#TransformationTemplate
-    package: solo.io.envoy.api.v2.filter.http
   solo.io.envoy.api.v2.route.CorsPolicy:
     relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#CorsPolicy
     package: solo.io.envoy.api.v2.route
@@ -1070,24 +1088,6 @@ apis:
   solo.io.envoy.config.filter.http.solo_jwt_authn.v2.SoloJwtAuthnPerRoute:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/jwt/solo_jwt_authn.proto.sk/#SoloJwtAuthnPerRoute
     package: solo.io.envoy.config.filter.http.solo_jwt_authn.v2
-  solo.io.envoy.config.filter.http.transformation_ee.v2.Action:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#Action
-    package: solo.io.envoy.config.filter.http.transformation_ee.v2
-  solo.io.envoy.config.filter.http.transformation_ee.v2.DlpTransformation:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#DlpTransformation
-    package: solo.io.envoy.config.filter.http.transformation_ee.v2
-  solo.io.envoy.config.filter.http.transformation_ee.v2.FilterTransformations:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#FilterTransformations
-    package: solo.io.envoy.config.filter.http.transformation_ee.v2
-  solo.io.envoy.config.filter.http.transformation_ee.v2.RouteTransformations:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#RouteTransformations
-    package: solo.io.envoy.config.filter.http.transformation_ee.v2
-  solo.io.envoy.config.filter.http.transformation_ee.v2.Transformation:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#Transformation
-    package: solo.io.envoy.config.filter.http.transformation_ee.v2
-  solo.io.envoy.config.filter.http.transformation_ee.v2.TransformationRule:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#TransformationRule
-    package: solo.io.envoy.config.filter.http.transformation_ee.v2
   solo.io.envoy.config.health_checker.http_path.v2.HttpPath:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/http_path/http_path.proto.sk/#HttpPath
     package: solo.io.envoy.config.health_checker.http_path.v2

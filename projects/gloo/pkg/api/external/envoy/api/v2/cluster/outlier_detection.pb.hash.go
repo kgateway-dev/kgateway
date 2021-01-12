@@ -39,220 +39,154 @@ func (m *OutlierDetection) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetConsecutive_5Xx()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Consecutive_5Xx")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetConsecutive_5Xx(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetConsecutive_5Xx(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Consecutive_5Xx")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetInterval()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Interval")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetInterval(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetInterval(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Interval")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetBaseEjectionTime()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("BaseEjectionTime")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetBaseEjectionTime(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetBaseEjectionTime(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("BaseEjectionTime")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetMaxEjectionPercent()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("MaxEjectionPercent")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMaxEjectionPercent(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMaxEjectionPercent(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("MaxEjectionPercent")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetEnforcingConsecutive_5Xx()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("EnforcingConsecutive_5Xx")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetEnforcingConsecutive_5Xx(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetEnforcingConsecutive_5Xx(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("EnforcingConsecutive_5Xx")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetEnforcingSuccessRate()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("EnforcingSuccessRate")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetEnforcingSuccessRate(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetEnforcingSuccessRate(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("EnforcingSuccessRate")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetSuccessRateMinimumHosts()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("SuccessRateMinimumHosts")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetSuccessRateMinimumHosts(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetSuccessRateMinimumHosts(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("SuccessRateMinimumHosts")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetSuccessRateRequestVolume()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("SuccessRateRequestVolume")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetSuccessRateRequestVolume(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetSuccessRateRequestVolume(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("SuccessRateRequestVolume")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetSuccessRateStdevFactor()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("SuccessRateStdevFactor")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetSuccessRateStdevFactor(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetSuccessRateStdevFactor(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("SuccessRateStdevFactor")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetConsecutiveGatewayFailure()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ConsecutiveGatewayFailure")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetConsecutiveGatewayFailure(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetConsecutiveGatewayFailure(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("ConsecutiveGatewayFailure")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetEnforcingConsecutiveGatewayFailure()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("EnforcingConsecutiveGatewayFailure")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetEnforcingConsecutiveGatewayFailure(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetEnforcingConsecutiveGatewayFailure(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("EnforcingConsecutiveGatewayFailure")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -264,60 +198,42 @@ func (m *OutlierDetection) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetConsecutiveLocalOriginFailure()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ConsecutiveLocalOriginFailure")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetConsecutiveLocalOriginFailure(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetConsecutiveLocalOriginFailure(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("ConsecutiveLocalOriginFailure")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetEnforcingConsecutiveLocalOriginFailure()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("EnforcingConsecutiveLocalOriginFailure")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetEnforcingConsecutiveLocalOriginFailure(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetEnforcingConsecutiveLocalOriginFailure(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("EnforcingConsecutiveLocalOriginFailure")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetEnforcingLocalOriginSuccessRate()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("EnforcingLocalOriginSuccessRate")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetEnforcingLocalOriginSuccessRate(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetEnforcingLocalOriginSuccessRate(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("EnforcingLocalOriginSuccessRate")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}

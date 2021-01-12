@@ -34,7 +34,7 @@ weight: 5
 ```yaml
 "matchers": []matchers.core.gloo.solo.io.HeaderMatcher
 "responseCodeDetails": string
-"responseTransformation": .solo.io.envoy.api.v2.filter.http.Transformation
+"responseTransformation": .envoy.api.v2.filter.http.Transformation
 
 ```
 
@@ -42,7 +42,7 @@ weight: 5
 | ----- | ---- | ----------- | 
 | `matchers` | [[]matchers.core.gloo.solo.io.HeaderMatcher](../../../core/matchers/matchers.proto.sk/#headermatcher) | Response headers to match on. |
 | `responseCodeDetails` | `string` | Response code detail to match on. To see the response code details for your usecase, you can use the envoy access log %RESPONSE_CODE_DETAILS% formatter to log it. |
-| `responseTransformation` | [.solo.io.envoy.api.v2.filter.http.Transformation](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformation) | Transformation to apply on the response. |
+| `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformation) | Transformation to apply on the response. |
 
 
 
@@ -55,8 +55,8 @@ weight: 5
 ```yaml
 "matcher": .matchers.core.gloo.solo.io.Matcher
 "clearRouteCache": bool
-"requestTransformation": .solo.io.envoy.api.v2.filter.http.Transformation
-"responseTransformation": .solo.io.envoy.api.v2.filter.http.Transformation
+"requestTransformation": .envoy.api.v2.filter.http.Transformation
+"responseTransformation": .envoy.api.v2.filter.http.Transformation
 
 ```
 
@@ -64,8 +64,8 @@ weight: 5
 | ----- | ---- | ----------- | 
 | `matcher` | [.matchers.core.gloo.solo.io.Matcher](../../../core/matchers/matchers.proto.sk/#matcher) | Matches on the request properties. |
 | `clearRouteCache` | `bool` | Should we clear the route cache if a transformation was matched. |
-| `requestTransformation` | [.solo.io.envoy.api.v2.filter.http.Transformation](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformation) | Transformation to apply on the request. |
-| `responseTransformation` | [.solo.io.envoy.api.v2.filter.http.Transformation](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformation) | Transformation to apply on the response. |
+| `requestTransformation` | [.envoy.api.v2.filter.http.Transformation](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformation) | Transformation to apply on the request. |
+| `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformation) | Transformation to apply on the response. |
 
 
 
@@ -76,17 +76,17 @@ weight: 5
 
 
 ```yaml
-"requestTransformation": .solo.io.envoy.api.v2.filter.http.Transformation
+"requestTransformation": .envoy.api.v2.filter.http.Transformation
 "clearRouteCache": bool
-"responseTransformation": .solo.io.envoy.api.v2.filter.http.Transformation
+"responseTransformation": .envoy.api.v2.filter.http.Transformation
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `requestTransformation` | [.solo.io.envoy.api.v2.filter.http.Transformation](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformation) | Apply a transformation to requests. |
+| `requestTransformation` | [.envoy.api.v2.filter.http.Transformation](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformation) | Apply a transformation to requests. |
 | `clearRouteCache` | `bool` | Clear the route cache if the request transformation was applied. |
-| `responseTransformation` | [.solo.io.envoy.api.v2.filter.http.Transformation](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformation) | Apply a transformation to responses. |
+| `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformation) | Apply a transformation to responses. |
 
 
 

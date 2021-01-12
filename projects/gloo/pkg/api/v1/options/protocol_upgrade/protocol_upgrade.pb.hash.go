@@ -43,20 +43,14 @@ func (m *ProtocolUpgradeConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *ProtocolUpgradeConfig_Websocket:
 
 		if h, ok := interface{}(m.GetWebsocket()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Websocket")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetWebsocket(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetWebsocket(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Websocket")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -81,20 +75,14 @@ func (m *ProtocolUpgradeConfig_ProtocolUpgradeSpec) Hash(hasher hash.Hash64) (ui
 	}
 
 	if h, ok := interface{}(m.GetEnabled()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Enabled")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetEnabled(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetEnabled(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Enabled")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}

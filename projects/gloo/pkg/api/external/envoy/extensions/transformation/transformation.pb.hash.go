@@ -34,27 +34,21 @@ func (m *FilterTransformations) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.FilterTransformations")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.FilterTransformations")); err != nil {
 		return 0, err
 	}
 
 	for _, v := range m.GetTransformations() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -79,45 +73,33 @@ func (m *TransformationRule) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.TransformationRule")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.TransformationRule")); err != nil {
 		return 0, err
 	}
 
 	if h, ok := interface{}(m.GetMatch()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Match")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMatch(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMatch(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Match")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetRouteTransformations()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("RouteTransformations")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetRouteTransformations(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetRouteTransformations(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("RouteTransformations")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -135,45 +117,33 @@ func (m *RouteTransformations) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.RouteTransformations")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.RouteTransformations")); err != nil {
 		return 0, err
 	}
 
 	if h, ok := interface{}(m.GetRequestTransformation()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("RequestTransformation")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetRequestTransformation(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetRequestTransformation(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("RequestTransformation")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetResponseTransformation()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ResponseTransformation")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetResponseTransformation(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetResponseTransformation(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("ResponseTransformation")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -187,20 +157,14 @@ func (m *RouteTransformations) Hash(hasher hash.Hash64) (uint64, error) {
 	for _, v := range m.GetTransformations() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -220,27 +184,21 @@ func (m *ResponseMatcher) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.ResponseMatcher")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.ResponseMatcher")); err != nil {
 		return 0, err
 	}
 
 	for _, v := range m.GetHeaders() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -249,20 +207,14 @@ func (m *ResponseMatcher) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetResponseCodeDetails()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ResponseCodeDetails")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetResponseCodeDetails(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetResponseCodeDetails(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("ResponseCodeDetails")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -280,45 +232,33 @@ func (m *ResponseTransformationRule) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.ResponseTransformationRule")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.ResponseTransformationRule")); err != nil {
 		return 0, err
 	}
 
 	if h, ok := interface{}(m.GetMatch()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Match")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMatch(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMatch(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Match")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetResponseTransformation()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ResponseTransformation")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetResponseTransformation(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetResponseTransformation(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("ResponseTransformation")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -336,7 +276,7 @@ func (m *Transformation) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.Transformation")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.Transformation")); err != nil {
 		return 0, err
 	}
 
@@ -345,20 +285,14 @@ func (m *Transformation) Hash(hasher hash.Hash64) (uint64, error) {
 	case *Transformation_TransformationTemplate:
 
 		if h, ok := interface{}(m.GetTransformationTemplate()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("TransformationTemplate")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetTransformationTemplate(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetTransformationTemplate(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("TransformationTemplate")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -367,20 +301,14 @@ func (m *Transformation) Hash(hasher hash.Hash64) (uint64, error) {
 	case *Transformation_HeaderBodyTransform:
 
 		if h, ok := interface{}(m.GetHeaderBodyTransform()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("HeaderBodyTransform")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetHeaderBodyTransform(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetHeaderBodyTransform(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("HeaderBodyTransform")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -400,7 +328,7 @@ func (m *Extraction) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.Extraction")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.Extraction")); err != nil {
 		return 0, err
 	}
 
@@ -424,20 +352,14 @@ func (m *Extraction) Hash(hasher hash.Hash64) (uint64, error) {
 	case *Extraction_Body:
 
 		if h, ok := interface{}(m.GetBody()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Body")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetBody(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetBody(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Body")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -457,7 +379,7 @@ func (m *TransformationTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.TransformationTemplate")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.TransformationTemplate")); err != nil {
 		return 0, err
 	}
 
@@ -473,20 +395,14 @@ func (m *TransformationTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 			innerHash.Reset()
 
 			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-				if _, err = innerHash.Write([]byte("")); err != nil {
-					return 0, err
-				}
 				if _, err = h.Hash(innerHash); err != nil {
 					return 0, err
 				}
 			} else {
-				if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				if val, err := hashstructure.Hash(v, nil); err != nil {
 					return 0, err
 				} else {
-					if _, err = innerHash.Write([]byte("")); err != nil {
-						return 0, err
-					}
-					if err := binary.Write(innerHash, binary.LittleEndian, fieldValue); err != nil {
+					if err := binary.Write(innerHash, binary.LittleEndian, val); err != nil {
 						return 0, err
 					}
 				}
@@ -512,20 +428,14 @@ func (m *TransformationTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 			innerHash.Reset()
 
 			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-				if _, err = innerHash.Write([]byte("")); err != nil {
-					return 0, err
-				}
 				if _, err = h.Hash(innerHash); err != nil {
 					return 0, err
 				}
 			} else {
-				if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				if val, err := hashstructure.Hash(v, nil); err != nil {
 					return 0, err
 				} else {
-					if _, err = innerHash.Write([]byte("")); err != nil {
-						return 0, err
-					}
-					if err := binary.Write(innerHash, binary.LittleEndian, fieldValue); err != nil {
+					if err := binary.Write(innerHash, binary.LittleEndian, val); err != nil {
 						return 0, err
 					}
 				}
@@ -547,20 +457,14 @@ func (m *TransformationTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 	for _, v := range m.GetHeadersToAppend() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -581,20 +485,14 @@ func (m *TransformationTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 	for _, v := range m.GetDynamicMetadataValues() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -607,20 +505,14 @@ func (m *TransformationTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 	case *TransformationTemplate_Body:
 
 		if h, ok := interface{}(m.GetBody()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Body")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetBody(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetBody(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Body")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -629,20 +521,14 @@ func (m *TransformationTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 	case *TransformationTemplate_Passthrough:
 
 		if h, ok := interface{}(m.GetPassthrough()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Passthrough")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetPassthrough(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetPassthrough(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Passthrough")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -651,20 +537,14 @@ func (m *TransformationTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 	case *TransformationTemplate_MergeExtractorsToBody:
 
 		if h, ok := interface{}(m.GetMergeExtractorsToBody()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("MergeExtractorsToBody")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetMergeExtractorsToBody(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetMergeExtractorsToBody(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("MergeExtractorsToBody")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -684,7 +564,7 @@ func (m *InjaTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.InjaTemplate")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.InjaTemplate")); err != nil {
 		return 0, err
 	}
 
@@ -704,7 +584,7 @@ func (m *Passthrough) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.Passthrough")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.Passthrough")); err != nil {
 		return 0, err
 	}
 
@@ -720,7 +600,7 @@ func (m *MergeExtractorsToBody) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.MergeExtractorsToBody")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.MergeExtractorsToBody")); err != nil {
 		return 0, err
 	}
 
@@ -736,7 +616,7 @@ func (m *HeaderBodyTransform) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.HeaderBodyTransform")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.HeaderBodyTransform")); err != nil {
 		return 0, err
 	}
 
@@ -752,25 +632,19 @@ func (m *TransformationRule_Transformations) Hash(hasher hash.Hash64) (uint64, e
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.TransformationRule_Transformations")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.TransformationRule_Transformations")); err != nil {
 		return 0, err
 	}
 
 	if h, ok := interface{}(m.GetRequestTransformation()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("RequestTransformation")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetRequestTransformation(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetRequestTransformation(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("RequestTransformation")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -782,20 +656,14 @@ func (m *TransformationRule_Transformations) Hash(hasher hash.Hash64) (uint64, e
 	}
 
 	if h, ok := interface{}(m.GetResponseTransformation()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ResponseTransformation")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetResponseTransformation(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetResponseTransformation(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("ResponseTransformation")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -813,7 +681,7 @@ func (m *RouteTransformations_RouteTransformation) Hash(hasher hash.Hash64) (uin
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.RouteTransformations_RouteTransformation")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.RouteTransformations_RouteTransformation")); err != nil {
 		return 0, err
 	}
 
@@ -827,20 +695,14 @@ func (m *RouteTransformations_RouteTransformation) Hash(hasher hash.Hash64) (uin
 	case *RouteTransformations_RouteTransformation_RequestMatch_:
 
 		if h, ok := interface{}(m.GetRequestMatch()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("RequestMatch")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetRequestMatch(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetRequestMatch(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("RequestMatch")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -849,20 +711,14 @@ func (m *RouteTransformations_RouteTransformation) Hash(hasher hash.Hash64) (uin
 	case *RouteTransformations_RouteTransformation_ResponseMatch_:
 
 		if h, ok := interface{}(m.GetResponseMatch()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("ResponseMatch")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetResponseMatch(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetResponseMatch(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("ResponseMatch")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -882,65 +738,47 @@ func (m *RouteTransformations_RouteTransformation_RequestMatch) Hash(hasher hash
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.RouteTransformations_RouteTransformation_RequestMatch")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.RouteTransformations_RouteTransformation_RequestMatch")); err != nil {
 		return 0, err
 	}
 
 	if h, ok := interface{}(m.GetMatch()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Match")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMatch(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMatch(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Match")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetRequestTransformation()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("RequestTransformation")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetRequestTransformation(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetRequestTransformation(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("RequestTransformation")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetResponseTransformation()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ResponseTransformation")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetResponseTransformation(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetResponseTransformation(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("ResponseTransformation")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -963,45 +801,33 @@ func (m *RouteTransformations_RouteTransformation_ResponseMatch) Hash(hasher has
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.RouteTransformations_RouteTransformation_ResponseMatch")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.RouteTransformations_RouteTransformation_ResponseMatch")); err != nil {
 		return 0, err
 	}
 
 	if h, ok := interface{}(m.GetMatch()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Match")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMatch(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMatch(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Match")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetResponseTransformation()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ResponseTransformation")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetResponseTransformation(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetResponseTransformation(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("ResponseTransformation")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -1019,7 +845,7 @@ func (m *TransformationTemplate_HeaderToAppend) Hash(hasher hash.Hash64) (uint64
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.TransformationTemplate_HeaderToAppend")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.TransformationTemplate_HeaderToAppend")); err != nil {
 		return 0, err
 	}
 
@@ -1028,20 +854,14 @@ func (m *TransformationTemplate_HeaderToAppend) Hash(hasher hash.Hash64) (uint64
 	}
 
 	if h, ok := interface{}(m.GetValue()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Value")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetValue(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetValue(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Value")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -1059,7 +879,7 @@ func (m *TransformationTemplate_DynamicMetadataValue) Hash(hasher hash.Hash64) (
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.TransformationTemplate_DynamicMetadataValue")); err != nil {
+	if _, err = hasher.Write([]byte("envoy.api.v2.filter.http.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation.TransformationTemplate_DynamicMetadataValue")); err != nil {
 		return 0, err
 	}
 
@@ -1072,20 +892,14 @@ func (m *TransformationTemplate_DynamicMetadataValue) Hash(hasher hash.Hash64) (
 	}
 
 	if h, ok := interface{}(m.GetValue()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Value")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetValue(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetValue(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Value")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}

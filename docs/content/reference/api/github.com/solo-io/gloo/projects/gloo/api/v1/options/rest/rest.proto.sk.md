@@ -30,14 +30,14 @@ weight: 5
 
 
 ```yaml
-"transformations": map<string, .solo.io.envoy.api.v2.filter.http.TransformationTemplate>
+"transformations": map<string, .envoy.api.v2.filter.http.TransformationTemplate>
 "swaggerInfo": .rest.options.gloo.solo.io.ServiceSpec.SwaggerInfo
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `transformations` | `map<string, .solo.io.envoy.api.v2.filter.http.TransformationTemplate>` |  |
+| `transformations` | `map<string, .envoy.api.v2.filter.http.TransformationTemplate>` |  |
 | `swaggerInfo` | [.rest.options.gloo.solo.io.ServiceSpec.SwaggerInfo](../rest.proto.sk/#swaggerinfo) |  |
 
 
@@ -71,7 +71,7 @@ This is only for upstream with REST service spec
 ```yaml
 "functionName": string
 "parameters": .transformation.options.gloo.solo.io.Parameters
-"responseTransformation": .solo.io.envoy.api.v2.filter.http.TransformationTemplate
+"responseTransformation": .envoy.api.v2.filter.http.TransformationTemplate
 
 ```
 
@@ -79,7 +79,7 @@ This is only for upstream with REST service spec
 | ----- | ---- | ----------- | 
 | `functionName` | `string` |  |
 | `parameters` | [.transformation.options.gloo.solo.io.Parameters](../../transformation/parameters.proto.sk/#parameters) |  |
-| `responseTransformation` | [.solo.io.envoy.api.v2.filter.http.TransformationTemplate](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformationtemplate) |  |
+| `responseTransformation` | [.envoy.api.v2.filter.http.TransformationTemplate](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformationtemplate) |  |
 
 
 

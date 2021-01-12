@@ -47,20 +47,14 @@ func (m *RegexMatcher) Hash(hasher hash.Hash64) (uint64, error) {
 	case *RegexMatcher_GoogleRe2:
 
 		if h, ok := interface{}(m.GetGoogleRe2()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("GoogleRe2")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetGoogleRe2(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetGoogleRe2(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("GoogleRe2")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -85,20 +79,14 @@ func (m *RegexMatchAndSubstitute) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetPattern()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Pattern")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetPattern(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetPattern(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Pattern")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -125,20 +113,14 @@ func (m *RegexMatcher_GoogleRE2) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetMaxProgramSize()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("MaxProgramSize")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMaxProgramSize(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMaxProgramSize(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("MaxProgramSize")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
