@@ -9,12 +9,12 @@ import (
 
 // Compile-time assertion
 var (
-	_ plugins.Plugin           = &plugin{}
-	_ plugins.HttpFilterPlugin = &plugin{}
+	_ plugins.Plugin           = new(plugin)
+	_ plugins.HttpFilterPlugin = new(plugin)
 )
 
 const (
-	errEnterpriseOnly = "Could not load dlp plugin - this is an Enterprise feature"
+	ErrEnterpriseOnly = "Could not load dlp plugin - this is an Enterprise feature"
 	ExtensionName     = "dlp"
 )
 
@@ -39,7 +39,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 func (p *plugin) HttpFilters(params plugins.Params, l *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	dlp := l.GetOptions().GetDlp()
 	if dlp != nil {
-		return nil, eris.New(errEnterpriseOnly)
+		return nil, eris.New(ErrEnterpriseOnly)
 	}
 	return nil, nil
 }

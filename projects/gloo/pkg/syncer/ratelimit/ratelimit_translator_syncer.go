@@ -121,7 +121,7 @@ func (s *TranslatorSyncerExtension) Sync(ctx context.Context, snap *gloov1.ApiSn
 }
 
 func createErrorMsg(feature string) string {
-	return fmt.Sprintf("The Gloo Advanced Rate limit API '%s' resource is an enterprise-only feature, please upgrade or use the Envoy rate-limit API instead", feature)
+	return fmt.Sprintf("The Gloo Advanced Rate limit API feature '%s' is enterprise-only, please upgrade or use the Envoy rate-limit API instead", feature)
 }
 
 func ExtensionName() string {

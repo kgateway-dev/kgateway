@@ -13,7 +13,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	skcore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
@@ -29,7 +28,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 		translator  syncer.TranslatorSyncerExtension
 		apiSnapshot *gloov1.ApiSnapshot
 		proxyClient clients.ResourceClient
-		snapCache   *mockSetSnapshot
+		snapCache   *syncer.MockXdsCache
 	)
 
 	Context("config with enterprise ratelimit feature is set on listener", func() {
@@ -91,7 +90,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			It("should error when enterprise ratelimitBasic config is set", func() {
 				_, err := translator.Sync(ctx, apiSnapshot, snapCache)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("The Gloo Advanced Rate limit API 'ratelimitBasic' resource is an enterprise-only feature, please upgrade or use the Envoy rate-limit API instead"))
+				Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'ratelimitBasic' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
 			})
 		})
 
@@ -161,7 +160,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			It("should error when enterprise RateLimitConfig config is set", func() {
 				_, err := translator.Sync(ctx, apiSnapshot, snapCache)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("The Gloo Advanced Rate limit API 'RateLimitConfig' resource is an enterprise-only feature, please upgrade or use the Envoy rate-limit API instead"))
+				Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitConfig' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
 			})
 		})
 
@@ -225,52 +224,9 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			It("should error when enterprise setActions config is set", func() {
 				_, err := translator.Sync(ctx, apiSnapshot, snapCache)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("The Gloo Advanced Rate limit API 'setActions' resource is an enterprise-only feature, please upgrade or use the Envoy rate-limit API instead"))
+				Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'setActions' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
 			})
 		})
 
 	})
 })
-
-type mockSetSnapshot struct {
-	Snapshots map[string]envoycache.Snapshot
-}
-
-func (m *mockSetSnapshot) CreateWatch(request envoycache.Request) (value chan envoycache.Response, cancel func()) {
-	// Dummy method
-	return nil, nil
-}
-
-func (m *mockSetSnapshot) Fetch(ctx context.Context, request envoycache.Request) (*envoycache.Response, error) {
-	// Dummy method
-	return nil, nil
-}
-
-func (m *mockSetSnapshot) GetStatusInfo(s string) envoycache.StatusInfo {
-	// Dummy method
-	return nil
-}
-
-func (m *mockSetSnapshot) GetStatusKeys() []string {
-	// Dummy method
-	return []string{}
-}
-
-func (m *mockSetSnapshot) GetSnapshot(node string) (envoycache.Snapshot, error) {
-	// Dummy method
-	return m.Snapshots[node], nil
-}
-
-func (m *mockSetSnapshot) ClearSnapshot(node string) {
-	// Dummy method
-	m.Snapshots[node] = nil
-}
-
-func (m *mockSetSnapshot) SetSnapshot(node string, snapshot envoycache.Snapshot) error {
-	if m.Snapshots == nil {
-		m.Snapshots = make(map[string]envoycache.Snapshot)
-	}
-
-	m.Snapshots[node] = snapshot
-	return nil
-}

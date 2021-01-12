@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	errEnterpriseOnly = "Could not load waf plugin - this is an Enterprise feature"
+	ErrEnterpriseOnly = "Could not load waf plugin - this is an Enterprise feature"
 	ExtensionName     = "waf"
 )
 
@@ -48,7 +48,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoy_config_route_v3.VirtualHost) error {
 	wafConfig := in.Options.GetWaf()
 	if wafConfig != nil {
-		return eris.New(errEnterpriseOnly)
+		return eris.New(ErrEnterpriseOnly)
 	}
 
 	return nil
@@ -58,7 +58,7 @@ func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	wafConfig := in.GetOptions().GetWaf()
 	if wafConfig != nil {
-		return eris.New(errEnterpriseOnly)
+		return eris.New(ErrEnterpriseOnly)
 	}
 
 	return nil
@@ -68,7 +68,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	waf := listener.GetOptions().GetWaf()
 	if waf != nil {
-		return nil, eris.New(errEnterpriseOnly)
+		return nil, eris.New(ErrEnterpriseOnly)
 	}
 	return nil, nil
 }

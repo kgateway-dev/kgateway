@@ -7,17 +7,13 @@ import (
 )
 
 const (
-	FilterName        = "io.solo.filters.http.proxy_latency"
-	errEnterpriseOnly = "Could not load proxylatency plugin - this is an Enterprise feature"
+	ErrEnterpriseOnly = "Could not load proxylatency plugin - this is an Enterprise feature"
 	pluginName        = "proxylatency"
 )
 
 var (
 	_ plugins.Plugin           = new(plugin)
 	_ plugins.HttpFilterPlugin = new(plugin)
-
-	// This filter must be last as it is used to measure latency of all the other filters.
-	FilterStage = plugins.AfterStage(plugins.RouteStage)
 )
 
 type plugin struct {
@@ -43,7 +39,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	if pl := listener.GetOptions().GetProxyLatency(); pl != nil {
-		return nil, eris.New(errEnterpriseOnly)
+		return nil, eris.New(ErrEnterpriseOnly)
 	}
 
 	return nil, nil

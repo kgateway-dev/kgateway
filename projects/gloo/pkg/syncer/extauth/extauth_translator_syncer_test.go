@@ -13,7 +13,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	skcore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
@@ -29,7 +28,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 		translator  syncer.TranslatorSyncerExtension
 		apiSnapshot *gloov1.ApiSnapshot
 		proxyClient clients.ResourceClient
-		snapCache   *mockSetSnapshot
+		snapCache   *syncer.MockXdsCache
 	)
 	JustBeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
@@ -79,49 +78,6 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 
 	})
 })
-
-type mockSetSnapshot struct {
-	Snapshots map[string]envoycache.Snapshot
-}
-
-func (m *mockSetSnapshot) CreateWatch(request envoycache.Request) (value chan envoycache.Response, cancel func()) {
-	// Dummy method
-	return nil, nil
-}
-
-func (m *mockSetSnapshot) Fetch(ctx context.Context, request envoycache.Request) (*envoycache.Response, error) {
-	// Dummy method
-	return nil, nil
-}
-
-func (m *mockSetSnapshot) GetStatusInfo(s string) envoycache.StatusInfo {
-	// Dummy method
-	return nil
-}
-
-func (m *mockSetSnapshot) GetStatusKeys() []string {
-	// Dummy method
-	return []string{}
-}
-
-func (m *mockSetSnapshot) GetSnapshot(node string) (envoycache.Snapshot, error) {
-	// Dummy method
-	return m.Snapshots[node], nil
-}
-
-func (m *mockSetSnapshot) ClearSnapshot(node string) {
-	// Dummy method
-	m.Snapshots[node] = nil
-}
-
-func (m *mockSetSnapshot) SetSnapshot(node string, snapshot envoycache.Snapshot) error {
-	if m.Snapshots == nil {
-		m.Snapshots = make(map[string]envoycache.Snapshot)
-	}
-
-	m.Snapshots[node] = snapshot
-	return nil
-}
 
 func getProxy(authConfigRef *skcore.ResourceRef) *gloov1.Proxy {
 	proxy := &gloov1.Proxy{

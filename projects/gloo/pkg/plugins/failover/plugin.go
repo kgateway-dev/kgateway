@@ -18,8 +18,8 @@ var (
 )
 
 const (
-	errEnterpriseOnly = "Could not load failover plugin - this is an Enterprise feature"
-	pluginName        = "failover"
+	ErrEnterpriseOnly = "Could not load failover plugin - this is an Enterprise feature"
+	ExtensionName     = "failover"
 )
 
 type plugin struct {
@@ -28,24 +28,12 @@ type plugin struct {
 	dnsResolver         consul.DnsResolver
 }
 
-func (p *plugin) ProcessEndpoints(params plugins.Params, in *v1.Upstream, out *envoy_config_endpoint_v3.ClusterLoadAssignment) error {
-	failoverCfg := in.GetFailover()
-	if failoverCfg != nil {
-		return eris.New(errEnterpriseOnly)
-	}
-	return nil
-}
-
-func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
-	failoverCfg := in.GetFailover()
-	if failoverCfg != nil {
-		return eris.New(errEnterpriseOnly)
-	}
-	return nil
+func NewPlugin() *plugin {
+	return &plugin{}
 }
 
 func (p *plugin) PluginName() string {
-	return pluginName
+	return ExtensionName
 }
 
 func (p *plugin) IsUpgrade() bool {
@@ -53,5 +41,19 @@ func (p *plugin) IsUpgrade() bool {
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
+	return nil
+}
+
+func (p *plugin) ProcessEndpoints(params plugins.Params, in *v1.Upstream, out *envoy_config_endpoint_v3.ClusterLoadAssignment) error {
+	if in.GetFailover() != nil {
+		return eris.New(ErrEnterpriseOnly)
+	}
+	return nil
+}
+
+func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
+	if in.GetFailover() != nil {
+		return eris.New(ErrEnterpriseOnly)
+	}
 	return nil
 }

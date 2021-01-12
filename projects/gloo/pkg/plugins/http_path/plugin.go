@@ -17,8 +17,8 @@ var (
 )
 
 const (
-	errEnterpriseOnly = "Could not load http_path plugin to configure custom paths/endpoint - this is an Enterprise feature"
-	pluginName        = "http_path"
+	ErrEnterpriseOnly = "Could not load http_path plugin to configure custom paths/endpoint - this is an Enterprise feature"
+	ExtensionName     = "http_path"
 )
 
 type plugin struct {
@@ -31,18 +31,8 @@ func NewPlugin() *plugin {
 	return &plugin{}
 }
 
-func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
-	for _, host := range in.GetStatic().GetHosts() {
-		if host.GetHealthCheckConfig().GetPath() != "" {
-			return eris.New(errEnterpriseOnly)
-		}
-	}
-
-	return nil
-}
-
 func (p *plugin) PluginName() string {
-	return pluginName
+	return ExtensionName
 }
 
 func (p *plugin) IsUpgrade() bool {
@@ -50,5 +40,15 @@ func (p *plugin) IsUpgrade() bool {
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
+	return nil
+}
+
+func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
+	for _, host := range in.GetStatic().GetHosts() {
+		if host.GetHealthCheckConfig().GetPath() != "" {
+			return eris.New(ErrEnterpriseOnly)
+		}
+	}
+
 	return nil
 }

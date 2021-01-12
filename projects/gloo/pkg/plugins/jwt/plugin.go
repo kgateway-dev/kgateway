@@ -9,13 +9,13 @@ import (
 
 // Compile-time assertion
 var (
-	_ plugins.Plugin            = &plugin{}
-	_ plugins.VirtualHostPlugin = &plugin{}
+	_ plugins.Plugin            = new(plugin)
+	_ plugins.VirtualHostPlugin = new(plugin)
 )
 
 const (
-	errEnterpriseOnly = "Could not load jwt plugin - this is an Enterprise feature"
-	pluginName        = "jwt"
+	ErrEnterpriseOnly = "Could not load jwt plugin - this is an Enterprise feature"
+	ExtensionName     = "jwt"
 )
 
 type plugin struct{}
@@ -25,7 +25,7 @@ func NewPlugin() *plugin {
 }
 
 func (p *plugin) PluginName() string {
-	return pluginName
+	return ExtensionName
 }
 
 func (p *plugin) IsUpgrade() bool {
@@ -43,7 +43,7 @@ func (p *plugin) ProcessVirtualHost(
 ) error {
 	jwt := in.GetOptions().GetJwt()
 	if jwt != nil {
-		return eris.New(errEnterpriseOnly)
+		return eris.New(ErrEnterpriseOnly)
 	}
 
 	return nil

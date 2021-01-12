@@ -10,7 +10,7 @@ import (
 
 const (
 	ExtensionName     = "rbac"
-	errEnterpriseOnly = "Could not load rbac plugin - this is an Enterprise feature"
+	ErrEnterpriseOnly = "Could not load rbac plugin - this is an Enterprise feature"
 )
 
 var (
@@ -44,7 +44,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoy_config_route_v3.VirtualHost) error {
 	rbacConf := in.Options.GetRbac()
 	if rbacConf != nil {
-		return eris.New(errEnterpriseOnly)
+		return eris.New(ErrEnterpriseOnly)
 	}
 
 	return nil
@@ -53,7 +53,7 @@ func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	rbacConf := in.Options.GetRbac()
 	if rbacConf != nil {
-		return eris.New(errEnterpriseOnly)
+		return eris.New(ErrEnterpriseOnly)
 	}
 
 	return nil
