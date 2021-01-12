@@ -25,6 +25,7 @@ import (
 func (t *translatorInstance) computeClusters(
 	params plugins.Params,
 	reports reporter.ResourceReports,
+	upstreamRefKeyToEndpoints map[string][]*v1.Endpoint,
 	proxy *v1.Proxy,
 ) []*envoy_config_cluster_v3.Cluster {
 
@@ -41,7 +42,7 @@ func (t *translatorInstance) computeClusters(
 	// snapshot contains both real and service-derived upstreams
 	for _, upstream := range upstreams {
 
-		cluster := t.computeCluster(params, upstream, reports)
+		cluster := t.computeCluster(params, upstream, upstreamRefKeyToEndpoints, reports)
 		clusters = append(clusters, cluster)
 	}
 
@@ -51,10 +52,11 @@ func (t *translatorInstance) computeClusters(
 func (t *translatorInstance) computeCluster(
 	params plugins.Params,
 	upstream *v1.Upstream,
+	upstreamRefKeyToEndpoints map[string][]*v1.Endpoint,
 	reports reporter.ResourceReports,
 ) *envoy_config_cluster_v3.Cluster {
 	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.Metadata.Name)
-	out := t.initializeCluster(upstream, params.Snapshot.Endpoints, reports, &params.Snapshot.Secrets)
+	out := t.initializeCluster(upstream, params.Snapshot.Endpoints, upstreamRefKeyToEndpoints, reports, &params.Snapshot.Secrets)
 
 	for _, plug := range t.plugins {
 		upstreamPlugin, ok := plug.(plugins.UpstreamPlugin)
@@ -76,6 +78,7 @@ func (t *translatorInstance) computeCluster(
 func (t *translatorInstance) initializeCluster(
 	upstream *v1.Upstream,
 	endpoints []*v1.Endpoint,
+	upstreamRefKeyToEndpoints map[string][]*v1.Endpoint,
 	reports reporter.ResourceReports,
 	secrets *v1.SecretList,
 ) *envoy_config_cluster_v3.Cluster {
@@ -114,7 +117,7 @@ func (t *translatorInstance) initializeCluster(
 	}
 
 	// set Type = EDS if we have endpoints for the upstream
-	if len(endpointsForUpstream(upstream, endpoints)) > 0 {
+	if eps, ok := upstreamRefKeyToEndpoints[upstream.Metadata.Ref().Key()]; ok && len(eps) > 0 {
 		xds.SetEdsOnCluster(out, t.settings)
 	}
 	return out
