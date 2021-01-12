@@ -12,24 +12,21 @@ const (
 	ExtensionName     = "waf"
 )
 
-type plugin struct {
-	listenerEnabled map[*v1.HttpListener]bool
-}
+type plugin struct{}
 
 var (
 	_ plugins.Plugin            = new(plugin)
 	_ plugins.VirtualHostPlugin = new(plugin)
 	_ plugins.RoutePlugin       = new(plugin)
 	_ plugins.HttpFilterPlugin  = new(plugin)
+	_ plugins.Upgradable        = new(plugin)
 
 	// waf should happen before any code is run
 	filterStage = plugins.DuringStage(plugins.WafStage)
 )
 
 func NewPlugin() *plugin {
-	return &plugin{
-		listenerEnabled: make(map[*v1.HttpListener]bool),
-	}
+	return &plugin{}
 }
 
 func (p *plugin) PluginName() string {

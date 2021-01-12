@@ -11,6 +11,7 @@ import (
 var (
 	_ plugins.Plugin           = new(plugin)
 	_ plugins.HttpFilterPlugin = new(plugin)
+	_ plugins.Upgradable       = new(plugin)
 )
 
 const (
@@ -37,8 +38,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) HttpFilters(params plugins.Params, l *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	dlp := l.GetOptions().GetDlp()
-	if dlp != nil {
+	if l.GetOptions().GetDlp() != nil {
 		return nil, eris.New(ErrEnterpriseOnly)
 	}
 	return nil, nil

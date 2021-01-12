@@ -21,6 +21,7 @@ type plugin struct {
 var (
 	_ plugins.Plugin           = new(plugin)
 	_ plugins.HttpFilterPlugin = new(plugin)
+	_ plugins.Upgradable       = new(plugin)
 )
 
 func NewPlugin() *plugin {

@@ -6,8 +6,6 @@ import (
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 // Compile-time assertion
@@ -15,6 +13,7 @@ var (
 	_ plugins.Plugin         = new(plugin)
 	_ plugins.UpstreamPlugin = new(plugin)
 	_ plugins.EndpointPlugin = new(plugin)
+	_ plugins.Upgradable     = new(plugin)
 )
 
 const (
@@ -22,11 +21,7 @@ const (
 	ExtensionName     = "failover"
 )
 
-type plugin struct {
-	sslConfigTranslator utils.SslConfigTranslator
-	endpoints           map[string][]*envoy_config_endpoint_v3.LocalityLbEndpoints
-	dnsResolver         consul.DnsResolver
-}
+type plugin struct{}
 
 func NewPlugin() *plugin {
 	return &plugin{}
