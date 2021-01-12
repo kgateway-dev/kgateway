@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package solo.io.envoy.config.health_checker.http_path.v2;
+package envoy.config.health_checker.http_path.v2;
 
 import "udpa/annotations/status.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/health_check.proto";

@@ -209,6 +209,36 @@ apis:
   envoy.api.v2.filter.http.TransformationTemplate:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#TransformationTemplate
     package: envoy.api.v2.filter.http
+  envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto.sk/#AWSLambdaConfig
+    package: envoy.config.filter.http.aws_lambda.v2
+  envoy.config.filter.http.aws_lambda.v2.AWSLambdaPerRoute:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto.sk/#AWSLambdaPerRoute
+    package: envoy.config.filter.http.aws_lambda.v2
+  envoy.config.filter.http.aws_lambda.v2.AWSLambdaProtocolExtension:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto.sk/#AWSLambdaProtocolExtension
+    package: envoy.config.filter.http.aws_lambda.v2
+  envoy.config.filter.http.modsecurity.v2.AuditLogging:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/#AuditLogging
+    package: envoy.config.filter.http.modsecurity.v2
+  envoy.config.filter.http.modsecurity.v2.ModSecurity:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/#ModSecurity
+    package: envoy.config.filter.http.modsecurity.v2
+  envoy.config.filter.http.modsecurity.v2.ModSecurityPerRoute:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/#ModSecurityPerRoute
+    package: envoy.config.filter.http.modsecurity.v2
+  envoy.config.filter.http.modsecurity.v2.RuleSet:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/#RuleSet
+    package: envoy.config.filter.http.modsecurity.v2
+  envoy.config.filter.http.proxylatency.v2.ProxyLatency:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto.sk/#ProxyLatency
+    package: envoy.config.filter.http.proxylatency.v2
+  envoy.config.filter.http.sanitize.v2.Sanitize:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/extauth/sanitize.proto.sk/#Sanitize
+    package: envoy.config.filter.http.sanitize.v2
+  envoy.config.filter.http.solo_jwt_authn.v2.SoloJwtAuthnPerRoute:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/jwt/solo_jwt_authn.proto.sk/#SoloJwtAuthnPerRoute
+    package: envoy.config.filter.http.solo_jwt_authn.v2
   envoy.config.filter.http.transformation_ee.v2.Action:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#Action
     package: envoy.config.filter.http.transformation_ee.v2
@@ -227,6 +257,9 @@ apis:
   envoy.config.filter.http.transformation_ee.v2.TransformationRule:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#TransformationRule
     package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.health_checker.http_path.v2.HttpPath:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/http_path/http_path.proto.sk/#HttpPath
+    package: envoy.config.health_checker.http_path.v2
   fault.options.gloo.solo.io.RouteAbort:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/faultinjection/fault.proto.sk/#RouteAbort
     package: fault.options.gloo.solo.io
@@ -1055,42 +1088,9 @@ apis:
   solo.io.envoy.config.core.v3.TypedExtensionConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/extension.proto.sk/#TypedExtensionConfig
     package: solo.io.envoy.config.core.v3
-  solo.io.envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto.sk/#AWSLambdaConfig
-    package: solo.io.envoy.config.filter.http.aws_lambda.v2
-  solo.io.envoy.config.filter.http.aws_lambda.v2.AWSLambdaPerRoute:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto.sk/#AWSLambdaPerRoute
-    package: solo.io.envoy.config.filter.http.aws_lambda.v2
-  solo.io.envoy.config.filter.http.aws_lambda.v2.AWSLambdaProtocolExtension:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto.sk/#AWSLambdaProtocolExtension
-    package: solo.io.envoy.config.filter.http.aws_lambda.v2
   solo.io.envoy.config.filter.http.gzip.v2.Gzip:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto.sk/#Gzip
     package: solo.io.envoy.config.filter.http.gzip.v2
-  solo.io.envoy.config.filter.http.modsecurity.v2.AuditLogging:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/#AuditLogging
-    package: solo.io.envoy.config.filter.http.modsecurity.v2
-  solo.io.envoy.config.filter.http.modsecurity.v2.ModSecurity:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/#ModSecurity
-    package: solo.io.envoy.config.filter.http.modsecurity.v2
-  solo.io.envoy.config.filter.http.modsecurity.v2.ModSecurityPerRoute:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/#ModSecurityPerRoute
-    package: solo.io.envoy.config.filter.http.modsecurity.v2
-  solo.io.envoy.config.filter.http.modsecurity.v2.RuleSet:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/#RuleSet
-    package: solo.io.envoy.config.filter.http.modsecurity.v2
-  solo.io.envoy.config.filter.http.proxylatency.v2.ProxyLatency:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto.sk/#ProxyLatency
-    package: solo.io.envoy.config.filter.http.proxylatency.v2
-  solo.io.envoy.config.filter.http.sanitize.v2.Sanitize:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/extauth/sanitize.proto.sk/#Sanitize
-    package: solo.io.envoy.config.filter.http.sanitize.v2
-  solo.io.envoy.config.filter.http.solo_jwt_authn.v2.SoloJwtAuthnPerRoute:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/jwt/solo_jwt_authn.proto.sk/#SoloJwtAuthnPerRoute
-    package: solo.io.envoy.config.filter.http.solo_jwt_authn.v2
-  solo.io.envoy.config.health_checker.http_path.v2.HttpPath:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/http_path/http_path.proto.sk/#HttpPath
-    package: solo.io.envoy.config.health_checker.http_path.v2
   solo.io.envoy.config.route.v3.CorsPolicy:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/route/v3/route_components.proto.sk/#CorsPolicy
     package: solo.io.envoy.config.route.v3

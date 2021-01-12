@@ -417,7 +417,7 @@ message GlooOptions {
             // In order to specify the aws sts endpoint, both the cluster and uri must be set.
             // This is due to an envoy limitation which cannot infer the host or path from the cluster,
             // and therefore must be explicitly specified via the uri
-            .solo.io.envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig.ServiceAccountCredentials service_account_credentials = 2;
+            envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig.ServiceAccountCredentials service_account_credentials = 2;
         }
     }
 

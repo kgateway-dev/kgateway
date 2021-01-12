@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package solo.io.envoy.config.filter.http.proxylatency.v2;
+package envoy.config.filter.http.proxylatency.v2;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/proxylatency";
 
 import "google/protobuf/wrappers.proto";
