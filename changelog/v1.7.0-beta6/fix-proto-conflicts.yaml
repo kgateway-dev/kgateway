@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4068
+    description: >
+      Fix protobuf package conflicts, which became more visible after we dropped gogo.
+      Future versions of golang protobuf will panic when these conflicts are encountered.
