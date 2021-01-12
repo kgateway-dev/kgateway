@@ -13,7 +13,6 @@ import (
 const (
 	DefaultAuthHeader = "x-user-id"
 	HttpServerUri     = "http://not-used.example.com/"
-	ExtensionName     = "extauth"
 )
 
 // Note that although this configures the "envoy.filters.http.ext_authz" filter, we still want the ordering to be within the

@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	errEnterpriseOnly = "Could not load sanitize_cluster_header plugin - this is an Enterprise feature"
-	pluginName        = "sanitize_cluster_header"
+	ErrEnterpriseOnly = "Could not load sanitize_cluster_header plugin - this is an Enterprise feature"
+	ExtensionName     = "sanitize_cluster_header"
 )
 
 var (
@@ -32,7 +32,7 @@ func (p *plugin) IsUpgrade() bool {
 }
 
 func (p *plugin) PluginName() string {
-	return pluginName
+	return ExtensionName
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
@@ -41,7 +41,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	if listener.GetOptions().GetSanitizeClusterHeader() != nil {
-		return nil, eris.New(errEnterpriseOnly)
+		return nil, eris.New(ErrEnterpriseOnly)
 	}
 	return nil, nil
 }

@@ -105,7 +105,6 @@ var _ = Describe("Process Custom Extauth configuration", func() {
 	Context("with gateway-level extauth settings", func() {
 		allTests(false)
 	})
-
 })
 
 type pluginContext struct {
