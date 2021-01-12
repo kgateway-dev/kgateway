@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    description: >
+      CPU profile of Gloo at scale (5000+ upstreams) indicated that the `generateXDSSnapshot` function was taking
+      upwards of 5 seconds of CPU on a ~50 second sample. This change optimizes the code by using creating hashes for
+      the XDS snapshot using deterministic proto marshalling and fnv hashing rather than the reflection-based
+      `mitchellh/hashstructure` which was benchmarked to be several orders of magnitude slower.
+    issueLink: https://github.com/solo-io/gloo/issues/4084
+    resolvesIssue: false
