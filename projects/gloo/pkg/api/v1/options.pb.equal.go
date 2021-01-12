@@ -388,16 +388,6 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetJwt()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetJwt(), target.GetJwt()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetRbac()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetRbac()) {
 			return false
@@ -500,6 +490,34 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetRateLimitConfigs(), target.GetRateLimitConfigs()) {
+				return false
+			}
+		}
+
+	}
+
+	switch m.JwtConfig.(type) {
+
+	case *VirtualHostOptions_Jwt:
+
+		if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetJwt()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetJwt(), target.GetJwt()) {
+				return false
+			}
+		}
+
+	case *VirtualHostOptions_JwtStaged:
+
+		if h, ok := interface{}(m.GetJwtStaged()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetJwtStaged()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetJwtStaged(), target.GetJwtStaged()) {
 				return false
 			}
 		}
@@ -677,16 +695,6 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetJwt()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetJwt(), target.GetJwt()) {
-			return false
-		}
-	}
-
 	if h, ok := interface{}(m.GetRbac()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetRbac()) {
 			return false
@@ -791,6 +799,34 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetRateLimitConfigs(), target.GetRateLimitConfigs()) {
+				return false
+			}
+		}
+
+	}
+
+	switch m.JwtConfig.(type) {
+
+	case *RouteOptions_Jwt:
+
+		if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetJwt()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetJwt(), target.GetJwt()) {
+				return false
+			}
+		}
+
+	case *RouteOptions_JwtStaged:
+
+		if h, ok := interface{}(m.GetJwtStaged()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetJwtStaged()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetJwtStaged(), target.GetJwtStaged()) {
 				return false
 			}
 		}

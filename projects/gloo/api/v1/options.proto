@@ -180,9 +180,24 @@ message VirtualHostOptions {
     // Enterprise-only: Config for Web Application Firewall (WAF), supporting
     // the popular ModSecurity 3.0 ruleset
     waf.options.gloo.solo.io.Settings waf = 8;
-    // Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other
-    // headers to make routing decisions or combine with RBAC for fine-grained access control.
-    jwt.options.gloo.solo.io.VhostExtension jwt = 9;
+
+    oneof jwt_config {
+        // Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other
+        // headers to make routing decisions or combine with RBAC for fine-grained access control.
+        // This has been deprecated in favor of staged jwt. The same configuration can be achieved through staged jwt
+        // using AfterExtAuth.
+        jwt.options.gloo.solo.io.VhostExtension jwt = 9 [deprecated=true];
+
+        // Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other
+        // headers to make routing decisions or combine with RBAC for fine-grained access control.
+        // JWT configuration has stages "BeforeExtAuth" and "AfterExtAuth". BeforeExtAuth JWT
+        // validation runs before the external authentication service. This is useful when JWT
+        // is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig).
+        // AfterExtAuth validation runs after external authentication service, which is useful for verifying
+        // JWTs obtained during extauth (e.g. oauth/oidc)
+        jwt.options.gloo.solo.io.JwtStagedVhostExtension jwt_staged = 19;
+    }
+
     // Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims)
     rbac.options.gloo.solo.io.ExtensionSettings rbac = 11;
     // Enterprise-only: Authentication configuration
@@ -218,6 +233,7 @@ message VirtualHostOptions {
     // Early transformations stage. These transformations run before most other options are processed.
     // If the `regular` field is set in here, the `transformations` field is ignored.
     transformation.options.gloo.solo.io.TransformationStages staged_transformations = 17;
+
 }
 
 // Optional, feature-specific configuration that lives on routes.
@@ -293,9 +309,23 @@ message RouteOptions {
     // Enterprise-only: Config for Web Application Firewall (WAF), supporting
     // the popular ModSecurity 3.0 ruleset
     waf.options.gloo.solo.io.Settings waf = 15;
-    // Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other
-    // headers to make routing decisions or combine with RBAC for fine-grained access control.
-    jwt.options.gloo.solo.io.RouteExtension jwt = 16;
+    oneof jwt_config{
+        // Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other
+        // headers to make routing decisions or combine with RBAC for fine-grained access control.
+        // This has been deprecated in favor of staged jwt. The same configuration can be achieved through staged jwt
+        // using AfterExtAuth.
+        jwt.options.gloo.solo.io.RouteExtension jwt = 16 [deprecated = true];
+
+        // Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other
+        // headers to make routing decisions or combine with RBAC for fine-grained access control.
+        // JWT configuration has stages "BeforeExtAuth" and "AfterExtAuth". BeforeExtAuth JWT
+        // validation runs before the external authentication service. This is useful when JWT
+        // is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig).
+        // AfterExtAuth validation runs after external authentication service, which is useful for verifying
+        // JWTs obtained during extauth (e.g. oauth/oidc)
+        jwt.options.gloo.solo.io.JwtStagedRouteExtension jwt_staged = 25;
+    }
+
     // Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims)
     rbac.options.gloo.solo.io.ExtensionSettings rbac = 17;
     // Enterprise-only: Authentication configuration
