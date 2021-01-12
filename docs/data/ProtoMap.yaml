@@ -236,8 +236,14 @@ apis:
   envoy.config.filter.http.sanitize.v2.Sanitize:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/extauth/sanitize.proto.sk/#Sanitize
     package: envoy.config.filter.http.sanitize.v2
+  envoy.config.filter.http.solo_jwt_authn.v2.JwtWithStage:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/jwt/solo_jwt_authn.proto.sk/#JwtWithStage
+    package: envoy.config.filter.http.solo_jwt_authn.v2
   envoy.config.filter.http.solo_jwt_authn.v2.SoloJwtAuthnPerRoute:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/jwt/solo_jwt_authn.proto.sk/#SoloJwtAuthnPerRoute
+    package: envoy.config.filter.http.solo_jwt_authn.v2
+  envoy.config.filter.http.solo_jwt_authn.v2.StagedJwtAuthnPerRoute:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/jwt/solo_jwt_authn.proto.sk/#StagedJwtAuthnPerRoute
     package: envoy.config.filter.http.solo_jwt_authn.v2
   envoy.config.filter.http.transformation_ee.v2.Action:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#Action
@@ -734,6 +740,12 @@ apis:
   jwt.options.gloo.solo.io.Jwks:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto.sk/#Jwks
     package: jwt.options.gloo.solo.io
+  jwt.options.gloo.solo.io.JwtStagedRouteExtension:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto.sk/#JwtStagedRouteExtension
+    package: jwt.options.gloo.solo.io
+  jwt.options.gloo.solo.io.JwtStagedVhostExtension:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto.sk/#JwtStagedVhostExtension
+    package: jwt.options.gloo.solo.io
   jwt.options.gloo.solo.io.LocalJwks:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto.sk/#LocalJwks
     package: jwt.options.gloo.solo.io
@@ -1160,6 +1172,39 @@ apis:
   solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto.sk/#CsrfPolicy
     package: solo.io.envoy.extensions.filters.http.csrf.v3
+  solo.io.envoy.extensions.filters.http.jwt_authn.v3.FilterStateRule:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto.sk/#FilterStateRule
+    package: solo.io.envoy.extensions.filters.http.jwt_authn.v3
+  solo.io.envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto.sk/#JwtAuthentication
+    package: solo.io.envoy.extensions.filters.http.jwt_authn.v3
+  solo.io.envoy.extensions.filters.http.jwt_authn.v3.JwtHeader:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto.sk/#JwtHeader
+    package: solo.io.envoy.extensions.filters.http.jwt_authn.v3
+  solo.io.envoy.extensions.filters.http.jwt_authn.v3.JwtProvider:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto.sk/#JwtProvider
+    package: solo.io.envoy.extensions.filters.http.jwt_authn.v3
+  solo.io.envoy.extensions.filters.http.jwt_authn.v3.JwtRequirement:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto.sk/#JwtRequirement
+    package: solo.io.envoy.extensions.filters.http.jwt_authn.v3
+  solo.io.envoy.extensions.filters.http.jwt_authn.v3.JwtRequirementAndList:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto.sk/#JwtRequirementAndList
+    package: solo.io.envoy.extensions.filters.http.jwt_authn.v3
+  solo.io.envoy.extensions.filters.http.jwt_authn.v3.JwtRequirementOrList:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto.sk/#JwtRequirementOrList
+    package: solo.io.envoy.extensions.filters.http.jwt_authn.v3
+  solo.io.envoy.extensions.filters.http.jwt_authn.v3.PerRouteConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto.sk/#PerRouteConfig
+    package: solo.io.envoy.extensions.filters.http.jwt_authn.v3
+  solo.io.envoy.extensions.filters.http.jwt_authn.v3.ProviderWithAudiences:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto.sk/#ProviderWithAudiences
+    package: solo.io.envoy.extensions.filters.http.jwt_authn.v3
+  solo.io.envoy.extensions.filters.http.jwt_authn.v3.RemoteJwks:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto.sk/#RemoteJwks
+    package: solo.io.envoy.extensions.filters.http.jwt_authn.v3
+  solo.io.envoy.extensions.filters.http.jwt_authn.v3.RequirementRule:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto.sk/#RequirementRule
+    package: solo.io.envoy.extensions.filters.http.jwt_authn.v3
   solo.io.envoy.extensions.filters.http.wasm.v3.Wasm:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/wasm/v3/wasm.proto.sk/#Wasm
     package: solo.io.envoy.extensions.filters.http.wasm.v3

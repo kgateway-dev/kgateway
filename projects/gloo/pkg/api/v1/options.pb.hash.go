@@ -626,26 +626,6 @@ func (m *VirtualHostOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetJwt()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Jwt")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetJwt(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("Jwt")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
 	if h, ok := interface{}(m.GetRbac()).(safe_hasher.SafeHasher); ok {
 		if _, err = hasher.Write([]byte("Rbac")); err != nil {
 			return 0, err
@@ -844,6 +824,54 @@ func (m *VirtualHostOptions) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("RateLimitConfigs")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	switch m.JwtConfig.(type) {
+
+	case *VirtualHostOptions_Jwt:
+
+		if h, ok := interface{}(m.GetJwt()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Jwt")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetJwt(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Jwt")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *VirtualHostOptions_JwtStaged:
+
+		if h, ok := interface{}(m.GetJwtStaged()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("JwtStaged")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetJwtStaged(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("JwtStaged")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -1154,26 +1182,6 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetJwt()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Jwt")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetJwt(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("Jwt")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
 	if h, ok := interface{}(m.GetRbac()).(safe_hasher.SafeHasher); ok {
 		if _, err = hasher.Write([]byte("Rbac")); err != nil {
 			return 0, err
@@ -1364,6 +1372,54 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("RateLimitConfigs")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	switch m.JwtConfig.(type) {
+
+	case *RouteOptions_Jwt:
+
+		if h, ok := interface{}(m.GetJwt()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Jwt")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetJwt(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Jwt")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *RouteOptions_JwtStaged:
+
+		if h, ok := interface{}(m.GetJwtStaged()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("JwtStaged")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetJwtStaged(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("JwtStaged")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
