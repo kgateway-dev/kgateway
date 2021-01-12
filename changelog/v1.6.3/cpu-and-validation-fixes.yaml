@@ -1,0 +1,27 @@
+changelog:
+  - type: FIX
+    description: >
+      CPU profile of Gloo at scale (5000+ upstreams) indicated that the `generateXDSSnapshot` function was taking
+      upwards of 5 seconds of CPU on a ~50 second sample. This change optimizes the code by using creating hashes for
+      the XDS snapshot using deterministic proto marshalling and fnv hashing rather than the reflection-based
+      `mitchellh/hashstructure` which was benchmarked to be several orders of magnitude slower.
+    issueLink: https://github.com/solo-io/gloo/issues/4084
+    resolvesIssue: false
+  - type: FIX
+    description: >
+      CPU profile of Gloo at scale (5000+ upstreams) indicated that the `endpointsForUpstream` function was taking
+      upwards of 5 seconds of CPU on a ~50 second sample. This change optimizes the code by using a map instead of
+      looping over all endpoints for each upstream.
+    issueLink: https://github.com/solo-io/gloo/issues/4084
+    resolvesIssue: false
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3334
+    resolvesIssue: true
+    description: |
+      Gloo Edge now proactively reports warnings on virtual services that have matchers that are short-circuited.
+      To enable, update the Gloo `Settings` such that `spec.gateway.validation.warnRouteShortCircuiting=true`
+      The cases now additionally covered are:
+        - routes that have simple OR regex header matchers, ensuring each one of the OR'ed matchers can be reached
+        - the same logic, but with method matchers
+      In addition, we support aggressively reporting errors on virtual services with invalid regex matchers. (no need
+      to enable short-circuiting reporting)
