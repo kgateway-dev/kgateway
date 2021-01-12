@@ -2,7 +2,6 @@ package extauth
 
 import (
 	"context"
-
 	"github.com/rotisserie/eris"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -10,6 +9,12 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+)
+
+// Compile-time assertion
+var (
+	_ syncer.TranslatorSyncerExtension           = new(TranslatorSyncerExtension)
+	_ syncer.UpgradeableTranslatorSyncerExtension = new(TranslatorSyncerExtension)
 )
 
 const (
@@ -20,6 +25,14 @@ const (
 
 type TranslatorSyncerExtension struct {
 	reports reporter.ResourceReports
+}
+
+func (s *TranslatorSyncerExtension) ExtensionName() string {
+	return Name
+}
+
+func (s *TranslatorSyncerExtension) IsUpgrade() bool {
+	return false
 }
 
 func NewTranslatorSyncerExtension(_ context.Context, params syncer.TranslatorSyncerExtensionParams) (syncer.TranslatorSyncerExtension, error) {
@@ -65,12 +78,4 @@ func (s *TranslatorSyncerExtension) Sync(ctx context.Context, snap *gloov1.ApiSn
 	}
 
 	return ExtAuthServerRole, nil
-}
-
-func ExtensionName() string {
-	return Name
-}
-
-func IsUpgrade() bool {
-	return false
 }

@@ -14,6 +14,12 @@ import (
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
 
+// Compile-time assertion
+var (
+	_ syncer.TranslatorSyncerExtension           = new(TranslatorSyncerExtension)
+	_ syncer.UpgradeableTranslatorSyncerExtension = new(TranslatorSyncerExtension)
+)
+
 const (
 	Name                = "rate-limit"
 	RateLimitServerRole = "ratelimit"
@@ -21,6 +27,14 @@ const (
 
 type TranslatorSyncerExtension struct {
 	reports reporter.ResourceReports
+}
+
+func (s *TranslatorSyncerExtension) ExtensionName() string {
+	return Name
+}
+
+func (s *TranslatorSyncerExtension) IsUpgrade() bool {
+	return false
 }
 
 func NewTranslatorSyncerExtension(_ context.Context, params syncer.TranslatorSyncerExtensionParams) (syncer.TranslatorSyncerExtension, error) {
@@ -101,12 +115,4 @@ func (s *TranslatorSyncerExtension) Sync(ctx context.Context, snap *gloov1.ApiSn
 
 func createErrorMsg(feature string) string {
 	return fmt.Sprintf("The Gloo Advanced Rate limit API feature '%s' is enterprise-only, please upgrade or use the Envoy rate-limit API instead", feature)
-}
-
-func ExtensionName() string {
-	return Name
-}
-
-func IsUpgrade() bool {
-	return false
 }
