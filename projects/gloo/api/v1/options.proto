@@ -184,6 +184,8 @@ message VirtualHostOptions {
     oneof jwt_config {
         // Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other
         // headers to make routing decisions or combine with RBAC for fine-grained access control.
+        // This has been deprecated in favor of staged jwt. The same configuration can be achieved through staged jwt
+        // using AfterExtAuth.
         jwt.options.gloo.solo.io.VhostExtension jwt = 9 [deprecated=true];
 
         // Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other
@@ -191,6 +193,8 @@ message VirtualHostOptions {
         // JWT configuration has stages "BeforeExtAuth" and "AfterExtAuth". BeforeExtAuth JWT
         // validation runs before the external authentication service. This is useful when JWT
         // is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig).
+        // AfterExtAuth validation runs after external authentication service, which is useful for verifying
+        // JWTs obtained during extauth (e.g. oauth/oidc)
         jwt.options.gloo.solo.io.JwtStagedVhostExtension jwt_staged = 19;
     }
 
@@ -308,6 +312,8 @@ message RouteOptions {
     oneof jwt_config{
         // Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other
         // headers to make routing decisions or combine with RBAC for fine-grained access control.
+        // This has been deprecated in favor of staged jwt. The same configuration can be achieved through staged jwt
+        // using AfterExtAuth.
         jwt.options.gloo.solo.io.RouteExtension jwt = 16 [deprecated = true];
 
         // Enterprise-only: Config for reading and verifying JWTs. Copy verifiable information from JWTs into other
@@ -315,6 +321,8 @@ message RouteOptions {
         // JWT configuration has stages "BeforeExtAuth" and "AfterExtAuth". BeforeExtAuth JWT
         // validation runs before the external authentication service. This is useful when JWT
         // is used in conjunction with other auth mechanisms specified in the [boolean expression Extauth API](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig).
+        // AfterExtAuth validation runs after external authentication service, which is useful for verifying
+        // JWTs obtained during extauth (e.g. oauth/oidc)
         jwt.options.gloo.solo.io.JwtStagedRouteExtension jwt_staged = 25;
     }
 

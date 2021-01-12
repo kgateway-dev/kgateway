@@ -183,10 +183,6 @@ func (m *RouteExtension) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetAllowMissingOrFailedJwt() != target.GetAllowMissingOrFailedJwt() {
-		return false
-	}
-
 	return true
 }
 
