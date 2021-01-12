@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Add the `glooctl get ratelimitconfig` command.
+    issueLink: https://github.com/solo-io/gloo/issues/4085

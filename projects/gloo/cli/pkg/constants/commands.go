@@ -50,6 +50,11 @@ var (
 		Aliases: []string{"ac", "authconfig"},
 	}
 
+	RATELIMIT_CONFIG_COMMAND = cobra.Command{
+		Use:     "ratelimitconfig",
+		Aliases: []string{"rlc", "ratelimitconfigs"},
+	}
+
 	ADD_COMMAND = cobra.Command{
 		Use:     "add",
 		Aliases: []string{"a"},
