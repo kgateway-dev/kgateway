@@ -3145,6 +3145,7 @@ metadata:
 						})
 						serviceLabels := map[string]string{
 							"gloo": "gateway-proxy",
+							"gateway-proxy-id": "gateway-proxy",
 						}
 						rb := ResourceBuilder{
 							Namespace: namespace,
