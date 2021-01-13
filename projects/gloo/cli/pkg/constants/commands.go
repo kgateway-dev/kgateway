@@ -42,12 +42,12 @@ var (
 
 	SECRET_COMMAND = cobra.Command{
 		Use:     "secret",
-		Aliases: []string{"s", "secret"},
+		Aliases: []string{"s", "secrets"},
 	}
 
 	AUTH_CONFIG_COMMAND = cobra.Command{
 		Use:     "authconfig",
-		Aliases: []string{"ac", "authconfig"},
+		Aliases: []string{"ac", "authconfigs"},
 	}
 
 	RATELIMIT_CONFIG_COMMAND = cobra.Command{

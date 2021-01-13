@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/olekukonko/tablewriter"
 	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
@@ -19,6 +18,7 @@ func PrintRateLimitConfigs(ratelimitConfigs ratelimit.RateLimitConfigList, outpu
 	return cliutils.PrintList(outputType.String(), "", ratelimitConfigs,
 		func(data interface{}, w io.Writer) error {
 			RateLimitConfig(data.(ratelimit.RateLimitConfigList), w)
+			SetRateLimitConfig(data.(ratelimit.RateLimitConfigList), w)
 			return nil
 		}, os.Stdout)
 }
@@ -26,43 +26,123 @@ func PrintRateLimitConfigs(ratelimitConfigs ratelimit.RateLimitConfigList, outpu
 // prints RateLimitConfigs using tables to io.Writer
 func RateLimitConfig(list ratelimit.RateLimitConfigList, w io.Writer) {
 	table := tablewriter.NewWriter(w)
-	table.SetHeader([]string{"RateLimitConfig", "Descriptors", "SetDescriptors"})
-
+	table.SetHeader([]string{"RateLimitConfig", "Descriptors", "Actions"})
 	for _, ratelimitConfig := range list {
 		name := ratelimitConfig.GetMetadata().Name
-		table.Append([]string{name, printDescriptors(ratelimitConfig.Spec.GetRaw().GetDescriptors()),
-			printSetDescriptors(ratelimitConfig.Spec.GetRaw().GetSetDescriptors())})
+		actions := printActions(ratelimitConfig.Spec.GetRaw().GetRateLimits())
+		maxNumLines := len(actions)
+		descriptors := printDescriptors(ratelimitConfig.Spec.GetRaw().GetDescriptors())
+		if len(descriptors) > maxNumLines {
+			maxNumLines = len(descriptors)
+		}
+
+		// If
+		for i := 0; i < maxNumLines; i++ {
+			var a, d = "", ""
+			if i < len(descriptors) {
+				d = descriptors[i]
+			}
+			if i < len(actions) {
+				a = actions[i]
+			}
+			if i == 0 {
+				if maxNumLines == 1 && a == "" && d == "" {
+					continue
+				}
+				table.Append([]string{name, d, a})
+			} else {
+				table.Append([]string{"", d, a})
+			}
+		}
 	}
 
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.Render()
 }
 
-func printDescriptors(descriptors []*rltypes.Descriptor) string {
-	var b strings.Builder
-	for _, descriptor := range descriptors {
-		if descriptor.GetValue() != "" {
-			fmt.Fprintf(&b, "- %s = %s\n", descriptor.GetKey(), descriptor.GetValue())
-		} else {
-			fmt.Fprintf(&b, "- %s\n", descriptor.GetKey())
-		}
-		if len(descriptor.GetDescriptors()) != 0 {
-			fmt.Fprint(&b, printDescriptors(descriptor.GetDescriptors()))
-		}
-	}
-	return strings.TrimRight(b.String(), "\n")
-}
+func SetRateLimitConfig(list ratelimit.RateLimitConfigList, w io.Writer) {
+	table := tablewriter.NewWriter(w)
+	table.SetHeader([]string{"Set-style RateLimitConfig", "SetDescriptors", "SetActions"})
 
-func printSetDescriptors(setDescriptors []*rltypes.SetDescriptor) string {
-	var b strings.Builder
-	for _, setDescriptor := range setDescriptors {
-		for _, simpleDescriptor := range setDescriptor.GetSimpleDescriptors() {
-			if simpleDescriptor.GetValue() != "" {
-				fmt.Fprintf(&b, "- %s  =%s\n", simpleDescriptor.GetKey(), simpleDescriptor.GetValue())
+	for _, ratelimitConfig := range list {
+		name := ratelimitConfig.GetMetadata().Name
+		setActions := printSetActions(ratelimitConfig.Spec.GetRaw().GetRateLimits())
+		maxNumLines := len(setActions)
+		setDescriptors := printSetDescriptors(ratelimitConfig.Spec.GetRaw().GetSetDescriptors())
+		if len(setDescriptors) > maxNumLines {
+			maxNumLines = len(setDescriptors)
+		}
+		for i := 0; i < maxNumLines; i++ {
+			var sa, sd = "", ""
+			if i < len(setDescriptors) {
+				sd = setDescriptors[i]
+			}
+			if i < len(setActions) {
+				sa = setActions[i]
+			}
+			if i == 0 {
+				if maxNumLines == 1 && sd == "" && sa == "" {
+					continue
+				}
+				table.Append([]string{name, sd, sa})
 			} else {
-				fmt.Fprintf(&b, "- %s\n", simpleDescriptor.GetKey())
+				table.Append([]string{"", sd, sa})
 			}
 		}
 	}
-	return strings.TrimRight(b.String(), "\n")
+
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.Render()
+}
+
+func printActions(ratelimitActions []*rltypes.RateLimitActions) []string {
+	var actions []string
+	for _, ratelimitAction := range ratelimitActions {
+		for _, setAction := range ratelimitAction.GetActions() {
+			actions = append(actions, setAction.String())
+		}
+	}
+	actions = append(actions, "")
+	return actions
+}
+
+func printSetActions(ratelimitActions []*rltypes.RateLimitActions) []string {
+	var setActions []string
+	for _, ratelimitAction := range ratelimitActions {
+		for _, setAction := range ratelimitAction.GetSetActions() {
+			setActions = append(setActions, setAction.String())
+		}
+	}
+	setActions = append(setActions, "")
+	return setActions
+}
+
+func printDescriptors(descriptors []*rltypes.Descriptor) []string {
+	var res []string
+	for _, descriptor := range descriptors {
+		res = append(res, fmt.Sprintf("- %s", descriptor.String()))
+	}
+	res = append(res, "")
+	return res
+}
+
+func printSetDescriptors(setDescriptors []*rltypes.SetDescriptor) []string {
+	var res []string
+	for _, setDescriptor := range setDescriptors {
+		res = append(res, fmt.Sprintf("- requests_per_unit: %v", setDescriptor.GetRateLimit().GetRequestsPerUnit()))
+		res = append(res, fmt.Sprintf("  unit: %v", setDescriptor.GetRateLimit().GetUnit()))
+		res = append(res, fmt.Sprintf("  always_apply: %v", setDescriptor.GetAlwaysApply()))
+		if len(setDescriptor.GetSimpleDescriptors()) > 0 {
+			res = append(res, fmt.Sprintf("  simple_descriptors:"))
+		}
+		for _, simpleDescriptor := range setDescriptor.GetSimpleDescriptors() {
+			if simpleDescriptor.GetValue() != "" {
+				res = append(res, fmt.Sprintf("    - %s = %s", simpleDescriptor.GetKey(), simpleDescriptor.GetValue()))
+			} else {
+				res = append(res, fmt.Sprintf("    - %s", simpleDescriptor.GetKey()))
+			}
+		}
+	}
+	res = append(res, "")
+	return res
 }
