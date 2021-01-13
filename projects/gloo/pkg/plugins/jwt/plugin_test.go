@@ -35,4 +35,20 @@ var _ = Describe("jwt plugin", func() {
 		Expect(err.Error()).To(Equal(ErrEnterpriseOnly))
 	})
 
+	It("will err if jwt is configured", func() {
+		p := NewPlugin()
+		route := &v1.Route{
+			Name:    "route1",
+			Options: &v1.RouteOptions{
+				JwtConfig: &v1.RouteOptions_JwtStaged{
+					JwtStaged: &jwt.JwtStagedRouteExtension{},
+				},
+			},
+		}
+
+		err := p.ProcessRoute(plugins.RouteParams{}, route, &envoy_config_route.Route{})
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal(ErrEnterpriseOnly))
+	})
+
 })
