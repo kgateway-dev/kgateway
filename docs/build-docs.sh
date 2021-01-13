@@ -12,6 +12,19 @@ declare -a versions=($(cat active_versions.json | jq -rc '."versions" | join(" "
 declare -a oldVersions=($(cat active_versions.json | jq -rc '."oldVersions" | join(" ")'))
 latestVersion=$(cat active_versions.json | jq -r ."latest")
 
+# verify that latestVersion is in versions
+latestVersionInVersions=false
+for version in "${versions[@]}"
+do
+    if [ "$version" == "$latestVersion" ]; then
+      latestVersionInVersions=true
+    fi
+done
+if ! $latestVersionInVersions ; then
+  echo "latest version not in versions, update the versions in active_versions.json"
+  exit 1
+fi
+
 # Firebase configuration
 firebaseJson=$(cat <<EOF
 { 
