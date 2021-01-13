@@ -38,7 +38,7 @@ var _ = Describe("jwt plugin", func() {
 	It("will err if jwt is configured", func() {
 		p := NewPlugin()
 		route := &v1.Route{
-			Name:    "route1",
+			Name: "route1",
 			Options: &v1.RouteOptions{
 				JwtConfig: &v1.RouteOptions_JwtStaged{
 					JwtStaged: &jwt.JwtStagedRouteExtension{},
