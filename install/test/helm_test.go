@@ -3144,7 +3144,8 @@ metadata:
 								"gatewayProxies.gatewayProxy.readConfigMulticluster=true"},
 						})
 						serviceLabels := map[string]string{
-							"gloo": "gateway-proxy",
+							"gloo":             "gateway-proxy",
+							"gateway-proxy-id": "gateway-proxy",
 						}
 						rb := ResourceBuilder{
 							Namespace: namespace,
