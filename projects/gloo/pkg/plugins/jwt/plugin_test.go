@@ -24,8 +24,8 @@ var _ = Describe("jwt plugin", func() {
 			Name:    "virt1",
 			Domains: []string{"*"},
 			Options: &v1.VirtualHostOptions{
-				JwtConfig: &v1.VirtualHostOptions_Jwt{
-					Jwt: &jwt.VhostExtension{},
+				JwtConfig: &v1.VirtualHostOptions_JwtStaged{
+					JwtStaged: &jwt.JwtStagedVhostExtension{},
 				},
 			},
 		}

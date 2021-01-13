@@ -11,6 +11,7 @@ import (
 var (
 	_ plugins.Plugin            = new(plugin)
 	_ plugins.VirtualHostPlugin = new(plugin)
+	_ plugins.RoutePlugin       = new(plugin)
 	_ plugins.Upgradable        = new(plugin)
 )
 
@@ -42,7 +43,15 @@ func (p *plugin) ProcessVirtualHost(
 	in *v1.VirtualHost,
 	out *envoy_config_route.VirtualHost,
 ) error {
-	if in.GetOptions().GetJwt() != nil {
+	if in.GetOptions().GetJwtConfig() != nil {
+		return eris.New(ErrEnterpriseOnly)
+	}
+
+	return nil
+}
+
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route.Route) error {
+	if in.GetOptions().GetJwtConfig() != nil {
 		return eris.New(ErrEnterpriseOnly)
 	}
 
