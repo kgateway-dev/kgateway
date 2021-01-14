@@ -79,9 +79,10 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 			return true
 		}
 
+		// don't leak the timer.
+		defer timer.Stop()
+
 		for {
-			// don't leak the timer.
-			defer timer.Stop()
 			select {
 			case serviceMeta, ok := <-serviceMetaChan:
 				if !ok {
