@@ -10,7 +10,7 @@ VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
 HUGO_VERSION := 0.69.2
 
-SOLO_HUGO_THEME_REVISION := d6e08db07e34d7823b5a5e0112f83a33cb1a40dc
+SOLO_HUGO_THEME_REVISION := 5a29d20f92fabafb2e41ec0576320e284b624c5e
 
 #----------------------------------------------------------------------------------
 # Docs
