@@ -42,6 +42,7 @@ glooctl get [flags]
 * [glooctl](../glooctl)	 - CLI for Gloo
 * [glooctl get authconfig](../glooctl_get_authconfig)	 - read an authconfig or list authconfigs in a namespace
 * [glooctl get proxy](../glooctl_get_proxy)	 - read a proxy or list proxies in a namespace
+* [glooctl get ratelimitconfig](../glooctl_get_ratelimitconfig)	 - read a ratelimitconfig or list ratelimitconfigs in a namespace
 * [glooctl get routetable](../glooctl_get_routetable)	 - read a route table or list route tables in a namespace
 * [glooctl get upstream](../glooctl_get_upstream)	 - read an upstream or list upstreams in a namespace
 * [glooctl get upstreamgroup](../glooctl_get_upstreamgroup)	 - read an upstream group or list upstream groups in a namespace
