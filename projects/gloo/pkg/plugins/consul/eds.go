@@ -66,6 +66,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		defer func() { cancel() }()
 
 		timer := time.NewTicker(DefaultDnsPollingInterval)
+		defer timer.Stop()
 
 		publishEndpoints := func(endpoints v1.EndpointList) bool {
 			if opts.Ctx.Err() != nil {
@@ -80,8 +81,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		}
 
 		for {
-			// don't leak the timer.
-			defer timer.Stop()
 			select {
 			case serviceMeta, ok := <-serviceMetaChan:
 				if !ok {
