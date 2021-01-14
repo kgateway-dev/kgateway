@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: >
+      Stop leaking memory for a timer in consul EDS.
+    issueLink: https://github.com/solo-io/gloo/issues/4112
