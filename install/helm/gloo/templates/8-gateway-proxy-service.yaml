@@ -86,14 +86,16 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: gateway-proxy-config-dump-service
+  name: {{ $name | kebabcase }}-config-dump-service
   namespace: {{ $.Release.Namespace }}
   labels:
     gloo: gateway-proxy
+    gateway-proxy-id: {{ $name | kebabcase }}
 spec:
   type: ClusterIP
   selector:
     gloo: gateway-proxy
+    gateway-proxy-id: {{ $name | kebabcase }}
   ports:
     - protocol: TCP
       port: 8082
