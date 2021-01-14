@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4020
+    description: Add warnings when users try to use enterprise-only Gloo Edge features when running the Open Source edition of Gloo Edge

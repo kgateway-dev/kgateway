@@ -12,6 +12,7 @@ import (
 // Compile-time assertion
 var _ plugins.Plugin = &Plugin{}
 var _ plugins.HttpFilterPlugin = &Plugin{}
+var _ plugins.Upgradable = &Plugin{}
 
 const errEnterpriseOnly = "Could not load wasm plugin - this is an Enterprise feature"
 const pluginName = "wasm"

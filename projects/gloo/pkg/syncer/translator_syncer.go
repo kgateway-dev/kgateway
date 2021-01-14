@@ -36,6 +36,11 @@ type TranslatorSyncerExtensionParams struct {
 
 type TranslatorSyncerExtensionFactory func(context.Context, TranslatorSyncerExtensionParams) (TranslatorSyncerExtension, error)
 
+type UpgradeableTranslatorSyncerExtension interface {
+	ExtensionName() string
+	IsUpgrade() bool
+}
+
 type TranslatorSyncerExtension interface {
 	Sync(
 		ctx context.Context,

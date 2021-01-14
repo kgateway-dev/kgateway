@@ -24,8 +24,8 @@ import (
 var _ = Describe("Translate Proxy", func() {
 
 	var (
-		xdsCache    *mockXdsCache
-		sanitizer   *mockXdsSanitizer
+		xdsCache    *MockXdsCache
+		sanitizer   *MockXdsSanitizer
 		syncer      v1.ApiSyncer
 		snap        *v1.ApiSnapshot
 		settings    *v1.Settings
@@ -38,8 +38,8 @@ var _ = Describe("Translate Proxy", func() {
 	)
 
 	BeforeEach(func() {
-		xdsCache = &mockXdsCache{}
-		sanitizer = &mockXdsSanitizer{}
+		xdsCache = &MockXdsCache{}
+		sanitizer = &MockXdsSanitizer{}
 		ctx, cancel = context.WithCancel(context.Background())
 
 		resourceClientFactory := &factory.MemoryResourceClientFactory{
@@ -85,7 +85,7 @@ var _ = Describe("Translate Proxy", func() {
 		}))
 
 		// NilSnapshot is always consistent, so snapshot will always be set as part of endpoints update
-		Expect(xdsCache.called).To(BeTrue())
+		Expect(xdsCache.Called).To(BeTrue())
 
 		// update rv for proxy
 		p1, err := proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
@@ -111,20 +111,20 @@ var _ = Describe("Translate Proxy", func() {
 			ReportedBy: ref,
 		}))
 
-		Expect(xdsCache.called).To(BeTrue())
+		Expect(xdsCache.Called).To(BeTrue())
 	})
 
 	It("updates the cache with the sanitized snapshot", func() {
-		sanitizer.snap = envoycache.NewEasyGenericSnapshot("easy")
+		sanitizer.Snap = envoycache.NewEasyGenericSnapshot("easy")
 		err := syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(sanitizer.called).To(BeTrue())
-		Expect(xdsCache.setSnap).To(BeEquivalentTo(sanitizer.snap))
+		Expect(sanitizer.Called).To(BeTrue())
+		Expect(xdsCache.SetSnap).To(BeEquivalentTo(sanitizer.Snap))
 	})
 
 	It("uses listeners and routes from the previous snapshot when sanitization fails", func() {
-		sanitizer.err = errors.Errorf("we ran out of coffee")
+		sanitizer.Err = errors.Errorf("we ran out of coffee")
 
 		oldXdsSnap := xds.NewSnapshotFromResources(
 			envoycache.NewResources("", nil),
@@ -136,20 +136,20 @@ var _ = Describe("Translate Proxy", func() {
 		)
 
 		// return this old snapshot when the syncer asks for it
-		xdsCache.getSnap = oldXdsSnap
+		xdsCache.GetSnap = oldXdsSnap
 		err := syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(sanitizer.called).To(BeTrue())
-		Expect(xdsCache.called).To(BeTrue())
+		Expect(sanitizer.Called).To(BeTrue())
+		Expect(xdsCache.Called).To(BeTrue())
 
 		oldListeners := oldXdsSnap.GetResources(resource.ListenerTypeV3)
-		newListeners := xdsCache.setSnap.GetResources(resource.ListenerTypeV3)
+		newListeners := xdsCache.SetSnap.GetResources(resource.ListenerTypeV3)
 
 		Expect(oldListeners).To(Equal(newListeners))
 
 		oldRoutes := oldXdsSnap.GetResources(resource.RouteTypeV3)
-		newRoutes := xdsCache.setSnap.GetResources(resource.RouteTypeV3)
+		newRoutes := xdsCache.SetSnap.GetResources(resource.RouteTypeV3)
 
 		Expect(oldRoutes).To(Equal(newRoutes))
 	})
@@ -159,8 +159,8 @@ var _ = Describe("Translate Proxy", func() {
 var _ = Describe("Translate mulitple proxies with errors", func() {
 
 	var (
-		xdsCache       *mockXdsCache
-		sanitizer      *mockXdsSanitizer
+		xdsCache       *MockXdsCache
+		sanitizer      *MockXdsSanitizer
 		syncer         v1.ApiSyncer
 		snap           *v1.ApiSnapshot
 		settings       *v1.Settings
@@ -204,8 +204,8 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 
 	BeforeEach(func() {
 		var err error
-		xdsCache = &mockXdsCache{}
-		sanitizer = &mockXdsSanitizer{}
+		xdsCache = &MockXdsCache{}
+		sanitizer = &MockXdsSanitizer{}
 
 		resourceClientFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
@@ -272,7 +272,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		}))
 
 		// NilSnapshot is always consistent, so snapshot will always be set as part of endpoints update
-		Expect(xdsCache.called).To(BeTrue())
+		Expect(xdsCache.Called).To(BeTrue())
 
 		upstreamClient, err = v1.NewUpstreamClient(context.Background(), resourceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
@@ -296,7 +296,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 			ReportedBy: ref,
 		}))
 
-		Expect(xdsCache.called).To(BeTrue())
+		Expect(xdsCache.Called).To(BeTrue())
 	})
 
 	It("handles reporting errors on multiple proxies sharing an upstream, each reporting the same upstream error", func() {
@@ -315,7 +315,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 			ReportedBy: ref,
 		}))
 
-		Expect(xdsCache.called).To(BeTrue())
+		Expect(xdsCache.Called).To(BeTrue())
 	})
 })
 
@@ -342,62 +342,4 @@ func (t *mockTranslator) Translate(params plugins.Params, proxy *v1.Proxy) (envo
 	return envoycache.NilSnapshot{}, nil, &validation.ProxyReport{}, nil
 }
 
-var _ envoycache.SnapshotCache = &mockXdsCache{}
-
-type mockXdsCache struct {
-	called bool
-	// snap that is set
-	setSnap envoycache.Snapshot
-	// snap that is returned
-	getSnap envoycache.Snapshot
-}
-
-func (*mockXdsCache) CreateWatch(envoycache.Request) (value chan envoycache.Response, cancel func()) {
-	panic("implement me")
-}
-
-func (*mockXdsCache) Fetch(context.Context, envoycache.Request) (*envoycache.Response, error) {
-	panic("implement me")
-}
-
-func (*mockXdsCache) GetStatusInfo(string) envoycache.StatusInfo {
-	panic("implement me")
-}
-
-func (c *mockXdsCache) GetStatusKeys() []string {
-	return []string{}
-}
-
-func (c *mockXdsCache) SetSnapshot(node string, snapshot envoycache.Snapshot) error {
-	c.called = true
-	c.setSnap = snapshot
-	return nil
-}
-
-func (c *mockXdsCache) GetSnapshot(node string) (envoycache.Snapshot, error) {
-	if c.getSnap != nil {
-		return c.getSnap, nil
-	}
-	return &envoycache.NilSnapshot{}, nil
-}
-
-func (*mockXdsCache) ClearSnapshot(node string) {
-	panic("implement me")
-}
-
-type mockXdsSanitizer struct {
-	called bool
-	snap   envoycache.Snapshot
-	err    error
-}
-
-func (s *mockXdsSanitizer) SanitizeSnapshot(ctx context.Context, glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, reports reporter.ResourceReports) (envoycache.Snapshot, error) {
-	s.called = true
-	if s.snap != nil {
-		return s.snap, nil
-	}
-	if s.err != nil {
-		return nil, s.err
-	}
-	return xdsSnapshot, nil
-}
+var _ envoycache.SnapshotCache = &MockXdsCache{}
