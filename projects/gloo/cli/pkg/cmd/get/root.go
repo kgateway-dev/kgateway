@@ -59,6 +59,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	cmd.AddCommand(Upstream(opts))
 	cmd.AddCommand(UpstreamGroup(opts))
 	cmd.AddCommand(AuthConfig(opts))
+	cmd.AddCommand(RateLimitConfig(opts))
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
