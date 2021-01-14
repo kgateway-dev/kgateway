@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4106
+    description: Removes an extraneous route_components proto that was in the incorrect directory.
