@@ -315,7 +315,7 @@ from "provider-A".
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `match` | [.solo.io.envoy.config.route.v3.RouteMatch](../../../../../../config/core/v3/route_components.proto.sk/#routematch) | The route matching parameter. Only when the match is satisfied, the "requires" field will apply. For example: following match will match all requests. .. code-block:: yaml match: prefix: /. |
+| `match` | [.solo.io.envoy.config.route.v3.RouteMatch](../../../../../../config/route/v3/route_components.proto.sk/#routematch) | The route matching parameter. Only when the match is satisfied, the "requires" field will apply. For example: following match will match all requests. .. code-block:: yaml match: prefix: /. |
 | `requires` | [.solo.io.envoy.extensions.filters.http.jwt_authn.v3.JwtRequirement](../config.proto.sk/#jwtrequirement) | Specify a Jwt requirement. Please see detail comment in message JwtRequirement. Only one of `requires` or `requirementName` can be set. |
 | `requirementName` | `string` | Use requirement_name to specify a Jwt requirement. This requirement_name MUST be specified at the :ref:`requirement_map <envoy_v3_api_field_extensions.filters.http.jwt_authn.v3.JwtAuthentication.requirement_map>` in `JwtAuthentication`. Only one of `requirementName` or `requires` can be set. |
 
