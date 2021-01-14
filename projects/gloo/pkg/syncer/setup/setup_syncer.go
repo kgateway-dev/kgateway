@@ -1,4 +1,4 @@
-package syncer
+package setup
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 
 	"github.com/golang/protobuf/ptypes/duration"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -54,6 +56,9 @@ import (
 	"google.golang.org/grpc/reflection"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	extauthExt "github.com/solo-io/gloo/projects/gloo/pkg/syncer/extauth"
+	ratelimitExt "github.com/solo-io/gloo/projects/gloo/pkg/syncer/ratelimit"
 )
 
 type RunFunc func(opts bootstrap.Opts) error
@@ -304,7 +309,7 @@ type Extensions struct {
 	// Deprecated. Use PluginExtensionsFuncs instead.
 	PluginExtensions      []plugins.Plugin
 	PluginExtensionsFuncs []func() plugins.Plugin
-	SyncerExtensions      []TranslatorSyncerExtensionFactory
+	SyncerExtensions      []syncer.TranslatorSyncerExtensionFactory
 	XdsCallbacks          xdsserver.Callbacks
 }
 
@@ -359,7 +364,12 @@ func GetPluginsWithExtensions(opts bootstrap.Opts, extensions Extensions) func()
 }
 
 func RunGloo(opts bootstrap.Opts) error {
-	return RunGlooWithExtensions(opts, Extensions{})
+	return RunGlooWithExtensions(opts, Extensions{
+		SyncerExtensions: []syncer.TranslatorSyncerExtensionFactory{
+			ratelimitExt.NewTranslatorSyncerExtension,
+			extauthExt.NewTranslatorSyncerExtension,
+		},
+	})
 }
 
 func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
@@ -521,26 +531,33 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		routeReplacingSanitizer,
 	}
 
-	// Set up the syncer extension
-	var syncerExtensions []TranslatorSyncerExtension
 	reports := make(reporter.ResourceReports)
-	params := TranslatorSyncerExtensionParams{
+	params := syncer.TranslatorSyncerExtensionParams{
 		Reports: reports,
 		RateLimitServiceSettings: ratelimit.ServiceSettings{
 			Descriptors:    opts.Settings.GetRatelimit().GetDescriptors(),
 			SetDescriptors: opts.Settings.GetRatelimit().GetSetDescriptors(),
 		},
 	}
+
+	// Set up the syncer extension
+	syncerExtensions := []syncer.TranslatorSyncerExtension{}
+
+	upgradedExtensions := make(map[string]bool)
 	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
 		syncerExtension, err := syncerExtensionFactory(watchOpts.Ctx, params)
 		if err != nil {
 			logger.Errorw("Error initializing extension", "error", err)
 			continue
 		}
+		if extension, ok := syncerExtension.(syncer.UpgradeableTranslatorSyncerExtension); ok && extension.IsUpgrade() {
+			upgradedExtensions[extension.ExtensionName()] = true
+		}
 		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
+	syncerExtensions = reconcileUpgradedTranslatorSyncerExtensions(syncerExtensions, upgradedExtensions)
 
-	translationSync := NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions, opts.Settings)
+	translationSync := syncer.NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions, opts.Settings)
 
 	syncers := v1.ApiSyncers{
 		translationSync,
@@ -622,6 +639,29 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}()
 
 	return nil
+}
+
+// removes any redundant syncers, if we have added an upgraded version to replace them
+func reconcileUpgradedTranslatorSyncerExtensions(syncerList []syncer.TranslatorSyncerExtension, upgradedSyncers map[string]bool) []syncer.TranslatorSyncerExtension {
+	var syncersToDrop []int
+	for i, syncerExtension := range syncerList {
+		extension, upgradable := syncerExtension.(syncer.UpgradeableTranslatorSyncerExtension)
+		if upgradable {
+			_, inMap := upgradedSyncers[extension.ExtensionName()]
+			if inMap && !extension.IsUpgrade() {
+				// An upgraded version of this syncer exists,
+				// mark this one for removal
+				syncersToDrop = append(syncersToDrop, i)
+			}
+		}
+	}
+
+	// Walk back through the syncerList and remove the redundant syncers
+	for i := len(syncersToDrop) - 1; i >= 0; i-- {
+		badIndex := syncersToDrop[i]
+		syncerList = append(syncerList[:badIndex], syncerList[badIndex+1:]...)
+	}
+	return syncerList
 }
 
 func startRestXdsServer(opts bootstrap.Opts) {
