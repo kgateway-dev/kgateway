@@ -36,7 +36,6 @@ func RateLimitConfig(list ratelimit.RateLimitConfigList, w io.Writer) {
 			maxNumLines = len(descriptors)
 		}
 
-		// If
 		for i := 0; i < maxNumLines; i++ {
 			var a, d = "", ""
 			if i < len(descriptors) {
