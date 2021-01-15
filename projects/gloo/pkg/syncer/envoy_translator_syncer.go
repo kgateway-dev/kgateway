@@ -67,7 +67,7 @@ func measureResource(ctx context.Context, resource string, len int) {
 	}
 }
 
-func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot, allReports reporter.ResourceReports) (error) {
+func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot, allReports reporter.ResourceReports) error {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 
@@ -84,7 +84,6 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot, 
 	if contextutils.GetLogLevel() == zapcore.DebugLevel {
 		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
-
 
 	allReports.Accept(snap.Upstreams.AsInputResources()...)
 	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
