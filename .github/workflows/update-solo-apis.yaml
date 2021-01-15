@@ -1,8 +1,7 @@
 name: Update solo-apis
-on: pull_request
-#on:
-#  release:
-#    types: [created]'
+on:
+  release:
+    types: [created]
 jobs:
   publish-apis:
     name: Publish Gloo APIs
@@ -46,7 +45,7 @@ jobs:
             echo "No changes found"
           else
             echo "Changes found"
-            git commit -m "Sync Gloo APIs"
+            git commit -m "Sync Gloo APIs to ${{ github.event.release.tag_name }}"
             git checkout -B update-gloo-apis
             git remote add solo-apis git@github.com:solo-io/solo-apis.git
             git push solo-apis update-gloo-apis
