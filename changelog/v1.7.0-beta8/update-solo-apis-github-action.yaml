@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      On a Gloo OS release, push the open source protos to the solo-apis repository.
+    issueLink: https://github.com/solo-io/gloo/issues/3518
