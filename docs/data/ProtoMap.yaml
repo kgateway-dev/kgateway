@@ -1268,6 +1268,21 @@ apis:
   solo.io.envoy.type.v3.SemanticVersion:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/semantic_version.proto.sk/#SemanticVersion
     package: solo.io.envoy.type.v3
+  solo.io.udpa.annotations.FieldMigrateAnnotation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/migrate.proto.sk/#FieldMigrateAnnotation
+    package: solo.io.udpa.annotations
+  solo.io.udpa.annotations.FileMigrateAnnotation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/migrate.proto.sk/#FileMigrateAnnotation
+    package: solo.io.udpa.annotations
+  solo.io.udpa.annotations.MigrateAnnotation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/migrate.proto.sk/#MigrateAnnotation
+    package: solo.io.udpa.annotations
+  solo.io.udpa.annotations.StatusAnnotation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/status.proto.sk/#StatusAnnotation
+    package: solo.io.udpa.annotations
+  solo.io.udpa.annotations.VersioningAnnotation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/versioning.proto.sk/#VersioningAnnotation
+    package: solo.io.udpa.annotations
   static.options.gloo.solo.io.Host:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/static/static.proto.sk/#Host
     package: static.options.gloo.solo.io
@@ -1310,21 +1325,6 @@ apis:
   transformation.options.gloo.solo.io.Transformations:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#Transformations
     package: transformation.options.gloo.solo.io
-  udpa.annotations.FieldMigrateAnnotation:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/migrate.proto.sk/#FieldMigrateAnnotation
-    package: udpa.annotations
-  udpa.annotations.FileMigrateAnnotation:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/migrate.proto.sk/#FileMigrateAnnotation
-    package: udpa.annotations
-  udpa.annotations.MigrateAnnotation:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/migrate.proto.sk/#MigrateAnnotation
-    package: udpa.annotations
-  udpa.annotations.StatusAnnotation:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/status.proto.sk/#StatusAnnotation
-    package: udpa.annotations
-  udpa.annotations.VersioningAnnotation:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/versioning.proto.sk/#VersioningAnnotation
-    package: udpa.annotations
   validate.AnyRules:
     relativepath: reference/api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#AnyRules
     package: validate

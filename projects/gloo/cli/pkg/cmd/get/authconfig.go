@@ -15,11 +15,11 @@ func AuthConfig(opts *options.Options) *cobra.Command {
 		Short:   "read an authconfig or list authconfigs in a namespace",
 		Long:    "usage: glooctl get authconfig [NAME] [--namespace=namespace] [-o FORMAT]",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			virtualServices, err := common.GetAuthConfigs(common.GetName(args, opts), opts)
+			authConfigs, err := common.GetAuthConfigs(common.GetName(args, opts), opts)
 			if err != nil {
 				return err
 			}
-			_ = printers.PrintAuthConfigs(virtualServices, opts.Top.Output)
+			_ = printers.PrintAuthConfigs(authConfigs, opts.Top.Output)
 			return nil
 		},
 	}

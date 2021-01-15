@@ -11,13 +11,13 @@ import "validate/validate.proto";
 option java_package = "io.envoyproxy.solo.io.envoy.config.core.v3";
 option java_outer_classname = "HttpUriProto";
 option java_multiple_files = true;
-option (udpa.annotations.file_status).package_version_status = ACTIVE;
+option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // [#protodoc-title: HTTP Service URI ]
 
 // Envoy external URI descriptor
 message HttpUri {
-  option (udpa.annotations.versioning).previous_message_type = ".solo.io.envoy.api.v2.core.HttpUri";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = ".solo.io.envoy.api.v2.core.HttpUri";
 
   // The HTTP server URI. It should be a full FQDN with protocol, host and path.
   //

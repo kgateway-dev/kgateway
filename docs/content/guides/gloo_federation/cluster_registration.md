@@ -46,6 +46,9 @@ glooctl cluster register --cluster-name local --remote-context kind-local \
 </code></pre>
 {{< /notice >}}
 
+Cluster registration creates a KubernetesCluster CR that contains information about the cluster
+that was just registered, including its credentials.
+
 Credentials for the remote cluster are stored in a secret in the gloo-fed namespace. The secret name will be the same as the `cluster-name` specified when registering the cluster.
 
 ```
