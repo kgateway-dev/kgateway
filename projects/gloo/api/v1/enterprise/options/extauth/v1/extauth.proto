@@ -765,13 +765,13 @@ message ExtAuthConfig {
 @solo-kit:resource.xds-enabled
 */
 service ExtAuthDiscoveryService {
-  rpc StreamExtAuthConfig (stream envoy.api.v2.DiscoveryRequest) returns (stream envoy.api.v2.DiscoveryResponse) {
+  rpc StreamExtAuthConfig (stream .solo.io.envoy.api.v2.DiscoveryRequest) returns (stream .solo.io.envoy.api.v2.DiscoveryResponse) {
   }
 
-  rpc DeltaExtAuthConfig (stream envoy.api.v2.DeltaDiscoveryRequest) returns (stream envoy.api.v2.DeltaDiscoveryResponse) {
+  rpc DeltaExtAuthConfig (stream .solo.io.envoy.api.v2.DeltaDiscoveryRequest) returns (stream .solo.io.envoy.api.v2.DeltaDiscoveryResponse) {
   }
 
-  rpc FetchExtAuthConfig (envoy.api.v2.DiscoveryRequest) returns (envoy.api.v2.DiscoveryResponse) {
+  rpc FetchExtAuthConfig (.solo.io.envoy.api.v2.DiscoveryRequest) returns (.solo.io.envoy.api.v2.DiscoveryResponse) {
     option (google.api.http) = {
       post : "/v2/discovery:extauthconfig"
       body : "*"

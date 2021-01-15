@@ -158,21 +158,6 @@ apis:
   enterprise.gloo.solo.io.UserSession:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#UserSession
     package: enterprise.gloo.solo.io
-  envoy.api.v2.DeltaDiscoveryRequest:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#DeltaDiscoveryRequest
-    package: envoy.api.v2
-  envoy.api.v2.DeltaDiscoveryResponse:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#DeltaDiscoveryResponse
-    package: envoy.api.v2
-  envoy.api.v2.DiscoveryRequest:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#DiscoveryRequest
-    package: envoy.api.v2
-  envoy.api.v2.DiscoveryResponse:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#DiscoveryResponse
-    package: envoy.api.v2
-  envoy.api.v2.Resource:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#Resource
-    package: envoy.api.v2
   envoy.api.v2.filter.http.Extraction:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto.sk/#Extraction
     package: envoy.api.v2.filter.http
@@ -902,6 +887,21 @@ apis:
   shadowing.options.gloo.solo.io.RouteShadowing:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/shadowing/shadowing.proto.sk/#RouteShadowing
     package: shadowing.options.gloo.solo.io
+  solo.io.envoy.api.v2.DeltaDiscoveryRequest:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#DeltaDiscoveryRequest
+    package: solo.io.envoy.api.v2
+  solo.io.envoy.api.v2.DeltaDiscoveryResponse:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#DeltaDiscoveryResponse
+    package: solo.io.envoy.api.v2
+  solo.io.envoy.api.v2.DiscoveryRequest:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#DiscoveryRequest
+    package: solo.io.envoy.api.v2
+  solo.io.envoy.api.v2.DiscoveryResponse:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#DiscoveryResponse
+    package: solo.io.envoy.api.v2
+  solo.io.envoy.api.v2.Resource:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#Resource
+    package: solo.io.envoy.api.v2
   solo.io.envoy.api.v2.cluster.OutlierDetection:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/cluster/outlier_detection.proto.sk/#OutlierDetection
     package: solo.io.envoy.api.v2.cluster
