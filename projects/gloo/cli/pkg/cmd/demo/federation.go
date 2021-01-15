@@ -111,7 +111,6 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
    -keyout mtls.key -out mtls.crt -subj "/CN=solo.io"
 
-# TODO(awang) when #3339 goes in, use helm values to achieve this
 glooctl create secret tls --name failover-downstream --certchain tls.crt --privatekey tls.key --rootca mtls.crt
 
 # Revert back to cluster context $1
