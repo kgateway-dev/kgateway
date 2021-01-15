@@ -81,7 +81,8 @@ func NewTranslatorSyncer(
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	logger := contextutils.LoggerFrom(ctx)
 	var multiErr *multierror.Error
-	reports, err := s.syncEnvoy(ctx, snap)
+	reports := make(reporter.ResourceReports)
+	err := s.syncEnvoy(ctx, snap, reports)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
