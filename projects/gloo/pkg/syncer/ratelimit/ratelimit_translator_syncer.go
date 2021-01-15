@@ -26,7 +26,6 @@ const (
 )
 
 type TranslatorSyncerExtension struct {
-	reports reporter.ResourceReports
 }
 
 func (s *TranslatorSyncerExtension) ExtensionName() string {
@@ -38,10 +37,15 @@ func (s *TranslatorSyncerExtension) IsUpgrade() bool {
 }
 
 func NewTranslatorSyncerExtension(_ context.Context, params syncer.TranslatorSyncerExtensionParams) (syncer.TranslatorSyncerExtension, error) {
-	return &TranslatorSyncerExtension{reports: params.Reports}, nil
+	return &TranslatorSyncerExtension{}, nil
 }
 
-func (s *TranslatorSyncerExtension) Sync(ctx context.Context, snap *gloov1.ApiSnapshot, xdsCache envoycache.SnapshotCache) (string, error) {
+func (s *TranslatorSyncerExtension) Sync(
+	ctx context.Context,
+	snap *gloov1.ApiSnapshot,
+	xdsCache envoycache.SnapshotCache,
+	reports reporter.ResourceReports,
+) (string, error) {
 	ctx = contextutils.WithLogger(ctx, "rateLimitTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 
