@@ -9,7 +9,7 @@ import "validate/validate.proto";
 option java_package = "io.envoyproxy.solo.io.envoy.type.metadata.v3";
 option java_outer_classname = "MetadataProto";
 option java_multiple_files = true;
-option (udpa.annotations.file_status).package_version_status = ACTIVE;
+option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // [#protodoc-title: Metadata]
 
@@ -37,12 +37,12 @@ option (udpa.annotations.file_status).package_version_status = ACTIVE;
 //    - key: foo
 //
 message MetadataKey {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.type.metadata.v2.MetadataKey";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.type.metadata.v2.MetadataKey";
 
   // Specifies the segment in a path to retrieve value from Metadata.
   // Currently it is only supported to specify the key, i.e. field name, as one segment of a path.
   message PathSegment {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "envoy.type.metadata.v2.MetadataKey.PathSegment";
 
     oneof segment {
@@ -68,31 +68,31 @@ message MetadataKey {
 
 // Describes what kind of metadata.
 message MetadataKind {
-  option (udpa.annotations.versioning).previous_message_type =
+  option (solo.io.udpa.annotations.versioning).previous_message_type =
       "envoy.type.metadata.v2.MetadataKind";
 
   // Represents dynamic metadata associated with the request.
   message Request {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "envoy.type.metadata.v2.MetadataKind.Request";
   }
 
   // Represents metadata from :ref:`the route<envoy_api_field_config.route.v3.Route.metadata>`.
   message Route {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "envoy.type.metadata.v2.MetadataKind.Route";
   }
 
   // Represents metadata from :ref:`the upstream cluster<envoy_api_field_config.cluster.v3.Cluster.metadata>`.
   message Cluster {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "envoy.type.metadata.v2.MetadataKind.Cluster";
   }
 
   // Represents metadata from :ref:`the upstream
   // host<envoy_api_field_config.endpoint.v3.LbEndpoint.metadata>`.
   message Host {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "envoy.type.metadata.v2.MetadataKind.Host";
   }
 

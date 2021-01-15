@@ -7,7 +7,7 @@ import "udpa/annotations/status.proto";
 option java_package = "io.envoyproxy.solo.io.envoy.type.v3";
 option java_outer_classname = "HttpProto";
 option java_multiple_files = true;
-option (udpa.annotations.file_status).package_version_status = ACTIVE;
+option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // [#protodoc-title: HTTP]
 

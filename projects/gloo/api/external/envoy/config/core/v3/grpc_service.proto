@@ -18,7 +18,7 @@ import "validate/validate.proto";
 option java_package = "io.envoyproxy.solo.io.envoy.config.core.v3";
 option java_outer_classname = "GrpcServiceProto";
 option java_multiple_files = true;
-option (udpa.annotations.file_status).package_version_status = ACTIVE;
+option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // [#protodoc-title: gRPC services]
 
@@ -26,10 +26,10 @@ option (udpa.annotations.file_status).package_version_status = ACTIVE;
 // <envoy_api_msg_config.core.v3.ApiConfigSource>` and filter configurations.
 // [#next-free-field: 6]
 message GrpcService {
-  option (udpa.annotations.versioning).previous_message_type = ".solo.io.envoy.api.v2.core.GrpcService";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = ".solo.io.envoy.api.v2.core.GrpcService";
 
   message EnvoyGrpc {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "solo.io.envoy.api.v2.core.GrpcService.EnvoyGrpc";
 
     // The name of the upstream gRPC cluster. SSL credentials will be supplied
@@ -40,19 +40,19 @@ message GrpcService {
 
   // [#next-free-field: 9]
   message GoogleGrpc {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "solo.io.envoy.api.v2.core.GrpcService.GoogleGrpc";
 
     // See https://grpc.io/grpc/cpp/structgrpc_1_1_ssl_credentials_options.html.
     message SslCredentials {
-      option (udpa.annotations.versioning).previous_message_type =
+      option (solo.io.udpa.annotations.versioning).previous_message_type =
           "solo.io.envoy.api.v2.core.GrpcService.GoogleGrpc.SslCredentials";
 
       // PEM encoded server root certificates.
       DataSource root_certs = 1;
 
       // PEM encoded client private key.
-      DataSource private_key = 2 [(udpa.annotations.sensitive) = true];
+      DataSource private_key = 2 [(solo.io.udpa.annotations.sensitive) = true];
 
       // PEM encoded client certificate chain.
       DataSource cert_chain = 3;
@@ -61,14 +61,14 @@ message GrpcService {
     // Local channel credentials. Only UDS is supported for now.
     // See https://github.com/grpc/grpc/pull/15909.
     message GoogleLocalCredentials {
-      option (udpa.annotations.versioning).previous_message_type =
+      option (solo.io.udpa.annotations.versioning).previous_message_type =
           "solo.io.envoy.api.v2.core.GrpcService.GoogleGrpc.GoogleLocalCredentials";
     }
 
     // See https://grpc.io/docs/guides/auth.html#credential-types to understand Channel and Call
     // credential types.
     message ChannelCredentials {
-      option (udpa.annotations.versioning).previous_message_type =
+      option (solo.io.udpa.annotations.versioning).previous_message_type =
           "solo.io.envoy.api.v2.core.GrpcService.GoogleGrpc.ChannelCredentials";
 
       oneof credential_specifier {
@@ -85,11 +85,11 @@ message GrpcService {
 
     // [#next-free-field: 8]
     message CallCredentials {
-      option (udpa.annotations.versioning).previous_message_type =
+      option (solo.io.udpa.annotations.versioning).previous_message_type =
           "solo.io.envoy.api.v2.core.GrpcService.GoogleGrpc.CallCredentials";
 
       message ServiceAccountJWTAccessCredentials {
-        option (udpa.annotations.versioning).previous_message_type =
+        option (solo.io.udpa.annotations.versioning).previous_message_type =
             "solo.io.envoy.api.v2.core.GrpcService.GoogleGrpc.CallCredentials."
             "ServiceAccountJWTAccessCredentials";
 
@@ -99,7 +99,7 @@ message GrpcService {
       }
 
       message GoogleIAMCredentials {
-        option (udpa.annotations.versioning).previous_message_type =
+        option (solo.io.udpa.annotations.versioning).previous_message_type =
             "solo.io.envoy.api.v2.core.GrpcService.GoogleGrpc.CallCredentials.GoogleIAMCredentials";
 
         string authorization_token = 1;
@@ -108,7 +108,7 @@ message GrpcService {
       }
 
       message MetadataCredentialsFromPlugin {
-        option (udpa.annotations.versioning).previous_message_type =
+        option (solo.io.udpa.annotations.versioning).previous_message_type =
             "solo.io.envoy.api.v2.core.GrpcService.GoogleGrpc.CallCredentials."
             "MetadataCredentialsFromPlugin";
 
@@ -129,7 +129,7 @@ message GrpcService {
       // https://github.com/grpc/grpc/pull/19587.
       // [#next-free-field: 10]
       message StsService {
-        option (udpa.annotations.versioning).previous_message_type =
+        option (solo.io.udpa.annotations.versioning).previous_message_type =
             "solo.io.envoy.api.v2.core.GrpcService.GoogleGrpc.CallCredentials.StsService";
 
         // URI of the token exchange service that handles token exchange requests.

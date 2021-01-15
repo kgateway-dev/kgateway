@@ -1,13 +1,13 @@
 syntax = "proto3";
 
-package udpa.annotations;
+package solo.io.udpa.annotations;
 
 import "google/protobuf/descriptor.proto";
 
 // Magic number in this file derived from top 28bit of SHA256 digest of
-// "udpa.annotation.status".
+// "solo.io.udpa.annotation.status".
 extend google.protobuf.FileOptions {
-  StatusAnnotation file_status = 222707719;
+  StatusAnnotation file_status = 254737244;
 }
 
 enum PackageVersionStatus {
