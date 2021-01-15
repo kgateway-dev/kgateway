@@ -65,6 +65,8 @@ spec:
   - {{ $name | kebabcase }}
 {{- end }}
 
+---
+
 {{- if $spec.failover }}
 {{- if $spec.failover.enabled }}
 apiVersion: gateway.solo.io/v1
