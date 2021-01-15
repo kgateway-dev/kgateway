@@ -170,7 +170,7 @@ func (v *validator) validateSnapshotThreadSafe(ctx context.Context, apply applyR
 }
 
 func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, dryRun bool) (ProxyReports, error) {
-	// validate that a snapshot can by modified
+	// validate that a snapshot can be modified
 	// should be called within a lock
 	//
 	// validation occurs by the following steps:
