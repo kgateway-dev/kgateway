@@ -31,7 +31,6 @@ type translatorSyncer struct {
 }
 
 type TranslatorSyncerExtensionParams struct {
-	Reports                  reporter.ResourceReports
 	RateLimitServiceSettings ratelimit.ServiceSettings
 }
 
@@ -43,10 +42,24 @@ type UpgradeableTranslatorSyncerExtension interface {
 }
 
 type TranslatorSyncerExtension interface {
-	Sync(ctx context.Context, snap *v1.ApiSnapshot, xdsCache envoycache.SnapshotCache) (string, error)
+	Sync(
+		ctx context.Context,
+		snap *v1.ApiSnapshot,
+		xdsCache envoycache.SnapshotCache,
+		reports reporter.ResourceReports,
+	) (string, error)
 }
 
-func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.SnapshotCache, xdsHasher *xds.ProxyKeyHasher, sanitizer sanitizer.XdsSanitizer, reporter reporter.Reporter, devMode bool, extensions []TranslatorSyncerExtension, settings *v1.Settings) v1.ApiSyncer {
+func NewTranslatorSyncer(
+	translator translator.Translator,
+	xdsCache envoycache.SnapshotCache,
+	xdsHasher *xds.ProxyKeyHasher,
+	sanitizer sanitizer.XdsSanitizer,
+	reporter reporter.Reporter,
+	devMode bool,
+	extensions []TranslatorSyncerExtension,
+	settings *v1.Settings,
+) v1.ApiSyncer {
 	s := &translatorSyncer{
 		translator: translator,
 		xdsCache:   xdsCache,
@@ -74,7 +87,8 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	}
 	s.extensionKeys = map[string]struct{}{}
 	for _, extension := range s.extensions {
-		nodeID, err := extension.Sync(ctx, snap, s.xdsCache)
+
+		nodeID, err := extension.Sync(ctx, snap, s.xdsCache, reports)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
