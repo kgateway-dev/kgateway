@@ -531,9 +531,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		routeReplacingSanitizer,
 	}
 
-	reports := make(reporter.ResourceReports)
 	params := syncer.TranslatorSyncerExtensionParams{
-		Reports: reports,
 		RateLimitServiceSettings: ratelimit.ServiceSettings{
 			Descriptors:    opts.Settings.GetRatelimit().GetDescriptors(),
 			SetDescriptors: opts.Settings.GetRatelimit().GetSetDescriptors(),
