@@ -161,14 +161,33 @@ func (v *validator) deleteFromLocalSnapshot(resource resources.Resource) {
 	}
 }
 
-func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, dryRun, acquireLock bool) (ProxyReports, error) {
+func (v *validator) validateSnapshotThreadSafe(ctx context.Context, apply applyResource, dryRun bool) (ProxyReports, error) {
+	// thread-safe implementation of validateSnapshot
+	v.lock.Lock()
+	defer v.lock.Unlock()
+
+	return v.validateSnapshot(ctx, apply, dryRun)
+}
+
+func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, dryRun bool) (ProxyReports, error) {
+	// validate that a snapshot can be modified
+	// should be called within a lock
+	//
+	// validation occurs by the following steps:
+	//	1. Clone the most recent snapshot
+	//	2. Apply the changes to that snapshot clone
+	//	3. Validate the generated proxy of that snapshot clone by making a gRPC call to Gloo.
+	//	4. If the proxy is valid, we know that the requested mutation is valid. If this request happens
+	//		during a dry run, we don't want to actually apply the change, since this will modify the internal
+	//		state of the validator, which is shared across requests. Therefore, only if we are not in a dry run,
+	//		we apply the mutation.
 	if !v.ready() {
 		return nil, NotReadyErr
 	}
 
 	ctx = contextutils.WithLogger(ctx, "gateway-validator")
 
-	snap := v.latestSnapshot.Clone()
+	snapshotClone := v.latestSnapshot.Clone()
 
 	if v.latestSnapshotErr != nil {
 		utils2.MeasureZero(ctx, mValidConfig)
@@ -178,9 +197,11 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 	}
 
 	utils2.MeasureOne(ctx, mValidConfig)
-	proxyNames, resource, ref := apply(&snap)
 
-	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
+	// verify the mutation against a snapshot clone first, only apply the change to the actual snapshot if this passes
+	proxyNames, resource, ref := apply(&snapshotClone)
+
+	gatewaysByProxy := utils.GatewaysByProxyName(snapshotClone.Gateways)
 
 	var (
 		errs         error
@@ -188,7 +209,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 	)
 	for _, proxyName := range proxyNames {
 		gatewayList := gatewaysByProxy[proxyName]
-		proxy, reports := v.translator.Translate(ctx, proxyName, v.writeNamespace, &snap, gatewayList)
+		proxy, reports := v.translator.Translate(ctx, proxyName, v.writeNamespace, &snapshotClone, gatewayList)
 		validate := reports.ValidateStrict
 		if v.allowWarnings {
 			validate = reports.Validate
@@ -246,13 +267,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 
 	if !dryRun {
 		// update internal snapshot to handle race where a lot of resources may be applied at once, before syncer updates
-		if acquireLock {
-			v.lock.Lock()
-		}
 		apply(v.latestSnapshot)
-		if acquireLock {
-			v.lock.Unlock()
-		}
 	}
 
 	return proxyReports, nil
@@ -266,7 +281,7 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 
 	v.lock.Lock()
 	defer v.lock.Unlock()
-	snap := v.latestSnapshot.Clone()
+	originalSnapshot := v.latestSnapshot.Clone()
 
 	for _, item := range ul.Items {
 
@@ -281,13 +296,20 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 	}
 
 	if dryRun {
-		v.latestSnapshot = &snap
+		// to validate the entire list of changes against one another, each item was applied to the latestSnapshot
+		// if this is a dry run, latestSnapshot needs to be reset back to it's original value without any of the changes
+		v.latestSnapshot = &originalSnapshot
 	}
 
 	return proxyReports, errs
 }
 
 func (v *validator) processItem(ctx context.Context, item unstructured.Unstructured) (ProxyReports, error) {
+	// process a single change in a list of changes
+	//
+	// when calling the specific internal validate method, dryRun and acquireLock are always false:
+	// 	dryRun=false: this enables items to be validated against other items in the list
+	// 	acquireLock=false: the entire list of changes are called within a single lock
 	gv, err := schema.ParseGroupVersion(item.GetAPIVersion())
 	if err != nil {
 		return ProxyReports{}, err
@@ -360,7 +382,11 @@ func (v *validator) validateVirtualServiceInternal(ctx context.Context, vs *v1.V
 		return proxiesForVirtualService(snap.Gateways, vs), vs, vsRef
 	}
 
-	return v.validateSnapshot(ctx, apply, dryRun, acquireLock)
+	if acquireLock {
+		return v.validateSnapshotThreadSafe(ctx, apply, dryRun)
+	} else {
+		return v.validateSnapshot(ctx, apply, dryRun)
+	}
 }
 
 func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef *core.ResourceRef, dryRun bool) error {
@@ -438,7 +464,11 @@ func (v *validator) validateRouteTableInternal(ctx context.Context, rt *v1.Route
 		return proxiesToConsider, rt, rtRef
 	}
 
-	return v.validateSnapshot(ctx, apply, dryRun, acquireLock)
+	if acquireLock {
+		return v.validateSnapshotThreadSafe(ctx, apply, dryRun)
+	} else {
+		return v.validateSnapshot(ctx, apply, dryRun)
+	}
 }
 
 func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef *core.ResourceRef, dryRun bool) error {
@@ -446,8 +476,8 @@ func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef *core.Re
 		return errors.Errorf("Gateway validation is yet not available. Waiting for first snapshot")
 	}
 	v.lock.Lock()
-	snap := v.latestSnapshot.Clone()
 	defer v.lock.Unlock()
+	snap := v.latestSnapshot.Clone()
 
 	rt, err := snap.RouteTables.Find(rtRef.Strings())
 	if err != nil {
@@ -516,7 +546,11 @@ func (v *validator) validateGatewayInternal(ctx context.Context, gw *v1.Gateway,
 		return proxiesToConsider, gw, gwRef
 	}
 
-	return v.validateSnapshot(ctx, apply, dryRun, acquireLock)
+	if acquireLock {
+		return v.validateSnapshotThreadSafe(ctx, apply, dryRun)
+	} else {
+		return v.validateSnapshot(ctx, apply, dryRun)
+	}
 }
 
 func proxiesForVirtualService(gwList v1.GatewayList, vs *v1.VirtualService) []string {
