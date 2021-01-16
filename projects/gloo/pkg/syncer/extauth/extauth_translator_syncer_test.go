@@ -41,7 +41,6 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 		proxyClient, err = resourceClientFactory.NewResourceClient(ctx, factory.NewResourceClientParams{ResourceType: &gloov1.Proxy{}})
 		Expect(err).NotTo(HaveOccurred())
 
-		params.Reports = make(reporter.ResourceReports)
 		translator, err = NewTranslatorSyncerExtension(ctx, params)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -71,7 +70,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 
 	Context("config with enterprise extauth feature is set on listener", func() {
 		It("should error when enterprise extauth config is set", func() {
-			_, err := translator.Sync(ctx, apiSnapshot, snapCache)
+			_, err := translator.Sync(ctx, apiSnapshot, snapCache, make(reporter.ResourceReports))
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ErrEnterpriseOnly))
 		})

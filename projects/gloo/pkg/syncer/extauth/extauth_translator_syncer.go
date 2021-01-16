@@ -24,9 +24,7 @@ const (
 	ErrEnterpriseOnly = "The Gloo Advanced Extauth API is an enterprise-only feature, please upgrade or use the Envoy Extauth API instead"
 )
 
-type TranslatorSyncerExtension struct {
-	reports reporter.ResourceReports
-}
+type TranslatorSyncerExtension struct{}
 
 func (s *TranslatorSyncerExtension) ExtensionName() string {
 	return Name
@@ -36,11 +34,19 @@ func (s *TranslatorSyncerExtension) IsUpgrade() bool {
 	return false
 }
 
-func NewTranslatorSyncerExtension(_ context.Context, params syncer.TranslatorSyncerExtensionParams) (syncer.TranslatorSyncerExtension, error) {
-	return &TranslatorSyncerExtension{reports: params.Reports}, nil
+func NewTranslatorSyncerExtension(
+	_ context.Context,
+	params syncer.TranslatorSyncerExtensionParams,
+) (syncer.TranslatorSyncerExtension, error) {
+	return &TranslatorSyncerExtension{}, nil
 }
 
-func (s *TranslatorSyncerExtension) Sync(ctx context.Context, snap *gloov1.ApiSnapshot, xdsCache envoycache.SnapshotCache) (string, error) {
+func (s *TranslatorSyncerExtension) Sync(
+	ctx context.Context,
+	snap *gloov1.ApiSnapshot,
+	xdsCache envoycache.SnapshotCache,
+	reports reporter.ResourceReports,
+) (string, error) {
 	ctx = contextutils.WithLogger(ctx, "extAuthTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 
