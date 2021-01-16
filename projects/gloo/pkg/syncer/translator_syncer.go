@@ -88,11 +88,12 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	}
 	s.extensionKeys = map[string]struct{}{}
 	for _, extension := range s.extensions {
-
-		nodeID, err := extension.Sync(ctx, snap, s.xdsCache, reports)
+		intermediateReports := make(reporter.ResourceReports)
+		nodeID, err := extension.Sync(ctx, snap, s.xdsCache, intermediateReports)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
+		reports.Merge(intermediateReports)
 		s.extensionKeys[nodeID] = struct{}{}
 	}
 
