@@ -523,9 +523,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	// Set up the syncer extension
 	var syncerExtensions []TranslatorSyncerExtension
-	reports := make(reporter.ResourceReports)
 	params := TranslatorSyncerExtensionParams{
-		Reports: reports,
 		RateLimitServiceSettings: ratelimit.ServiceSettings{
 			Descriptors:    opts.Settings.GetRatelimit().GetDescriptors(),
 			SetDescriptors: opts.Settings.GetRatelimit().GetSetDescriptors(),

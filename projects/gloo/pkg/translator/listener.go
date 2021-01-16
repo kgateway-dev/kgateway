@@ -186,7 +186,7 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 	for _, sslConfig := range sslConfigs {
 
 		// make sure ssl configs are only different by sni domains
-		sslConfigCopy := *sslConfig
+		sslConfigCopy := proto.Clone(sslConfig).(*v1.SslConfig)
 		sslConfigCopy.SniDomains = nil
 		hash, _ := sslConfigCopy.Hash(nil)
 
@@ -200,8 +200,7 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 				matchingCfg.SniDomains = merge(matchingCfg.SniDomains, sslConfig.SniDomains...)
 			}
 		} else {
-			cfgCopy := *sslConfig
-			ptrToCopy := &cfgCopy
+			ptrToCopy := proto.Clone(sslConfig).(*v1.SslConfig)
 			mergedSslSecrets[key] = ptrToCopy
 			result = append(result, ptrToCopy)
 		}
