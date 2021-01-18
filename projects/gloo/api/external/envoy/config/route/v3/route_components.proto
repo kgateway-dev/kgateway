@@ -26,7 +26,7 @@ import "validate/validate.proto";
 option java_package = "io.envoyproxy.solo.io.envoy.config.route.v3";
 option java_outer_classname = "RouteComponentsProto";
 option java_multiple_files = true;
-option (udpa.annotations.file_status).package_version_status = ACTIVE;
+option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // [#protodoc-title: HTTP route components]
 // * Routing :ref:`architecture overview <arch_overview_http_routing>`
@@ -39,7 +39,7 @@ option (udpa.annotations.file_status).package_version_status = ACTIVE;
 // upstream cluster to route to or whether to perform a redirect.
 // [#next-free-field: 21]
 message VirtualHost {
-  option (udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.VirtualHost";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.VirtualHost";
 
   enum TlsRequirementType {
     // No TLS requirement for the virtual host.
@@ -186,7 +186,7 @@ message VirtualHost {
 
 // A filter-defined action type.
 message FilterAction {
-  option (udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.FilterAction";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.FilterAction";
 
   google.protobuf.Any action = 1;
 }
@@ -200,7 +200,7 @@ message FilterAction {
 //   <envoy_api_msg_config.route.v3.HeaderMatcher>`.
 // [#next-free-field: 18]
 message Route {
-  option (udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.Route";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.Route";
 
   reserved 6, 8;
 
@@ -294,11 +294,11 @@ message Route {
 // traffic to be forwarded to each cluster. The router selects an upstream cluster based on the
 // weights.
 message WeightedCluster {
-  option (udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.WeightedCluster";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.WeightedCluster";
 
   // [#next-free-field: 11]
   message ClusterWeight {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "solo.io.envoy.api.v2.route.WeightedCluster.ClusterWeight";
 
     reserved 7, 8;
@@ -378,15 +378,15 @@ message WeightedCluster {
 
 // [#next-free-field: 13]
 message RouteMatch {
-  option (udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.RouteMatch";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.RouteMatch";
 
   message GrpcRouteMatchOptions {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "solo.io.envoy.api.v2.route.RouteMatch.GrpcRouteMatchOptions";
   }
 
   message TlsContextMatchOptions {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "solo.io.envoy.api.v2.route.RouteMatch.TlsContextMatchOptions";
 
     // If specified, the route will match against whether or not a certificate is presented.
@@ -493,7 +493,7 @@ message RouteMatch {
 
 // [#next-free-field: 12]
 message CorsPolicy {
-  option (udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.CorsPolicy";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.CorsPolicy";
 
   reserved 1, 8, 7;
 
@@ -543,7 +543,7 @@ message CorsPolicy {
 
 // [#next-free-field: 35]
 message RouteAction {
-  option (udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.RouteAction";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.RouteAction";
 
   enum ClusterNotFoundResponseCode {
     // HTTP status code - 503 Service Unavailable.
@@ -574,7 +574,7 @@ message RouteAction {
   //
   //   Shadowing will not be triggered if the primary cluster does not exist.
   message RequestMirrorPolicy {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "solo.io.envoy.api.v2.route.RouteAction.RequestMirrorPolicy";
 
     reserved 2;
@@ -603,11 +603,11 @@ message RouteAction {
   // <arch_overview_load_balancing_types>`.
   // [#next-free-field: 7]
   message HashPolicy {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "solo.io.envoy.api.v2.route.RouteAction.HashPolicy";
 
     message Header {
-      option (udpa.annotations.versioning).previous_message_type =
+      option (solo.io.udpa.annotations.versioning).previous_message_type =
           "solo.io.envoy.api.v2.route.RouteAction.HashPolicy.Header";
 
       // The name of the request header that will be used to obtain the hash
@@ -636,7 +636,7 @@ message RouteAction {
     //    streams on the same connection will independently receive the same
     //    cookie, even if they arrive at the Envoy simultaneously.
     message Cookie {
-      option (udpa.annotations.versioning).previous_message_type =
+      option (solo.io.udpa.annotations.versioning).previous_message_type =
           "solo.io.envoy.api.v2.route.RouteAction.HashPolicy.Cookie";
 
       // The name of the cookie that will be used to obtain the hash key. If the
@@ -655,7 +655,7 @@ message RouteAction {
     }
 
     message ConnectionProperties {
-      option (udpa.annotations.versioning).previous_message_type =
+      option (solo.io.udpa.annotations.versioning).previous_message_type =
           "solo.io.envoy.api.v2.route.RouteAction.HashPolicy.ConnectionProperties";
 
       // Hash on source IP address.
@@ -663,7 +663,7 @@ message RouteAction {
     }
 
     message QueryParameter {
-      option (udpa.annotations.versioning).previous_message_type =
+      option (solo.io.udpa.annotations.versioning).previous_message_type =
           "solo.io.envoy.api.v2.route.RouteAction.HashPolicy.QueryParameter";
 
       // The name of the URL query parameter that will be used to obtain the hash
@@ -673,7 +673,7 @@ message RouteAction {
     }
 
     message FilterState {
-      option (udpa.annotations.versioning).previous_message_type =
+      option (solo.io.udpa.annotations.versioning).previous_message_type =
           "solo.io.envoy.api.v2.route.RouteAction.HashPolicy.FilterState";
 
       // The name of the Object in the per-request filterState, which is an
@@ -730,7 +730,7 @@ message RouteAction {
   // <envoy_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.upgrade_configs>`
   // but does not affect any custom filter chain specified there.
   message UpgradeConfig {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "solo.io.envoy.api.v2.route.RouteAction.UpgradeConfig";
 
     // Configuration for sending data upstream as a raw data payload. This is used for
@@ -1031,10 +1031,10 @@ message RouteAction {
 // HTTP retry :ref:`architecture overview <arch_overview_http_routing_retry>`.
 // [#next-free-field: 11]
 message RetryPolicy {
-  option (udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.RetryPolicy";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.RetryPolicy";
 
   message RetryPriority {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "solo.io.envoy.api.v2.route.RetryPolicy.RetryPriority";
 
     reserved 2;
@@ -1049,7 +1049,7 @@ message RetryPolicy {
   }
 
   message RetryHostPredicate {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "solo.io.envoy.api.v2.route.RetryPolicy.RetryHostPredicate";
 
     reserved 2;
@@ -1064,7 +1064,7 @@ message RetryPolicy {
   }
 
   message RetryBackOff {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "solo.io.envoy.api.v2.route.RetryPolicy.RetryBackOff";
 
     // Specifies the base interval between retries. This parameter is required and must be greater
@@ -1092,7 +1092,7 @@ message RetryPolicy {
   // defaults to 1. These are the same conditions documented for
   // :ref:`config_http_filters_router_x-envoy-max-retries`.
   google.protobuf.UInt32Value num_retries = 2
-      [(udpa.annotations.field_migrate).rename = "max_retries"];
+      [(solo.io.udpa.annotations.field_migrate).rename = "max_retries"];
 
   // Specifies a non-zero upstream timeout per retry attempt. This parameter is optional. The
   // same conditions documented for
@@ -1144,7 +1144,7 @@ message RetryPolicy {
 
 // HTTP request hedging :ref:`architecture overview <arch_overview_http_routing_hedging>`.
 message HedgePolicy {
-  option (udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.HedgePolicy";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.HedgePolicy";
 
   // Specifies the number of initial requests that should be sent upstream.
   // Must be at least 1.
@@ -1171,7 +1171,7 @@ message HedgePolicy {
 
 // [#next-free-field: 9]
 message RedirectAction {
-  option (udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.RedirectAction";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.RedirectAction";
 
   enum RedirectResponseCode {
     // Moved Permanently HTTP Status Code - 301.
@@ -1252,7 +1252,7 @@ message RedirectAction {
 }
 
 message DirectResponseAction {
-  option (udpa.annotations.versioning).previous_message_type =
+  option (solo.io.udpa.annotations.versioning).previous_message_type =
       "solo.io.envoy.api.v2.route.DirectResponseAction";
 
   // Specifies the HTTP response status to be returned.
@@ -1270,7 +1270,7 @@ message DirectResponseAction {
 }
 
 message Decorator {
-  option (udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.Decorator";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.Decorator";
 
   // The operation name associated with the request matched to this route. If tracing is
   // enabled, this information will be used as the span name reported for this request.
@@ -1287,7 +1287,7 @@ message Decorator {
 }
 
 message Tracing {
-  option (udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.Tracing";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.Tracing";
 
   // Target percentage of requests managed by this HTTP connection manager that will be force
   // traced if the :ref:`x-client-trace-id <config_http_conn_man_headers_x-client-trace-id>`
@@ -1341,7 +1341,7 @@ message Tracing {
 //    every application endpoint. This is both not easily maintainable and as well the matching and
 //    statistics output are not free.
 message VirtualCluster {
-  option (udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.VirtualCluster";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.VirtualCluster";
 
   reserved 1, 3;
 
@@ -1360,11 +1360,11 @@ message VirtualCluster {
 
 // Global rate limiting :ref:`architecture overview <arch_overview_global_rate_limit>`.
 message RateLimit {
-  option (udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.RateLimit";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.RateLimit";
 
   // [#next-free-field: 8]
   message Action {
-    option (udpa.annotations.versioning).previous_message_type =
+    option (solo.io.udpa.annotations.versioning).previous_message_type =
         "solo.io.envoy.api.v2.route.RateLimit.Action";
 
     // The following descriptor entry is appended to the descriptor:
@@ -1375,7 +1375,7 @@ message RateLimit {
     //
     // <local service cluster> is derived from the :option:`--service-cluster` option.
     message SourceCluster {
-      option (udpa.annotations.versioning).previous_message_type =
+      option (solo.io.udpa.annotations.versioning).previous_message_type =
           "solo.io.envoy.api.v2.route.RateLimit.Action.SourceCluster";
     }
 
@@ -1396,7 +1396,7 @@ message RateLimit {
     // * :ref:`cluster_header <envoy_api_field_config.route.v3.RouteAction.cluster_header>` indicates which
     //   header in the request contains the target cluster.
     message DestinationCluster {
-      option (udpa.annotations.versioning).previous_message_type =
+      option (solo.io.udpa.annotations.versioning).previous_message_type =
           "solo.io.envoy.api.v2.route.RateLimit.Action.DestinationCluster";
     }
 
@@ -1407,7 +1407,7 @@ message RateLimit {
     //
     //   ("<descriptor_key>", "<header_value_queried_from_header>")
     message RequestHeaders {
-      option (udpa.annotations.versioning).previous_message_type =
+      option (solo.io.udpa.annotations.versioning).previous_message_type =
           "solo.io.envoy.api.v2.route.RateLimit.Action.RequestHeaders";
 
       // The header name to be queried from the request headers. The header’s
@@ -1433,7 +1433,7 @@ message RateLimit {
     //
     //   ("remote_address", "<trusted address from x-forwarded-for>")
     message RemoteAddress {
-      option (udpa.annotations.versioning).previous_message_type =
+      option (solo.io.udpa.annotations.versioning).previous_message_type =
           "solo.io.envoy.api.v2.route.RateLimit.Action.RemoteAddress";
     }
 
@@ -1443,7 +1443,7 @@ message RateLimit {
     //
     //   ("generic_key", "<descriptor_value>")
     message GenericKey {
-      option (udpa.annotations.versioning).previous_message_type =
+      option (solo.io.udpa.annotations.versioning).previous_message_type =
           "solo.io.envoy.api.v2.route.RateLimit.Action.GenericKey";
 
       // The value to use in the descriptor entry.
@@ -1456,7 +1456,7 @@ message RateLimit {
     //
     //   ("header_match", "<descriptor_value>")
     message HeaderValueMatch {
-      option (udpa.annotations.versioning).previous_message_type =
+      option (solo.io.udpa.annotations.versioning).previous_message_type =
           "solo.io.envoy.api.v2.route.RateLimit.Action.HeaderValueMatch";
 
       // The value to use in the descriptor entry.
@@ -1587,7 +1587,7 @@ message RateLimit {
 //  [#next-major-version: HeaderMatcher should be refactored to use StringMatcher.]
 // [#next-free-field: 12]
 message HeaderMatcher {
-  option (udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.HeaderMatcher";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "solo.io.envoy.api.v2.route.HeaderMatcher";
 
   reserved 2, 3, 5;
 
@@ -1654,7 +1654,7 @@ message HeaderMatcher {
 // as an ampersand-separated list of keys and/or key=value elements.
 // [#next-free-field: 7]
 message QueryParameterMatcher {
-  option (udpa.annotations.versioning).previous_message_type =
+  option (solo.io.udpa.annotations.versioning).previous_message_type =
       "solo.io.envoy.api.v2.route.QueryParameterMatcher";
 
   reserved 3, 4;

@@ -11,13 +11,13 @@ import "validate/validate.proto";
 option java_package = "io.envoyproxy.solo.io.envoy.config.core.v3";
 option java_outer_classname = "BackoffProto";
 option java_multiple_files = true;
-option (udpa.annotations.file_status).package_version_status = ACTIVE;
+option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // [#protodoc-title: Backoff Strategy]
 
 // Configuration defining a jittered exponential back off strategy.
 message BackoffStrategy {
-  option (udpa.annotations.versioning).previous_message_type = ".solo.io.envoy.api.v2.core.BackoffStrategy";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = ".solo.io.envoy.api.v2.core.BackoffStrategy";
 
   // The base interval to be used for the next back off computation. It should
   // be greater than zero and less than or equal to :ref:`max_interval

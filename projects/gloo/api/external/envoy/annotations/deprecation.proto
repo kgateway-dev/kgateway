@@ -10,15 +10,15 @@ import "google/protobuf/descriptor.proto";
 // is reversible with :ref:`runtime overrides <config_runtime_deprecation>`.
 
 // Magic number in this file derived from top 28bit of SHA256 digest of
-// "envoy.annotation.disallowed_by_default"
+// "solo.io.envoy.annotation.disallowed_by_default"
 extend google.protobuf.FieldOptions {
-  bool disallowed_by_default = 189503208;
+  bool disallowed_by_default = 246172783;
 }
 
 // Magic number in this file derived from top 28bit of SHA256 digest of
-// "envoy.annotation.disallowed_by_default_enum"
+// "solo.io.envoy.annotation.disallowed_by_default_enum"
 extend google.protobuf.EnumValueOptions {
-  bool disallowed_by_default_enum = 70100854;
+  bool disallowed_by_default_enum = 178329844;
 }
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/annotations";
 import "extproto/ext.proto";

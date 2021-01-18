@@ -12,14 +12,14 @@ import "validate/validate.proto";
 option java_package = "io.envoyproxy.solo.io.envoy.type.matcher.v3";
 option java_outer_classname = "StringProto";
 option java_multiple_files = true;
-option (udpa.annotations.file_status).package_version_status = ACTIVE;
+option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // [#protodoc-title: String matcher]
 
 // Specifies the way to match a string.
 // [#next-free-field: 7]
 message StringMatcher {
-  option (udpa.annotations.versioning).previous_message_type = "envoy.type.matcher.StringMatcher";
+  option (solo.io.udpa.annotations.versioning).previous_message_type = "envoy.type.matcher.StringMatcher";
 
   reserved 4;
 
@@ -63,7 +63,7 @@ message StringMatcher {
 
 // Specifies a list of ways to match a string.
 message ListStringMatcher {
-  option (udpa.annotations.versioning).previous_message_type =
+  option (solo.io.udpa.annotations.versioning).previous_message_type =
       "envoy.type.matcher.ListStringMatcher";
 
   repeated StringMatcher patterns = 1 [(validate.rules).repeated = {min_items: 1}];

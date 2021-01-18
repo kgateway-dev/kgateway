@@ -1,30 +1,30 @@
 syntax = "proto3";
 
-package udpa.annotations;
+package solo.io.udpa.annotations;
 
 import "google/protobuf/descriptor.proto";
 
 // Magic number in this file derived from top 28bit of SHA256 digest of
-// "udpa.annotation.migrate".
+// "solo.io.udpa.annotation.migrate".
 
 extend google.protobuf.MessageOptions {
-  MigrateAnnotation message_migrate = 171962766;
+  MigrateAnnotation message_migrate = 146192544;
 }
 
 extend google.protobuf.FieldOptions {
-  FieldMigrateAnnotation field_migrate = 171962766;
+  FieldMigrateAnnotation field_migrate = 146192544;
 }
 
 extend google.protobuf.EnumOptions {
-  MigrateAnnotation enum_migrate = 171962766;
+  MigrateAnnotation enum_migrate = 146192544;
 }
 
 extend google.protobuf.EnumValueOptions {
-  MigrateAnnotation enum_value_migrate = 171962766;
+  MigrateAnnotation enum_value_migrate = 146192544;
 }
 
 extend google.protobuf.FileOptions {
-  FileMigrateAnnotation file_migrate = 171962766;
+  FileMigrateAnnotation file_migrate = 146192544;
 }
 
 message MigrateAnnotation {

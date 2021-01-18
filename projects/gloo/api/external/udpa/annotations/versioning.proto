@@ -1,12 +1,13 @@
 syntax = "proto3";
 
-package udpa.annotations;
+package solo.io.udpa.annotations;
 
 import "google/protobuf/descriptor.proto";
 
 extend google.protobuf.MessageOptions {
-  // Magic number derived from 0x78 ('x') 0x44 ('D') 0x53 ('S')
-  VersioningAnnotation versioning = 7881811;
+  // Magic number in this file derived from top 28bit of SHA256 digest of
+  // "solo.io.udpa.annotation.versioning".
+  VersioningAnnotation versioning = 138081409;
 }
 
 message VersioningAnnotation {

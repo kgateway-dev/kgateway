@@ -13,7 +13,7 @@ option (extproto.equal_all) = true;
 option java_package = "io.envoyproxy.envoy.config.health_checker.http_path.v2";
 option java_outer_classname = "HttpPath";
 option java_multiple_files = true;
-option (udpa.annotations.file_status).package_version_status = ACTIVE;
+option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // Same as HTTP health checker, but allows a custom path per endpoint
 // The http path to use can be overriden using endpoint metadata. The endpoint specific path should
