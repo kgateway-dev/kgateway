@@ -440,16 +440,20 @@ metadata:
   namespace: gloo-system
 spec:
   configs:
-  - oauth:
-      app_url: http://localhost:8080/
-      callback_path: /callback
-      client_id: gloo
-      client_secret_ref:
-        name: oauth
-        namespace: gloo-system
-      issuer_url: http://dex.gloo-system.svc.cluster.local:32000/
-      scopes:
-      - email
+  - oauth2:
+      oidcAuthorizationCode:
+        app_url: http://localhost:8080
+        callback_path: /callback
+        client_id: gloo
+        client_secret_ref:
+          name: oauth
+          namespace: gloo-system
+        issuer_url: http://dex.gloo-system.svc.cluster.local:32000/
+        session:
+          cookieOptions:
+            notSecure: true
+        scopes:
+        - email
   - opa_auth:
       modules:
       - name: allow-jwt

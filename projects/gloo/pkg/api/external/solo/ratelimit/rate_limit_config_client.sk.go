@@ -106,7 +106,12 @@ func (client *rateLimitConfigClient) Watch(namespace string, opts clients.WatchO
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				ratelimitconfigsChan <- convertToRateLimitConfig(resourceList)
+				select {
+				case ratelimitconfigsChan <- convertToRateLimitConfig(resourceList):
+				case <-opts.Ctx.Done():
+					close(ratelimitconfigsChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(ratelimitconfigsChan)
 				return

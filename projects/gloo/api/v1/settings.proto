@@ -339,6 +339,36 @@ message Settings {
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation
     core.solo.io.Status status = 15 [(extproto.skip_hashing) = true];
+
+    message ObservabilityOptions {
+
+        // Provides settings related to the observability pod's interactions with grafana
+        message GrafanaIntegration {
+
+            // (UInt32Value) Grafana allows dashboards to be added to specific folders by specifying that folder's ID
+            // If unset, automatic upstream dashboards are generated in the general folder (folderId: 0).
+            // If set, the observability deployment will try to create/move all upstreams without their own folderId
+            // to the folder specified here, after verifying that a folder with such an ID exists.
+            // Be aware that grafana requires a folders ID, which
+            // should not be confused with the similarly-named and more easily accessible folder UID value.
+            // If individual upstream dashboards need to be placed specific granafa folders, they can be given their own
+            // folder IDs by annotating the upstreams. The annotation key must be
+            // 'observability.solo.io/dashboard_folder_id' and the value must be the folder ID.
+            // Folder IDs can be retrieved from grafana with a pair of terminal commands:
+            // 1. Port forward the grafana deployment to surface its API:
+            // kubectl -n gloo-system port-forward deployment/glooe-grafana 3000
+            // 2. Request all folder data (after admin:admin is replaced with the correct credentials):
+            // curl http://admin:admin@localhost:3000/api/folders
+            google.protobuf.UInt32Value default_dashboard_folder_id = 1;
+        }
+
+        // Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/).
+        GrafanaIntegration grafanaIntegration = 1;
+    }
+
+    // Provides settings related to the observability deployment (enterprise only)
+    ObservabilityOptions observabilityOptions = 31;
+
 }
 
 // Settings specific to the gloo (Envoy xDS server) controller
@@ -483,9 +513,17 @@ message GatewayOptions {
         google.protobuf.BoolValue always_accept = 6;
 
         // Accept resources if validation produced a warning (defaults to true).
-        // By settings to false, this means that validation will start rejecting resources that would result
+        // By setting to false, this means that validation will start rejecting resources that would result
         // in warnings, rather than just those that would result in errors.
         google.protobuf.BoolValue allow_warnings = 7;
+
+        // Write a warning to route resources if validation produced a route ordering warning (defaults to false).
+        // By setting to true, this means that Gloo will start assigning warnings to resources that would result
+        // in route short-circuiting within a virtual host, for example:
+        //   - prefix routes that make later routes unreachable
+        //   - regex routes that make later routes unreachable
+        //   - duplicate matchers
+        google.protobuf.BoolValue warn_route_short_circuiting = 8;
     }
 
     // If provided, the Gateway will perform [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)

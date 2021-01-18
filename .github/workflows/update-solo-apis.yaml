@@ -1,0 +1,52 @@
+name: Update solo-apis
+on:
+  release:
+    types: [created]
+jobs:
+  publish-apis:
+    name: Publish Gloo APIs
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Cancel Previous Actions
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+      - name: Install SSH Deploy key
+        uses: webfactory/ssh-agent@v0.4.1
+        with:
+          ssh-private-key: ${{ secrets.SOLO_API_DEPLOY_KEY }}
+      - name: Set up Go 1.14
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.14
+        id: go
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1.1.2
+        with:
+          version: '3.6.1'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+        with:
+          path: gloo
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+        with:
+          repository: solo-io/solo-apis
+          path: solo-apis
+      - name: Update solo-apis
+        run: |
+          cd solo-apis
+          make mod-download update-deps; ./hack/sync-gloo-apis.sh; make generate
+          git config --local user.name soloio-bot
+          git config --local user.email soloio-bot@github.com
+          git add .
+          if git diff-index --quiet HEAD --; then
+            echo "No changes found"
+          else
+            echo "Changes found"
+            git commit -m "Sync Gloo APIs to ${{ github.event.release.tag_name }}"
+            git checkout -B update-gloo-apis
+            git remote add solo-apis git@github.com:solo-io/solo-apis.git
+            git push solo-apis update-gloo-apis
+          fi

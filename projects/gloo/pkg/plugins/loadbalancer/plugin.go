@@ -85,7 +85,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return nil
 	}
 
-	if cfg.HealthyPanicThreshold != nil || cfg.UpdateMergeWindow != nil {
+	if cfg.HealthyPanicThreshold != nil || cfg.UpdateMergeWindow != nil || cfg.LocalityConfig != nil {
 		out.CommonLbConfig = &envoy_config_cluster_v3.Cluster_CommonLbConfig{}
 		if cfg.HealthyPanicThreshold != nil {
 			out.CommonLbConfig.HealthyPanicThreshold = &envoy_type_v3.Percent{
@@ -94,6 +94,14 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		}
 		if cfg.UpdateMergeWindow != nil {
 			out.CommonLbConfig.UpdateMergeWindow = cfg.UpdateMergeWindow
+		}
+		if cfg.LocalityConfig != nil {
+			switch cfg.LocalityConfig.(type) {
+			case *v1.LoadBalancerConfig_LocalityWeightedLbConfig:
+				out.CommonLbConfig.LocalityConfigSpecifier = &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+					LocalityWeightedLbConfig: &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
+				}
+			}
 		}
 	}
 

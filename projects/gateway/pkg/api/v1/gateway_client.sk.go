@@ -106,7 +106,12 @@ func (client *gatewayClient) Watch(namespace string, opts clients.WatchOpts) (<-
 		for {
 			select {
 			case resourceList := <-resourcesChan:
-				gatewaysChan <- convertToGateway(resourceList)
+				select {
+				case gatewaysChan <- convertToGateway(resourceList):
+				case <-opts.Ctx.Done():
+					close(gatewaysChan)
+					return
+				}
 			case <-opts.Ctx.Done():
 				close(gatewaysChan)
 				return

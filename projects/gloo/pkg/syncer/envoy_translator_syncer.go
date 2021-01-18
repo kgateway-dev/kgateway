@@ -67,7 +67,7 @@ func measureResource(ctx context.Context, resource string, len int) {
 	}
 }
 
-func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) (reporter.ResourceReports, error) {
+func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot, allReports reporter.ResourceReports) error {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 
@@ -85,7 +85,6 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
 
-	allReports := make(reporter.ResourceReports)
 	allReports.Accept(snap.Upstreams.AsInputResources()...)
 	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
 	allReports.Accept(snap.Proxies.AsInputResources()...)
@@ -106,7 +105,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 		for key, valid := range allKeys {
 			if !valid {
 				if err := s.xdsCache.SetSnapshot(key, emptySnapshot); err != nil {
-					return allReports, err
+					return err
 				}
 			}
 		}
@@ -127,7 +126,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 		if err != nil {
 			err := eris.Wrapf(err, "translation loop failed")
 			logger.DPanicw("", zap.Error(err))
-			return allReports, err
+			return err
 		}
 
 		if validateErr := reports.ValidateStrict(); validateErr != nil {
@@ -157,7 +156,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 		if err := s.xdsCache.SetSnapshot(key, sanitizedSnapshot); err != nil {
 			err := eris.Wrapf(err, "failed while updating xDS snapshot cache")
 			logger.DPanicw("", zap.Error(err))
-			return allReports, err
+			return err
 		}
 
 		// Record some metrics
@@ -177,12 +176,12 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 			"routes", routesLen,
 			"endpoints", endpointsLen)
 
-		logger.Debugf("Full snapshot for proxy %v: %v", proxy.Metadata.Name, xdsSnapshot)
+		logger.Debugf("Full snapshot for proxy %v: %+v", proxy.Metadata.Name, xdsSnapshot)
 	}
 
 	logger.Debugf("gloo reports to be written: %v", allReports)
 
-	return allReports, nil
+	return nil
 }
 
 // TODO(ilackarms): move this somewhere else, make it part of dev-mode

@@ -292,7 +292,7 @@ var _ = Describe("Translator", func() {
 		listenerResource := listeners.Items["http-listener"]
 		listenerConfiguration := listenerResource.ResourceProto().(*envoy_config_listener_v3.Listener)
 		Expect(listenerConfiguration).NotTo(BeNil())
-		Expect(listenerConfiguration.PerConnectionBufferLimitBytes).To(Equal(&wrappers.UInt32Value{Value: 4096}))
+		Expect(listenerConfiguration.PerConnectionBufferLimitBytes).To(MatchProto(&wrappers.UInt32Value{Value: 4096}))
 	})
 
 	Context("Auth configs", func() {
@@ -645,7 +645,7 @@ var _ = Describe("Translator", func() {
 			for _, v := range expectedResult {
 				msgList = append(msgList, v)
 			}
-			Expect(cluster.HealthChecks).To(ConistOfProtos(msgList...))
+			Expect(cluster.HealthChecks).To(ConsistOfProtos(msgList...))
 		})
 
 		It("can translate the grpc health check", func() {
@@ -671,7 +671,7 @@ var _ = Describe("Translator", func() {
 			for _, v := range expectedResult {
 				msgList = append(msgList, v)
 			}
-			Expect(cluster.HealthChecks).To(ConistOfProtos(msgList...))
+			Expect(cluster.HealthChecks).To(ConsistOfProtos(msgList...))
 		})
 
 		It("can properly translate outlier detection config", func() {
@@ -790,7 +790,7 @@ var _ = Describe("Translator", func() {
 			for _, v := range expectedResult {
 				msgList = append(msgList, v)
 			}
-			Expect(cluster.HealthChecks).To(ConistOfProtos(msgList...))
+			Expect(cluster.HealthChecks).To(ConsistOfProtos(msgList...))
 		})
 	})
 
@@ -822,7 +822,7 @@ var _ = Describe("Translator", func() {
 			}
 			translate()
 
-			Expect(cluster.CircuitBreakers).To(BeEquivalentTo(expectedCircuitBreakers))
+			Expect(cluster.CircuitBreakers).To(MatchProto(expectedCircuitBreakers))
 		})
 
 		It("should translate circuit breakers on settings", func() {
@@ -847,7 +847,7 @@ var _ = Describe("Translator", func() {
 			}
 			translate()
 
-			Expect(cluster.CircuitBreakers).To(BeEquivalentTo(expectedCircuitBreakers))
+			Expect(cluster.CircuitBreakers).To(MatchProto(expectedCircuitBreakers))
 		})
 
 		It("should override circuit breakers on upstream", func() {
@@ -879,7 +879,7 @@ var _ = Describe("Translator", func() {
 			}
 			translate()
 
-			Expect(cluster.CircuitBreakers).To(BeEquivalentTo(expectedCircuitBreakers))
+			Expect(cluster.CircuitBreakers).To(MatchProto(expectedCircuitBreakers))
 		})
 	})
 
@@ -1327,7 +1327,8 @@ var _ = Describe("Translator", func() {
 
 				endpointMeta := claConfiguration.Endpoints[0].LbEndpoints[0].Metadata
 				fields := endpointMeta.FilterMetadata["envoy.lb"].Fields
-				Expect(fields).To(HaveKeyWithValue("testkey", sv("testvalue")))
+				Expect(fields).To(HaveKey("testkey"))
+				Expect(fields["testkey"]).To(MatchProto(sv("testvalue")))
 			})
 
 			It("should add subset to cluster", func() {
@@ -1355,7 +1356,8 @@ var _ = Describe("Translator", func() {
 			Expect(endpointMeta).ToNot(BeNil())
 			Expect(endpointMeta.FilterMetadata).To(HaveKey("envoy.lb"))
 			fields := endpointMeta.FilterMetadata["envoy.lb"].Fields
-			Expect(fields).To(HaveKeyWithValue("testkey", sv("")))
+			Expect(fields).To(HaveKey("testkey"))
+			Expect(fields["testkey"]).To(MatchProto(sv("")))
 		})
 
 		Context("subset in route doesnt match subset in upstream", func() {
@@ -1678,7 +1680,7 @@ var _ = Describe("Translator", func() {
 			Expect(cluster.LbSubsetConfig).NotTo(BeNil())
 			Expect(cluster.LbSubsetConfig.SubsetSelectors).To(HaveLen(3))
 			// Order is important here
-			Expect(cluster.LbSubsetConfig.SubsetSelectors).To(ConsistOf(
+			Expect(cluster.LbSubsetConfig.SubsetSelectors).To(ConsistOfProtos(
 				&envoy_config_cluster_v3.Cluster_LbSubsetConfig_LbSubsetSelector{
 					Keys: []string{dc(east), dc(west)},
 				},
@@ -1936,7 +1938,7 @@ var _ = Describe("Translator", func() {
 			endpoint := endpointResource.ResourceProto().(*envoy_config_endpoint_v3.ClusterLoadAssignment)
 			Expect(endpoint).NotTo(BeNil())
 			Expect(endpoint.Endpoints).To(HaveLen(2))
-			Expect(endpoint.Endpoints[1]).To(Equal(additionalEndpoint))
+			Expect(endpoint.Endpoints[1]).To(MatchProto(additionalEndpoint))
 		})
 
 		It("should call the endpoint plugin with an empty endpoint", func() {

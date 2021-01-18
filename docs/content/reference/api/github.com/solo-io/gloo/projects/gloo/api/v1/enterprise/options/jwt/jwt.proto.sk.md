@@ -11,6 +11,8 @@ weight: 5
 #### Types:
 
 
+- [JwtStagedVhostExtension](#jwtstagedvhostextension)
+- [JwtStagedRouteExtension](#jwtstagedrouteextension)
 - [VhostExtension](#vhostextension)
 - [RouteExtension](#routeextension)
 - [Provider](#provider)
@@ -31,18 +33,58 @@ weight: 5
 
 
 ---
+### JwtStagedVhostExtension
+
+
+
+```yaml
+"beforeExtAuth": .jwt.options.gloo.solo.io.VhostExtension
+"afterExtAuth": .jwt.options.gloo.solo.io.VhostExtension
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `beforeExtAuth` | [.jwt.options.gloo.solo.io.VhostExtension](../jwt.proto.sk/#vhostextension) | JWT Virtual host config for the JWT filter that runs before the extauth filter. |
+| `afterExtAuth` | [.jwt.options.gloo.solo.io.VhostExtension](../jwt.proto.sk/#vhostextension) | JWT Virtual host config for the JWT filter that runs after the extauth filter. |
+
+
+
+
+---
+### JwtStagedRouteExtension
+
+
+
+```yaml
+"beforeExtAuth": .jwt.options.gloo.solo.io.RouteExtension
+"afterExtAuth": .jwt.options.gloo.solo.io.RouteExtension
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `beforeExtAuth` | [.jwt.options.gloo.solo.io.RouteExtension](../jwt.proto.sk/#routeextension) | JWT route config for the JWT filter that runs after the extauth filter. |
+| `afterExtAuth` | [.jwt.options.gloo.solo.io.RouteExtension](../jwt.proto.sk/#routeextension) | JWT route config for the JWT filter that runs after the extauth filter. |
+
+
+
+
+---
 ### VhostExtension
 
 
 
 ```yaml
 "providers": map<string, .jwt.options.gloo.solo.io.Provider>
+"allowMissingOrFailedJwt": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `providers` | `map<string, .jwt.options.gloo.solo.io.Provider>` | Auth providers can be used instead of the fields above where more than one is required. if this list is provided the fields above are ignored. |
+| `allowMissingOrFailedJwt` | `bool` | Allow pass through of JWT requests for this virtual host, even if JWT token is missing or JWT auth failed. If this is false (default false), requests that fail JWT authentication will fail authorization immediately. For example, if a request requires either JWT auth OR another auth method, this can be enabled to allow a failed JWT auth request to pass through to the other auth method. |
 
 
 

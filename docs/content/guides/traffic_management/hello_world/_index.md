@@ -346,20 +346,21 @@ status:
     '*v1.Proxy.gloo-system.gateway-proxy':
       reportedBy: gloo
       state: Accepted
-virtualHost:
-  domains:
-  - '*'
-  routes:
-  - matchers:
-    - exact: /all-pets
-    options:
-      prefixRewrite: /api/pets
-    routeAction:
-      single:
-        upstream:
-          name: default-petstore-8080
-          namespace: gloo-system
-```
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matchers:
+      - exact: /all-pets
+      options:
+        prefixRewrite: /api/pets
+      routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
+  ```
     
 When a Virtual Service is created, Gloo Edge immediately updates the proxy configuration. Since the status of this Virtual Service is `Accepted`, we know this route is now active. 
 

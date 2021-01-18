@@ -9,7 +9,7 @@ settings:
   # if this is set to false, default settings will be created by pods upon boot
   create: true
   linkerd: false
-  enableRestEds: true
+  enableRestEds: false
   aws: {}
   invalidConfigPolicy:
     replaceInvalidRoutes: false
@@ -183,3 +183,7 @@ global:
         repository: gloo-envoy-wrapper
   istioSDS:
     enabled: false
+  istioIntegration:
+    labelInstallNamespace: false
+    whitelistDiscovery: false
+    disableAutoinjection: false

@@ -8,8 +8,16 @@ jobs:
     name: Add `keep pr updated` Label
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: christianvuerings/add-labels@v1
+      - name: Detect Community PR
+        id: community-pr-check
+        if: ${{ github.event.pull_request.head.repo.full_name != 'solo-io/gloo' }}
+        shell: bash
+        run: |
+          echo "Pull Request is from a fork. Setting IS_COMMUNITY_PR to true"
+          echo "::set-output name=IS_COMMUNITY_PR::true"
+      - name: Add PR label
+        uses: christianvuerings/add-labels@v1
+        if: ${{ !steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
         with:
           labels: |
             keep pr updated

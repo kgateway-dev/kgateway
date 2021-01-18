@@ -1,0 +1,6 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyTag: v1.17.0-rc4
+    dependencyRepo: envoy-gloo
+    description: Update envoy-gloo to version v1.17.0-rc4

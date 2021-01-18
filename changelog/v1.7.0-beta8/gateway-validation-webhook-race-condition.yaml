@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4136
+    description: >
+      Fix a race condition in the gateway-validation-webhook,
+      where resources applied concurrently can avoid validation.

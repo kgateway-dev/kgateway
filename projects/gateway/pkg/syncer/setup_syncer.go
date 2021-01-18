@@ -108,6 +108,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			IgnoreProxyValidationFailure: validationCfg.GetIgnoreGlooValidationFailure(),
 			AlwaysAcceptResources:        alwaysAcceptResources,
 			AllowWarnings:                allowWarnings,
+			WarnOnRouteShortCircuiting:   validationCfg.GetWarnRouteShortCircuiting().GetValue(),
 		}
 		if validation.ProxyValidationServerAddress == "" {
 			validation.ProxyValidationServerAddress = defaults.GlooProxyValidationServerAddr

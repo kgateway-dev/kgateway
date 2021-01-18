@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3207
+    resolvesIssue: false
+    description: >
+      Allows Jwt authentication to be compatible with other auth mechanisms in enterprise authentication.

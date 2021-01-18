@@ -2,6 +2,9 @@ package translator
 
 import (
 	"fmt"
+	"hash/fnv"
+
+	proto2 "google.golang.org/protobuf/proto"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -37,10 +40,20 @@ func NewTranslator(
 	settings *v1.Settings,
 	getPlugins func() []plugins.Plugin,
 ) Translator {
+	return NewTranslatorWithHasher(sslConfigTranslator, settings, getPlugins, EnvoyCacheResourcesListToFnvHash)
+}
+
+func NewTranslatorWithHasher(
+	sslConfigTranslator utils.SslConfigTranslator,
+	settings *v1.Settings,
+	getPlugins func() []plugins.Plugin,
+	hasher func(resources []envoycache.Resource) uint64,
+) Translator {
 	return &translatorFactory{
 		getPlugins:          getPlugins,
 		settings:            settings,
 		sslConfigTranslator: sslConfigTranslator,
+		hasher:              hasher,
 	}
 }
 
@@ -48,6 +61,7 @@ type translatorFactory struct {
 	getPlugins          func() []plugins.Plugin
 	settings            *v1.Settings
 	sslConfigTranslator utils.SslConfigTranslator
+	hasher              func(resources []envoycache.Resource) uint64
 }
 
 func (t *translatorFactory) Translate(
@@ -58,6 +72,7 @@ func (t *translatorFactory) Translate(
 		plugins:             t.getPlugins(),
 		settings:            t.settings,
 		sslConfigTranslator: t.sslConfigTranslator,
+		hasher:              t.hasher,
 	}
 	return instance.Translate(params, proxy)
 }
@@ -67,6 +82,7 @@ type translatorInstance struct {
 	plugins             []plugins.Plugin
 	settings            *v1.Settings
 	sslConfigTranslator utils.SslConfigTranslator
+	hasher              func(resources []envoycache.Resource) uint64
 }
 
 func (t *translatorInstance) Translate(
@@ -94,12 +110,14 @@ func (t *translatorInstance) Translate(
 	logger.Debugf("verifying upstream groups: %v", proxy.Metadata.Name)
 	t.verifyUpstreamGroups(params, reports)
 
+	upstreamRefKeyToEndpoints := createUpstreamToEndpointsMap(params.Snapshot.Upstreams, params.Snapshot.Endpoints)
+
 	// endpoints and listeners are shared between listeners
 	logger.Debugf("computing envoy clusters for proxy: %v", proxy.Metadata.Name)
-	clusters := t.computeClusters(params, reports, proxy)
+	clusters := t.computeClusters(params, reports, upstreamRefKeyToEndpoints, proxy)
 	logger.Debugf("computing envoy endpoints for proxy: %v", proxy.Metadata.Name)
 
-	endpoints := t.computeClusterEndpoints(params, reports)
+	endpoints := t.computeClusterEndpoints(params, upstreamRefKeyToEndpoints, reports)
 
 	// Find all the EDS clusters without endpoints (can happen with kube service that have no endpoints), and create a zero sized load assignment
 	// this is important as otherwise envoy will wait for them forever wondering their fate and not doing much else.
@@ -170,7 +188,7 @@ ClusterLoop:
 		clusters = append(clusters, generated...)
 	}
 
-	xdsSnapshot := generateXDSSnapshot(clusters, endpoints, routeConfigs, listeners)
+	xdsSnapshot := t.generateXDSSnapshot(clusters, endpoints, routeConfigs, listeners)
 
 	if err := validation.GetProxyError(proxyRpt); err != nil {
 		reports.AddError(proxy, err)
@@ -219,7 +237,7 @@ func (t *translatorInstance) computeListenerResources(
 	}
 }
 
-func generateXDSSnapshot(
+func (t *translatorInstance) generateXDSSnapshot(
 	clusters []*envoy_config_cluster_v3.Cluster,
 	endpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment,
 	routeConfigs []*envoy_config_route_v3.RouteConfiguration,
@@ -243,20 +261,9 @@ func generateXDSSnapshot(
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
-	endpointsVersion, err := hashstructure.Hash(endpointsProto, nil)
-	if err != nil {
-		panic(errors.Wrap(err, "constructing version hash for endpoints envoy snapshot components"))
-	}
-
-	clustersVersion, err := hashstructure.Hash(clustersProto, nil)
-	if err != nil {
-		panic(errors.Wrap(err, "constructing version hash for clusters envoy snapshot components"))
-	}
-
-	listenersVersion, err := hashstructure.Hash(listenersProto, nil)
-	if err != nil {
-		panic(errors.Wrap(err, "constructing version hash for listeners envoy snapshot components"))
-	}
+	endpointsVersion := t.hasher(endpointsProto)
+	clustersVersion := t.hasher(clustersProto)
+	listenersVersion := t.hasher(listenersProto)
 
 	// if clusters are updated, provider a new version of the endpoints,
 	// so the clusters are warm
@@ -265,7 +272,40 @@ func generateXDSSnapshot(
 		envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto),
 		MakeRdsResources(routeConfigs),
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
+}
 
+func EnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint64 {
+	hasher := fnv.New32()
+	// 8kb capacity, consider raising if we find the buffer is frequently being
+	// re-allocated by MarshalAppend to fit larger protos.
+	// the goal is to keep allocations constant for GC, without allocating an
+	// unnecessarily large buffer.
+	buffer := make([]byte, 0, 8*1024)
+	mo := proto2.MarshalOptions{Deterministic: true}
+	for _, r := range resources {
+		buf := buffer[:0]
+		// proto.MessageV2 will create another allocation, updating solo-kit
+		// to use google protos (rather than github protos, i.e. use v2) is
+		// another path to further improve performance here.
+		out, err := mo.MarshalAppend(buf, proto.MessageV2(r.ResourceProto()))
+		if err != nil {
+			panic(errors.Wrap(err, "marshalling envoy snapshot components"))
+		}
+		_, err = hasher.Write(out)
+		if err != nil {
+			panic(errors.Wrap(err, "constructing hash for envoy snapshot components"))
+		}
+	}
+	return uint64(hasher.Sum32())
+}
+
+// deprecated, slower than EnvoyCacheResourcesListToFnvHash
+func EnvoyCacheResourcesListToHash(resources []envoycache.Resource) uint64 {
+	hash, err := hashstructure.Hash(resources, nil)
+	if err != nil {
+		panic(errors.Wrap(err, "constructing version hash for endpoints envoy snapshot components"))
+	}
+	return hash
 }
 
 func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) envoycache.Resources {

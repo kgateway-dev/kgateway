@@ -83,7 +83,7 @@
 |settings.aws.enableServiceAccountCredentials|bool|false|Use ServiceAccount credentials to authenticate lambda requests. If enableCredentialsDiscovery is also set, this will take precedence as only one may be enabled in Gloo Edge|
 |settings.aws.stsCredentialsRegion|string||Regional endpoint to use for AWS STS requests. If empty will default to global sts endpoint.|
 |settings.rateLimit|interface||Partial config for Gloo Edge Enterprise’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes.|
-|settings.enableRestEds|bool|true|Whether or not to use rest xds for all EDS by default. Set to true by default in versions > v1.6.0.|
+|settings.enableRestEds|bool|false|Whether or not to use rest xds for all EDS by default. Set to true by default in versions > v1.6.0.|
 |gloo.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gloo.deployment.image.repository|string|gloo|image name (repository) for the container.|
 |gloo.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -327,6 +327,7 @@
 |gatewayProxies.NAME.gatewaySettings.options.validation.ignore_gloo_validation_failure|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.validation.always_accept.value|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.validation.allow_warnings.value|bool|||
+|gatewayProxies.NAME.gatewaySettings.options.validation.warn_route_short_circuiting.value|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.read_gateways_from_all_namespaces|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.always_sort_route_table_routes|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.compressed_proxy_spec|bool|||
@@ -338,6 +339,7 @@
 |gatewayProxies.NAME.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |gatewayProxies.NAME.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
 |gatewayProxies.NAME.readConfig|bool||expose a read-only subset of the envoy admin api|
+|gatewayProxies.NAME.readConfigMulticluster|bool||expose a read-only subset of the envoy admin api to gloo-fed|
 |gatewayProxies.NAME.extraProxyVolumeMountHelper|string||name of custom made named template allowing for extra volume mounts on the proxy container|
 |gatewayProxies.NAME.loopBackAddress|string||Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
 |gatewayProxies.NAME.failover.enabled|bool||(Enterprise Only): Configure this proxy for failover|
@@ -449,6 +451,7 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.ignore_gloo_validation_failure|bool|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.always_accept.value|bool|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.allow_warnings.value|bool|||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.warn_route_short_circuiting.value|bool|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.read_gateways_from_all_namespaces|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.always_sort_route_table_routes|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.compressed_proxy_spec|bool|false||
@@ -460,6 +463,7 @@
 |gatewayProxies.gatewayProxy.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |gatewayProxies.gatewayProxy.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
 |gatewayProxies.gatewayProxy.readConfig|bool|false|expose a read-only subset of the envoy admin api|
+|gatewayProxies.gatewayProxy.readConfigMulticluster|bool|false|expose a read-only subset of the envoy admin api to gloo-fed|
 |gatewayProxies.gatewayProxy.extraProxyVolumeMountHelper|string||name of custom made named template allowing for extra volume mounts on the proxy container|
 |gatewayProxies.gatewayProxy.loopBackAddress|string|127.0.0.1|Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
 |gatewayProxies.gatewayProxy.failover.enabled|bool|false|(Enterprise Only): Configure this proxy for failover|
@@ -626,3 +630,6 @@
 |global.glooMtls.sdsResources.requests.cpu|string||amount of CPUs|
 |global.istioSDS.enabled|bool|false|Enables SDS cert-rotator sidecar for istio mTLS cert rotation|
 |global.istioSDS.customSidecars[]|interface||Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if IstioSDS.enabled is false|
+|global.istioIntegration.labelInstallNamespace|bool|false|If creating a namespace for Gloo, include the 'istio-injection: enabled' label to allow Istio sidecar injection for Gloo pods. Be aware that Istio's default injection behavior will auto-inject a sidecar into all pods in such a marked namespace. Disabling this behavior in Istio's configs or using gloo's global.istioIntegration.disableAutoinjection flag is recommended.|
+|global.istioIntegration.whitelistDiscovery|bool|false|Annotate the discovery pod for Istio sidecar injection to ensure that it gets a sidecar even when namespace-wide auto-injection is disabled. Generally only needed for FDS is enabled.|
+|global.istioIntegration.disableAutoinjection|bool|false|Annotate all pods (excluding those whitelisted by other config values) to with an explicit 'do not inject' annotation to prevent Istio from adding sidecars to all pods. It's recommended that this be set to true if Gloo's namespace is marked for Istio discovery, as some pods do not immediately work with an Istio sidecar without extra manual configuration.|

@@ -4,6 +4,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -144,6 +145,29 @@ func GetAuthConfigs(name string, opts *options.Options) (extauthv1.AuthConfigLis
 	}
 
 	return authConfigList, nil
+}
+
+func GetRateLimitConfigs(name string, opts *options.Options) (ratelimit.RateLimitConfigList, error) {
+	var ratelimitConfigList ratelimit.RateLimitConfigList
+
+	ratelimitConfigClient := helpers.MustNamespacedRateLimitConfigClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
+	if name == "" {
+		ratelimitConfigs, err := ratelimitConfigClient.List(opts.Metadata.Namespace,
+			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
+		if err != nil {
+			return nil, err
+		}
+		ratelimitConfigList = append(ratelimitConfigList, ratelimitConfigs...)
+	} else {
+		ratelimitConfig, err := ratelimitConfigClient.Read(opts.Metadata.Namespace, name, clients.ReadOpts{Ctx: opts.Top.Ctx})
+		if err != nil {
+			return nil, err
+		}
+		opts.Metadata.Name = name
+		ratelimitConfigList = append(ratelimitConfigList, ratelimitConfig)
+	}
+
+	return ratelimitConfigList, nil
 }
 
 func GetName(args []string, opts *options.Options) string {

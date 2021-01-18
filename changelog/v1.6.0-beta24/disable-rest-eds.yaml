@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3805
+    description: >
+      Disable REST EDS server by default, which is no longer necessary now that upstream envoy has fixed
+      https://github.com/envoyproxy/envoy/issues/13070

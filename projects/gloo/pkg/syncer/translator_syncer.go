@@ -31,17 +31,35 @@ type translatorSyncer struct {
 }
 
 type TranslatorSyncerExtensionParams struct {
-	Reports                  reporter.ResourceReports
 	RateLimitServiceSettings ratelimit.ServiceSettings
 }
 
 type TranslatorSyncerExtensionFactory func(context.Context, TranslatorSyncerExtensionParams) (TranslatorSyncerExtension, error)
 
-type TranslatorSyncerExtension interface {
-	Sync(ctx context.Context, snap *v1.ApiSnapshot, xdsCache envoycache.SnapshotCache) (string, error)
+type UpgradeableTranslatorSyncerExtension interface {
+	ExtensionName() string
+	IsUpgrade() bool
 }
 
-func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.SnapshotCache, xdsHasher *xds.ProxyKeyHasher, sanitizer sanitizer.XdsSanitizer, reporter reporter.Reporter, devMode bool, extensions []TranslatorSyncerExtension, settings *v1.Settings) v1.ApiSyncer {
+type TranslatorSyncerExtension interface {
+	Sync(
+		ctx context.Context,
+		snap *v1.ApiSnapshot,
+		xdsCache envoycache.SnapshotCache,
+		reports reporter.ResourceReports,
+	) (string, error)
+}
+
+func NewTranslatorSyncer(
+	translator translator.Translator,
+	xdsCache envoycache.SnapshotCache,
+	xdsHasher *xds.ProxyKeyHasher,
+	sanitizer sanitizer.XdsSanitizer,
+	reporter reporter.Reporter,
+	devMode bool,
+	extensions []TranslatorSyncerExtension,
+	settings *v1.Settings,
+) v1.ApiSyncer {
 	s := &translatorSyncer{
 		translator: translator,
 		xdsCache:   xdsCache,
@@ -63,16 +81,19 @@ func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.S
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	logger := contextutils.LoggerFrom(ctx)
 	var multiErr *multierror.Error
-	reports, err := s.syncEnvoy(ctx, snap)
+	reports := make(reporter.ResourceReports)
+	err := s.syncEnvoy(ctx, snap, reports)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
 	s.extensionKeys = map[string]struct{}{}
 	for _, extension := range s.extensions {
-		nodeID, err := extension.Sync(ctx, snap, s.xdsCache)
+		intermediateReports := make(reporter.ResourceReports)
+		nodeID, err := extension.Sync(ctx, snap, s.xdsCache, intermediateReports)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
+		reports.Merge(intermediateReports)
 		s.extensionKeys[nodeID] = struct{}{}
 	}
 

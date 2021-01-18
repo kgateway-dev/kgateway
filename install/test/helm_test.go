@@ -561,6 +561,8 @@ var _ = Describe("Helm Test", func() {
 
 			Context("gloo with istio sds settings", func() {
 				var (
+					istioAnnotation = "sidecar.istio.io/inject"
+
 					istioCertsVolume = v1.Volume{
 						Name: "istio-certs",
 						VolumeSource: v1.VolumeSource{
@@ -697,6 +699,80 @@ var _ = Describe("Helm Test", func() {
 
 						if structuredConfigMap.Name == "gateway-proxy-envoy-config" {
 							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring("gateway_proxy_sds"), "should have an sds cluster configured")
+						}
+					})
+				})
+
+				It("should add an anti-injection annotation to all pods when disableAutoinjection is enabled", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"global.istioIntegration.disableAutoinjection=true",
+							"settings.integrations.knative.enabled=true", // ensure that as many pods as possible are checked
+							"ingress.enabled=true",
+						},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						// ensure every deployment has a istio annotation set to false
+						val, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deployment.GetName()))
+						Expect(val).To(Equal("false"), fmt.Sprintf("Deployment %s should have an istio annotation with value of 'false'", deployment.GetName()))
+					})
+				})
+
+				It("should add an Istio injection annotation for pods that can be configured for it", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"global.istioIntegration.whitelistDiscovery=true",
+							"global.istioIntegration.disableAutoinjection=false"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						// Ensure that the discovery pod has a true annotation, gateway-proxy has a false annotation (default), and nothing else has any annoation.
+						// todo if we ever decide to add more pods to the list of 'allow istio injection' pods, then change this to a whitelist check
+						if structuredDeployment.GetName() == "discovery" {
+							val, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %s should contain an istio injection annotation", deployment.GetName()))
+							Expect(val).To(Equal("true"), fmt.Sprintf("Deployment %s should have an istio annotation with value of 'true'", deployment.GetName()))
+						} else {
+							_, ok := structuredDeployment.Spec.Template.ObjectMeta.Annotations[istioAnnotation]
+							Expect(ok).To(BeFalse(), fmt.Sprintf("Deployment %s should not contain an istio injection annotation", deployment.GetName()))
+						}
+					})
+				})
+
+				It("The created namespace can be labeled for Istio discovery", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"namespace.create=true",
+							"global.istioIntegration.labelInstallNamespace=true"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Namespace"
+					}).ExpectAll(func(namespace *unstructured.Unstructured) {
+						namespaceObject, err := kuberesource.ConvertUnstructured(namespace)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Namespace %+v should be able to convert from unstructured", namespace))
+						structuredNamespace, ok := namespaceObject.(*v1.Namespace)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", namespace))
+
+						// Ensure that the discovery pod has a true annotation, gateway-proxy has a false annotation (default), and nothing else has any annoation.
+						if structuredNamespace.GetName() == "gloo-system" {
+							val, ok := structuredNamespace.ObjectMeta.Labels["istio-injection"]
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Namespace %s should contain an Istio discovery label", structuredNamespace.GetName()))
+							Expect(val).To(Equal("enabled"), fmt.Sprintf("Namespace %s should have an Istio discovery label with value of 'enabled'", structuredNamespace.GetName()))
 						}
 					})
 				})
@@ -918,7 +994,7 @@ var _ = Describe("Helm Test", func() {
 							for _, v := range vsList {
 								msgList = append(msgList, v)
 							}
-							Expect(httpGateway.VirtualServices).To(test_matchers.ConistOfProtos(msgList...))
+							Expect(httpGateway.VirtualServices).To(test_matchers.ConsistOfProtos(msgList...))
 							gatewayUns = testManifest.ExpectCustomResource("Gateway", namespace, name+"-ssl")
 							ConvertKubeResource(gatewayUns, &gateway1)
 							Expect(gateway1.UseProxyProto).To(test_matchers.MatchProto(&wrappers.BoolValue{
@@ -928,7 +1004,7 @@ var _ = Describe("Helm Test", func() {
 							for _, v := range vsList {
 								msgList = append(msgList, v)
 							}
-							Expect(httpGateway.VirtualServices).To(test_matchers.ConistOfProtos(msgList...))
+							Expect(httpGateway.VirtualServices).To(test_matchers.ConsistOfProtos(msgList...))
 						}
 
 					})
@@ -1788,12 +1864,12 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
-					It("correctly sets the `gloo.enableRestEds` to false in the settings", func() {
-						settings := makeUnstructureFromTemplateFile("fixtures/settings/disable_rest_eds.yaml", namespace)
+					It("correctly sets the `gloo.enableRestEds` to true in the settings", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/enable_rest_eds.yaml", namespace)
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"settings.enableRestEds=false",
+								"settings.enableRestEds=true",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
@@ -1823,7 +1899,7 @@ spec:
   gloo:
     xdsBindAddr: "0.0.0.0:9977"
     restXdsBindAddr: "0.0.0.0:9976"
-    enableRestEds: true
+    enableRestEds: false
     disableKubernetesDestinations: false
     disableProxyGarbageCollection: false
   discoveryNamespace: gloo-system
@@ -3059,6 +3135,34 @@ metadata:
 						}
 						proxy := cmRb.GetConfigMap()
 						testManifest.ExpectConfigMapWithYamlData(proxy)
+					})
+				})
+				Describe("gateway proxy -- readConfigMulticluster config", func() {
+					It("has a service for the gateway proxy config dump port", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.readConfig=true",
+								"gatewayProxies.gatewayProxy.readConfigMulticluster=true"},
+						})
+						serviceLabels := map[string]string{
+							"gloo":             "gateway-proxy",
+							"gateway-proxy-id": "gateway-proxy",
+						}
+						rb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      "gateway-proxy-config-dump-service",
+							Args:      nil,
+							Labels:    serviceLabels,
+						}
+						gatewayProxyConfigDumpService := rb.GetService()
+						gatewayProxyConfigDumpService.Spec.Selector = serviceLabels
+						gatewayProxyConfigDumpService.Spec.Ports = []v1.ServicePort{
+							{
+								Protocol: "TCP",
+								Port:     8082,
+							},
+						}
+						gatewayProxyConfigDumpService.Spec.Type = v1.ServiceTypeClusterIP
+						testManifest.ExpectService(gatewayProxyConfigDumpService)
 					})
 				})
 				Describe("supports multiple gateway proxy config maps", func() {

@@ -117,6 +117,8 @@ type routeInfo struct {
 	hasName bool
 	// Whether any child route objects should inherit headers, methods, and query param matchers from the parent.
 	inheritableMatchers bool
+	// Whether any child route objects should inherit path matchers from the parent.
+	inheritablePathMatchers bool
 }
 
 // Helper object for reporting errors and warnings
@@ -228,11 +230,12 @@ func (rv *routeVisitor) visit(
 
 					// Collect information about this route that are relevant when visiting the delegated route table
 					currentRouteInfo := &routeInfo{
-						matcher:             delegateMatcher,
-						options:             routeClone.Options,
-						name:                name,
-						hasName:             routeHasName,
-						inheritableMatchers: routeClone.InheritableMatchers.GetValue(),
+						matcher:                 delegateMatcher,
+						options:                 routeClone.Options,
+						name:                    name,
+						hasName:                 routeHasName,
+						inheritableMatchers:     routeClone.InheritableMatchers.GetValue(),
+						inheritablePathMatchers: routeClone.InheritablePathMatchers.GetValue(),
 					}
 
 					// Make a copy of the existing set of visited route tables. We need to pass this information into
@@ -404,6 +407,13 @@ func getDelegateRouteMatcher(route *gatewayv1.Route) (*matchersv1.Matcher, error
 func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*gatewayv1.Route, error) {
 
 	// inherit inheritance config from parent if unset
+	if child.InheritablePathMatchers == nil {
+		child.InheritablePathMatchers = &wrappers.BoolValue{
+			Value: parent.inheritablePathMatchers,
+		}
+	}
+
+	// inherit inheritance config from parent if unset
 	if child.InheritableMatchers == nil {
 		child.InheritableMatchers = &wrappers.BoolValue{
 			Value: parent.inheritableMatchers,
@@ -411,7 +421,26 @@ func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*ga
 	}
 
 	// inherit route table config from parent
-	if parent.inheritableMatchers {
+	if child.GetInheritablePathMatchers().GetValue() {
+		for _, childMatch := range child.Matchers {
+			childMatch.PathSpecifier = parent.matcher.PathSpecifier
+			childMatch.CaseSensitive = parent.matcher.CaseSensitive
+		}
+		if len(child.Matchers) == 0 {
+			child.Matchers = []*matchersv1.Matcher{{
+				PathSpecifier: parent.matcher.PathSpecifier,
+				CaseSensitive: parent.matcher.CaseSensitive,
+			}}
+		}
+	}
+
+	// If the route has no matchers, we fall back to the default prefix matcher like for regular routes.
+	if len(child.Matchers) == 0 {
+		child.Matchers = []*matchersv1.Matcher{defaults.DefaultMatcher()}
+	}
+
+	// inherit route table config from parent
+	if child.GetInheritableMatchers().GetValue() {
 		for _, childMatch := range child.Matchers {
 			childMatch.Headers = append(parent.matcher.Headers, childMatch.Headers...)
 			childMatch.Methods = append(parent.matcher.Methods, childMatch.Methods...)
@@ -437,12 +466,6 @@ func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*ga
 }
 
 func isRouteTableValidForDelegateMatcher(parentMatcher *matchersv1.Matcher, childRoute *gatewayv1.Route) error {
-
-	// If the route has no matchers, we fall back to the default prefix matcher like for regular routes.
-	// In these case, we only accept it if the parent also uses the default matcher.
-	if len(childRoute.Matchers) == 0 && parentMatcher.GetPrefix() != defaults.DefaultMatcher().GetPrefix() {
-		return InvalidRouteTableForDelegatePrefixErr(parentMatcher.GetPrefix(), defaults.DefaultMatcher().GetPrefix())
-	}
 
 	for _, childMatch := range childRoute.Matchers {
 		// ensure all sub-routes in the delegated route table match the parent prefix
