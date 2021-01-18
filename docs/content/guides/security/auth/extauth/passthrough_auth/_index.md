@@ -1,7 +1,7 @@
 ---
 title: Passthrough Auth
 weight: 10
-description: Authenticating using an external grpc service that implements [Envoy's Authorization Service API](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/ext_authz_filter.html?highlight=authorization%20service#service-definition). 
+description: Authenticating using an external grpc service that implements [Envoy's Authorization Service API](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/ext_authz_filter.html). 
 ---
 
 {{% notice note %}}
@@ -38,7 +38,7 @@ glooctl create upstream static --static-hosts jsonplaceholder.typicode.com:80 --
 {{< /tabs >}}
 
 ### Creating an authentication service
-Currently, Gloo Edge's external authentication server only supports passthrough requests to a gRPC server. For more information, view the service spec in the [official docs](https://github.com/envoyproxy/envoy/blob/master/api/envoy/service/auth/v2/external_auth.proto).
+Currently, Gloo Edge's external authentication server only supports passthrough requests to a gRPC server. For more information, view the service spec in the [official docs](https://github.com/envoyproxy/envoy/blob/main/api/envoy/service/auth/v3/external_auth.proto).
 
 To use an example gRPC authentication service provided for this guide, run the following command to deploy the provided image. This will run a docker image that contains a simple gRPC service running on port 9001.
 
