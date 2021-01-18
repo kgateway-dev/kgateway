@@ -2,10 +2,11 @@ package v3
 
 import (
 	"context"
-	envoy_api_v3_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"log"
 	"strings"
+
+	envoy_api_v3_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	envoy_service_auth_v3 "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"google.golang.org/genproto/googleapis/rpc/code"
