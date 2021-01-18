@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Updated the Gloo Edge docs around Rate Limiting IP Address to 
+      emphasize that we are updated the gateway-proxy service and not
+      the Gateway.I added a patch command so that they do not have to 
+      configure the yaml themselves.
