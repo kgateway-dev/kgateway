@@ -9,7 +9,18 @@ The Passthrough feature was introduced with **Gloo Edge Enterprise**, release 1.
 {{% /notice %}}
 
 When using Gloo Edge's external authentication server, it may be convenient to integrate authentication with a component that implements [Envoy's authorization service API](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/ext_authz_filter.html?highlight=authorization%20service#service-definition). This guide will walk through the process of setting up Gloo Edge's external authentication server to pass through requests to the provided component for authenticating requests. 
-If you do not wish to use the external authentication server provided in the enterprise version of Gloo Edge, you can also configure gloo to work with your own [Custom Auth server]({{< versioned_link_path fromRoot="/guides/security/auth/custom_auth" >}}).
+
+## Passthrough auth vs. Custom Auth vs. Custom Extauth plugin
+You can also implement your own auth with Gloo Edge with a [Custom Auth server]({{< versioned_link_path fromRoot="/guides/security/auth/custom_auth" >}}) or an [Extauth plugin]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/plugin_auth" >}}). 
+
+**gRPC Passthrough vs. Custom Auth**
+With gRPC passthrough, you can leverage other Gloo Edge extauth implementations (e.g. OIDC, API key, etc.) alongside custom logic. A custom auth plugin is not integrated with Gloo Edge extauth so it can not do this.
+
+**gRPC Passthrough vs. Extauth plugin**
+Using Gloo Edge to passthrough requests to a separate authentication component eliminates the need to recompile extauth plugins with each version of Gloo Edge Enterprise.
+
+**gRPC Passthrough Cons**
+While using a gRPC Passthrough service does provide additional flexibility and convenience with auth configuration, it does require an additional network hop from Gloo Edge's external auth service to the gRPC service. 
 
 ## Setup
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
