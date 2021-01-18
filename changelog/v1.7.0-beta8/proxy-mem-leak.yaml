@@ -1,0 +1,8 @@
+changelog:
+- type: NON_USER_FACING
+  description: >
+    Fix the proxy memory leak in the Gloo pod. It was being caused by a map or resources with status updates never
+    being cleared. Rather than have this map created and passed in at setup time, it will instead be an argument
+    to the various functions.
+  issueLink: https://github.com/solo-io/gloo/issues/4078
+  resolvesIssue: false

@@ -3,7 +3,9 @@ package validation
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"sync"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8syamlutil "sigs.k8s.io/yaml"
@@ -748,6 +751,71 @@ var _ = Describe("Validator", func() {
 				Expect(proxyReports).To(HaveLen(1))
 			})
 
+		})
+
+	})
+
+	Context("validating concurrent scenario", func() {
+
+		var (
+			resultMap       sync.Map
+			numberOfWorkers int
+		)
+
+		BeforeEach(func() {
+			resultMap = sync.Map{}
+			numberOfWorkers = 100
+		})
+
+		validateVirtualServiceWorker := func(vsToDuplicate *gatewayv1.VirtualService, name string) error {
+			// duplicate the vs with a different name
+			workerVirtualService := &gatewayv1.VirtualService{}
+			vsToDuplicate.DeepCopyInto(workerVirtualService)
+			workerVirtualService.Metadata.Name = "vs2-" + name
+
+			_, err := v.ValidateVirtualService(context.TODO(), workerVirtualService, false)
+
+			if err != nil {
+				// worker errors are stored in the resultMap
+				resultMap.Store(name, err.Error())
+			}
+
+			return nil
+		}
+
+		It("accepts only 1 vs when multiple are written concurrently", func() {
+			vc.validateProxy = acceptProxy
+			us := samples.SimpleUpstream()
+			snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+			err := v.Sync(context.TODO(), snap)
+			Expect(err).NotTo(HaveOccurred())
+
+			samples.AddVsToSnap(snap, us.GetMetadata().Ref(), "ns")
+			vsToDuplicate := snap.VirtualServices[1]
+
+			// start workers
+			errorGroup := errgroup.Group{}
+			for i := 0; i < numberOfWorkers; i++ {
+				workerName := fmt.Sprintf("worker #%d", i)
+				errorGroup.Go(func() error {
+					defer GinkgoRecover()
+					return validateVirtualServiceWorker(vsToDuplicate, workerName)
+				})
+			}
+
+			// wait for all workers to complete
+			err = errorGroup.Wait()
+			Expect(err).NotTo(HaveOccurred())
+
+			// aggregate the error messages from all the workers
+			var errMessages []string
+			resultMap.Range(func(name, value interface{}) bool {
+				errMessages = append(errMessages, value.(string))
+				return true // continue
+			})
+
+			// Expect 1 worker to have successfully completed and all others to have failed
+			Expect(len(errMessages)).To(Equal(numberOfWorkers - 1))
 		})
 
 	})
