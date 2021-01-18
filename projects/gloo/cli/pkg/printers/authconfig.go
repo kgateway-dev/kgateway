@@ -44,6 +44,8 @@ func AuthConfig(list extauthv1.AuthConfigList, w io.Writer) {
 				authType = "OPA"
 			case *extauthv1.AuthConfig_Config_Ldap:
 				authType = "LDAP"
+			case *extauthv1.AuthConfig_Config_PassThroughAuth:
+				authType = "Passthrough GRPC"
 			default:
 				authType = "unknown"
 			}

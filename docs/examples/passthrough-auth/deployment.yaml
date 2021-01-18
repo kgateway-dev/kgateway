@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extauth-grpcservice
+spec:
+  selector:
+    matchLabels:
+      app: grpc-extauth
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: grpc-extauth
+    spec:
+      containers:
+        - name: grpc-extauth
+          image: quay.io/solo-io/passthrough-grpc-service-example
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9001
