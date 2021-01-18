@@ -1,0 +1,24 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: auth-tutorial
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+      - 'foo'
+    routes:
+      - matchers:
+        - prefix: /
+        routeAction:
+          single:
+            upstream:
+              name: json-upstream
+              namespace: gloo-system
+        options:
+          autoHostRewrite: true      
+    options:
+      extauth:
+        configRef:
+          name: passthrough-auth
+          namespace: gloo-system
