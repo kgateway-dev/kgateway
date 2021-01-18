@@ -13,8 +13,8 @@ When using Gloo Edge's external authentication server, it may be convenient to i
 ## Passthrough auth vs. Custom Auth vs. Custom Extauth plugin
 You can also implement your own auth with Gloo Edge with a [Custom Auth server]({{< versioned_link_path fromRoot="/guides/security/auth/custom_auth" >}}) or an [Extauth plugin]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/plugin_auth" >}}). 
 
-**gRPC Passthrough vs. Custom Auth**
-With gRPC passthrough, you can leverage other Gloo Edge extauth implementations (e.g. OIDC, API key, etc.) alongside custom logic. A custom auth plugin is not integrated with Gloo Edge extauth so it can not do this.
+**gRPC Passthrough vs. Custom Auth server**
+With gRPC passthrough, you can leverage other Gloo Edge extauth implementations (e.g. OIDC, API key, etc.) alongside custom logic. A custom auth server is not integrated with Gloo Edge extauth so it can not do this.
 
 **gRPC Passthrough vs. Extauth plugin**
 Using Gloo Edge to passthrough requests to a separate authentication component eliminates the need to recompile extauth plugins with each version of Gloo Edge Enterprise.
@@ -69,6 +69,25 @@ EOF
 
 The source code for the gRPC service can be found in the Gloo Edge repository at `docs/examples/passthrough-auth`.
 
+Once we create the authentication service, we also want to apply the following Service to assign it a static cluster IP.
+{{< highlight shell >}}
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-grpc-auth-service
+  labels:
+      app: grpc-extauth
+spec:
+  clusterIP: 10.96.2.2
+  ports:
+  - port: 9001
+    protocol: TCP
+  selector:
+      app: grpc-extauth
+EOF
+{{< /highlight >}}
+
 ## Creating a Virtual Service
 Now let's configure Gloo Edge to route requests to the upstream we just created. To do that, we define a simple Virtual 
 Service to match all requests that:
@@ -96,27 +115,12 @@ The above command should produce the following output:
 }
 ```
 
-If you are getting a connection error, make sure you are portforwarding the `glooctl proxy url` port to port 8080.
+If you are getting a connection error, make sure you are port-forwarding the `glooctl proxy url` port to port 8080.
 
 # Securing the Virtual Service 
 As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default 
 Gloo Edge allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
 We will update the Virtual Service so that all requests will be authenticated by our own auth service.
-
-First, we need to get the cluster IP address of our gRPC authentication service that we've deployed. The following command lists out deployments in the default namespace, along with their cluster IP.
-
-```shell script
-kubectl get pods -n default -o wide
-```
-
-The output should look like this, with the pod name, status, and cluster IP of the currently deployed pod.
-
-```
-NAME                                   READY   STATUS    RESTARTS   AGE     IP           NODE       NOMINATED NODE
-extauth-grpcservice-7bb94c5ccf-zb7tx   1/1     Running   0          2m45s   172.17.0.8   minikube   <none>
-```
-
-We now want to use this IP to configure Gloo Edge's external authentication service to use this gRPC server for authentication. Apply the following AuthConfig, making sure to replace the address of the gRPC server with the cluster IP from above.
 
 {{< highlight shell "hl_lines=11-13" >}}
 kubectl apply -f - <<EOF
@@ -131,7 +135,7 @@ spec:
       # As of Gloo Edge v1.6.1, grpc is the only passthrough auth method supported
       grpc:
         # Address of the grpc auth server to query
-        address: <<server address here>>
+        address: 10.96.2.2
         # Set a connection timeout to external service, default is 5 seconds
         connectionTimeout: 3s
 EOF
