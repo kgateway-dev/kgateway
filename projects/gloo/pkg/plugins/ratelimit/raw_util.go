@@ -65,6 +65,7 @@ func convertAction(ctx context.Context, action *gloorl.Action) *envoy_config_rou
 			RequestHeaders: &envoy_config_route_v3.RateLimit_Action_RequestHeaders{
 				HeaderName:    specificAction.RequestHeaders.GetHeaderName(),
 				DescriptorKey: specificAction.RequestHeaders.GetDescriptorKey(),
+				SkipIfAbsent:  true, // necessary for the set actions to work; not all request headers may be present
 			},
 		}
 
