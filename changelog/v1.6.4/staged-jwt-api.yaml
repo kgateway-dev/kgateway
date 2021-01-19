@@ -3,4 +3,4 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/3207
     resolvesIssue: false
     description: >
-      Adds API to support two different instances of JWT validation, before the extauth filter in envoy and after.
+      Adds API to support two different instances of JWT validation, before the envoy extauth filter and after.
