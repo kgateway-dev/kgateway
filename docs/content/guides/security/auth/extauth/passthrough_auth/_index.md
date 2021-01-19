@@ -79,7 +79,6 @@ metadata:
   labels:
       app: grpc-extauth
 spec:
-  clusterIP: 10.96.2.2
   ports:
   - port: 9001
     protocol: TCP
@@ -132,10 +131,9 @@ metadata:
 spec:
   configs:
   - passThroughAuth:
-      # As of Gloo Edge v1.6.1, grpc is the only passthrough auth method supported
       grpc:
         # Address of the grpc auth server to query
-        address: 10.96.2.2
+        address: example-grpc-auth-service.default.svc.cluster.local:9001
         # Set a connection timeout to external service, default is 5 seconds
         connectionTimeout: 3s
 EOF
