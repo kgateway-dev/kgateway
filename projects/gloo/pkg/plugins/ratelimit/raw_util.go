@@ -13,6 +13,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
+// special value for generic keys that signals the enterprise rate limit server
+// to treat those descriptors differently (for the set-style rate-limit API)
+const GenericKey = "generic_key"
+const SetDescriptorValue = "solo.setDescriptor.uniqueValue"
+
 func generateEnvoyConfigForCustomFilter(
 	ref *core.ResourceRef,
 	timeout *duration.Duration,
@@ -41,9 +46,24 @@ func generateCustomEnvoyConfigForVhost(
 func ConvertActions(ctx context.Context, actions []*gloorl.Action) []*envoy_config_route_v3.RateLimit_Action {
 	var retActions []*envoy_config_route_v3.RateLimit_Action
 
+	var isSetStyle bool
 	for _, action := range actions {
-		retActions = append(retActions, convertAction(ctx, action))
+		convertedAction := convertAction(ctx, action)
+		if convertedAction.GetGenericKey().GetDescriptorValue() == SetDescriptorValue {
+			isSetStyle = true
+		}
+		retActions = append(retActions, convertedAction)
 	}
+
+	if isSetStyle {
+		for _, action := range retActions {
+			hdrs := action.GetRequestHeaders()
+			if hdrs != nil {
+				hdrs.SkipIfAbsent = true // necessary for the set actions to work; not all request headers may be present
+			}
+		}
+	}
+
 	return retActions
 }
 
@@ -65,7 +85,6 @@ func convertAction(ctx context.Context, action *gloorl.Action) *envoy_config_rou
 			RequestHeaders: &envoy_config_route_v3.RateLimit_Action_RequestHeaders{
 				HeaderName:    specificAction.RequestHeaders.GetHeaderName(),
 				DescriptorKey: specificAction.RequestHeaders.GetDescriptorKey(),
-				SkipIfAbsent:  true, // necessary for the set actions to work; not all request headers may be present
 			},
 		}
 
