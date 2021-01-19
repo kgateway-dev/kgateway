@@ -52,7 +52,7 @@ var _ = Describe("MergeRoutePlugins", func() {
 			},
 		}
 
-		actual, err := mergeRoutePlugins(dst, src)
+		actual, err := mergeRouteOptions(dst, src)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(actual).To(Equal(expected))
 	})

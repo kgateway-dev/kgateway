@@ -453,11 +453,11 @@ func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*ga
 		return nil, err
 	}
 
-	// Merge plugins from parent routes
-	merged, err := mergeRoutePlugins(child.GetOptions(), parent.options)
+	// Merge options from parent routes
+	merged, err := mergeRouteOptions(child.GetOptions(), parent.options)
 	if err != nil {
 		// Should never happen
-		return nil, errors.Wrapf(err, "internal error: merging route plugins from parent to delegated route")
+		return nil, errors.Wrapf(err, "internal error: merging route options from parent to delegated route")
 	}
 
 	child.Options = merged
