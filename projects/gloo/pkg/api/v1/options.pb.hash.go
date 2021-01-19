@@ -1302,6 +1302,26 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetEnvoyMetadata()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("EnvoyMetadata")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetEnvoyMetadata(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("EnvoyMetadata")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:

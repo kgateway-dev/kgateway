@@ -755,6 +755,16 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetEnvoyMetadata()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEnvoyMetadata()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetEnvoyMetadata(), target.GetEnvoyMetadata()) {
+			return false
+		}
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:
