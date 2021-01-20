@@ -23,9 +23,9 @@ func (p *Plugin) Init(_ plugins.InitParams) error {
 
 func (p *Plugin) ProcessRoute(_ plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 
-	if filterMetadata := in.GetOptions().GetEnvoyMetadata().GetFilterMetadata(); len(filterMetadata) > 0 {
+	if envoyMetadata := in.GetOptions().GetEnvoyMetadata(); len(envoyMetadata) > 0 {
 		out.Metadata = &envoy_config_core_v3.Metadata{
-			FilterMetadata: filterMetadata,
+			FilterMetadata: envoyMetadata,
 		}
 	}
 

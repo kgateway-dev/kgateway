@@ -6,7 +6,6 @@ import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	envoy_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/metadata"
@@ -39,9 +38,7 @@ var _ = Describe("Metadata Plugin", func() {
 		It("does not set any metadata on the output route", func() {
 			glooRoute = &v1.Route{
 				Options: &v1.RouteOptions{
-					EnvoyMetadata: &envoy_core_v3.Metadata{
-						FilterMetadata: map[string]*structpb.Struct{},
-					},
+					EnvoyMetadata: map[string]*structpb.Struct{},
 				},
 			}
 
@@ -96,11 +93,9 @@ var _ = Describe("Metadata Plugin", func() {
 
 			glooRoute = &v1.Route{
 				Options: &v1.RouteOptions{
-					EnvoyMetadata: &envoy_core_v3.Metadata{
-						FilterMetadata: map[string]*structpb.Struct{
-							"io.solo.test.one": inputMetadata1,
-							"io.solo.test.two": inputMetadata2,
-						},
+					EnvoyMetadata: map[string]*structpb.Struct{
+						"io.solo.test.one": inputMetadata1,
+						"io.solo.test.two": inputMetadata2,
 					},
 				},
 			}

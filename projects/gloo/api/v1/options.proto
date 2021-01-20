@@ -358,7 +358,7 @@ message RouteOptions {
     // The value of this field will be propagated to the `metadata` attribute of the corresponding Envoy route.
     // Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#config-route-v3-route)
     // for more details about the `metadata` attribute.
-    .solo.io.envoy.config.core.v3.Metadata envoy_metadata = 26;
+    map<string, google.protobuf.Struct> envoy_metadata = 26;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination

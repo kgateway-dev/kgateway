@@ -755,14 +755,21 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetEnvoyMetadata()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetEnvoyMetadata()) {
-			return false
+	if len(m.GetEnvoyMetadata()) != len(target.GetEnvoyMetadata()) {
+		return false
+	}
+	for k, v := range m.GetEnvoyMetadata() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetEnvoyMetadata()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetEnvoyMetadata()[k]) {
+				return false
+			}
 		}
-	} else {
-		if !proto.Equal(m.GetEnvoyMetadata(), target.GetEnvoyMetadata()) {
-			return false
-		}
+
 	}
 
 	switch m.HostRewriteType.(type) {
