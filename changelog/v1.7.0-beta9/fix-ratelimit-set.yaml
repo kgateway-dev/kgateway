@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Set the skip if empty on request headers in rate limiting so that descriptors are still sent to the rate limit
+      server even if some headers are missing on the request.
+    issueLink: https://github.com/solo-io/gloo/issues/4095
+    resolvesIssue: false
