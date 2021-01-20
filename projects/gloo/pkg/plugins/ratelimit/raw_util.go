@@ -15,7 +15,6 @@ import (
 
 // special value for generic keys that signals the enterprise rate limit server
 // to treat those descriptors differently (for the set-style rate-limit API)
-const GenericKey = "generic_key"
 const SetDescriptorValue = "solo.setDescriptor.uniqueValue"
 
 func generateEnvoyConfigForCustomFilter(
