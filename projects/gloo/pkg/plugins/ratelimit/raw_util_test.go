@@ -3,8 +3,9 @@ package ratelimit_test
 import (
 	"fmt"
 
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	golangjsonpb "github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -52,6 +53,7 @@ var _ = Describe("RawUtil", func() {
 		}
 	)
 
+	// note: this is no longer a straight conversion, see the other context below for other tests
 	DescribeTable(
 		"should convert protos to the same thing till we properly vendor them",
 		func(actions []*gloorl.Action) {
@@ -134,58 +136,120 @@ var _ = Describe("RawUtil", func() {
 	)
 
 	// Needs to be separate because the yaml is no longer compatible
-	It("works with regex", func() {
-		actions := []*gloorl.Action{
-			{
-				ActionSpecifier: &gloorl.Action_HeaderValueMatch_{
-					HeaderValueMatch: &gloorl.Action_HeaderValueMatch{
-						DescriptorValue: "someothervalue",
-						ExpectMatch:     &wrappers.BoolValue{Value: false},
-						Headers: []*gloorl.Action_HeaderValueMatch_HeaderMatcher{
-							{
-								HeaderMatchSpecifier: &gloorl.Action_HeaderValueMatch_HeaderMatcher_RegexMatch{
-									RegexMatch: "hello",
-								},
-								Name: "test",
-							},
-						},
-					},
-				},
-			},
-		}
+	Context("special cases - not a straight conversion", func() {
 
-		out := ConvertActions(nil, actions)
-
-		expected := []*envoy_config_route_v3.RateLimit_Action{
-			{
-				ActionSpecifier: &envoy_config_route_v3.RateLimit_Action_HeaderValueMatch_{
-					HeaderValueMatch: &envoy_config_route_v3.RateLimit_Action_HeaderValueMatch{
-						DescriptorValue: "someothervalue",
-						ExpectMatch: &wrappers.BoolValue{
-							Value: false,
-						},
-						Headers: []*envoy_config_route_v3.HeaderMatcher{
-							{
-								Name: "test",
-								HeaderMatchSpecifier: &envoy_config_route_v3.HeaderMatcher_SafeRegexMatch{
-									SafeRegexMatch: &envoy_type_matcher_v3.RegexMatcher{
-										EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-											GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{
-												MaxProgramSize: nil,
-											},
-										},
-										Regex: "hello",
+		It("works with regex", func() {
+			actions := []*gloorl.Action{
+				{
+					ActionSpecifier: &gloorl.Action_HeaderValueMatch_{
+						HeaderValueMatch: &gloorl.Action_HeaderValueMatch{
+							DescriptorValue: "someothervalue",
+							ExpectMatch:     &wrappers.BoolValue{Value: false},
+							Headers: []*gloorl.Action_HeaderValueMatch_HeaderMatcher{
+								{
+									HeaderMatchSpecifier: &gloorl.Action_HeaderValueMatch_HeaderMatcher_RegexMatch{
+										RegexMatch: "hello",
 									},
+									Name: "test",
 								},
-								InvertMatch: false,
 							},
 						},
 					},
 				},
-			},
-		}
+			}
 
-		Expect(out).To(Equal(expected))
+			out := ConvertActions(nil, actions)
+
+			expected := []*envoy_config_route_v3.RateLimit_Action{
+				{
+					ActionSpecifier: &envoy_config_route_v3.RateLimit_Action_HeaderValueMatch_{
+						HeaderValueMatch: &envoy_config_route_v3.RateLimit_Action_HeaderValueMatch{
+							DescriptorValue: "someothervalue",
+							ExpectMatch: &wrappers.BoolValue{
+								Value: false,
+							},
+							Headers: []*envoy_config_route_v3.HeaderMatcher{
+								{
+									Name: "test",
+									HeaderMatchSpecifier: &envoy_config_route_v3.HeaderMatcher_SafeRegexMatch{
+										SafeRegexMatch: &envoy_type_matcher_v3.RegexMatcher{
+											EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
+												GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{
+													MaxProgramSize: nil,
+												},
+											},
+											Regex: "hello",
+										},
+									},
+									InvertMatch: false,
+								},
+							},
+						},
+					},
+				},
+			}
+
+			Expect(out).To(Equal(expected))
+
+		})
+
+		It("works with set actions and request headers", func() {
+			actions := []*gloorl.Action{
+				{
+					// our special generic key that signals to treat the rest of the actions as a set
+					ActionSpecifier: &gloorl.Action_GenericKey_{
+						GenericKey: &gloorl.Action_GenericKey{DescriptorValue: SetDescriptorValue},
+					},
+				},
+				{
+					ActionSpecifier: &gloorl.Action_RequestHeaders_{
+						RequestHeaders: &gloorl.Action_RequestHeaders{
+							HeaderName:    "x-foo",
+							DescriptorKey: "foo",
+						},
+					},
+				},
+				{
+					ActionSpecifier: &gloorl.Action_RequestHeaders_{
+						RequestHeaders: &gloorl.Action_RequestHeaders{
+							HeaderName:    "x-bar",
+							DescriptorKey: "bar",
+						},
+					},
+				},
+			}
+
+			out := ConvertActions(nil, actions)
+
+			expected := []*envoy_config_route_v3.RateLimit_Action{
+				{
+					ActionSpecifier: &envoy_config_route_v3.RateLimit_Action_GenericKey_{
+						GenericKey: &envoy_config_route_v3.RateLimit_Action_GenericKey{DescriptorValue: SetDescriptorValue},
+					},
+				},
+				{
+					ActionSpecifier: &envoy_config_route_v3.RateLimit_Action_RequestHeaders_{
+						RequestHeaders: &envoy_config_route_v3.RateLimit_Action_RequestHeaders{
+							HeaderName:    "x-foo",
+							DescriptorKey: "foo",
+							SkipIfAbsent:  true, // important, or else rate-limit server won't get requests if some headers are missing from a request
+						},
+					},
+				},
+				{
+					ActionSpecifier: &envoy_config_route_v3.RateLimit_Action_RequestHeaders_{
+						RequestHeaders: &envoy_config_route_v3.RateLimit_Action_RequestHeaders{
+							HeaderName:    "x-bar",
+							DescriptorKey: "bar",
+							SkipIfAbsent:  true, // important, or else rate-limit server won't get requests if some headers are missing from a request
+						},
+					},
+				},
+			}
+
+			Expect(out).To(Equal(expected))
+
+		})
 
 	})
 
