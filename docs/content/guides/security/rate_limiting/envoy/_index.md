@@ -534,6 +534,15 @@ spec:
   externalTrafficPolicy: Local
 ```
 
+{{% notice note %}}
+To apply this as a patch, write it to a file called `patch2.yaml`, then apply the patch with the following command: 
+`kubectl patch -n gloo-system svc gateway-proxy --type merge --patch "$(cat patch2.yaml)"`
+
+<br />
+
+This assumes you are trying to patch the gateway-proxy service in the gloo-system namespace.
+{{% /notice %}}
+
 #### Configuring multiple limits per remote address
 
 Now, using the config from the simple example, we can use the `remote_address` descriptor to rate limit based on the real 

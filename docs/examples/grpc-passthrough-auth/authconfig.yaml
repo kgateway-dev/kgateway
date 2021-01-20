@@ -1,0 +1,13 @@
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: passthrough-auth
+  namespace: gloo-system
+spec:
+  configs:
+  - passThroughAuth:
+      grpc:
+        # Address of the grpc auth server to query
+        address: example-grpc-auth-service.default.svc.cluster.local:9001
+        # Set a connection timeout to external service, default is 5 seconds
+        connectionTimeout: 3s

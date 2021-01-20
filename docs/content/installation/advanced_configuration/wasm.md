@@ -102,6 +102,6 @@ When loading directly from file, you'll need to ensure that the given `filePath`
 
 To find our more information about WASM filters, and how to build/run them check out [`wasm`](https://github.com/solo-io/wasm).
 
-In that repo you'll find `wasme`, a tool for building and deploying Envoy WASM filters. `wasme` works with Gloo Edge Enterprise, Istio, and vanilla Envoy. Much more detailed information can be found there on how the filters work.
+In that repo you'll find `wasme`, a tool for building and deploying Envoy WASM filters. `wasme` works with Gloo Edge Enterprise, Istio, and vanilla Envoy. Much more detailed information can be found there on how the filters work.  Learn how to install the `wasme` CLI tool [here](https://docs.solo.io/web-assembly-hub/latest/installation/).
 
 To find more information about WASM filters, and find more filters which can be included in Gloo Edge check out [WebAssembly Hub!](https://webassemblyhub.io/).
