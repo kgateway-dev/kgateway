@@ -1740,6 +1740,46 @@ var _ = Describe("Helm Test", func() {
 							gatewayProxyDeployment.GetName()).To(BeNil())
 					})
 
+					It("Removes rest_xds_cluster when enableRestEds is false", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"settings.enableRestEds=false"},
+						})
+
+						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+							return resource.GetKind() == "ConfigMap"
+						}).ExpectAll(func(configMap *unstructured.Unstructured) {
+							configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", configMap))
+							structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", configMap))
+
+							if structuredConfigMap.Name == "gateway-proxy-envoy-config" {
+								Expect(structuredConfigMap.Data["envoy.yaml"]).To(Not(ContainSubstring("rest_xds_cluster")), "should not have an rest_xds_cluster configured")
+							}
+						})
+
+					})
+
+					It("Adds rest_xds_cluster when enableRestEds is true", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"settings.enableRestEds=true"},
+						})
+
+						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+							return resource.GetKind() == "ConfigMap"
+						}).ExpectAll(func(configMap *unstructured.Unstructured) {
+							configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", configMap))
+							structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", configMap))
+
+							if structuredConfigMap.Name == "gateway-proxy-envoy-config" {
+								Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring("rest_xds_cluster"), "should have an rest_xds_cluster configured")
+							}
+						})
+
+					})
+
 					Context("pass image pull secrets", func() {
 						pullSecretName := "test-pull-secret"
 						pullSecret := []v1.LocalObjectReference{
@@ -1864,12 +1904,12 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
-					It("correctly sets the `gloo.enableRestEds` to true in the settings", func() {
+					It("correctly sets the `gloo.enableRestEds` to false in the settings", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/enable_rest_eds.yaml", namespace)
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"settings.enableRestEds=true",
+								"settings.enableRestEds=false",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
@@ -1899,7 +1939,7 @@ spec:
   gloo:
     xdsBindAddr: "0.0.0.0:9977"
     restXdsBindAddr: "0.0.0.0:9976"
-    enableRestEds: false
+    enableRestEds: true
     disableKubernetesDestinations: false
     disableProxyGarbageCollection: false
   discoveryNamespace: gloo-system

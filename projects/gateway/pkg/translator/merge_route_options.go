@@ -7,24 +7,28 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-func mergeRoutePlugins(dst, src *v1.RouteOptions) (*v1.RouteOptions, error) {
+// Merges the fields of src into dst.
+// The fields in dst that have non-zero values will not be overwritten.
+func mergeRouteOptions(dst, src *v1.RouteOptions) (*v1.RouteOptions, error) {
 	if src == nil {
 		return dst, nil
 	}
-	if dst != nil {
-		dstValue, srcValue := reflect.ValueOf(dst).Elem(), reflect.ValueOf(src).Elem()
 
-		for i := 0; i < dstValue.NumField(); i++ {
-			dstField, srcField := dstValue.Field(i), srcValue.Field(i)
-			shallowMerge(dstField, srcField, false)
-		}
-
-		return dst, nil
+	if dst == nil {
+		return proto.Clone(src).(*v1.RouteOptions), nil
 	}
-	return proto.Clone(src).(*v1.RouteOptions), nil
+
+	dstValue, srcValue := reflect.ValueOf(dst).Elem(), reflect.ValueOf(src).Elem()
+
+	for i := 0; i < dstValue.NumField(); i++ {
+		dstField, srcField := dstValue.Field(i), srcValue.Field(i)
+		shallowMerge(dstField, srcField, false)
+	}
+
+	return dst, nil
 }
 
-// sets src to dst, if src is non-zero and dest is zero-valued or overwrite=true.
+// Sets dst to the value of src, if src is non-zero and dest is zero-valued or overwrite=true.
 func shallowMerge(dst, src reflect.Value, overwrite bool) {
 	if !src.IsValid() {
 		return
