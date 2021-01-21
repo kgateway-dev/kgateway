@@ -102,19 +102,28 @@ When loading directly from file, you'll need to ensure that the given `filePath`
 
 ## Loading a wasm filter image from an initContainer
 
-In some circumstances, using [WebAssembly Hub](https://webassemblyhub.io/) may not be possible, for example due to enterprise networking restrictions. One way to deploy a wasm filter without going through WebAssembly Hub, is to use an `initContainer` on your `gatewayProxy` deployment to load the `.wasm` file into a shared `volume`. This section will walk you through setting this up.
+In some circumstances, using [WebAssembly Hub](https://webassemblyhub.io/) as your wasm filter image repository may not be possible, for example due to enterprise networking restrictions. One way to deploy a wasm filter without going through WebAssembly Hub, is to use an `initContainer` on your `gatewayProxy` deployment to load the `.wasm` file into a shared `volume`. This section will walk you through setting this up.
 
 ### Prerequisites
 
-We are assuming you already have a wasm filter created and built locally. You can replicate this by running `wasme init --language cpp --platform gloo --platform-version 1.6.x ./my-filter` followed by `wasme build cpp .` - Or you can follow the more in-depth guide in the WebAssembly Hub docs [here](https://docs.solo.io/web-assembly-hub/latest/tutorial_code/build_tutorials/building_cpp_filters/).
+We are assuming you already have a wasm filter created and built locally. You can replicate this by running the two commands below. Alternatively, you can follow the more in-depth guide in the WebAssembly Hub docs [here](https://docs.solo.io/web-assembly-hub/latest/tutorial_code/build_tutorials/building_cpp_filters/).
 
-It's also assumed that you have a k8s cluster running, with Gloo Edge Enterprise installed in it. The example we're using here uses 1.6.2, but any future version should work.
+```bash
+wasme init --language cpp --platform gloo --platform-version 1.6.x ./my-filter
+```
+followed by
+
+```bash
+wasme build cpp .
+```
+
+It's also assumed that you have a k8s cluster running, with Gloo Edge Enterprise installed in it, ideally with a route to an upstream we can hit for testing. The example we're using here uses Gloo Edge Enterprise 1.6.2, but any future version should work.
 
 ### Step 1 - Build a docker image containing our filter
 
-First we need to build a docker image which contains our new wasm filter image. In our steps above this file is called `filter.wasm` and has been output at ......
+First we need to build a docker image which contains our new wasm filter image. In our steps above this file is called `filter.wasm` and has been output at in our local wasme store, which is by default `~/.wasme/store/<uniqueId>/filter.wasm`. If you've built your `filter.wasm` using a tool other than wasme, for example using `bazel` instead - the location of the filter file may differ. Let's grab this `filter.wasm` file and put it in a folder somewhere that we can make changes.
 
-We will create a file named `Dockerfile` as a sibling to `filter.wasm`, this will be used to generate our docker image. The contents of `Dockerfile` should be as follows:
+We will create a file named `Dockerfile` as a sibling to this `filter.wasm`, this will be used to generate our docker image. The contents of `Dockerfile` should be as follows:
 
 ```
 FROM alpine
@@ -126,7 +135,7 @@ CMD ["cp", "filter.wasm", "/wasm-filters/"]
 
 This will create a basic docker image which just contains our `filter.wasm` file, and when run, will copy it to the `/wasm-filters/` folder, which we will mount later.
 
-Next we want to build & tag the docker image from this Dockerfile, by running the following command (replacing your repository URL, and preferred image name):
+Next we want to build and tag the docker image from this Dockerfile, by running the following command (replacing your repository URL, and preferred image name):
 
 `docker build . -t localhost:8888/myorg/my-wasm-getter:1.0.0`
 
@@ -138,9 +147,9 @@ We have now created a standard docker image named `localhost:8888/myorg/my-wasm-
 
 Now that we have a docker image containing our wasm filter, we will use it as an `initContainer` for our `gateway-proxy` pod, so that the filter is available to Envoy via a shared mounted volume.
 
-Update the `gateway-proxy` `Deployment` resource as shown below, noting the extra `wasm-filters` `volume` and `volumeMount`, as well as the addition of `initContainers`:
+Update the `gateway-proxy` `Deployment` resource as shown below, noting the extra "wasm-filters" `volume` and `volumeMount`, as well as the addition of `initContainers`:
 
-{< highlight yaml "hl_lines=60-68 83" >}}
+{{< highlight yaml "hl_lines=60-68 83" >}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -176,7 +185,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: quay.io/solo-io/gloo-envoy-wrapper:1.6.0
+        image: quay.io/solo-io/gloo-envoy-wrapper:1.6.2
         imagePullPolicy: IfNotPresent
         name: gateway-proxy
         ports:
@@ -232,7 +241,7 @@ What we've done here, is specify the initContainer, which will run _before_ the 
 
 Now that the filter is in a filepath accessible to Envoy, we need to tell envoy to load it from path. We do this in the `Gateway` type resource, named `gateway-proxy`:
 
-{< highlight yaml "hl_lines=12-21" >}}
+{{< highlight yaml "hl_lines=12-21" >}}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
@@ -250,7 +259,7 @@ spec:
         filters:
         - config:
             '@type': type.googleapis.com/google.protobuf.StringValue
-            value: "world"
+            value: "my test config"
           filePath: /wasm-filters/filter.wasm
           name: myfilter
           root_id: add_header_root_id
@@ -262,7 +271,7 @@ spec:
 
 If you've been following along with this example, you should now be able to curl one of your endpoints and see the results of your filter being run - in this case, a newly added http header.
 
-If you don't have any test services to run against, you can install the petstore example used in our [hello world tutorial]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world/" >}})
+If you don't have any test services to run against, you can install the petstore example used in our [hello world tutorial]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world/" >}}).
 
 ### References
 
