@@ -1323,15 +1323,8 @@ github.com/solo-io/protoc-gen-ext v0.0.14 h1:NTdfALCSuA1MT6XOi2zjArrGloZjdGI7qOq
 github.com/solo-io/protoc-gen-ext v0.0.14/go.mod h1:ch1ZUyVtN45zxAVwpuZUW+F1IR7aG0rCVAp2JrWKDCc=
 github.com/solo-io/reporting-client v0.2.0 h1:v4NheU8EQL9G7kC3qrsKvC/sJzydrJyVr/sW4QN/owk=
 github.com/solo-io/reporting-client v0.2.0/go.mod h1:FmBDzwc1zEwayCCrlP+1w7NcpM0FIuvU+NSePj4wJq8=
-github.com/solo-io/skv2 v0.14.1/go.mod h1:m1a3AUh8D+49AO6kwD0yUnOJGSzekiPq/6TUoXueeuk=
-github.com/solo-io/skv2 v0.15.2 h1:m6IfIcIRXLDv0xokRrP5o1BT7aSiz10CUYWtJKVDq2w=
-github.com/solo-io/skv2 v0.15.2/go.mod h1:VHaqcbvRTzPD/m5lCV+zBOQppbtEB5PTmkZkCmrJBL0=
 github.com/solo-io/skv2 v0.16.2 h1:FMnvbT/c3pGkSKcSAdM8tviE5S5f6wlDWakr1TV11Ec=
 github.com/solo-io/skv2 v0.16.2/go.mod h1:VHaqcbvRTzPD/m5lCV+zBOQppbtEB5PTmkZkCmrJBL0=
-github.com/solo-io/solo-apis v0.0.0-20201208172621-1ef725df2bff h1:bZlxXxgFqBEFj0I+lKVBaoqv48+JgRLsTqlEeM+tecQ=
-github.com/solo-io/solo-apis v0.0.0-20201208172621-1ef725df2bff/go.mod h1:4y0+gYZPdlNDPQ09waJs25QjTjht03dkmGUi28AgIrU=
-github.com/solo-io/solo-apis v0.0.0-20210120222656-f3da893c947f h1:OoEo3AWfCdvQ564TXNoaCNux8NT+sdVYz1EwN+tDSG0=
-github.com/solo-io/solo-apis v0.0.0-20210120222656-f3da893c947f/go.mod h1:9tB/zzr7cGk308Y7tqwWRkccG8N4rSslS6s8mlKXd5s=
 github.com/solo-io/solo-apis v0.0.0-20210121145553-1944acb863a4 h1:vGzGEZWc5MVz3ofcUScu7t3JQc+4bPqrtpI4Cj0NHdU=
 github.com/solo-io/solo-apis v0.0.0-20210121145553-1944acb863a4/go.mod h1:9tB/zzr7cGk308Y7tqwWRkccG8N4rSslS6s8mlKXd5s=
 github.com/solo-io/solo-kit v0.16.0/go.mod h1:zf+vof9HAavbFKRgL80jJ24SeE9PvoB8ooQ7DACtK8I=
