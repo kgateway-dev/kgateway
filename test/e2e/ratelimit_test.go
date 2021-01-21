@@ -396,9 +396,6 @@ func (b *RlProxyBuilder) getProxy() *gloov1.Proxy {
 			Domains: []string{hostname},
 			Routes: []*gloov1.Route{
 				{
-					Options: &gloov1.RouteOptions{
-						EnvoyMetadata: hostConfig.routeMetadata,
-					},
 					Action: &gloov1.Route_RouteAction{
 						RouteAction: &gloov1.RouteAction{
 							Destination: &gloov1.RouteAction_Single{

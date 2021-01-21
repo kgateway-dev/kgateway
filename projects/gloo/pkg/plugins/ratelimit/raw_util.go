@@ -100,32 +100,27 @@ func convertAction(ctx context.Context, action *solo_rl.Action) *envoy_config_ro
 		}
 
 	case *solo_rl.Action_Metadata:
-		convertedAction := &envoy_config_route_v3.RateLimit_Action_Metadata{
+
+		var envoyPathSegments []*envoy_type_metadata_v3.MetadataKey_PathSegment
+		for _, segment := range specificAction.Metadata.GetMetadataKey().GetPath() {
+			envoyPathSegments = append(envoyPathSegments, &envoy_type_metadata_v3.MetadataKey_PathSegment{
+				Segment: &envoy_type_metadata_v3.MetadataKey_PathSegment_Key{
+					Key: segment.GetKey(),
+				},
+			})
+		}
+
+		retAction.ActionSpecifier = &envoy_config_route_v3.RateLimit_Action_Metadata{
 			Metadata: &envoy_config_route_v3.RateLimit_Action_MetaData{
 				DescriptorKey: specificAction.Metadata.GetDescriptorKey(),
 				MetadataKey: &envoy_type_metadata_v3.MetadataKey{
 					Key:  specificAction.Metadata.GetMetadataKey().GetKey(),
-					Path: nil,
+					Path: envoyPathSegments,
 				},
 				DefaultValue: specificAction.Metadata.DefaultValue,
 				Source:       envoy_config_route_v3.RateLimit_Action_MetaData_Source(specificAction.Metadata.GetSource()),
 			},
 		}
-
-		if len(specificAction.Metadata.GetMetadataKey().GetPath()) > 0 {
-			var envoyPathSegments []*envoy_type_metadata_v3.MetadataKey_PathSegment
-			for _, segment := range specificAction.Metadata.GetMetadataKey().GetPath() {
-				envoyPathSegments = append(envoyPathSegments, &envoy_type_metadata_v3.MetadataKey_PathSegment{
-					Segment: &envoy_type_metadata_v3.MetadataKey_PathSegment_Key{
-						Key: segment.GetKey(),
-					},
-				})
-			}
-			convertedAction.Metadata.MetadataKey.Path = envoyPathSegments
-		}
-
-		retAction.ActionSpecifier = convertedAction
-
 	}
 
 	return &retAction
