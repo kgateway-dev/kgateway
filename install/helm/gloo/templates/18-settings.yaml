@@ -21,8 +21,8 @@ spec:
     invalidConfigPolicy:
 {{ toYaml .Values.settings.invalidConfigPolicy | indent 6}}
 {{- end }}
-    disableKubernetesDestinations: {{ hasKey .Values.settings "disableKubernetesDestinations" | ternary .Values.settings.disableKubernetesDestinations false }}
-    disableProxyGarbageCollection: {{ hasKey .Values.settings "disableProxyGarbageCollection" | ternary .Values.settings.disableProxyGarbageCollection false }}
+    disableKubernetesDestinations: {{ .Values.settings.disableKubernetesDestinations | default false }}
+    disableProxyGarbageCollection: {{ .Values.settings.disableProxyGarbageCollection | default false }}
 {{- if .Values.settings.aws.enableServiceAccountCredentials }}
     awsOptions:
       serviceAccountCredentials:
