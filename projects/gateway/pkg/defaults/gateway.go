@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	GatewayProxyName   = "gateway-proxy"
-	GatewayBindAddress = "::"
+	GatewayProxyName        = "gateway-proxy"
+	GatewayBindAddress      = "::"
+	ConfigDumpServiceSuffix = "-config-dump-service"
 )
 
 func DefaultGateway(writeNamespace string) *v1.Gateway {
@@ -92,4 +93,8 @@ Delete the '` + name + ` Virtual Service to get started.
 
 func DefaultMatcher() *matchers.Matcher {
 	return &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/"}}
+}
+
+func GatewayProxyConfigDumpServiceName(name string) string {
+	return name + ConfigDumpServiceSuffix
 }

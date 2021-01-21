@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Add the ConfigDumpServiceSuffix to use across gloo and gloo-fed.
+    issueLink: https://github.com/solo-io/gloo/issues/4173
