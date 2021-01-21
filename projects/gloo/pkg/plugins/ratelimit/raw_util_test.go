@@ -133,6 +133,40 @@ var _ = Describe("RawUtil", func() {
 				},
 			},
 		),
+		Entry("should convert metadata",
+			[]*gloorl.Action{
+				{
+					ActionSpecifier: &gloorl.Action_Metadata{
+						Metadata: &gloorl.Action_MetaData{
+							DescriptorKey: "some-key",
+							MetadataKey: &gloorl.Action_MetaData_MetadataKey{
+								Key: "io.solo.some.filter",
+								Path: []*gloorl.Action_MetaData_MetadataKey_PathSegment{
+									{
+										Segment: &gloorl.Action_MetaData_MetadataKey_PathSegment_Key{
+											Key: "foo",
+										},
+									},
+								},
+							},
+							DefaultValue: "nothing",
+							Source:       gloorl.Action_MetaData_ROUTE_ENTRY,
+						},
+					},
+				},
+				{
+					ActionSpecifier: &gloorl.Action_Metadata{
+						Metadata: &gloorl.Action_MetaData{
+							DescriptorKey: "some-other-key",
+							MetadataKey: &gloorl.Action_MetaData_MetadataKey{
+								Key: "io.solo.some.other.filter",
+								// no path here
+							},
+						},
+					},
+				},
+			},
+		),
 	)
 
 	// Needs to be separate because the yaml is no longer compatible
