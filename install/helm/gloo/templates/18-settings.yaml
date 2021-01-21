@@ -15,14 +15,14 @@ spec:
 {{- else }}
     xdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}"
     restXdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.restXdsPort }}"
-    enableRestEds: {{ .Values.settings.enableRestEds }}
+    enableRestEds: {{ hasKey .Values.settings "enableRestEds" | ternary .Values.settings.enableRestEds true }}
 {{- end }}
 {{- if .Values.settings.replaceInvalidRoutes }}
     invalidConfigPolicy:
 {{ toYaml .Values.settings.invalidConfigPolicy | indent 6}}
 {{- end }}
-    disableKubernetesDestinations: {{ .Values.settings.disableKubernetesDestinations | default false }}
-    disableProxyGarbageCollection: {{ .Values.settings.disableProxyGarbageCollection | default false }}
+    disableKubernetesDestinations: {{ hasKey .Values.settings "disableKubernetesDestinations" | ternary .Values.settings.disableKubernetesDestinations false }}
+    disableProxyGarbageCollection: {{ hasKey .Values.settings "disableProxyGarbageCollection" | ternary .Values.settings.disableProxyGarbageCollection false }}
 {{- if .Values.settings.aws.enableServiceAccountCredentials }}
     awsOptions:
       serviceAccountCredentials:
