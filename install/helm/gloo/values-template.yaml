@@ -9,7 +9,7 @@ settings:
   # if this is set to false, default settings will be created by pods upon boot
   create: true
   linkerd: false
-  enableRestEds: false
+  enableRestEds: true
   aws: {}
   invalidConfigPolicy:
     replaceInvalidRoutes: false

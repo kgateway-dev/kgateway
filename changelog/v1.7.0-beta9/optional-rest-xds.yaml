@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: >
+      Changes helm to make rest_xds_cluster deployment optional.
+    issueLink: https://github.com/solo-io/gloo/issues/4164
