@@ -1302,6 +1302,45 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetEnvoyMetadata() {
+			innerHash.Reset()
+
+			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+				if _, err = innerHash.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if _, err = h.Hash(innerHash); err != nil {
+					return 0, err
+				}
+			} else {
+				if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+					return 0, err
+				} else {
+					if _, err = innerHash.Write([]byte("")); err != nil {
+						return 0, err
+					}
+					if err := binary.Write(innerHash, binary.LittleEndian, fieldValue); err != nil {
+						return 0, err
+					}
+				}
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:

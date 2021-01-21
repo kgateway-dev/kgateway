@@ -45,6 +45,7 @@ data:
         upstream_connection_options:
           tcp_keepalive: {}
         type: STRICT_DNS
+{{- if .Values.settings.enableRestEds }}
       - name: rest_xds_cluster
         alt_stat_name: rest_xds_cluster
         connect_timeout: 5.000s
@@ -61,6 +62,7 @@ data:
           tcp_keepalive: {}
         type: STRICT_DNS
         respect_dns_ttl: true
+{{- end }}
 {{- if .Values.settings.integrations.knative.proxy.stats }}
       - name: admin_port_cluster
         connect_timeout: 5.000s
