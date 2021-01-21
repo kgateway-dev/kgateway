@@ -14,9 +14,18 @@ func SetEdsOnCluster(out *envoy_config_cluster_v3.Cluster, settings *v1.Settings
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_EDS,
 	}
-	// The default value for enableRestEds should be set to false via helm.
-	// If nil will not enable rest eds.
-	if settings.GetGloo().GetEnableRestEds().GetValue() {
+	// The default value for enableRestEds should be set to true via helm.
+	// If nil, will enable rest eds
+	if !settings.GetGloo().GetEnableRestEds().GetValue() {
+		out.EdsClusterConfig = &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
+			EdsConfig: &envoy_config_core_v3.ConfigSource{
+				ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
+				ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_Ads{
+					Ads: &envoy_config_core_v3.AggregatedConfigSource{},
+				},
+			},
+		}
+	} else {
 		out.EdsClusterConfig = &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
 			EdsConfig: &envoy_config_core_v3.ConfigSource{
 				ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
@@ -28,15 +37,6 @@ func SetEdsOnCluster(out *envoy_config_cluster_v3.Cluster, settings *v1.Settings
 						RefreshDelay:        ptypes.DurationProto(time.Second * 5),
 						RequestTimeout:      ptypes.DurationProto(time.Second * 5),
 					},
-				},
-			},
-		}
-	} else {
-		out.EdsClusterConfig = &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
-			EdsConfig: &envoy_config_core_v3.ConfigSource{
-				ResourceApiVersion: envoy_config_core_v3.ApiVersion_V3,
-				ConfigSourceSpecifier: &envoy_config_core_v3.ConfigSource_Ads{
-					Ads: &envoy_config_core_v3.AggregatedConfigSource{},
 				},
 			},
 		}
