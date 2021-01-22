@@ -630,27 +630,27 @@ The following descriptor entry is appended when the metadata contains a key valu
 
  
 MetadataKey provides a general interface using `key` and `path` to retrieve value from
-:ref:`Metadata <envoy_api_msg_config.core.v3.Metadata>`.
+[`Metadata`](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-metadata).
 
 For example, for the following Metadata:
 
-.. code-block:: yaml
-
-   filter_metadata:
-     envoy.xxx:
-       prop:
-         foo: bar
-         xyz:
-           hello: envoy
+```yaml
+filter_metadata:
+  envoy.xxx:
+    prop:
+      foo: bar
+      xyz:
+        hello: envoy
+```
 
 The following MetadataKey will retrieve a string value "bar" from the Metadata.
 
-.. code-block:: yaml
-
-   key: envoy.xxx
-   path:
-   - key: prop
-   - key: foo
+```yaml
+key: envoy.xxx
+path:
+- key: prop
+- key: foo
+```
 
 ```yaml
 "key": string
@@ -692,8 +692,8 @@ Currently it is only supported to specify the key, i.e. field name, as one segme
 
 | Name | Description |
 | ----- | ----------- | 
-| `DYNAMIC` | Query :ref:`dynamic metadata <well_known_dynamic_metadata>` |
-| `ROUTE_ENTRY` | Query :ref:`route entry metadata <envoy_api_field_config.route.v3.Route.metadata>` |
+| `DYNAMIC` | Query [dynamic metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata#well-known-dynamic-metadata). |
+| `ROUTE_ENTRY` | Query [route entry metadata](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-route-metadata). |
 
 
 
