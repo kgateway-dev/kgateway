@@ -114,14 +114,15 @@ wasme init --language cpp --platform gloo --platform-version 1.6.x ./my-filter
 followed by
 
 ```bash
-wasme build cpp .
+cd my-filter
+wasme build cpp --store ./wasmstore . -t my-wasm-filter:v1.0
 ```
 
 It's also assumed that you have a k8s cluster running, with Gloo Edge Enterprise installed in it, ideally with a route to an upstream we can hit for testing. The example we're using here uses Gloo Edge Enterprise 1.6.2, but any future version should work.
 
 ### Step 1 - Build a docker image containing our filter
 
-First we need to build a docker image which contains our new wasm filter image. In our steps above this file is called `filter.wasm` and has been output at in our local wasme store, which is by default `~/.wasme/store/<uniqueId>/filter.wasm`. If you've built your `filter.wasm` using a tool other than wasme, for example using `bazel` instead - the location of the filter file may differ. Let's grab this `filter.wasm` file and put it in a folder somewhere that we can make changes.
+First we need to build a docker image which contains our new wasm filter image. In our steps above this file is called `filter.wasm` and has been output at `.wasmstore/<uniqueId>/filter.wasm`. If you've built your `filter.wasm` using a tool other than wasme, for example using `bazel` instead - the location of the filter file may differ. Let's grab this `filter.wasm` file and put it in a folder somewhere that we can make changes.
 
 We will create a file named `Dockerfile` as a sibling to this `filter.wasm`, this will be used to generate our docker image. The contents of `Dockerfile` should be as follows:
 
