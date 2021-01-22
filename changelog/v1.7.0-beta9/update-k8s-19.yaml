@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update to k8s 0.19.
+    issueLink: https://github.com/solo-io/gloo/issues/3582
