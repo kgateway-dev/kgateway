@@ -30,6 +30,10 @@ Improving the documentation, adding examples or use cases can be the easiest way
 
 For more detailed guidance on contributing to the documentation, check out the guide on the [docs website](https://docs.solo.io/gloo-edge/latest/contributing).
 
+### Setting up the development environment
+
+Instructions for setting the development environment can be found in the [developer guide](https://docs.solo.io/gloo-edge/latest/guides/dev/setting-up-dev-environment/). 
+
 ### Small bug fixes
 
 If your bug fix is small (around 20 lines of code) just open a pull request. We will try to merge it as soon as possible, 

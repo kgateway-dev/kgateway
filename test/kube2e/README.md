@@ -1,5 +1,5 @@
 # Regression tests
-This directory contains test that install each of the 3 Gloo Edge flavours (`gateway`, `ingress`, and `knative`) and run 
+This directory contains test that install each of the 3 Gloo Edge flavours (`gateway`, `ingress`, `knative`, `gloomtls`, `helm` and `glooctl`) and run 
 regression tests against them.
 
 ## Build test assets
