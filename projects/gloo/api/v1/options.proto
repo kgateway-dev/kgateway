@@ -35,6 +35,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/prox
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto";
@@ -156,7 +157,7 @@ message VirtualHostOptions {
     // Defines a CORS policy for the virtual host
     // If a CORS policy is also defined on the route matched by the request, the policies are merged.
     cors.options.gloo.solo.io.CorsPolicy cors = 3;
-    // Transformations to apply. Note: this field is superceded by `staged_transformations`.
+    // Transformations to apply. Note: this field is superseded by `staged_transformations`.
     // If `staged_transformations.regular` is set, this field will be ignored.
     transformation.options.gloo.solo.io.Transformations transformations = 4 [deprecated = true];
     // Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
@@ -241,7 +242,7 @@ message VirtualHostOptions {
 // Note to developers: new Route plugins must be added to this struct
 // to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 message RouteOptions {
-    // Transformations to apply. Note: this field is superceded by `staged_transformations`.
+    // Transformations to apply. Note: this field is superseded by `staged_transformations`.
     // If `staged_transformations.regular` is set, this field will be ignored.
     transformation.options.gloo.solo.io.Transformations transformations = 1 [deprecated = true];
     fault.options.gloo.solo.io.RouteFaults faults = 2;
@@ -349,6 +350,15 @@ message RouteOptions {
     // Early transformations stage. These transformations run before most other options are processed.
     // If the `regular` field is set in here, the `transformations` field is ignored.
     transformation.options.gloo.solo.io.TransformationStages staged_transformations = 23;
+
+    // This field can be used to provide additional information about the route. This metadata can be consumed
+    // by the Envoy filters that process requests that match the route. For more info about metadata, see
+    // [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/data_sharing_between_filters#metadata).
+    //
+    // The value of this field will be propagated to the `metadata` attribute of the corresponding Envoy route.
+    // Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#config-route-v3-route)
+    // for more details about the `metadata` attribute.
+    map<string, google.protobuf.Struct> envoy_metadata = 26;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
@@ -368,7 +378,7 @@ message DestinationSpec {
 message WeightedDestinationOptions {
     // Append/Remove headers on Requests or Responses to/from this Weighted Destination
     headers.options.gloo.solo.io.HeaderManipulation header_manipulation = 1;
-    // Transformations to apply. Note: this field is superceded by `staged_transformations`.
+    // Transformations to apply. Note: this field is superseded by `staged_transformations`.
     // If `staged_transformations.regular` is set, this field will be ignored.
     transformation.options.gloo.solo.io.Transformations transformations = 2 [deprecated = true];
     // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
