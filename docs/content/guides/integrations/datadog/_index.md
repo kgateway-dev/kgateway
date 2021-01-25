@@ -24,7 +24,7 @@ You will need the following to complete this guide:
 
 * **Datadog account**: If you don't already have an account, you can sign up for a free trial [on their website](https://app.datadoghq.com).
 * **Kubernetes cluster**: This can be deployed in any environment, follow our [preparation guide]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) for more information.
-* **Gloo Edge installation**: You can install Gloo Edge on Kubernetes by following our [setup guide](/installation/gateway/kubernetes).
+* **Gloo Edge installation**: You can install Gloo Edge on Kubernetes by following our [setup guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
 * **Helm**: You will be deploying the Datadog integration using [Helm v3](https://helm.sh/docs/intro/install/).
 * **kubectl**: Kubectl should be installed and configured to access the cluster where you are adding Datadog.
 
