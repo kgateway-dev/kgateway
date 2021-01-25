@@ -10,23 +10,19 @@ As part of configuring an Upstream, Gloo Edge provides the option of adding *hea
 
 Descriptions of the options available for configuring health checks can be found {{< protobuf name="solo.io.envoy.api.v2.core.HealthCheck" display="here" >}}.
 
-### Custom Headers for HttpHealthChecks
+### Custom paths for HttpHealthChecks
 
-There are two ways to add custom headers to health check requests, both of which are shown in the example below.
+There is a way to add custom paths to health check requests shown in the example below.
 
 {{< highlight yaml >}}
-...
-  healthCheck:
+spec:
+  healthChecks:
+  - healthyThreshold: 1
     httpHealthCheck:
-      requestHeadersToAdd:
-        - header:
-            key: example-name
-            value: example-value
-          append: true
-        - headerSecretRef:
-            name: example-name
-            namespace: example-namespace
-          append: true
+      path: /check/healthz
+    interval: 30s
+    timeout: 10s
+    unhealthyThreshold: 1
 {{< /highlight >}}
 
-A `header` represents an explicitly-specified header where the key is the header name and the value is the header value. In contrast, a `headerSecretRef` points to headers contained in a Kubernetes secret. Each secret represents one or more (header name, header value) pairs that will all be added to the request. Secrets for this purpose can be [created with glooctl]({{< versioned_link_path fromRoot="/reference/cli/glooctl_create_secret_header" >}}). In both cases, the `append` field controls whether headers from the give source add to existing headers with the same name (`true`) or overwrite them (`false`).
+A `path` represents an explicitly-specified path to check the health of the upstream. The `timeout` declares how much time between checks there should be. An `unhealthyThreshold` is the limit of checks that are allowed to fail before declaring the upstream unhealthy. A `healthyThreshold` is the limit of checks that are allowed to pass before declaring an upstream healthy. The `interval` is the interval of time that you send `healthchecks` as to not overload your upstream service. 
