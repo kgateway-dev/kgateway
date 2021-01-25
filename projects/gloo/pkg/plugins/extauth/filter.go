@@ -129,6 +129,11 @@ func generateEnvoyConfigForFilter(settings *extauthv1.Settings, extauthUpstreamR
 	}
 	cfg.StatusOnError = statusOnError
 
+	// If not set, `TransportApiVersion` defaults to AUTO (which defaults to V2).
+	if settings.GetUseV3TransportApi() {
+		cfg.TransportApiVersion = envoycore.ApiVersion_V3
+	}
+
 	return cfg, nil
 }
 
