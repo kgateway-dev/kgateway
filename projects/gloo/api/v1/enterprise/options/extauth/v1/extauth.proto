@@ -134,7 +134,7 @@ message Settings {
         V2 = 0;
 
         // Use v3 API.
-        V3 = 2;
+        V3 = 1;
     }
 
     // Determines the API version for the `ext_authz` transport protocol that will be used by Envoy
