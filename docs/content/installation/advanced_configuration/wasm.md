@@ -98,7 +98,183 @@ If your image isn't hosted on an image registry, such as [WebAssembly Hub](https
           root_id: add_header_root_id
 ```
 
-When loading directly from file, you'll need to ensure that the given `filePath` contains your `.wasm` file. One way to do this for example, would be using an `initContainer` on your `gatewayProxy` deployment to load the `.wasm` file into a shared `volume`.
+When loading directly from file, you'll need to ensure that the given `filePath` contains your `.wasm` file. 
+
+## Loading a wasm filter image from an initContainer
+
+In some circumstances, using [WebAssembly Hub](https://webassemblyhub.io/) as your wasm filter image repository may not be possible, for example due to enterprise networking restrictions. One way to deploy a wasm filter without going through WebAssembly Hub, is to use an `initContainer` on your `gatewayProxy` deployment to load the `.wasm` file into a shared `volume`. This section will walk you through setting this up.
+
+### Prerequisites
+
+We are assuming you already have a wasm filter created and built locally. You can replicate this by running the two commands below. Alternatively, you can follow the more in-depth guide in the WebAssembly Hub docs [here](https://docs.solo.io/web-assembly-hub/latest/tutorial_code/build_tutorials/building_cpp_filters/).
+
+```bash
+wasme init --language cpp --platform gloo --platform-version 1.6.x ./my-filter
+```
+followed by
+
+```bash
+cd my-filter
+wasme build cpp --store ./wasmstore . -t my-wasm-filter:v1.0
+```
+
+It's also assumed that you have a k8s cluster running, with Gloo Edge Enterprise installed in it, ideally with a route to an upstream we can hit for testing. The example we're using here uses Gloo Edge Enterprise 1.6.2, but any future version should work.
+
+### Step 1 - Build a docker image containing our filter
+
+First we need to build a docker image which contains our new wasm filter image. In our steps above this file is called `filter.wasm` and has been output at `.wasmstore/<uniqueId>/filter.wasm`. If you've built your `filter.wasm` using a tool other than wasme, for example using `bazel` instead - the location of the filter file may differ. Let's grab this `filter.wasm` file and put it in a folder somewhere that we can make changes.
+
+We will create a file named `Dockerfile` as a sibling to this `filter.wasm`, this will be used to generate our docker image. The contents of `Dockerfile` should be as follows:
+
+```
+FROM alpine
+
+COPY filter.wasm filter.wasm
+
+CMD ["cp", "filter.wasm", "/wasm-filters/"]
+```
+
+This will create a basic docker image which just contains our `filter.wasm` file, and when run, will copy it to the `/wasm-filters/` folder, which we will mount later.
+
+Next we want to build and tag the docker image from this Dockerfile, by running the following command (replacing your repository URL, and preferred image name):
+
+`docker build . -t localhost:8888/myorg/my-wasm-getter:1.0.0`
+
+We have now created a standard docker image named `localhost:8888/myorg/my-wasm-getter` with a tag of `1.0.0`. This can be pushed to whatever docker-compliant image repository you have:
+
+`docker push localhost:8888/myorg/my-wasm-getter:1.0.0`
+
+### Step 2 - Add the initContainer to the gateway-proxy Deployment
+
+Now that we have a docker image containing our wasm filter, we will use it as an `initContainer` for our `gateway-proxy` pod, so that the filter is available to Envoy via a shared mounted volume.
+
+Update the `gateway-proxy` `Deployment` resource as shown below, noting the extra "wasm-filters" `volume` and `volumeMount`, as well as the addition of `initContainers`:
+
+{{< highlight yaml "hl_lines=60-68 83" >}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  selector:
+    matchLabels:
+      gateway-proxy-id: gateway-proxy
+      gloo: gateway-proxy
+  template:
+    metadata:
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8081"
+        prometheus.io/scrape: "true"
+      labels:
+        gateway-proxy: live
+        gateway-proxy-id: gateway-proxy
+        gloo: gateway-proxy
+    spec:
+      containers:
+      - args:
+        - --disable-hot-restart
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        image: quay.io/solo-io/gloo-envoy-wrapper:1.6.2
+        imagePullPolicy: IfNotPresent
+        name: gateway-proxy
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        - containerPort: 8443
+          name: https
+          protocol: TCP
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 10101
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/envoy
+          name: envoy-config
+        - mountPath: /wasm-filters
+          name: wasm-filters
+      initContainers:
+      - name: wasm-image
+        image: localhost:8888/myorg/my-wasm-getter:1.0.0
+        imagePullPolicy: Never
+        volumeMounts:
+        - mountPath: /wasm-filters
+          name: wasm-filters
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 10101
+        runAsUser: 10101
+      serviceAccount: gateway-proxy
+      serviceAccountName: gateway-proxy
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: gateway-proxy-envoy-config
+        name: envoy-config
+      - name: wasm-filters
+{{< /highlight >}}
+
+What we've done here, is specify the initContainer, which will run _before_ the gateway-proxy envoy starts up. It will add our `filter.wasm` file to the filepath at `/wasm-filters/filter.wasm`, and since that's mounted to our gateway-proxy container, it's now accessible to be read directly from the file.
+
+### Step 3 - Configure the wasm filter in the gateway
+
+Now that the filter is in a filepath accessible to Envoy, we need to tell envoy to load it from path. We do this in the `Gateway` type resource, named `gateway-proxy`:
+
+{{< highlight yaml "hl_lines=12-21" >}}
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+    app.kubernetes.io/managed-by: Helm
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  httpGateway:
+    options:
+      wasm:
+        filters:
+        - config:
+            '@type': type.googleapis.com/google.protobuf.StringValue
+            value: "my test config"
+          filePath: /wasm-filters/filter.wasm
+          name: myfilter
+          root_id: add_header_root_id
+  proxyNames:
+  - gateway-proxy
+  ssl: false
+  useProxyProto: false
+{{< /highlight >}}
+
+If you've been following along with this example, you should now be able to curl one of your endpoints and see the results of your filter being run - in this case, a newly added http header.
+
+If you don't have any test services to run against, you can install the petstore example used in our [hello world tutorial]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world/" >}}).
+
+### References
 
 To find our more information about WASM filters, and how to build/run them check out [`wasm`](https://github.com/solo-io/wasm).
 

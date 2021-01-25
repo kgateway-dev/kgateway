@@ -67,7 +67,7 @@ func (p *Plugin) ProcessVirtualHost(
 	in *v1.VirtualHost, out *envoy_config_route_v3.VirtualHost,
 ) error {
 	if newRateLimits := in.GetOptions().GetRatelimit().GetRateLimits(); len(newRateLimits) > 0 {
-		out.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, newRateLimits)
+		out.RateLimits = toEnvoyRateLimits(params.Ctx, newRateLimits)
 	}
 	return nil
 }
@@ -75,7 +75,7 @@ func (p *Plugin) ProcessVirtualHost(
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if rateLimits := in.GetOptions().GetRatelimit(); rateLimits != nil {
 		if ra := out.GetRoute(); ra != nil {
-			ra.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, rateLimits.GetRateLimits())
+			ra.RateLimits = toEnvoyRateLimits(params.Ctx, rateLimits.GetRateLimits())
 			ra.IncludeVhRateLimits = &wrappers.BoolValue{Value: rateLimits.GetIncludeVhRateLimits()}
 		} else {
 			// TODO(yuval-k): maybe return nil here instead and just log a warning?
@@ -107,7 +107,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 		return nil, nil
 	}
 
-	customConf := generateEnvoyConfigForCustomFilter(upstreamRef, timeout, denyOnFail)
+	customConf := GenerateEnvoyConfigForFilterWith(upstreamRef, CustomDomain, CustomStage, timeout, denyOnFail)
 
 	customStagedFilter, err := plugins.NewStagedFilterWithConfig(
 		wellknown.HTTPRateLimit,

@@ -52,7 +52,7 @@ serve-site: site-test
 
 .PHONY: clean
 clean:
-	rm -fr ./site ./resources ./site-latest ./site-versioned ./public ./ci ./gloo-temp
+	rm -fr ./site ./resources ./site-latest ./site-versioned ./public ./ci ./gloo-temp ./themes
 
 # Uses https://github.com/gjtorikian/html-proofer
 # Does not require running site; just make sure you generate the site and then run it

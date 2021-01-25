@@ -1,0 +1,8 @@
+changelog:
+- type: NEW_FEATURE
+  description: >
+    Add support for [metadata actions](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#config-route-v3-ratelimit-action-metadata)
+    to the rate limit API. The new `metadata` action type can now be used to generate rate limit descriptors based on
+    both static and dynamic Envoy metadata.
+  issueLink: https://github.com/solo-io/gloo/issues/4160
+  resolvesIssue: false
