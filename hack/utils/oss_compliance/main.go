@@ -76,13 +76,12 @@ func Cli() *cobra.Command {
 
 func run(licenses map[string]interface{}) error {
 	glooOptions := &license.Options{
-		RunAll:                  false,
-		Words:                   false,
-		PrintConfidence:         false,
-		UseMarkdown:             true,
-		PrunePath:               "github.com/solo-io/gloo/vendor/",
-		HelperListGlooPkgs:      false,
-		ConsolidatedLicenseFile: "third_party_licenses.txt",
+		RunAll:             false,
+		Words:              false,
+		PrintConfidence:    false,
+		UseMarkdown:        true,
+		PrunePath:          "github.com/solo-io/gloo/vendor/",
+		HelperListGlooPkgs: false,
 		Pkgs: []string{
 			"github.com/solo-io/gloo/projects/accesslogger/cmd",
 			"github.com/solo-io/gloo/projects/discovery/cmd",
