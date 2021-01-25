@@ -15,6 +15,7 @@ weight: 5
 - [Config](#config)
 - [ExtAuthExtension](#extauthextension)
 - [Settings](#settings)
+- [ApiVersion](#apiversion)
 - [HttpService](#httpservice)
 - [Request](#request)
 - [Response](#response)
@@ -160,6 +161,7 @@ Global external auth settings
 "requestBody": .enterprise.gloo.solo.io.BufferSettings
 "clearRouteCache": bool
 "statusOnError": int
+"transportApiVersion": .enterprise.gloo.solo.io.Settings.ApiVersion
 
 ```
 
@@ -173,6 +175,21 @@ Global external auth settings
 | `requestBody` | [.enterprise.gloo.solo.io.BufferSettings](../extauth.proto.sk/#buffersettings) | Set this if you also want to send the body of the request, and not just the headers. |
 | `clearRouteCache` | `bool` | Clears route cache in order to allow the external authorization service to correctly affect routing decisions. Filter clears all cached routes when: 1. The field is set to *true*. 2. The status returned from the authorization service is a HTTP 200 or gRPC 0. 3. At least one *authorization response header* is added to the client request, or is used for altering another client request header. |
 | `statusOnError` | `int` | Sets the HTTP status that is returned to the client when there is a network error between the filter and the authorization server. The default status is HTTP 403 Forbidden. If set, this must be one of the following: - 100 - 200 201 202 203 204 205 206 207 208 226 - 300 301 302 303 304 305 307 308 - 400 401 402 403 404 405 406 407 408 409 410 411 412 413 414 415 416 417 421 422 423 424 426 428 429 431 - 500 501 502 503 504 505 506 507 508 510 511. |
+| `transportApiVersion` | [.enterprise.gloo.solo.io.Settings.ApiVersion](../extauth.proto.sk/#apiversion) | Determines the API version for the `ext_authz` transport protocol that will be used by Envoy to communicate with the auth server. Defaults to `V2`. For more info, see the `transport_api_version` field [here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#extensions-filters-http-ext-authz-v3-extauthz). |
+
+
+
+
+---
+### ApiVersion
+
+ 
+Describes the transport protocol version to use when connecting to the ext auth server.
+
+| Name | Description |
+| ----- | ----------- | 
+| `V2` | Use v2 API. |
+| `V3` | Use v3 API. |
 
 
 
