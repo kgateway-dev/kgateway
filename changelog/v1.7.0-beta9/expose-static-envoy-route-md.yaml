@@ -1,0 +1,8 @@
+changelog:
+- type: NEW_FEATURE
+  description: >
+    Added the new `envoy_metadata` route option. This field can be used to provide additional information which can be
+    consumed by the Envoy filters that process requests that match the route. For more info about metadata,
+    see [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/data_sharing_between_filters#metadata).
+  issueLink: https://github.com/solo-io/gloo/issues/4160
+  resolvesIssue: false
