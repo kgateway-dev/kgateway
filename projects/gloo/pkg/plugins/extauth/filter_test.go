@@ -186,7 +186,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			It("sets TransportApiVersion to V3 on the ext auth filter", func() {
 				settings = &extauthv1.Settings{
 					ExtauthzServerRef: upstream.Metadata.Ref(),
-					UseV3TransportApi: true,
+					TransportApiVersion: extauthv1.Settings_V3,
 				}
 
 				filters, err := BuildHttpFilters(settings, nil, gloov1.UpstreamList{upstream})

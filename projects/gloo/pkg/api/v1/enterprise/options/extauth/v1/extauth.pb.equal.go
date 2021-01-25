@@ -231,7 +231,7 @@ func (m *Settings) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetUseV3TransportApi() != target.GetUseV3TransportApi() {
+	if m.GetTransportApiVersion() != target.GetTransportApiVersion() {
 		return false
 	}
 

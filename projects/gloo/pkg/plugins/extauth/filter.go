@@ -133,8 +133,11 @@ func generateEnvoyConfigForFilter(settings *extauthv1.Settings, extauthUpstreamR
 	// Both the AUTO and V2 values are [currently deprecated](https://github.com/envoyproxy/envoy/blob/main/api/envoy/config/core/v3/config_source.proto#L33).
 	// These fields will be removed in Envoy [by end of Q1 2021](https://www.envoyproxy.io/docs/envoy/latest/faq/api/envoy_v2_support),
 	// when V3 will become the default.
-	if settings.GetUseV3TransportApi() {
+	switch settings.GetTransportApiVersion() {
+	case extauthv1.Settings_V3:
 		cfg.TransportApiVersion = envoycore.ApiVersion_V3
+	default:
+		// Leave unset so it defaults to AUTO
 	}
 
 	return cfg, nil
