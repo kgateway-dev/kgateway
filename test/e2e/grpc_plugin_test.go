@@ -44,7 +44,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		defaults.HttpsPort = services.NextBindPort()
 
 		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstanceWithRestXdsPort(uint32(testClients.RestXdsPort))
+		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 
 		writeNamespace = defaults.GlooSystem
@@ -66,7 +66,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 		err = helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to create the default gateways")
-		err = envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
+		err = envoyInstance.RunWithRestXds(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)

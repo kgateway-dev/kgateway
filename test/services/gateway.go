@@ -136,7 +136,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	glooOpts.Settings = runOptions.Settings
 	if glooOpts.Settings == nil {
 		glooOpts.Settings = &gloov1.Settings{
-			Gloo:                 &gloov1.GlooOptions{
+			Gloo: &gloov1.GlooOptions{
 				RestXdsBindAddr: fmt.Sprintf("0.0.0.0:%v", int(runOptions.RestXdsPort)),
 			},
 		}

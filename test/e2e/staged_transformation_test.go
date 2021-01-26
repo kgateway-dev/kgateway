@@ -45,7 +45,7 @@ var _ = Describe("Staged Transformation", func() {
 		defaults.HttpsPort = services.NextBindPort()
 
 		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstanceWithRestXdsPort(uint32(testClients.RestXdsPort))
+		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 
 		tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
@@ -89,7 +89,7 @@ var _ = Describe("Staged Transformation", func() {
 		_, err = testClients.UpstreamClient.Write(extauthn, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		err = envoyInstance.RunWithRole(ns+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
+		err = envoyInstance.RunWithRestXds(ns+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		up = tu.Upstream
