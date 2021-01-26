@@ -66,7 +66,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sergi/go-diff v1.1.0
 	github.com/smartystreets/assertions v1.0.0 // indirect
-	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
+	github.com/solo-io/go-list-licenses v0.0.1
 	github.com/solo-io/go-utils v0.20.1
 	github.com/solo-io/k8s-utils v0.0.3
 	github.com/solo-io/protoc-gen-ext v0.0.14
@@ -125,7 +125,6 @@ replace (
 	github.com/opencontainers/go-digest => github.com/opencontainers/go-digest v1.0.0-rc1
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
-
 	//the following block of replacements are needed to have locked these packages to before versions they switched to using proto4
 	golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
 

@@ -1,27 +1,87 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"os"
+
+	"github.com/solo-io/go-utils/cliutils"
+	"github.com/spf13/cobra"
 
 	"github.com/solo-io/go-list-licenses/pkg/license"
 )
 
 func main() {
-	err := run()
-	if err != nil {
-		log.Fatalf("unable to run oss compliance check: %v\n", err)
+
+	app := Cli()
+	if err := app.Execute(); err != nil {
+		fmt.Errorf("unable to run oss compliance check: %v\n", err)
+		os.Exit(1)
 	}
 }
 
-func run() error {
+type Options struct {
+	LicensesToSkip    []string
+	LicensesToInclude []string
+}
+
+func Cli() *cobra.Command {
+	opts := &Options{}
+	optionsFunc := func(app *cobra.Command) {
+		pflags := app.PersistentFlags()
+		pflags.StringSliceVarP(&opts.LicensesToSkip, "skipLicenses", "s", nil, "licenses to not include in the output list, evaluated after skipped licenses")
+		pflags.StringSliceVarP(&opts.LicensesToInclude, "includeLicenses", "i", nil, "only these licenses will be included in the list, if empty, all licenses will be included")
+	}
+	app := &cobra.Command{
+		Use: "osagen",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			arr, err := cmd.Flags().GetStringSlice("includeLicenses")
+			if err != nil {
+				return err
+			}
+			licensesToDisplay, err := license.GetTemplatesSet()
+			if err != nil {
+				return err
+			}
+			if len(arr) != 0 {
+				// only include these licenses, if this array is not empty
+				tempSet := make(map[string]interface{})
+				for _, l := range arr {
+					if licensesToDisplay[l] == nil {
+						return fmt.Errorf("%s is not a valid license name", l)
+					}
+					tempSet[l] = true
+				}
+				licensesToDisplay = tempSet
+
+			}
+			arr, err = cmd.Flags().GetStringSlice("skipLicenses")
+			if err != nil {
+				return err
+			}
+			if len(arr) != 0 {
+				for _, l := range arr {
+					if licensesToDisplay[l] == nil {
+						return fmt.Errorf("%s is not a valid license name", l)
+					}
+					delete(licensesToDisplay, l)
+				}
+			}
+			return run(licensesToDisplay)
+		},
+	}
+
+	cliutils.ApplyOptions(app, []cliutils.OptionsFunc{optionsFunc})
+	return app
+}
+
+func run(licenses map[string]interface{}) error {
 	glooOptions := &license.Options{
-		RunAll:                  false,
-		Words:                   false,
-		PrintConfidence:         false,
-		UseCsv:                  true,
-		PrunePath:               "github.com/solo-io/gloo/vendor/",
-		HelperListGlooPkgs:      false,
-		ConsolidatedLicenseFile: "third_party_licenses.txt",
+		RunAll:             false,
+		Words:              false,
+		PrintConfidence:    false,
+		UseMarkdown:        true,
+		PrunePath:          "github.com/solo-io/gloo/vendor/",
+		HelperListGlooPkgs: false,
 		Pkgs: []string{
 			"github.com/solo-io/gloo/projects/accesslogger/cmd",
 			"github.com/solo-io/gloo/projects/discovery/cmd",
@@ -31,7 +91,7 @@ func run() error {
 			"github.com/solo-io/gloo/projects/ingress/cmd",
 			"github.com/solo-io/gloo/projects/hypergloo",
 		},
-		Product: NewGlooProductLicenseHandler(linuxTarget),
+		Product: NewGlooProductLicenseHandler(linuxTarget, licenses),
 	}
 	return license.PrintLicensesWithOptions(glooOptions)
 }
@@ -42,16 +102,22 @@ const (
 )
 
 type GlooProductLicenseHandler struct {
-	TargetOs string
+	TargetOs          string
+	LicensesToProcess map[string]interface{}
 }
 
-func NewGlooProductLicenseHandler(targetOs string) *GlooProductLicenseHandler {
+func NewGlooProductLicenseHandler(targetOs string, licensesToProcess map[string]interface{}) *GlooProductLicenseHandler {
 	return &GlooProductLicenseHandler{
-		TargetOs: targetOs,
+		TargetOs:          targetOs,
+		LicensesToProcess: licensesToProcess,
 	}
 }
 
 func (lh *GlooProductLicenseHandler) SkipLicense(l license.License) bool {
+	// explicitly don't process this license
+	if l.Template != nil && lh.LicensesToProcess[l.Template.Title] == nil {
+		return true
+	}
 	// only present on mac
 	if lh.TargetOs == linuxTarget && l.Package == "github.com/solo-io/gloo/vendor/github.com/mitchellh/go-homedir" {
 		return true

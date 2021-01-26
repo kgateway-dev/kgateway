@@ -146,7 +146,7 @@ clean:
 #----------------------------------------------------------------------------------
 
 .PHONY: generated-code
-generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-licenses generate-helm-files init
+generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-licenses generate-helm-files init update-licenses
 
 # Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
 # Glooctl enterprise docs are pushed from the private repo.
@@ -338,7 +338,6 @@ $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_SOURCES)
 gloo: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH)
 
 $(GLOO_OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/cmd/Dockerfile
-	cp hack/utils/oss_compliance/third_party_licenses.txt $(GLOO_OUTPUT_DIR)/third_party_licenses.txt
 	cp $< $@
 
 .PHONY: gloo-docker
@@ -610,9 +609,8 @@ build-test-chart:
 #----------------------------------------------------------------------------------
 .PHONY: update-licenses
 update-licenses:
-# TODO(helm3): fix after we completely drop toml parsing in favor of go modules
-#	cd hack/utils/oss_compliance && GO111MODULE=on go run main.go
-
+	cd hack/utils/oss_compliance; GO111MODULE=on go run main.go osagen -s "Mozilla Public License 2.0,GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"> ../../../docs/content/static/content/osa_provided.docgen
+	cd hack/utils/oss_compliance; GO111MODULE=on go run main.go osagen -i "Mozilla Public License 2.0,GNU General Public License v2.0,GNU General Public License v3.0,GNU Lesser General Public License v2.1,GNU Lesser General Public License v3.0,GNU Affero General Public License v3.0"> ../../../docs/content/static/content/osa_included.docgen
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility
