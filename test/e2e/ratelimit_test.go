@@ -193,7 +193,7 @@ var _ = Describe("Rate Limit", func() {
 			err = helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
 			Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
 
-			err = envoyInstance.Run(testClients.GlooPort)
+			err = envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			testUpstream = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
