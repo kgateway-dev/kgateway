@@ -187,7 +187,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 
 	// NOTE: you need to configure EC2 instances before running this
 	It("be able to call upstream function", func() {
-		err := envoyInstance.RunWithRoleAndRestXds(services.defaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err := envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy := &gloov1.Proxy{
