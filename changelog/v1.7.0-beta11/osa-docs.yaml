@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Adds an Open Source Attribution doc, which is generated during code gen. This allows us to declare the third party software
+      which we are using, as well as explicitly mention which softwares we provide and which ones are included (depending on the license).
