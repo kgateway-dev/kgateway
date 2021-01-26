@@ -117,7 +117,7 @@ var _ = Describe("Fault Injection", func() {
 					return errors.New(fmt.Sprintf("%v is not ServiceUnavailable", res.StatusCode))
 				}
 				return nil
-			}, "20s", ".1s").Should(BeNil())
+			}, "40s", ".1s").Should(BeNil())
 		})
 
 		It("should cause envoy delay fault", func() {
