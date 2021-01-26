@@ -338,7 +338,6 @@ $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_SOURCES)
 gloo: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH)
 
 $(GLOO_OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/cmd/Dockerfile
-	cp hack/utils/oss_compliance/third_party_licenses.txt $(GLOO_OUTPUT_DIR)/third_party_licenses.txt
 	cp $< $@
 
 .PHONY: gloo-docker
