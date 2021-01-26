@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 	"github.com/solo-io/gloo/test/services"
@@ -80,7 +79,7 @@ var _ = Describe("Fault Injection", func() {
 			envoyInstance, err = envoyFactory.NewEnvoyInstance()
 			Expect(err).NotTo(HaveOccurred())
 
-			err = envoyInstance.RunWithRestXds(gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+			err = envoyInstance.RunWithRestXds("default~proxy", testClients.GlooPort, testClients.RestXdsPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			setupUpstream()
@@ -117,7 +116,7 @@ var _ = Describe("Fault Injection", func() {
 					return errors.New(fmt.Sprintf("%v is not ServiceUnavailable", res.StatusCode))
 				}
 				return nil
-			}, "40s", ".1s").Should(BeNil())
+			}, "20s", ".1s").Should(BeNil())
 		})
 
 		It("should cause envoy delay fault", func() {

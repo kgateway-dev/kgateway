@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
@@ -53,7 +52,7 @@ var _ = Describe("Transformations", func() {
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRestXds(gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err = envoyInstance.RunWithRestXds("default~proxy", testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 		envoyPort = defaults.HttpPort
 

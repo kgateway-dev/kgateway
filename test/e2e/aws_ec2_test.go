@@ -13,7 +13,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/rotisserie/eris"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -188,7 +187,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 
 	// NOTE: you need to configure EC2 instances before running this
 	It("be able to call upstream function", func() {
-		err := envoyInstance.RunWithRestXds(gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err := envoyInstance.RunWithRestXds("default~proxy", testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy := &gloov1.Proxy{

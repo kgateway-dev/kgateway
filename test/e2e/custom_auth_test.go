@@ -13,7 +13,6 @@ import (
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -89,7 +88,7 @@ var _ = Describe("CustomAuth", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Run envoy
-		err = envoyInstance.RunWithRestXds(gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err = envoyInstance.RunWithRestXds("default~proxy", testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Create a test upstream

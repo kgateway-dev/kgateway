@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -69,7 +68,7 @@ var _ = Describe("CORS", func() {
 				td.per.envoyInstance.LocalAddr(),
 				td.per.envoyInstance.AdminPort)
 
-			err = td.per.envoyInstance.RunWithRestXds(gatewaydefaults.GatewayProxyName, td.testClients.GlooPort, td.testClients.RestXdsPort)
+			err = td.per.envoyInstance.RunWithRestXds("default~proxy", td.testClients.GlooPort, td.testClients.RestXdsPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			td.per.up = td.setupUpstream()
