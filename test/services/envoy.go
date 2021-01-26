@@ -29,7 +29,8 @@ import (
 )
 
 const (
-	containerName = "e2e_envoy"
+	containerName    = "e2e_envoy"
+	DefaultProxyName = "default~proxy"
 )
 
 var adminPort = uint32(20000)
@@ -398,11 +399,11 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 
 func (ei *EnvoyInstance) RunWithId(id string) error {
 	ei.ID = id
-	return ei.RunWithRole("default~proxy", 8081)
+	return ei.RunWithRole(DefaultProxyName, 8081)
 }
 
 func (ei *EnvoyInstance) Run(port int) error {
-	return ei.RunWithRole("default~proxy", port)
+	return ei.RunWithRole(DefaultProxyName, port)
 }
 
 func (ei *EnvoyInstance) RunWith(eic EnvoyInstanceConfig) error {
@@ -423,7 +424,7 @@ func (ei *EnvoyInstance) RunWithRole(role string, port int) error {
 	return ei.runWithAll(eic, boostrapBuilder)
 }
 
-func (ei *EnvoyInstance) RunWithRestXds(role string, glooPort, restXdsPort int) error {
+func (ei *EnvoyInstance) RunWithRoleAndRestXds(role string, glooPort, restXdsPort int) error {
 	eic := &envoyInstanceConfig{
 		role:        role,
 		port:        uint32(glooPort),

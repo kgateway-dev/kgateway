@@ -88,7 +88,7 @@ var _ = Describe("CustomAuth", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Run envoy
-		err = envoyInstance.RunWithRestXds("default~proxy", testClients.GlooPort, testClients.RestXdsPort)
+		err = envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Create a test upstream

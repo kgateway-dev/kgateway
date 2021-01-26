@@ -144,7 +144,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		// Start Envoy
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, glooPort, restXdsPort)
+		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, glooPort, restXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Run a simple web application locally

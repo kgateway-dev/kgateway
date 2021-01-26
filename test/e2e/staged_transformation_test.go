@@ -89,7 +89,7 @@ var _ = Describe("Staged Transformation", func() {
 		_, err = testClients.UpstreamClient.Write(extauthn, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		err = envoyInstance.RunWithRestXds(ns+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err = envoyInstance.RunWithRoleAndRestXds(ns+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		up = tu.Upstream

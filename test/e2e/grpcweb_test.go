@@ -84,7 +84,7 @@ var _ = Describe("Grpc Web", func() {
 					_, err := tc.TestClients.UpstreamClient.Write(grpcUpstream, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
-					err = envoyInstance.RunWithRestXds(gatewaydefaults.GatewayProxyName, tc.TestClients.GlooPort, tc.TestClients.RestXdsPort)
+					err = envoyInstance.RunWithRoleAndRestXds(gatewaydefaults.GatewayProxyName, tc.TestClients.GlooPort, tc.TestClients.RestXdsPort)
 					Expect(err).NotTo(HaveOccurred())
 
 					// we want to test grpc web, so lets reuse the access log service

@@ -154,7 +154,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			}
 
 			return string(body), nil
-		}, "120s", "1s").Should(ContainSubstring(substring))
+		}, "10s", "1s").Should(ContainSubstring(substring))
 	}
 
 	validateEc2Endpoint := func(envoyPort uint32, substring string) {
@@ -187,7 +187,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 
 	// NOTE: you need to configure EC2 instances before running this
 	It("be able to call upstream function", func() {
-		err := envoyInstance.RunWithRestXds("default~proxy", testClients.GlooPort, testClients.RestXdsPort)
+		err := envoyInstance.RunWithRoleAndRestXds(services.defaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy := &gloov1.Proxy{

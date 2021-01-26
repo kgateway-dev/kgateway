@@ -119,7 +119,7 @@ var _ = Describe("Access Log", func() {
 					contextutils.SetFallbackLogger(logger.Sugar())
 
 					envoyInstance.AccessLogPort = accessLogPort
-					err := envoyInstance.RunWithRestXds(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+					err := envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 					Expect(err).NotTo(HaveOccurred())
 
 					gatewaycli := testClients.GatewayClient

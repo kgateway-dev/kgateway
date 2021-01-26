@@ -68,7 +68,7 @@ var _ = Describe("CORS", func() {
 				td.per.envoyInstance.LocalAddr(),
 				td.per.envoyInstance.AdminPort)
 
-			err = td.per.envoyInstance.RunWithRestXds("default~proxy", td.testClients.GlooPort, td.testClients.RestXdsPort)
+			err = td.per.envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, td.testClients.GlooPort, td.testClients.RestXdsPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			td.per.up = td.setupUpstream()

@@ -94,7 +94,7 @@ var _ = Describe("Consul e2e", func() {
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 		envoyInstance.RestXdsPort = uint32(testClients.RestXdsPort)
-		err = envoyInstance.RunWithRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Run two simple web applications locally

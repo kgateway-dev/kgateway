@@ -136,7 +136,7 @@ var _ = Describe("Happy path", func() {
 					}
 					testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 					envoyInstance.ApiVersion = testCase.TransportApiVersion.String()
-					err := envoyInstance.RunWithRestXds(ns+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+					err := envoyInstance.RunWithRoleAndRestXds(ns+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 					Expect(err).NotTo(HaveOccurred())
 
 					up = tu.Upstream

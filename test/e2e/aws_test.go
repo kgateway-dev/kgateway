@@ -238,7 +238,7 @@ var _ = Describe("AWS Lambda", func() {
 	}
 
 	testLambdaWithVirtualService := func() {
-		err := envoyInstance.RunWithRestXds("gloo-system~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err := envoyInstance.RunWithRoleAndRestXds("gloo-system~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		vs := &gw1.VirtualService{
