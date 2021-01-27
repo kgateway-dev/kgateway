@@ -72,7 +72,7 @@ message ListenerOptions {
 
     // Additional socket options that may not be present in Envoy source code or
     // precompiled binaries.
-    .solo.io.envoy.api.v2.core.SocketOption socket_options = 4;
+    repeated .solo.io.envoy.api.v2.core.SocketOption socket_options = 4;
 }
 
 // Optional, feature-specific configuration that lives on http listeners
