@@ -135,21 +135,13 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 	glooOpts.Settings = runOptions.Settings
 	if glooOpts.Settings == nil {
-		glooOpts.Settings = &gloov1.Settings{
-			Gloo: &gloov1.GlooOptions{
-				RestXdsBindAddr: fmt.Sprintf("0.0.0.0:%v", int(runOptions.RestXdsPort)),
-			},
-		}
-	} else {
-		if glooOpts.Settings.Gloo == nil {
-			glooOpts.Settings.Gloo = &gloov1.GlooOptions{
-				RestXdsBindAddr: fmt.Sprintf("0.0.0.0:%v", int(runOptions.RestXdsPort)),
-			}
-		} else {
-			if glooOpts.Settings.Gloo.RestXdsBindAddr == "" {
-				glooOpts.Settings.Gloo.RestXdsBindAddr = fmt.Sprintf("0.0.0.0:%v", int(runOptions.RestXdsPort))
-			}
-		}
+		glooOpts.Settings = &gloov1.Settings{}
+	}
+	if glooOpts.Settings.Gloo == nil {
+		glooOpts.Settings.Gloo = &gloov1.GlooOptions{}
+	}
+	if glooOpts.Settings.Gloo.RestXdsBindAddr == "" {
+		glooOpts.Settings.Gloo.RestXdsBindAddr = fmt.Sprintf("0.0.0.0:%v", int(runOptions.RestXdsPort))
 	}
 
 	runOptions.Extensions.SyncerExtensions = []syncer.TranslatorSyncerExtensionFactory{
