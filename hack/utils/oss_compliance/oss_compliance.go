@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
@@ -119,7 +120,7 @@ func (lh *GlooProductLicenseHandler) SkipLicense(l license.License) bool {
 		return true
 	}
 	// only present on mac
-	if lh.TargetOs == linuxTarget && l.Package == "github.com/solo-io/gloo/vendor/github.com/mitchellh/go-homedir" {
+	if lh.TargetOs == linuxTarget && strings.Contains(l.Package, "github.com/mitchellh/go-homedir") {
 		return true
 	}
 	return false

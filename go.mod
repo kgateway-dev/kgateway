@@ -66,7 +66,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sergi/go-diff v1.1.0
 	github.com/smartystreets/assertions v1.0.0 // indirect
-	github.com/solo-io/go-list-licenses v0.0.1
+	github.com/solo-io/go-list-licenses v0.0.3
 	github.com/solo-io/go-utils v0.20.1
 	github.com/solo-io/k8s-utils v0.0.3
 	github.com/solo-io/protoc-gen-ext v0.0.14
