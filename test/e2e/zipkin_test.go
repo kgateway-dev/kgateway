@@ -72,7 +72,7 @@ var _ = Describe("Zipkin config loading", func() {
 	}
 
 	It("should send trace msgs to the zipkin server", func() {
-		err := envoyInstance.RunWithConfigFile(int(defaults.HttpPort),"./envoyconfigs/zipkin-envoy-conf.yaml")
+		err := envoyInstance.RunWithConfigFile(int(defaults.HttpPort), "./envoyconfigs/zipkin-envoy-conf.yaml")
 		Expect(err).NotTo(HaveOccurred())
 
 		// Start a dummy server listening on 9411 for Zipkin requests
