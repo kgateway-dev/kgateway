@@ -31,7 +31,7 @@ EOF
 kind create cluster --config=cluster.yaml
 rm cluster.yaml
 
-./ci/load-kind-images.sh
+./ci/kind.sh
 
 make glooctl
 export PATH=_output:$PATH
