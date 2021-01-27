@@ -147,8 +147,8 @@ jobs:
         # see what's in the cluster if we failed
         kubectl get all -A
         kubectl get configmaps -A
-  non_testrunner_regression_tests:
-    name: k8s non-testrunner regression tests
+  kind_regression_tests:
+    name: kind regression tests
     runs-on: ubuntu-18.04
     strategy:
       matrix:
@@ -190,7 +190,7 @@ jobs:
         env:
           KUBE2E_TESTS: ${{ matrix.kind-e2e-test-type }}
         run: |
-          make run-ci-regression-tests
+          make run-kind-ci-regression-tests
       - name: Debug Info
         if: failure()
         run: |
