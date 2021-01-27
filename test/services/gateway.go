@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"net"
 	"time"
 
@@ -58,6 +59,7 @@ type TestClients struct {
 	SecretClient         gloov1.SecretClient
 	ServiceClient        skkube.ServiceClient
 	GlooPort             int
+	RestXdsPort          int
 }
 
 var glooPortBase = int32(30400)
@@ -91,6 +93,7 @@ type RunOptions struct {
 	WhatToRun        What
 	GlooPort         int32
 	ValidationPort   int32
+	RestXdsPort      int32
 	Settings         *gloov1.Settings
 	Extensions       syncer.Extensions
 	Cache            memory.InMemoryResourceCache
@@ -106,6 +109,9 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	}
 	if runOptions.ValidationPort == 0 {
 		runOptions.ValidationPort = AllocateGlooPort()
+	}
+	if runOptions.RestXdsPort == 0 {
+		runOptions.RestXdsPort = AllocateGlooPort()
 	}
 
 	if runOptions.Cache == nil {
@@ -126,7 +132,21 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 	glooOpts.Settings = runOptions.Settings
 	if glooOpts.Settings == nil {
-		glooOpts.Settings = &gloov1.Settings{}
+		glooOpts.Settings = &gloov1.Settings{
+			Gloo: &gloov1.GlooOptions{
+				RestXdsBindAddr: fmt.Sprintf("0.0.0.0:%v", int(runOptions.RestXdsPort)),
+			},
+		}
+	} else {
+		if glooOpts.Settings.Gloo == nil {
+			glooOpts.Settings.Gloo = &gloov1.GlooOptions{
+				RestXdsBindAddr: fmt.Sprintf("0.0.0.0:%v", int(runOptions.RestXdsPort)),
+			}
+		} else {
+			if glooOpts.Settings.Gloo.RestXdsBindAddr == "" {
+				glooOpts.Settings.Gloo.RestXdsBindAddr = fmt.Sprintf("0.0.0.0:%v", int(runOptions.RestXdsPort))
+			}
+		}
 	}
 
 	glooOpts.ControlPlane.StartGrpcServer = true
@@ -154,6 +174,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 	testClients := getTestClients(ctx, runOptions.Cache, glooOpts.KubeServiceClient)
 	testClients.GlooPort = int(runOptions.GlooPort)
+	testClients.RestXdsPort = int(runOptions.RestXdsPort)
 	return testClients
 }
 

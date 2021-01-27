@@ -29,7 +29,8 @@ import (
 )
 
 const (
-	containerName = "e2e_envoy"
+	containerName    = "e2e_envoy"
+	DefaultProxyName = "default~proxy"
 )
 
 var adminPort = uint32(20000)
@@ -398,11 +399,11 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 
 func (ei *EnvoyInstance) RunWithId(id string) error {
 	ei.ID = id
-	return ei.RunWithRole("default~proxy", 8081)
+	return ei.RunWithRole(DefaultProxyName, 8081)
 }
 
 func (ei *EnvoyInstance) Run(port int) error {
-	return ei.RunWithRole("default~proxy", port)
+	return ei.RunWithRole(DefaultProxyName, port)
 }
 
 func (ei *EnvoyInstance) RunWith(eic EnvoyInstanceConfig) error {
@@ -416,6 +417,19 @@ func (ei *EnvoyInstance) RunWithRole(role string, port int) error {
 		role:    role,
 		port:    uint32(port),
 		context: context.TODO(),
+	}
+	boostrapBuilder := &templateBootstrapBuilder{
+		template: defaultBootstrapTemplate,
+	}
+	return ei.runWithAll(eic, boostrapBuilder)
+}
+
+func (ei *EnvoyInstance) RunWithRoleAndRestXds(role string, glooPort, restXdsPort int) error {
+	eic := &envoyInstanceConfig{
+		role:        role,
+		port:        uint32(glooPort),
+		restXdsPort: uint32(restXdsPort),
+		context:     context.TODO(),
 	}
 	boostrapBuilder := &templateBootstrapBuilder{
 		template: defaultBootstrapTemplate,
@@ -438,13 +452,15 @@ func (ei *EnvoyInstance) RunWithConfigFile(port int, configFile string) error {
 type EnvoyInstanceConfig interface {
 	Role() string
 	Port() uint32
+	RestXdsPort() uint32
 
 	Context() context.Context
 }
 
 type envoyInstanceConfig struct {
-	role string
-	port uint32
+	role        string
+	port        uint32
+	restXdsPort uint32
 
 	context context.Context
 }
@@ -455,6 +471,10 @@ func (eic *envoyInstanceConfig) Role() string {
 
 func (eic *envoyInstanceConfig) Port() uint32 {
 	return eic.port
+}
+
+func (eic *envoyInstanceConfig) RestXdsPort() uint32 {
+	return eic.restXdsPort
 }
 
 func (eic *envoyInstanceConfig) Context() context.Context {
@@ -471,6 +491,7 @@ func (ei *EnvoyInstance) runWithAll(eic EnvoyInstanceConfig, bootstrapBuilder En
 	}
 	ei.Role = eic.Role()
 	ei.Port = eic.Port()
+	ei.RestXdsPort = eic.RestXdsPort()
 	ei.envoycfg = bootstrapBuilder.Build(ei)
 
 	if ei.UseDocker {

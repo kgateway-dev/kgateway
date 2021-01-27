@@ -9,10 +9,11 @@ import (
 	"strings"
 	"time"
 
-	pb "github.com/envoyproxy/go-control-plane/envoy/service/ratelimit/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	pb "github.com/envoyproxy/go-control-plane/envoy/service/ratelimit/v3"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	gloov1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
@@ -120,7 +121,7 @@ var _ = Describe("Rate Limit", func() {
 			err = helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
 			Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
 
-			err = envoyInstance.Run(testClients.GlooPort)
+			err = envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			testUpstream = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
