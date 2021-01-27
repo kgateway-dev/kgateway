@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3758
+    description: >-
+      Allow for the configuration of socket options on the envoy listener. This is useful, for example, to set TCP
+      keep alive for downstream connections to envoy (e.g., NLB in front of envoy).
