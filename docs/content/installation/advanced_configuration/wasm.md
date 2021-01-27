@@ -138,11 +138,15 @@ This will create a basic docker image which just contains our `filter.wasm` file
 
 Next we want to build and tag the docker image from this Dockerfile, by running the following command (replacing your repository URL, and preferred image name):
 
-`docker build . -t localhost:8888/myorg/my-wasm-getter:1.0.0`
+```bash
+docker build . -t localhost:8888/myorg/my-wasm-getter:1.0.0
+```
 
 We have now created a standard docker image named `localhost:8888/myorg/my-wasm-getter` with a tag of `1.0.0`. This can be pushed to whatever docker-compliant image repository you have:
 
-`docker push localhost:8888/myorg/my-wasm-getter:1.0.0`
+```bash
+docker push localhost:8888/myorg/my-wasm-getter:1.0.0
+```
 
 ### Step 2 - Add the initContainer to the gateway-proxy Deployment
 
@@ -215,7 +219,7 @@ spec:
       initContainers:
       - name: wasm-image
         image: localhost:8888/myorg/my-wasm-getter:1.0.0
-        imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         volumeMounts:
         - mountPath: /wasm-filters
           name: wasm-filters
@@ -270,7 +274,47 @@ spec:
   useProxyProto: false
 {{< /highlight >}}
 
-If you've been following along with this example, you should now be able to curl one of your endpoints and see the results of your filter being run - in this case, a newly added http header.
+If you've been following along with this example, you should now be able to curl one of your endpoints and see the results of your filter being run - in this case, a newly added http header. You can also confirm that the filter has been loaded by Envoy if you check the `config_dump` from the Envoy Admin page. This is usually served on port `19000`:
+
+```bash
+kubectl port-forward -n gloo-system gateway-proxy-645bc75c67-xmfdz 19000:19000
+```
+
+When you open `localhost:19000/config_dump`, if you look under `filter_chains` you should see your deployed wasm filter with the name `envoy.filters.http.wasm`:
+
+```json
+...
+{
+    "name": "envoy.filters.http.wasm",
+    "typed_config": {
+        "@type": "type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm",
+        "config": {
+            "name": "myfilter",
+            "root_id": "add_header",
+            "vm_config": {
+                "vm_id": "gloo-vm-id",
+                "runtime": "envoy.wasm.runtime.v8",
+                "code": {
+                    "remote": {
+                        "http_uri": {
+                            "uri": "http://gloo/images/8b3b05719379af3996d51bf6d5baed1103059fb908baec547f2136ed48aebd77",
+                            "cluster": "wasm-cache",
+                            "timeout": "5s"
+                        },
+                        "sha256": "8b3b05719379af3996d51bf6d5baed1103059fb908baec547f2136ed48aebd77"
+                    }
+                },
+                "nack_on_code_cache_miss": true
+            },
+            "configuration": {
+                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "value": "my test config"
+            }
+        }
+    }
+},
+...
+```
 
 If you don't have any test services to run against, you can install the petstore example used in our [hello world tutorial]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world/" >}}).
 
