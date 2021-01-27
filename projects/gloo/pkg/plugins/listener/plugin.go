@@ -40,7 +40,7 @@ func translateSocketOptions(sos []*core.SocketOption) []*envoy_config_core_v3.So
 	for _, so := range sos {
 		socketOptions = append(socketOptions, translateSocketOption(so))
 	}
-	return nil
+	return socketOptions
 }
 
 func translateSocketOption(so *core.SocketOption) *envoy_config_core_v3.SocketOption {
