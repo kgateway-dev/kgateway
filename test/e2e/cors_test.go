@@ -8,14 +8,13 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -69,7 +68,7 @@ var _ = Describe("CORS", func() {
 				td.per.envoyInstance.LocalAddr(),
 				td.per.envoyInstance.AdminPort)
 
-			err = td.per.envoyInstance.Run(td.testClients.GlooPort)
+			err = td.per.envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, td.testClients.GlooPort, td.testClients.RestXdsPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			td.per.up = td.setupUpstream()
