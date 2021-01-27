@@ -437,11 +437,10 @@ func (ei *EnvoyInstance) RunWithRoleAndRestXds(role string, glooPort, restXdsPor
 	return ei.runWithAll(eic, boostrapBuilder)
 }
 
-func (ei *EnvoyInstance) RunWithConfigFile(port, restXdsPort int, configFile string) error {
+func (ei *EnvoyInstance) RunWithConfigFile(port int, configFile string) error {
 	eic := &envoyInstanceConfig{
 		role:        "gloo-system~gateway-proxy",
 		port:        uint32(port),
-		restXdsPort: uint32(restXdsPort),
 		context:     context.TODO(),
 	}
 	boostrapBuilder := &fileBootstrapBuilder{

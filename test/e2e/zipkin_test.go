@@ -72,7 +72,7 @@ var _ = Describe("Zipkin config loading", func() {
 	}
 
 	It("should send trace msgs to the zipkin server", func() {
-		err := envoyInstance.RunWithConfigFile(int(defaults.HttpPort), defaults.GlooRestXdsPort, "./envoyconfigs/zipkin-envoy-conf.yaml")
+		err := envoyInstance.RunWithConfigFile(int(defaults.HttpPort),"./envoyconfigs/zipkin-envoy-conf.yaml")
 		Expect(err).NotTo(HaveOccurred())
 
 		// Start a dummy server listening on 9411 for Zipkin requests
@@ -339,7 +339,7 @@ var _ = Describe("Zipkin config loading", func() {
 			}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
 
 			// run envoy
-			err = envoyInstance.RunWithConfigFile(testClients.GlooPort, testClients.RestXdsPort, "./envoyconfigs/zipkin-static-cluster.yaml")
+			err = envoyInstance.RunWithConfigFile(testClients.GlooPort, "./envoyconfigs/zipkin-static-cluster.yaml")
 			Expect(err).NotTo(HaveOccurred())
 
 			// create test upstream
