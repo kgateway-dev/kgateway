@@ -3,4 +3,4 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/4151
     resolvesIssue: false
     description: >
-      Re-enable REST EDS. Change the helm template to avoid this helm issue (https://github.com/Masterminds/sprig/issues/111).
+      Re-enable REST EDS.

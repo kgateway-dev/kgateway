@@ -73,6 +73,11 @@ func (t TestContext) Role() string {
 func (t TestContext) Port() uint32 {
 	return uint32(t.TestClients.GlooPort)
 }
+
+func (t TestContext) RestXdsPort() uint32 {
+	return uint32(t.TestClients.RestXdsPort)
+}
+
 func (t TestContext) Context() context.Context {
 	return t.Ctx
 }
