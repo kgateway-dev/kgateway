@@ -76,6 +76,16 @@ func (m *ListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetSocketOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSocketOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSocketOptions(), target.GetSocketOptions()) {
+			return false
+		}
+	}
+
 	return true
 }
 
