@@ -56,6 +56,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		petstorePort   int
 		glooPort       int
 		validationPort int
+		restXdsPort    int
 	)
 
 	const writeNamespace = defaults.GlooSystem
@@ -65,6 +66,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 
 		glooPort = int(services.AllocateGlooPort())
 		validationPort = int(services.AllocateGlooPort())
+		restXdsPort = int(services.AllocateGlooPort())
 
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
@@ -85,7 +87,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		settingsDir, err = ioutil.TempDir("", "")
 		Expect(err).NotTo(HaveOccurred())
 
-		settings, err := writeSettings(settingsDir, glooPort, validationPort, writeNamespace)
+		settings, err := writeSettings(settingsDir, glooPort, validationPort, restXdsPort, writeNamespace)
 		Expect(err).NotTo(HaveOccurred())
 
 		consulClient, err = bootstrap.ConsulClientForSettings(ctx, settings)
@@ -142,7 +144,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		// Start Envoy
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, glooPort)
+		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, glooPort, restXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Run a simple web application locally
@@ -337,7 +339,7 @@ func makeFunctionRoutingVirtualService(vsNamespace string, upstream *core.Resour
 	}
 }
 
-func writeSettings(settingsDir string, glooPort, validationPort int, writeNamespace string) (*gloov1.Settings, error) {
+func writeSettings(settingsDir string, glooPort, validationPort, restXdsPort int, writeNamespace string) (*gloov1.Settings, error) {
 	settings := &gloov1.Settings{
 		ConfigSource: &gloov1.Settings_ConsulKvSource{
 			ConsulKvSource: &gloov1.Settings_ConsulKv{},
@@ -362,6 +364,7 @@ func writeSettings(settingsDir string, glooPort, validationPort int, writeNamesp
 		Gloo: &gloov1.GlooOptions{
 			XdsBindAddr:        fmt.Sprintf("0.0.0.0:%v", glooPort),
 			ValidationBindAddr: fmt.Sprintf("0.0.0.0:%v", validationPort),
+			RestXdsBindAddr:    fmt.Sprintf("0.0.0.0:%v", restXdsPort),
 		},
 		RefreshRate:        prototime.DurationToProto(time.Second * 1),
 		DiscoveryNamespace: writeNamespace,
