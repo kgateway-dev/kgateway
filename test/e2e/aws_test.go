@@ -135,7 +135,7 @@ var _ = Describe("AWS Lambda", func() {
 	}
 
 	testProxy := func() {
-		err := envoyInstance.Run(testClients.GlooPort)
+		err := envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy := &gloov1.Proxy{
@@ -186,7 +186,7 @@ var _ = Describe("AWS Lambda", func() {
 	}
 
 	testProxyWithResponseTransform := func() {
-		err := envoyInstance.Run(testClients.GlooPort)
+		err := envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy := &gloov1.Proxy{
