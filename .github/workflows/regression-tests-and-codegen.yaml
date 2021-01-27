@@ -150,9 +150,6 @@ jobs:
   kind_regression_tests:
     name: kind regression tests
     runs-on: ubuntu-18.04
-    strategy:
-      matrix:
-        kind-e2e-test-type: ['discovery']
     steps:
       - name: Cancel Previous Actions
         uses: styfle/cancel-workflow-action@0.4.1
@@ -185,10 +182,10 @@ jobs:
           version: v3.2.0
       - name: Setup test env
         run: |
-          SETUP=${{ matrix.kind-e2e-test-type }} ./ci/setup-kind.sh
+          SETUP=discovery ./ci/setup-kind.sh
       - name: Testing - Envoy e2e tests
         env:
-          KUBE2E_TESTS: ${{ matrix.kind-e2e-test-type }}
+          KUBE2E_TESTS: discovery
         run: |
           make run-kind-ci-regression-tests
       - name: Debug Info

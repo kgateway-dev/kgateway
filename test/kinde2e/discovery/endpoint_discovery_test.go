@@ -5,11 +5,12 @@ import (
 	"io/ioutil"
 	"regexp"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/k8s-utils/testutils/kube"
+	"github.com/solo-io/gloo/test/kinde2e/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
@@ -23,14 +24,14 @@ var _ = Describe("Endpoint discovery works", func() {
 		prevConfigDumpLen   int
 
 		findPetstoreClusterEndpoints = func() int {
-			clusters := kube.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, defaults.GlooSystem, gatewayProxyPodName, clustersPath)
+			clusters := utils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, defaults.GlooSystem, gatewayProxyPodName, clustersPath)
 			petstoreClusterEndpoints := regexp.MustCompile("\ndefault-petstore-8080_gloo-system::[0-9.]+:8080::")
 			matches := petstoreClusterEndpoints.FindAllStringIndex(clusters, -1)
 			fmt.Println(len(matches))
 			return len(matches)
 		}
 		findConfigDumpHttp2Count = func() int {
-			configDump := kube.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, defaults.GlooSystem, gatewayProxyPodName, configDumpPath, "-s")
+			configDump := utils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, defaults.GlooSystem, gatewayProxyPodName, configDumpPath, "-s")
 			http2Configs := regexp.MustCompile("http2_protocol_options")
 			matches := http2Configs.FindAllStringIndex(configDump, -1)
 			return len(matches)
@@ -59,14 +60,14 @@ var _ = Describe("Endpoint discovery works", func() {
 
 	BeforeEach(func() {
 		// Find gateway-proxy pod name
-		gatewayProxyPodName = kube.FindPodNameByLabel(cfg, ctx, defaults.GlooSystem, "gloo=gateway-proxy")
+		gatewayProxyPodName = utils.FindPodNameByLabel(cfg, ctx, defaults.GlooSystem, "gloo=gateway-proxy")
 
 		// Disable discovery so that we can modify upstreams without interruption
-		kube.DisableContainer(ctx, GinkgoWriter, kubeCtx, defaults.GlooSystem, "discovery", "discovery")
+		utils.DisableContainer(ctx, GinkgoWriter, kubeCtx, defaults.GlooSystem, "discovery", "discovery")
 	})
 
 	AfterEach(func() {
-		kube.EnableContainer(ctx, GinkgoWriter, kubeCtx, defaults.GlooSystem, "discovery")
+		utils.EnableContainer(ctx, GinkgoWriter, kubeCtx, defaults.GlooSystem, "discovery")
 	})
 
 	It("can modify upstreams repeatedly", func() {
