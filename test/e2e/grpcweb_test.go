@@ -14,7 +14,6 @@ import (
 	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -84,7 +83,7 @@ var _ = Describe("Grpc Web", func() {
 					_, err := tc.TestClients.UpstreamClient.Write(grpcUpstream, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
-					err = envoyInstance.RunWithRoleAndRestXds(gatewaydefaults.GatewayProxyName, tc.TestClients.GlooPort, tc.TestClients.RestXdsPort)
+					err = envoyInstance.RunWith(tc)
 					Expect(err).NotTo(HaveOccurred())
 
 					// we want to test grpc web, so lets reuse the access log service
