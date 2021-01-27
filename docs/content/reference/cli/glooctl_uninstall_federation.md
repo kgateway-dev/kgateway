@@ -6,10 +6,6 @@ weight: 5
 
 uninstall gloo federation
 
-### Synopsis
-
-uninstall gloo federation
-
 ```
 glooctl uninstall federation [flags]
 ```

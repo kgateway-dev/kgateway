@@ -6,10 +6,6 @@ weight: 5
 
 dump Envoy logs from one of the proxy instancesNote: this will enable verbose logging on Envoy
 
-### Synopsis
-
-dump Envoy logs from one of the proxy instancesNote: this will enable verbose logging on Envoy
-
 ```
 glooctl proxy logs [flags]
 ```

@@ -6,10 +6,6 @@ weight: 5
 
 Debug Gloo logs (requires Gloo running on Kubernetes)
 
-### Synopsis
-
-Debug Gloo logs (requires Gloo running on Kubernetes)
-
 ```
 glooctl debug logs [flags]
 ```

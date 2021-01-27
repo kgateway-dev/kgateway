@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/solo-io/go-list-licenses/pkg/license"
 	"os"
+
+	"github.com/solo-io/go-list-licenses/pkg/license"
 )
 
 func main() {
