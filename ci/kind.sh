@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -ex
+
 # make all the docker images
 # write the output to a temp file so that we can grab the image names out of it
 # also ensure we clean up the file once we're done

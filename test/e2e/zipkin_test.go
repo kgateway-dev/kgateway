@@ -124,7 +124,7 @@ var _ = Describe("Zipkin config loading", func() {
 			}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
 
 			// run envoy
-			err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
+			err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			// create test upstream
