@@ -82,7 +82,7 @@ Name|Version|License
 [ryanuber/go-glob](https://github.com/ryanuber/go-glob)|v1.0.0|MIT License
 [sirupsen/logrus](https://github.com/sirupsen/logrus)|v1.7.0|MIT License
 [afero/mem](https://github.com/spf13/afero)|v1.3.4|Apache License 2.0
-[spf13/cobra](https://github.com/spf13/cobra)|v1.0.0|Apache License 2.0
+[spf13/cobra](https://github.com/spf13/cobra)|v1.1.1|Apache License 2.0
 [spf13/pflag](https://github.com/spf13/pflag)|v1.0.5|BSD 3-clause "New" or "Revised" License
 [go.mongodb.org/mongo-driver](https://go.mongodb.org/mongo-driver)|v1.1.2|Apache License 2.0
 [go.opencensus.io](https://go.opencensus.io)|v0.22.5|Apache License 2.0
