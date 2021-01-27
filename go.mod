@@ -126,7 +126,6 @@ replace (
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
 
-	github.com/solo-io/go-list-licenses => /Users/sai/go/src/github.com/solo-io/go-list-licenses
 	//the following block of replacements are needed to have locked these packages to before versions they switched to using proto4
 	golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
 	// kube 0.18: redirects needed for most k8s.io dependencies because
