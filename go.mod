@@ -66,8 +66,8 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sergi/go-diff v1.1.0
 	github.com/smartystreets/assertions v1.0.0 // indirect
-	github.com/solo-io/go-list-licenses v0.0.3
-	github.com/solo-io/go-utils v0.20.1
+	github.com/solo-io/go-list-licenses v0.0.4-0.20210127191650-c1072fce4ee2
+	github.com/solo-io/go-utils v0.20.2
 	github.com/solo-io/k8s-utils v0.0.3
 	github.com/solo-io/protoc-gen-ext v0.0.14
 	github.com/solo-io/reporting-client v0.2.0
@@ -77,7 +77,7 @@ require (
 	github.com/solo-io/solo-kit v0.17.1
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
-	github.com/spf13/cobra v1.0.0
+	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
 	github.com/yuin/goldmark v1.2.1
@@ -125,9 +125,9 @@ replace (
 	github.com/opencontainers/go-digest => github.com/opencontainers/go-digest v1.0.0-rc1
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
+
 	//the following block of replacements are needed to have locked these packages to before versions they switched to using proto4
 	golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
-
 	// kube 0.18: redirects needed for most k8s.io dependencies because
 	// k8s.io/kubernetes tries to import v0.0.0 of everything.
 	k8s.io/api => k8s.io/api v0.19.6

@@ -6,10 +6,6 @@ weight: 5
 
 List available glooctl plugins
 
-### Synopsis
-
-List available glooctl plugins
-
 ```
 glooctl plugin list [flags]
 ```
