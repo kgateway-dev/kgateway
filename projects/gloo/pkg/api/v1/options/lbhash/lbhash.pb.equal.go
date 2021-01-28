@@ -136,12 +136,18 @@ func (m *HashPolicy) Equal(that interface{}) bool {
 	switch m.KeyType.(type) {
 
 	case *HashPolicy_Header:
+		if _, ok := target.KeyType.(*HashPolicy_Header); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetHeader(), target.GetHeader()) != 0 {
 			return false
 		}
 
 	case *HashPolicy_Cookie:
+		if _, ok := target.KeyType.(*HashPolicy_Cookie); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetCookie()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetCookie()) {
@@ -154,11 +160,19 @@ func (m *HashPolicy) Equal(that interface{}) bool {
 		}
 
 	case *HashPolicy_SourceIp:
+		if _, ok := target.KeyType.(*HashPolicy_SourceIp); !ok {
+			return false
+		}
 
 		if m.GetSourceIp() != target.GetSourceIp() {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.KeyType != target.KeyType {
+			return false
+		}
 	}
 
 	return true

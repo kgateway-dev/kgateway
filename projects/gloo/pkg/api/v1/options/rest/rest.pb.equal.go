@@ -148,17 +148,28 @@ func (m *ServiceSpec_SwaggerInfo) Equal(that interface{}) bool {
 	switch m.SwaggerSpec.(type) {
 
 	case *ServiceSpec_SwaggerInfo_Url:
+		if _, ok := target.SwaggerSpec.(*ServiceSpec_SwaggerInfo_Url); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetUrl(), target.GetUrl()) != 0 {
 			return false
 		}
 
 	case *ServiceSpec_SwaggerInfo_Inline:
+		if _, ok := target.SwaggerSpec.(*ServiceSpec_SwaggerInfo_Inline); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetInline(), target.GetInline()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.SwaggerSpec != target.SwaggerSpec {
+			return false
+		}
 	}
 
 	return true

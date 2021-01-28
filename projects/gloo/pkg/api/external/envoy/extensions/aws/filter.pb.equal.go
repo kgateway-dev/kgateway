@@ -143,6 +143,9 @@ func (m *AWSLambdaConfig) Equal(that interface{}) bool {
 	switch m.CredentialsFetcher.(type) {
 
 	case *AWSLambdaConfig_UseDefaultCredentials:
+		if _, ok := target.CredentialsFetcher.(*AWSLambdaConfig_UseDefaultCredentials); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetUseDefaultCredentials()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetUseDefaultCredentials()) {
@@ -155,6 +158,9 @@ func (m *AWSLambdaConfig) Equal(that interface{}) bool {
 		}
 
 	case *AWSLambdaConfig_ServiceAccountCredentials_:
+		if _, ok := target.CredentialsFetcher.(*AWSLambdaConfig_ServiceAccountCredentials_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetServiceAccountCredentials()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetServiceAccountCredentials()) {
@@ -166,6 +172,11 @@ func (m *AWSLambdaConfig) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.CredentialsFetcher != target.CredentialsFetcher {
+			return false
+		}
 	}
 
 	return true
