@@ -51,7 +51,7 @@ make glooctl-linux-amd64
 
 if [ "$KUBE2E_TESTS" = "eds" ]; then
   echo "Installing Gloo Edge"
-  glooctl install gateway --file _test/gloo-kind.tgz
+  _output/glooctl-linux-amd64 install gateway --file _test/gloo-kind.tgz
 
   kubectl -n gloo-system rollout status deployment gloo --timeout=2m || true
   kubectl -n gloo-system rollout status deployment discovery --timeout=2m || true
@@ -60,7 +60,7 @@ if [ "$KUBE2E_TESTS" = "eds" ]; then
 
   echo "Installing Hello World example"
   kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
-  glooctl add route \
+  _output/glooctl-linux-amd64 add route \
     --path-exact /all-pets \
     --dest-name default-petstore-8080 \
     --prefix-rewrite /api/pets
