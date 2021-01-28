@@ -1,4 +1,4 @@
-package discovery_test
+package eds_test
 
 import (
 	"fmt"

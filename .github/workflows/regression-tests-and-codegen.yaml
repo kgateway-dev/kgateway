@@ -185,7 +185,7 @@ jobs:
           SETUP=discovery ./ci/setup-kind.sh
       - name: Testing - Envoy e2e tests
         env:
-          KUBE2E_TESTS: discovery
+          KUBE2E_TESTS: eds
         run: |
           make run-ci-regression-tests
       - name: Debug Info

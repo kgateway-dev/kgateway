@@ -1,4 +1,4 @@
-package discovery_test
+package eds_test
 
 import (
 	"context"
@@ -30,22 +30,21 @@ var (
 	err    error
 	cfg    *rest.Config
 
-	installNamespace     = "gloo-system"
 	upstreamClient       gloov1.UpstreamClient
 	virtualServiceClient gatewayv1.VirtualServiceClient
 )
 
 func TestDiscovery(t *testing.T) {
-	if os.Getenv("KUBE2E_TESTS") != "discovery" {
+	if os.Getenv("KUBE2E_TESTS") != "eds" {
 		log.Warnf("This test is disabled. " +
-			"To enable, set KUBE2E_TESTS to 'discovery' in your env.")
+			"To enable, set KUBE2E_TESTS to 'eds' in your env.")
 		return
 	}
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
 	_ = os.Remove(cliutil.GetLogsPath())
-	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, installNamespace))
-	RunSpecs(t, "Discovery Suite")
+	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, defaults.GlooSystem))
+	RunSpecs(t, "Endpoint discovery (EDS) Suite")
 }
 
 var _ = BeforeSuite(func() {
