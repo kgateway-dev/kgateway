@@ -35,11 +35,14 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 		virtualServiceClient gatewayv1.VirtualServiceClient
 	)
 
+	const (
+		configDumpPath = "http://localhost:19000/config_dump"
+		clustersPath   = "http://localhost:19000/clusters"
+		kubeCtx        = ""
+	)
+
 	var (
 		gatewayProxyPodName string
-		configDumpPath      = "http://localhost:19000/config_dump"
-		clustersPath        = "http://localhost:19000/clusters"
-		kubeCtx             string
 		prevConfigDumpLen   int
 
 		findPetstoreClusterEndpoints = func() int {
@@ -61,7 +64,7 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 			currConfigDumpLen := findConfigDumpHttp2Count()
 			if prevConfigDumpLen != currConfigDumpLen {
 				prevConfigDumpLen = currConfigDumpLen
-				fmt.Sprintf("Upstream changes picked up!")
+				fmt.Println("Upstream changes picked up! (cluster exists)")
 				return true
 			}
 			return false
@@ -72,6 +75,7 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 				if upstreamChangesPickedUp() {
 					By("check that endpoints were discovered")
 					Expect(findPetstoreClusterEndpoints()).Should(BeNumerically(">", 0), "petstore endpoints should exist")
+					fmt.Println("Endpoints exist for cluster!")
 					return true
 				}
 				return false
