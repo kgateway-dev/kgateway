@@ -1,6 +1,6 @@
 changelog:
   - type: FIX
-    issueLink: https://github.com/solo-io/solo-projects/issues/2042
+    issueLink: https://github.com/solo-io/gloo/issues/4215
     description: |
       Fixed a bug where some protobufs were erroneously being considered
       equal when comparing values inside of a `oneOf` interface. This resulted
