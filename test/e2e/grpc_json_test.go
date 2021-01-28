@@ -58,7 +58,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 		_, err = testClients.GatewayClient.Write(getGrpcJsonGateway(), clients.WriteOpts{Ctx: ctx})
 		Expect(err).ToNot(HaveOccurred())
 
-		err = envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
+		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)

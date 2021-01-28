@@ -6,10 +6,6 @@ weight: 5
 
 root command for settings
 
-### Synopsis
-
-root command for settings
-
 ### Options
 
 ```

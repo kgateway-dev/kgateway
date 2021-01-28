@@ -181,6 +181,23 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			})
 		})
 
+		When("transport protocol version is set to V3 in settings", func() {
+
+			It("sets TransportApiVersion to V3 on the ext auth filter", func() {
+				settings = &extauthv1.Settings{
+					ExtauthzServerRef:   upstream.Metadata.Ref(),
+					TransportApiVersion: extauthv1.Settings_V3,
+				}
+
+				filters, err := BuildHttpFilters(settings, nil, gloov1.UpstreamList{upstream})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(filters).To(HaveLen(1))
+
+				actualFilterConfig := getExtAuthz(filters[0])
+				Expect(actualFilterConfig.GetTransportApiVersion()).To(Equal(envoycore.ApiVersion_V3))
+			})
+		})
+
 		When("complete settings are provided", func() {
 
 			BeforeEach(func() {

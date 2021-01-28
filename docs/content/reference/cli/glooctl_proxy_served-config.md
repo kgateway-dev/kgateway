@@ -6,10 +6,6 @@ weight: 5
 
 dump Envoy config being served by the Gloo xDS server
 
-### Synopsis
-
-dump Envoy config being served by the Gloo xDS server
-
 ```
 glooctl proxy served-config [flags]
 ```

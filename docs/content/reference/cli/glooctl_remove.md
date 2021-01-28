@@ -6,10 +6,6 @@ weight: 5
 
 remove configuration items from a top-level Gloo resource
 
-### Synopsis
-
-remove configuration items from a top-level Gloo resource
-
 ### Options
 
 ```

@@ -6,10 +6,6 @@ weight: 5
 
 Edit a Gloo resource
 
-### Synopsis
-
-Edit a Gloo resource
-
 ### Options
 
 ```

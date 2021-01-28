@@ -6,10 +6,6 @@ weight: 5
 
 Delete a Gloo resource
 
-### Synopsis
-
-Delete a Gloo resource
-
 ```
 glooctl delete [flags]
 ```

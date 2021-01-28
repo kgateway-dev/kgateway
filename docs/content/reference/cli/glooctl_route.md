@@ -6,10 +6,6 @@ weight: 5
 
 subcommands for interacting with routes within virtual services
 
-### Synopsis
-
-subcommands for interacting with routes within virtual services
-
 ### Options
 
 ```
