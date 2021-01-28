@@ -49,7 +49,7 @@ sed -nE 's|(\\x1b\[0m)?Successfully tagged (.*$)|\2|p' ${TEMP_FILE} | while read
 VERSION=kind make build-test-chart
 make glooctl-linux-amd64
 
-if [ "$SETUP" = "eds" ]; then
+if [ "$KUBE2E_TESTS" = "eds" ]; then
   echo "Installing Gloo Edge"
   glooctl install gateway --file _test/gloo-kind.tgz
 
