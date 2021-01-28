@@ -120,10 +120,6 @@ run-tests:
 run-ci-regression-tests: TEST_PKG=./test/kube2e/...
 run-ci-regression-tests: install-go-tools run-tests
 
-.PHONY: run-ci-regression-tests
-run-kind-ci-regression-tests: TEST_PKG=./test/kinde2e/...
-run-kind-ci-regression-tests: install-go-tools run-tests
-
 .PHONY: check-format
 check-format:
 	NOT_FORMATTED=$$(gofmt -l ./projects/ ./pkg/ ./test/) && if [ -n "$$NOT_FORMATTED" ]; then echo These files are not formatted: $$NOT_FORMATTED; exit 1; fi
@@ -401,6 +397,7 @@ gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(E
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
 		-t $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION)
 
+#----------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------
 # Certgen - Job for creating TLS Secrets in Kubernetes
 #----------------------------------------------------------------------------------

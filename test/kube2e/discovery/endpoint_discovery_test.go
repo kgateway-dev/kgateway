@@ -10,7 +10,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/kinde2e/utils"
+	"github.com/solo-io/gloo/test/kube2e/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
