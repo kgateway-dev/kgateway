@@ -398,7 +398,6 @@ gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(E
 		-t $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION)
 
 #----------------------------------------------------------------------------------
-#----------------------------------------------------------------------------------
 # Certgen - Job for creating TLS Secrets in Kubernetes
 #----------------------------------------------------------------------------------
 
