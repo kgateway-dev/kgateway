@@ -6,9 +6,10 @@ import (
 	"io/ioutil"
 	"regexp"
 
+	kubeutils "github.com/solo-io/k8s-utils/testutils/kube"
+
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -19,7 +20,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/kube2e/utils"
+	utils "github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
@@ -46,14 +47,14 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 		prevConfigDumpLen   int
 
 		findPetstoreClusterEndpoints = func() int {
-			clusters := utils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, defaults.GlooSystem, gatewayProxyPodName, clustersPath)
+			clusters := kubeutils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, defaults.GlooSystem, gatewayProxyPodName, clustersPath)
 			petstoreClusterEndpoints := regexp.MustCompile("\ndefault-petstore-8080_gloo-system::[0-9.]+:8080::")
 			matches := petstoreClusterEndpoints.FindAllStringIndex(clusters, -1)
 			fmt.Println(fmt.Sprintf("Number of cluster stats for petstore (endpoints) on clusters page: %d", len(matches)))
 			return len(matches)
 		}
 		findConfigDumpHttp2Count = func() int {
-			configDump := utils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, defaults.GlooSystem, gatewayProxyPodName, configDumpPath, "-s")
+			configDump := kubeutils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, defaults.GlooSystem, gatewayProxyPodName, configDumpPath, "-s")
 			http2Configs := regexp.MustCompile("http2_protocol_options")
 			matches := http2Configs.FindAllStringIndex(configDump, -1)
 			fmt.Println(fmt.Sprintf("Number of http2_protocol_options (i.e., clusters) on config dump page: %d", len(matches)))
@@ -85,7 +86,7 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-		cfg, err = kubeutils.GetConfig("", "")
+		cfg, err = utils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
 		cache := kube.NewKubeCache(ctx)
@@ -112,14 +113,14 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 		}, "15s", "0.5s").Should(BeTrue())
 
 		// Find gateway-proxy pod name
-		gatewayProxyPodName = utils.FindPodNameByLabel(cfg, ctx, defaults.GlooSystem, "gloo=gateway-proxy")
+		gatewayProxyPodName = kubeutils.FindPodNameByLabel(cfg, ctx, defaults.GlooSystem, "gloo=gateway-proxy")
 
 		// Disable discovery so that we can modify upstreams without interruption
-		utils.DisableContainer(ctx, GinkgoWriter, kubeCtx, defaults.GlooSystem, "discovery", "discovery")
+		kubeutils.DisableContainer(ctx, GinkgoWriter, kubeCtx, defaults.GlooSystem, "discovery", "discovery")
 	})
 
 	AfterEach(func() {
-		utils.EnableContainer(ctx, GinkgoWriter, kubeCtx, defaults.GlooSystem, "discovery")
+		kubeutils.EnableContainer(ctx, GinkgoWriter, kubeCtx, defaults.GlooSystem, "discovery")
 		cancel()
 	})
 
