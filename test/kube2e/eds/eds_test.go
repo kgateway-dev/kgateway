@@ -50,7 +50,7 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 			clusters := kubeutils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, defaults.GlooSystem, gatewayProxyPodName, clustersPath)
 			petstoreClusterEndpoints := regexp.MustCompile("\ndefault-petstore-8080_gloo-system::[0-9.]+:8080::")
 			matches := petstoreClusterEndpoints.FindAllStringIndex(clusters, -1)
-			fmt.Println(fmt.Sprintf("Number of cluster stats for petstore (endpoints) on clusters page: %d", len(matches)))
+			fmt.Println(fmt.Sprintf("Number of cluster stats for petstore (i.e., checking for endpoints) on clusters page: %d", len(matches)))
 			return len(matches)
 		}
 		findConfigDumpHttp2Count = func() int {
@@ -80,7 +80,7 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 					return true
 				}
 				return false
-			}, "30s", "1s").Should(BeTrue())
+			}, "45s", "1s").Should(BeTrue(), "upstream changes were never picked up!")
 		}
 	)
 
