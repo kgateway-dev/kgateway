@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update protoc-gen-ext to fix equals bug causing waf test flake.
+    issueLink: https://github.com/solo-io/solo-projects/issues/2042
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: protoc-gen-ext
+    dependencyTag: v0.0.15
