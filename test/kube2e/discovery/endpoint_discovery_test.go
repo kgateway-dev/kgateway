@@ -14,7 +14,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("Endpoint discovery works", func() {
+var _ = Describe("endpoint discovery (EDS) works", func() {
 
 	var (
 		gatewayProxyPodName string
@@ -27,13 +27,14 @@ var _ = Describe("Endpoint discovery works", func() {
 			clusters := utils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, defaults.GlooSystem, gatewayProxyPodName, clustersPath)
 			petstoreClusterEndpoints := regexp.MustCompile("\ndefault-petstore-8080_gloo-system::[0-9.]+:8080::")
 			matches := petstoreClusterEndpoints.FindAllStringIndex(clusters, -1)
-			fmt.Println(len(matches))
+			fmt.Println(fmt.Sprintf("Number of cluster stats for petstore (endpoints) on clusters page: %d",len(matches)))
 			return len(matches)
 		}
 		findConfigDumpHttp2Count = func() int {
 			configDump := utils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, defaults.GlooSystem, gatewayProxyPodName, configDumpPath, "-s")
 			http2Configs := regexp.MustCompile("http2_protocol_options")
 			matches := http2Configs.FindAllStringIndex(configDump, -1)
+			fmt.Println(fmt.Sprintf("Number of http2_protocol_options (i.e., clusters) on config dump page: %d",len(matches)))
 			return len(matches)
 		}
 
@@ -41,6 +42,7 @@ var _ = Describe("Endpoint discovery works", func() {
 			currConfigDumpLen := findConfigDumpHttp2Count()
 			if prevConfigDumpLen != currConfigDumpLen {
 				prevConfigDumpLen = currConfigDumpLen
+				fmt.Sprintf("Upstream changes picked up!")
 				return true
 			}
 			return false
@@ -50,11 +52,11 @@ var _ = Describe("Endpoint discovery works", func() {
 			Eventually(func() bool {
 				if upstreamChangesPickedUp() {
 					By("check that endpoints were discovered")
-					Expect(findPetstoreClusterEndpoints()).NotTo(Equal(0))
+					Expect(findPetstoreClusterEndpoints()).Should(BeNumerically(">", 0), "petstore endpoints should exist")
 					return true
 				}
 				return false
-			}, "2m", "1s").Should(BeTrue())
+			}, "30s", "1s").Should(BeTrue())
 		}
 	)
 
@@ -70,18 +72,19 @@ var _ = Describe("Endpoint discovery works", func() {
 		utils.EnableContainer(ctx, GinkgoWriter, kubeCtx, defaults.GlooSystem, "discovery")
 	})
 
-	It("can modify upstreams repeatedly", func() {
+	It("can modify upstreams repeatedly, and endpoints don't lag via EDS", func() {
 		// Initialize a way to track the envoy config dump in order to tell when it has changed, and when the
 		// new upstream changes have been picked up.
 		Eventually(func() int {
 			prevConfigDumpLen = findConfigDumpHttp2Count()
 			return prevConfigDumpLen
-		}, "30s", "1s").ShouldNot(Equal(0))
+		}, "30s", "1s").ShouldNot(Equal(0), "cluster count should be nonzero")
 
 		// We should consistently be able to modify upstreams
 		Consistently(func() error {
 			// Modify the upstream
 			us, err := upstreamClient.Read(defaults.GlooSystem, "default-petstore-8080", clients.ReadOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
 			us.UseHttp2 = &wrappers.BoolValue{Value: !us.UseHttp2.GetValue()}
 			_, err = upstreamClient.Write(us, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
@@ -90,6 +93,6 @@ var _ = Describe("Endpoint discovery works", func() {
 			checkClusterEndpoints()
 
 			return nil
-		}, "5m", "5s").Should(BeNil())
+		}, "5m", "5s").Should(BeNil()) // 5 min to be safe, usually repros in ~40s when running locally without REST EDS
 	})
 })
