@@ -65,3 +65,8 @@ if [ "$KUBE2E_TESTS" = "eds" ]; then
     --dest-name default-petstore-8080 \
     --prefix-rewrite /api/pets
 fi
+
+if [ "$KUBE2E_TESTS" = "glooctl" ]; then
+  curl -sSL https://github.com/istio/istio/releases/download/1.7.4/istio-1.7.4-linux-amd64.tar.gz | tar -xzf - istio-1.7.4/bin/istioctl
+  ./istio-1.7.4/bin/istioctl install --set profile=minimal
+fi
