@@ -85,6 +85,8 @@ jobs:
       with:
         version: v3.2.0
     - name: Setup test env
+      env:
+        KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
       run: |
         ./ci/kind.sh
     - name: Testing - kube e2e regression tests
