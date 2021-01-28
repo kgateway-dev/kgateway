@@ -53,6 +53,9 @@ func (m *CustomTag) Equal(that interface{}) bool {
 	switch m.Type.(type) {
 
 	case *CustomTag_Literal_:
+		if _, ok := target.Type.(*CustomTag_Literal_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetLiteral()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetLiteral()) {
@@ -65,6 +68,9 @@ func (m *CustomTag) Equal(that interface{}) bool {
 		}
 
 	case *CustomTag_Environment_:
+		if _, ok := target.Type.(*CustomTag_Environment_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetEnvironment()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetEnvironment()) {
@@ -77,6 +83,9 @@ func (m *CustomTag) Equal(that interface{}) bool {
 		}
 
 	case *CustomTag_RequestHeader:
+		if _, ok := target.Type.(*CustomTag_RequestHeader); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRequestHeader()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRequestHeader()) {
@@ -89,6 +98,9 @@ func (m *CustomTag) Equal(that interface{}) bool {
 		}
 
 	case *CustomTag_Metadata_:
+		if _, ok := target.Type.(*CustomTag_Metadata_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetMetadata()) {
@@ -100,6 +112,11 @@ func (m *CustomTag) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.Type != target.Type {
+			return false
+		}
 	}
 
 	return true

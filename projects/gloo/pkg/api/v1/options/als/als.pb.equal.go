@@ -90,6 +90,9 @@ func (m *AccessLog) Equal(that interface{}) bool {
 	switch m.OutputDestination.(type) {
 
 	case *AccessLog_FileSink:
+		if _, ok := target.OutputDestination.(*AccessLog_FileSink); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetFileSink()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetFileSink()) {
@@ -102,6 +105,9 @@ func (m *AccessLog) Equal(that interface{}) bool {
 		}
 
 	case *AccessLog_GrpcService:
+		if _, ok := target.OutputDestination.(*AccessLog_GrpcService); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetGrpcService()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetGrpcService()) {
@@ -113,6 +119,11 @@ func (m *AccessLog) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.OutputDestination != target.OutputDestination {
+			return false
+		}
 	}
 
 	return true
@@ -146,12 +157,18 @@ func (m *FileSink) Equal(that interface{}) bool {
 	switch m.OutputFormat.(type) {
 
 	case *FileSink_StringFormat:
+		if _, ok := target.OutputFormat.(*FileSink_StringFormat); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetStringFormat(), target.GetStringFormat()) != 0 {
 			return false
 		}
 
 	case *FileSink_JsonFormat:
+		if _, ok := target.OutputFormat.(*FileSink_JsonFormat); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetJsonFormat()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetJsonFormat()) {
@@ -163,6 +180,11 @@ func (m *FileSink) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.OutputFormat != target.OutputFormat {
+			return false
+		}
 	}
 
 	return true
@@ -229,11 +251,19 @@ func (m *GrpcService) Equal(that interface{}) bool {
 	switch m.ServiceRef.(type) {
 
 	case *GrpcService_StaticClusterName:
+		if _, ok := target.ServiceRef.(*GrpcService_StaticClusterName); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetStaticClusterName(), target.GetStaticClusterName()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.ServiceRef != target.ServiceRef {
+			return false
+		}
 	}
 
 	return true
