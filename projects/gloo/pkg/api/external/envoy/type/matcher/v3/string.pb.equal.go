@@ -53,24 +53,36 @@ func (m *StringMatcher) Equal(that interface{}) bool {
 	switch m.MatchPattern.(type) {
 
 	case *StringMatcher_Exact:
+		if _, ok := target.MatchPattern.(*StringMatcher_Exact); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetExact(), target.GetExact()) != 0 {
 			return false
 		}
 
 	case *StringMatcher_Prefix:
+		if _, ok := target.MatchPattern.(*StringMatcher_Prefix); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetPrefix(), target.GetPrefix()) != 0 {
 			return false
 		}
 
 	case *StringMatcher_Suffix:
+		if _, ok := target.MatchPattern.(*StringMatcher_Suffix); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetSuffix(), target.GetSuffix()) != 0 {
 			return false
 		}
 
 	case *StringMatcher_SafeRegex:
+		if _, ok := target.MatchPattern.(*StringMatcher_SafeRegex); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetSafeRegex()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetSafeRegex()) {
@@ -82,6 +94,11 @@ func (m *StringMatcher) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.MatchPattern != target.MatchPattern {
+			return false
+		}
 	}
 
 	return true
