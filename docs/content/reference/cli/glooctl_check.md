@@ -6,10 +6,6 @@ weight: 5
 
 Checks Gloo resources for errors (requires Gloo running on Kubernetes)
 
-### Synopsis
-
-Checks Gloo resources for errors (requires Gloo running on Kubernetes)
-
 ```
 glooctl check [flags]
 ```

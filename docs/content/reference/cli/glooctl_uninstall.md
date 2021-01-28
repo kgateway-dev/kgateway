@@ -6,10 +6,6 @@ weight: 5
 
 uninstall gloo
 
-### Synopsis
-
-uninstall gloo
-
 ```
 glooctl uninstall [flags]
 ```
