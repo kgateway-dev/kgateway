@@ -65,17 +65,28 @@ func (m *SocketOption) Equal(that interface{}) bool {
 	switch m.Value.(type) {
 
 	case *SocketOption_IntValue:
+		if _, ok := target.Value.(*SocketOption_IntValue); !ok {
+			return false
+		}
 
 		if m.GetIntValue() != target.GetIntValue() {
 			return false
 		}
 
 	case *SocketOption_BufValue:
+		if _, ok := target.Value.(*SocketOption_BufValue); !ok {
+			return false
+		}
 
 		if bytes.Compare(m.GetBufValue(), target.GetBufValue()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.Value != target.Value {
+			return false
+		}
 	}
 
 	return true
