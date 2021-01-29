@@ -6,10 +6,6 @@ weight: 5
 
 Commands for interacting with Istio in Gloo
 
-### Synopsis
-
-Commands for interacting with Istio in Gloo
-
 ```
 glooctl istio [flags]
 ```

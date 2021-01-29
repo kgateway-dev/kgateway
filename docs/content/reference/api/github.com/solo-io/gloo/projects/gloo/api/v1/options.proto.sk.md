@@ -41,6 +41,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "accessLoggingService": .als.options.gloo.solo.io.AccessLoggingService
 "extensions": .gloo.solo.io.Extensions
 "perConnectionBufferLimitBytes": .google.protobuf.UInt32Value
+"socketOptions": []solo.io.envoy.api.v2.core.SocketOption
 
 ```
 
@@ -49,6 +50,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `accessLoggingService` | [.als.options.gloo.solo.io.AccessLoggingService](../options/als/als.proto.sk/#accessloggingservice) |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml. Some sample use cases: * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata. * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process. Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API. |
 | `perConnectionBufferLimitBytes` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Soft limit on size of the listener's new connection read and write buffers. If unspecified, defaults to 1MiB For more info, check out the [Envoy docs](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/listener.proto). |
+| `socketOptions` | [[]solo.io.envoy.api.v2.core.SocketOption](../../../../../../solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#socketoption) | Additional socket options that may not be present in Envoy source code or precompiled binaries. |
 
 
 

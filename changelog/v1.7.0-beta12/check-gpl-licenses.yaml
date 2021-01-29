@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Adds check to codegen that will fail if a dependency is detected which uses a GPL license.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: go-utils
+    dependencyTag: v0.20.2
+    description: Update go-utils to v0.20.2
