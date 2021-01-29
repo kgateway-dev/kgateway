@@ -962,12 +962,6 @@ func (m *AccessTokenValidation) Equal(that interface{}) bool {
 			}
 		}
 
-	case *AccessTokenValidation_MatchPredicate:
-
-		if strings.Compare(m.GetMatchPredicate(), target.GetMatchPredicate()) != 0 {
-			return false
-		}
-
 	}
 
 	return true

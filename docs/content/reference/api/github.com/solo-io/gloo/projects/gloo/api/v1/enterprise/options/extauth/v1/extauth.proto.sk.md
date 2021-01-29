@@ -612,7 +612,6 @@ https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
 "userinfoUrl": string
 "cacheTimeout": .google.protobuf.Duration
 "matchAll": .enterprise.gloo.solo.io.AccessTokenValidation.ScopeList
-"matchPredicate": string
 
 ```
 
@@ -621,8 +620,7 @@ https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
 | `introspectionUrl` | `string` | the url for the OAuth2.0 access token introspection endpoint. if provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. |
 | `userinfoUrl` | `string` | the url for the OIDC userinfo endpoint. if provided, the (opaque) access token provided or received from the oauth endpoint will be queried and the userinfo response (or cached response) will be put in the `AuthorizationRequest` state. this can be useful to leverage the userinfo response in, for example, an extauth server plugin. |
 | `cacheTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | how long the token introspection and userinfo endpoint response for a specific access token should be kept in the in-memory cache. the result will be invalidated at this timeout, or at "exp" time from the introspection result, whichever comes sooner. if omitted, defaults to 10 minutes. if zero, then no caching will be done. |
-| `matchAll` | [.enterprise.gloo.solo.io.AccessTokenValidation.ScopeList](../extauth.proto.sk/#scopelist) | Require token to have all of the scopes in the given list. Only one of `matchAll` or `matchPredicate` can be set. |
-| `matchPredicate` | `string` | Require token to have scopes satisfying the given boolean expression. Examples: scope1 && scope2 : must have both "scope1" and "scope2" scope1 || scope2 : must have either "scope1" or "scope2" !scope1 && (scope2 || scope3) : must not have "scope1" and must have either "scope2" or "scope3". Only one of `matchPredicate` or `matchAll` can be set. |
+| `matchAll` | [.enterprise.gloo.solo.io.AccessTokenValidation.ScopeList](../extauth.proto.sk/#scopelist) | Require token to have all of the scopes in the given list. |
 
 
 

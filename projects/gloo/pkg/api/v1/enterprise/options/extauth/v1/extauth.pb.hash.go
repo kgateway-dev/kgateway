@@ -957,12 +957,6 @@ func (m *AccessTokenValidation) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *AccessTokenValidation_MatchPredicate:
-
-		if _, err = hasher.Write([]byte(m.GetMatchPredicate())); err != nil {
-			return 0, err
-		}
-
 	}
 
 	return hasher.Sum64(), nil

@@ -446,15 +446,12 @@ message AccessTokenValidation {
   google.protobuf.Duration cache_timeout = 5 ;
 
   // Optional criteria for validating the scopes of a token.
+  // Omitting this field means all scopes are permitted.
   oneof scope_validation {
     // Require token to have all of the scopes in the given list.
     ScopeList match_all = 6;
-    // Require token to have scopes satisfying the given boolean expression.
-    // Examples:
-    // scope1 && scope2 : must have both "scope1" and "scope2"
-    // scope1 || scope2 : must have either "scope1" or "scope2"
-    // !scope1 && (scope2 || scope3)  : must not have "scope1" and must have either "scope2" or "scope3"
-    string match_predicate = 7;
+
+    // We may add more kinds of criteria (e.g. "match any", general boolean predicates) in the future.
   }
 
   message ScopeList {
