@@ -168,6 +168,18 @@ var _ = Describe("gzip", func() {
 			_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
 
+			// Wait until the gateway is written
+			Eventually(func() error {
+				readGateway, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				if err != nil {
+					return err
+				}
+				if readGateway.GetHttpGateway() == nil || readGateway.GetHttpGateway().GetOptions() == nil || readGateway.GetHttpGateway().GetOptions().Gzip == nil {
+					return fmt.Errorf("gzip not set, new gateway is not yet written")
+				}
+				return nil
+			}, "15s", "0.5s").ShouldNot(HaveOccurred())
+
 			// write a virtual service so we have a proxy to our test upstream
 			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
 			_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
