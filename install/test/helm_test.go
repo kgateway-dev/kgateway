@@ -1677,6 +1677,23 @@ var _ = Describe("Helm Test", func() {
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.extraVolumes[0].name=tls-crt",
+								"gatewayProxies.gatewayProxy.extraVolumes[0].secret[0].secretName=gloo-test-cert",
+								"gatewayProxies.gatewayProxy.extraVolumes[0].secret[0].items[0].key=tls.crt",
+								"gatewayProxies.gatewayProxy.extraVolumes[0].secret[0].items[0].path=tls.crt",
+							},
+						})
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.ExtraProxyVolumeMounts[0].name=tls-crt",
+								"gatewayProxies.gatewayProxy.ExtraProxyVolumeMounts[0].mountPath=/certs/crt",
+								"gatewayProxies.gatewayProxy.ExtraProxyVolumeMounts[0].readOnly=true",
+							},
+						})
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.extraVolumeHelper=gloo.testVolume",
 								"gatewayProxies.gatewayProxy.extraProxyVolumeMountHelper=gloo.testVolumeMount",
 							},
