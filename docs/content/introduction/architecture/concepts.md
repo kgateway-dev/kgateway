@@ -141,7 +141,7 @@ A destination can be either an *upstream destination* or a *function destination
 
 **Upstream Destinations** are analogous to [Envoy clusters](https://www.envoyproxy.io/docs/envoy/v1.8.0/api-v1/cluster_manager/cluster). Requests routed to upstream destinations are routed to a server which handles the request once it has been admitted (and possibly transformed) by Gloo Edge.
 
-**Function Destinations** allow requests to be routed directly to *functions* that live on various Upstreams. A function can be a serverless function call (e.g., Lambda, Google Cloud Function, and OpenFaaS function), an API call on a service (e.g., a REST API call, OpenAPI operation, and XML/SOAP request), or publishing to a message queue (e.g., NATS and AMQP). Function-level routing is enabled in Envoy by Gloo Edge's function-level filters. Gloo Edge supports the addition of new Upstream types and new function types through our plugin interface.
+**Function Destinations** allow requests to be routed directly to *functions* that live on various Upstreams. A function can be a serverless function call (e.g., AWS Lambda, Google Cloud Function, Microsoft Azure Function) or an API call on a service (e.g., a REST API call, OpenAPI operation, gRPC operation). Function-level routing is enabled in Envoy by Gloo Edge's function-level filters. Gloo Edge supports the addition of new Upstream types and new function types through our plugin interface.
 
 ---
 
