@@ -6,7 +6,7 @@ description: Managing the traffic flowing through Gloo Edge to Upstream destinat
 
 Gloo Edge has a powerful routing engine that can handle simple use cases like API-to-API routing as well as more complex ones like HTTP to gRPC with body and header transformations. Routing can also be done natively to cloud-function providers like AWS Lambda, Google Cloud Functions and Azure Functions.
 
-Gloo Edge can route requests directly to functions, which can be: a serverless function call (e.g. Lambda, Google Cloud Function, OpenFaaS function, etc.); an API call on a microservice or a legacy service (e.g. a REST API call, OpenAPI operation, XML/SOAP request etc.); or publishing to a message queue (e.g. NATS, AMQP, etc.). This unique ability is what makes Gloo Edge the only API gateway that supports hybrid apps, as well as the only one that does not tie the user to a specific paradigm.
+Gloo Edge can route requests directly to functions, which can be: a serverless function call (e.g. AWS Lambda, Google Cloud Function, Microsoft Azure Function) or an API call on a microservice or a legacy service (e.g. a REST API call, OpenAPI operation, gRPC operation). This unique ability is what makes Gloo Edge the only API gateway that supports hybrid apps, as well as the only one that does not tie the user to a specific paradigm.
 
 Routes are the primary building block of the *Virtual Service*. A route contains matchers and an upstream which could be a single destination, a list of weighted destinations, or an upstream group. 
 
