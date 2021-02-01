@@ -6,4 +6,4 @@ changelog:
     dependencyOwner: solo-io
     dependencyRepo: skv2
     dependencyTag: v0.17.2
-    description: Update go-utils to v0.17.2
+    description: Update skv2 to v0.17.2
