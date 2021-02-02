@@ -14,7 +14,7 @@ Application owners can battle CSRF attacks at multiple levels of their stack.  A
 
 A primary benefit of API Gateways like Gloo Edge is that they provide these weapons at a controlled access point and thus can off-load responsibilities from the application team.
 
-One option for Gloo Edge Enterprise users is to  activate its [Web Application Framework]({{% versioned_link_path fromRoot="/guides/security/waf/" %}}) based on Apache ModSecurity.  It supports use of CSRF rules in the OWASP [Core Rule Set](https://coreruleset.org/).
+One option for Gloo Edge Enterprise users is to  activate its [Web Application Firewall]({{% versioned_link_path fromRoot="/guides/security/waf/" %}}) based on Apache ModSecurity.  It supports use of CSRF rules in the OWASP [Core Rule Set](https://coreruleset.org/).
 
 Alternatively, Envoy provides a simple [CSRF filter](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/csrf/v2/csrf.proto) that may be applied to an entire Gloo `Gateway`, a `VirtualService`, or even individual `Routes` within a `VirtualService`.  To understand more about how this filter works in Envoy, we recommend playing in their CSRF [sandbox](https://www.envoyproxy.io/docs/envoy/latest/start/sandboxes/csrf).
 
