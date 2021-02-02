@@ -16,6 +16,10 @@ Socket options can have considerable effects. The configurations provided in thi
 
 One use case for this, is when an AWS NLB is deployed in front of Gloo Edge. This is a powerful combination that we recommend. However, AWS NLB's have an idle timeout of 350 seconds that [cannot be changed](https://docs.aws.amazon.com/elasticloadbalancing/latest/network/network-load-balancers.html#connection-idle-timeout). Therefore, we need to configure TCP keep alive, to keep the socket open during long idle periods.
 
+{{% notice note %}}
+Some users avoid this issue altogether by using a [kubernetes controller for elastic load balancers](https://github.com/kubernetes-sigs/aws-load-balancer-controller), instead of an AWS NLB
+{{% /notice %}}
+
 ### Without Keep-Alive
 
 Without using socket options to configure keep-alive, the connection between the Gloo Edge proxy and AWS NLB is silently closed after a period less than 350 seconds. The client then makes a request, and a reset packet (RST) is returned by the NLB. Since the client doesn't know how to handle the reset packet, it closes the socket.
