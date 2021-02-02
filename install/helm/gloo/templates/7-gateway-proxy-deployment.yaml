@@ -179,9 +179,9 @@ spec:
           hostPort: {{ $spec.podTemplate.httpsPort }}
           {{- end}}
           {{- end}}
-{{- with $spec.podTemplate.extraPorts }}
-{{toYaml . | indent 8}}{{- end }}
-{{- if $spec.podTemplate.resources }}
+          {{- with $spec.podTemplate.extraPorts }}
+          {{ toYaml . | indent 8}}{{- end }}
+          {{- if $spec.podTemplate.resources }}
         resources:
 {{ toYaml $spec.podTemplate.resources | indent 10}}
 {{- end}}
@@ -437,9 +437,9 @@ spec:
       - name: shared-data
         emptyDir: {}
       {{- end }}
-{{- if $spec.extraVolumes }}
-{{ toYaml $spec.extraVolumes | indent 6 }}
-{{- end }}
+      {{- if $spec.extraVolumes }}
+      {{ toYaml $spec.extraVolumes | nindent 6 }}
+      {{- end }}
       {{- if $spec.extraVolumeHelper }}
       {{- include $spec.extraVolumeHelper $ | nindent 6 }}
       {{- end }}
