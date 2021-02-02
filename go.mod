@@ -71,7 +71,7 @@ require (
 	github.com/solo-io/k8s-utils v0.0.5
 	github.com/solo-io/protoc-gen-ext v0.0.15
 	github.com/solo-io/reporting-client v0.2.0
-	github.com/solo-io/skv2 v0.17.0
+	github.com/solo-io/skv2 v0.17.2
 	// Pinned to the `rate-limiter-v0.1.8` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10
 	github.com/solo-io/solo-kit v0.17.1
