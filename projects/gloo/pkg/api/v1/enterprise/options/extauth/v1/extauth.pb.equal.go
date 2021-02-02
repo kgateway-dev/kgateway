@@ -998,17 +998,17 @@ func (m *AccessTokenValidation) Equal(that interface{}) bool {
 
 	switch m.ScopeValidation.(type) {
 
-	case *AccessTokenValidation_MatchAll:
-		if _, ok := target.ScopeValidation.(*AccessTokenValidation_MatchAll); !ok {
+	case *AccessTokenValidation_RequiredScopes:
+		if _, ok := target.ScopeValidation.(*AccessTokenValidation_RequiredScopes); !ok {
 			return false
 		}
 
-		if h, ok := interface{}(m.GetMatchAll()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetMatchAll()) {
+		if h, ok := interface{}(m.GetRequiredScopes()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRequiredScopes()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetMatchAll(), target.GetMatchAll()) {
+			if !proto.Equal(m.GetRequiredScopes(), target.GetRequiredScopes()) {
 				return false
 			}
 		}

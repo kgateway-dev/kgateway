@@ -461,9 +461,10 @@ message AccessTokenValidation {
 
 
     // Optional criteria for validating the scopes of a token.
+    // Omitting this field means that scope validation will be skipped.
     oneof scope_validation {
       // Require token to have all of the scopes in the given list.
-      ScopeList match_all = 6;
+      ScopeList required_scopes = 6;
 
       // in the future we may add other types of scope validation (e.g. predicate matching)
     }
