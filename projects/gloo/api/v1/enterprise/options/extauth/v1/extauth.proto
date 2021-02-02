@@ -458,6 +458,20 @@ message AccessTokenValidation {
     // in the in-memory cache. the result will be invalidated at this timeout, or at "exp" time from the introspection
     // result, whichever comes sooner. if omitted, defaults to 10 minutes. if zero, then no caching will be done.
     google.protobuf.Duration cache_timeout = 5;
+
+
+    // Optional criteria for validating the scopes of a token.
+    // Omitting this field means that scope validation will be skipped.
+    oneof scope_validation {
+      // Require token to have all of the scopes in the given list.
+      ScopeList required_scopes = 6;
+
+      // in the future we may add other types of scope validation (e.g. predicate matching)
+    }
+
+    message ScopeList {
+      repeated string scope = 1;
+    }
 }
 
 message OauthSecret {
