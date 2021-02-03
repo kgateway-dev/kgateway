@@ -30,6 +30,21 @@ Improving the documentation, adding examples or use cases can be the easiest way
 
 For more detailed guidance on contributing to the documentation, check out the guide on the [docs website](https://docs.solo.io/gloo-edge/latest/contributing).
 
+### Setting up the development environment
+
+Instructions for setting the development environment can be found in the [developer guide](https://docs.solo.io/gloo-edge/latest/guides/dev/setting-up-dev-environment/). 
+
+Useful make commands:
+
+| Command                                                   | Description |
+| ---                                                       |   ---      |
+| make install-go-tools generated-code -B                   | Makes all generated code which is required to get past CI. |
+| make glooctl                                              | Makes glooctl binary and places it in _output/glooctl |
+| make build-kind-chart                                     | Makes the .tgz helm file that locally built instances of glooctl require to install gloo |
+| make docker TAGGED_VERSION=(version)                      | Builds the docker images needed for the helm charts and tests |
+| make clean build-test-assets -B TAGGED_VERSION=v(version) | Builds a zipped helm chart for gloo that is configured to use the specified gloo version. This version must be a valid image in quay. This can include non-standard versions used for testing. |
+| make update-deps                                          | Updates the go dependencies |
+
 ### Small bug fixes
 
 If your bug fix is small (around 20 lines of code) just open a pull request. We will try to merge it as soon as possible, 
