@@ -189,7 +189,6 @@ Describes the transport protocol version to use when connecting to the ext auth 
 
 | Name | Description |
 | ----- | ----------- | 
-| `V2` | Use v2 API. |
 | `V3` | Use v3 API. |
 
 

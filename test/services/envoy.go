@@ -84,7 +84,6 @@ layered_runtime:
   layers:
   - name: static_layer
     static_layer:
-      envoy.reloadable_features.enable_deprecated_v2_api: true
       upstream:
         healthy_panic_threshold:
           value: 0

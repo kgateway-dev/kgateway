@@ -1,0 +1,5 @@
+changelog:
+  - type: UPGRADE
+    issueLink: https://github.com/solo-io/gloo/issues/4042
+    description: >
+      Upgrade gloo's envoy api to remove v2 references. This marks the complete transition from v2 to v3.

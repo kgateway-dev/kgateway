@@ -130,11 +130,8 @@ message Settings {
 
     // Describes the transport protocol version to use when connecting to the ext auth server.
     enum ApiVersion {
-        // Use v2 API.
-        V2 = 0;
-
         // Use v3 API.
-        V3 = 1;
+        V3 = 0;
     }
 
     // Determines the API version for the `ext_authz` transport protocol that will be used by Envoy
