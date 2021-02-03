@@ -84,7 +84,6 @@ layered_runtime:
   layers:
   - name: static_layer
     static_layer:
-      envoy.reloadable_features.disable_tls_inspector_injection: false
       upstream:
         healthy_panic_threshold:
           value: 0
@@ -329,6 +328,17 @@ func (ef *EnvoyFactory) Clean() error {
 		ei.Clean()
 	}
 	return nil
+}
+
+func (ei *EnvoyInstance) EnvoyConfig() (*http.Response, error) {
+	adminUrl := fmt.Sprintf("http://%s:%d/config_dump",
+		ei.LocalAddr(),
+		ei.AdminPort)
+	r, err := http.Get(adminUrl)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
 type EnvoyInstance struct {
