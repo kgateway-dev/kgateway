@@ -149,7 +149,7 @@ func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*
 			return nil, NilFieldError(fmt.Sprintf("HealthCheck[%d].UnhealthyThreshold", i))
 		}
 		if hc.GetHealthChecker() == nil {
-			return nil, NilFieldError(fmt.Sprintf(fmt.Sprintf("HealthCheck[%d].HealthChecker", i)))
+			return nil, NilFieldError(fmt.Sprintf("HealthCheck[%d].HealthChecker", i))
 		}
 		converted, err := api_conversion.ToEnvoyHealthCheck(hc, secrets)
 		if err != nil {
@@ -165,7 +165,7 @@ func createOutlierDetectionConfig(upstream *v1.Upstream) (*envoy_config_cluster_
 		return nil, nil
 	}
 	if upstream.GetOutlierDetection().GetInterval() == nil {
-		return nil, NilFieldError(fmt.Sprintf(fmt.Sprintf("OutlierDetection.HealthChecker.Interval")))
+		return nil, NilFieldError("OutlierDetection.HealthChecker.Interval")
 	}
 	return api_conversion.ToEnvoyOutlierDetection(upstream.GetOutlierDetection()), nil
 }
