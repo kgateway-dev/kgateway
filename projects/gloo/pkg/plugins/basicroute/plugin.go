@@ -233,11 +233,10 @@ func convertRegexMatcher(rm *v32.RegexMatcher) *envoy_type_matcher.RegexMatcher 
 
 	var retMatcher envoy_type_matcher.RegexMatcher
 
-	switch et := rm.EngineType.(type) {
-	case *v32.RegexMatcher_GoogleRe2:
+	switch rm.EngineType.(type) {
+	case *v32.RegexMatcher_GoogleRe2, nil: // if no engine specified, default to GoogleRe2
 		retMatcher.EngineType = &envoy_type_matcher.RegexMatcher_GoogleRe2{
 			GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{
-				MaxProgramSize: et.GoogleRe2.MaxProgramSize,
 			},
 		}
 	}
