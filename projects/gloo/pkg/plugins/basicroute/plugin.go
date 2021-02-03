@@ -92,7 +92,6 @@ func applyRegexRewrite(in *v1.Route, out *envoy_config_route_v3.Route) error {
 		return errors.Errorf("internal error: route %v specified a regex, but output Envoy object "+
 			"had nil route", in.Action)
 	}
-
 	routeAction.Route.RegexRewrite = convertRegexMatchAndSubstitute(in.Options.RegexRewrite)
 	return nil
 }
