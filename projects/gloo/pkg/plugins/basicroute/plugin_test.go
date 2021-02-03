@@ -74,8 +74,7 @@ var _ = Describe("regex rewrite", func() {
 				Pattern: &envoy_type_matcher_v3.RegexMatcher{
 					Regex: "/",
 					EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-						GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{
-						},
+						GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
 					},
 				},
 				Substitution: "/bar",
