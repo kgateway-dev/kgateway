@@ -1147,6 +1147,14 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectService(gatewayProxyService)
 					})
 
+					It("sets externalIPs", func() {
+						gatewayProxyService.Spec.Type = v1.ServiceTypeLoadBalancer
+						gatewayProxyService.Spec.ExternalIPs = []string{"130.211.204.1", "130.211.204.2"}
+						gatewayProxyService.Annotations = map[string]string{"test": "test"}
+						prepareMakefileFromValuesFile("values/val_lb_external_ips.yaml")
+						testManifest.ExpectService(gatewayProxyService)
+					})
+
 					It("sets external traffic policy", func() {
 						gatewayProxyService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeLocal
 						prepareMakefile(namespace, helmValues{

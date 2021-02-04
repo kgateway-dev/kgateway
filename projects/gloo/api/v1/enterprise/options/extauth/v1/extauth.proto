@@ -436,34 +436,91 @@ message OidcAuthorizationCode {
 
 message AccessTokenValidation {
 
+    // Defines how JSON Web Token (JWT) access tokens are validated.
+    //
+    // Tokens are validated using a JSON Web Key Set (as defined in
+    // [Section 5 of RFC7517](https://tools.ietf.org/html/rfc7517#section-5)),
+    // which can be either inlined in the configuration or fetched from a remote location via HTTP.
+    // Any keys in the JWKS that are not intended for signature verification (i.e. whose
+    // ["use" parameter](https://tools.ietf.org/html/rfc7517#section-4.2) is not "sig")
+    // will be ignored by the system, as will keys that do not specify a
+    // ["kid" (Key ID) parameter](https://tools.ietf.org/html/rfc7517#section-4.2).
+    //
+    // The JWT to be validated must define non-empty "kid" and "alg" headers. The "kid" header
+    // determines which key in the JWKS will be used to verify the signature of the token;
+    // if no matching key is found, the token will be rejected.
+    //
+    // If present, the server will verify the "exp", "iat", and "nbf" standard JWT claims.
+    // Validation of the "iss" claim and of token scopes can be configured as well.
+    // If the JWT has been successfully validated, its set of claims will be added to the
+    // `AuthorizationRequest` state under the "jwtAccessToken" key.
+    message JwtValidation {
+
+        // Specifies how to fetch JWKS from remote and how to cache it.
+        message RemoteJwks {
+            // The HTTP URI to fetch the JWKS.
+            string url = 1;
+
+            // The frequency at which the JWKS should be refreshed.
+            // If not specified, the default value is 5 minutes.
+            google.protobuf.Duration refresh_interval = 2;
+        }
+
+        // Represents a locally available JWKS.
+        message LocalJwks {
+            // JWKS is embedded as a string.
+            string inline_string = 1;
+        }
+
+        oneof jwks_source_specifier {
+            // Fetches the JWKS from a remote location.
+            RemoteJwks remote_jwks = 1;
+            // Loads the JWKS from a local data source.
+            LocalJwks local_jwks = 2;
+        }
+
+        // Allow only tokens that have been issued by this principal (i.e. whose "iss" claim matches this value).
+        // If empty, issuer validation will be skipped.
+        string issuer = 3;
+    }
+
     oneof validation_type {
-        // the url for the OAuth2.0 access token introspection endpoint.
-        // if provided, the (opaque) access token provided or received from the oauth authorization endpoint
+        // The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint.
+        // If provided, the (opaque) access token provided or received from the oauth authorization endpoint
         // will be validated against this endpoint, or locally cached responses for this access token.
         string introspection_url = 1;
 
-        // in the future we may implement jwt and hmac validation
+        // Validate access tokens that conform to the
+        // [JSON Web Token (JWT)](https://tools.ietf.org/html/rfc7519) specification.
+        JwtValidation jwt = 2;
+
+        // In the future we may implement HMAC validation
     }
 
-    // the url for the OIDC userinfo endpoint.
-    // if provided, the (opaque) access token provided or received from the oauth endpoint
-    // will be queried and the userinfo response (or cached response) will be put in the `AuthorizationRequest` state.
-    // this can be useful to leverage the userinfo response in, for example, an extauth server plugin.
+    // The URL for the OIDC userinfo endpoint.
+    // If provided, the (opaque) access token provided or received from the oauth endpoint
+    // will be queried and the userinfo response (or cached response) will be added to the
+    // `AuthorizationRequest` state under the "introspection" key.
+    // This can be useful to leverage the userinfo response in, for example, an external auth server plugin.
     string userinfo_url = 4;
 
-    // how long the token introspection and userinfo endpoint response for a specific access token should be kept
-    // in the in-memory cache. the result will be invalidated at this timeout, or at "exp" time from the introspection
-    // result, whichever comes sooner. if omitted, defaults to 10 minutes. if zero, then no caching will be done.
+    // How long the token introspection and userinfo endpoint response for a specific access token should be kept
+    // in the in-memory cache. The result will be invalidated at this timeout, or at "exp" time from the introspection
+    // result, whichever comes sooner. If omitted, defaults to 10 minutes. If zero, then no caching will be done.
     google.protobuf.Duration cache_timeout = 5;
 
-
     // Optional criteria for validating the scopes of a token.
-    // Omitting this field means that scope validation will be skipped.
     oneof scope_validation {
-      // Require token to have all of the scopes in the given list.
-      ScopeList required_scopes = 6;
+        // Require access token to have all of the scopes in the given list.
+        // This configuration applies to both opaque and JWT tokens. In the case of opaque tokens,
+        // this will check the scopes returned in the "scope" member of introspection response
+        // (as described in [Section 2.2 of RFC7662](https://tools.ietf.org/html/rfc7662#section-2.2).
+        // In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the
+        // token in the form of a space-separated string.
+        // Omitting this field means that scope validation will be skipped.
+        ScopeList required_scopes = 6;
 
-      // in the future we may add other types of scope validation (e.g. predicate matching)
+        // in the future we may add other types of scope validation (e.g. predicate matching)
     }
 
     message ScopeList {

@@ -121,7 +121,7 @@ or `helm template`:
 helm fetch --untar --untardir . 'gloo/gloo'
 
 # deploy gloo resources to my-namespace with our value overrides
-helm template gloo --namespace my-namespace  --set crds.create=true | k apply -f - -n my-namespace
+helm template gloo --namespace my-namespace  --set crds.create=true | kubectl apply -f - -n my-namespace
 ```
 {{< /tab >}}
 {{< tab name="Helm 3" codelang="shell">}}
