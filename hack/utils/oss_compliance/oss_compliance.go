@@ -13,6 +13,8 @@ func main() {
 	macOnlyDependencies := []string{
 		"github.com/mitchellh/go-homedir",
 		"github.com/containerd/continuity",
+		"github.com/keybase/go-ps",
+		"github.com/golang/mock",
 	}
 
 	app, err := license.CliAllPackages(macOnlyDependencies)

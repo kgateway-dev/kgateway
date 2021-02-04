@@ -73,7 +73,6 @@ Name|Version|License
 [gobwas/glob](https://github.com/gobwas/glob)|v0.2.3|MIT License
 [gogo/protobuf](https://github.com/gogo/protobuf)|v1.3.1|BSD 3-clause "New" or "Revised" License
 [groupcache/lru](https://github.com/golang/groupcache)|v0.0.0-20200121045136-8c9f03a8e57e|Apache License 2.0
-[golang/mock](https://github.com/golang/mock)|v1.4.4|Apache License 2.0
 [golang/protobuf](https://github.com/golang/protobuf)|v1.4.3|BSD 3-clause "New" or "Revised" License
 [golang/snappy](https://github.com/golang/snappy)|v0.0.1|BSD 3-clause "New" or "Revised" License
 [google/btree](https://github.com/google/btree)|v1.0.0|Apache License 2.0
@@ -106,7 +105,6 @@ Name|Version|License
 [kballard/go-shellquote](https://github.com/kballard/go-shellquote)|v0.0.0-20180428030007-95032a82bc51|MIT License
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [kevinburke/ssh_config](https://github.com/kevinburke/ssh_config)|v0.0.0-20190725054713-01f96b0aa0cd|MIT License
-[go-ps/darwincgo](https://github.com/keybase/go-ps)|v0.0.0-20190827175125-91aafc93ba19|MIT License
 [kr/pty](https://github.com/kr/pty)|v1.1.8|MIT License
 [lann/builder](https://github.com/lann/builder)|v0.0.0-20180802200727-47ae307949d0|MIT License
 [lann/ps](https://github.com/lann/ps)|v0.0.0-20150810152359-62de8c46ede0|MIT License
@@ -178,7 +176,7 @@ Name|Version|License
 [x/net](https://golang.org/x/net)|v0.0.0-20201224014010-6772e930b67b|BSD 3-clause "New" or "Revised" License
 [x/oauth2](https://golang.org/x/oauth2)|v0.0.0-20200902213428-5d25da1a8d43|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.0.0-20201020160332-67f06af15bc9|BSD 3-clause "New" or "Revised" License
-[x/sys](https://golang.org/x/sys)|v0.0.0-20200826173525-f9321e4c35a6|BSD 3-clause "New" or "Revised" License
+[x/sys](https://golang.org/x/sys)|v0.0.0-20210112091331-59c308dcf3cc|BSD 3-clause "New" or "Revised" License
 [x/text](https://golang.org/x/text)|v0.3.5|BSD 3-clause "New" or "Revised" License
 [time/rate](https://golang.org/x/time/rate)|v0.0.0-20200630173020-3af7569d3a1e|BSD 3-clause "New" or "Revised" License
 [xerrors/internal](https://golang.org/x/xerrors/internal)|v0.0.0-20200804184101-5ec99f83aff1|BSD 3-clause "New" or "Revised" License
@@ -225,4 +223,3 @@ Name|Version|License
 [envoyproxy/envoy](https://github.com/envoyproxy/envoy)|latest|Apache License 2.0
 [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)|latest|Apache License 2.0
 [paulvollmer/2gobytes](https://github.com/paulvollmer/2gobytes)|latest|MIT License
-[golang/mock](https://github.com/golang/mock)|latest|Apache License 2.0
