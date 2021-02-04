@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Updated the Gloo Edge docs around Upstream Health Checks. The 
+      updated docs show a working configuration and has a paragraph
+      explaining what the contents of the yaml mean. 

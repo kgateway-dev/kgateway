@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 
-	pb "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
+	pb "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/gogo/googleapis/google/rpc"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"

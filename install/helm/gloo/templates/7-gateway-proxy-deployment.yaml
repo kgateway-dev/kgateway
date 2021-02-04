@@ -214,6 +214,9 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+{{- if $spec.extraProxyVolumeMounts }}
+{{ toYaml $spec.extraProxyVolumeMounts | indent 8 }}
+{{- end }}
 {{- if $spec.extraProxyVolumeMountHelper }}
 {{- include $spec.extraProxyVolumeMountHelper $ | nindent 8 }}
 {{- end }}
@@ -433,6 +436,9 @@ spec:
       {{- if $spec.extraContainersHelper }}
       - name: shared-data
         emptyDir: {}
+      {{- end }}
+      {{- if $spec.extraVolumes }}
+      {{ toYaml $spec.extraVolumes | nindent 6 }}
       {{- end }}
       {{- if $spec.extraVolumeHelper }}
       {{- include $spec.extraVolumeHelper $ | nindent 6 }}

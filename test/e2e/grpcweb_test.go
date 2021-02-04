@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"time"
 
+	envoy_data_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	envoy_data_accesslog_v2 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
-	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
+	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -57,7 +58,7 @@ var _ = Describe("Grpc Web", func() {
 			Context("Grpc", func() {
 
 				var (
-					msgChan      <-chan *envoy_data_accesslog_v2.HTTPAccessLogEntry
+					msgChan      <-chan *envoy_data_accesslog_v3.HTTPAccessLogEntry
 					grpcUpstream *gloov1.Upstream
 				)
 
@@ -104,8 +105,8 @@ var _ = Describe("Grpc Web", func() {
 					toSend := &envoyals.StreamAccessLogsMessage{
 						LogEntries: &envoyals.StreamAccessLogsMessage_HttpLogs{
 							HttpLogs: &envoyals.StreamAccessLogsMessage_HTTPAccessLogEntries{
-								LogEntry: []*envoy_data_accesslog_v2.HTTPAccessLogEntry{{
-									CommonProperties: &envoy_data_accesslog_v2.AccessLogCommon{
+								LogEntry: []*envoy_data_accesslog_v3.HTTPAccessLogEntry{{
+									CommonProperties: &envoy_data_accesslog_v3.AccessLogCommon{
 										UpstreamCluster: "foo",
 									},
 								}},
@@ -133,7 +134,7 @@ var _ = Describe("Grpc Web", func() {
 					var bufferbase64 bytes.Buffer
 					bufferbase64.Write(dest)
 
-					req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/envoy.service.accesslog.v2.AccessLogService/StreamAccessLogs", defaults.HttpPort), &bufferbase64)
+					req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/envoy.service.accesslog.v3.AccessLogService/StreamAccessLogs", defaults.HttpPort), &bufferbase64)
 					Expect(err).NotTo(HaveOccurred())
 
 					req.Header.Set("content-type", "application/grpc-web-text")
@@ -149,7 +150,7 @@ var _ = Describe("Grpc Web", func() {
 						return nil
 					}, 10*time.Second, time.Second/10).Should(Not(HaveOccurred()))
 
-					var entry *envoy_data_accesslog_v2.HTTPAccessLogEntry
+					var entry *envoy_data_accesslog_v3.HTTPAccessLogEntry
 					Eventually(msgChan, time.Second).Should(Receive(&entry))
 					Expect(entry.CommonProperties.UpstreamCluster).To(Equal("foo"))
 				})

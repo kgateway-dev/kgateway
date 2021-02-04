@@ -3,10 +3,8 @@ package tcp_test
 import (
 	"time"
 
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -276,64 +274,4 @@ var _ = Describe("Plugin", func() {
 
 	})
 
-	Context("ListenerPlugin", func() {
-		It("will not prepend the TlsInspector when ServerName match present", func() {
-			snap := &v1.ApiSnapshot{}
-			out := &envoy_config_listener_v3.Listener{}
-			tcpListener := &v1.TcpListener{
-				TcpHosts: []*v1.TcpHost{
-					{
-						Name: "one",
-						Destination: &v1.TcpHost_TcpAction{
-							Destination: &v1.TcpHost_TcpAction_ForwardSniClusterName{
-								ForwardSniClusterName: &empty.Empty{},
-							},
-						},
-						SslConfig: &v1.SslConfig{
-							SniDomains: []string{"hello.world"},
-						},
-					},
-				},
-			}
-			listener := &v1.Listener{
-				ListenerType: &v1.Listener_TcpListener{
-					TcpListener: tcpListener,
-				},
-			}
-
-			p := NewPlugin(sslTranslator)
-			err := p.ProcessListener(plugins.Params{Snapshot: snap}, listener, out)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(out.ListenerFilters).To(HaveLen(0))
-		})
-
-		It("will prepend the TlsInspector when NO ServerName match present", func() {
-			snap := &v1.ApiSnapshot{}
-			out := &envoy_config_listener_v3.Listener{}
-			tcpListener := &v1.TcpListener{
-				TcpHosts: []*v1.TcpHost{
-					{
-						Name: "one",
-						Destination: &v1.TcpHost_TcpAction{
-							Destination: &v1.TcpHost_TcpAction_ForwardSniClusterName{
-								ForwardSniClusterName: &empty.Empty{},
-							},
-						},
-					},
-				},
-			}
-			listener := &v1.Listener{
-				ListenerType: &v1.Listener_TcpListener{
-					TcpListener: tcpListener,
-				},
-			}
-
-			p := NewPlugin(sslTranslator)
-			err := p.ProcessListener(plugins.Params{Snapshot: snap}, listener, out)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(out.ListenerFilters).To(HaveLen(1))
-			Expect(out.ListenerFilters[0].GetName()).To(Equal(wellknown.TlsInspector))
-			Expect(out.ListenerFilters[0].GetTypedConfig()).To(BeNil())
-		})
-	})
 })
