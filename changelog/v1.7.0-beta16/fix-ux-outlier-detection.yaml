@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Improve error message when outlier detection interval is erroneously configured as nil.
+    issueLink: https://github.com/solo-io/gloo/issues/4217

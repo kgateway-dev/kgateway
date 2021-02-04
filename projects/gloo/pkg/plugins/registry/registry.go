@@ -34,6 +34,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tcp"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tls_inspector"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamconn"
@@ -59,6 +60,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 		rest.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		hcmPlugin,
 		als.NewPlugin(),
+		tls_inspector.NewPlugin(),
 		pipe.NewPlugin(),
 		tcp.NewPlugin(utils.NewSslConfigTranslator()),
 		static.NewPlugin(),
