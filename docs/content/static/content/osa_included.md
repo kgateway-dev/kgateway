@@ -8,6 +8,7 @@ Name|Version|License
 [hashicorp/go-retryablehttp](https://github.com/hashicorp/go-retryablehttp)|v0.6.6|Mozilla Public License 2.0
 [hashicorp/go-rootcerts](https://github.com/hashicorp/go-rootcerts)|v1.0.1|Mozilla Public License 2.0
 [hashicorp/go-sockaddr](https://github.com/hashicorp/go-sockaddr)|v1.0.2|Mozilla Public License 2.0
+[hashicorp/go-uuid](https://github.com/hashicorp/go-uuid)|v1.0.2-0.20191001231223-f32f5fe8d6a8|Mozilla Public License 2.0
 [golang-lru/simplelru](https://github.com/hashicorp/golang-lru)|v0.5.4|Mozilla Public License 2.0
 [hashicorp/hcl](https://github.com/hashicorp/hcl)|v1.0.0|Mozilla Public License 2.0
 [serf/coordinate](https://github.com/hashicorp/serf)|v0.8.5|Mozilla Public License 2.0
