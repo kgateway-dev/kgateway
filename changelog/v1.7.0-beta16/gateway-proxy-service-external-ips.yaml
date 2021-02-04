@@ -1,0 +1,4 @@
+changelog:
+- type: HELM
+  description: Added a new externalIPs Helm value that allows users to define a list of IP addresses for which nodes in the cluster will also accept traffic.
+  issueLink: https://github.com/solo-io/gloo/issues/3791
