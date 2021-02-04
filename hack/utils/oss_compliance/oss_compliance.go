@@ -8,15 +8,6 @@ import (
 )
 
 func main() {
-	glooPackages := []string{
-		"github.com/solo-io/gloo/projects/accesslogger/cmd",
-		"github.com/solo-io/gloo/projects/discovery/cmd",
-		"github.com/solo-io/gloo/projects/envoyinit/cmd",
-		"github.com/solo-io/gloo/projects/gateway/cmd",
-		"github.com/solo-io/gloo/projects/gloo/cmd",
-		"github.com/solo-io/gloo/projects/ingress/cmd",
-		"github.com/solo-io/gloo/projects/hypergloo",
-	}
 
 	// dependencies for this package which are used on mac, and will not be present in linux CI
 	macOnlyDependencies := []string{
@@ -24,9 +15,13 @@ func main() {
 		"github.com/containerd/continuity",
 	}
 
-	app := license.Cli(glooPackages, macOnlyDependencies)
-	if err := app.Execute(); err != nil {
-		fmt.Errorf("unable to run oss compliance check: %v\n", err)
+	app, err := license.CliAllPackages(macOnlyDependencies)
+	if err != nil {
+		fmt.Printf("unable to list all packages in current project: %v\n", err)
+		os.Exit(1)
+	}
+	if err = app.Execute(); err != nil {
+		fmt.Printf("unable to run oss compliance check: %v\n", err)
 		os.Exit(1)
 	}
 }
