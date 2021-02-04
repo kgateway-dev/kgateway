@@ -176,7 +176,7 @@ Name|Version|License
 [x/net](https://golang.org/x/net)|v0.0.0-20201224014010-6772e930b67b|BSD 3-clause "New" or "Revised" License
 [x/oauth2](https://golang.org/x/oauth2)|v0.0.0-20200902213428-5d25da1a8d43|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.0.0-20201020160332-67f06af15bc9|BSD 3-clause "New" or "Revised" License
-[x/sys](https://golang.org/x/sys)|v0.0.0-20210112091331-59c308dcf3cc|BSD 3-clause "New" or "Revised" License
+[x/sys](https://golang.org/x/sys)|v0.0.0-20200826173525-f9321e4c35a6|BSD 3-clause "New" or "Revised" License
 [x/text](https://golang.org/x/text)|v0.3.5|BSD 3-clause "New" or "Revised" License
 [time/rate](https://golang.org/x/time/rate)|v0.0.0-20200630173020-3af7569d3a1e|BSD 3-clause "New" or "Revised" License
 [xerrors/internal](https://golang.org/x/xerrors/internal)|v0.0.0-20200804184101-5ec99f83aff1|BSD 3-clause "New" or "Revised" License
