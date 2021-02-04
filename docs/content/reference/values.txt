@@ -312,6 +312,7 @@
 |gatewayProxies.NAME.service.loadBalancerIP|string||IP address of the load balancer|
 |gatewayProxies.NAME.service.loadBalancerSourceRanges[]|string||List of IP CIDR ranges that are allowed to access the load balancer|
 |gatewayProxies.NAME.service.customPorts[]|interface||List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)|
+|gatewayProxies.NAME.service.externalIPs[]|string||externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service|
 |gatewayProxies.NAME.antiAffinity|bool||configure anti affinity such that pods are preferably not co-located|
 |gatewayProxies.NAME.tracing.provider|string|||
 |gatewayProxies.NAME.tracing.cluster|string|||
@@ -438,6 +439,7 @@
 |gatewayProxies.gatewayProxy.service.loadBalancerIP|string||IP address of the load balancer|
 |gatewayProxies.gatewayProxy.service.loadBalancerSourceRanges[]|string||List of IP CIDR ranges that are allowed to access the load balancer|
 |gatewayProxies.gatewayProxy.service.customPorts[]|interface||List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)|
+|gatewayProxies.gatewayProxy.service.externalIPs[]|string||externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service|
 |gatewayProxies.gatewayProxy.antiAffinity|bool|false|configure anti affinity such that pods are preferably not co-located|
 |gatewayProxies.gatewayProxy.tracing.provider|string|||
 |gatewayProxies.gatewayProxy.tracing.cluster|string|||
