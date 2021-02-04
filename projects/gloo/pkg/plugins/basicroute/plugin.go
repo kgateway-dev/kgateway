@@ -2,8 +2,9 @@ package basicroute
 
 import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
@@ -45,7 +46,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if err := applyPrefixRewrite(in, out); err != nil {
 		return err
 	}
-	if err := applyRegexRewrite(in, out); err != nil {
+	if err := applyRegexRewrite(params, in, out); err != nil {
 		return err
 	}
 	if err := applyTimeout(in, out); err != nil {
@@ -80,7 +81,7 @@ func applyPrefixRewrite(in *v1.Route, out *envoy_config_route_v3.Route) error {
 	return nil
 }
 
-func applyRegexRewrite(in *v1.Route, out *envoy_config_route_v3.Route) error {
+func applyRegexRewrite(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if in.Options.RegexRewrite == nil {
 		return nil
 	}
@@ -92,7 +93,7 @@ func applyRegexRewrite(in *v1.Route, out *envoy_config_route_v3.Route) error {
 		return errors.Errorf("internal error: route %v specified a regex, but output Envoy object "+
 			"had nil route", in.Action)
 	}
-	routeAction.Route.RegexRewrite = convertRegexMatchAndSubstitute(in.Options.RegexRewrite)
+	routeAction.Route.RegexRewrite = convertRegexMatchAndSubstitute(params, in.Options.RegexRewrite)
 	return nil
 }
 
@@ -215,31 +216,22 @@ func convertPolicy(policy *retries.RetryPolicy) *envoy_config_route_v3.RetryPoli
 	}
 }
 
-func convertRegexMatchAndSubstitute(rmas *v32.RegexMatchAndSubstitute) *envoy_type_matcher.RegexMatchAndSubstitute {
-	if rmas == nil {
+func convertRegexMatchAndSubstitute(params plugins.RouteParams, in *v32.RegexMatchAndSubstitute) *envoy_type_matcher_v3.RegexMatchAndSubstitute {
+	if in == nil {
 		return nil
 	}
 
-	return &envoy_type_matcher.RegexMatchAndSubstitute{
-		Pattern:      convertRegexMatcher(rmas.GetPattern()),
-		Substitution: rmas.Substitution,
+	out := &envoy_type_matcher_v3.RegexMatchAndSubstitute{
+		Pattern:      regexutils.NewRegex(params.Ctx, in.Pattern.Regex),
+		Substitution: in.Substitution,
 	}
-}
-
-func convertRegexMatcher(rm *v32.RegexMatcher) *envoy_type_matcher.RegexMatcher {
-	if rm == nil {
-		return nil
-	}
-
-	var retMatcher envoy_type_matcher.RegexMatcher
-
-	switch rm.EngineType.(type) {
-	case *v32.RegexMatcher_GoogleRe2, nil: // if no engine specified, default to GoogleRe2
-		retMatcher.EngineType = &envoy_type_matcher.RegexMatcher_GoogleRe2{
-			GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
+	switch inET := in.Pattern.EngineType.(type) {
+	case *v32.RegexMatcher_GoogleRe2:
+		outET := out.Pattern.EngineType.(*envoy_type_matcher_v3.RegexMatcher_GoogleRe2)
+		if inET.GoogleRe2.MaxProgramSize != nil && (outET.GoogleRe2.MaxProgramSize == nil || inET.GoogleRe2.MaxProgramSize.Value < outET.GoogleRe2.MaxProgramSize.Value) {
+			out.Pattern = regexutils.NewRegexWithProgramSize(in.Pattern.Regex, &inET.GoogleRe2.MaxProgramSize.Value)
 		}
 	}
-	retMatcher.Regex = rm.Regex
 
-	return &retMatcher
+	return out
 }

@@ -1,7 +1,10 @@
 package basicroute_test
 
 import (
+	"context"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
@@ -68,7 +71,7 @@ var _ = Describe("prefix rewrite", func() {
 })
 
 var _ = Describe("regex rewrite", func() {
-	It("works", func() {
+	It("works, config alone supplies max program size", func() {
 		p := NewPlugin()
 		routeAction := &envoy_config_route_v3.RouteAction{
 			RegexRewrite: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
@@ -93,6 +96,63 @@ var _ = Describe("regex rewrite", func() {
 					Pattern: &v3.RegexMatcher{
 						Regex: "/",
 						EngineType: &v3.RegexMatcher_GoogleRe2{
+							GoogleRe2: &v3.RegexMatcher_GoogleRE2{
+								MaxProgramSize: &wrappers.UInt32Value{Value: 1024},
+							},
+						},
+					},
+					Substitution: "/foo",
+				},
+			},
+		}, out)
+
+		rmas := &envoy_type_matcher_v3.RegexMatchAndSubstitute{
+			Pattern: &envoy_type_matcher_v3.RegexMatcher{
+				Regex: "/",
+				EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
+					GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{
+						MaxProgramSize: &wrappers.UInt32Value{Value: 1024},
+					},
+				},
+			},
+			Substitution: "/foo",
+		}
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routeAction.RegexRewrite).To(Equal(rmas))
+	})
+	It("works, ctx alone supplies max program size", func() {
+		p := NewPlugin()
+		routeAction := &envoy_config_route_v3.RouteAction{
+			RegexRewrite: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
+				Pattern: &envoy_type_matcher_v3.RegexMatcher{
+					Regex: "/",
+					EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
+						GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
+					},
+				},
+				Substitution: "/bar",
+			},
+		}
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
+				Route: routeAction,
+			},
+		}
+
+		rps := plugins.RouteParams{}
+		rps.Ctx = settingsutil.WithSettings(context.Background(), &v1.Settings{
+			Gloo: &v1.GlooOptions{
+				RegexMaxProgramSize: &wrappers.UInt32Value{Value: 256},
+			},
+		})
+
+		err := p.ProcessRoute(rps, &v1.Route{
+			Options: &v1.RouteOptions{
+				RegexRewrite: &v3.RegexMatchAndSubstitute{
+					Pattern: &v3.RegexMatcher{
+						Regex: "/",
+						EngineType: &v3.RegexMatcher_GoogleRe2{
 							GoogleRe2: &v3.RegexMatcher_GoogleRE2{},
 						},
 					},
@@ -105,7 +165,66 @@ var _ = Describe("regex rewrite", func() {
 			Pattern: &envoy_type_matcher_v3.RegexMatcher{
 				Regex: "/",
 				EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-					GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
+					GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{
+						MaxProgramSize: &wrappers.UInt32Value{Value: 256},
+					},
+				},
+			},
+			Substitution: "/foo",
+		}
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routeAction.RegexRewrite).To(Equal(rmas))
+	})
+	It("works, ctx max program size more restrictive", func() {
+		p := NewPlugin()
+		routeAction := &envoy_config_route_v3.RouteAction{
+			RegexRewrite: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
+				Pattern: &envoy_type_matcher_v3.RegexMatcher{
+					Regex: "/",
+					EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
+						GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
+					},
+				},
+				Substitution: "/bar",
+			},
+		}
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
+				Route: routeAction,
+			},
+		}
+
+		rps := plugins.RouteParams{}
+		rps.Ctx = settingsutil.WithSettings(context.Background(), &v1.Settings{
+			Gloo: &v1.GlooOptions{
+				RegexMaxProgramSize: &wrappers.UInt32Value{Value: 256},
+			},
+		})
+
+		err := p.ProcessRoute(rps, &v1.Route{
+			Options: &v1.RouteOptions{
+				RegexRewrite: &v3.RegexMatchAndSubstitute{
+					Pattern: &v3.RegexMatcher{
+						Regex: "/",
+						EngineType: &v3.RegexMatcher_GoogleRe2{
+							GoogleRe2: &v3.RegexMatcher_GoogleRE2{
+								MaxProgramSize: &wrappers.UInt32Value{Value: 1024},
+							},
+						},
+					},
+					Substitution: "/foo",
+				},
+			},
+		}, out)
+
+		rmas := &envoy_type_matcher_v3.RegexMatchAndSubstitute{
+			Pattern: &envoy_type_matcher_v3.RegexMatcher{
+				Regex: "/",
+				EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
+					GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{
+						MaxProgramSize: &wrappers.UInt32Value{Value: 256},
+					},
 				},
 			},
 			Substitution: "/foo",
