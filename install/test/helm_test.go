@@ -1454,6 +1454,31 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
+					It("sets extra anti affinity ", func() {
+
+						gatewayProxyDeployment.Spec.Template.Spec.Affinity = &v1.Affinity{
+							NodeAffinity: &v1.NodeAffinity{
+								RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{
+									NodeSelectorTerms: []v1.NodeSelectorTerm{
+										v1.NodeSelectorTerm{
+											MatchExpressions: []v1.NodeSelectorRequirement{
+												v1.NodeSelectorRequirement{
+													Key:      "kubernetes.io/e2e-az-name",
+													Operator: v1.NodeSelectorOpIn,
+													Values:   []string{"e2e-az1", "e2e-az2"},
+												},
+											},
+										},
+									},
+								},
+							},
+						}
+
+						prepareMakefileFromValuesFile("values/val_gwp_extra_anti_affinity.yaml")
+
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
 					It("enables probes", func() {
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
 							Handler: v1.Handler{
