@@ -91,3 +91,21 @@ We have successfully shown how you can change the external API of your services 
 glooctl uninstall
 kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
+
+### Regex Engine
+
+The Google RE2 engine is used by default. The user may specify another engine, but only the Google RE2 engine is supported.
+
+The user may supply a `max_program_size` parameter to the Google RE2 engine like so:
+```yaml
+        regexRewrite: 
+          pattern:
+            google_re2:
+              max_program_size: 1024
+            regex: 'bar'
+          substitution: 'baz'
+```
+If the global regex max program size is more restrictive than that specified in the config, the global setting will be used.
+
+{{% notice note %}} Max program size is enforced by Envoy. If a given regex exceeds the max program size, from either config or global setting, it will not be reflected in the virtual service status. {{% /notice %}}
+
