@@ -91,8 +91,10 @@ spec:
         {{- end}}
 {{- end}}
 {{- if $spec.kind.deployment }}
-{{- if $spec.antiAffinity }}
+{{ if or ($spec.antiAffinity) ($spec.affinity) }}
       affinity:
+{{- end}}
+{{ if $spec.antiAffinity }}
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
           - weight: 100
@@ -102,6 +104,9 @@ spec:
                   gloo: gateway-proxy
               topologyKey: kubernetes.io/hostname
 {{- end}}
+{{- if $spec.affinity }}
+      {{ toYaml $spec.affinity | nindent 8 }}
+{{- end }}
 {{- end}}
       {{- include "gloo.pullSecret" $image | nindent 6 }}
       serviceAccountName: gateway-proxy
