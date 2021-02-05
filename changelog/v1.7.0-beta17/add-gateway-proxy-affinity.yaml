@@ -1,0 +1,4 @@
+changelog:
+- type: HELM
+  description: Added a new affinity Helm value that allows users to define more fine grained affinity rules.
+  issueLink: https://github.com/solo-io/gloo/issues/3995

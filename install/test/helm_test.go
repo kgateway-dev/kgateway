@@ -1454,7 +1454,7 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
-					It("sets extra anti affinity ", func() {
+					It("sets affinity", func() {
 
 						gatewayProxyDeployment.Spec.Template.Spec.Affinity = &v1.Affinity{
 							NodeAffinity: &v1.NodeAffinity{
@@ -1474,7 +1474,7 @@ var _ = Describe("Helm Test", func() {
 							},
 						}
 
-						prepareMakefileFromValuesFile("values/val_gwp_extra_anti_affinity.yaml")
+						prepareMakefileFromValuesFile("values/val_gwp_affinity.yaml")
 
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
