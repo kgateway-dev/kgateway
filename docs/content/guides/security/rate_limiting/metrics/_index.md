@@ -8,11 +8,12 @@ In this tutorial we will see how to use the rate-limit service's default prometh
 near breach, and alert once broken.
 
 {{% notice note %}}
-For **Gloo Edge Enterprise**, release 1.2.1, you will need to enable rate-limit metrics using the following helm values:
+For **Gloo Edge Enterprise**, you will need to enable rate-limit metrics using the following helm values:
 ```yaml
 rateLimit:
   deployment:
-    stats: true
+    stats:
+      enabled: true
 ```
 Prior versions of Gloo Edge Enterprise published rate-limit metrics to port 16070, which isn't scraped by the default
 prometheus installation included with Gloo Edge Enterprise.
