@@ -215,6 +215,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "csrf": .solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy
 "stagedTransformations": .transformation.options.gloo.solo.io.TransformationStages
 "envoyMetadata": map<string, .google.protobuf.Struct>
+"regexRewrite": .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute
 
 ```
 
@@ -247,6 +248,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `csrf` | [.solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy](../../external/envoy/extensions/filters/http/csrf/v3/csrf.proto.sk/#csrfpolicy) | Csrf can be used to set percent of requests for which the CSRF filter is enabled, enable shadow-only mode where policies will be evaluated and tracked, but not enforced and add additional source origins that will be allowed in addition to the destination origin. For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/csrf/v2/csrf.proto. |
 | `stagedTransformations` | [.transformation.options.gloo.solo.io.TransformationStages](../options/transformation/transformation.proto.sk/#transformationstages) | Early transformations stage. These transformations run before most other options are processed. If the `regular` field is set in here, the `transformations` field is ignored. |
 | `envoyMetadata` | `map<string, .google.protobuf.Struct>` | This field can be used to provide additional information about the route. This metadata can be consumed by the Envoy filters that process requests that match the route. For more info about metadata, see [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/data_sharing_between_filters#metadata). The value of this field will be propagated to the `metadata` attribute of the corresponding Envoy route. Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#config-route-v3-route) for more details about the `metadata` attribute. |
+| `regexRewrite` | [.solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute](../../external/envoy/type/matcher/v3/regex.proto.sk/#regexmatchandsubstitute) | For requests matched on this route, rewrite the HTTP request path according to the provided regex pattern before forwarding upstream Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-regex-rewrite) for more details about the `regex_rewrite` attribute. |
 
 
 
