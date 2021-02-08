@@ -1,5 +1,5 @@
 changelog:
-  - type: FIX
+  - type: NON_USER_FACING
     description: >
       Slim down testrunner container.
     issueLink: https://github.com/solo-io/gloo/issues/4043
