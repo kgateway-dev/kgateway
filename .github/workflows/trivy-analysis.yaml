@@ -1,0 +1,123 @@
+name: release
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+jobs:
+  release:
+    name: Release
+    runs-on: "ubuntu-18.04"
+    env:
+      IMAGE_REPO: quay.io/solo-io
+      VERSION: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build an image from Dockerfile
+        run: |
+          TAGGED_VERSION=vtest make docker
+
+      - name: Run Trivy vulnerability scanner (Gateway)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/gateway:$VERSION"
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results-gateway.sarif'
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab (Gateway)
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: 'trivy-results-gateway.sarif'
+
+      - name: Run Trivy vulnerability scanner (Ingress)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/ingress:$VERSION"
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results-ingress.sarif'
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab (Ingress)
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: 'trivy-results-ingress.sarif'
+
+      - name: Run Trivy vulnerability scanner (Discovery)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/discovery:$VERSION"
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results-discovery.sarif'
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab (Discovery)
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: 'trivy-results-discovery.sarif'
+
+      - name: Run Trivy vulnerability scanner (Gloo)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/gloo:$VERSION"
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results-gloo.sarif'
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab (Gloo)
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: 'trivy-results-gloo.sarif'
+
+      - name: Run Trivy vulnerability scanner (Gloo-Envoy-Wrapper)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/gloo-envoy-wrapper:$VERSION"
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results-gloo-envoy-wrapper.sarif'
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab (Gloo-Envoy-Wrapper)
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: 'trivy-results-gloo-envoy-wrapper.sarif'
+
+      - name: Run Trivy vulnerability scanner (Certgen)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/certgen:$VERSION"
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results-certgen.sarif'
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab (Certgen)
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: 'trivy-results-certgen.sarif'
+
+      - name: Run Trivy vulnerability scanner (sds)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/sds:$VERSION"
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results-sds.sarif'
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab (sds)
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: 'trivy-results-sds.sarif'
+
+      - name: Run Trivy vulnerability scanner (access-logger)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/access-logger:$VERSION"
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results-access-logger.sarif'
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab (access-logger)
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: 'trivy-results-access-logger.sarif'
