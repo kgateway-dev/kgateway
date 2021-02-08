@@ -811,6 +811,16 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 
 	}
 
+	if h, ok := interface{}(m.GetRegexRewrite()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRegexRewrite()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRegexRewrite(), target.GetRegexRewrite()) {
+			return false
+		}
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:
