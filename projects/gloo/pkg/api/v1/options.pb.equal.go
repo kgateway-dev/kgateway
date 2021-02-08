@@ -267,6 +267,16 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetLeftmostXffHeader()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLeftmostXffHeader()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetLeftmostXffHeader(), target.GetLeftmostXffHeader()) {
+			return false
+		}
+	}
+
 	return true
 }
 

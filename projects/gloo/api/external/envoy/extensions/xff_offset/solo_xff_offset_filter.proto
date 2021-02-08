@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package envoy.config.filter.http.solo_xff_offset.v2;
 
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/solo_xff_offset";
 option java_package = "io.envoyproxy.envoy.config.filter.http.solo_xff_offset.v2";
 option java_outer_classname = "SoloXffOffsetProto";
 option java_multiple_files = true;
