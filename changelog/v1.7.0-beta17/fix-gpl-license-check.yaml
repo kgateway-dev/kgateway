@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Previously, GPL License checking and generating open source attribution docs required a manual list of
+      gloo packages to be kept so that we could analyze their dependencies. Now, the go-list-licenses
+      repo can automatically find all packages by running `go list ./...` and will analyze the dependencies of all
+      found packages.

@@ -276,6 +276,7 @@ type GatewayProxy struct {
 	HealthyPanicThreshold          int8                         `json:"healthyPanicThreshold,omitempty" desc:"the percentage of healthy hosts required to load balance based on health status of hosts"`
 	Service                        *GatewayProxyService         `json:"service,omitempty"`
 	AntiAffinity                   bool                         `json:"antiAffinity" desc:"configure anti affinity such that pods are preferably not co-located"`
+	Affinity                       []map[string]interface{}     `json:"affinity,omitempty"`
 	Tracing                        *Tracing                     `json:"tracing,omitempty"`
 	GatewaySettings                *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
 	ExtraEnvoyArgs                 []string                     `json:"extraEnvoyArgs,omitempty" desc:"envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)"`
