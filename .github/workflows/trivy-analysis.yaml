@@ -30,6 +30,14 @@ jobs:
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: 'trivy-results-gateway.sarif'
+      - name: Gloo Docs (Gateway)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/gateway:$VERSION"
+          format: 'template'
+          template: '@hack/utils/security_scan_report/markdown.tpl'
+          output: 'docs/content/static/content/gateway_cve_report.docgen'
+          severity: 'CRITICAL,HIGH'
 
       - name: Run Trivy vulnerability scanner (Ingress)
         uses: aquasecurity/trivy-action@master
@@ -43,6 +51,14 @@ jobs:
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: 'trivy-results-ingress.sarif'
+      - name: Gloo Docs (Ingress)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/ingress:$VERSION"
+          format: 'template'
+          template: '@hack/utils/security_scan_report/markdown.tpl'
+          output: 'docs/content/static/content/ingress_cve_report.docgen'
+          severity: 'CRITICAL,HIGH'
 
       - name: Run Trivy vulnerability scanner (Discovery)
         uses: aquasecurity/trivy-action@master
@@ -56,6 +72,14 @@ jobs:
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: 'trivy-results-discovery.sarif'
+      - name: Gloo Docs (Discovery)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/discovery:$VERSION"
+          format: 'template'
+          template: '@hack/utils/security_scan_report/markdown.tpl'
+          output: 'docs/content/static/content/discovery_cve_report.docgen'
+          severity: 'CRITICAL,HIGH'
 
       - name: Run Trivy vulnerability scanner (Gloo)
         uses: aquasecurity/trivy-action@master
@@ -69,6 +93,14 @@ jobs:
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: 'trivy-results-gloo.sarif'
+      - name: Gloo Docs (Gloo)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/gloo:$VERSION"
+          format: 'template'
+          template: '@hack/utils/security_scan_report/markdown.tpl'
+          output: 'docs/content/static/content/gloo_cve_report.docgen'
+          severity: 'CRITICAL,HIGH'
 
       - name: Run Trivy vulnerability scanner (Gloo-Envoy-Wrapper)
         uses: aquasecurity/trivy-action@master
@@ -82,6 +114,14 @@ jobs:
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: 'trivy-results-gloo-envoy-wrapper.sarif'
+      - name: Gloo Docs (Gloo-Envoy-Wrapper)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/gloo-envoy-wrapper:$VERSION"
+          format: 'template'
+          template: '@hack/utils/security_scan_report/markdown.tpl'
+          output: 'docs/content/static/content/gloo-envoy-wrapper_cve_report.docgen'
+          severity: 'CRITICAL,HIGH'
 
       - name: Run Trivy vulnerability scanner (Certgen)
         uses: aquasecurity/trivy-action@master
@@ -95,6 +135,14 @@ jobs:
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: 'trivy-results-certgen.sarif'
+      - name: Gloo Docs (Certgen)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/certgen:$VERSION"
+          format: 'template'
+          template: '@hack/utils/security_scan_report/markdown.tpl'
+          output: 'docs/content/static/content/certgen_cve_report.docgen'
+          severity: 'CRITICAL,HIGH'
 
       - name: Run Trivy vulnerability scanner (sds)
         uses: aquasecurity/trivy-action@master
@@ -108,6 +156,14 @@ jobs:
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: 'trivy-results-sds.sarif'
+      - name: Gloo Docs (sds)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/sds:$VERSION"
+          format: 'template'
+          template: '@hack/utils/security_scan_report/markdown.tpl'
+          output: 'docs/content/static/content/sds_cve_report.docgen'
+          severity: 'CRITICAL,HIGH'
 
       - name: Run Trivy vulnerability scanner (access-logger)
         uses: aquasecurity/trivy-action@master
@@ -121,3 +177,11 @@ jobs:
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: 'trivy-results-access-logger.sarif'
+      - name: Gloo Docs (access-logger)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "$IMAGE_REPO/access_logger:$VERSION"
+          format: 'template'
+          template: '@hack/utils/security_scan_report/markdown.tpl'
+          output: 'docs/content/static/content/access_logger_cve_report.docgen'
+          severity: 'CRITICAL,HIGH'
