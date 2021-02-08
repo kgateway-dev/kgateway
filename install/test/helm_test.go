@@ -972,12 +972,13 @@ var _ = Describe("Helm Test", func() {
 					})
 
 					It("can set accessLoggingService", func() {
+						name := defaults.GatewayProxyName
 						gw := makeUnstructured(`
 kind: Gateway
 metadata:
   labels:
     app: gloo
-  name: gateway-proxy
+  name: ` + name + `
   namespace: gloo-system
 spec:
   bindAddress: '::'
@@ -996,6 +997,8 @@ spec:
 apiVersion: gateway.solo.io/v1
 `)
 						prepareMakefileFromValuesFile("values/val_default_gateway_access_logging_service.yaml")
+						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
+						name = defaults.GatewayProxyName + "-ssl"
 						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
 					})
 
