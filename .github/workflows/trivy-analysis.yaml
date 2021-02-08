@@ -11,9 +11,6 @@ jobs:
       IMAGE_REPO: quay.io/solo-io
       VERSION: test
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
       - name: Build an image from Dockerfile
         run: |
           TAGGED_VERSION=vtest make docker
@@ -21,7 +18,7 @@ jobs:
       - name: Run Trivy vulnerability scanner (Gateway)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/gateway:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/gateway:${{ VERSION }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results-gateway.sarif'
@@ -33,7 +30,7 @@ jobs:
       - name: Gloo Docs (Gateway)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/gateway:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/gateway:${{ VERSION }}
           format: 'template'
           template: '@hack/utils/security_scan_report/markdown.tpl'
           output: 'docs/content/static/content/gateway_cve_report.docgen'
@@ -42,7 +39,7 @@ jobs:
       - name: Run Trivy vulnerability scanner (Ingress)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/ingress:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/ingress:${{ VERSION }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results-ingress.sarif'
@@ -54,7 +51,7 @@ jobs:
       - name: Gloo Docs (Ingress)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/ingress:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/ingress:${{ VERSION }}
           format: 'template'
           template: '@hack/utils/security_scan_report/markdown.tpl'
           output: 'docs/content/static/content/ingress_cve_report.docgen'
@@ -63,7 +60,7 @@ jobs:
       - name: Run Trivy vulnerability scanner (Discovery)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/discovery:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/discovery:${{ VERSION }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results-discovery.sarif'
@@ -75,7 +72,7 @@ jobs:
       - name: Gloo Docs (Discovery)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/discovery:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/discovery:${{ VERSION }}
           format: 'template'
           template: '@hack/utils/security_scan_report/markdown.tpl'
           output: 'docs/content/static/content/discovery_cve_report.docgen'
@@ -84,7 +81,7 @@ jobs:
       - name: Run Trivy vulnerability scanner (Gloo)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/gloo:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/gloo:${{ VERSION }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results-gloo.sarif'
@@ -96,7 +93,7 @@ jobs:
       - name: Gloo Docs (Gloo)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/gloo:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/gloo:${{ VERSION }}
           format: 'template'
           template: '@hack/utils/security_scan_report/markdown.tpl'
           output: 'docs/content/static/content/gloo_cve_report.docgen'
@@ -105,7 +102,7 @@ jobs:
       - name: Run Trivy vulnerability scanner (Gloo-Envoy-Wrapper)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/gloo-envoy-wrapper:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/gloo-envoy-wrapper:${{ VERSION }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results-gloo-envoy-wrapper.sarif'
@@ -117,7 +114,7 @@ jobs:
       - name: Gloo Docs (Gloo-Envoy-Wrapper)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/gloo-envoy-wrapper:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/gloo-envoy-wrapper:${{ VERSION }}
           format: 'template'
           template: '@hack/utils/security_scan_report/markdown.tpl'
           output: 'docs/content/static/content/gloo-envoy-wrapper_cve_report.docgen'
@@ -126,7 +123,7 @@ jobs:
       - name: Run Trivy vulnerability scanner (Certgen)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/certgen:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/certgen:${{ VERSION }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results-certgen.sarif'
@@ -138,7 +135,7 @@ jobs:
       - name: Gloo Docs (Certgen)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/certgen:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/certgen:${{ VERSION }}
           format: 'template'
           template: '@hack/utils/security_scan_report/markdown.tpl'
           output: 'docs/content/static/content/certgen_cve_report.docgen'
@@ -147,7 +144,7 @@ jobs:
       - name: Run Trivy vulnerability scanner (sds)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/sds:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/sds:${{ VERSION }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results-sds.sarif'
@@ -159,7 +156,7 @@ jobs:
       - name: Gloo Docs (sds)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/sds:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/sds:${{ VERSION }}
           format: 'template'
           template: '@hack/utils/security_scan_report/markdown.tpl'
           output: 'docs/content/static/content/sds_cve_report.docgen'
@@ -168,7 +165,7 @@ jobs:
       - name: Run Trivy vulnerability scanner (access-logger)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/access-logger:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/access-logger:${{ VERSION }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results-access-logger.sarif'
@@ -180,7 +177,7 @@ jobs:
       - name: Gloo Docs (access-logger)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "$IMAGE_REPO/access_logger:$VERSION"
+          image-ref: ${{ IMAGE_REPO }}/access_logger:${{ VERSION }}
           format: 'template'
           template: '@hack/utils/security_scan_report/markdown.tpl'
           output: 'docs/content/static/content/access_logger_cve_report.docgen'
