@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-
 	// dependencies for this package which are used on mac, and will not be present in linux CI
 	macOnlyDependencies := []string{
 		"github.com/mitchellh/go-homedir",
@@ -17,10 +16,10 @@ func main() {
 
 	app, err := license.CliAllPackages(macOnlyDependencies)
 	if err != nil {
-		fmt.Printf("unable to list all packages in current project: %v\n", err)
+		fmt.Printf("unable to list all gloo dependencies: %v\n", err)
 		os.Exit(1)
 	}
-	if err = app.Execute(); err != nil {
+	if err := app.Execute(); err != nil {
 		fmt.Printf("unable to run oss compliance check: %v\n", err)
 		os.Exit(1)
 	}
