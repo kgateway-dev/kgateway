@@ -1,0 +1,49 @@
+name: release
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+jobs:
+  release:
+    name: Release
+    runs-on: "ubuntu-18.04"
+    env:
+      IMAGE_REPO: quay.io/solo-io
+      VERSION: test
+    steps:
+      - name: Cancel Previous Actions
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+      - name: Set up Go 1.14
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.14
+        id: go
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Build an image from Dockerfile
+        run: |
+          TAGGED_VERSION=v${{ env.VERSION }} make sds-docker
+      - name: Run Trivy vulnerability scanner (sds)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_REPO }}/sds:${{ env.VERSION }}
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results-sds.sarif'
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab (sds)
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: 'trivy-results-sds.sarif'
+      - name: Gloo Docs (sds)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_REPO }}/sds:${{ env.VERSION }}
+          format: 'template'
+          template: '@hack/utils/security_scan_report/markdown.tpl'
+          output: 'docs/content/static/content/sds_cve_report.docgen'
+          severity: 'CRITICAL,HIGH'
