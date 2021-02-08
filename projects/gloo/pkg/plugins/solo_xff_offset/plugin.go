@@ -37,7 +37,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	if listener.GetOptions().GetSanitizeClusterHeader() != nil {
+	if listener.GetOptions().GetLeftmostXffHeader() != nil {
 		return nil, eris.New(ErrEnterpriseOnly)
 	}
 	return nil, nil
