@@ -1,11 +1,11 @@
-FROM soloio/circleci:latest
-RUN apt update && apt install -y curl
-RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl \
-    &&  chmod +x ./kubectl \
-    && mv ./kubectl /usr/local/bin/
-COPY root.crt /
+FROM ubuntu:18.04
 
-# install stan-pub for nats tests
-RUN go get -v github.com/nats-io/go-nats-streaming/examples/stan-sub
+RUN apt update && apt install -y curl
+COPY --from=lachlanevenson/k8s-kubectl:v1.10.3 /usr/local/bin/kubectl /usr/local/bin/kubectl
+
+# Python
+RUN apt-get install -y python; apt clean
+
+COPY root.crt /
 
 CMD ["/bin/sh", "-c", "echo 'STARTING SLEEP! Access me.' && /bin/sleep 36000"]
