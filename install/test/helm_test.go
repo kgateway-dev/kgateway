@@ -973,6 +973,8 @@ var _ = Describe("Helm Test", func() {
 
 					It("can set accessLoggingService", func() {
 						name := defaults.GatewayProxyName
+						bindPort := "8080"
+						ssl := "false"
 						gw := makeUnstructured(`
 kind: Gateway
 metadata:
@@ -982,7 +984,7 @@ metadata:
   namespace: gloo-system
 spec:
   bindAddress: '::'
-  bindPort: 8080
+  bindPort: ` + bindPort + `
   proxyNames: 
   - gateway-proxy
   httpGateway: {}
@@ -992,14 +994,41 @@ spec:
       - fileSink:
           path: /dev/stdout
           stringFormat: ""
-  ssl: false
+  ssl: ` + ssl + `
   useProxyProto: false
 apiVersion: gateway.solo.io/v1
 `)
 						prepareMakefileFromValuesFile("values/val_default_gateway_access_logging_service.yaml")
 						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
+
 						name = defaults.GatewayProxyName + "-ssl"
-						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
+						bindPort = "8443"
+						ssl = "true"
+						gw = makeUnstructured(`
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+  name: ` + name + `
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: ` + bindPort + `
+  proxyNames: 
+  - gateway-proxy
+  httpGateway: {}
+  options:
+    accessLoggingService:
+      accessLog:
+      - fileSink:
+          path: /dev/stdout
+          stringFormat: ""
+  ssl: ` + ssl + `
+  useProxyProto: false
+apiVersion: gateway.solo.io/v1
+`)
+
+						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gw))
 					})
 
 					It("can render with custom listener yaml", func() {
