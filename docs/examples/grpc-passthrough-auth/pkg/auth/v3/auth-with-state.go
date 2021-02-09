@@ -15,18 +15,19 @@ const (
 	soloPassThroughAuthMetadataKey = "solo.auth.passthrough"
 )
 
-type serverWithRequiredState struct {
+type serverWithRequiredJwtToken struct {
 }
 
-// NewAuthServerWithRequiredState creates a new authorization server
-// that authorizes requests based on state passed from other plugins
-func NewAuthServerWithRequiredState() envoy_service_auth_v3.AuthorizationServer {
-	return &serverWithRequiredState{}
+// NewAuthServerWithRequiredJwtToken creates a new authorization server
+// that authorizes requests based on whether a JWT token was extracted in an earlier stage
+func NewAuthServerWithRequiredJwtToken() envoy_service_auth_v3.AuthorizationServer {
+	return &serverWithRequiredJwtToken{}
 }
 
 // Check implements authorization's Check interface
-// Only authorizes requests if they have a jwt token passed from another plugin
-func (s *serverWithRequiredState) Check(
+// Only authorizes requests if they have a successfully extracted a JWT ID token
+// from an OIDC flow
+func (s *serverWithRequiredJwtToken) Check(
 	ctx context.Context,
 	req *envoy_service_auth_v3.CheckRequest) (*envoy_service_auth_v3.CheckResponse, error) {
 	filterMetadata := req.GetAttributes().GetMetadataContext().GetFilterMetadata()
@@ -39,6 +40,9 @@ func (s *serverWithRequiredState) Check(
 	availablePassThroughState := filterMetadata[soloPassThroughAuthMetadataKey]
 
 	var jwt string
+	// During our build-in OIDC flow, the `jwt` field is set with the contents of the JWT ID token
+	// We can access that value, and apply some custom logic logic to that token, though in this instance
+	// we are only checking its presence
 	if jwtFromState, ok := availablePassThroughState.GetFields()["jwt"]; ok {
 		jwt = jwtFromState.GetStringValue()
 	}
@@ -73,7 +77,7 @@ func (s *serverWithNewState) Check(
 	ctx context.Context,
 	req *envoy_service_auth_v3.CheckRequest) (*envoy_service_auth_v3.CheckResponse, error) {
 
-	// The state you want to make available to other plugins
+	// The state you want to make available to other auth stages
 	newState := &structpb.Struct{
 		Fields: map[string]*structpb.Value{
 			"custom-key": {

@@ -205,23 +205,23 @@ curl -H "Host: foo" -H "authorization: authorize me" $(glooctl proxy url)/posts/
 
 The request should now be authorized!
 
-## Sharing state with other plugins
+## Sharing state with other auth steps
 
 {{% notice note %}}
 The sharing state feature was introduced with **Gloo Edge Enterprise**, release 1.6.10. If you are using an earlier version, this will not work.
 {{% /notice %}}
 
-A common requirement is to be able to share state between the Passthrough service, and other auth plugins. When writing a custom auth plugin, this is possible, and the steps to achieve it are [outlined here]({{< versioned_link_path fromRoot="/guides/dev/writing_auth_plugins#sharing-state-between-steps" >}}). We support this requirement by leveraging request and response metadata.
+A common requirement is to be able to share state between the passthrough service, and other auth steps (either custom plugins, or our built-in authentication) . When writing a custom auth plugin, this is possible, and the steps to achieve it are [outlined here]({{< versioned_link_path fromRoot="/guides/dev/writing_auth_plugins#sharing-state-between-steps" >}}). We support this requirement by leveraging request and response metadata.
 
 We provide some example implementations in the Gloo Edge repository at `docs/examples/passthrough-auth/pkg/auth/v3/auth-with-state.go`.
 
-### Reading state from other plugins
+### Reading state from other auth steps
 
-State from other plugins is sent to the passthrough service via [CheckRequest FilterMetadata](https://github.com/envoyproxy/envoy/blob/50e722cbb0486268c128b0f1d0ef76217387799f/api/envoy/service/auth/v3/external_auth.proto#L36) under a unique key: `solo.auth.passthrough`.
+State from other auth steps is sent to the passthrough service via [CheckRequest FilterMetadata](https://github.com/envoyproxy/envoy/blob/50e722cbb0486268c128b0f1d0ef76217387799f/api/envoy/service/auth/v3/external_auth.proto#L36) under a unique key: `solo.auth.passthrough`.
 
-### Writing state to be used by other plugins
+### Writing state to be used by other auth steps
 
-State from the passthrough service can be sent to other plugins via [CheckResponse DynamicMetadata](https://github.com/envoyproxy/envoy/blob/50e722cbb0486268c128b0f1d0ef76217387799f/api/envoy/service/auth/v3/external_auth.proto#L126) under a unique key: `solo.auth.passthrough`.
+State from the passthrough service can be sent to other auth steps via [CheckResponse DynamicMetadata](https://github.com/envoyproxy/envoy/blob/50e722cbb0486268c128b0f1d0ef76217387799f/api/envoy/service/auth/v3/external_auth.proto#L126) under a unique key: `solo.auth.passthrough`.
 
 ## Summary
 
