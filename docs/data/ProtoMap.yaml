@@ -245,6 +245,9 @@ apis:
   envoy.config.filter.http.solo_jwt_authn.v2.StagedJwtAuthnPerRoute:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/jwt/solo_jwt_authn.proto.sk/#StagedJwtAuthnPerRoute
     package: envoy.config.filter.http.solo_jwt_authn.v2
+  envoy.config.filter.http.solo_xff_offset.v2.SoloXffOffset:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/xff_offset/solo_xff_offset_filter.proto.sk/#SoloXffOffset
+    package: envoy.config.filter.http.solo_xff_offset.v2
   envoy.config.filter.http.transformation_ee.v2.Action:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#Action
     package: envoy.config.filter.http.transformation_ee.v2

@@ -1,0 +1,9 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4014
+    resolvesIssue: false
+    description: >
+      Provides an enterprise-only option to use the leftmost IP address from
+      the x-forwarded-for header and set it as the downstream address. This is useful if the network topology
+      (load balancers, etc.) prior to gloo is unknown or dynamic. If using this option, be sure to sanitize this
+      header from downstream requests to prevent security risks.
