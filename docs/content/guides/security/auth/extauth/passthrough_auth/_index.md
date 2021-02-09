@@ -207,6 +207,10 @@ The request should now be authorized!
 
 ## Sharing state with other plugins
 
+{{% notice note %}}
+The sharing state feature was introduced with **Gloo Edge Enterprise**, release 1.6.10. If you are using an earlier version, this will not work.
+{{% /notice %}}
+
 A common requirement is to be able to share state between the Passthrough service, and other auth plugins. When writing a custom auth plugin, this is possible, and the steps to achieve it are [outlined here]({{< versioned_link_path fromRoot="/guides/dev/writing_auth_plugins#sharing-state-between-steps" >}}). We support this requirement by leveraging request and response metadata.
 
 We provide some example implementations in the Gloo Edge repository at `docs/examples/passthrough-auth/pkg/auth/v3/auth-with-state.go`.
