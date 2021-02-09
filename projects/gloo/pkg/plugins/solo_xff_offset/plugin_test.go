@@ -1,4 +1,4 @@
-package sanitize_cluster_header_test
+package solo_xff_offset_test
 
 import (
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -6,23 +6,23 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/sanitize_cluster_header"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/solo_xff_offset"
 )
 
-var _ = Describe("sanitize cluster header plugin", func() {
+var _ = Describe("solo x-forwarded-for offset plugin", func() {
 
-	It("should not add filter if sanitize cluster header config is nil", func() {
+	It("should not add filter if solo xff offset config is nil", func() {
 		p := NewPlugin()
 		f, err := p.HttpFilters(plugins.Params{}, nil)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(f).To(BeNil())
 	})
 
-	It("will err if sanitize cluster header is configured", func() {
+	It("will err if solo xff offset is configured", func() {
 		p := NewPlugin()
 		hl := &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
-				SanitizeClusterHeader: &wrappers.BoolValue{},
+				LeftmostXffHeader: &wrappers.BoolValue{},
 			},
 		}
 

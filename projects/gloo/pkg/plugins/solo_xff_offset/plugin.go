@@ -1,4 +1,4 @@
-package sanitize_cluster_header
+package solo_xff_offset
 
 import (
 	"github.com/rotisserie/eris"

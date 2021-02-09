@@ -1,4 +1,4 @@
-package sanitize_cluster_header_test
+package solo_xff_offset_test
 
 import (
 	"testing"
