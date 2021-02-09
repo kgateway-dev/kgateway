@@ -10,6 +10,7 @@ jobs:
     env:
       IMAGE_REPO: quay.io/solo-io
       VERSION: test
+      SCAN_DIR: _output/scans/${GITHUB_REF#refs/tags/}
     steps:
       - name: Cancel Previous Actions
         uses: styfle/cancel-workflow-action@0.4.1
@@ -39,11 +40,17 @@ jobs:
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: 'trivy-results-ingress.sarif'
+      - name: Setup Gloo Docs Output (Ingress)
+        run: |
+          mkdir -p {{ env.SCAN_DIR }}
       - name: Gloo Docs (Ingress)
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.IMAGE_REPO }}/ingress:${{ env.VERSION }}
           format: 'template'
           template: '@hack/utils/security_scan_report/markdown.tpl'
-          output: 'docs/content/static/content/ingress_cve_report.docgen'
+          output: {{ env.SCAN_DIR }}/ingress_cve_report.docgen
           severity: 'CRITICAL,HIGH'
+      - name: Publish Docs (Ingress)
+        run: |
+          SCAN_FILE=ingress_cve_report.docgen make publish-security-scan

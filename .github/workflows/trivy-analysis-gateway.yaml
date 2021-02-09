@@ -10,6 +10,7 @@ jobs:
     env:
       IMAGE_REPO: quay.io/solo-io
       VERSION: test
+      SCAN_DIR: _output/scans/${GITHUB_REF#refs/tags/}
     steps:
       - name: Cancel Previous Actions
         uses: styfle/cancel-workflow-action@0.4.1
@@ -40,6 +41,9 @@ jobs:
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: 'trivy-results-gateway.sarif'
+      - name: Setup Gloo Docs Output (Gateway)
+        run: |
+          mkdir -p {{ env.SCAN_DIR }}
       - name: Gloo Docs (Gateway)
         uses: aquasecurity/trivy-action@master
         with:
@@ -48,3 +52,6 @@ jobs:
           template: '@hack/utils/security_scan_report/markdown.tpl'
           output: 'docs/content/static/content/gateway_cve_report.docgen'
           severity: 'CRITICAL,HIGH'
+      - name: Publish Docs (Gateway)
+        run: |
+          SCAN_FILE=gateway_cve_report.docgen make publish-security-scan
