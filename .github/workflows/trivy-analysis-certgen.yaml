@@ -42,7 +42,9 @@ jobs:
           sarif_file: 'trivy-results-certgen.sarif'
       - name: Setup Gloo Docs Output (Certgen)
         run: |
-          mkdir -p {{ env.SCAN_DIR }}
+          echo ${{ env.SCAN_DIR }}
+          mkdir -p ${{ env.SCAN_DIR }}
+          ls ${{ env.SCAN_DIR }}
       - name: Gloo Docs (Certgen)
         uses: aquasecurity/trivy-action@master
         with:
@@ -53,4 +55,4 @@ jobs:
           severity: 'CRITICAL,HIGH'
       - name: Publish Docs (Certgen)
         run: |
-          SCAN_DIR={{ env.SCAN_DIR }}/certgen_cve_report.docgen make publish-security-scan
+          SCAN_DIR=${{ env.SCAN_DIR }}/certgen_cve_report.docgen make publish-security-scan

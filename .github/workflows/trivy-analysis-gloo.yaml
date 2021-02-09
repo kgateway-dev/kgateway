@@ -42,7 +42,8 @@ jobs:
           sarif_file: 'trivy-results-gloo.sarif'
       - name: Setup Gloo Docs Output (Gloo)
         run: |
-          mkdir -p {{ env.SCAN_DIR }}
+          echo ${{ env.SCAN_DIR }}
+          mkdir -p ${{ env.SCAN_DIR }}
       - name: Gloo Docs (Gloo)
         uses: aquasecurity/trivy-action@master
         with:
@@ -53,4 +54,4 @@ jobs:
           severity: 'CRITICAL,HIGH'
       - name: Publish Docs (Gloo)
         run: |
-          SCAN_DIR={{ env.SCAN_DIR }}/gloo_cve_report.docgen make publish-security-scan
+          SCAN_DIR=${{ env.SCAN_DIR }}/gloo_cve_report.docgen make publish-security-scan
