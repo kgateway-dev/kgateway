@@ -54,8 +54,7 @@ func (s *serverWithRequiredJwtToken) Check(
 
 	return &envoy_service_auth_v3.CheckResponse{
 		HttpResponse: &envoy_service_auth_v3.CheckResponse_OkResponse{
-			OkResponse: &envoy_service_auth_v3.OkHttpResponse{
-			},
+			OkResponse: &envoy_service_auth_v3.OkHttpResponse{},
 		},
 		Status: &status.Status{
 			Code: int32(code.Code_OK),
@@ -90,8 +89,7 @@ func (s *serverWithNewState) Check(
 
 	return &envoy_service_auth_v3.CheckResponse{
 		HttpResponse: &envoy_service_auth_v3.CheckResponse_OkResponse{
-			OkResponse: &envoy_service_auth_v3.OkHttpResponse{
-			},
+			OkResponse: &envoy_service_auth_v3.OkHttpResponse{},
 		},
 		Status: &status.Status{
 			Code: int32(code.Code_OK),
