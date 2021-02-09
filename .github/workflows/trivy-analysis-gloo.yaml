@@ -5,12 +5,11 @@ on:
   pull_request:
 jobs:
   release:
-    name: Release
+    name: Trivy Scan Gloo
     runs-on: "ubuntu-18.04"
     env:
       IMAGE_REPO: quay.io/solo-io
-      VERSION: test
-      SCAN_DIR: _output/scans/${GITHUB_REF##*/}
+      SCAN_DIR: _output/scans
     steps:
       - name: Cancel Previous Actions
         uses: styfle/cancel-workflow-action@0.4.1
@@ -26,12 +25,15 @@ jobs:
         with:
           fetch-depth: 0
       - name: Build an image from Dockerfile
+        id: build-docker-image
         run: |
-          TAGGED_VERSION=v${{ env.VERSION }} make gloo-docker
+          VERSION=$(git describe --tags | cut -c 2-)
+          TAGGED_VERSION=v$(echo $VERSION) make gloo-docker
+          echo "::set-output name=VERSION::$(echo $VERSION)"
       - name: Run Trivy vulnerability scanner (Gloo)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.IMAGE_REPO }}/gloo:${{ env.VERSION }}
+          image-ref: ${{ env.IMAGE_REPO }}/gloo:${{ steps.build-docker-image.outputs.VERSION }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results-gloo.sarif'
@@ -42,16 +44,15 @@ jobs:
           sarif_file: 'trivy-results-gloo.sarif'
       - name: Setup Gloo Docs Output (Gloo)
         run: |
-          echo ${{ env.SCAN_DIR }}
-          mkdir -p ${{ env.SCAN_DIR }}
+          mkdir -p ${{ env.SCAN_DIR }}/${{ steps.build-docker-image.outputs.VERSION }}
       - name: Gloo Docs (Gloo)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.IMAGE_REPO }}/gloo:${{ env.VERSION }}
+          image-ref: ${{ env.IMAGE_REPO }}/gloo:${{ steps.build-docker-image.outputs.VERSION }}
           format: 'template'
           template: '@hack/utils/security_scan_report/markdown.tpl'
-          output: ${{ env.SCAN_DIR }}/gloo_cve_report.docgen
+          output: ${{ env.SCAN_DIR }}/${{ steps.build-docker-image.outputs.VERSION }}/gloo_cve_report.docgen
           severity: 'CRITICAL,HIGH'
       - name: Publish Docs (Gloo)
         run: |
-          SCAN_DIR=${{ env.SCAN_DIR }}/gloo_cve_report.docgen make publish-security-scan
+          SCAN_FILE=gloo_cve_report.docgen make publish-security-scan

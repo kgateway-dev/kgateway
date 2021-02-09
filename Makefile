@@ -637,7 +637,7 @@ SCAN_BUCKET := gloo-security-scans
 
 .PHONY: publish-security-scan
 publish-security-scan:
-	gsutil cp -r $(SCAN_DIR) gs://$(SCAN_BUCKET)
+	gsutil cp -r $(SCAN_DIR)/$(SCAN_FILE) gs://$(SCAN_BUCKET)
 
 #----------------------------------------------------------------------------------
 # Third Party License Management
