@@ -9,16 +9,16 @@ import (
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/leftmost_xff_address"
 )
 
-var _ = Describe("solo x-forwarded-for offset plugin", func() {
+var _ = Describe("leftmost x-forwarded-for address plugin", func() {
 
-	It("should not add filter if solo xff offset config is nil", func() {
+	It("should not add filter if leftmost xff header config is nil", func() {
 		p := NewPlugin()
 		f, err := p.HttpFilters(plugins.Params{}, nil)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(f).To(BeNil())
 	})
 
-	It("will err if solo xff offset is configured", func() {
+	It("will err if leftmost xff header is configured", func() {
 		p := NewPlugin()
 		hl := &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
