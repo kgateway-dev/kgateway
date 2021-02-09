@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	ErrEnterpriseOnly = "Could not load solo_xff_offset plugin - this is an Enterprise feature"
+	ErrEnterpriseOnly = "Could not load leftmost_xff_address plugin - this is an Enterprise feature"
 	ExtensionName     = "leftmost_xff_address"
 )
 
