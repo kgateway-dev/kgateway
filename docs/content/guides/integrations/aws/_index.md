@@ -30,6 +30,8 @@ Using Gloo Edge with AWS ELBs is recommended for AWS based deployments. The gate
 
 In general, we'd recommend using an AWS Network Load Balancer (NLB) with Gloo Edge. Gloo Edge provides more application (L7) capabilities than AWS Application Load Balancer (ALB). Gloo Edge's configuration can be managed and deployed like other Kubernetes assets, which allow application teams to move faster by reducing the number of different teams and infrastructure tiers they have to coordinate with as part of a deployment.
 
+It's important to note that an AWS NLB has an idle timeout of 350 seconds that [cannot be changed](https://docs.aws.amazon.com/elasticloadbalancing/latest/network/network-load-balancers.html#connection-idle-timeout). This can lead to an increase in the number of reset TCP connections. This is a limitation of the load balancer in front of the Gloo Edge proxy, not a limitation of the proxy itself. To navigate this limitation, Gloo Edge can be configured with [socket options]({{% versioned_link_path fromRoot="/guides/dev/configuring-socket-options" %}}), to set TCP keep alive for downstream connections to envoy.
+
 ---
 
 ## How To

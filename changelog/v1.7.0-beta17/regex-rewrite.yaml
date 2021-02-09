@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3321
+    description: Add new `regexRewrite` option to routes. This new field can be used to substitute matched regex patterns for alternate text in request paths, optionally including capture groups from the regex.

@@ -971,6 +971,66 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeNil())
 					})
 
+					It("can set accessLoggingService", func() {
+						name := defaults.GatewayProxyName
+						bindPort := "8080"
+						ssl := "false"
+						gw := makeUnstructured(`
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+  name: ` + name + `
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: ` + bindPort + `
+  proxyNames: 
+  - gateway-proxy
+  httpGateway: {}
+  options:
+    accessLoggingService:
+      accessLog:
+      - fileSink:
+          path: /dev/stdout
+          stringFormat: ""
+  ssl: ` + ssl + `
+  useProxyProto: false
+apiVersion: gateway.solo.io/v1
+`)
+						prepareMakefileFromValuesFile("values/val_default_gateway_access_logging_service.yaml")
+						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
+
+						name = defaults.GatewayProxyName + "-ssl"
+						bindPort = "8443"
+						ssl = "true"
+						gw = makeUnstructured(`
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+  name: ` + name + `
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: ` + bindPort + `
+  proxyNames: 
+  - gateway-proxy
+  httpGateway: {}
+  options:
+    accessLoggingService:
+      accessLog:
+      - fileSink:
+          path: /dev/stdout
+          stringFormat: ""
+  ssl: ` + ssl + `
+  useProxyProto: false
+apiVersion: gateway.solo.io/v1
+`)
+
+						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gw))
+					})
+
 					It("can render with custom listener yaml", func() {
 						newGatewayProxyName := "test-name"
 						vsList := []*core.ResourceRef{
@@ -1144,6 +1204,14 @@ var _ = Describe("Helm Test", func() {
 								"gatewayProxies.gatewayProxy.service.extraAnnotations.bar=baz",
 							},
 						})
+						testManifest.ExpectService(gatewayProxyService)
+					})
+
+					It("sets externalIPs", func() {
+						gatewayProxyService.Spec.Type = v1.ServiceTypeLoadBalancer
+						gatewayProxyService.Spec.ExternalIPs = []string{"130.211.204.1", "130.211.204.2"}
+						gatewayProxyService.Annotations = map[string]string{"test": "test"}
+						prepareMakefileFromValuesFile("values/val_lb_external_ips.yaml")
 						testManifest.ExpectService(gatewayProxyService)
 					})
 
@@ -1446,6 +1514,31 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
+					It("sets affinity", func() {
+
+						gatewayProxyDeployment.Spec.Template.Spec.Affinity = &v1.Affinity{
+							NodeAffinity: &v1.NodeAffinity{
+								RequiredDuringSchedulingIgnoredDuringExecution: &v1.NodeSelector{
+									NodeSelectorTerms: []v1.NodeSelectorTerm{
+										v1.NodeSelectorTerm{
+											MatchExpressions: []v1.NodeSelectorRequirement{
+												v1.NodeSelectorRequirement{
+													Key:      "kubernetes.io/e2e-az-name",
+													Operator: v1.NodeSelectorOpIn,
+													Values:   []string{"e2e-az1", "e2e-az2"},
+												},
+											},
+										},
+									},
+								},
+							},
+						}
+
+						prepareMakefileFromValuesFile("values/val_gwp_affinity.yaml")
+
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
 					It("enables probes", func() {
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
 							Handler: v1.Handler{
@@ -1657,15 +1750,49 @@ var _ = Describe("Helm Test", func() {
 					})
 
 					It("can add extra volume mounts to the gateway-proxy container deployment", func() {
+
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(
 							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].VolumeMounts,
 							v1.VolumeMount{
+								Name:      "tls-crt",
+								MountPath: "/certs/crt",
+								ReadOnly:  true,
+							},
+							v1.VolumeMount{
+								Name:      "tls-key",
+								MountPath: "/certs/key",
+								ReadOnly:  true,
+							},
+							v1.VolumeMount{
 								Name:      "sds-uds-path",
 								MountPath: "/var/run/sds",
-							})
+							},
+						)
 
 						gatewayProxyDeployment.Spec.Template.Spec.Volumes = append(
 							gatewayProxyDeployment.Spec.Template.Spec.Volumes,
+							v1.Volume{
+								Name: "tls-crt",
+								VolumeSource: v1.VolumeSource{
+									Secret: &v1.SecretVolumeSource{
+										SecretName: "gloo-test-cert",
+										Items: []v1.KeyToPath{
+											{Key: "tls.crt", Path: "tls.crt"},
+										},
+									},
+								},
+							},
+							v1.Volume{
+								Name: "tls-key",
+								VolumeSource: v1.VolumeSource{
+									Secret: &v1.SecretVolumeSource{
+										SecretName: "gloo-test-cert",
+										Items: []v1.KeyToPath{
+											{Key: "tls.key", Path: "tls.key"},
+										},
+									},
+								},
+							},
 							v1.Volume{
 								Name: "sds-uds-path",
 								VolumeSource: v1.VolumeSource{
@@ -1677,6 +1804,20 @@ var _ = Describe("Helm Test", func() {
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.extraProxyVolumeMounts[0].mountPath=/certs/crt",
+								"gatewayProxies.gatewayProxy.extraProxyVolumeMounts[0].name=tls-crt",
+								"gatewayProxies.gatewayProxy.extraProxyVolumeMounts[0].readOnly=true",
+								"gatewayProxies.gatewayProxy.extraProxyVolumeMounts[1].mountPath=/certs/key",
+								"gatewayProxies.gatewayProxy.extraProxyVolumeMounts[1].name=tls-key",
+								"gatewayProxies.gatewayProxy.extraProxyVolumeMounts[1].readOnly=true",
+								"gatewayProxies.gatewayProxy.extraVolumes[0].Name=tls-crt",
+								"gatewayProxies.gatewayProxy.extraVolumes[0].Secret.secretName=gloo-test-cert",
+								"gatewayProxies.gatewayProxy.extraVolumes[0].Secret.items[0].key=tls.crt",
+								"gatewayProxies.gatewayProxy.extraVolumes[0].Secret.items[0].path=tls.crt",
+								"gatewayProxies.gatewayProxy.extraVolumes[1].Name=tls-key",
+								"gatewayProxies.gatewayProxy.extraVolumes[1].Secret.secretName=gloo-test-cert",
+								"gatewayProxies.gatewayProxy.extraVolumes[1].Secret.items[0].key=tls.key",
+								"gatewayProxies.gatewayProxy.extraVolumes[1].Secret.items[0].path=tls.key",
 								"gatewayProxies.gatewayProxy.extraVolumeHelper=gloo.testVolume",
 								"gatewayProxies.gatewayProxy.extraProxyVolumeMountHelper=gloo.testVolumeMount",
 							},

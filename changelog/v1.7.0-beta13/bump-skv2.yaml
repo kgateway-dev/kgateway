@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Bump skv2 to resolve bug in equality function used by `Upsert()`
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: skv2
+    dependencyTag: v0.17.2
+    description: Update skv2 to v0.17.2

@@ -1,0 +1,8 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4224
+    resolvesIssue: false
+    description: >-
+       Add ability for the Gloo Edge Enterprise external auth server to validate OAuth 2.0 access tokens based on access token scopes. 
+       The new `requiredScopes` field of AccessTokenValidation can be used to specify a list of required scopes for a token.
+       Omitting the field means that scope validation is skipped.

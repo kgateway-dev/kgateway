@@ -19,6 +19,14 @@ metadata:
   {{- end }}
 {{- end }}
 spec:
+{{- if $spec.service.externalIPs }}
+{{- with $spec.service.externalIPs }}
+  externalIPs:
+    {{- range . }}
+    - {{ . }}
+    {{- end }}
+{{- end }} {{/* with spec.service.externalIPs */}}
+{{- end }} {{/* $spec.service.externalIPs */}}
 {{- if $spec.service.externalTrafficPolicy }}
   externalTrafficPolicy: {{ $spec.service.externalTrafficPolicy }}
 {{- end }}

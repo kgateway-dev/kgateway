@@ -2,7 +2,10 @@ package basicroute
 
 import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/gloo/pkg/utils/regexutils"
+	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
@@ -43,6 +46,9 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if err := applyPrefixRewrite(in, out); err != nil {
 		return err
 	}
+	if err := applyRegexRewrite(params, in, out); err != nil {
+		return err
+	}
 	if err := applyTimeout(in, out); err != nil {
 		return err
 	}
@@ -72,6 +78,22 @@ func applyPrefixRewrite(in *v1.Route, out *envoy_config_route_v3.Route) error {
 			"had nil route", in.Action)
 	}
 	routeAction.Route.PrefixRewrite = in.Options.PrefixRewrite.Value
+	return nil
+}
+
+func applyRegexRewrite(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+	if in.Options.RegexRewrite == nil {
+		return nil
+	}
+	routeAction, ok := out.Action.(*envoy_config_route_v3.Route_Route)
+	if !ok {
+		return errors.Errorf("regex rewrite is only available for Route Actions")
+	}
+	if routeAction.Route == nil {
+		return errors.Errorf("internal error: route %v specified a regex, but output Envoy object "+
+			"had nil route", in.Action)
+	}
+	routeAction.Route.RegexRewrite = convertRegexMatchAndSubstitute(params, in.Options.RegexRewrite)
 	return nil
 }
 
@@ -192,4 +214,24 @@ func convertPolicy(policy *retries.RetryPolicy) *envoy_config_route_v3.RetryPoli
 		NumRetries:    &wrappers.UInt32Value{Value: numRetries},
 		PerTryTimeout: policy.GetPerTryTimeout(),
 	}
+}
+
+func convertRegexMatchAndSubstitute(params plugins.RouteParams, in *v32.RegexMatchAndSubstitute) *envoy_type_matcher_v3.RegexMatchAndSubstitute {
+	if in == nil {
+		return nil
+	}
+
+	out := &envoy_type_matcher_v3.RegexMatchAndSubstitute{
+		Pattern:      regexutils.NewRegex(params.Ctx, in.Pattern.Regex),
+		Substitution: in.Substitution,
+	}
+	switch inET := in.Pattern.EngineType.(type) {
+	case *v32.RegexMatcher_GoogleRe2:
+		outET := out.Pattern.EngineType.(*envoy_type_matcher_v3.RegexMatcher_GoogleRe2)
+		if inET.GoogleRe2.MaxProgramSize != nil && (outET.GoogleRe2.MaxProgramSize == nil || inET.GoogleRe2.MaxProgramSize.Value < outET.GoogleRe2.MaxProgramSize.Value) {
+			out.Pattern = regexutils.NewRegexWithProgramSize(in.Pattern.Regex, &inET.GoogleRe2.MaxProgramSize.Value)
+		}
+	}
+
+	return out
 }

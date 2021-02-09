@@ -24,10 +24,16 @@ spec:
 {{- else }}
   httpGateway: {}
 {{- end }}
-{{- if $gatewaySettings.options }}
+{{ if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
   options:
-{{ toYaml $gatewaySettings.options | indent 4 }}
 {{- end }}
+  {{- if $gatewaySettings.options }}
+  {{ toYaml $gatewaySettings.options | indent 4 }}
+  {{- end }}
+  {{- if $gatewaySettings.accessLoggingService }}
+    accessLoggingService:  
+  {{ toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
+  {{- end }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
   ssl: false
   proxyNames:
@@ -55,10 +61,16 @@ spec:
 {{- else }}
   httpGateway: {}
 {{- end }}
-{{- if $gatewaySettings.options }}
+{{ if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
   options:
-{{ toYaml $gatewaySettings.options | indent 4 }}
 {{- end }}
+  {{- if $gatewaySettings.options }}
+  {{ toYaml $gatewaySettings.options | indent 4 }}
+  {{- end }}
+  {{- if $gatewaySettings.accessLoggingService }}
+    accessLoggingService:  
+  {{ toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
+  {{- end }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
   ssl: true
   proxyNames:
