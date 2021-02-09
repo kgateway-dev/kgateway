@@ -633,7 +633,7 @@ security-checks:
  	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/sds_cve_report.docgen $(IMAGE_REPO)/sds:$(VERSION) && \
  	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/access_logger_cve_report.docgen $(IMAGE_REPO)/access-logger:$(VERSION)
 
-SCAN_BUCKET := gloo-security-scans
+SCAN_BUCKET := solo-gloo-security-scans
 
 .PHONY: publish-security-scan
 publish-security-scan:

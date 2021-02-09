@@ -27,7 +27,9 @@ jobs:
       - name: Build an image from Dockerfile
         id: build-docker-image
         run: |
-          TAGGED_VERSION=v${{ github.event.release.tag_name }}" make access-logger-docker
+          VERSION=$(git describe --tags | cut -c 2-)
+          TAGGED_VERSION=v$(echo $VERSION) make access-logger-docker
+          echo "::set-output name=VERSION::$(echo $VERSION)"
       - name: Run Trivy vulnerability scanner (access-logger)
         uses: aquasecurity/trivy-action@master
         with:
@@ -42,14 +44,14 @@ jobs:
           sarif_file: 'trivy-results-access-logger.sarif'
       - name: Setup Gloo Docs Output (access-logger)
         run: |
-          mkdir -p ${{ env.SCAN_DIR }}/${{ github.event.release.tag_name }}"
+          mkdir -p ${{ env.SCAN_DIR }}/${{ steps.build-docker-image.outputs.VERSION }}
       - name: Gloo Docs (access-logger)
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.IMAGE_REPO }}/access-logger:${{ github.event.release.tag_name }}"
           format: 'template'
           template: '@hack/utils/security_scan_report/markdown.tpl'
-          output: ${{ env.SCAN_DIR }}/${{ github.event.release.tag_name }}"/access_logger_cve_report.docgen
+          output: ${{ env.SCAN_DIR }}/${{ steps.build-docker-image.outputs.VERSION }}/access_logger_cve_report.docgen
           severity: 'CRITICAL,HIGH'
       - name: Publish Docs (access-logger)
         run: |
