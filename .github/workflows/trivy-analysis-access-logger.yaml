@@ -10,7 +10,7 @@ jobs:
     env:
       IMAGE_REPO: quay.io/solo-io
       VERSION: test
-      SCAN_DIR: _output/scans/${GITHUB_REF#refs/tags/}
+      SCAN_DIR: _output/scans/${GITHUB_REF##*/}
     steps:
       - name: Cancel Previous Actions
         uses: styfle/cancel-workflow-action@0.4.1
@@ -49,8 +49,8 @@ jobs:
           image-ref: ${{ env.IMAGE_REPO }}/access_logger:${{ env.VERSION }}
           format: 'template'
           template: '@hack/utils/security_scan_report/markdown.tpl'
-          output: 'docs/content/static/content/access_logger_cve_report.docgen'
+          output: ${{ env.SCAN_DIR }}/access_logger_cve_report.docgen
           severity: 'CRITICAL,HIGH'
       - name: Publish Docs (access-logger)
         run: |
-          SCAN_FILE=access_logger_cve_report.docgen make publish-security-scan
+          SCAN_DIR={{ env.SCAN_DIR }}/access_logger_cve_report.docgen make publish-security-scan
