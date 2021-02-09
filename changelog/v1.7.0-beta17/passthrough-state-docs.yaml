@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4255
+    resolvesIssue: false
+    description: >
+      The PassThrough auth service can now share state from other filters. Add documentation
+      to clarify how to use this feature.
