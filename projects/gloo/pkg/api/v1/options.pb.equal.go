@@ -267,12 +267,12 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetLeftmostXffHeader()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetLeftmostXffHeader()) {
+	if h, ok := interface{}(m.GetLeftmostXffAddress()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLeftmostXffAddress()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetLeftmostXffHeader(), target.GetLeftmostXffHeader()) {
+		if !proto.Equal(m.GetLeftmostXffAddress(), target.GetLeftmostXffAddress()) {
 			return false
 		}
 	}

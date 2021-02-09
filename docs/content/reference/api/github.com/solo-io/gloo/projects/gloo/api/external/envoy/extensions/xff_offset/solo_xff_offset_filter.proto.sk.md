@@ -25,7 +25,8 @@ weight: 5
 ---
 ### SoloXffOffset
 
-
+ 
+Envoy filter configuration for the solo_xff_offset filter,  not set by the user.
 
 ```yaml
 "offset": int

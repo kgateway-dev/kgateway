@@ -1,4 +1,4 @@
-package solo_xff_offset_test
+package leftmost_xff_address_test
 
 import (
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/solo_xff_offset"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/leftmost_xff_address"
 )
 
 var _ = Describe("solo x-forwarded-for offset plugin", func() {
@@ -22,7 +22,7 @@ var _ = Describe("solo x-forwarded-for offset plugin", func() {
 		p := NewPlugin()
 		hl := &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
-				LeftmostXffHeader: &wrappers.BoolValue{},
+				LeftmostXffAddress: &wrappers.BoolValue{},
 			},
 		}
 

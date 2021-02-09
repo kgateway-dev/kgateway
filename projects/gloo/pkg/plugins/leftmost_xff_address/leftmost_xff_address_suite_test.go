@@ -1,4 +1,4 @@
-package solo_xff_offset_test
+package leftmost_xff_address_test
 
 import (
 	"testing"

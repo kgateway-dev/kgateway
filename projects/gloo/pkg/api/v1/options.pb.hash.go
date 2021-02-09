@@ -438,18 +438,18 @@ func (m *HttpListenerOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetLeftmostXffHeader()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("LeftmostXffHeader")); err != nil {
+	if h, ok := interface{}(m.GetLeftmostXffAddress()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("LeftmostXffAddress")); err != nil {
 			return 0, err
 		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetLeftmostXffHeader(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetLeftmostXffAddress(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("LeftmostXffHeader")); err != nil {
+			if _, err = hasher.Write([]byte("LeftmostXffAddress")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

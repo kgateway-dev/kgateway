@@ -1,4 +1,4 @@
-package solo_xff_offset
+package leftmost_xff_address
 
 import (
 	"github.com/rotisserie/eris"
@@ -8,7 +8,7 @@ import (
 
 const (
 	ErrEnterpriseOnly = "Could not load solo_xff_offset plugin - this is an Enterprise feature"
-	ExtensionName     = "solo_xff_offset"
+	ExtensionName     = "leftmost_xff_address"
 )
 
 type plugin struct {
@@ -37,7 +37,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	if listener.GetOptions().GetLeftmostXffHeader() != nil {
+	if listener.GetOptions().GetLeftmostXffAddress() != nil {
 		return nil, eris.New(ErrEnterpriseOnly)
 	}
 	return nil, nil
