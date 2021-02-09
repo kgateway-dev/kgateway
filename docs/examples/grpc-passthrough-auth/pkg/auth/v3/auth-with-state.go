@@ -66,7 +66,7 @@ type serverWithNewState struct {
 }
 
 // NewAuthServerWithNewState creates a new authorization server
-// that authorizes all requests and adds state to be used by other plugins
+// that authorizes all requests and adds state to be used by other auth steps
 func NewAuthServerWithNewState() envoy_service_auth_v3.AuthorizationServer {
 	return &serverWithNewState{}
 }
@@ -76,7 +76,7 @@ func (s *serverWithNewState) Check(
 	ctx context.Context,
 	req *envoy_service_auth_v3.CheckRequest) (*envoy_service_auth_v3.CheckResponse, error) {
 
-	// The state you want to make available to other auth stages
+	// The state you want to make available to other auth steps
 	newState := &structpb.Struct{
 		Fields: map[string]*structpb.Value{
 			"custom-key": {
