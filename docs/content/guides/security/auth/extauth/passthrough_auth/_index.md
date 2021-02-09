@@ -121,7 +121,7 @@ As we just saw, we were able to reach the upstream without having to provide any
 Gloo Edge allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
 We will update the Virtual Service so that all requests will be authenticated by our own auth service.
 
-{{< highlight shell "hl_lines=11-13" >}}
+{{< highlight shell "hl_lines=9-14" >}}
 kubectl apply -f - <<EOF
 apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
@@ -203,7 +203,26 @@ The sample gRPC authentication service has been implemented such that any reques
 curl -H "Host: foo" -H "authorization: authorize me" $(glooctl proxy url)/posts/1
 ```
 
-The request should now be authorized! 
+The request should now be authorized!
+
+## Sharing state with other auth steps
+
+{{% notice note %}}
+The sharing state feature was introduced with **Gloo Edge Enterprise**, release 1.6.10. If you are using an earlier version, this will not work.
+{{% /notice %}}
+
+A common requirement is to be able to share state between the passthrough service, and other auth steps (either custom plugins, or our built-in authentication) . When writing a custom auth plugin, this is possible, and the steps to achieve it are [outlined here]({{< versioned_link_path fromRoot="/guides/dev/writing_auth_plugins#sharing-state-between-steps" >}}). We support this requirement by leveraging request and response metadata.
+
+We provide some example implementations in the Gloo Edge repository at `docs/examples/passthrough-auth/pkg/auth/v3/auth-with-state.go`.
+
+### Reading state from other auth steps
+
+State from other auth steps is sent to the passthrough service via [CheckRequest FilterMetadata](https://github.com/envoyproxy/envoy/blob/50e722cbb0486268c128b0f1d0ef76217387799f/api/envoy/service/auth/v3/external_auth.proto#L36) under a unique key: `solo.auth.passthrough`.
+
+### Writing state to be used by other auth steps
+
+State from the passthrough service can be sent to other auth steps via [CheckResponse DynamicMetadata](https://github.com/envoyproxy/envoy/blob/50e722cbb0486268c128b0f1d0ef76217387799f/api/envoy/service/auth/v3/external_auth.proto#L126) under a unique key: `solo.auth.passthrough`.
+
 ## Summary
 
 In this guide, we installed Gloo Edge Enterprise and created an unauthenticated Virtual Service that routes requests to a static upstream. We spun up an example gRPC authentication service that uses a simple header for authentication. We then created an `AuthConfig` and configured it to use Passthrough Auth, pointing it to the IP of our example gRPC service. In doing so, we instructed gloo to pass through requests from the external authentication server to the grpc authentication service provided by the user.
