@@ -136,12 +136,6 @@ var (
 		&Endpoint{})
 )
 
-func init() {
-	if err := crd.AddCrd(EndpointCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	EndpointGVK = schema.GroupVersionKind{
 		Version: "v1",
