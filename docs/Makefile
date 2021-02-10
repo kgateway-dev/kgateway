@@ -72,8 +72,3 @@ install-tools:
 .PHONY: build-site
 build-site: clean
 	./build-docs.sh
-
-
-.PHONY: build-security-scan-docs
-build-security-scan-docs:
-	gloo_images = ["gateway", "discovery", "gloo", "gloo_envoy_wrapper", "ingress", "access_logger", "sds", "certgen"]
