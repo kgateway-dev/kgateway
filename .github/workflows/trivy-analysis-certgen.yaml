@@ -27,8 +27,8 @@ jobs:
       - name: Setup - gcloud / gsutil
         uses: google-github-actions/setup-gcloud@master
         with:
-          service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-          project_id: ${{ secrets.GCS_PROJECT }}
+          service_account_key: ${{ secrets.GLOO_VULN_REPORTER }}
+          project_id: solo-public
           export_default_credentials: true
       - name: Build an image from Dockerfile
         id: build-docker-image
