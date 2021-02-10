@@ -39,7 +39,7 @@ jobs:
       - name: Run Trivy vulnerability scanner (access-logger)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.IMAGE_REPO }}/access-logger:${{ github.event.release.tag_name }}"
+          image-ref: ${{ env.IMAGE_REPO }}/access-logger:${{ steps.build-docker-image.outputs.VERSION }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: 'trivy-results-access-logger.sarif'
