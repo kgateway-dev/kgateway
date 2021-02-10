@@ -1,8 +1,7 @@
 name: release
 on:
-  push:
-    branches: [ master ]
-  pull_request:
+  release:
+    types: [created]
 jobs:
   release:
     name: Trivy Scan Sds
