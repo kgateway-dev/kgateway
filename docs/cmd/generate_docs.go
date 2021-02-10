@@ -263,7 +263,7 @@ func generateSecurityScanMd() error {
 	var tagNames []string
 	for _, release := range allReleases {
 		// ignore beta releases when display security scan results
-		if !strings.Contains(release.GetTagName(), "beta"){
+		if !strings.Contains(release.GetTagName(), "beta") {
 			tagNames = append(tagNames, release.GetTagName())
 		}
 	}
