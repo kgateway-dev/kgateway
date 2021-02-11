@@ -2,6 +2,7 @@ package xds
 
 import (
 	"fmt"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/service/cluster/v3"
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -73,7 +74,7 @@ func GetValidKeys(proxies v1.ProxyList, extensionKeys map[string]struct{}) []str
 func SetupEnvoyXds(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyCache envoycache.SnapshotCache) {
 
 	// check if we need to register
-	if _, ok := grpcServer.GetServiceInfo()["envoy.api.v2.EndpointDiscoveryService"]; ok {
+	if _, ok := grpcServer.GetServiceInfo()["envoy.api.v3.EndpointDiscoveryService"]; ok {
 		return
 	}
 
