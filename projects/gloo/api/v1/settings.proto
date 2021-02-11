@@ -370,13 +370,16 @@ message Settings {
     // Provides settings related to the observability deployment (enterprise only)
     ObservabilityOptions observabilityOptions = 31;
 
+    // Default configuration to use for upstreams, when not provided by specific upstream
+    // When these properties are defined on an upstream, this configuration will be ignored
     UpstreamOptions upstreamOptions = 32;
 
 }
 
+// Default configuration to use for upstreams, when not provided by a specific upstream
+// When these properties are defined on a specific upstream, this configuration will be ignored
 message UpstreamOptions {
-    // Default ssl parameter configuration to use for upstreams,
-    // when not provided by specific upstream.
+    // Default ssl parameter configuration to use for upstreams
     SslParameters ssl_parameters = 1;
 }
 

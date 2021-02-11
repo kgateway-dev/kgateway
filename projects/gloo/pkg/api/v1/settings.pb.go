@@ -179,7 +179,9 @@ type Settings struct {
 	Status *core.Status `protobuf:"bytes,15,opt,name=status,proto3" json:"status,omitempty"`
 	// Provides settings related to the observability deployment (enterprise only)
 	ObservabilityOptions *Settings_ObservabilityOptions `protobuf:"bytes,31,opt,name=observabilityOptions,proto3" json:"observabilityOptions,omitempty"`
-	UpstreamOptions      *UpstreamOptions               `protobuf:"bytes,32,opt,name=upstreamOptions,proto3" json:"upstreamOptions,omitempty"`
+	// Default configuration to use for upstreams, when not provided by specific upstream
+	// When these properties are defined on an upstream, this configuration will be ignored
+	UpstreamOptions *UpstreamOptions `protobuf:"bytes,32,opt,name=upstreamOptions,proto3" json:"upstreamOptions,omitempty"`
 }
 
 func (x *Settings) Reset() {
@@ -511,13 +513,14 @@ func (*Settings_DirectoryArtifactSource) isSettings_ArtifactSource() {}
 
 func (*Settings_ConsulKvArtifactSource) isSettings_ArtifactSource() {}
 
+// Default configuration to use for upstreams, when not provided by a specific upstream
+// When these properties are defined on a specific upstream, this configuration will be ignored
 type UpstreamOptions struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Default ssl parameter configuration to use for upstreams,
-	// when not provided by specific upstream.
+	// Default ssl parameter configuration to use for upstreams
 	SslParameters *SslParameters `protobuf:"bytes,1,opt,name=ssl_parameters,json=sslParameters,proto3" json:"ssl_parameters,omitempty"`
 }
 

@@ -115,7 +115,7 @@ Represents global settings for all the Gloo components.
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |
 | `observabilityOptions` | [.gloo.solo.io.Settings.ObservabilityOptions](../settings.proto.sk/#observabilityoptions) | Provides settings related to the observability deployment (enterprise only). |
-| `upstreamOptions` | [.gloo.solo.io.UpstreamOptions](../settings.proto.sk/#upstreamoptions) |  |
+| `upstreamOptions` | [.gloo.solo.io.UpstreamOptions](../settings.proto.sk/#upstreamoptions) | Default configuration to use for upstreams, when not provided by specific upstream When these properties are defined on an upstream, this configuration will be ignored. |
 
 
 
@@ -464,7 +464,9 @@ Provides settings related to the observability pod's interactions with grafana
 ---
 ### UpstreamOptions
 
-
+ 
+Default configuration to use for upstreams, when not provided by a specific upstream
+When these properties are defined on a specific upstream, this configuration will be ignored
 
 ```yaml
 "sslParameters": .gloo.solo.io.SslParameters
@@ -473,7 +475,7 @@ Provides settings related to the observability pod's interactions with grafana
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `sslParameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk/#sslparameters) | Default ssl parameter configuration to use for upstreams, when not provided by specific upstream. |
+| `sslParameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk/#sslparameters) | Default ssl parameter configuration to use for upstreams. |
 
 
 
