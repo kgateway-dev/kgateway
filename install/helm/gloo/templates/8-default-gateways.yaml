@@ -4,6 +4,7 @@
 {{- if not $gatewaySettings.disableGeneratedGateways -}}
 
 ---
+{{- if not $gatewaySettings.disableHttpGateway }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
@@ -38,9 +39,9 @@ spec:
   ssl: false
   proxyNames:
   - {{ $name | kebabcase }}
-
+{{- end }}
 ---
-
+{{- if not $gatewaySettings.disableHttpsGateway -}}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
@@ -76,7 +77,7 @@ spec:
   proxyNames:
   - {{ $name | kebabcase }}
 {{- end }}
-
+{{- end }}
 ---
 
 {{- if $spec.failover }}

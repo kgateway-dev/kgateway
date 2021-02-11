@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    description: Added disableHttpGateway and disableHttpsGateway helm values for more fine grained control over gateway creation.
+    issueLink: https://github.com/solo-io/gloo/issues/3450
