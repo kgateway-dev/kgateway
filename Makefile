@@ -609,8 +609,8 @@ build-test-chart:
 #----------------------------------------------------------------------------------
 # Locally run the Trivy security scan to generate result report as markdown
 
-TRIVY_VERSION := $(shell curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
-SCAN_DIR := $(OUTPUT_DIR)/scans/$(VERSION)
+TRIVY_VERSION ?= $(shell curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+SCAN_DIR ?= $(OUTPUT_DIR)/scans/$(VERSION)
 
 ifeq ($(shell uname), Darwin)
 	machine += macOS
@@ -633,11 +633,13 @@ security-checks:
 	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/sds_cve_report.docgen $(IMAGE_REPO)/sds:$(VERSION) && \
 	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/access_logger_cve_report.docgen $(IMAGE_REPO)/access-logger:$(VERSION)
 
-SCAN_BUCKET := solo-gloo-security-scans
+SCAN_BUCKET ?= solo-gloo-security-scans
 
 .PHONY: publish-security-scan
 publish-security-scan:
+ifeq ($(RELEASE),"true")
 	gsutil cp -r $(SCAN_DIR)/$(SCAN_FILE) gs://$(SCAN_BUCKET)
+endif
 
 #----------------------------------------------------------------------------------
 # Third Party License Management
