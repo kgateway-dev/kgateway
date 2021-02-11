@@ -55,7 +55,18 @@ glooctl get upstream -n gloo-system default-petstore-8080
 ```
 
 Here, we can see an upstream was created and accepted. The upstream points to the petstore service on port 8080 in the
-default namespace. In fact, Gloo Edge discovered that it was a REST service and, using it's function discovery system, 
+default namespace. 
+
+By default the upstream created is rather simple. It represents a specific kubernetes service. However, the petstore
+application is a swagger service. Gloo Edge can discover this swagger spec, but by default Gloo Edge's function
+discovery features are turned off to improve performance. To enable Function Discovery Service (fds) on our petstore,
+we need to label the namespace.
+
+```shell
+kubectl label namespace default  discovery.solo.io/function_discovery=enabled
+```
+
+Gloo Edge discovered that it was a REST service and, using it's function discovery system, 
 added the functions it found in the Swagger definition to the upstream.
 
 {{% notice note %}}

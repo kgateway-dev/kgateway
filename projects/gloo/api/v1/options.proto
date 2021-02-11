@@ -137,6 +137,12 @@ message HttpListenerOptions {
     // this option will sanitize that header from downstream traffic.
     // Defaults to false
     google.protobuf.BoolValue sanitize_cluster_header = 14;
+
+    // Enterprise-only: Setting this value to true will grab the leftmost IP address from
+    // the x-forwarded-for header and set it as the downstream address.
+    // It is worth noting that the x-forwarded-for header can be tampered with by clients
+    // and should therefore be sanitized by any preceding proxies / load balancers if this option is to be used.
+    google.protobuf.BoolValue leftmost_xff_address = 16;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners
