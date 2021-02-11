@@ -2163,7 +2163,6 @@ var _ = Describe("Translator", func() {
 
 		})
 
-
 		Context("failure", func() {
 
 			It("should fail with only private key", func() {
