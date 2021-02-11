@@ -3,9 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
-	"strings"
-
 	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
 	. "github.com/solo-io/gloo/docs/cmd/changelogutils"
@@ -13,6 +10,8 @@ import (
 	. "github.com/solo-io/go-utils/versionutils"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
+	"os"
+	"regexp"
 )
 
 func main() {
@@ -263,7 +262,8 @@ func generateSecurityScanMd() error {
 	var tagNames []string
 	for _, release := range allReleases {
 		// ignore beta releases when display security scan results
-		if !strings.Contains(release.GetTagName(), "beta") {
+		isMatch, _ := regexp.MatchString("^v(\\d+\\.)?(\\d+\\.)?(\\*|\\d+)$", release.GetTagName())
+		if isMatch {
 			tagNames = append(tagNames, release.GetTagName())
 		}
 	}

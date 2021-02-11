@@ -38,7 +38,7 @@ func GetSecurityScanReport(url string) (string, error) {
 	if resp.StatusCode == http.StatusOK {
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
 		report = string(bodyBytes)
-	} else {
+	} else if resp.StatusCode == http.StatusNotFound {
 		// Older releases may be missing scan results
 		report = "No scan found\n"
 	}

@@ -613,9 +613,9 @@ TRIVY_VERSION ?= $(shell curl --silent "https://api.github.com/repos/aquasecurit
 SCAN_DIR ?= $(OUTPUT_DIR)/scans/$(VERSION)
 
 ifeq ($(shell uname), Darwin)
-	machine += macOS
+	machine ?= macOS
 else
-	machine += Linux
+	machine ?= Linux
 endif
 
 .PHONY: security-checks
