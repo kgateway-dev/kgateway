@@ -74,7 +74,7 @@ func GetValidKeys(proxies v1.ProxyList, extensionKeys map[string]struct{}) []str
 func SetupEnvoyXds(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyCache envoycache.SnapshotCache) {
 
 	// check if we need to register
-	if _, ok := grpcServer.GetServiceInfo()["envoy.api.v3.EndpointDiscoveryService"]; ok {
+	if _, ok := grpcServer.GetServiceInfo()["envoy.service.endpoint.v3.EndpointDiscoveryService"]; ok {
 		return
 	}
 
