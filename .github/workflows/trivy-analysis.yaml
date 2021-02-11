@@ -4,11 +4,14 @@ on:
     types: [created]
 jobs:
   release:
-    name: Trivy Scan Gateway
+    name: Trivy Scan
     runs-on: "ubuntu-18.04"
     env:
       IMAGE_REPO: quay.io/solo-io
       SCAN_DIR: _output/scans
+    strategy:
+      matrix:
+        image-type: [ 'access-logger', 'certgen', 'discovery', 'gateway', 'gloo', 'gloo-envoy-wrapper', 'ingress', 'sds' ]
     steps:
       - name: Cancel Previous Actions
         uses: styfle/cancel-workflow-action@0.4.1
@@ -29,35 +32,35 @@ jobs:
           service_account_key: ${{ secrets.GLOO_VULN_REPORTER }}
           project_id: solo-public
           export_default_credentials: true
-      - name: Build an image from Dockerfile
-        id: build-docker-image
-        run: |
-          VERSION=$(git describe --tags | cut -c 2-)
-          TAGGED_VERSION=v$(echo $VERSION) make gateway-docker
-          echo "::set-output name=VERSION::$(echo $VERSION)"
-      - name: Run Trivy vulnerability scanner (Gateway)
+  - name: Build an image from Dockerfile
+      id: build-docker-image
+      run: |
+        VERSION=$(git describe --tags | cut -c 2-)
+        TAGGED_VERSION=v$(echo $VERSION) make ${{ matrix.image-type }}-docker
+        echo "::set-output name=VERSION::$(echo $VERSION)"
+      - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.IMAGE_REPO }}/gateway:${{ steps.build-docker-image.outputs.VERSION }}
+          image-ref: ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:${{ steps.build-docker-image.outputs.VERSION }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
-          output: 'trivy-results-gateway.sarif'
+          output: trivy-results-${{ matrix.image-type }}.sarif
           severity: 'CRITICAL,HIGH'
-      - name: Upload Trivy scan results to GitHub Security tab (Gateway)
+      - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v1
         with:
-          sarif_file: 'trivy-results-gateway.sarif'
-      - name: Setup Gloo Docs Output (Gateway)
+          sarif_file: trivy-results-${{ matrix.image-type }}.sarif
+      - name: Setup Gloo Docs Output
         run: |
           mkdir -p ${{ env.SCAN_DIR }}/${{ steps.build-docker-image.outputs.VERSION }}
-      - name: Gloo Docs (Gateway)
+      - name: Gloo Docs
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.IMAGE_REPO }}/gateway:${{ steps.build-docker-image.outputs.VERSION }}
+          image-ref: ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:${{ github.event.release.tag_name }}"
           format: 'template'
           template: '@hack/utils/security_scan_report/markdown.tpl'
-          output: ${{ env.SCAN_DIR }}/${{ steps.build-docker-image.outputs.VERSION }}/gateway_cve_report.docgen
+          output: ${{ env.SCAN_DIR }}/${{ steps.build-docker-image.outputs.VERSION }}/${{ matrix.image-type }}_cve_report.docgen
           severity: 'CRITICAL,HIGH'
-      - name: Publish Docs (Gateway)
+      - name: Publish Docs
         run: |
-          SCAN_FILE=gateway_cve_report.docgen make publish-security-scan
+          SCAN_FILE=${{ matrix.image-type }}_cve_report.docgen make publish-security-scan
