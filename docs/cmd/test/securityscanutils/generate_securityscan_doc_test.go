@@ -11,10 +11,10 @@ var _ = Describe("generate security scan docgen", func() {
 		It("reports exist", func() {
 			existsTag := "1.5.0"
 			expectedReport := `
-Package|Vulnerability ID|Severity|Installed Version|Fixed Version
----|---|---|---|---
-libcrypto1.1|CVE-2020-1967|HIGH|1.1.1d-r3|1.1.1g-r0
-libssl1.1|CVE-2020-1967|HIGH|1.1.1d-r3|1.1.1g-r0
+Vulnerability ID|Package|Severity|Installed Version|Fixed Version|Reference
+---|---|---|---|---|---
+CVE-2020-1967|libcrypto1.1|HIGH|1.1.1d-r3|1.1.1g-r0|https://avd.aquasec.com/nvd/cve-2020-1967
+CVE-2020-1967|libssl1.1|HIGH|1.1.1d-r3|1.1.1g-r0|https://avd.aquasec.com/nvd/cve-2020-1967
 `
 			url := "https://storage.googleapis.com/solo-gloo-security-scans/" + existsTag + "/gateway_cve_report.docgen"
 			report, err := GetSecurityScanReport(url)
