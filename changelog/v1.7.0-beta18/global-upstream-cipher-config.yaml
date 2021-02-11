@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4285
+    resolvesIssue: true
+    description: >
+      Provides an option to define global SslParameters that will be applied to all upstreams by default.
+      An individual upstream can override these properties by specifying SslParameters.
