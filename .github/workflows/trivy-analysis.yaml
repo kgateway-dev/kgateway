@@ -63,4 +63,4 @@ jobs:
           severity: 'CRITICAL,HIGH'
       - name: Publish Docs
         run: |
-          SCAN_FILE=${{ matrix.image-type }}_cve_report.docgen make publish-security-scan
+          VERSION=${{ steps.build-docker-image.outputs.VERSION }} SCAN_FILE=${{ matrix.image-type }}_cve_report.docgen make publish-security-scan
