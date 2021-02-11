@@ -1,4 +1,4 @@
-package main_test
+package securityscanutils_test
 
 import (
 	"testing"

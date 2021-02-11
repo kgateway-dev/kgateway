@@ -1,4 +1,4 @@
-package main_test
+package securityscanutils_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -10,8 +10,7 @@ var _ = Describe("generate security scan docgen", func() {
 	Context("check markdown", func() {
 		It("reports exist", func() {
 			existsTag := "1.5.0"
-			expectedReport :=
-				`
+			expectedReport := `
 Package|Vulnerability ID|Severity|Installed Version|Fixed Version
 ---|---|---|---|---
 libcrypto1.1|CVE-2020-1967|HIGH|1.1.1d-r3|1.1.1g-r0
