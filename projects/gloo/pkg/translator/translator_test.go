@@ -2141,7 +2141,9 @@ var _ = Describe("Translator", func() {
 				}
 
 				upstream.SslConfig.Parameters = upstreamSslParameters
-				settings.UpstreamOptions.SslParameters = settingsSslParameters
+				settings.UpstreamOptions = &v1.UpstreamOptions{
+					SslParameters: settingsSslParameters,
+				}
 
 				translate()
 				Expect(tlsContext()).ToNot(BeNil())
@@ -2154,7 +2156,9 @@ var _ = Describe("Translator", func() {
 				}
 
 				upstream.SslConfig.Parameters = nil
-				settings.UpstreamOptions.SslParameters = settingsSslParameters
+				settings.UpstreamOptions = &v1.UpstreamOptions{
+					SslParameters: settingsSslParameters,
+				}
 
 				translate()
 				Expect(tlsContext()).ToNot(BeNil())
