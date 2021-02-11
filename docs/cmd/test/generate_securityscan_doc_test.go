@@ -7,7 +7,7 @@ import (
 )
 
 var _ = Describe("generate security scan docgen", func() {
-	FContext("check markdown", func() {
+	Context("check markdown", func() {
 		It("reports exist", func() {
 			existsTag := "1.5.0"
 			expectedReport :=
