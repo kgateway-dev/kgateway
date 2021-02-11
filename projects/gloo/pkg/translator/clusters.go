@@ -105,6 +105,7 @@ func (t *translatorInstance) initializeCluster(
 	}
 
 	if sslConfig := upstream.SslConfig; sslConfig != nil {
+		applyDefaultsToUpstreamSslConfig(sslConfig, t.settings.GetUpstreamOptions())
 		cfg, err := utils.NewSslConfigTranslator().ResolveUpstreamSslConfig(*secrets, sslConfig)
 		if err != nil {
 			reports.AddError(upstream, err)
@@ -333,4 +334,16 @@ func validateRouteDestinationForValidLambdas(
 		}
 	}
 
+}
+
+// Apply defaults to UpstreamSslConfig
+func applyDefaultsToUpstreamSslConfig(sslConfig *v1.UpstreamSslConfig, options *v1.UpstreamOptions) {
+	if options == nil {
+		return
+	}
+
+	// Apply default SslParameters if none are defined on upstream
+	if sslConfig.GetParameters() == nil {
+		sslConfig.Parameters = options.GetSslParameters()
+	}
 }

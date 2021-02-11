@@ -2063,6 +2063,7 @@ var _ = Describe("Translator", func() {
 			Expect(listener.GetListenerFilters()[0].GetName()).To(Equal(wellknown.TlsInspector))
 		})
 	})
+
 	Context("Ssl - cluster", func() {
 
 		var (
@@ -2103,6 +2104,7 @@ var _ = Describe("Translator", func() {
 
 			return glooutils.MustAnyToMessage(cluster.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
 		}
+
 		It("should process an upstream with tls config", func() {
 			translate()
 			Expect(tlsContext()).ToNot(BeNil())
@@ -2125,6 +2127,44 @@ var _ = Describe("Translator", func() {
 			translate()
 			Expect(tlsContext()).ToNot(BeNil())
 			Expect(tlsContext().CommonTlsContext.GetValidationContext().TrustedCa.GetInlineString()).To(Equal("rootca"))
+		})
+
+		Context("SslParameters", func() {
+
+			It("should set upstream SslParameters if defined on upstream", func() {
+				upstreamSslParameters := &v1.SslParameters{
+					CipherSuites: []string{"AES256-SHA", "AES256-GCM-SHA384"},
+				}
+
+				settingsSslParameters := &v1.SslParameters{
+					CipherSuites: []string{"ECDHE-RSA-AES128-SHA"},
+				}
+
+				upstream.SslConfig.Parameters = upstreamSslParameters
+				settings.UpstreamOptions = &v1.UpstreamOptions{
+					SslParameters: settingsSslParameters,
+				}
+
+				translate()
+				Expect(tlsContext()).ToNot(BeNil())
+				Expect(tlsContext().CommonTlsContext.TlsParams.CipherSuites).To(Equal(upstreamSslParameters.CipherSuites))
+			})
+
+			It("should set settings.UpstreamOptions SslParameters if none defined on upstream", func() {
+				settingsSslParameters := &v1.SslParameters{
+					CipherSuites: []string{"ECDHE-RSA-AES128-SHA"},
+				}
+
+				upstream.SslConfig.Parameters = nil
+				settings.UpstreamOptions = &v1.UpstreamOptions{
+					SslParameters: settingsSslParameters,
+				}
+
+				translate()
+				Expect(tlsContext()).ToNot(BeNil())
+				Expect(tlsContext().CommonTlsContext.TlsParams.CipherSuites).To(Equal(settingsSslParameters.CipherSuites))
+			})
+
 		})
 
 		Context("failure", func() {
