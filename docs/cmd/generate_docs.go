@@ -265,7 +265,7 @@ func generateSecurityScanMd() error {
 		// ignore beta releases when display security scan results
 		test, err := semver.NewVersion(release.GetTagName())
 		stableOnlyConstraint, _ := semver.NewConstraint("*")
-		if err != nil && stableOnlyConstraint.Check(test) {
+		if err == nil && stableOnlyConstraint.Check(test) {
 			tagNames = append(tagNames, release.GetTagName())
 		}
 	}
