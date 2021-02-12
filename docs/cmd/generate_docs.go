@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"regexp"
+
 	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
 	. "github.com/solo-io/gloo/docs/cmd/changelogutils"
@@ -10,8 +13,6 @@ import (
 	. "github.com/solo-io/go-utils/versionutils"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
-	"os"
-	"regexp"
 )
 
 func main() {
