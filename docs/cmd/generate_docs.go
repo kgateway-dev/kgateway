@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"regexp"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
 	. "github.com/solo-io/gloo/docs/cmd/changelogutils"
@@ -263,8 +263,9 @@ func generateSecurityScanMd() error {
 	var tagNames []string
 	for _, release := range allReleases {
 		// ignore beta releases when display security scan results
-		isMatch, _ := regexp.MatchString("^v(\\d+\\.)?(\\d+\\.)?(\\*|\\d+)$", release.GetTagName())
-		if isMatch {
+		test, err := semver.NewVersion(release.GetTagName())
+		stableOnlyConstraint, _ := semver.NewConstraint("*")
+		if err != nil && stableOnlyConstraint.Check(test) {
 			tagNames = append(tagNames, release.GetTagName())
 		}
 	}
