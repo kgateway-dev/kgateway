@@ -1045,6 +1045,24 @@ apiVersion: gateway.solo.io/v1
 						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gw))
 					})
 
+					// It("can create gwp autoscaling/v1 hpa", func() {
+					// 	prepareMakefile(namespace, helmValues{
+					// 		valuesArgs: []string{
+					// 			"gatewayProxies.gatewayProxy.horizontalPodAutoscaler.apiVersion=autoscaling/v1",
+					// 			"gatewayProxies.gatewayProxy.horizontalPodAutoscaler.minReplicas=1",
+					// 			"gatewayProxies.gatewayProxy.horizontalPodAutoscaler.maxReplicas=2",
+					// 			"gatewayProxies.gatewayProxy.horizontalPodAutoscaler.targetCPUUtilizationPercentage=75",
+					// 		},
+					// 	})
+
+					
+					// 	testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					// })
+
+					// It("can create gwp autoscaling/v2beta2 hpa"), func() {
+
+					// })
+
 					It("can render with custom listener yaml", func() {
 						newGatewayProxyName := "test-name"
 						vsList := []*core.ResourceRef{
