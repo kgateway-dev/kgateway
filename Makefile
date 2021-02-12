@@ -618,6 +618,7 @@ else
 	machine ?= Linux
 endif
 
+# Local run for trivy security checks
 .PHONY: security-checks
 security-checks:
 	mkdir -p $(SCAN_DIR)
