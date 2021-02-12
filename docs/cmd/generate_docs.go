@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
 	. "github.com/solo-io/gloo/docs/cmd/changelogutils"
+	. "github.com/solo-io/gloo/docs/cmd/securityscanutils"
 	. "github.com/solo-io/go-utils/versionutils"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
@@ -48,12 +50,24 @@ func rootApp(ctx context.Context) *cobra.Command {
 	}
 	app.AddCommand(changelogMdFromGithubCmd(opts))
 	app.AddCommand(minorReleaseChangelogMdFromGithubCmd(opts))
+	app.AddCommand(securityScanMdFromCmd(opts))
 
 	app.PersistentFlags().StringVar(&opts.HugoDataSoloOpts.version, "version", "", "version of docs and code")
 	app.PersistentFlags().StringVar(&opts.HugoDataSoloOpts.product, "product", "gloo", "product to which the docs refer (defaults to gloo)")
 	app.PersistentFlags().BoolVar(&opts.HugoDataSoloOpts.noScope, "no-scope", false, "if set, will not nest the served docs by product or version")
 	app.PersistentFlags().BoolVar(&opts.HugoDataSoloOpts.callLatest, "call-latest", false, "if set, will use the string 'latest' in the scope, rather than the particular release version")
 
+	return app
+}
+
+func securityScanMdFromCmd(opts *options) *cobra.Command {
+	app := &cobra.Command{
+		Use:   "gen-security-scan-md",
+		Short: "generate a markdown file from gcloud bucket",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return generateSecurityScanMd()
+		},
+	}
 	return app
 }
 
@@ -233,4 +247,28 @@ func printVersionOrderReleases(minorReleaseMap map[Version]string, versionOrder 
 		}
 		fmt.Printf("%v", body)
 	}
+}
+
+func generateSecurityScanMd() error {
+	client := github.NewClient(nil)
+	allReleases, err := GetAllReleases(client, glooOpenSourceRepo)
+	if err != nil {
+		return err
+	}
+	allReleases = SortReleases(allReleases)
+	if err != nil {
+		return err
+	}
+
+	var tagNames []string
+	for _, release := range allReleases {
+		// ignore beta releases when display security scan results
+		test, err := semver.NewVersion(release.GetTagName())
+		stableOnlyConstraint, _ := semver.NewConstraint("*")
+		if err != nil && stableOnlyConstraint.Check(test) {
+			tagNames = append(tagNames, release.GetTagName())
+		}
+	}
+
+	return BuildSecurityScanMarkdownReport(tagNames)
 }

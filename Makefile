@@ -605,6 +605,44 @@ build-test-chart:
 	helm repo index $(TEST_ASSET_DIR)
 
 #----------------------------------------------------------------------------------
+# Security Scan
+#----------------------------------------------------------------------------------
+# Locally run the Trivy security scan to generate result report as markdown
+
+TRIVY_VERSION ?= $(shell curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+SCAN_DIR ?= $(OUTPUT_DIR)/scans/$(VERSION)
+
+ifeq ($(shell uname), Darwin)
+	machine ?= macOS
+else
+	machine ?= Linux
+endif
+
+# Local run for trivy security checks
+.PHONY: security-checks
+security-checks:
+	mkdir -p $(SCAN_DIR)
+
+	curl -Ls "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_${machine}-64bit.tar.gz" | tar zx '*trivy' || { echo "Download/extract failed for trivy."; exit 1; };
+
+	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/gateway_cve_report.docgen $(IMAGE_REPO)/gateway:$(VERSION) && \
+	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/ingress_cve_report.docgen $(IMAGE_REPO)/ingress:$(VERSION) && \
+	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/discovery_cve_report.docgen $(IMAGE_REPO)/discovery:$(VERSION) && \
+	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/gloo_cve_report.docgen $(IMAGE_REPO)/gloo:$(VERSION) && \
+	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/gloo_envoy_wrapper_cve_report.docgen $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
+	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/certgen_cve_report.docgen $(IMAGE_REPO)/certgen:$(VERSION) && \
+	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/sds_cve_report.docgen $(IMAGE_REPO)/sds:$(VERSION) && \
+	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/access_logger_cve_report.docgen $(IMAGE_REPO)/access-logger:$(VERSION)
+
+SCAN_BUCKET ?= solo-gloo-security-scans
+
+.PHONY: publish-security-scan
+publish-security-scan:
+ifeq ($(RELEASE),"true")
+	gsutil cp -r $(SCAN_DIR)/$(SCAN_FILE) gs://$(SCAN_BUCKET)/$(VERSION)
+endif
+
+#----------------------------------------------------------------------------------
 # Third Party License Management
 #----------------------------------------------------------------------------------
 .PHONY: update-licenses
