@@ -122,7 +122,7 @@ run-ci-regression-tests: install-go-tools run-tests
 
 .PHONY: check-format
 check-format:
-	NOT_FORMATTED=$$(gofmt -l ./projects/ ./pkg/ ./test/) && if [ -n "$$NOT_FORMATTED" ]; then echo These files are not formatted: $$NOT_FORMATTED; exit 1; fi
+	NOT_FORMATTED=$$(gofmt -l ./projects/ ./pkg/ ./test/) && if [ -n "$$NOT_FORMATTED" ]; then @echo These files are not formatted: $$NOT_FORMATTED; exit 1; fi
 
 .PHONY: check-spelling
 check-spelling:
@@ -433,6 +433,7 @@ build: gloo glooctl gateway discovery envoyinit certgen ingress
 HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
 HELM_DIR := install/helm/gloo
 HELM_BUCKET := gs://solo-public-helm
+HELM_DEV_BUCKET := gs://solo-public-tagged-helm
 
 # Creates Chart.yaml and values.yaml. See install/helm/README.md for more info.
 .PHONY: generate-helm-files
@@ -459,17 +460,21 @@ push-chart-to-registry: generate-helm-files
 
 .PHONY: fetch-package-and-save-helm
 fetch-package-and-save-helm: generate-helm-files
-ifeq ($(RELEASE),"true")
-	until $$(GENERATION=$$(gsutil ls -a $(HELM_BUCKET)/index.yaml | tail -1 | cut -f2 -d '#') && \
-					gsutil cp -v $(HELM_BUCKET)/index.yaml $(HELM_SYNC_DIR)/index.yaml && \
-					helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR) >> /dev/null && \
-					helm repo index $(HELM_SYNC_DIR) --merge $(HELM_SYNC_DIR)/index.yaml && \
-					gsutil -m rsync $(HELM_SYNC_DIR)/charts $(HELM_BUCKET)/charts && \
-					gsutil -h x-goog-if-generation-match:"$$GENERATION" cp $(HELM_SYNC_DIR)/index.yaml $(HELM_BUCKET)/index.yaml); do \
-		echo "Failed to upload new helm index (updated helm index since last download?). Trying again"; \
-		sleep 2; \
-	done
+BUCKET := $(HELM_BUCKET)
+ifeq ($(RELEASE),"false")
+	BUCKET := $(HELM_DEV_BUCKET)
+	@echo "Uploading helm chart for this branch to solo-public-tagged-helm bucket"
 endif
+	until $$(GENERATION=$$(gsutil ls -a $(BUCKET)/index.yaml | tail -1 | cut -f2 -d '#') && \
+    				gsutil cp -v $(HELM_BUCKET)/index.yaml $(HELM_SYNC_DIR)/index.yaml && \
+    				helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR) >> /dev/null && \
+    				helm repo index $(HELM_SYNC_DIR) --merge $(HELM_SYNC_DIR)/index.yaml && \
+    				gsutil -m rsync $(HELM_SYNC_DIR)/charts $(BUCKET)/charts && \
+    				gsutil -h x-goog-if-generation-match:"$$GENERATION" cp $(HELM_SYNC_DIR)/index.yaml $(BUCKET)/index.yaml); do \
+    	@echo "Failed to upload new helm index (updated helm index since last download?). Trying again"; \
+    	sleep 2; \
+    done
+
 
 #----------------------------------------------------------------------------------
 # Build the Gloo Edge Manifests that are published as release assets
