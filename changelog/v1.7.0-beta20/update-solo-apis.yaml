@@ -1,4 +1,4 @@
 changelog:
   - type: NON_USER_FACING
     description: >
-      Add Trivy security scan to find CVEs in container images and generate github issues and security update docs.
+      Trigger the solo-apis update github workflow on each Gloo release.
