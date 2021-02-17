@@ -38,6 +38,7 @@ Name|Version|License
 [prometheus/prometheus](https://github.com/prometheus/prometheus)|v2.5.0+incompatible|Apache License 2.0
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.4.0|MIT License
 [sergi/go-diff](https://github.com/sergi/go-diff)|v1.1.0|MIT License
+[sirupsen/logrus](https://github.com/sirupsen/logrus)|v1.7.0|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.3.4|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.1.1|Apache License 2.0
 [spf13/pflag](https://github.com/spf13/pflag)|v1.0.5|BSD 3-clause "New" or "Revised" License
