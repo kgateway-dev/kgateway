@@ -15,11 +15,35 @@ z := $(shell mkdir -p $(OUTPUT_DIR))
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 RELEASE := "true"
-ifeq ($(TAGGED_VERSION),)
-	TAGGED_VERSION := $(shell git describe --tags --dirty)
-	RELEASE := "false"
+CREATE_TEST_ASSETS := "true"
+CREATE_ASSETS := "true"
+
+ifeq ($(TEST_ASSET_ID),)
+	CREATE_TEST_ASSETS := "false"
 endif
-VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
+
+# If TAGGED_VERSION does not exist, this is not a release in CI
+ifeq ($(TAGGED_VERSION),)
+  RELEASE := "false"
+    # If we want to create test assets, set version to be PR-unique rather than commit-unique for charts and images
+    ifeq ($(CREATE_TEST_ASSETS), "true")
+      VERSION := $(shell git describe --tags --abbrev=0 | cut -c 2-)-$(TEST_ASSET_ID)
+    else
+      VERSION := $(shell git describe --tags --dirty | cut -c 2-)
+    endif
+else
+  VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
+endif
+
+# only set CREATE_ASSETS to true if RELEASE is true or CREATE_TEST_ASSETS is true
+# workaround since makefile has no Logical OR for conditionals
+ifeq ($(CREATE_TEST_ASSETS), "true")
+else
+  ifeq ($(RELEASE), "true")
+  else
+    CREATE_ASSETS := "false"
+  endif
+endif
 
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.17.0-rc4
 
@@ -433,6 +457,15 @@ build: gloo glooctl gateway discovery envoyinit certgen ingress
 HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
 HELM_DIR := install/helm/gloo
 HELM_BUCKET := gs://solo-public-helm
+HELM_BUCKET_TAGGED := gs://solo-public-tagged-helm
+
+BUCKET := $(HELM_BUCKET)
+# If this is not a release commit, push up helm chart to solo-public-tagged-helm chart repo with
+# name gloo-{{VERSION}}-{{TEST_ASSET_ID}}
+# e.g. gloo-v1.7.0-4300
+ifeq ($(RELEASE), "false")
+  BUCKET := $(HELM_BUCKET_TAGGED)
+endif
 
 # Creates Chart.yaml and values.yaml. See install/helm/README.md for more info.
 .PHONY: generate-helm-files
@@ -459,13 +492,14 @@ push-chart-to-registry: generate-helm-files
 
 .PHONY: fetch-package-and-save-helm
 fetch-package-and-save-helm: generate-helm-files
-ifeq ($(RELEASE),"true")
-	until $$(GENERATION=$$(gsutil ls -a $(HELM_BUCKET)/index.yaml | tail -1 | cut -f2 -d '#') && \
-					gsutil cp -v $(HELM_BUCKET)/index.yaml $(HELM_SYNC_DIR)/index.yaml && \
+ifeq ($(CREATE_ASSETS), "true")
+	@echo "Uploading helm chart to $(BUCKET) with name gloo-$(VERSION).tgz"
+	until $$(GENERATION=$$(gsutil ls -a $(BUCKET)/index.yaml | tail -1 | cut -f2 -d '#') && \
+					gsutil cp -v $(BUCKET)/index.yaml $(HELM_SYNC_DIR)/index.yaml && \
 					helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR) >> /dev/null && \
 					helm repo index $(HELM_SYNC_DIR) --merge $(HELM_SYNC_DIR)/index.yaml && \
-					gsutil -m rsync $(HELM_SYNC_DIR)/charts $(HELM_BUCKET)/charts && \
-					gsutil -h x-goog-if-generation-match:"$$GENERATION" cp $(HELM_SYNC_DIR)/index.yaml $(HELM_BUCKET)/index.yaml); do \
+					gsutil -m rsync $(HELM_SYNC_DIR)/charts $(BUCKET)/charts && \
+					gsutil -h x-goog-if-generation-match:"$$GENERATION" cp $(HELM_SYNC_DIR)/index.yaml $(BUCKET)/index.yaml); do \
 		echo "Failed to upload new helm index (updated helm index since last download?). Trying again"; \
 		sleep 2; \
 	done
@@ -537,7 +571,7 @@ upload-github-release-assets: print-git-info build-cli render-manifests
 #---------
 
 DOCKER_IMAGES :=
-ifeq ($(RELEASE),"true")
+ifeq ($(CREATE_ASSETS),"true")
 	DOCKER_IMAGES := docker
 endif
 
@@ -546,13 +580,14 @@ docker: discovery-docker gateway-docker gloo-docker \
 		gloo-envoy-wrapper-docker certgen-docker sds-docker \
 		ingress-docker access-logger-docker
 
+
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker`
 # to be used for local testing.
 # docker-push is intended to be run by CI
 .PHONY: docker-push
 docker-push: $(DOCKER_IMAGES)
-ifeq ($(RELEASE),"true")
+ifeq ($(CREATE_ASSETS), "true")
 	docker push $(IMAGE_REPO)/gateway:$(VERSION) && \
 	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
@@ -565,7 +600,7 @@ endif
 
 .PHONY: docker-push-extended
 docker-push-extended:
-ifeq ($(RELEASE),"true")
+ifeq ($(CREATE_ASSETS), "true")
 	ci/extended-docker/extended-docker.sh
 endif
 

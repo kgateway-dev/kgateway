@@ -4,7 +4,7 @@ steps:
 # All steps after this must set working directory to use the cloned Gloo Edge source
 
 # $COMMIT_SHA is a default gcloud env var, to run via cloudbuild submit use:
-# gcloud builds submit --substitutions COMMIT_SHA=<commit sha>,REPO_NAME=solo-io/gloo --project solo-public
+# gcloud builds submit --substitutions COMMIT_SHA=<commit sha>,REPO_NAME=solo-io/gloo,_PR_NUM=<<insert PR Number here>> --project solo-public
 - name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.3.0'
   args:
     - "--repo-name"
@@ -112,6 +112,7 @@ steps:
   env:
   - 'DOCKER_CONFIG=/workspace/docker-config'
   - 'TAGGED_VERSION=$TAG_NAME'
+  - 'TEST_ASSET_ID=$_PR_NUM'
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
   waitFor: ['docker-login']
@@ -133,6 +134,7 @@ steps:
     - 'DOCKER_CONFIG=/workspace/docker-config'
     - 'HELM_REPOSITORY_CACHE=/builder/home/.cache/helm/registry'
     - 'TAGGED_VERSION=$TAG_NAME'
+    - 'TEST_ASSET_ID=$_PR_NUM'
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
