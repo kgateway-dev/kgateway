@@ -113,7 +113,7 @@ var _ = Describe("Make", func() {
 		})
 	})
 
-	FContext("HELM_BUCKET", func() {
+	Context("HELM_BUCKET", func() {
 		It("is official helm chart repo on RELEASE", func() {
 			ExpectMakeVarsWithEnvVars([]*EnvVar{
 				{TAGGED_VERSION, "v0.0.1-someVersion"},
