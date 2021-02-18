@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/usage"
 	"github.com/solo-io/gloo/pkg/version"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -109,7 +108,6 @@ func kubeOrFileSettingsClient(ctx context.Context, setupNamespace, settingsDir s
 		Cfg:                cfg,
 		SharedCache:        kube.NewKubeCache(ctx),
 		NamespaceWhitelist: []string{setupNamespace},
-		SkipCrdCreation:    settingsutil.GetSkipCrdCreation(),
 	})
 }
 
