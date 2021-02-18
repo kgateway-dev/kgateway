@@ -15,11 +15,11 @@ z := $(shell mkdir -p $(OUTPUT_DIR))
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 RELEASE := "true"
-CREATE_TEST_ASSETS := "true"
+CREATE_TEST_ASSETS := "false"
 CREATE_ASSETS := "true"
 
-ifeq ($(TEST_ASSET_ID),)
-	CREATE_TEST_ASSETS := "false"
+ifneq ($(TEST_ASSET_ID),)
+	CREATE_TEST_ASSETS := "true"
 endif
 
 # If TAGGED_VERSION does not exist, this is not a release in CI
@@ -39,7 +39,7 @@ endif
 # workaround since makefile has no Logical OR for conditionals
 ifeq ($(CREATE_TEST_ASSETS), "true")
   # set quay image expiration if creating test assets
-QUAY_EXPIRATION_LABEL := --label "quay.expires-after=3w"
+  QUAY_EXPIRATION_LABEL := --label "quay.expires-after=3w"
 else
   ifeq ($(RELEASE), "true")
   else
@@ -459,14 +459,12 @@ build: gloo glooctl gateway discovery envoyinit certgen ingress
 HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
 HELM_DIR := install/helm/gloo
 HELM_BUCKET := gs://solo-public-helm
-HELM_BUCKET_TAGGED := gs://solo-public-tagged-helm
 
-BUCKET := $(HELM_BUCKET)
 # If this is not a release commit, push up helm chart to solo-public-tagged-helm chart repo with
 # name gloo-{{VERSION}}-{{TEST_ASSET_ID}}
 # e.g. gloo-v1.7.0-4300
 ifeq ($(RELEASE), "false")
-  BUCKET := $(HELM_BUCKET_TAGGED)
+	HELM_BUCKET := gs://solo-public-tagged-helm
 endif
 
 # Creates Chart.yaml and values.yaml. See install/helm/README.md for more info.
@@ -495,13 +493,13 @@ push-chart-to-registry: generate-helm-files
 .PHONY: fetch-package-and-save-helm
 fetch-package-and-save-helm: generate-helm-files
 ifeq ($(CREATE_ASSETS), "true")
-	@echo "Uploading helm chart to $(BUCKET) with name gloo-$(VERSION).tgz"
-	until $$(GENERATION=$$(gsutil ls -a $(BUCKET)/index.yaml | tail -1 | cut -f2 -d '#') && \
-					gsutil cp -v $(BUCKET)/index.yaml $(HELM_SYNC_DIR)/index.yaml && \
+	@echo "Uploading helm chart to $(HELM_BUCKET) with name gloo-$(VERSION).tgz"
+	until $$(GENERATION=$$(gsutil ls -a $(HELM_BUCKET)/index.yaml | tail -1 | cut -f2 -d '#') && \
+					gsutil cp -v $(HELM_BUCKET)/index.yaml $(HELM_SYNC_DIR)/index.yaml && \
 					helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR) >> /dev/null && \
 					helm repo index $(HELM_SYNC_DIR) --merge $(HELM_SYNC_DIR)/index.yaml && \
-					gsutil -m rsync $(HELM_SYNC_DIR)/charts $(BUCKET)/charts && \
-					gsutil -h x-goog-if-generation-match:"$$GENERATION" cp $(HELM_SYNC_DIR)/index.yaml $(BUCKET)/index.yaml); do \
+					gsutil -m rsync $(HELM_SYNC_DIR)/charts $(HELM_BUCKET)/charts && \
+					gsutil -h x-goog-if-generation-match:"$$GENERATION" cp $(HELM_SYNC_DIR)/index.yaml $(HELM_BUCKET)/index.yaml); do \
 		echo "Failed to upload new helm index (updated helm index since last download?). Trying again"; \
 		sleep 2; \
 	done
