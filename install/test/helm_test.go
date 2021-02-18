@@ -1045,6 +1045,11 @@ apiVersion: gateway.solo.io/v1
 						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gw))
 					})
 
+					It("gwp hpa disabled by default", func() {
+
+						testManifest.ExpectUnstructured("HorizontalPodAutoscaler", namespace, defaults.GatewayProxyName+"-hpa").To(BeNil())
+					})
+
 					It("can create gwp autoscaling/v1 hpa", func() {
 
 						prepareMakefile(namespace, helmValues{

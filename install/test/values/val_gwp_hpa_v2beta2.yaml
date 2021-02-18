@@ -4,10 +4,6 @@ gatewayProxies:
       apiVersion: autoscaling/v2beta2
       minReplicas: 1
       maxReplicas: 2
-      scaleTargetRef:
-        apiVersion: apps/v1
-        kind: Deployment
-        name: gateway-proxy
       metrics:
         - type: Resource
           resource:

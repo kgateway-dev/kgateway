@@ -297,7 +297,7 @@ type GatewayProxy struct {
 	EnvoyApiVersion                string                       `json:"envoyApiVersion" desc:"Version of the envoy API to use for the xDS transport and resources. Default is V3"`
 	EnvoyBootstrapExtensions       []map[string]interface{}     `json:"envoyBootstrapExtensions" desc:"List of bootstrap extensions to add to envoy bootstrap config. Examples include Wasm Service (https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-wasmservice)."`
 	EnvoyStaticClusters            []map[string]interface{}     `json:"envoyStaticClusters" desc:"List of extra static clusters to be added to envoy bootstrap config. https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#envoy-v3-api-msg-config-cluster-v3-cluster"`
-	HorizontalPodAutoscaler        *HorizontalPodAutoscaler     `json:"horizontalPodAutoscaler,omitempty" desc:"HorizontalPodAutoscaler for the GatewayProxy. Used only when Kind is set to Deployment."`
+	HorizontalPodAutoscaler        *HorizontalPodAutoscaler     `json:"horizontalPodAutoscaler,omitempty" desc:"HorizontalPodAutoscaler for the GatewayProxy. Used only when Kind is set to Deployment. Resources must be set on the gateway-proxy deployment for HorizontalPodAutoscalers to function correctly"`
 }
 
 type GatewayProxyGatewaySettings struct {
@@ -321,7 +321,7 @@ type GatewayProxyDeployment struct {
 }
 
 type HorizontalPodAutoscaler struct {
-	ApiVersion                     string                   `json:"apiVersion,omitempty" desc:"accepts autoscaling/v1 or autoscaling/v2beta2. Defaults to autoscaling/v2beta2."`
+	ApiVersion                     string                   `json:"apiVersion,omitempty" desc:"accepts autoscaling/v1 or autoscaling/v2beta2."`
 	MinReplicas                    int32                    `json:"minReplicas,omitempty" desc:"minReplicas is the lower limit for the number of replicas to which the autoscaler can scale down."`
 	MaxReplicas                    int32                    `json:"maxReplicas,omitempty" desc:"maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up. It cannot be less that minReplicas."`
 	TargetCPUUtilizationPercentage int32                    `json:"targetCPUUtilizationPercentage,omitempty" desc:"target average CPU utilization (represented as a percentage of requested CPU) over all the pods. Used only with apiVersion autoscaling/v1"`
