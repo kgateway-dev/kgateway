@@ -571,14 +571,14 @@ upload-github-release-assets: print-git-info build-cli render-manifests
 #---------
 
 DOCKER_IMAGES :=
-ifeq ($(RELEASE),"true")
+ifeq ($(CREATE_ASSETS),"true")
 	DOCKER_IMAGES := docker
 endif
 
 .PHONY: docker docker-push
 docker: discovery-docker gateway-docker gloo-docker \
-        		gloo-envoy-wrapper-docker certgen-docker sds-docker \
-        		ingress-docker access-logger-docker
+		gloo-envoy-wrapper-docker certgen-docker sds-docker \
+		ingress-docker access-logger-docker
 
 
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
