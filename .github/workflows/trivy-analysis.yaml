@@ -56,7 +56,7 @@ jobs:
       - name: Gloo Docs
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:${{ github.event.release.tag_name }}
+          image-ref: ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:${{ steps.build-docker-image.outputs.VERSION }}
           format: 'template'
           template: '@hack/utils/security_scan_report/markdown.tpl'
           output: ${{ env.SCAN_DIR }}/${{ steps.build-docker-image.outputs.VERSION }}/${{ matrix.image-type }}_cve_report.docgen
