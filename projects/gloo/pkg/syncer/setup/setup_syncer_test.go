@@ -4,7 +4,16 @@ import (
 	"context"
 	"net"
 	"os"
+	"sync"
 	"time"
+
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
+	"github.com/solo-io/solo-kit/test/helpers"
+	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
@@ -31,13 +40,13 @@ var _ = Describe("SetupSyncer", func() {
 		cancel   context.CancelFunc
 		memcache memory.InMemoryResourceCache
 	)
+
 	newContext := func() {
 		if cancel != nil {
 			cancel()
 		}
 		ctx, cancel = context.WithCancel(context.Background())
 		ctx = settingsutil.WithSettings(ctx, settings)
-
 	}
 
 	BeforeEach(func() {
@@ -53,9 +62,11 @@ var _ = Describe("SetupSyncer", func() {
 		memcache = memory.NewInMemoryResourceCache()
 		newContext()
 	})
+
 	AfterEach(func() {
 		cancel()
 	})
+
 	Context("Setup", func() {
 		setupTestGrpcClient := func() func() error {
 			cc, err := grpc.DialContext(ctx, settings.Gloo.XdsBindAddr, grpc.WithInsecure(), grpc.FailOnNonTempDialError(true))
@@ -81,6 +92,7 @@ var _ = Describe("SetupSyncer", func() {
 			Expect(err).NotTo(HaveOccurred())
 			return func() error { return clientstream.Send(req) }
 		}
+
 		Context("XDS tests", func() {
 
 			It("setup can be called twice", func() {
@@ -103,6 +115,7 @@ var _ = Describe("SetupSyncer", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
+
 		Context("Extensions tests", func() {
 			var (
 				plugin1 = &dummyPlugin{}
@@ -175,21 +188,45 @@ var _ = Describe("SetupSyncer", func() {
 
 		Context("Kube tests", func() {
 			var (
-				kubeCoreCache kube.SharedCache
+				kubeCoreCache    kube.SharedCache
+				registerCrdsOnce sync.Once
 			)
+
+			registerCRDs := func() {
+				cfg, err := kubeutils.GetConfig("", "")
+				ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+				apiExts, err := apiext.NewForConfig(cfg)
+				ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+				crdsToRegister := []crd.Crd{
+					v1.UpstreamCrd,
+					v1.UpstreamGroupCrd,
+					v1.ProxyCrd,
+					gatewayv1.GatewayCrd,
+					extauthv1.AuthConfigCrd,
+					v1alpha1.RateLimitConfigCrd,
+				}
+
+				for _, crdToRegister := range crdsToRegister {
+					err = helpers.AddAndRegisterCrd(ctx, crdToRegister, apiExts)
+					ExpectWithOffset(1, err).NotTo(HaveOccurred())
+				}
+			}
+
 			BeforeEach(func() {
 				if os.Getenv("RUN_KUBE_TESTS") != "1" {
 					Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 				}
-				os.Setenv("AUTO_CREATE_CRDS", "1")
 				settings.ConfigSource = &v1.Settings_KubernetesConfigSource{KubernetesConfigSource: &v1.Settings_KubernetesCrds{}}
 				settings.SecretSource = &v1.Settings_KubernetesSecretSource{KubernetesSecretSource: &v1.Settings_KubernetesSecrets{}}
 				settings.ArtifactSource = &v1.Settings_KubernetesArtifactSource{KubernetesArtifactSource: &v1.Settings_KubernetesConfigmaps{}}
 				kubeCoreCache = kube.NewKubeCache(ctx)
-			})
 
-			AfterEach(func() {
-				os.Unsetenv("AUTO_CREATE_CRDS")
+				// Gloo SetupFunc is no longer responsible for registering CRDs. This was not used in production, and
+				// required Gloo having RBAC permissions that it should not have. CRD registration is now only supported
+				// by Helm. Therefore, this test needs to manually register CRDs to test setup.
+				registerCrdsOnce.Do(registerCRDs)
 			})
 
 			It("can be called with core cache", func() {

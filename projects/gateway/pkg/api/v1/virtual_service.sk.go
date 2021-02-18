@@ -148,12 +148,6 @@ var (
 		&VirtualService{})
 )
 
-func init() {
-	if err := crd.AddCrd(VirtualServiceCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	VirtualServiceGVK = schema.GroupVersionKind{
 		Version: "v1",
