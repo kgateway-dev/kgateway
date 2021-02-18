@@ -35,13 +35,15 @@ jobs:
           repository: solo-io/solo-apis
           path: solo-apis
       - name: Update solo-apis
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name }}
         run: |
           cd solo-apis
           make mod-download update-deps; ./hack/sync-gloo-apis.sh; make generate
           git config --local user.name soloio-bot
           git config --local user.email soloio-bot@github.com
           git add .
-          git commit -m "Sync Gloo APIs to ${{ github.event.release.tag_name }}" --allow-empty
-          git checkout -B gloo-v${{ github.event.release.tag_name }}
+          git commit -m "Sync Gloo APIs to ${TAG_NAME}" --allow-empty
+          git checkout -B gloo-v${TAG_NAME}
           git remote add solo-apis git@github.com:solo-io/solo-apis.git
-          git push solo-apis gloo-v${{ github.event.release.tag_name }}
+          git push solo-apis gloo-v${TAG_NAME}
