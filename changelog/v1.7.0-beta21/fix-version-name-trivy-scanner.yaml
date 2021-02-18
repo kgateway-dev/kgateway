@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Use image name from docker build step in trivy scanner workflow
