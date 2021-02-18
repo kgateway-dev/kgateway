@@ -1,9 +1,9 @@
 {{- if .Values.gateway.enabled }}
 {{- range $name, $spec := .Values.gatewayProxies }}
 {{- if $spec.kind.deployment}}
-{{- if $spec.gatewayProxyHorizontalPodAutoscaler }}
+{{- if $spec.horizontalPodAutoscaler }}
 ---
-apiVersion: {{ $spec.gatewayProxyHorizontalPodAutoscaler.apiVersion | default "autoscaling/v2beta2" }}
+apiVersion: {{ $spec.horizontalPodAutoscaler.apiVersion | default "autoscaling/v2beta2" }}
 kind: HorizontalPodAutoscaler
 metadata:
   labels:
@@ -13,22 +13,22 @@ metadata:
   name: {{ $name | kebabcase }}-hpa
   namespace: {{ $.Release.Namespace }}
 spec:
-  maxReplicas: {{ $spec.gatewayProxyHorizontalPodAutoscaler.maxReplicas }}
-  minReplicas: {{ $spec.gatewayProxyHorizontalPodAutoscaler.minReplicas }}
+  minReplicas: {{ $spec.horizontalPodAutoscaler.minReplicas }}
+  maxReplicas: {{ $spec.horizontalPodAutoscaler.maxReplicas }}
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: {{ $name | kebabcase }}
-  {{- if (eq $spec.gatewayProxyHorizontalPodAutoscaler.apiVersion "autoscaling/v1") }}
-  targetCPUUtilizationPercentage: {{ $spec.gatewayProxyHorizontalPodAutoscaler.targetCPUUtilizationPercentage }}
+  {{- if (eq $spec.horizontalPodAutoscaler.apiVersion "autoscaling/v1") }}
+  targetCPUUtilizationPercentage: {{ $spec.horizontalPodAutoscaler.targetCPUUtilizationPercentage }}
   {{- end }}
-  {{- if eq $spec.gatewayProxyHorizontalPodAutoscaler.apiVersion "autoscaling/v2beta2" }}
+  {{- if eq $spec.horizontalPodAutoscaler.apiVersion "autoscaling/v2beta2" }}
   metrics:
-  {{ toYaml $spec.gatewayProxyHorizontalPodAutoscaler.metrics | nindent 4 }}
+  {{ toYaml $spec.horizontalPodAutoscaler.metrics | nindent 4 }}
   {{- end }}
-  {{- if eq $spec.gatewayProxyHorizontalPodAutoscaler.apiVersion "autoscaling/v2beta2" }}
+  {{- if eq $spec.horizontalPodAutoscaler.apiVersion "autoscaling/v2beta2" }}
   behavior:
-  {{ toYaml $spec.gatewayProxyHorizontalPodAutoscaler.behavior | nindent 4 }}
+  {{ toYaml $spec.horizontalPodAutoscaler.behavior | nindent 4 }}
   {{- end }}
 {{- end }}
 {{- end }}

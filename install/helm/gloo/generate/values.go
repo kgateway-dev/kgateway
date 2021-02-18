@@ -270,34 +270,34 @@ type CertGenJob struct {
 }
 
 type GatewayProxy struct {
-	Kind                           *GatewayProxyKind                    `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
-	PodTemplate                    *GatewayProxyPodTemplate             `json:"podTemplate,omitempty"`
-	ConfigMap                      *GatewayProxyConfigMap               `json:"configMap,omitempty"`
-	GlobalDownstreamMaxConnections uint32                               `json:"globalDownstreamMaxConnections,omitempty" desc:"the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine"`
-	HealthyPanicThreshold          int8                                 `json:"healthyPanicThreshold,omitempty" desc:"the percentage of healthy hosts required to load balance based on health status of hosts"`
-	Service                        *GatewayProxyService                 `json:"service,omitempty"`
-	AntiAffinity                   bool                                 `json:"antiAffinity" desc:"configure anti affinity such that pods are preferably not co-located"`
-	Affinity                       []map[string]interface{}             `json:"affinity,omitempty"`
-	Tracing                        *Tracing                             `json:"tracing,omitempty"`
-	GatewaySettings                *GatewayProxyGatewaySettings         `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
-	ExtraEnvoyArgs                 []string                             `json:"extraEnvoyArgs,omitempty" desc:"envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)"`
-	ExtraContainersHelper          string                               `json:"extraContainersHelper,omitempty"`
-	ExtraInitContainersHelper      string                               `json:"extraInitContainersHelper,omitempty"`
-	ExtraVolumes                   []map[string]interface{}             `json:"extraVolumes,omitempty"`
-	ExtraVolumeHelper              string                               `json:"extraVolumeHelper,omitempty"`
-	ExtraListenersHelper           string                               `json:"extraListenersHelper,omitempty"`
-	Stats                          *Stats                               `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway-proxy pod"`
-	ReadConfig                     bool                                 `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
-	ReadConfigMulticluster         bool                                 `json:"readConfigMulticluster" desc:"expose a read-only subset of the envoy admin api to gloo-fed"`
-	ExtraProxyVolumeMounts         []map[string]interface{}             `json:"extraProxyVolumeMounts,omitempty"`
-	ExtraProxyVolumeMountHelper    string                               `json:"extraProxyVolumeMountHelper,omitempty" desc:"name of custom made named template allowing for extra volume mounts on the proxy container"`
-	LoopBackAddress                string                               `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
-	Failover                       Failover                             `json:"failover" desc:"(Enterprise Only): Failover configuration"`
-	Disabled                       bool                                 `json:"disabled,omitempty" desc:"Skips creation of this gateway proxy. Used to turn off gateway proxies created by preceding configurations"`
-	EnvoyApiVersion                string                               `json:"envoyApiVersion" desc:"Version of the envoy API to use for the xDS transport and resources. Default is V3"`
-	EnvoyBootstrapExtensions       []map[string]interface{}             `json:"envoyBootstrapExtensions" desc:"List of bootstrap extensions to add to envoy bootstrap config. Examples include Wasm Service (https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-wasmservice)."`
-	EnvoyStaticClusters            []map[string]interface{}             `json:"envoyStaticClusters" desc:"List of extra static clusters to be added to envoy bootstrap config. https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#envoy-v3-api-msg-config-cluster-v3-cluster"`
-	HorizontalPodAutoscaler        *GatewayProxyHorizontalPodAutoscaler `json:"horizontalPodAutoscaler,omitempty" desc:"HorizontalPodAutoscaler for the GatewayProxy. Used only when Kind is set to Deployment."`
+	Kind                           *GatewayProxyKind            `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
+	PodTemplate                    *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
+	ConfigMap                      *GatewayProxyConfigMap       `json:"configMap,omitempty"`
+	GlobalDownstreamMaxConnections uint32                       `json:"globalDownstreamMaxConnections,omitempty" desc:"the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine"`
+	HealthyPanicThreshold          int8                         `json:"healthyPanicThreshold,omitempty" desc:"the percentage of healthy hosts required to load balance based on health status of hosts"`
+	Service                        *GatewayProxyService         `json:"service,omitempty"`
+	AntiAffinity                   bool                         `json:"antiAffinity" desc:"configure anti affinity such that pods are preferably not co-located"`
+	Affinity                       []map[string]interface{}     `json:"affinity,omitempty"`
+	Tracing                        *Tracing                     `json:"tracing,omitempty"`
+	GatewaySettings                *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
+	ExtraEnvoyArgs                 []string                     `json:"extraEnvoyArgs,omitempty" desc:"envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)"`
+	ExtraContainersHelper          string                       `json:"extraContainersHelper,omitempty"`
+	ExtraInitContainersHelper      string                       `json:"extraInitContainersHelper,omitempty"`
+	ExtraVolumes                   []map[string]interface{}     `json:"extraVolumes,omitempty"`
+	ExtraVolumeHelper              string                       `json:"extraVolumeHelper,omitempty"`
+	ExtraListenersHelper           string                       `json:"extraListenersHelper,omitempty"`
+	Stats                          *Stats                       `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway-proxy pod"`
+	ReadConfig                     bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
+	ReadConfigMulticluster         bool                         `json:"readConfigMulticluster" desc:"expose a read-only subset of the envoy admin api to gloo-fed"`
+	ExtraProxyVolumeMounts         []map[string]interface{}     `json:"extraProxyVolumeMounts,omitempty"`
+	ExtraProxyVolumeMountHelper    string                       `json:"extraProxyVolumeMountHelper,omitempty" desc:"name of custom made named template allowing for extra volume mounts on the proxy container"`
+	LoopBackAddress                string                       `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
+	Failover                       Failover                     `json:"failover" desc:"(Enterprise Only): Failover configuration"`
+	Disabled                       bool                         `json:"disabled,omitempty" desc:"Skips creation of this gateway proxy. Used to turn off gateway proxies created by preceding configurations"`
+	EnvoyApiVersion                string                       `json:"envoyApiVersion" desc:"Version of the envoy API to use for the xDS transport and resources. Default is V3"`
+	EnvoyBootstrapExtensions       []map[string]interface{}     `json:"envoyBootstrapExtensions" desc:"List of bootstrap extensions to add to envoy bootstrap config. Examples include Wasm Service (https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-wasmservice)."`
+	EnvoyStaticClusters            []map[string]interface{}     `json:"envoyStaticClusters" desc:"List of extra static clusters to be added to envoy bootstrap config. https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#envoy-v3-api-msg-config-cluster-v3-cluster"`
+	HorizontalPodAutoscaler        *HorizontalPodAutoscaler     `json:"horizontalPodAutoscaler,omitempty" desc:"HorizontalPodAutoscaler for the GatewayProxy. Used only when Kind is set to Deployment."`
 }
 
 type GatewayProxyGatewaySettings struct {
@@ -320,7 +320,7 @@ type GatewayProxyDeployment struct {
 	*DeploymentSpecSansResources
 }
 
-type GatewayProxyHorizontalPodAutoscaler struct {
+type HorizontalPodAutoscaler struct {
 	ApiVersion                     string                   `json:"apiVersion,omitempty" desc:"accepts autoscaling/v1 or autoscaling/v2beta2. Defaults to autoscaling/v2beta2."`
 	MinReplicas                    int32                    `json:"minReplicas,omitempty" desc:"minReplicas is the lower limit for the number of replicas to which the autoscaler can scale down."`
 	MaxReplicas                    int32                    `json:"maxReplicas,omitempty" desc:"maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up. It cannot be less that minReplicas."`
