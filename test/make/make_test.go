@@ -21,10 +21,11 @@ const (
 	RELEASE            = "RELEASE"
 	HELM_BUCKET        = "HELM_BUCKET"
 	VERSION            = "VERSION"
-
-	REPO_NAME = "gloo"
 )
 
+// NOTE: These tests are mostly to check that the makefile ifeq directive logic is working as expected.
+// It's preferred that if Makefile logic gets anymore complicated, to direct the logic to go code rather than
+// increase the complexity of the makefile.
 var _ = Describe("Make", func() {
 
 	It("should set RELEASE to true iff TAGGED_VERSION is set", func() {
