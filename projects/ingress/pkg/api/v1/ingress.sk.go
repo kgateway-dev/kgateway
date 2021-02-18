@@ -136,12 +136,6 @@ var (
 		&Ingress{})
 )
 
-func init() {
-	if err := crd.AddCrd(IngressCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	IngressGVK = schema.GroupVersionKind{
 		Version: "v1",

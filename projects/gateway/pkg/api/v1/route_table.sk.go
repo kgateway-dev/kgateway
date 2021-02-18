@@ -148,12 +148,6 @@ var (
 		&RouteTable{})
 )
 
-func init() {
-	if err := crd.AddCrd(RouteTableCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	RouteTableGVK = schema.GroupVersionKind{
 		Version: "v1",

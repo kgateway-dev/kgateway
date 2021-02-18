@@ -148,12 +148,6 @@ var (
 		&Settings{})
 )
 
-func init() {
-	if err := crd.AddCrd(SettingsCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	SettingsGVK = schema.GroupVersionKind{
 		Version: "v1",
