@@ -221,7 +221,6 @@ func UpstreamClient(ctx context.Context, namespaces []string) (v1.UpstreamClient
 		Crd:                v1.UpstreamCrd,
 		Cfg:                cfg,
 		SharedCache:        cache,
-		SkipCrdCreation:    true,
 		NamespaceWhitelist: namespaces,
 	})
 	if err != nil {
@@ -265,7 +264,6 @@ func UpstreamGroupClient(ctx context.Context, namespaces []string) (v1.UpstreamG
 		Crd:                v1.UpstreamGroupCrd,
 		Cfg:                cfg,
 		SharedCache:        cache,
-		SkipCrdCreation:    true,
 		NamespaceWhitelist: namespaces,
 	})
 	if err != nil {
@@ -309,7 +307,6 @@ func ProxyClient(ctx context.Context, namespaces []string) (v1.ProxyClient, erro
 		Crd:                v1.ProxyCrd,
 		Cfg:                cfg,
 		SharedCache:        cache,
-		SkipCrdCreation:    true,
 		NamespaceWhitelist: namespaces,
 	})
 	if err != nil {
@@ -353,7 +350,6 @@ func GatewayClient(ctx context.Context, namespaces []string) (gatewayv1.GatewayC
 		Crd:                gatewayv1.GatewayCrd,
 		Cfg:                cfg,
 		SharedCache:        cache,
-		SkipCrdCreation:    true,
 		NamespaceWhitelist: namespaces,
 	})
 	if err != nil {
@@ -397,7 +393,6 @@ func VirtualServiceClient(ctx context.Context, namespaces []string) (gatewayv1.V
 		Crd:                gatewayv1.VirtualServiceCrd,
 		Cfg:                cfg,
 		SharedCache:        cache,
-		SkipCrdCreation:    true,
 		NamespaceWhitelist: namespaces,
 	})
 	if err != nil {
@@ -441,7 +436,6 @@ func RouteTableClient(ctx context.Context, namespaces []string) (gatewayv1.Route
 		Crd:                gatewayv1.RouteTableCrd,
 		Cfg:                cfg,
 		SharedCache:        cache,
-		SkipCrdCreation:    true,
 		NamespaceWhitelist: namespaces,
 	})
 	if err != nil {
@@ -485,7 +479,6 @@ func SettingsClient(ctx context.Context, namespaces []string) (v1.SettingsClient
 		Crd:                v1.SettingsCrd,
 		Cfg:                cfg,
 		SharedCache:        cache,
-		SkipCrdCreation:    true,
 		NamespaceWhitelist: namespaces,
 	})
 	if err != nil {
@@ -614,7 +607,6 @@ func AuthConfigClient(ctx context.Context, namespaces []string) (extauth.AuthCon
 		Crd:                extauth.AuthConfigCrd,
 		Cfg:                cfg,
 		SharedCache:        cache,
-		SkipCrdCreation:    true,
 		NamespaceWhitelist: namespaces,
 	})
 	if err != nil {
@@ -654,7 +646,6 @@ func RateLimitConfigClient(ctx context.Context, namespaces []string) (v1alpha1.R
 		Crd:                v1alpha1.RateLimitConfigCrd,
 		Cfg:                cfg,
 		SharedCache:        kubeCache,
-		SkipCrdCreation:    true,
 		NamespaceWhitelist: namespaces,
 	})
 	if err != nil {
