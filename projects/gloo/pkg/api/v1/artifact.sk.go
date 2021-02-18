@@ -136,12 +136,6 @@ var (
 		&Artifact{})
 )
 
-func init() {
-	if err := crd.AddCrd(ArtifactCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	ArtifactGVK = schema.GroupVersionKind{
 		Version: "v1",

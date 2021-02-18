@@ -148,12 +148,6 @@ var (
 		&AuthConfig{})
 )
 
-func init() {
-	if err := crd.AddCrd(AuthConfigCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	AuthConfigGVK = schema.GroupVersionKind{
 		Version: "v1",

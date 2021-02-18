@@ -136,12 +136,6 @@ var (
 		&Secret{})
 )
 
-func init() {
-	if err := crd.AddCrd(SecretCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	SecretGVK = schema.GroupVersionKind{
 		Version: "v1",

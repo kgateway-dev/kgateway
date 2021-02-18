@@ -148,12 +148,6 @@ var (
 		&Gateway{})
 )
 
-func init() {
-	if err := crd.AddCrd(GatewayCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	GatewayGVK = schema.GroupVersionKind{
 		Version: "v1",
