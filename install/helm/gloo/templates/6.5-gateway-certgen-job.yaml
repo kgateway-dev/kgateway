@@ -26,6 +26,7 @@ spec:
         sidecar.istio.io/inject: "false"
       {{- end }}
     spec:
+      {{- include "gloo.pullSecret" $image | nindent 6 }}
       serviceAccountName: certgen
       containers:
         - image: {{template "gloo.image" $image}}
