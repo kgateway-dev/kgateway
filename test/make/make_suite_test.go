@@ -35,7 +35,7 @@ func ExpectMakeVarsWithEnvVars(envVars []*EnvVar, makeVars []*MakeVar) {
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 		output := strings.TrimSpace(string(out))
 
-		ExpectWithOffset(1, output).To(Equal(makeVar.ExpectedValue))
+		ExpectWithOffset(1, output).To(ContainSubstring(makeVar.ExpectedValue))
 	}
 	for _, envVar := range envVars {
 		err := os.Unsetenv(envVar.Name)
