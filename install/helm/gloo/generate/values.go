@@ -298,6 +298,7 @@ type GatewayProxy struct {
 	EnvoyBootstrapExtensions       []map[string]interface{}     `json:"envoyBootstrapExtensions" desc:"List of bootstrap extensions to add to envoy bootstrap config. Examples include Wasm Service (https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-wasmservice)."`
 	EnvoyStaticClusters            []map[string]interface{}     `json:"envoyStaticClusters" desc:"List of extra static clusters to be added to envoy bootstrap config. https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#envoy-v3-api-msg-config-cluster-v3-cluster"`
 	HorizontalPodAutoscaler        *HorizontalPodAutoscaler     `json:"horizontalPodAutoscaler,omitempty" desc:"HorizontalPodAutoscaler for the GatewayProxy. Used only when Kind is set to Deployment. Resources must be set on the gateway-proxy deployment for HorizontalPodAutoscalers to function correctly"`
+	PodDisruptionBudget            *PodDisruptionBudget         `json:"podDisruptionBudget,omitempty" desc:"PodDisruptionBudget is an object to define the max disruption that can be caused to the gate-proxy pods”`
 }
 
 type GatewayProxyGatewaySettings struct {
@@ -327,6 +328,11 @@ type HorizontalPodAutoscaler struct {
 	TargetCPUUtilizationPercentage int32                    `json:"targetCPUUtilizationPercentage,omitempty" desc:"target average CPU utilization (represented as a percentage of requested CPU) over all the pods. Used only with apiVersion autoscaling/v1"`
 	Metrics                        []map[string]interface{} `json:"metrics,omitempty" desc:"metrics contains the specifications for which to use to calculate the desired replica count (the maximum replica count across all metrics will be used). Used only with apiVersion autoscaling/v2beta2"`
 	Behavior                       map[string]interface{}   `json:"behavior,omitempty" desc:"behavior configures the scaling behavior of the target in both Up and Down directions (scaleUp and scaleDown fields respectively). Used only with apiVersion autoscaling/v2beta2"`
+}
+
+type PodDisruptionBudget struct {
+	minAvailable   int32 `json:"minAvailable,omitempty" desc:"An eviction is allowed if at least \"minAvailable\" pods selected by \"selector\" will still be available after the eviction, i.e. even in the absence of the evicted pod. So for example you can prevent all voluntary evictions by specifying \"100%\"."`
+	maxUnavailable int32 `json:"maxUnavailable,omitempty" desc:"An eviction is allowed if at most \"maxUnavailable\" pods selected by \"selector\" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with \"minAvailable\"."`
 }
 
 type DaemonSetSpec struct {

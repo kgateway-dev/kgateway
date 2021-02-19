@@ -1127,6 +1127,59 @@ apiVersion: autoscaling/v2beta2
 
 					})
 
+					It("gwp pdb disabled by default", func() {
+
+						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-pdb").To(BeNil())
+					})
+
+					It("can create gwp pdb with minAvailable", func() {
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podDisruptionBudget.minAvailable=2",
+							},
+						})
+
+						pdb := makeUnstructured(`
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: gateway-proxy-pdb
+  namespace: gloo-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      gloo: gateway-proxy
+`)
+
+						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-pdb").To(BeEquivalentTo(pdb))
+					})
+
+					It("can create gwp pdb with maxUnavailable", func() {
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable=2",
+							},
+						})
+
+						pdb := makeUnstructured(`
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: gateway-proxy-pdb
+  namespace: gloo-system
+spec:
+  maxUnavailable: 2
+  selector:
+    matchLabels:
+      gloo: gateway-proxy
+`)
+
+						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-pdb").To(BeEquivalentTo(pdb))
+					})
+
 					It("can render with custom listener yaml", func() {
 						newGatewayProxyName := "test-name"
 						vsList := []*core.ResourceRef{

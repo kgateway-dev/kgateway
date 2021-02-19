@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    description: Added PodDisruptionBudget helm values for the gateway-proxy.
+    issueLink: https://github.com/solo-io/gloo/issues/2229
