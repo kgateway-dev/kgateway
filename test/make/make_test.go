@@ -28,7 +28,6 @@ const (
 // It's preferred that if Makefile logic gets anymore complicated, to direct the logic to go code rather than
 // increase the complexity of the makefile.
 var _ = Describe("Make", func() {
-	defer GinkgoRecover()
 
 	It("should set RELEASE to true iff TAGGED_VERSION is set", func() {
 		ExpectMakeVarsWithEnvVars([]*EnvVar{
@@ -94,7 +93,7 @@ var _ = Describe("Make", func() {
 			})
 		})
 
-		When("neither TAGGED_VERSION nor TEST_ASSET_ID are set", func() {
+		It("neither TAGGED_VERSION nor TEST_ASSET_ID are set", func() {
 
 			out, err := exec.Command("git", "describe", "--tags", "--dirty").CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
