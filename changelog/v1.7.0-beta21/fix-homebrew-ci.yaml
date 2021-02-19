@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix homebrew formula to update homebrew-core with stable gloo release
+    issueLink: https://github.com/solo-io/gloo/issues/4047
