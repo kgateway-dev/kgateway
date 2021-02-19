@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestChecks(t *testing.T) {
+func TestMake(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Make Suite")
 }

@@ -23,16 +23,16 @@ ifneq ($(TEST_ASSET_ID),)
 endif
 
 # If TAGGED_VERSION does not exist, this is not a release in CI
-ifneq ($(TAGGED_VERSION),)
-    VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
-else
-	RELEASE := "true"
+ifeq ($(TAGGED_VERSION),)
 	# If we want to create test assets, set version to be PR-unique rather than commit-unique for charts and images
 	ifeq ($(CREATE_TEST_ASSETS), "true")
 	  VERSION ?= $(shell git describe --tags --abbrev=0 | cut -c 2-)-$(TEST_ASSET_ID)
 	else
 	  VERSION ?= $(shell git describe --tags --dirty | cut -c 2-)
 	endif
+else
+	RELEASE := "true"
+	VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 endif
 
 # only set CREATE_ASSETS to true if RELEASE is true or CREATE_TEST_ASSETS is true
