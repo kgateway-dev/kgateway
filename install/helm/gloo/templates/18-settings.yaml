@@ -18,7 +18,7 @@ spec:
     enableRestEds: {{ .Values.settings.enableRestEds }}
 {{- end }}
 {{- /* .Values.settings.replaceInvalidRoutes for backwards compatibility */}}
-{{- if or (.Values.settings.InvalidConfigPolicy) (.Values.settings.replaceInvalidRoutes) }}
+{{- if or (.Values.settings.invalidConfigPolicy) (.Values.settings.replaceInvalidRoutes) }}
     invalidConfigPolicy:
 {{ toYaml .Values.settings.invalidConfigPolicy | indent 6}}
 {{- end }}
