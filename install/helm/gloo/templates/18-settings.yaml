@@ -20,6 +20,9 @@ spec:
 {{- /* .Values.settings.replaceInvalidRoutes for backwards compatibility */}}
 {{- if or (.Values.settings.invalidConfigPolicy) (.Values.settings.replaceInvalidRoutes) }}
     invalidConfigPolicy:
+    {{- if .Values.settings.replaceInvalidRoutes }}
+      replaceInvalidRoutes: {{ .Values.settings.replaceInvalidRoutes }}
+    {{- end }}
 {{ toYaml .Values.settings.invalidConfigPolicy | indent 6}}
 {{- end }}
     disableKubernetesDestinations: {{ .Values.settings.disableKubernetesDestinations | default false }}

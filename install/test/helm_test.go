@@ -2141,6 +2141,8 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"settings.replaceInvalidRoutes=true",
+								"settings.invalidConfigPolicy.invalidRouteResponseBody=Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.",
+								"settings.invalidConfigPolicy.invalidRouteResponseCode=404",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
@@ -2151,6 +2153,8 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"settings.invalidConfigPolicy.replaceInvalidRoutes=true",
+								"settings.invalidConfigPolicy.invalidRouteResponseBody=Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.",
+								"settings.invalidConfigPolicy.invalidRouteResponseCode=404",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
@@ -2241,6 +2245,9 @@ spec:
     enableRestEds: true
     disableKubernetesDestinations: false
     disableProxyGarbageCollection: false
+    invalidConfigPolicy:
+      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run ` + "`glooctl check`" + ` to find and fix config errors.
+      invalidRouteResponseCode: 404
   discoveryNamespace: gloo-system
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
