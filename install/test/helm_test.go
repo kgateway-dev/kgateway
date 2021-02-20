@@ -2150,7 +2150,7 @@ spec:
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/gateway_settings.yaml", namespace)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"settings.InvalidConfigPolicy.replaceInvalidRoutes=true",
+								"settings.invalidConfigPolicy.replaceInvalidRoutes=true",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
