@@ -2136,6 +2136,16 @@ spec:
 
 					})
 
+					It("creates settings with the gateway config with old mapping", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/gateway_settings.yaml", namespace)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.replaceInvalidRoutes=true",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
 					It("creates settings with the gateway config", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/gateway_settings.yaml", namespace)
 						prepareMakefile(namespace, helmValues{
