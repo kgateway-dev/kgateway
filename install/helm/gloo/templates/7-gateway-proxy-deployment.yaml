@@ -352,9 +352,9 @@ spec:
           - name: CA_ADDR
             value: istiod.istio-system.svc:15012
           - name: ISTIO_META_MESH_ID
-            value: cluster.local
+            value: {{ $spec.istioMetaMeshId | default "cluster.local"}}
           - name: ISTIO_META_CLUSTER_ID
-            value: Kubernetes
+            value: {{ $spec.istioMetaClusterId | default "Kubernetes"}}
           - name: POD_NAME
             valueFrom:
               fieldRef:
