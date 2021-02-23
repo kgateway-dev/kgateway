@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Deep merge default gateway proxy values into the proxy templates
+    issueLink: https://github.com/solo-io/gloo/issues/3142

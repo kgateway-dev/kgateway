@@ -1,4 +1,6 @@
-{{- range $name, $spec := .Values.gatewayProxies }}
+{{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{- $spec := deepCopy $gatewayProxy | merge $gatewaySpec -}}
 {{- if and $spec.gatewaySettings (not $spec.disabled) }}
 {{$gatewaySettings := $spec.gatewaySettings}}
 {{- if not $gatewaySettings.disableGeneratedGateways -}}
@@ -32,7 +34,7 @@ spec:
   {{ toYaml $gatewaySettings.options | indent 4 }}
   {{- end }}
   {{- if $gatewaySettings.accessLoggingService }}
-    accessLoggingService:  
+    accessLoggingService:
   {{ toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
   {{- end }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
@@ -69,7 +71,7 @@ spec:
   {{ toYaml $gatewaySettings.options | indent 4 }}
   {{- end }}
   {{- if $gatewaySettings.accessLoggingService }}
-    accessLoggingService:  
+    accessLoggingService:
   {{ toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
   {{- end }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
