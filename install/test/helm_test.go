@@ -1898,6 +1898,152 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
+					It("ISTIO_META_MESH_ID env var default value set", func() {
+
+						var value = "cluster.local"
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true", // adds gloo/gateway proxy side containers
+								"global.istioSDS.enabled=true", // add default itsio sds sidecar
+							},
+						})
+
+						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+							return resource.GetKind() == "Deployment"
+						}).ExpectAll(func(deployment *unstructured.Unstructured) {
+							deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+							//get ISTIO_META_MESH_ID env var value
+							var istioMetaMeshID string
+							for _, c := range structuredDeployment.Spec.Template.Spec.Containers {
+								for _, e := range c.Env {
+									if e.Name == "ISTIO_META_MESH_ID" {
+										istioMetaMeshID = e.Value
+										break
+									}
+								}
+							}
+							if structuredDeployment.GetName() == "gateway-proxy" {
+								Expect(istioMetaMeshID).To(Equal(value), "ISTIO_META_MESH_ID should equal "+value)
+							}
+
+						})
+					})
+
+					It("can set ISTIO_META_MESH_ID env var", func() {
+
+						var value = "foo"
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true", // adds gloo/gateway proxy side containers
+								"global.istioSDS.enabled=true", // add default itsio sds sidecar
+								"gatewayProxies.gatewayProxy.istioMetaMeshId=" + value,
+							},
+						})
+
+						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+							return resource.GetKind() == "Deployment"
+						}).ExpectAll(func(deployment *unstructured.Unstructured) {
+							deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+							//get ISTIO_META_MESH_ID env var value
+							var istioMetaMeshID string
+							for _, c := range structuredDeployment.Spec.Template.Spec.Containers {
+								for _, e := range c.Env {
+									if e.Name == "ISTIO_META_MESH_ID" {
+										istioMetaMeshID = e.Value
+										break
+									}
+								}
+							}
+							if structuredDeployment.GetName() == "gateway-proxy" {
+								Expect(istioMetaMeshID).To(Equal(value), "ISTIO_META_MESH_ID should equal "+value)
+							}
+
+						})
+					})
+
+					It("ISTIO_META_CLUSTER_ID env var default value set", func() {
+
+						var value = "Kubernetes"
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true", // adds gloo/gateway proxy side containers
+								"global.istioSDS.enabled=true", // add default itsio sds sidecar
+							},
+						})
+
+						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+							return resource.GetKind() == "Deployment"
+						}).ExpectAll(func(deployment *unstructured.Unstructured) {
+							deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+							//get ISTIO_META_CLUSTER_ID env var value
+							var istioMetaClusterID string
+							for _, c := range structuredDeployment.Spec.Template.Spec.Containers {
+								for _, e := range c.Env {
+									if e.Name == "ISTIO_META_CLUSTER_ID" {
+										istioMetaClusterID = e.Value
+										break
+									}
+								}
+							}
+							if structuredDeployment.GetName() == "gateway-proxy" {
+								Expect(istioMetaClusterID).To(Equal(value), "ISTIO_META_CLUSTER_ID should equal "+value)
+							}
+
+						})
+					})
+
+					It("can set ISTIO_META_CLUSTER_ID env var", func() {
+
+						var value = "bar"
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true", // adds gloo/gateway proxy side containers
+								"global.istioSDS.enabled=true", // add default itsio sds sidecar
+								"gatewayProxies.gatewayProxy.istioMetaClusterId=" + value,
+							},
+						})
+
+						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+							return resource.GetKind() == "Deployment"
+						}).ExpectAll(func(deployment *unstructured.Unstructured) {
+							deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+							//get ISTIO_META_CLUSTER_ID env var value
+							var istioMetaClusterID string
+							for _, c := range structuredDeployment.Spec.Template.Spec.Containers {
+								for _, e := range c.Env {
+									if e.Name == "ISTIO_META_CLUSTER_ID" {
+										istioMetaClusterID = e.Value
+										break
+									}
+								}
+							}
+							if structuredDeployment.GetName() == "gateway-proxy" {
+								Expect(istioMetaClusterID).To(Equal(value), "ISTIO_META_CLUSTER_ID should equal "+value)
+							}
+
+						})
+					})
+
 					It("can add extra volume mounts to the gateway-proxy container deployment", func() {
 
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(
