@@ -159,6 +159,8 @@ type Add struct {
 type Istio struct {
 	Upstream  string // upstream for which we are changing the istio mTLS settings
 	Namespace string // namespace in which istio is installed
+	IstioMetaMeshId string // IstioMetaMeshId sets ISTIO_META_MESH_ID env var
+	IstioMetaClusterId string // IstioMetaMeshId sets ISTIO_META_CLUSTER_ID env var
 }
 
 type InputRoute struct {
