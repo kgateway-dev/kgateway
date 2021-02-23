@@ -80,8 +80,8 @@ func Inject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 func istioInject(args []string, opts *options.Options) error {
 	glooNS := opts.Metadata.Namespace
 	istioNS := opts.Istio.Namespace
-	istioMetaMeshID := opts.Istio.IstioMetaMeshId
-	istioMetaClusterID := opts.Istio.IstioMetaClusterId
+	istioMetaMeshID := getIstioMetaMeshID(opts.Istio.IstioMetaMeshId)
+	istioMetaClusterID := getIstioMetaClusterID(opts.Istio.IstioMetaClusterId)
 
 	client := helpers.MustKubeClient()
 	_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, glooNS, metav1.GetOptions{})
