@@ -148,12 +148,6 @@ var (
 		&Proxy{})
 )
 
-func init() {
-	if err := crd.AddCrd(ProxyCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	ProxyGVK = schema.GroupVersionKind{
 		Version: "v1",

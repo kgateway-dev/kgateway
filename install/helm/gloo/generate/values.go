@@ -2,6 +2,7 @@ package generate
 
 import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	appsv1 "k8s.io/api/core/v1"
 )
 
@@ -276,16 +277,19 @@ type GatewayProxy struct {
 	HealthyPanicThreshold          int8                         `json:"healthyPanicThreshold,omitempty" desc:"the percentage of healthy hosts required to load balance based on health status of hosts"`
 	Service                        *GatewayProxyService         `json:"service,omitempty"`
 	AntiAffinity                   bool                         `json:"antiAffinity" desc:"configure anti affinity such that pods are preferably not co-located"`
+	Affinity                       []map[string]interface{}     `json:"affinity,omitempty"`
 	Tracing                        *Tracing                     `json:"tracing,omitempty"`
 	GatewaySettings                *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
 	ExtraEnvoyArgs                 []string                     `json:"extraEnvoyArgs,omitempty" desc:"envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)"`
 	ExtraContainersHelper          string                       `json:"extraContainersHelper,omitempty"`
 	ExtraInitContainersHelper      string                       `json:"extraInitContainersHelper,omitempty"`
+	ExtraVolumes                   []map[string]interface{}     `json:"extraVolumes,omitempty"`
 	ExtraVolumeHelper              string                       `json:"extraVolumeHelper,omitempty"`
 	ExtraListenersHelper           string                       `json:"extraListenersHelper,omitempty"`
 	Stats                          *Stats                       `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway-proxy pod"`
 	ReadConfig                     bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
 	ReadConfigMulticluster         bool                         `json:"readConfigMulticluster" desc:"expose a read-only subset of the envoy admin api to gloo-fed"`
+	ExtraProxyVolumeMounts         []map[string]interface{}     `json:"extraProxyVolumeMounts,omitempty"`
 	ExtraProxyVolumeMountHelper    string                       `json:"extraProxyVolumeMountHelper,omitempty" desc:"name of custom made named template allowing for extra volume mounts on the proxy container"`
 	LoopBackAddress                string                       `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 	Failover                       Failover                     `json:"failover" desc:"(Enterprise Only): Failover configuration"`
@@ -293,15 +297,20 @@ type GatewayProxy struct {
 	EnvoyApiVersion                string                       `json:"envoyApiVersion" desc:"Version of the envoy API to use for the xDS transport and resources. Default is V3"`
 	EnvoyBootstrapExtensions       []map[string]interface{}     `json:"envoyBootstrapExtensions" desc:"List of bootstrap extensions to add to envoy bootstrap config. Examples include Wasm Service (https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-wasmservice)."`
 	EnvoyStaticClusters            []map[string]interface{}     `json:"envoyStaticClusters" desc:"List of extra static clusters to be added to envoy bootstrap config. https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#envoy-v3-api-msg-config-cluster-v3-cluster"`
+	HorizontalPodAutoscaler        *HorizontalPodAutoscaler     `json:"horizontalPodAutoscaler,omitempty" desc:"HorizontalPodAutoscaler for the GatewayProxy. Used only when Kind is set to Deployment. Resources must be set on the gateway-proxy deployment for HorizontalPodAutoscalers to function correctly"`
+	PodDisruptionBudget            *PodDisruptionBudget         `json:"podDisruptionBudget,omitempty" desc:"PodDisruptionBudget is an object to define the max disruption that can be caused to the gate-proxy pods”`
 }
 
 type GatewayProxyGatewaySettings struct {
-	DisableGeneratedGateways bool              `json:"disableGeneratedGateways" desc:"set to true to disable the gateway generation for a gateway proxy"`
-	IPv4Only                 bool              `json:"ipv4Only,omitempty" desc:"set to true if your network allows ipv4 addresses only. Sets the Gateway spec's bindAddress to 0.0.0.0 instead of ::"`
-	UseProxyProto            bool              `json:"useProxyProto" desc:"use proxy protocol"`
-	CustomHttpGateway        string            `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
-	CustomHttpsGateway       string            `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
-	GatewayOptions           v1.GatewayOptions `json:"options,omitempty" desc:"custom options for http(s) gateways"`
+	DisableGeneratedGateways bool                     `json:"disableGeneratedGateways" desc:"set to true to disable the gateway generation for a gateway proxy"`
+	DisableHttpGateway       bool                     `json:"disableHttpGateway,omitempty" desc:"Set to true to disable http gateway generation."`
+	DisableHttpsGateway      bool                     `json:"disableHttpsGateway,omitempty" desc:"Set to true to disable https gateway generation."`
+	IPv4Only                 bool                     `json:"ipv4Only,omitempty" desc:"set to true if your network allows ipv4 addresses only. Sets the Gateway spec's bindAddress to 0.0.0.0 instead of ::"`
+	UseProxyProto            bool                     `json:"useProxyProto" desc:"use proxy protocol"`
+	CustomHttpGateway        string                   `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
+	CustomHttpsGateway       string                   `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
+	GatewayOptions           v1.GatewayOptions        `json:"options,omitempty" desc:"custom options for http(s) gateways"`
+	AccessLoggingService     als.AccessLoggingService `json:"accessLoggingService,omitempty"`
 }
 
 type GatewayProxyKind struct {
@@ -310,6 +319,20 @@ type GatewayProxyKind struct {
 }
 type GatewayProxyDeployment struct {
 	*DeploymentSpecSansResources
+}
+
+type HorizontalPodAutoscaler struct {
+	ApiVersion                     string                   `json:"apiVersion,omitempty" desc:"accepts autoscaling/v1 or autoscaling/v2beta2."`
+	MinReplicas                    int32                    `json:"minReplicas,omitempty" desc:"minReplicas is the lower limit for the number of replicas to which the autoscaler can scale down."`
+	MaxReplicas                    int32                    `json:"maxReplicas,omitempty" desc:"maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up. It cannot be less that minReplicas."`
+	TargetCPUUtilizationPercentage int32                    `json:"targetCPUUtilizationPercentage,omitempty" desc:"target average CPU utilization (represented as a percentage of requested CPU) over all the pods. Used only with apiVersion autoscaling/v1"`
+	Metrics                        []map[string]interface{} `json:"metrics,omitempty" desc:"metrics contains the specifications for which to use to calculate the desired replica count (the maximum replica count across all metrics will be used). Used only with apiVersion autoscaling/v2beta2"`
+	Behavior                       map[string]interface{}   `json:"behavior,omitempty" desc:"behavior configures the scaling behavior of the target in both Up and Down directions (scaleUp and scaleDown fields respectively). Used only with apiVersion autoscaling/v2beta2"`
+}
+
+type PodDisruptionBudget struct {
+	minAvailable   int32 `json:"minAvailable,omitempty" desc:"An eviction is allowed if at least \"minAvailable\" pods selected by \"selector\" will still be available after the eviction, i.e. even in the absence of the evicted pod. So for example you can prevent all voluntary evictions by specifying \"100%\"."`
+	maxUnavailable int32 `json:"maxUnavailable,omitempty" desc:"An eviction is allowed if at most \"maxUnavailable\" pods selected by \"selector\" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with \"minAvailable\"."`
 }
 
 type DaemonSetSpec struct {
@@ -357,6 +380,7 @@ type GatewayProxyService struct {
 	LoadBalancerIP           string            `json:"loadBalancerIP,omitempty" desc:"IP address of the load balancer"`
 	LoadBalancerSourceRanges []string          `json:"loadBalancerSourceRanges,omitempty" desc:"List of IP CIDR ranges that are allowed to access the load balancer"`
 	CustomPorts              []interface{}     `json:"customPorts,omitempty" desc:"List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)"`
+	ExternalIPs              []string          `json:"externalIPs,omitempty" desc:"externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service"`
 }
 
 type Tracing struct {

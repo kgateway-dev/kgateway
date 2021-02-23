@@ -148,12 +148,6 @@ var (
 		&Upstream{})
 )
 
-func init() {
-	if err := crd.AddCrd(UpstreamCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	UpstreamGVK = schema.GroupVersionKind{
 		Version: "v1",

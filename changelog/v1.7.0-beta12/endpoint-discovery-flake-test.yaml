@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Add a test that checks for the endpoint discovery flake, where clusters
+      sometimes don't warm up with discovered endpoints.
+    issueLink: https://github.com/solo-io/gloo/issues/4151
+    resolvesIssue: false 

@@ -97,10 +97,9 @@ func initGlooClients(ctx context.Context) (v1.UpstreamClient, v1.ProxyClient) {
 
 	// initialize the CRD client for Gloo Upstreams
 	upstreamClient, err := v1.NewUpstreamClient(ctx, &factory.KubeResourceClientFactory{
-		Crd:             v1.UpstreamCrd,
-		Cfg:             restConfig,
-		SharedCache:     cache,
-		SkipCrdCreation: true,
+		Crd:         v1.UpstreamCrd,
+		Cfg:         restConfig,
+		SharedCache: cache,
 	})
 	must(err)
 
@@ -110,10 +109,9 @@ func initGlooClients(ctx context.Context) (v1.UpstreamClient, v1.ProxyClient) {
 
 	// initialize the CRD client for Gloo Proxies
 	proxyClient, err := v1.NewProxyClient(ctx, &factory.KubeResourceClientFactory{
-		Crd:             v1.ProxyCrd,
-		Cfg:             restConfig,
-		SharedCache:     cache,
-		SkipCrdCreation: true,
+		Crd:         v1.ProxyCrd,
+		Cfg:         restConfig,
+		SharedCache: cache,
 	})
 	must(err)
 

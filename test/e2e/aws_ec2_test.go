@@ -10,6 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/rotisserie/eris"
@@ -75,6 +76,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		if err != nil {
 			Skip("no AWS creds available")
 		}
+
 		// role arn format: "arn:aws:iam::[account_number]:role/[role_name]"
 		roleArn = os.Getenv("AWS_ARN_ROLE_1")
 		if roleArn == "" {
@@ -134,7 +136,6 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		var opts clients.WriteOpts
 		_, err := testClients.UpstreamClient.Write(upstream, opts)
 		Expect(err).NotTo(HaveOccurred())
-
 	}
 
 	validateUrl := func(url, substring string) {
@@ -226,6 +227,21 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		var opts clients.WriteOpts
 		_, err = testClients.ProxyClient.Write(proxy, opts)
 		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() (core.Status, error) {
+			proxy, err := testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
+			if err != nil {
+				return core.Status{}, err
+			}
+			if proxy.GetStatus() == nil {
+				return core.Status{}, nil
+			}
+			return *(proxy.GetStatus()), nil
+		}, "60s", "0.5s").Should(MatchFields(IgnoreExtras, Fields{
+			"Reason": BeEmpty(),
+			"State":  Equal(core.Status_Accepted),
+		}))
+
 		validateEc2Endpoint(defaults.HttpPort, "Counts")
 	})
 

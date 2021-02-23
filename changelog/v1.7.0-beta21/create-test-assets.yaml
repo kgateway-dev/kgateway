@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Temp helm charts for all gloo oss PRs are uploaded to solo-public-tagged-helm gs bucket.
+      The naming convention for these charts are gloo-{{release}}-{{pr number}}, e.g. gloo-1.7.0-beta19-4300 for this PR.
+      In addition, tags for all gloo images are created in quay with the same naming scheme.

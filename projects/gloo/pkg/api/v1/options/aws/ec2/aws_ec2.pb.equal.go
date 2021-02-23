@@ -116,12 +116,18 @@ func (m *TagFilter) Equal(that interface{}) bool {
 	switch m.Spec.(type) {
 
 	case *TagFilter_Key:
+		if _, ok := target.Spec.(*TagFilter_Key); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
 			return false
 		}
 
 	case *TagFilter_KvPair_:
+		if _, ok := target.Spec.(*TagFilter_KvPair_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetKvPair()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetKvPair()) {
@@ -133,6 +139,11 @@ func (m *TagFilter) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.Spec != target.Spec {
+			return false
+		}
 	}
 
 	return true

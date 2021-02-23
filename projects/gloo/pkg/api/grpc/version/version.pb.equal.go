@@ -57,6 +57,9 @@ func (m *ServerVersion) Equal(that interface{}) bool {
 	switch m.VersionType.(type) {
 
 	case *ServerVersion_Kubernetes:
+		if _, ok := target.VersionType.(*ServerVersion_Kubernetes); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetKubernetes()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetKubernetes()) {
@@ -68,6 +71,11 @@ func (m *ServerVersion) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.VersionType != target.VersionType {
+			return false
+		}
 	}
 
 	return true

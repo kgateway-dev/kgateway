@@ -28,6 +28,7 @@ weight: 5
 - [RateLimits](#ratelimits)
 - [ObservabilityOptions](#observabilityoptions)
 - [GrafanaIntegration](#grafanaintegration)
+- [UpstreamOptions](#upstreamoptions)
 - [GlooOptions](#gloooptions)
 - [AWSOptions](#awsoptions)
 - [InvalidConfigPolicy](#invalidconfigpolicy)
@@ -79,6 +80,7 @@ Represents global settings for all the Gloo components.
 "metadata": .core.solo.io.Metadata
 "status": .core.solo.io.Status
 "observabilityOptions": .gloo.solo.io.Settings.ObservabilityOptions
+"upstreamOptions": .gloo.solo.io.UpstreamOptions
 
 ```
 
@@ -113,6 +115,7 @@ Represents global settings for all the Gloo components.
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |
 | `observabilityOptions` | [.gloo.solo.io.Settings.ObservabilityOptions](../settings.proto.sk/#observabilityoptions) | Provides settings related to the observability deployment (enterprise only). |
+| `upstreamOptions` | [.gloo.solo.io.UpstreamOptions](../settings.proto.sk/#upstreamoptions) | Default configuration to use for upstreams, when not provided by specific upstream When these properties are defined on an upstream, this configuration will be ignored. |
 
 
 
@@ -454,6 +457,25 @@ Provides settings related to the observability pod's interactions with grafana
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `defaultDashboardFolderId` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | (UInt32Value) Grafana allows dashboards to be added to specific folders by specifying that folder's ID If unset, automatic upstream dashboards are generated in the general folder (folderId: 0). If set, the observability deployment will try to create/move all upstreams without their own folderId to the folder specified here, after verifying that a folder with such an ID exists. Be aware that grafana requires a folders ID, which should not be confused with the similarly-named and more easily accessible folder UID value. If individual upstream dashboards need to be placed specific granafa folders, they can be given their own folder IDs by annotating the upstreams. The annotation key must be 'observability.solo.io/dashboard_folder_id' and the value must be the folder ID. Folder IDs can be retrieved from grafana with a pair of terminal commands: 1. Port forward the grafana deployment to surface its API: kubectl -n gloo-system port-forward deployment/glooe-grafana 3000 2. Request all folder data (after admin:admin is replaced with the correct credentials): curl http://admin:admin@localhost:3000/api/folders. |
+
+
+
+
+---
+### UpstreamOptions
+
+ 
+Default configuration to use for upstreams, when not provided by a specific upstream
+When these properties are defined on a specific upstream, this configuration will be ignored
+
+```yaml
+"sslParameters": .gloo.solo.io.SslParameters
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `sslParameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk/#sslparameters) | Default ssl parameter configuration to use for upstreams. |
 
 
 

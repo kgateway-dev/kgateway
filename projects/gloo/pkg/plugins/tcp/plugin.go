@@ -31,7 +31,6 @@ func NewPlugin(sslConfigTranslator utils.SslConfigTranslator) *Plugin {
 var (
 	_ plugins.Plugin                    = (*Plugin)(nil)
 	_ plugins.ListenerFilterChainPlugin = (*Plugin)(nil)
-	_ plugins.ListenerPlugin            = (*Plugin)(nil)
 
 	NoDestinationTypeError = func(host *v1.TcpHost) error {
 		return eris.Errorf("no destination type was specified for tcp host %v", host)
@@ -47,33 +46,6 @@ type Plugin struct {
 }
 
 func (p *Plugin) Init(_ plugins.InitParams) error {
-	return nil
-}
-
-func (p *Plugin) ProcessListener(_ plugins.Params, in *v1.Listener, out *envoy_config_listener_v3.Listener) error {
-	// Only focused on Tcp listeners, so return otherwise
-	tcpListener := in.GetTcpListener()
-	if tcpListener == nil {
-		return nil
-	}
-
-	var sniCluster, sniMatch bool
-	for _, host := range tcpListener.GetTcpHosts() {
-		if len(host.GetSslConfig().GetSniDomains()) > 0 {
-			sniMatch = true
-		}
-		if host.GetDestination().GetForwardSniClusterName() != nil {
-			sniCluster = true
-		}
-	}
-
-	// If there is a forward SNI cluster, and no SNI matches, prepend the TLS inspector manually.
-	if sniCluster && !sniMatch {
-		out.ListenerFilters = append(
-			[]*envoy_config_listener_v3.ListenerFilter{{Name: wellknown.TlsInspector}},
-			out.ListenerFilters...,
-		)
-	}
 	return nil
 }
 

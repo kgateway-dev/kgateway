@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Trigger the solo-apis update github workflow on each Gloo release.

@@ -1,4 +1,7 @@
 {{- $image := .Values.gateway.certGenJob.image }}
+{{- if .Values.global  }}
+{{- $image = merge .Values.gateway.certGenJob.image .Values.global.image }}
+{{- end }}
 {{- if .Values.global.glooMtls.enabled }}
 apiVersion: batch/v1
 kind: Job
@@ -18,6 +21,7 @@ spec:
       labels:
         gloo: gloo-mtls-certs
     spec:
+      {{- include "gloo.pullSecret" $image | nindent 6 }}
       serviceAccountName: certgen
       containers:
         - image: {{template "gloo.image" $image}}

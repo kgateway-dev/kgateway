@@ -105,6 +105,7 @@ func (t *translatorInstance) initializeCluster(
 	}
 
 	if sslConfig := upstream.SslConfig; sslConfig != nil {
+		applyDefaultsToUpstreamSslConfig(sslConfig, t.settings.GetUpstreamOptions())
 		cfg, err := utils.NewSslConfigTranslator().ResolveUpstreamSslConfig(*secrets, sslConfig)
 		if err != nil {
 			reports.AddError(upstream, err)
@@ -149,7 +150,7 @@ func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*
 			return nil, NilFieldError(fmt.Sprintf("HealthCheck[%d].UnhealthyThreshold", i))
 		}
 		if hc.GetHealthChecker() == nil {
-			return nil, NilFieldError(fmt.Sprintf(fmt.Sprintf("HealthCheck[%d].HealthChecker", i)))
+			return nil, NilFieldError(fmt.Sprintf("HealthCheck[%d].HealthChecker", i))
 		}
 		converted, err := api_conversion.ToEnvoyHealthCheck(hc, secrets)
 		if err != nil {
@@ -161,14 +162,11 @@ func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*
 }
 
 func createOutlierDetectionConfig(upstream *v1.Upstream) (*envoy_config_cluster_v3.OutlierDetection, error) {
-	if upstream == nil {
-		return nil, nil
-	}
 	if upstream.GetOutlierDetection() == nil {
 		return nil, nil
 	}
 	if upstream.GetOutlierDetection().GetInterval() == nil {
-		return nil, NilFieldError(fmt.Sprintf(fmt.Sprintf("OutlierDetection.HealthChecker")))
+		return nil, NilFieldError("OutlierDetection.HealthChecker.Interval")
 	}
 	return api_conversion.ToEnvoyOutlierDetection(upstream.GetOutlierDetection()), nil
 }
@@ -336,4 +334,16 @@ func validateRouteDestinationForValidLambdas(
 		}
 	}
 
+}
+
+// Apply defaults to UpstreamSslConfig
+func applyDefaultsToUpstreamSslConfig(sslConfig *v1.UpstreamSslConfig, options *v1.UpstreamOptions) {
+	if options == nil {
+		return
+	}
+
+	// Apply default SslParameters if none are defined on upstream
+	if sslConfig.GetParameters() == nil {
+		sslConfig.Parameters = options.GetSslParameters()
+	}
 }
