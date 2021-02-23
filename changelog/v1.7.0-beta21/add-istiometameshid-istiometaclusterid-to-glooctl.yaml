@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Added istioMetaMeshId and istioMetaClusterId to glooctl install.
+    issueLink: https://github.com/solo-io/gloo/issues/4325
