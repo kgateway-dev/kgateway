@@ -1260,8 +1260,8 @@ spec:
 
 				})
 
-				Context("custom gateway", func(){
-					Context("when the default values weren't overridden", func(){
+				Context("custom gateway", func() {
+					Context("when the default values weren't overridden", func() {
 						BeforeEach(func() {
 							prepareMakefile(namespace, helmValues{
 								valuesArgs: []string{
@@ -1300,13 +1300,13 @@ spec:
 							Expect(configMapStr.Data).ToNot(BeNil()) // Uses the default config data
 						})
 					})
-					Context("when default values are overridden by custom gatewayproxy", func(){
+					Context("when default values are overridden by custom gatewayproxy", func() {
 						BeforeEach(func() {
 							prepareMakefile(namespace, helmValues{
 								valuesArgs: []string{
-									"gatewayProxies.anotherGatewayProxy.podTemplate.httpPort=9999", // used by gateway
-									"gatewayProxies.anotherGatewayProxy.kind.deployment.replicas=50", // used by deployment
-									"gatewayProxies.anotherGatewayProxy.service.type=NodePort", // used by service
+									"gatewayProxies.anotherGatewayProxy.podTemplate.httpPort=9999",          // used by gateway
+									"gatewayProxies.anotherGatewayProxy.kind.deployment.replicas=50",        // used by deployment
+									"gatewayProxies.anotherGatewayProxy.service.type=NodePort",              // used by service
 									"gatewayProxies.anotherGatewayProxy.configMap.data.customData=someData", // used by config map
 								},
 							})
