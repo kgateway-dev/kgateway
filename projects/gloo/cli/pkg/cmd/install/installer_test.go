@@ -169,7 +169,7 @@ rules:
 		if mode == install.Federation {
 			installConfig = &options.Install{
 				Federation: options.HelmInstall{
-					Namespace: defaults.GlooFed,
+					Namespace:       defaults.GlooFed,
 					HelmReleaseName: constants.GlooFedReleaseName,
 					Version:         "test",
 					CreateNamespace: true,
