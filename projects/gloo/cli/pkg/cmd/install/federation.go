@@ -20,7 +20,6 @@ func glooFedCmd(opts *options.Options) *cobra.Command {
 		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			opts.Install.HelmInstall = opts.Install.Federation.HelmInstall
 			extraValues := map[string]interface{}{
 				"license_key": opts.Install.LicenseKey,
 			}
@@ -40,6 +39,6 @@ func glooFedCmd(opts *options.Options) *cobra.Command {
 	}
 
 	pflags := cmd.PersistentFlags()
-	flagutils.AddFederationInstallFlags(pflags, &opts.Install.Federation)
+	flagutils.AddFederationInstallFlags(pflags, &opts.Install)
 	return cmd
 }
