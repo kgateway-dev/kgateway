@@ -1291,8 +1291,13 @@ spec:
 							serviceStr := service.(*v1.Service)
 							Expect(serviceStr.Spec.Type).To(Equal(v1.ServiceType("LoadBalancer")))
 						})
-						It("renders the custom config map", func() {
-							testManifest.ExpectCustomResource("ConfigMap", namespace, "another-gateway-proxy-envoy-config")
+						It("uses default values for the config map", func() {
+							configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, "another-gateway-proxy-envoy-config")
+							configMap, err := kuberesource.ConvertUnstructured(configMapUns)
+							Expect(err).NotTo(HaveOccurred())
+							Expect(configMap).To(BeAssignableToTypeOf(&v1.ConfigMap{}))
+							configMapStr := configMap.(*v1.ConfigMap)
+							Expect(configMapStr.Data).ToNot(BeNil()) // Uses the default config data
 						})
 					})
 					Context("when default values are overridden by custom gatewayproxy", func(){
@@ -1302,7 +1307,7 @@ spec:
 									"gatewayProxies.anotherGatewayProxy.podTemplate.httpPort=9999", // used by gateway
 									"gatewayProxies.anotherGatewayProxy.kind.deployment.replicas=50", // used by deployment
 									"gatewayProxies.anotherGatewayProxy.service.type=NodePort", // used by service
-									"gatewayProxies.anotherGatewayProxy.configMap.data=customData", // used by config map
+									"gatewayProxies.anotherGatewayProxy.configMap.data.customData=someData", // used by config map
 								},
 							})
 						})
@@ -1328,8 +1333,13 @@ spec:
 							serviceStr := *service.(*v1.Service)
 							Expect(serviceStr.Spec.Type).To(Equal(v1.ServiceType("NodePort")))
 						})
-						It("renders the custom config map", func() {
-							testManifest.ExpectCustomResource("ConfigMap", namespace, "another-gateway-proxy-envoy-config")
+						It("uses merged values for the config map", func() {
+							configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, "another-gateway-proxy-envoy-config")
+							configMap, err := kuberesource.ConvertUnstructured(configMapUns)
+							Expect(err).NotTo(HaveOccurred())
+							Expect(configMap).To(BeAssignableToTypeOf(&v1.ConfigMap{}))
+							configMapStr := configMap.(*v1.ConfigMap)
+							Expect(configMapStr.Data).To(Equal(map[string]string{"customData": "someData"}))
 						})
 					})
 				})
