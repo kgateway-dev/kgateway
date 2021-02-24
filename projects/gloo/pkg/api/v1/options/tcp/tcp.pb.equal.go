@@ -104,26 +104,5 @@ func (m *TcpProxySettings_TunnelingConfig) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetUsePost() != target.GetUsePost() {
-		return false
-	}
-
-	if len(m.GetHeadersToAdd()) != len(target.GetHeadersToAdd()) {
-		return false
-	}
-	for idx, v := range m.GetHeadersToAdd() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetHeadersToAdd()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetHeadersToAdd()[idx]) {
-				return false
-			}
-		}
-
-	}
-
 	return true
 }

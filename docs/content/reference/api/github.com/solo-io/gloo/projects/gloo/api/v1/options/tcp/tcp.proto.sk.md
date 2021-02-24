@@ -41,7 +41,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.10.0/api-
 | ----- | ---- | ----------- | 
 | `maxConnectAttempts` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) |  |
 | `idleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |
-| `tunnelingConfig` | [.tcp.options.gloo.solo.io.TcpProxySettings.TunnelingConfig](../tcp.proto.sk/#tunnelingconfig) | If set, this configures tunneling, e.g. configuration options to tunnel multiple TCP payloads over a shared HTTP tunnel. If this message is absent, the payload will be proxied upstream as per usual. HTTP/2 is used by default, to use HTTP/1.1, explicitly set http_protocol_options on the destination upstream. |
+| `tunnelingConfig` | [.tcp.options.gloo.solo.io.TcpProxySettings.TunnelingConfig](../tcp.proto.sk/#tunnelingconfig) | If set, this configures tunneling, e.g. configuration options to tunnel multiple TCP payloads over a shared HTTP tunnel. If this message is absent, the payload will be proxied upstream as per usual. |
 
 
 
@@ -56,16 +56,12 @@ remain the default.
 
 ```yaml
 "hostname": string
-"usePost": bool
-"headersToAdd": []solo.io.envoy.api.v2.core.HeaderValueOption
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `hostname` | `string` | The hostname to send in the synthesized CONNECT headers to the upstream proxy. |
-| `usePost` | `bool` | Use POST method instead of CONNECT method to tunnel the TCP stream. The 'protocol: bytestream' header is also NOT set to comply with the HTTP spec. The upstream proxy is expected to convert POST payload as raw TCP. |
-| `headersToAdd` | [[]solo.io.envoy.api.v2.core.HeaderValueOption](../../../../../../../../solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#headervalueoption) | Additional request headers to upstream proxy. This is mainly used to trigger upstream to convert POST requests back to CONNECT requests. Neither *:-prefixed* pseudo-headers nor the Host: header can be overridden. |
 
 
 
