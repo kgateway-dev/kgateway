@@ -1260,6 +1260,89 @@ spec:
 
 				})
 
+				Context("custom gateway", func(){
+					Context("when the default values weren't overridden", func(){
+						It("uses default values for the gateway", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"gatewayProxies.anotherGatewayProxy.specKey=testing",
+								},
+							})
+							gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, "another-gateway-proxy")
+							var customGateway gwv1.Gateway
+							ConvertKubeResource(gatewayUns, &customGateway)
+							Expect(customGateway.BindPort).To(Equal(defaults.DefaultGateway(namespace).BindPort))
+						})
+						It("uses default values for the deployment", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"gatewayProxies.anotherGatewayProxy.specKey=testing",
+								},
+							})
+							deploymentUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
+							Expect(deploymentUns.Object["spec"].(map[string]interface{})["replicas"]).To(Equal(int64(1)))
+						})
+						It("uses default values for the service", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"gatewayProxies.anotherGatewayProxy.specKey=testing",
+								},
+							})
+							serviceUns := testManifest.ExpectCustomResource("Service", namespace, "another-gateway-proxy")
+							Expect(serviceUns.Object["spec"].(map[string]interface{})["type"]).To(Equal("LoadBalancer"))
+						})
+						It("uses default values for the config map", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"gatewayProxies.anotherGatewayProxy.specKey=testing",
+								},
+							})
+							configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, "another-gateway-proxy-envoy-config")
+							Expect(configMapUns.Object["data"]).ToNot(BeNil()) // Uses the default config data
+						})
+					})
+					Context("when the default values were overridden", func(){
+						It("uses merged values for the gateway", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"gatewayProxies.anotherGatewayProxy.podTemplate.httpPort=9999",
+								},
+							})
+							gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, "another-gateway-proxy")
+							var customGateway gwv1.Gateway
+							ConvertKubeResource(gatewayUns, &customGateway)
+							Expect(customGateway.BindPort).To(Equal(uint32(9999)))
+						})
+						It("uses merged values for the deployment", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"gatewayProxies.anotherGatewayProxy.kind.deployment.replicas=50",
+								},
+							})
+							deploymentUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
+							Expect(deploymentUns.Object["spec"].(map[string]interface{})["replicas"]).To(Equal(int64(50)))
+						})
+						It("uses merged values for the service", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"gatewayProxies.anotherGatewayProxy.service.type=NodePort",
+								},
+							})
+							serviceUns := testManifest.ExpectCustomResource("Service", namespace, "another-gateway-proxy")
+							Expect(serviceUns.Object["spec"].(map[string]interface{})["type"]).To(Equal("NodePort"))
+						})
+						It("uses merged values for the config map", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"gatewayProxies.anotherGatewayProxy.configMap.data=customData",
+								},
+							})
+							configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, "another-gateway-proxy-envoy-config")
+							Expect(configMapUns.Object["data"]).To(Equal("customData"))
+						})
+					})
+				})
+
 				Context("gateway-proxy service account", func() {
 					var gatewayProxyServiceAccount *v1.ServiceAccount
 
