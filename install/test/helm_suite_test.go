@@ -62,7 +62,6 @@ type renderTestCase struct {
 }
 
 var renderers = []renderTestCase{
-	{"Helm 2", helm2Renderer{chartDir}},
 	{"Helm 3", helm3Renderer{chartDir}},
 }
 
