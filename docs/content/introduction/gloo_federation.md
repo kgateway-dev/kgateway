@@ -41,6 +41,8 @@ The federated configuration data is stored in the following Custom Resource type
  - federatedupstreamgroups.fed.gloo.solo.io
  - federatedupstreams.fed.gloo.solo.io
  - federatedvirtualservices.fed.gateway.solo.io
+ - federatedauthconfigs.fed.enterprise.gloo.solo.io
+ - federatedratelimitconfigs.fed.ratelimit.solo.io
 
 Each of these CRDs closely corresponds to the local version of Gloo Edge resources like Gateways, Upstreams, and Virtual Services.
 
