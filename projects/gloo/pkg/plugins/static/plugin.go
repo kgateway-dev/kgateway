@@ -29,7 +29,9 @@ const (
 var _ plugins.Plugin = new(plugin)
 var _ plugins.UpstreamPlugin = new(plugin)
 
-type plugin struct{}
+type plugin struct {
+	settings *v1.Settings
+}
 
 func NewPlugin() plugins.Plugin {
 	return &plugin{}
@@ -48,6 +50,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
+	p.settings = params.Settings
 	return nil
 }
 
@@ -123,6 +126,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		// TODO: support client certificates
 		if out.TransportSocket == nil {
 			tlsContext := &envoyauth.UpstreamTlsContext{
+				CommonTlsContext: getCommonTlsContextFromUpstreamOptions(p.settings.GetUpstreamOptions()),
 				// TODO(yuval-k): Add verification context
 				Sni: hostname,
 			}
@@ -238,4 +242,47 @@ func metadataMatch(spec *v1static.UpstreamSpec, in *v1static.Host) *pbgostruct.S
 			},
 		},
 	}
+}
+
+// Borrowed from: https://github.com/solo-io/gloo/blob/15da82bdd65ab4bcedbc7fb803ea0bb5f7e926fc/projects/gloo/pkg/utils/ssl.go#L334
+// We support global UpstreamOptions to define SslParameters for all upstreams
+// If an upstream is configure with ssl, it will inherit the defaults here:
+// https://github.com/solo-io/gloo/blob/15da82bdd65ab4bcedbc7fb803ea0bb5f7e926fc/projects/gloo/pkg/translator/clusters.go#L108
+// However, if an upstream is configured with one-way TLS, we must explicitly apply the defaults, since there is no ssl
+// configuration on the upstream
+func getCommonTlsContextFromUpstreamOptions(options *v1.UpstreamOptions) *envoyauth.CommonTlsContext {
+	sslParameters := options.GetSslParameters()
+	if sslParameters == nil {
+		return nil
+	}
+
+	return &envoyauth.CommonTlsContext{
+		TlsParams: &envoyauth.TlsParameters{
+			CipherSuites:              sslParameters.GetCipherSuites(),
+			EcdhCurves:                sslParameters.GetEcdhCurves(),
+			TlsMaximumProtocolVersion: convertVersion(sslParameters.GetMaximumProtocolVersion()),
+			TlsMinimumProtocolVersion: convertVersion(sslParameters.GetMinimumProtocolVersion()),
+		},
+	}
+}
+
+func convertVersion(v v1.SslParameters_ProtocolVersion) envoyauth.TlsParameters_TlsProtocol {
+	switch v {
+	case v1.SslParameters_TLS_AUTO:
+		return envoyauth.TlsParameters_TLS_AUTO
+	// TLS 1.0
+	case v1.SslParameters_TLSv1_0:
+		return envoyauth.TlsParameters_TLSv1_0
+	// TLS 1.1
+	case v1.SslParameters_TLSv1_1:
+		return envoyauth.TlsParameters_TLSv1_1
+	// TLS 1.2
+	case v1.SslParameters_TLSv1_2:
+		return envoyauth.TlsParameters_TLSv1_2
+	// TLS 1.3
+	case v1.SslParameters_TLSv1_3:
+		return envoyauth.TlsParameters_TLSv1_3
+	}
+
+	return envoyauth.TlsParameters_TLS_AUTO
 }
