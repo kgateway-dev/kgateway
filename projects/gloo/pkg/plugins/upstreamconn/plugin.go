@@ -60,6 +60,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		}
 		out.CommonHttpProtocolOptions = commonHttpProtocolOptions
 	}
+	//out.TypedExtensionProtocolOptions
 
 	return nil
 }

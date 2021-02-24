@@ -96,6 +96,7 @@ func (p *Plugin) tcpProxyFilters(
 		if tcpSettings := plugins.GetTcpProxySettings(); tcpSettings != nil {
 			cfg.MaxConnectAttempts = tcpSettings.GetMaxConnectAttempts()
 			cfg.IdleTimeout = tcpSettings.GetIdleTimeout()
+			cfg.TunnelingConfig = tc
 		}
 	}
 

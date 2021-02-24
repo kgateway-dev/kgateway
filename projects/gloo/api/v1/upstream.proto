@@ -23,7 +23,6 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/azure/azure.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/consul/consul.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/ec2/aws_ec2.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/failover.proto";
 import "google/protobuf/wrappers.proto";
 
