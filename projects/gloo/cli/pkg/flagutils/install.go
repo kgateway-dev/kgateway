@@ -24,7 +24,7 @@ func AddEnterpriseInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	set.BoolVar(&install.WithUi, "with-admin-console", false, "install gloo and a read-only version of its admin console")
 }
 
-func AddFederationInstallFlags(set *pflag.FlagSet, install *options.Install) {
+func AddFederationInstallFlags(set *pflag.FlagSet, install *options.Federation) {
 	set.BoolVar(&install.DryRun, "dry-run", false, "Dump the raw installation yaml instead of applying it to kubernetes")
 	set.StringVar(&install.HelmChartOverride, "file", "", "Install Gloo Fed from this Helm chart archive file rather than from a release")
 	set.StringSliceVar(&install.HelmChartValueFileNames, "values", []string{}, "List of files with value overrides for the Gloo Fed Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)")
