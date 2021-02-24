@@ -1262,83 +1262,84 @@ spec:
 
 				Context("custom gateway", func(){
 					Context("when the default values weren't overridden", func(){
-						It("uses default values for the gateway", func() {
+						BeforeEach(func() {
 							prepareMakefile(namespace, helmValues{
 								valuesArgs: []string{
 									"gatewayProxies.anotherGatewayProxy.specKey=testing",
 								},
 							})
+						})
+						It("uses default values for the gateway", func() {
 							gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, "another-gateway-proxy")
 							var customGateway gwv1.Gateway
 							ConvertKubeResource(gatewayUns, &customGateway)
 							Expect(customGateway.BindPort).To(Equal(defaults.DefaultGateway(namespace).BindPort))
 						})
 						It("uses default values for the deployment", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									"gatewayProxies.anotherGatewayProxy.specKey=testing",
-								},
-							})
 							deploymentUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
-							Expect(deploymentUns.Object["spec"].(map[string]interface{})["replicas"]).To(Equal(int64(1)))
+							deployment, err := kuberesource.ConvertUnstructured(deploymentUns)
+							Expect(err).NotTo(HaveOccurred())
+							Expect(deployment).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
+							deploymentStr := deployment.(*appsv1.Deployment)
+							Expect(*deploymentStr.Spec.Replicas).To(Equal(int32(1)))
 						})
 						It("uses default values for the service", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									"gatewayProxies.anotherGatewayProxy.specKey=testing",
-								},
-							})
 							serviceUns := testManifest.ExpectCustomResource("Service", namespace, "another-gateway-proxy")
-							Expect(serviceUns.Object["spec"].(map[string]interface{})["type"]).To(Equal("LoadBalancer"))
+							service, err := kuberesource.ConvertUnstructured(serviceUns)
+							Expect(err).NotTo(HaveOccurred())
+							Expect(service).To(BeAssignableToTypeOf(&v1.Service{}))
+							serviceStr := service.(*v1.Service)
+							Expect(serviceStr.Spec.Type).To(Equal(v1.ServiceType("LoadBalancer")))
 						})
 						It("uses default values for the config map", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									"gatewayProxies.anotherGatewayProxy.specKey=testing",
-								},
-							})
 							configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, "another-gateway-proxy-envoy-config")
-							Expect(configMapUns.Object["data"]).ToNot(BeNil()) // Uses the default config data
+							configMap, err := kuberesource.ConvertUnstructured(configMapUns)
+							Expect(err).NotTo(HaveOccurred())
+							Expect(configMap).To(BeAssignableToTypeOf(&v1.ConfigMap{}))
+							configMapStr := configMap.(*v1.ConfigMap)
+							Expect(configMapStr.Data).ToNot(BeNil()) // Uses the default config data
 						})
 					})
-					Context("when the default values were overridden", func(){
-						It("uses merged values for the gateway", func() {
+					Context("when default values are overridden by custom gatewayproxy", func(){
+						BeforeEach(func() {
 							prepareMakefile(namespace, helmValues{
 								valuesArgs: []string{
-									"gatewayProxies.anotherGatewayProxy.podTemplate.httpPort=9999",
+									"gatewayProxies.anotherGatewayProxy.podTemplate.httpPort=9999", // used by gateway
+									"gatewayProxies.anotherGatewayProxy.kind.deployment.replicas=50", // used by deployment
+									"gatewayProxies.anotherGatewayProxy.service.type=NodePort", // used by service
+									"gatewayProxies.anotherGatewayProxy.configMap.data=customData", // used by config map
 								},
 							})
+						})
+						It("uses merged values for the gateway", func() {
 							gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, "another-gateway-proxy")
 							var customGateway gwv1.Gateway
 							ConvertKubeResource(gatewayUns, &customGateway)
 							Expect(customGateway.BindPort).To(Equal(uint32(9999)))
 						})
 						It("uses merged values for the deployment", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									"gatewayProxies.anotherGatewayProxy.kind.deployment.replicas=50",
-								},
-							})
 							deploymentUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
-							Expect(deploymentUns.Object["spec"].(map[string]interface{})["replicas"]).To(Equal(int64(50)))
+							deployment, err := kuberesource.ConvertUnstructured(deploymentUns)
+							Expect(err).NotTo(HaveOccurred())
+							Expect(deployment).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
+							deploymentStr := deployment.(*appsv1.Deployment)
+							Expect(*deploymentStr.Spec.Replicas).To(Equal(int32(50)))
 						})
 						It("uses merged values for the service", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									"gatewayProxies.anotherGatewayProxy.service.type=NodePort",
-								},
-							})
 							serviceUns := testManifest.ExpectCustomResource("Service", namespace, "another-gateway-proxy")
-							Expect(serviceUns.Object["spec"].(map[string]interface{})["type"]).To(Equal("NodePort"))
+							service, err := kuberesource.ConvertUnstructured(serviceUns)
+							Expect(err).NotTo(HaveOccurred())
+							Expect(service).To(BeAssignableToTypeOf(&v1.Service{}))
+							serviceStr := *service.(*v1.Service)
+							Expect(serviceStr.Spec.Type).To(Equal(v1.ServiceType("NodePort")))
 						})
-						It("uses merged values for the config map", func() {
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									"gatewayProxies.anotherGatewayProxy.configMap.data=customData",
-								},
-							})
+						FIt("uses merged values for the config map", func() {
 							configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, "another-gateway-proxy-envoy-config")
-							Expect(configMapUns.Object["data"]).To(Equal("customData"))
+							configMap, err := kuberesource.ConvertUnstructured(configMapUns)
+							Expect(err).NotTo(HaveOccurred())
+							Expect(configMap).To(BeAssignableToTypeOf(&v1.ConfigMap{}))
+							configMapStr := configMap.(*v1.ConfigMap)
+							Expect(configMapStr.Data).To(Equal("customData"))
 						})
 					})
 				})
