@@ -167,8 +167,14 @@ rules:
 			},
 		}
 		if mode == install.Federation {
-			installConfig.Federation.Namespace = defaults.GlooFed
-			installConfig.Federation.HelmReleaseName = constants.GlooFedReleaseName
+			installConfig = &options.Install{
+				Federation: options.HelmInstall{
+					Namespace: defaults.GlooFed,
+					HelmReleaseName: constants.GlooFedReleaseName,
+					Version:         "test",
+					CreateNamespace: true,
+				},
+			}
 		}
 
 		installWithConfig(mode, expectedValues, expectedChartUri, installConfig)
