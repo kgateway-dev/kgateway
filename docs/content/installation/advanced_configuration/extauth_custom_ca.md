@@ -119,7 +119,7 @@ Once the installation is complete, we can validate our change with the following
 kubectl describe pods -n gloo-system -l gloo=extauth
 ```
 
-You should see the init container `add-ca-cert` has completed it's work.
+You should see the init container `add-ca-cert` has completed its work.
 
 ```bash
   State:          Terminated
@@ -210,7 +210,7 @@ This will force a recreation of the external authentication server pod(s). We ca
 kubectl describe pods -n gloo-system -l gloo=extauth
 ```
 
-You should see the init container `add-ca-cert` has completed it's work.
+You should see the init container `add-ca-cert` has completed its work.
 
 ```bash
   State:          Terminated

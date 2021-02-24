@@ -80,6 +80,8 @@ func Inject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 func istioInject(args []string, opts *options.Options) error {
 	glooNS := opts.Metadata.Namespace
 	istioNS := opts.Istio.Namespace
+	istioMetaMeshID := getIstioMetaMeshID(opts.Istio.IstioMetaMeshId)
+	istioMetaClusterID := getIstioMetaClusterID(opts.Istio.IstioMetaClusterId)
 
 	client := helpers.MustKubeClient()
 	_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, glooNS, metav1.GetOptions{})
@@ -131,7 +133,7 @@ func istioInject(args []string, opts *options.Options) error {
 			if err != nil {
 				return err
 			}
-			err = addIstioSidecar(opts.Top.Ctx, &deployment, istioNS)
+			err = addIstioSidecar(opts.Top.Ctx, &deployment, istioNS, istioMetaMeshID, istioMetaClusterID)
 			if err != nil {
 				return err
 			}
@@ -161,7 +163,7 @@ func addSdsSidecar(ctx context.Context, deployment *appsv1.Deployment, glooNames
 }
 
 // addIstioSidecar adds an Istio sidecar to the given deployment's containers
-func addIstioSidecar(ctx context.Context, deployment *appsv1.Deployment, istioNamespace string) error {
+func addIstioSidecar(ctx context.Context, deployment *appsv1.Deployment, istioNamespace string, istioMetaMeshID string, istioMetaClusterID string) error {
 	// Get current istio version & JWT policy from cluster
 	istioPilotContainer, err := getIstiodContainer(ctx, istioNamespace)
 	if err != nil {
@@ -177,7 +179,7 @@ func addIstioSidecar(ctx context.Context, deployment *appsv1.Deployment, istioNa
 	jwtPolicy := getJWTPolicy(istioPilotContainer)
 
 	// Get the appropriate sidecar based on Istio configuration currently deployed
-	istioSidecar, err := sidecars.GetIstioSidecar(istioVersion, jwtPolicy)
+	istioSidecar, err := sidecars.GetIstioSidecar(istioVersion, jwtPolicy, istioMetaMeshID, istioMetaClusterID)
 	if err != nil {
 		return err
 	}
