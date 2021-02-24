@@ -282,6 +282,10 @@ func (m *Upstream) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if _, err = hasher.Write([]byte(m.GetHttpProxyHostname())); err != nil {
+		return 0, err
+	}
+
 	switch m.UpstreamType.(type) {
 
 	case *Upstream_Kube:
