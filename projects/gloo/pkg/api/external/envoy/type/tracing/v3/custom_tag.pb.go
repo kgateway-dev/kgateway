@@ -13,8 +13,8 @@ import (
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	proto "github.com/golang/protobuf/proto"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/metadata/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
+	_ "github.com/solo-io/solo-kit/pkg/api/external/udpa/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )

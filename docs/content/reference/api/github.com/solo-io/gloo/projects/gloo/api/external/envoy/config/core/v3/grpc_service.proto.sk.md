@@ -55,7 +55,7 @@ gRPC service configuration. This is used by :ref:`ApiConfigSource
 | `envoyGrpc` | [.solo.io.envoy.config.core.v3.GrpcService.EnvoyGrpc](../grpc_service.proto.sk/#envoygrpc) | Envoy's in-built gRPC client. See the :ref:`gRPC services overview <arch_overview_grpc_services>` documentation for discussion on gRPC client selection. Only one of `envoyGrpc` or `googleGrpc` can be set. |
 | `googleGrpc` | [.solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc](../grpc_service.proto.sk/#googlegrpc) | `Google C++ gRPC client <https://github.com/grpc/grpc>`_ See the :ref:`gRPC services overview <arch_overview_grpc_services>` documentation for discussion on gRPC client selection. Only one of `googleGrpc` or `envoyGrpc` can be set. |
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout for the gRPC request. This is the timeout for a specific request. |
-| `initialMetadata` | [[]solo.io.envoy.config.core.v3.HeaderValue](../base.proto.sk/#headervalue) | Additional metadata to include in streams initiated to the GrpcService. This can be used for scenarios in which additional ad hoc authorization headers (e.g. ``x-foo-bar: baz-key``) are to be injected. |
+| `initialMetadata` | [[]solo.io.envoy.config.core.v3.HeaderValue](../../../../../../../../../../solo-kit/api/external/envoy/config/core/v3/base.proto.sk/#headervalue) | Additional metadata to include in streams initiated to the GrpcService. This can be used for scenarios in which additional ad hoc authorization headers (e.g. ``x-foo-bar: baz-key``) are to be injected. |
 
 
 
@@ -124,9 +124,9 @@ See https://grpc.io/grpc/cpp/structgrpc_1_1_ssl_credentials_options.html.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `rootCerts` | [.solo.io.envoy.config.core.v3.DataSource](../base.proto.sk/#datasource) | PEM encoded server root certificates. |
-| `privateKey` | [.solo.io.envoy.config.core.v3.DataSource](../base.proto.sk/#datasource) | PEM encoded client private key. |
-| `certChain` | [.solo.io.envoy.config.core.v3.DataSource](../base.proto.sk/#datasource) | PEM encoded client certificate chain. |
+| `rootCerts` | [.solo.io.envoy.config.core.v3.DataSource](../../../../../../../../../../solo-kit/api/external/envoy/config/core/v3/base.proto.sk/#datasource) | PEM encoded server root certificates. |
+| `privateKey` | [.solo.io.envoy.config.core.v3.DataSource](../../../../../../../../../../solo-kit/api/external/envoy/config/core/v3/base.proto.sk/#datasource) | PEM encoded client private key. |
+| `certChain` | [.solo.io.envoy.config.core.v3.DataSource](../../../../../../../../../../solo-kit/api/external/envoy/config/core/v3/base.proto.sk/#datasource) | PEM encoded client certificate chain. |
 
 
 

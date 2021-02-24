@@ -7,7 +7,7 @@ package solo.io.envoy.extensions.filters.http.csrf.v3;
 // manually updated this line:
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3";
 
-import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/config/core/v3/base.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto";
 
 import "validate/validate.proto";

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package solo.io.envoy.config.core.v3;
 
-import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/config/core/v3/base.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/event_service_config.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/http.proto";

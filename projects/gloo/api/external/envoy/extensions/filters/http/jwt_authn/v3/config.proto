@@ -4,8 +4,8 @@ package solo.io.envoy.extensions.filters.http.jwt_authn.v3;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/jwt_authn/v3";
 
-import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/http_uri.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/config/core/v3/base.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/config/core/v3/http_uri.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/route/v3/route_components.proto";
 
 import "google/protobuf/duration.proto";
