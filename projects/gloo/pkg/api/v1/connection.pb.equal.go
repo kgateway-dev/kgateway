@@ -90,23 +90,6 @@ func (m *ConnectionConfig) Equal(that interface{}) bool {
 		}
 	}
 
-	if len(m.GetTypedExtensionProtocolOptions()) != len(target.GetTypedExtensionProtocolOptions()) {
-		return false
-	}
-	for k, v := range m.GetTypedExtensionProtocolOptions() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetTypedExtensionProtocolOptions()[k]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetTypedExtensionProtocolOptions()[k]) {
-				return false
-			}
-		}
-
-	}
-
 	return true
 }
 

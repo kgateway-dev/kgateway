@@ -101,7 +101,7 @@ func (t *translatorInstance) initializeCluster(
 		OutlierDetection: detectCfg,
 		// this field can be overridden by plugins
 		ConnectTimeout:       ptypes.DurationProto(ClusterConnectionTimeout),
-		Http2ProtocolOptions: getHttp2ptions(upstream),
+		Http2ProtocolOptions: getHttp2options(upstream),
 	}
 
 	if sslConfig := upstream.SslConfig; sslConfig != nil {
@@ -227,7 +227,7 @@ func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoy_config_cluster_
 	return nil
 }
 
-func getHttp2ptions(us *v1.Upstream) *envoy_config_core_v3.Http2ProtocolOptions {
+func getHttp2options(us *v1.Upstream) *envoy_config_core_v3.Http2ProtocolOptions {
 	if us.GetUseHttp2().GetValue() {
 		return &envoy_config_core_v3.Http2ProtocolOptions{}
 	}

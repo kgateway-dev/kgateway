@@ -37,7 +37,6 @@ Fine tune the settings for connections to an upstream
 "tcpKeepalive": .gloo.solo.io.ConnectionConfig.TcpKeepAlive
 "perConnectionBufferLimitBytes": .google.protobuf.UInt32Value
 "commonHttpProtocolOptions": .gloo.solo.io.ConnectionConfig.HttpProtocolOptions
-"typedExtensionProtocolOptions": map<string, .google.protobuf.Any>
 
 ```
 
@@ -48,7 +47,6 @@ Fine tune the settings for connections to an upstream
 | `tcpKeepalive` | [.gloo.solo.io.ConnectionConfig.TcpKeepAlive](../connection.proto.sk/#tcpkeepalive) | Configure OS-level tcp keepalive checks. |
 | `perConnectionBufferLimitBytes` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Soft limit on size of the cluster’s connections read and write buffers. If unspecified, an implementation defined default is applied (1MiB). For more info, see the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/cluster.proto#cluster). |
 | `commonHttpProtocolOptions` | [.gloo.solo.io.ConnectionConfig.HttpProtocolOptions](../connection.proto.sk/#httpprotocoloptions) | Additional options when handling HTTP requests upstream. These options will be applicable to both HTTP1 and HTTP2 requests. |
-| `typedExtensionProtocolOptions` | `map<string, .google.protobuf.Any>` | The extension_protocol_options field is used to provide extension-specific protocol options for upstream connections. The key should match the extension filter name, such as "envoy.filters.network.thrift_proxy". See the extension's documentation for details on specific options. [#next-major-version: make this a list of typed extensions.]. |
 
 
 

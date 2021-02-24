@@ -87,11 +87,4 @@ message ConnectionConfig {
     // Additional options when handling HTTP requests upstream. These options will be applicable to
     // both HTTP1 and HTTP2 requests.
     HttpProtocolOptions common_http_protocol_options = 5;
-
-    // The extension_protocol_options field is used to provide extension-specific protocol options
-    // for upstream connections. The key should match the extension filter name, such as
-    // "envoy.filters.network.thrift_proxy". See the extension's documentation for details on
-    // specific options.
-    // [#next-major-version: make this a list of typed extensions.]
-    map<string, google.protobuf.Any> typed_extension_protocol_options = 36;
 }
