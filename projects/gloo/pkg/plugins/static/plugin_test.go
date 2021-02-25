@@ -222,6 +222,29 @@ var _ = Describe("Plugin", func() {
 			})
 		})
 
+		Context("should error while configuring ssl with invalid tls versions in settings.UpstreamOptions", func() {
+			var invalidProtocolVersions v1.SslParameters_ProtocolVersion = 5 // INVALID
+
+			BeforeEach(func() {
+				upstreamSpec.UseTls = true
+				initParams.Settings = &v1.Settings{
+					UpstreamOptions: &v1.UpstreamOptions{
+						SslParameters: &v1.SslParameters{
+							MinimumProtocolVersion: invalidProtocolVersions,
+							MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+							CipherSuites:           []string{"cipher-test"},
+							EcdhCurves:             []string{"ec-dh-test"},
+						},
+					},
+				}
+			})
+
+			It("should not ProcessUpstream", func() {
+				err := p.ProcessUpstream(params, upstream, out)
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
 		It("should not override existing tls config", func() {
 			existing := &envoyauth.UpstreamTlsContext{}
 			out.TransportSocket = &envoy_config_core_v3.TransportSocket{
