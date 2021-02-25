@@ -183,13 +183,13 @@ var _ = Describe("Plugin", func() {
 
 			Context("should error while configuring ssl with invalid tls versions in settings.UpstreamOptions", func() {
 
-				var invalidProtocolVersions v1.SslParameters_ProtocolVersion = 5 // INVALID
+				var invalidProtocolVersion v1.SslParameters_ProtocolVersion = 5 // INVALID
 
 				BeforeEach(func() {
 					initParams.Settings = &v1.Settings{
 						UpstreamOptions: &v1.UpstreamOptions{
 							SslParameters: &v1.SslParameters{
-								MinimumProtocolVersion: invalidProtocolVersions,
+								MinimumProtocolVersion: invalidProtocolVersion,
 								MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
 								CipherSuites:           []string{"cipher-test"},
 								EcdhCurves:             []string{"ec-dh-test"},
