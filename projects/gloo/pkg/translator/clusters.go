@@ -43,6 +43,7 @@ func (t *translatorInstance) computeClusters(
 	for _, upstream := range upstreams {
 
 		cluster := t.computeCluster(params, upstream, upstreamRefKeyToEndpoints, reports)
+		// TODO(kdorosh) update cluster into self loopback for HTTP proxy, add both to returned clusters
 		clusters = append(clusters, cluster)
 	}
 
@@ -56,7 +57,7 @@ func (t *translatorInstance) computeCluster(
 	reports reporter.ResourceReports,
 ) *envoy_config_cluster_v3.Cluster {
 	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.Metadata.Name)
-	out := t.initializeCluster(upstream, params.Snapshot.Endpoints, upstreamRefKeyToEndpoints, reports, &params.Snapshot.Secrets)
+	out := t.initializeCluster(upstream, upstreamRefKeyToEndpoints, reports, &params.Snapshot.Secrets)
 
 	for _, plug := range t.plugins {
 		upstreamPlugin, ok := plug.(plugins.UpstreamPlugin)
@@ -77,7 +78,6 @@ func (t *translatorInstance) computeCluster(
 
 func (t *translatorInstance) initializeCluster(
 	upstream *v1.Upstream,
-	endpoints []*v1.Endpoint,
 	upstreamRefKeyToEndpoints map[string][]*v1.Endpoint,
 	reports reporter.ResourceReports,
 	secrets *v1.SecretList,
