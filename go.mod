@@ -74,7 +74,9 @@ require (
 	github.com/solo-io/skv2 v0.17.2
 	// Pinned to the `rate-limiter-v0.1.8` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10
-	github.com/solo-io/solo-kit v0.18.0
+
+	// Points to commit: d96ff1a8a805d21d5f9bdc5b39fc6107689f8ec3
+	github.com/solo-io/solo-kit v0.18.1-0.20210225151735-d96ff1a8a805
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
 	github.com/spf13/cobra v1.1.1
@@ -126,8 +128,6 @@ replace (
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
 
-	// LOCAL solo-kit
-	github.com/solo-io/solo-kit => /Users/samheilbron/go/src/github.com/solo-io/solo-kit
 	//the following block of replacements are needed to have locked these packages to before versions they switched to using proto4
 	golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
 	// kube 0.18: redirects needed for most k8s.io dependencies because
