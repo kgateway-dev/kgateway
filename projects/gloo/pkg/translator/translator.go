@@ -168,6 +168,10 @@ ClusterLoop:
 
 		envoyResources := t.computeListenerResources(params, proxy, listener, listenerReport)
 		if envoyResources != nil {
+
+			// modify and inject tcp listener?
+			//envoyResources.listener.Metadata.FilterMetadata["solo.io.tcp.self.referenced"] = list of routes
+
 			listeners = append(listeners, envoyResources.listener)
 			if envoyResources.routeConfig != nil {
 				routeConfigs = append(routeConfigs, envoyResources.routeConfig)
