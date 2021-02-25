@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    description: Added a new accessLoggingService Helm value that allows users to define access logs from helm.
+    issueLink: https://github.com/solo-io/gloo/issues/4096

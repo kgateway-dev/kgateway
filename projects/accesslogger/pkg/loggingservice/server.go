@@ -3,7 +3,7 @@ package loggingservice
 import (
 	"context"
 
-	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
+	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"

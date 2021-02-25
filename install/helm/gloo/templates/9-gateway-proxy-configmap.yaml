@@ -3,7 +3,9 @@
 {{- end -}}
 {{- if .Values.gateway.enabled }}
 {{- $global := .Values.global }}
-{{- range $name, $spec := .Values.gatewayProxies }}
+{{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{- $spec := deepCopy $gatewayProxy | merge $gatewaySpec -}}
 {{- if not $spec.disabled }}
 {{- $statsConfig := coalesce $spec.stats $global.glooStats }}
 ---
@@ -24,8 +26,6 @@ data:
       layers:
       - name: static_layer
         static_layer:
-          envoy.reloadable_features.enable_deprecated_v2_api: true
-          envoy.reloadable_features.disable_tls_inspector_injection: false
           overload:
             global_downstream_max_connections: {{ $spec.globalDownstreamMaxConnections }}
           upstream:

@@ -1,0 +1,38 @@
+{{- if .Values.gateway.enabled }}
+{{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{- $spec := deepCopy $gatewayProxy | merge $gatewaySpec -}}
+{{- if $spec.kind.deployment}}
+{{- if $spec.horizontalPodAutoscaler }}
+---
+apiVersion: {{ $spec.horizontalPodAutoscaler.apiVersion }}
+kind: HorizontalPodAutoscaler
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway-proxy
+    gateway-proxy-id: {{ $name | kebabcase }}
+  name: {{ $name | kebabcase }}-hpa
+  namespace: {{ $.Release.Namespace }}
+spec:
+  minReplicas: {{ $spec.horizontalPodAutoscaler.minReplicas }}
+  maxReplicas: {{ $spec.horizontalPodAutoscaler.maxReplicas }}
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $name | kebabcase }}
+  {{- if (eq $spec.horizontalPodAutoscaler.apiVersion "autoscaling/v1") }}
+  targetCPUUtilizationPercentage: {{ $spec.horizontalPodAutoscaler.targetCPUUtilizationPercentage }}
+  {{- end }}
+  {{- if eq $spec.horizontalPodAutoscaler.apiVersion "autoscaling/v2beta2" }}
+  metrics:
+  {{ toYaml $spec.horizontalPodAutoscaler.metrics | nindent 4 }}
+  {{- end }}
+  {{- if eq $spec.horizontalPodAutoscaler.apiVersion "autoscaling/v2beta2" }}
+  behavior:
+  {{ toYaml $spec.horizontalPodAutoscaler.behavior | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

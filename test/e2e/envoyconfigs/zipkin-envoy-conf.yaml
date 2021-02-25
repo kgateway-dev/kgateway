@@ -2,8 +2,6 @@ layered_runtime:
   layers:
   - name: static_layer
     static_layer:
-      envoy.reloadable_features.enable_deprecated_v2_api: true
-      envoy.reloadable_features.disable_tls_inspector_injection: false
       cluster:
         healthy_panic_threshold:
           value: 0
@@ -17,11 +15,12 @@ node:
   role: gloo-system~gateway-proxy
 
 stats_sinks:
-  - name: envoy.stat_sinks.metrics_service
-    typed_config:
-      "@type": type.googleapis.com/envoy.config.metrics.v3.MetricsServiceConfig
-      grpc_service:
-        envoy_grpc: {cluster_name: metrics_cluster}
+ - name: envoy.stat_sinks.metrics_service
+   typed_config:
+     "@type": type.googleapis.com/envoy.config.metrics.v3.MetricsServiceConfig
+     transport_api_version: v3
+     grpc_service:
+       envoy_grpc: {cluster_name: metrics_cluster}
 static_resources:
   # Enable tracing on admin endpoint
   listeners:
@@ -111,7 +110,6 @@ static_resources:
                     port_value: 0
     http2_protocol_options: {}
     type: STATIC
-
 
 dynamic_resources:
 

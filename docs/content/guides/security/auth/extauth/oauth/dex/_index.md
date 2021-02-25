@@ -119,9 +119,7 @@ EOF
 
 This configures Dex with a static users. Notice how we choose a **client secret** with value `secretvalue` for the client named `gloo`. Gloo Edge will need to provide this secret when connecting to Dex in order to confirm its identity.
 
-{{< notice note >}}
-The above configuration uses unsecured http traffic without SSL certificates. You can have Dex generate its own certificates by including settings for the Helm chart on the path `certs.web.altNames`. The names should be set to the fully-qualified domain name of the Dex service on Kubernetes and the Dex URL, which would be `dex.gloo-system.svc.cluster.local` and `https://dex.gloo-system.svc.cluster.local:32000`. You would then need to add the Dex web server certificate authority to Gloo Edge's external authentication so the web certificates used by the Dex service will be trusted. You can find more information about adding trusted CAs to the Ext Auth service [here]({{< versioned_link_path fromRoot="/installation/advanced_configuration/extauth_custom/" >}}).
-{{< /notice >}}
+Note that the above configuration uses unsecured http traffic without SSL certificates. You can have Dex generate its own certificates by including settings for the Helm chart on the path `certs.web.altNames`. The names should be set to the fully-qualified domain name of the Dex service on Kubernetes and the Dex URL, which would be `dex.gloo-system.svc.cluster.local` and `https://dex.gloo-system.svc.cluster.local:32000`. You would then need to add the Dex web server certificate authority to Gloo Edge's external authentication so the web certificates used by the Dex service will be trusted. You can find more information about adding trusted CAs to the Ext Auth service [here]({{< versioned_link_path fromRoot="/installation/advanced_configuration/extauth_custom_ca/" >}}).
 
 Using this configuration, we can deploy Dex to our cluster using Helm.
 

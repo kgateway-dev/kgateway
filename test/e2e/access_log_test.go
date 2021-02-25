@@ -8,8 +8,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	envoy_data_accesslog_v2 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
-	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
+	envoy_data_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
+
+	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
 	"github.com/fgrosse/zaptest"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
@@ -109,7 +110,7 @@ var _ = Describe("Access Log", func() {
 			Context("Grpc", func() {
 
 				var (
-					msgChan <-chan *envoy_data_accesslog_v2.HTTPAccessLogEntry
+					msgChan <-chan *envoy_data_accesslog_v3.HTTPAccessLogEntry
 				)
 
 				BeforeEach(func() {
@@ -168,7 +169,7 @@ var _ = Describe("Access Log", func() {
 
 					TestUpstreamReachable()
 
-					var entry *envoy_data_accesslog_v2.HTTPAccessLogEntry
+					var entry *envoy_data_accesslog_v3.HTTPAccessLogEntry
 					Eventually(msgChan, 5*time.Second).Should(Receive(&entry))
 					Expect(entry.CommonProperties.UpstreamCluster).To(Equal(translator.UpstreamToClusterName(tu.Upstream.Metadata.Ref())))
 
@@ -323,8 +324,8 @@ var _ = Describe("Access Log", func() {
 	})
 })
 
-func runAccessLog(ctx context.Context, accessLogPort uint32) <-chan *envoy_data_accesslog_v2.HTTPAccessLogEntry {
-	msgChan := make(chan *envoy_data_accesslog_v2.HTTPAccessLogEntry, 10)
+func runAccessLog(ctx context.Context, accessLogPort uint32) <-chan *envoy_data_accesslog_v3.HTTPAccessLogEntry {
+	msgChan := make(chan *envoy_data_accesslog_v3.HTTPAccessLogEntry, 10)
 
 	opts := loggingservice.Options{
 		Ordered: true,

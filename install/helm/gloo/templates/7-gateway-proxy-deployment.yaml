@@ -5,7 +5,9 @@
 {{- $global := .Values.global }}
 {{- $settings := .Values.settings }}
 {{- $isUpgrade := .Values.gateway.upgrade }}
-{{- range $name, $spec := .Values.gatewayProxies }}
+{{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{- $spec := deepCopy $gatewayProxy | merge $gatewaySpec -}}
 {{- $image := $spec.podTemplate.image }}
 {{- if $global }}
 {{- $image = merge $spec.podTemplate.image $global.image }}
@@ -91,8 +93,10 @@ spec:
         {{- end}}
 {{- end}}
 {{- if $spec.kind.deployment }}
-{{- if $spec.antiAffinity }}
+{{ if or ($spec.antiAffinity) ($spec.affinity) }}
       affinity:
+{{- end}}
+{{ if $spec.antiAffinity }}
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
           - weight: 100
@@ -102,6 +106,9 @@ spec:
                   gloo: gateway-proxy
               topologyKey: kubernetes.io/hostname
 {{- end}}
+{{- if $spec.affinity }}
+      {{ toYaml $spec.affinity | nindent 8 }}
+{{- end }}
 {{- end}}
       {{- include "gloo.pullSecret" $image | nindent 6 }}
       serviceAccountName: gateway-proxy
@@ -214,6 +221,9 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+{{- if $spec.extraProxyVolumeMounts }}
+{{ toYaml $spec.extraProxyVolumeMounts | indent 8 }}
+{{- end }}
 {{- if $spec.extraProxyVolumeMountHelper }}
 {{- include $spec.extraProxyVolumeMountHelper $ | nindent 8 }}
 {{- end }}
@@ -344,9 +354,9 @@ spec:
           - name: CA_ADDR
             value: istiod.istio-system.svc:15012
           - name: ISTIO_META_MESH_ID
-            value: cluster.local
+            value: {{ $spec.istioMetaMeshId | default "cluster.local"}}
           - name: ISTIO_META_CLUSTER_ID
-            value: Kubernetes
+            value: {{ $spec.istioMetaClusterId | default "Kubernetes"}}
           - name: POD_NAME
             valueFrom:
               fieldRef:
@@ -396,7 +406,7 @@ spec:
         - mountPath: /etc/istio-certs/
           name: istio-certs
         - mountPath: /var/run/secrets/tokens
-          name: istio-token 
+          name: istio-token
 {{- end}}
 {{- end}}
       volumes:
@@ -433,6 +443,9 @@ spec:
       {{- if $spec.extraContainersHelper }}
       - name: shared-data
         emptyDir: {}
+      {{- end }}
+      {{- if $spec.extraVolumes }}
+      {{ toYaml $spec.extraVolumes | nindent 6 }}
       {{- end }}
       {{- if $spec.extraVolumeHelper }}
       {{- include $spec.extraVolumeHelper $ | nindent 6 }}

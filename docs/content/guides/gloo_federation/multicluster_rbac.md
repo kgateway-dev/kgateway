@@ -110,6 +110,12 @@ spec:
       - '*'
       namespaces:
       - '*'
+  - apiGroup: fed.ratelimit.gloo.solo.io
+    placements:
+    - clusters:
+      - '*'
+      namespaces:
+      - '*'
 ```
 
 The `gloo-fed` MultiClusterRoleBinding associates the MultiClusterRole with the `gloo-fed` service account. Without the binding, the gloo-fed pod wouldn't be able to update the status of Gloo Edge Federation API objects.
@@ -214,6 +220,13 @@ spec:
       - remote
       namespaces:
       - gloo-system
+  - apiGroup: fed.gateway.solo.io
+    action: CREATE
+    placements:
+    - clusters:
+      - remote
+      namespaces:
+      - gloo-system
   - apiGroup: fed.enterprise.gloo.solo.io
     action: CREATE
     placements:
@@ -221,7 +234,7 @@ spec:
       - remote
       namespaces:
       - gloo-system
-  - apiGroup: fed.gateway.solo.io
+  - apiGroup: fed.ratelimit.gloo.solo.io
     action: CREATE
     placements:
     - clusters:
@@ -266,6 +279,9 @@ kubectl get multiclusterrolebinding -n gloo-fed remote-admin -oyaml
 
 You can customize both the MultiClusterRole and MultiClusterRoleBindings to match your unique requirements. Since the RBAC model is deny by default, any access not explicitly granted will be denied.
 
+{{< notice note >}}
+To use Google Groups in a GKE cluster, follow the instructions here: https://cloud.google.com/kubernetes-engine/docs/how-to/role-based-access-control.
+{{< /notice >}}
 ## Next Steps
 
 To get deeper into Federated Configuration, you can check out our [guide on the topic]({{% versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" %}}) next, or learn more about the [concepts]({{% versioned_link_path fromRoot="/introduction/gloo_federation/" %}}) behind Gloo Edge Federation.

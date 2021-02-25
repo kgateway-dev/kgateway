@@ -1,0 +1,26 @@
+{{- if .Values.gateway.enabled }}
+{{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{- $spec := deepCopy $gatewayProxy | merge $gatewaySpec -}}
+{{- if $spec.kind.deployment}}
+{{- if $spec.podDisruptionBudget }}
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $name | kebabcase }}-pdb
+  namespace: {{ $.Release.Namespace }}
+spec:
+  {{- if $spec.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ $spec.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if $spec.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ $spec.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      gloo: gateway-proxy
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

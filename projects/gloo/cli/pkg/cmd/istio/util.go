@@ -66,6 +66,32 @@ func getImageVersion(container corev1.Container) (string, error) {
 	return img[1], nil
 }
 
+//getIstioMetaMeshID returns the set value or default value 'cluster.local' if unset
+func getIstioMetaMeshID(istioMetaMeshID string) string {
+	var result = ""
+
+	if istioMetaMeshID == "" {
+		result = "cluster.local"
+	} else {
+		result = istioMetaMeshID
+	}
+
+	return result
+}
+
+//getIstioMetaClusterID returns the set value or default value 'Kubernetes' if unset
+func getIstioMetaClusterID(istioMetaClusterID string) string {
+	var result = ""
+
+	if istioMetaClusterID == "" {
+		result = "Kubernetes"
+	} else {
+		result = istioMetaClusterID
+	}
+
+	return result
+}
+
 // getJWTPolicy gets the JWT policy from istiod
 func getJWTPolicy(pilotContainer corev1.Container) string {
 	for _, env := range pilotContainer.Env {

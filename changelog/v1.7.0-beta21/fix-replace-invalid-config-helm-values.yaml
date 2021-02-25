@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix helm values mapping and test for .Values.settings.InvalidConfigPolicy
+    issueLink: https://github.com/solo-io/gloo/issues/4321

@@ -27,3 +27,4 @@ Test that extraListenersHelper is rendered correctly
 - mountPath: /var/run/sds
   name: sds-uds-path
 {{- end }}
+

@@ -126,8 +126,8 @@ func mustUpdateFormulas(ctx context.Context, versionBeingReleased *versionutils.
 			PRDescription:   "Created by Solo-io Bot",
 			PRCommitName:    "Solo-io Bot",
 			PRCommitEmail:   "bot@solo.io",
-			VersionRegex:    `:tag\s*=>\s*"v([0-9.]+)",`,
-			VersionShaRegex: `:revision\s*=>\s*"(.*)"`,
+			VersionRegex:    `tag:\s*"v([0-9.]+)",`,
+			VersionShaRegex: `revision:\s*"(.*)"`,
 		},
 	}
 

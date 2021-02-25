@@ -1,9 +1,12 @@
-{{- range $name, $spec := .Values.gatewayProxies }}
+{{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{- $spec := deepCopy $gatewayProxy | merge $gatewaySpec -}}
 {{- if and $spec.gatewaySettings (not $spec.disabled) }}
 {{$gatewaySettings := $spec.gatewaySettings}}
 {{- if not $gatewaySettings.disableGeneratedGateways -}}
 
 ---
+{{- if not $gatewaySettings.disableHttpGateway }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
@@ -24,17 +27,23 @@ spec:
 {{- else }}
   httpGateway: {}
 {{- end }}
-{{- if $gatewaySettings.options }}
+{{ if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
   options:
-{{ toYaml $gatewaySettings.options | indent 4 }}
 {{- end }}
+  {{- if $gatewaySettings.options }}
+  {{ toYaml $gatewaySettings.options | indent 4 }}
+  {{- end }}
+  {{- if $gatewaySettings.accessLoggingService }}
+    accessLoggingService:
+  {{ toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
+  {{- end }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
   ssl: false
   proxyNames:
   - {{ $name | kebabcase }}
-
+{{- end }}
 ---
-
+{{- if not $gatewaySettings.disableHttpsGateway -}}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
@@ -55,16 +64,22 @@ spec:
 {{- else }}
   httpGateway: {}
 {{- end }}
-{{- if $gatewaySettings.options }}
+{{ if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
   options:
-{{ toYaml $gatewaySettings.options | indent 4 }}
 {{- end }}
+  {{- if $gatewaySettings.options }}
+  {{ toYaml $gatewaySettings.options | indent 4 }}
+  {{- end }}
+  {{- if $gatewaySettings.accessLoggingService }}
+    accessLoggingService:
+  {{ toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
+  {{- end }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
   ssl: true
   proxyNames:
   - {{ $name | kebabcase }}
 {{- end }}
-
+{{- end }}
 ---
 
 {{- if $spec.failover }}

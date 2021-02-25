@@ -1,0 +1,6 @@
+changelog:
+- type: NON_USER_FACING
+  description: Added support for JWT validation to the `AccessTokenValidation` external auth Gloo Edge Enterprise API.
+  issueLink: https://github.com/solo-io/gloo/issues/4224
+  resolvesIssue: false
+

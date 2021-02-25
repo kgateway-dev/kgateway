@@ -312,10 +312,14 @@
 |gatewayProxies.NAME.service.loadBalancerIP|string||IP address of the load balancer|
 |gatewayProxies.NAME.service.loadBalancerSourceRanges[]|string||List of IP CIDR ranges that are allowed to access the load balancer|
 |gatewayProxies.NAME.service.customPorts[]|interface||List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)|
+|gatewayProxies.NAME.service.externalIPs[]|string||externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service|
 |gatewayProxies.NAME.antiAffinity|bool||configure anti affinity such that pods are preferably not co-located|
+|gatewayProxies.NAME.affinity[].NAME|interface|||
 |gatewayProxies.NAME.tracing.provider|string|||
 |gatewayProxies.NAME.tracing.cluster|string|||
 |gatewayProxies.NAME.gatewaySettings.disableGeneratedGateways|bool||set to true to disable the gateway generation for a gateway proxy|
+|gatewayProxies.NAME.gatewaySettings.disableHttpGateway|bool||Set to true to disable http gateway generation.|
+|gatewayProxies.NAME.gatewaySettings.disableHttpsGateway|bool||Set to true to disable https gateway generation.|
 |gatewayProxies.NAME.gatewaySettings.ipv4Only|bool||set to true if your network allows ipv4 addresses only. Sets the Gateway spec's bindAddress to 0.0.0.0 instead of ::|
 |gatewayProxies.NAME.gatewaySettings.useProxyProto|bool||use proxy protocol|
 |gatewayProxies.NAME.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
@@ -331,15 +335,18 @@
 |gatewayProxies.NAME.gatewaySettings.options.read_gateways_from_all_namespaces|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.always_sort_route_table_routes|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.compressed_proxy_spec|bool|||
+|gatewayProxies.NAME.gatewaySettings.accessLoggingService.access_log[]|interface|||
 |gatewayProxies.NAME.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.NAME.extraContainersHelper|string|||
 |gatewayProxies.NAME.extraInitContainersHelper|string|||
+|gatewayProxies.NAME.extraVolumes[].NAME|interface|||
 |gatewayProxies.NAME.extraVolumeHelper|string|||
 |gatewayProxies.NAME.extraListenersHelper|string|||
 |gatewayProxies.NAME.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |gatewayProxies.NAME.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
 |gatewayProxies.NAME.readConfig|bool||expose a read-only subset of the envoy admin api|
 |gatewayProxies.NAME.readConfigMulticluster|bool||expose a read-only subset of the envoy admin api to gloo-fed|
+|gatewayProxies.NAME.extraProxyVolumeMounts[].NAME|interface|||
 |gatewayProxies.NAME.extraProxyVolumeMountHelper|string||name of custom made named template allowing for extra volume mounts on the proxy container|
 |gatewayProxies.NAME.loopBackAddress|string||Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
 |gatewayProxies.NAME.failover.enabled|bool||(Enterprise Only): Configure this proxy for failover|
@@ -350,6 +357,16 @@
 |gatewayProxies.NAME.envoyApiVersion|string||Version of the envoy API to use for the xDS transport and resources. Default is V3|
 |gatewayProxies.NAME.envoyBootstrapExtensions[].NAME|interface||List of bootstrap extensions to add to envoy bootstrap config. Examples include Wasm Service (https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-wasmservice).|
 |gatewayProxies.NAME.envoyStaticClusters[].NAME|interface||List of extra static clusters to be added to envoy bootstrap config. https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#envoy-v3-api-msg-config-cluster-v3-cluster|
+|gatewayProxies.NAME.horizontalPodAutoscaler.apiVersion|string||accepts autoscaling/v1 or autoscaling/v2beta2.|
+|gatewayProxies.NAME.horizontalPodAutoscaler.minReplicas|int32||minReplicas is the lower limit for the number of replicas to which the autoscaler can scale down.|
+|gatewayProxies.NAME.horizontalPodAutoscaler.maxReplicas|int32||maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up. It cannot be less that minReplicas.|
+|gatewayProxies.NAME.horizontalPodAutoscaler.targetCPUUtilizationPercentage|int32||target average CPU utilization (represented as a percentage of requested CPU) over all the pods. Used only with apiVersion autoscaling/v1|
+|gatewayProxies.NAME.horizontalPodAutoscaler.metrics[].NAME|interface||metrics contains the specifications for which to use to calculate the desired replica count (the maximum replica count across all metrics will be used). Used only with apiVersion autoscaling/v2beta2|
+|gatewayProxies.NAME.horizontalPodAutoscaler.behavior.NAME|interface||behavior configures the scaling behavior of the target in both Up and Down directions (scaleUp and scaleDown fields respectively). Used only with apiVersion autoscaling/v2beta2|
+|gatewayProxies.NAME.podDisruptionBudget.minAvailable|int32||An eviction is allowed if at least "minAvailable" pods selected by "selector" will still be available after the eviction, i.e. even in the absence of the evicted pod. So for example you can prevent all voluntary evictions by specifying "100%".|
+|gatewayProxies.NAME.podDisruptionBudget.maxUnavailable|int32||An eviction is allowed if at most "maxUnavailable" pods selected by "selector" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with "minAvailable".|
+|gatewayProxies.NAME.istioMetaMeshId|string||ISTIO_META_MESH_ID Environment Variable. Defaults to "cluster.local"|
+|gatewayProxies.NAME.IstioMetaClusterId|string||ISTIO_META_CLUSTER_ID Environment Variable. Defaults to "Kubernetes"|
 |gatewayProxies.gatewayProxy.kind.deployment.replicas|int|1|number of instances to deploy|
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].name|string|||
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].value|string|||
@@ -436,10 +453,14 @@
 |gatewayProxies.gatewayProxy.service.loadBalancerIP|string||IP address of the load balancer|
 |gatewayProxies.gatewayProxy.service.loadBalancerSourceRanges[]|string||List of IP CIDR ranges that are allowed to access the load balancer|
 |gatewayProxies.gatewayProxy.service.customPorts[]|interface||List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)|
+|gatewayProxies.gatewayProxy.service.externalIPs[]|string||externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service|
 |gatewayProxies.gatewayProxy.antiAffinity|bool|false|configure anti affinity such that pods are preferably not co-located|
+|gatewayProxies.gatewayProxy.affinity[].NAME|interface|||
 |gatewayProxies.gatewayProxy.tracing.provider|string|||
 |gatewayProxies.gatewayProxy.tracing.cluster|string|||
 |gatewayProxies.gatewayProxy.gatewaySettings.disableGeneratedGateways|bool|false|set to true to disable the gateway generation for a gateway proxy|
+|gatewayProxies.gatewayProxy.gatewaySettings.disableHttpGateway|bool|false|Set to true to disable http gateway generation.|
+|gatewayProxies.gatewayProxy.gatewaySettings.disableHttpsGateway|bool|false|Set to true to disable https gateway generation.|
 |gatewayProxies.gatewayProxy.gatewaySettings.ipv4Only|bool|false|set to true if your network allows ipv4 addresses only. Sets the Gateway spec's bindAddress to 0.0.0.0 instead of ::|
 |gatewayProxies.gatewayProxy.gatewaySettings.useProxyProto|bool|false|use proxy protocol|
 |gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
@@ -455,15 +476,18 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.options.read_gateways_from_all_namespaces|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.always_sort_route_table_routes|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.compressed_proxy_spec|bool|false||
+|gatewayProxies.gatewayProxy.gatewaySettings.accessLoggingService.access_log[]|interface|||
 |gatewayProxies.gatewayProxy.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.gatewayProxy.extraContainersHelper|string|||
 |gatewayProxies.gatewayProxy.extraInitContainersHelper|string|||
+|gatewayProxies.gatewayProxy.extraVolumes[].NAME|interface|||
 |gatewayProxies.gatewayProxy.extraVolumeHelper|string|||
 |gatewayProxies.gatewayProxy.extraListenersHelper|string|||
 |gatewayProxies.gatewayProxy.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |gatewayProxies.gatewayProxy.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
 |gatewayProxies.gatewayProxy.readConfig|bool|false|expose a read-only subset of the envoy admin api|
 |gatewayProxies.gatewayProxy.readConfigMulticluster|bool|false|expose a read-only subset of the envoy admin api to gloo-fed|
+|gatewayProxies.gatewayProxy.extraProxyVolumeMounts[].NAME|interface|||
 |gatewayProxies.gatewayProxy.extraProxyVolumeMountHelper|string||name of custom made named template allowing for extra volume mounts on the proxy container|
 |gatewayProxies.gatewayProxy.loopBackAddress|string|127.0.0.1|Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
 |gatewayProxies.gatewayProxy.failover.enabled|bool|false|(Enterprise Only): Configure this proxy for failover|
@@ -474,6 +498,16 @@
 |gatewayProxies.gatewayProxy.envoyApiVersion|string|V3|Version of the envoy API to use for the xDS transport and resources. Default is V3|
 |gatewayProxies.gatewayProxy.envoyBootstrapExtensions[].NAME|interface||List of bootstrap extensions to add to envoy bootstrap config. Examples include Wasm Service (https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-wasmservice).|
 |gatewayProxies.gatewayProxy.envoyStaticClusters[].NAME|interface||List of extra static clusters to be added to envoy bootstrap config. https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#envoy-v3-api-msg-config-cluster-v3-cluster|
+|gatewayProxies.gatewayProxy.horizontalPodAutoscaler.apiVersion|string||accepts autoscaling/v1 or autoscaling/v2beta2.|
+|gatewayProxies.gatewayProxy.horizontalPodAutoscaler.minReplicas|int32||minReplicas is the lower limit for the number of replicas to which the autoscaler can scale down.|
+|gatewayProxies.gatewayProxy.horizontalPodAutoscaler.maxReplicas|int32||maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up. It cannot be less that minReplicas.|
+|gatewayProxies.gatewayProxy.horizontalPodAutoscaler.targetCPUUtilizationPercentage|int32||target average CPU utilization (represented as a percentage of requested CPU) over all the pods. Used only with apiVersion autoscaling/v1|
+|gatewayProxies.gatewayProxy.horizontalPodAutoscaler.metrics[].NAME|interface||metrics contains the specifications for which to use to calculate the desired replica count (the maximum replica count across all metrics will be used). Used only with apiVersion autoscaling/v2beta2|
+|gatewayProxies.gatewayProxy.horizontalPodAutoscaler.behavior.NAME|interface||behavior configures the scaling behavior of the target in both Up and Down directions (scaleUp and scaleDown fields respectively). Used only with apiVersion autoscaling/v2beta2|
+|gatewayProxies.gatewayProxy.podDisruptionBudget.minAvailable|int32||An eviction is allowed if at least "minAvailable" pods selected by "selector" will still be available after the eviction, i.e. even in the absence of the evicted pod. So for example you can prevent all voluntary evictions by specifying "100%".|
+|gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable|int32||An eviction is allowed if at most "maxUnavailable" pods selected by "selector" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with "minAvailable".|
+|gatewayProxies.gatewayProxy.istioMetaMeshId|string||ISTIO_META_MESH_ID Environment Variable. Defaults to "cluster.local"|
+|gatewayProxies.gatewayProxy.IstioMetaClusterId|string||ISTIO_META_CLUSTER_ID Environment Variable. Defaults to "Kubernetes"|
 |ingress.enabled|bool|false||
 |ingress.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |ingress.deployment.image.repository|string|ingress|image name (repository) for the container.|

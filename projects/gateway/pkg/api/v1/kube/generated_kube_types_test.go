@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	"github.com/solo-io/solo-kit/test/helpers"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 
@@ -52,10 +54,10 @@ var _ = Describe("Generated Kube Code", func() {
 		apiExts, err = apiext.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = gloov1.UpstreamCrd.Register(ctx, apiExts)
+		err = helpers.AddAndRegisterCrd(ctx, gloov1.UpstreamCrd, apiExts)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = gatewayv1.VirtualServiceCrd.Register(ctx, apiExts)
+		err = helpers.AddAndRegisterCrd(ctx, gatewayv1.VirtualServiceCrd, apiExts)
 		Expect(err).NotTo(HaveOccurred())
 
 		glooV1Client, err = gloov1kube.NewForConfig(cfg)
@@ -70,18 +72,16 @@ var _ = Describe("Generated Kube Code", func() {
 		kubeCache := kube.NewKubeCache(context.TODO())
 
 		upstreamClient, err = gloov1.NewUpstreamClient(ctx, &factory.KubeResourceClientFactory{
-			Crd:             gloov1.UpstreamCrd,
-			Cfg:             cfg,
-			SharedCache:     kubeCache,
-			SkipCrdCreation: true,
+			Crd:         gloov1.UpstreamCrd,
+			Cfg:         cfg,
+			SharedCache: kubeCache,
 		})
 		Expect(err).NotTo(HaveOccurred())
 
 		virtualServiceClient, err = gatewayv1.NewVirtualServiceClient(ctx, &factory.KubeResourceClientFactory{
-			Crd:             gatewayv1.VirtualServiceCrd,
-			Cfg:             cfg,
-			SharedCache:     kubeCache,
-			SkipCrdCreation: true,
+			Crd:         gatewayv1.VirtualServiceCrd,
+			Cfg:         cfg,
+			SharedCache: kubeCache,
 		})
 		Expect(err).NotTo(HaveOccurred())
 	})

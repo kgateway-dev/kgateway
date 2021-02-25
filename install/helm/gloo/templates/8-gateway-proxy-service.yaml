@@ -1,5 +1,7 @@
 {{- if .Values.gateway.enabled }}
-{{- range $name, $spec := .Values.gatewayProxies }}
+{{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{- $spec := deepCopy $gatewayProxy | merge $gatewaySpec -}}
 {{- if not $spec.disabled }}
 {{- $svcName := default $name $spec.service.name }}
 ---
@@ -19,6 +21,14 @@ metadata:
   {{- end }}
 {{- end }}
 spec:
+{{- if $spec.service.externalIPs }}
+{{- with $spec.service.externalIPs }}
+  externalIPs:
+    {{- range . }}
+    - {{ . }}
+    {{- end }}
+{{- end }} {{/* with spec.service.externalIPs */}}
+{{- end }} {{/* $spec.service.externalIPs */}}
 {{- if $spec.service.externalTrafficPolicy }}
   externalTrafficPolicy: {{ $spec.service.externalTrafficPolicy }}
 {{- end }}

@@ -136,12 +136,6 @@ var (
 		&KubeService{})
 )
 
-func init() {
-	if err := crd.AddCrd(KubeServiceCrd); err != nil {
-		log.Fatalf("could not add crd to global registry")
-	}
-}
-
 var (
 	KubeServiceGVK = schema.GroupVersionKind{
 		Version: "v1",
