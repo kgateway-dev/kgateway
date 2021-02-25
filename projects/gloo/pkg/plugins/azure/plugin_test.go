@@ -204,7 +204,6 @@ var _ = Describe("Plugin", func() {
 	})
 })
 
-
 func getClusterTlsContext(cluster *envoy_config_cluster_v3.Cluster) *envoyauth.UpstreamTlsContext {
 	return utils.MustAnyToMessage(cluster.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
 }
