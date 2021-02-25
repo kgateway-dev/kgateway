@@ -55,18 +55,14 @@ type HelmInstall struct {
 	HelmChartValueFileNames []string
 	HelmReleaseName         string
 	Version                 string
-	LicenseKey              string
 }
 
 type Install struct {
-	HelmInstall
-	Federation Federation
+	Gloo       HelmInstall
+	Federation HelmInstall
 	Knative    Knative
 	WithUi     bool
-}
-
-type Federation struct {
-	HelmInstall
+	LicenseKey string
 }
 
 type Knative struct {
