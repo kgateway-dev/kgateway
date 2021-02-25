@@ -187,10 +187,15 @@ var _ = Describe("Plugin", func() {
 				initParams.Settings = &v1.Settings{}
 			})
 
-			It("should not configure CommonTlsContext", func() {
+			It("should configure CommonTlsContext without TlsParams", func() {
 				err := p.ProcessUpstream(params, upstream, out)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(tlsContext().GetCommonTlsContext()).To(BeNil())
+
+				commonTlsContext := tlsContext().GetCommonTlsContext()
+				Expect(commonTlsContext).NotTo(BeNil())
+
+				tlsParams := commonTlsContext.GetTlsParams()
+				Expect(tlsParams).To(BeNil())
 			})
 		})
 
