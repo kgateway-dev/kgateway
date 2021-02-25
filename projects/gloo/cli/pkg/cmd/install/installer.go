@@ -74,16 +74,16 @@ func NewInstallerWithWriter(helmClient HelmClient, kubeNsClient v1.NamespaceInte
 }
 
 func (i *installer) Install(installerConfig *InstallerConfig) error {
-	if installerConfig.Mode == Enterprise {
+	if installerConfig.Mode == Enterprise && installerConfig.InstallCliArgs.WithGlooFed {
 		err := i.installFromConfig(installerConfig)
 		if err != nil {
 			return err
 		}
 		installerConfig.Mode = Federation
 		return i.installFromConfig(installerConfig)
-	} else {
-		return i.installFromConfig(installerConfig)
 	}
+
+	return i.installFromConfig(installerConfig)
 }
 
 func (i *installer) installFromConfig(installerConfig *InstallerConfig) error {
