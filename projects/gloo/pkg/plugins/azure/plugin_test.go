@@ -15,9 +15,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = FDescribe("Plugin", func() {
+var _ = Describe("Plugin", func() {
 	var (
 		p      		plugins.Plugin
+		namespace 	string
 		initParams 	plugins.InitParams
 		params 		plugins.Params
 		upstream     *v1.Upstream
@@ -29,17 +30,18 @@ var _ = FDescribe("Plugin", func() {
 		var b bool
 		p = azureplugin.NewPlugin(&b)
 
+		// TODO: support namespace
+		namespace = ""
 		initParams = plugins.InitParams{}
 		params = plugins.Params{}
 
 		upstreamSpec = &azure.UpstreamSpec{
-			FunctionAppName: "my-appwhos",
+			FunctionAppName: "app-name",
 		}
 		upstream = &v1.Upstream{
 			Metadata: &core.Metadata{
-				Name: "test",
-				// TODO(yuval-k): namespace
-				Namespace: "",
+				Name: "us",
+				Namespace: namespace,
 			},
 			UpstreamType: &v1.Upstream_Azure{
 				Azure: upstreamSpec,
@@ -63,17 +65,17 @@ var _ = FDescribe("Plugin", func() {
 		})
 
 		Context("with secrets", func() {
+
 			BeforeEach(func() {
 				upstreamSpec.SecretRef = &core.ResourceRef{
-					Namespace: "",
+					Namespace: namespace,
 					Name:      "azure-secret1",
 				}
 				params.Snapshot = &v1.ApiSnapshot{
 					Secrets: v1.SecretList{{
 						Metadata: &core.Metadata{
 							Name: "azure-secret1",
-							// TODO(yuval-k): namespace
-							Namespace: "",
+							Namespace: namespace,
 						},
 						Kind: &v1.Secret_Azure{
 							Azure: &v1.AzureSecret{
@@ -95,8 +97,8 @@ var _ = FDescribe("Plugin", func() {
 			It("should have the correct output", func() {
 				Expect(out.LoadAssignment.Endpoints).Should(HaveLen(1))
 
-				tlsContext := utils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
-				Expect(tlsContext.Sni).To(Equal("my-appwhos.azurewebsites.net"))
+				tlsContext := getClusterTlsContext(out)
+				Expect(tlsContext.Sni).To(Equal("app-name.azurewebsites.net"))
 				Expect(out.GetType()).To(Equal(envoy_config_cluster_v3.Cluster_LOGICAL_DNS))
 				Expect(out.DnsLookupFamily).To(Equal(envoy_config_cluster_v3.Cluster_V4_ONLY))
 			})
@@ -111,30 +113,39 @@ var _ = FDescribe("Plugin", func() {
 
 			It("should have the correct output", func() {
 				Expect(out.LoadAssignment.Endpoints).Should(HaveLen(1))
-				tlsContext := utils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
-				Expect(tlsContext.Sni).To(Equal("my-appwhos.azurewebsites.net"))
+				tlsContext := getClusterTlsContext(out)
+
+				Expect(tlsContext.Sni).To(Equal("app-name.azurewebsites.net"))
 				Expect(out.GetType()).To(Equal(envoy_config_cluster_v3.Cluster_LOGICAL_DNS))
 				Expect(out.DnsLookupFamily).To(Equal(envoy_config_cluster_v3.Cluster_V4_ONLY))
 			})
 		})
 
-		/**
 		Context("with ssl", func() {
+
 			Context("should allow configuring ssl without settings.UpstreamOptions", func() {
+
 				BeforeEach(func() {
 					initParams.Settings = &v1.Settings{}
 				})
 
-				It("should not configure CommonTlsContext", func() {
-					err := p.ProcessUpstream(params, upstream, out)
+				It("should not error", func() {
 					Expect(err).NotTo(HaveOccurred())
-					Expect(tlsContext().GetCommonTlsContext()).To(BeNil())
 				})
+
+				It("should configure CommonTlsContext without TlsParams", func() {
+					commonTlsContext := getClusterTlsContext(out).GetCommonTlsContext()
+					Expect(commonTlsContext).NotTo(BeNil())
+
+					tlsParams := commonTlsContext.GetTlsParams()
+					Expect(tlsParams).To(BeNil())
+				})
+
 			})
 
 			Context("should allow configuring ssl with settings.UpstreamOptions", func() {
+
 				BeforeEach(func() {
-					upstreamSpec.UseTls = true
 					initParams.Settings = &v1.Settings{
 						UpstreamOptions: &v1.UpstreamOptions{
 							SslParameters: &v1.SslParameters{
@@ -147,24 +158,30 @@ var _ = FDescribe("Plugin", func() {
 					}
 				})
 
-				It("should configure CommonTlsContext", func() {
-					err := p.ProcessUpstream(params, upstream, out)
+				It("should not error", func() {
 					Expect(err).NotTo(HaveOccurred())
+				})
 
-					tlsParams := tlsContext().GetCommonTlsContext().GetTlsParams()
+				It("should configure CommonTlsContext", func() {
+					commonTlsContext := getClusterTlsContext(out).GetCommonTlsContext()
+					Expect(commonTlsContext).NotTo(BeNil())
+
+					tlsParams := commonTlsContext.GetTlsParams()
 					Expect(tlsParams).NotTo(BeNil())
+
 					Expect(tlsParams.GetCipherSuites()).To(Equal([]string{"cipher-test"}))
 					Expect(tlsParams.GetEcdhCurves()).To(Equal([]string{"ec-dh-test"}))
 					Expect(tlsParams.GetTlsMinimumProtocolVersion()).To(Equal(envoyauth.TlsParameters_TLSv1_1))
 					Expect(tlsParams.GetTlsMaximumProtocolVersion()).To(Equal(envoyauth.TlsParameters_TLSv1_2))
 				})
+
 			})
 
 			Context("should error while configuring ssl with invalid tls versions in settings.UpstreamOptions", func() {
+
 				var invalidProtocolVersions v1.SslParameters_ProtocolVersion = 5 // INVALID
 
 				BeforeEach(func() {
-					upstreamSpec.UseTls = true
 					initParams.Settings = &v1.Settings{
 						UpstreamOptions: &v1.UpstreamOptions{
 							SslParameters: &v1.SslParameters{
@@ -177,12 +194,17 @@ var _ = FDescribe("Plugin", func() {
 					}
 				})
 
-				It("should not ProcessUpstream", func() {
-					err := p.ProcessUpstream(params, upstream, out)
+				It("should error", func() {
 					Expect(err).To(HaveOccurred())
 				})
+
 			})
+
 		})
-		 */
 	})
 })
+
+
+func getClusterTlsContext(cluster *envoy_config_cluster_v3.Cluster) *envoyauth.UpstreamTlsContext {
+	return utils.MustAnyToMessage(cluster.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
+}
