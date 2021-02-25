@@ -1,7 +1,7 @@
 ---
 title: OAuth
 weight: 20
-description: External Auth with Oauth
+description: External Auth with OAuth
 ---
 
 {{% notice note %}}
@@ -68,7 +68,7 @@ will redirect them to this URL. Gloo Edge will intercept requests with this path
 the Identity Provider for an ID token, place the ID token in a cookie on the request, and forward the request to its original destination. 
 
 {{% notice note %}}
-The callback path must have a matching route in the VirtualService associated with the OIDC settings. For example, you could simply have a `/` path-prefix route which would match any callback path. The important part of this callback "catch all" route is that it goes through the routing filters including external auth. Please see the examples for Google and Dex. 
+The callback path must have a matching route in the VirtualService associated with the OIDC settings. For example, you could simply have a `/` path-prefix route which would match any callback path. The important part of this callback "catch all" route is that it goes through the routing filters including external auth. Please see the examples for Google, Dex, and Okta. 
 {{% /notice %}}
 
 - `client_id`: This is the **client id** that you obtained when you registered your application with the identity provider.
@@ -101,9 +101,9 @@ data:
 
 Use the cookieOptions field to customize cookie behavior:
 - notSecure - Set the cookie to not secure. This is not recommended, but might be useful for demo/testing purposes.
-- maxAge - The max age of the cookie in seconds.
-- path - The path of the cookie.
-- domain - The domain of the cookie.
+- maxAge - The max age of the cookie in seconds.  Leave unset for a default of 30 days (2592000 seconds). To disable cookie expiry, set explicitly to 0.
+- path - The path of the cookie.  If unset, it defaults to "/". Set it explicitly to "" to avoid setting a path.
+- domain - The domain of the cookie.  The default value is empty and matches only the originating request.  This is fine for cases where the `VirtualService` matches the host value that is also the redirect target of the IdP.  However, this value is critical if the OAuth provider is redirecting the request to another subdomain, for example.  Consider a case where a `VirtualService` matches requests to `*.example.com` and the IdP redirects its auth requests to `subdomain.example.com`.  With default settings for `domain`, if a request comes in on `other.example.com`, the operation fails. The user is directed to the IdP login as expected but auth fails because the token-bearing cookie is not sent back to the proxy, since the request originates from a different subdomain.  However, if this `domain` property is set to `example.com`, then the operation succeeds because the cookie is sent to any subdomain of `example.com`.
 
 Example configuration:
 
@@ -131,7 +131,7 @@ spec:
             notSecure: true
             maxAge: 3600
 {{< /highlight >}}
-## Logout url
+## Logout URL
 
 Gloo also supports specifying a logout url. When specified, accessing this url will
 trigger a deletion of the user session, with an empty 200 OK response returned.
