@@ -2,6 +2,7 @@ package initpluginmanager
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -9,7 +10,6 @@ import (
 	"os/exec"
 
 	"github.com/rotisserie/eris"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -32,11 +32,9 @@ func Command(ctx context.Context) *cobra.Command {
 			if opts.home != "" {
 				installCmd.Env = append(installCmd.Env, "GLOOCTL_HOME="+opts.home)
 			}
-
 			return installCmd.Run()
 		},
 	}
-
 	opts.addToFlags(cmd.Flags())
 	cmd.SilenceUsage = true
 	return cmd
@@ -63,14 +61,12 @@ func downloadScript(ctx context.Context) (io.ReadCloser, error) {
 	if res.StatusCode != http.StatusOK {
 		b, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			logrus.WithError(err).Debug("could not read response body")
+			fmt.Println("could not read response body")
 		} else {
-			logrus.Debugf("response body: %s", string(b))
+			fmt.Printf("response body: %s\n", string(b))
 		}
 		res.Body.Close()
-
 		return nil, eris.Errorf("could not download script: %d %s", res.StatusCode, res.Status)
 	}
-
 	return res.Body, nil
 }
