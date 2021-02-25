@@ -58,11 +58,12 @@ type HelmInstall struct {
 }
 
 type Install struct {
-	Gloo       HelmInstall
-	Federation HelmInstall
-	Knative    Knative
-	WithUi     bool
-	LicenseKey string
+	Gloo        HelmInstall
+	Federation  HelmInstall
+	Knative     Knative
+	WithUi      bool
+	LicenseKey  string
+	WithGlooFed bool
 }
 
 type Knative struct {

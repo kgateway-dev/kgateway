@@ -73,6 +73,15 @@ func NewInstallerWithWriter(helmClient HelmClient, kubeNsClient v1.NamespaceInte
 	}
 }
 
+func (i *installer) InstallEnterprise(installerConfig *InstallerConfig) error {
+	err := i.Install(installerConfig)
+	if err != nil {
+		return err
+	}
+	installerConfig.Mode = Federation
+	return i.Install(installerConfig)
+}
+
 func (i *installer) Install(installerConfig *InstallerConfig) error {
 	helmInstallConfig := installerConfig.InstallCliArgs.Gloo
 	if installerConfig.Mode == Federation {

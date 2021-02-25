@@ -22,6 +22,7 @@ func AddEnterpriseInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	set.BoolVarP(&install.Gloo.DryRun, "dry-run", "d", false, "Dump the raw installation yaml instead of applying it to kubernetes")
 	set.StringVar(&install.LicenseKey, "license-key", "", "License key to activate GlooE features")
 	set.BoolVar(&install.WithUi, "with-admin-console", false, "install gloo and a read-only version of its admin console")
+	set.BoolVar(&install.WithGlooFed, "with-gloo-fed", true, "Install Gloo-Fed alongside Gloo Enterprise")
 }
 
 func AddFederationInstallFlags(set *pflag.FlagSet, install *options.Install) {
