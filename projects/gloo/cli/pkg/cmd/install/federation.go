@@ -21,12 +21,8 @@ func glooFedCmd(opts *options.Options) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			extraValues := map[string]interface{}{
-				"license": map[string]interface{}{
-					"key": opts.Install.Federation.LicenseKey,
-				},
+				"license_key": opts.Install.LicenseKey,
 			}
-
-			opts.Install.HelmInstall = opts.Install.Federation.HelmInstall
 
 			if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
 				InstallCliArgs: &opts.Install,
@@ -43,6 +39,6 @@ func glooFedCmd(opts *options.Options) *cobra.Command {
 	}
 
 	pflags := cmd.PersistentFlags()
-	flagutils.AddFederationInstallFlags(pflags, &opts.Install.Federation)
+	flagutils.AddFederationInstallFlags(pflags, &opts.Install)
 	return cmd
 }
