@@ -17,8 +17,12 @@ spec:
     restXdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.restXdsPort }}"
     enableRestEds: {{ .Values.settings.enableRestEds }}
 {{- end }}
-{{- if .Values.settings.replaceInvalidRoutes }}
+{{- /* .Values.settings.replaceInvalidRoutes for backwards compatibility */}}
+{{- if or (.Values.settings.invalidConfigPolicy) (.Values.settings.replaceInvalidRoutes) }}
     invalidConfigPolicy:
+    {{- if .Values.settings.replaceInvalidRoutes }}
+      replaceInvalidRoutes: {{ .Values.settings.replaceInvalidRoutes }}
+    {{- end }}
 {{ toYaml .Values.settings.invalidConfigPolicy | indent 6}}
 {{- end }}
     disableKubernetesDestinations: {{ .Values.settings.disableKubernetesDestinations | default false }}
