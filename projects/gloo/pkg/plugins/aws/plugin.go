@@ -85,7 +85,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	out.DnsLookupFamily = envoy_config_cluster_v3.Cluster_V4_ONLY
 	pluginutils.EnvoySingleEndpointLoadAssignment(out, lambdaHostname, 443)
 
-	commonTlsContext, err := getCommonTlsContextFromUpstreamOptions(p.upstreamOptions)
+	commonTlsContext, err := utils.GetCommonTlsContextFromUpstreamOptions(p.upstreamOptions)
 	if err != nil {
 		return err
 	}
@@ -267,18 +267,4 @@ func (p *plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 	return []plugins.StagedHttpFilter{
 		f,
 	}, nil
-}
-
-// We support global UpstreamOptions to define SslParameters for all upstreams
-// If an upstream is configure with ssl, it will inherit the defaults here:
-// https://github.com/solo-io/gloo/blob/15da82bdd65ab4bcedbc7fb803ea0bb5f7e926fc/projects/gloo/pkg/translator/clusters.go#L108
-// However, if an upstream is configured with one-way TLS, we must explicitly apply the defaults, since there is no ssl
-// configuration on the upstream
-func getCommonTlsContextFromUpstreamOptions(options *v1.UpstreamOptions) (*envoyauth.CommonTlsContext, error) {
-	sslCfgTranslator := utils.NewSslConfigTranslator()
-	tlsParams, err := sslCfgTranslator.ResolveSslParamsConfig(options.GetSslParameters())
-
-	return &envoyauth.CommonTlsContext{
-		TlsParams: tlsParams,
-	}, err
 }

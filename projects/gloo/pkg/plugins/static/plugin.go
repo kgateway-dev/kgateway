@@ -125,7 +125,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		// tell envoy to use TLS to connect to this upstream
 		// TODO: support client certificates
 		if out.TransportSocket == nil {
-			commonTlsContext, err := getCommonTlsContextFromUpstreamOptions(p.settings.GetUpstreamOptions())
+			commonTlsContext, err := utils.GetCommonTlsContextFromUpstreamOptions(p.settings.GetUpstreamOptions())
 			if err != nil {
 				return err
 			}
@@ -246,18 +246,4 @@ func metadataMatch(spec *v1static.UpstreamSpec, in *v1static.Host) *pbgostruct.S
 			},
 		},
 	}
-}
-
-// We support global UpstreamOptions to define SslParameters for all upstreams
-// If an upstream is configure with ssl, it will inherit the defaults here:
-// https://github.com/solo-io/gloo/blob/15da82bdd65ab4bcedbc7fb803ea0bb5f7e926fc/projects/gloo/pkg/translator/clusters.go#L108
-// However, if an upstream is configured with one-way TLS, we must explicitly apply the defaults, since there is no ssl
-// configuration on the upstream
-func getCommonTlsContextFromUpstreamOptions(options *v1.UpstreamOptions) (*envoyauth.CommonTlsContext, error) {
-	sslCfgTranslator := utils.NewSslConfigTranslator()
-	tlsParams, err := sslCfgTranslator.ResolveSslParamsConfig(options.GetSslParameters())
-
-	return &envoyauth.CommonTlsContext{
-		TlsParams: tlsParams,
-	}, err
 }
