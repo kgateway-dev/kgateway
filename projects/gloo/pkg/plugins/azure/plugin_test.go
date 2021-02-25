@@ -1,6 +1,8 @@
 package azure_test
 
 import (
+	"context"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
@@ -32,7 +34,9 @@ var _ = Describe("Plugin", func() {
 
 		// TODO: support namespace
 		namespace = ""
-		initParams = plugins.InitParams{}
+		initParams = plugins.InitParams{
+			Ctx: context.TODO(),
+		}
 		params = plugins.Params{}
 
 		upstreamSpec = &azure.UpstreamSpec{
