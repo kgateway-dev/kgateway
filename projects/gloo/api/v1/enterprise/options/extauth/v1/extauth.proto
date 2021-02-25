@@ -12,7 +12,7 @@ option (extproto.hash_all) = true;
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
-import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/service/discovery/v3/discovery.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
@@ -847,15 +847,15 @@ message ExtAuthConfig {
 @solo-kit:resource.xds-enabled
 */
 service ExtAuthDiscoveryService {
-    rpc StreamExtAuthConfig (stream envoy.api.v2.DiscoveryRequest) returns (stream envoy.api.v2.DiscoveryResponse) {
+    rpc StreamExtAuthConfig (stream envoy.service.discovery.v3.DiscoveryRequest) returns (stream envoy.service.discovery.v3.DiscoveryResponse) {
     }
 
-    rpc DeltaExtAuthConfig (stream envoy.api.v2.DeltaDiscoveryRequest) returns (stream envoy.api.v2.DeltaDiscoveryResponse) {
+    rpc DeltaExtAuthConfig (stream envoy.service.discovery.v3.DeltaDiscoveryRequest) returns (stream envoy.service.discovery.v3.DeltaDiscoveryResponse) {
     }
 
-    rpc FetchExtAuthConfig (envoy.api.v2.DiscoveryRequest) returns (envoy.api.v2.DiscoveryResponse) {
+    rpc FetchExtAuthConfig (envoy.service.discovery.v3.DiscoveryRequest) returns (envoy.service.discovery.v3.DiscoveryResponse) {
         option (google.api.http) = {
-      post : "/v2/discovery:extauthconfig"
+      post : "/v3/discovery:extauthconfig"
       body : "*"
     };
     }

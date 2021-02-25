@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	discovery "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -73,7 +73,7 @@ func NewExtAuthDiscoveryServiceServer(genericServer server.Server) ExtAuthDiscov
 }
 
 func (s *extAuthDiscoveryServiceServer) StreamExtAuthConfig(stream ExtAuthDiscoveryService_StreamExtAuthConfigServer) error {
-	return s.Server.StreamV2(stream, ExtAuthConfigType)
+	return s.Server.StreamV3(stream, ExtAuthConfigType)
 }
 
 func (s *extAuthDiscoveryServiceServer) FetchExtAuthConfig(ctx context.Context, req *discovery.DiscoveryRequest) (*discovery.DiscoveryResponse, error) {
@@ -81,7 +81,7 @@ func (s *extAuthDiscoveryServiceServer) FetchExtAuthConfig(ctx context.Context, 
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
 	req.TypeUrl = ExtAuthConfigType
-	return s.Server.FetchV2(ctx, req)
+	return s.Server.FetchV3(ctx, req)
 }
 
 func (s *extAuthDiscoveryServiceServer) DeltaExtAuthConfig(_ ExtAuthDiscoveryService_DeltaExtAuthConfigServer) error {

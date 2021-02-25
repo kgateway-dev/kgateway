@@ -16,7 +16,7 @@ import (
 	empty "github.com/golang/protobuf/ptypes/empty"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
+	_ "github.com/solo-io/solo-kit/pkg/api/external/udpa/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )

@@ -269,6 +269,21 @@ apis:
   envoy.config.health_checker.http_path.v2.HttpPath:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/http_path/http_path.proto.sk/#HttpPath
     package: envoy.config.health_checker.http_path.v2
+  envoy.service.discovery.v3.DeltaDiscoveryRequest:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/service/discovery/v3/discovery.proto.sk/#DeltaDiscoveryRequest
+    package: envoy.service.discovery.v3
+  envoy.service.discovery.v3.DeltaDiscoveryResponse:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/service/discovery/v3/discovery.proto.sk/#DeltaDiscoveryResponse
+    package: envoy.service.discovery.v3
+  envoy.service.discovery.v3.DiscoveryRequest:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/service/discovery/v3/discovery.proto.sk/#DiscoveryRequest
+    package: envoy.service.discovery.v3
+  envoy.service.discovery.v3.DiscoveryResponse:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/service/discovery/v3/discovery.proto.sk/#DiscoveryResponse
+    package: envoy.service.discovery.v3
+  envoy.service.discovery.v3.Resource:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/service/discovery/v3/discovery.proto.sk/#Resource
+    package: envoy.service.discovery.v3
   fault.options.gloo.solo.io.RouteAbort:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/faultinjection/fault.proto.sk/#RouteAbort
     package: fault.options.gloo.solo.io
@@ -1274,20 +1289,53 @@ apis:
   solo.io.envoy.type.v3.SemanticVersion:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/semantic_version.proto.sk/#SemanticVersion
     package: solo.io.envoy.type.v3
+  solo.io.kit.envoy.config.core.v3.Address:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/core/v3/address.proto.sk/#Address
+    package: solo.io.kit.envoy.config.core.v3
+  solo.io.kit.envoy.config.core.v3.BuildVersion:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/core/v3/base.proto.sk/#BuildVersion
+    package: solo.io.kit.envoy.config.core.v3
+  solo.io.kit.envoy.config.core.v3.ControlPlane:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/core/v3/base.proto.sk/#ControlPlane
+    package: solo.io.kit.envoy.config.core.v3
+  solo.io.kit.envoy.config.core.v3.EnvoyInternalAddress:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/core/v3/address.proto.sk/#EnvoyInternalAddress
+    package: solo.io.kit.envoy.config.core.v3
+  solo.io.kit.envoy.config.core.v3.Extension:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/core/v3/base.proto.sk/#Extension
+    package: solo.io.kit.envoy.config.core.v3
+  solo.io.kit.envoy.config.core.v3.Locality:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/core/v3/base.proto.sk/#Locality
+    package: solo.io.kit.envoy.config.core.v3
+  solo.io.kit.envoy.config.core.v3.Node:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/core/v3/base.proto.sk/#Node
+    package: solo.io.kit.envoy.config.core.v3
+  solo.io.kit.envoy.config.core.v3.Pipe:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/core/v3/address.proto.sk/#Pipe
+    package: solo.io.kit.envoy.config.core.v3
+  solo.io.kit.envoy.config.core.v3.RuntimeUInt32:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/core/v3/base.proto.sk/#RuntimeUInt32
+    package: solo.io.kit.envoy.config.core.v3
+  solo.io.kit.envoy.config.core.v3.SocketAddress:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/core/v3/address.proto.sk/#SocketAddress
+    package: solo.io.kit.envoy.config.core.v3
+  solo.io.kit.envoy.type.v3.SemanticVersion:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/v3/semantic_version.proto.sk/#SemanticVersion
+    package: solo.io.kit.envoy.type.v3
   solo.io.udpa.annotations.FieldMigrateAnnotation:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/migrate.proto.sk/#FieldMigrateAnnotation
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/udpa/annotations/migrate.proto.sk/#FieldMigrateAnnotation
     package: solo.io.udpa.annotations
   solo.io.udpa.annotations.FileMigrateAnnotation:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/migrate.proto.sk/#FileMigrateAnnotation
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/udpa/annotations/migrate.proto.sk/#FileMigrateAnnotation
     package: solo.io.udpa.annotations
   solo.io.udpa.annotations.MigrateAnnotation:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/migrate.proto.sk/#MigrateAnnotation
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/udpa/annotations/migrate.proto.sk/#MigrateAnnotation
     package: solo.io.udpa.annotations
   solo.io.udpa.annotations.StatusAnnotation:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/status.proto.sk/#StatusAnnotation
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/udpa/annotations/status.proto.sk/#StatusAnnotation
     package: solo.io.udpa.annotations
   solo.io.udpa.annotations.VersioningAnnotation:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/versioning.proto.sk/#VersioningAnnotation
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/udpa/annotations/versioning.proto.sk/#VersioningAnnotation
     package: solo.io.udpa.annotations
   static.options.gloo.solo.io.Host:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/static/static.proto.sk/#Host

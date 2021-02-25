@@ -18,7 +18,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/udpa/annotations/migrate.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/udpa/annotations/migrate.proto)
+##### Source File: [github.com/solo-io/solo-kit/api/external/udpa/annotations/migrate.proto](https://github.com/solo-io/solo-kit/blob/master/api/external/udpa/annotations/migrate.proto)
 
 
 

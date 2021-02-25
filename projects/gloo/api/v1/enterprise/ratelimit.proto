@@ -2,7 +2,7 @@ syntax = "proto3";
 package glooe.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise";
 
-import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/service/discovery/v3/discovery.proto";
 import "google/api/annotations.proto";
 import "github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto";
 
@@ -27,16 +27,16 @@ message RateLimitConfig {
 @solo-kit:resource.xds-enabled
 */
 service RateLimitDiscoveryService {
-    rpc StreamRateLimitConfig(stream envoy.api.v2.DiscoveryRequest) returns (stream envoy.api.v2.DiscoveryResponse) {
+    rpc StreamRateLimitConfig(stream envoy.service.discovery.v3.DiscoveryRequest) returns (stream envoy.service.discovery.v3.DiscoveryResponse) {
     }
 
-    rpc DeltaRateLimitConfig(stream envoy.api.v2.DeltaDiscoveryRequest)
-        returns (stream envoy.api.v2.DeltaDiscoveryResponse) {
+    rpc DeltaRateLimitConfig(stream envoy.service.discovery.v3.DeltaDiscoveryRequest)
+        returns (stream envoy.service.discovery.v3.DeltaDiscoveryResponse) {
     }
 
-    rpc FetchRateLimitConfig(envoy.api.v2.DiscoveryRequest) returns (envoy.api.v2.DiscoveryResponse) {
+    rpc FetchRateLimitConfig(envoy.service.discovery.v3.DiscoveryRequest) returns (envoy.service.discovery.v3.DiscoveryResponse) {
         option (google.api.http) = {
-        post: "/v2/discovery:ratelimitconfig"
+        post: "/v3/discovery:ratelimitconfig"
         body: "*"
         };
     }
