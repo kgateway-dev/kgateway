@@ -78,8 +78,9 @@ EOF
 kubectl config use-context kind-"$1"
 
 # Install gloo-fed to cluster $1
+# TODO: remove v1.7.0-beta11 version after 1.7.0 release
 if [ "$5" == "" ]; then
-  glooctl install federation --license-key=$4
+  glooctl install federation --license-key=$4 --version=v1.7.0-beta11
 else
   glooctl install federation --license-key=$4 --file $5
 fi
