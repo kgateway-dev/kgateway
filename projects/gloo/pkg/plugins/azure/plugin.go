@@ -32,7 +32,7 @@ var _ plugins.RoutePlugin = new(plugin)
 var _ plugins.UpstreamPlugin = new(plugin)
 
 type plugin struct {
-	settings 		  *v1.Settings
+	settings          *v1.Settings
 	recordedUpstreams map[string]*azure.UpstreamSpec
 	apiKeys           map[string]string
 	ctx               context.Context

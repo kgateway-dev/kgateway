@@ -55,7 +55,7 @@ type plugin struct {
 	ctx               context.Context
 	transformsAdded   *bool
 	settings          *v1.GlooOptions_AWSOptions
-	upstreamOptions	  *v1.UpstreamOptions
+	upstreamOptions   *v1.UpstreamOptions
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
@@ -282,4 +282,3 @@ func getCommonTlsContextFromUpstreamOptions(options *v1.UpstreamOptions) (*envoy
 		TlsParams: tlsParams,
 	}, err
 }
-

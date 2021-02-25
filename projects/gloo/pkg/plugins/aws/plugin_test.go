@@ -30,7 +30,7 @@ const (
 var _ = Describe("Plugin", func() {
 
 	var (
-		initParams 	plugins.InitParams
+		initParams  plugins.InitParams
 		params      plugins.Params
 		vhostParams plugins.VirtualHostParams
 		awsPlugin   plugins.Plugin

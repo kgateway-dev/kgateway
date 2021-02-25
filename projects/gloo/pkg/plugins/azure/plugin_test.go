@@ -17,13 +17,13 @@ import (
 
 var _ = Describe("Plugin", func() {
 	var (
-		p      		plugins.Plugin
-		namespace 	string
-		initParams 	plugins.InitParams
-		params 		plugins.Params
+		p            plugins.Plugin
+		namespace    string
+		initParams   plugins.InitParams
+		params       plugins.Params
 		upstream     *v1.Upstream
 		upstreamSpec *azure.UpstreamSpec
-		out    		*envoy_config_cluster_v3.Cluster
+		out          *envoy_config_cluster_v3.Cluster
 	)
 
 	BeforeEach(func() {
@@ -40,7 +40,7 @@ var _ = Describe("Plugin", func() {
 		}
 		upstream = &v1.Upstream{
 			Metadata: &core.Metadata{
-				Name: "us",
+				Name:      "us",
 				Namespace: namespace,
 			},
 			UpstreamType: &v1.Upstream_Azure{
@@ -74,15 +74,15 @@ var _ = Describe("Plugin", func() {
 				params.Snapshot = &v1.ApiSnapshot{
 					Secrets: v1.SecretList{{
 						Metadata: &core.Metadata{
-							Name: "azure-secret1",
+							Name:      "azure-secret1",
 							Namespace: namespace,
 						},
 						Kind: &v1.Secret_Azure{
 							Azure: &v1.AzureSecret{
 								ApiKeys: map[string]string{
 									"_master": "key1",
-									"foo": "key1",
-									"bar": "key2",
+									"foo":     "key1",
+									"bar":     "key2",
 								},
 							},
 						},
