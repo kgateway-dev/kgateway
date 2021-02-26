@@ -63,7 +63,7 @@ type Install struct {
 	WithUi      bool
 	LicenseKey  string
 	WithGlooFed bool
-	DryRun                  bool
+	DryRun      bool
 }
 
 type Knative struct {

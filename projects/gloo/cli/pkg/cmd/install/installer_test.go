@@ -263,7 +263,7 @@ rules:
 				HelmReleaseName: constants.GlooReleaseName,
 				Version:         glooOsVersion,
 			},
-			DryRun:          true,
+			DryRun: true,
 		}
 
 		helmEnv := &cli.EnvSettings{
