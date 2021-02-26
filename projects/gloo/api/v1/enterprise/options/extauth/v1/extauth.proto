@@ -630,6 +630,10 @@ message PassThroughAuth {
     oneof protocol {
         PassThroughGrpc grpc = 1;
     }
+
+    // Custom config to be passed per request to the passthrough auth service.
+    google.protobuf.Struct config = 4;
+
 }
 
 // Authorizes requests by querying a custom extauth grpc server

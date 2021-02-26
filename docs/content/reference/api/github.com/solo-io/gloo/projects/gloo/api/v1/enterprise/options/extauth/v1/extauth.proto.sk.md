@@ -900,12 +900,14 @@ Authorizes requests by querying a custom extauth server.
 
 ```yaml
 "grpc": .enterprise.gloo.solo.io.PassThroughGrpc
+"config": .google.protobuf.Struct
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `grpc` | [.enterprise.gloo.solo.io.PassThroughGrpc](../extauth.proto.sk/#passthroughgrpc) |  |
+| `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Custom config to be passed per request to the passthrough auth service. |
 
 
 
