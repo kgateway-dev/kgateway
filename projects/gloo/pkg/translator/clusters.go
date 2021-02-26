@@ -43,7 +43,6 @@ func (t *translatorInstance) computeClusters(
 	for _, upstream := range upstreams {
 
 		cluster := t.computeCluster(params, upstream, upstreamRefKeyToEndpoints, reports)
-		// TODO(kdorosh) update cluster into self loopback for HTTP proxy, add both to returned clusters
 		clusters = append(clusters, cluster)
 	}
 
