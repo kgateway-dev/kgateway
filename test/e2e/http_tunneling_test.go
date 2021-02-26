@@ -37,6 +37,7 @@ var _ = FDescribe("tunneling", func() {
 		testClients   services.TestClients
 		envoyInstance *services.EnvoyInstance
 		up            *gloov1.Upstream
+		useSsl        bool
 
 		writeNamespace = defaults.GlooSystem
 	)
@@ -69,54 +70,11 @@ var _ = FDescribe("tunneling", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
+	})
 
-		// write a test upstream
-		// this is the upstream that will handle requests
-		proxy := goproxy.NewProxyHttpServer()
-		proxy.Verbose = true
-		err = setCA([]byte(gloohelpers.Certificate()), []byte(gloohelpers.PrivateKey()))
-		Expect(err).ToNot(HaveOccurred())
-		proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
+	JustBeforeEach(func() {
 
-		listener, err := net.Listen("tcp", ":0")
-		if err != nil {
-			panic(err)
-		}
-
-		addr := listener.Addr().String()
-		_, portStr, err := net.SplitHostPort(addr)
-		if err != nil {
-			panic(err)
-		}
-
-		port, err := strconv.Atoi(portStr)
-		if err != nil {
-			panic(err)
-		}
-
-		go func() {
-			defer GinkgoRecover()
-			server := &http.Server{Addr: addr, Handler: proxy}
-			server.Serve(listener)
-
-		}()
-
-		secret := &gloov1.Secret{
-			Metadata: &core.Metadata{
-				Name:      "secret",
-				Namespace: "default",
-			},
-			Kind: &gloov1.Secret_Tls{
-				Tls: &gloov1.TlsSecret{
-					CertChain:  gloohelpers.Certificate(),
-					PrivateKey: gloohelpers.PrivateKey(),
-				},
-			},
-		}
-
-		_, err = testClients.SecretClient.Write(secret, clients.WriteOpts{OverwriteExisting: true})
-		Expect(err).NotTo(HaveOccurred())
-
+		_, port := startHttpProxy(useSsl)
 		up = &gloov1.Upstream{
 			Metadata: &core.Metadata{
 				Name:      "local-1",
@@ -135,12 +93,16 @@ var _ = FDescribe("tunneling", func() {
 		}
 
 		up.HttpProxyHostname = "host.com:443" // enable HTTP tunneling
-		up.SslConfig = &gloov1.UpstreamSslConfig{
-			SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
-				SecretRef: &core.ResourceRef{Name: "secret", Namespace: "default"},
-			},
+
+		if useSsl {
+			up.SslConfig = &gloov1.UpstreamSslConfig{
+				SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
+					SecretRef: &core.ResourceRef{Name: "secret", Namespace: "default"},
+				},
+			}
 		}
-		_, err = testClients.UpstreamClient.Write(up, clients.WriteOpts{OverwriteExisting: true})
+
+		_, err := testClients.UpstreamClient.Write(up, clients.WriteOpts{OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -168,29 +130,8 @@ var _ = FDescribe("tunneling", func() {
 		By("Make request")
 		responseBody := ""
 		EventuallyWithOffset(1, func() error {
-
 			var client http.Client
-
 			scheme := "http"
-
-			//cert := gloohelpers.Certificate()
-			//rootca := &cert
-			//if rootca != nil {
-			//	scheme = "https"
-			//	caCertPool := x509.NewCertPool()
-			//	ok := caCertPool.AppendCertsFromPEM([]byte(*rootca))
-			//	if !ok {
-			//		return fmt.Errorf("ca cert is not OK")
-			//	}
-			//
-			//	client.Transport = &http.Transport{
-			//		TLSClientConfig: &tls.Config{
-			//			RootCAs:            caCertPool,
-			//			InsecureSkipVerify: true,
-			//		},
-			//	}
-			//}
-
 			req, err := http.NewRequest("GET", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), nil)
 			if err != nil {
 				return err
@@ -229,6 +170,28 @@ var _ = FDescribe("tunneling", func() {
 		})
 
 		Context("with SSL", func() {
+
+			BeforeEach(func() {
+
+				secret := &gloov1.Secret{
+					Metadata: &core.Metadata{
+						Name:      "secret",
+						Namespace: "default",
+					},
+					Kind: &gloov1.Secret_Tls{
+						Tls: &gloov1.TlsSecret{
+							CertChain:  gloohelpers.Certificate(),
+							PrivateKey: gloohelpers.PrivateKey(),
+						},
+					},
+				}
+
+				_, err := testClients.SecretClient.Write(secret, clients.WriteOpts{OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+
+				useSsl = true
+			})
+
 			It("should proxy HTTPS", func() {
 				time.Sleep(1 * time.Second) //TODO(kdorosh) remove
 				testReq := testRequest()
@@ -238,6 +201,41 @@ var _ = FDescribe("tunneling", func() {
 	})
 
 })
+
+func startHttpProxy(useSsl bool) (*http.Server, int) {
+	proxy := goproxy.NewProxyHttpServer()
+	proxy.Verbose = true
+	if useSsl {
+		err := setCA([]byte(gloohelpers.Certificate()), []byte(gloohelpers.PrivateKey()))
+		Expect(err).ToNot(HaveOccurred())
+		proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
+	}
+
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		panic(err)
+	}
+
+	addr := listener.Addr().String()
+	_, portStr, err := net.SplitHostPort(addr)
+	if err != nil {
+		panic(err)
+	}
+
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		panic(err)
+	}
+
+	var server *http.Server
+	go func() {
+		defer GinkgoRecover()
+		server = &http.Server{Addr: addr, Handler: proxy}
+		server.Serve(listener)
+	}()
+
+	return server, port
+}
 
 func setCA(caCert, caKey []byte) error {
 	goproxyCa, err := tls.X509KeyPair(caCert, caKey)
