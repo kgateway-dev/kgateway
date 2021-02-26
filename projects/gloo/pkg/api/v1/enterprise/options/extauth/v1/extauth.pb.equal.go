@@ -1316,6 +1316,16 @@ func (m *PassThroughAuth) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetConfig(), target.GetConfig()) {
+			return false
+		}
+	}
+
 	switch m.Protocol.(type) {
 
 	case *PassThroughAuth_Grpc:
