@@ -1,5 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/4306
-    resolvesIssue: false
-    description: Adds a `init-plugin-manger` to bootstrap the plugin manager.
