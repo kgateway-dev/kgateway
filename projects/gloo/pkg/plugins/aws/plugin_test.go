@@ -3,6 +3,7 @@ package aws_test
 import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	gogoproto "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
@@ -15,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/test/matchers"
 )
@@ -26,7 +28,9 @@ const (
 )
 
 var _ = Describe("Plugin", func() {
+
 	var (
+		initParams  plugins.InitParams
 		params      plugins.Params
 		vhostParams plugins.VirtualHostParams
 		awsPlugin   plugins.Plugin
@@ -36,13 +40,15 @@ var _ = Describe("Plugin", func() {
 		outroute    *envoy_config_route_v3.Route
 		lpe         *AWSLambdaProtocolExtension
 	)
+
 	BeforeEach(func() {
 		var b bool
 		awsPlugin = NewPlugin(&b)
-		awsPlugin.Init(plugins.InitParams{})
+
 		upstreamName := "up"
 		clusterName := upstreamName
 		funcName := "foo"
+
 		upstream = &v1.Upstream{
 			Metadata: &core.Metadata{
 				Name:      upstreamName,
@@ -98,6 +104,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 
+		initParams = plugins.InitParams{}
 		params.Snapshot = &v1.ApiSnapshot{
 			Secrets: v1.SecretList{{
 				Metadata: &core.Metadata{
@@ -114,6 +121,11 @@ var _ = Describe("Plugin", func() {
 		}
 		vhostParams = plugins.VirtualHostParams{Params: params}
 		lpe = &AWSLambdaProtocolExtension{}
+	})
+
+	JustBeforeEach(func() {
+		err := awsPlugin.Init(initParams)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	processProtocolOptions := func() {
@@ -184,13 +196,100 @@ var _ = Describe("Plugin", func() {
 			Expect(outroute.TypedPerFilterConfig).NotTo(HaveKey(FilterName))
 
 		})
+
+		Context("with ssl", func() {
+
+			var err error
+
+			JustBeforeEach(func() {
+				err = awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+			})
+
+			Context("should allow configuring ssl without settings.UpstreamOptions", func() {
+
+				BeforeEach(func() {
+					initParams.Settings = &v1.Settings{}
+				})
+
+				It("should not error", func() {
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("should configure CommonTlsContext without TlsParams", func() {
+					commonTlsContext := getClusterTlsContext(out).GetCommonTlsContext()
+					Expect(commonTlsContext).NotTo(BeNil())
+
+					tlsParams := commonTlsContext.GetTlsParams()
+					Expect(tlsParams).To(BeNil())
+				})
+
+			})
+
+			Context("should allow configuring ssl with settings.UpstreamOptions", func() {
+
+				BeforeEach(func() {
+					initParams.Settings = &v1.Settings{
+						UpstreamOptions: &v1.UpstreamOptions{
+							SslParameters: &v1.SslParameters{
+								MinimumProtocolVersion: v1.SslParameters_TLSv1_1,
+								MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+								CipherSuites:           []string{"cipher-test"},
+								EcdhCurves:             []string{"ec-dh-test"},
+							},
+						},
+					}
+				})
+
+				It("should not error", func() {
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("should configure CommonTlsContext", func() {
+					commonTlsContext := getClusterTlsContext(out).GetCommonTlsContext()
+					Expect(commonTlsContext).NotTo(BeNil())
+
+					tlsParams := commonTlsContext.GetTlsParams()
+					Expect(tlsParams).NotTo(BeNil())
+
+					Expect(tlsParams.GetCipherSuites()).To(Equal([]string{"cipher-test"}))
+					Expect(tlsParams.GetEcdhCurves()).To(Equal([]string{"ec-dh-test"}))
+					Expect(tlsParams.GetTlsMinimumProtocolVersion()).To(Equal(envoyauth.TlsParameters_TLSv1_1))
+					Expect(tlsParams.GetTlsMaximumProtocolVersion()).To(Equal(envoyauth.TlsParameters_TLSv1_2))
+				})
+
+			})
+
+			Context("should error while configuring ssl with invalid tls versions in settings.UpstreamOptions", func() {
+
+				var invalidProtocolVersion v1.SslParameters_ProtocolVersion = 5 // INVALID
+
+				BeforeEach(func() {
+					initParams.Settings = &v1.Settings{
+						UpstreamOptions: &v1.UpstreamOptions{
+							SslParameters: &v1.SslParameters{
+								MinimumProtocolVersion: invalidProtocolVersion,
+								MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+								CipherSuites:           []string{"cipher-test"},
+								EcdhCurves:             []string{"ec-dh-test"},
+							},
+						},
+					}
+				})
+
+				It("should error", func() {
+					Expect(err).To(HaveOccurred())
+				})
+
+			})
+
+		})
 	})
 
 	Context("routes", func() {
 
 		var destination *v1.Destination
 
-		BeforeEach(func() {
+		JustBeforeEach(func() {
 			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
 			destination = route.Action.(*v1.Route_RouteAction).RouteAction.Destination.(*v1.RouteAction_Single).Single
@@ -257,17 +356,15 @@ var _ = Describe("Plugin", func() {
 		BeforeEach(func() {
 			cfg = &AWSLambdaConfig{}
 
-			awsPlugin.Init(plugins.InitParams{
-				Settings: &v1.Settings{
-					Gloo: &v1.GlooOptions{
-						AwsOptions: &v1.GlooOptions_AWSOptions{
-							CredentialsFetcher: &v1.GlooOptions_AWSOptions_EnableCredentialsDiscovey{
-								EnableCredentialsDiscovey: true,
-							},
+			initParams.Settings = &v1.Settings{
+				Gloo: &v1.GlooOptions{
+					AwsOptions: &v1.GlooOptions_AWSOptions{
+						CredentialsFetcher: &v1.GlooOptions_AWSOptions_EnableCredentialsDiscovey{
+							EnableCredentialsDiscovey: true,
 						},
 					},
 				},
-			})
+			}
 			// remove secrets from upstream
 			upstream.GetAws().SecretRef = nil
 		})
@@ -342,17 +439,15 @@ var _ = Describe("Plugin", func() {
 		BeforeEach(func() {
 			cfg = &AWSLambdaConfig{}
 
-			awsPlugin.Init(plugins.InitParams{
-				Settings: &v1.Settings{
-					Gloo: &v1.GlooOptions{
-						AwsOptions: &v1.GlooOptions_AWSOptions{
-							CredentialsFetcher: &v1.GlooOptions_AWSOptions_ServiceAccountCredentials{
-								ServiceAccountCredentials: saCredentials,
-							},
+			initParams.Settings = &v1.Settings{
+				Gloo: &v1.GlooOptions{
+					AwsOptions: &v1.GlooOptions_AWSOptions{
+						CredentialsFetcher: &v1.GlooOptions_AWSOptions_ServiceAccountCredentials{
+							ServiceAccountCredentials: saCredentials,
 						},
 					},
 				},
-			})
+			}
 			// remove secrets from upstream
 			upstream.GetAws().SecretRef = nil
 			upstream.GetAws().RoleArn = roleArn
@@ -400,3 +495,7 @@ var _ = Describe("Plugin", func() {
 
 	})
 })
+
+func getClusterTlsContext(cluster *envoy_config_cluster_v3.Cluster) *envoyauth.UpstreamTlsContext {
+	return utils.MustAnyToMessage(cluster.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
+}
