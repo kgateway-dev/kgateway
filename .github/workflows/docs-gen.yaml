@@ -3,10 +3,10 @@ name: Docs
 on:
   push:
     branches:
-      - 'master'
+    - 'master'
   pull_request:
     branches:
-      - 'master'
+    - 'master'
   workflow_run:
     workflows: ["Trivy Scan"]
     types:
