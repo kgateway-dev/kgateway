@@ -33,6 +33,7 @@ jobs:
       run: |
         ./ci/check-code-and-docs-gen.sh
     - name: Setup Hugo
+      if: ${{ github.event.pull_request.base.ref == 'master' }}
       uses: peaceiris/actions-hugo@v2
       with:
         hugo-version: '0.69.2'
@@ -44,6 +45,7 @@ jobs:
           echo "Pull Request is from a fork. Setting IS_COMMUNITY_PR to true"
           echo "::set-output name=IS_COMMUNITY_PR::true"
     - name: Generate versioned docs site
+      if: ${{ github.event.pull_request.base.ref == 'master' }}
       run: make -C docs build-site
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
