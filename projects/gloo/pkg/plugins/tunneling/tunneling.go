@@ -37,10 +37,9 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 	var generatedClusters []*envoy_config_cluster_v3.Cluster
 	var generatedListeners []*envoy_config_listener_v3.Listener
 
-	upstreams := params.Snapshot.Upstreams //TODO(kdorosh) assert non nil
+	upstreams := params.Snapshot.Upstreams
 
 	// find all the route config that points to upstreams with tunneling
-
 	for _, rtConfig := range inRouteConfigurations {
 		for _, vh := range rtConfig.VirtualHosts {
 			for _, rt := range vh.Routes {
@@ -73,19 +72,23 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 					rtAction.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{Cluster: selfCluster}
 
 					var originalTransportSocket *envoy_config_core_v3.TransportSocket
-					//var originalTransportSocketMatches []*envoy_config_cluster_v3.Cluster_TransportSocketMatch
-
 					for _, inCluster := range inClusters {
 						if inCluster.Name == cluster && inCluster.TransportSocket != nil {
 							tmp := *inCluster.TransportSocket
 							originalTransportSocket = &tmp
-							inCluster.TransportSocket = nil        //TODO(kdorosh) configurable?
-							inCluster.TransportSocketMatches = nil //TODO(kdorosh)
+							// we copy the transport socket to the generated cluster.
+							// the generated cluster will use upstream TLS context to leverage TLS,
+							// and when we encapsulate in HTTP Connect the tcp data being proxied will
+							// be secured (thus we don't need the original transport socket metadata here)
+							inCluster.TransportSocket = nil
+							inCluster.TransportSocketMatches = nil
 						}
 					}
 
 					generatedClusters = append(generatedClusters, &envoy_config_cluster_v3.Cluster{
-						ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{Type: envoy_config_cluster_v3.Cluster_STATIC},
+						ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
+							Type: envoy_config_cluster_v3.Cluster_STATIC,
+						},
 						ConnectTimeout:       &duration.Duration{Seconds: 5},
 						Name:                 selfCluster,
 						TransportSocket:      originalTransportSocket,
@@ -114,7 +117,7 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 					})
 
 					cfg := &envoytcp.TcpProxy{
-						StatPrefix:       "soloioTcpStats",
+						StatPrefix:       "soloioTcpStats"+cluster,
 						TunnelingConfig:  &envoytcp.TcpProxy_TunnelingConfig{Hostname: tunnelingHostname},
 						ClusterSpecifier: &envoytcp.TcpProxy_Cluster{Cluster: cluster}, // route to original target
 					}
@@ -130,7 +133,6 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 						},
 						FilterChains: []*envoy_config_listener_v3.FilterChain{
 							{
-								FilterChainMatch: nil,
 								Filters: []*envoy_config_listener_v3.Filter{
 									{
 										Name: "tcp",
