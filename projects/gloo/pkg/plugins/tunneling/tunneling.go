@@ -73,13 +73,17 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 					rtAction.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{Cluster: selfCluster}
 
 					var originalTransportSocket *envoy_config_core_v3.TransportSocket
+					//var originalTransportSocketMatches []*envoy_config_cluster_v3.Cluster_TransportSocketMatch
+
 					for _, inCluster := range inClusters {
 						if inCluster.Name == cluster && inCluster.TransportSocket != nil {
 							tmp := *inCluster.TransportSocket
 							originalTransportSocket = &tmp
 							inCluster.TransportSocket = nil //TODO(kdorosh) configurable?
+							inCluster.TransportSocketMatches = nil //TODO(kdorosh)
 						}
 					}
+
 
 					generatedClusters = append(generatedClusters, &envoy_config_cluster_v3.Cluster{
 						ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{Type: envoy_config_cluster_v3.Cluster_STATIC},
