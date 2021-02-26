@@ -80,6 +80,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 			return err
 		}
 		installerConfig.Mode = Federation
+		installerConfig.InstallCliArgs.Federation.CreateNamespace = true
 		return i.installFromConfig(installerConfig)
 	}
 
