@@ -51,8 +51,6 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.10.0/api-
 
  
 Configuration for tunneling TCP over other transports or application layers.
-Currently, only HTTP/2 is supported. When other options exist, HTTP/2 will
-remain the default.
 
 ```yaml
 "hostname": string

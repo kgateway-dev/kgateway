@@ -55,7 +55,7 @@ type Upstream struct {
 	// Upstreams and their configuration can be automatically by Gloo Discovery
 	// if this upstream is created or modified by Discovery, metadata about the operation will be placed here.
 	DiscoveryMetadata *DiscoveryMetadata `protobuf:"bytes,3,opt,name=discovery_metadata,json=discoveryMetadata,proto3" json:"discovery_metadata,omitempty"`
-	// TODO(kdorosh) perhaps rename/improve comments?
+	// SslConfig contains the options necessary to configure an upstream to use TLS origination
 	SslConfig *UpstreamSslConfig `protobuf:"bytes,4,opt,name=ssl_config,json=sslConfig,proto3" json:"ssl_config,omitempty"`
 	// Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used.
 	// if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
@@ -99,14 +99,14 @@ type Upstream struct {
 	InitialConnectionWindowSize *wrappers.UInt32Value `protobuf:"bytes,20,opt,name=initial_connection_window_size,json=initialConnectionWindowSize,proto3" json:"initial_connection_window_size,omitempty"`
 	// Tells envoy that the upstream is an HTTP proxy (e.g., another proxy in a DMZ) that supports HTTP Connect.
 	// This configuration sets the hostname used as part of the HTTP Connect request.
-	// For example, setting to: host.com:443 and making a request routed to the upstream such as `curl envoy:port/v1`
+	// For example, setting to: host.com:443 and making a request routed to the upstream such as `curl <envoy>:<port>/v1`
 	// would result in the following request:
 	//
 	//    CONNECT host.com:443 HTTP/1.1
 	//    host: host.com:443
 	//
 	//    GET /v1 HTTP/1.1
-	//    host: 127.0.0.1:9999
+	//    host: <envoy>:<port>
 	//    user-agent: curl/7.64.1
 	//    accept: */*
 	HttpProxyHostname string `protobuf:"bytes,21,opt,name=http_proxy_hostname,json=httpProxyHostname,proto3" json:"http_proxy_hostname,omitempty"`

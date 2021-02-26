@@ -20,8 +20,6 @@ message TcpProxySettings {
     google.protobuf.Duration idle_timeout = 2;
 
     // Configuration for tunneling TCP over other transports or application layers.
-    // Currently, only HTTP/2 is supported. When other options exist, HTTP/2 will
-    // remain the default.
     message TunnelingConfig {
         // The hostname to send in the synthesized CONNECT headers to the upstream proxy.
         string hostname = 1;

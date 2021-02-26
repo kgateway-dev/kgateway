@@ -99,8 +99,6 @@ func (x *TcpProxySettings) GetTunnelingConfig() *TcpProxySettings_TunnelingConfi
 }
 
 // Configuration for tunneling TCP over other transports or application layers.
-// Currently, only HTTP/2 is supported. When other options exist, HTTP/2 will
-// remain the default.
 type TcpProxySettings_TunnelingConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

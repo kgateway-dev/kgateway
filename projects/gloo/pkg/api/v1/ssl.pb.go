@@ -289,7 +289,7 @@ func (x *SSLFiles) GetRootCa() string {
 	return ""
 }
 
-// SslConfig contains the options necessary to configure a virtual host or listener to use TLS
+// SslConfig contains the options necessary to configure an upstream to use TLS origination
 type UpstreamSslConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

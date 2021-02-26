@@ -85,7 +85,7 @@ SSLFiles reference paths to certificates which can be read by the proxy off of i
 ### UpstreamSslConfig
 
  
-SslConfig contains the options necessary to configure a virtual host or listener to use TLS
+SslConfig contains the options necessary to configure an upstream to use TLS origination
 
 ```yaml
 "secretRef": .core.solo.io.ResourceRef

@@ -89,9 +89,9 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 						ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
 							Type: envoy_config_cluster_v3.Cluster_STATIC,
 						},
-						ConnectTimeout:       &duration.Duration{Seconds: 5},
-						Name:                 selfCluster,
-						TransportSocket:      originalTransportSocket,
+						ConnectTimeout:  &duration.Duration{Seconds: 5},
+						Name:            selfCluster,
+						TransportSocket: originalTransportSocket,
 						LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
 							ClusterName: selfCluster,
 							Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
@@ -117,7 +117,7 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 					})
 
 					cfg := &envoytcp.TcpProxy{
-						StatPrefix:       "soloioTcpStats"+cluster,
+						StatPrefix:       "soloioTcpStats" + cluster,
 						TunnelingConfig:  &envoytcp.TcpProxy_TunnelingConfig{Hostname: tunnelingHostname},
 						ClusterSpecifier: &envoytcp.TcpProxy_Cluster{Cluster: cluster}, // route to original target
 					}
