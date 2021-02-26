@@ -48,7 +48,6 @@ type Top struct {
 }
 
 type HelmInstall struct {
-	DryRun                  bool
 	CreateNamespace         bool
 	Namespace               string
 	HelmChartOverride       string
@@ -64,6 +63,7 @@ type Install struct {
 	WithUi      bool
 	LicenseKey  string
 	WithGlooFed bool
+	DryRun                  bool
 }
 
 type Knative struct {

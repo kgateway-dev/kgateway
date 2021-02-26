@@ -8,7 +8,7 @@ import (
 )
 
 func AddGlooInstallFlags(set *pflag.FlagSet, install *options.Install) {
-	set.BoolVarP(&install.Gloo.DryRun, "dry-run", "d", false, "Dump the raw installation yaml instead of applying it to kubernetes")
+	set.BoolVarP(&install.DryRun, "dry-run", "d", false, "Dump the raw installation yaml instead of applying it to kubernetes")
 	set.StringVarP(&install.Gloo.HelmChartOverride, "file", "f", "", "Install Gloo from this Helm chart archive file rather than from a release")
 	set.StringSliceVarP(&install.Gloo.HelmChartValueFileNames, "values", "", []string{}, "List of files with value overrides for the Gloo Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)")
 	set.StringVar(&install.Gloo.HelmReleaseName, "release-name", constants.GlooReleaseName, "helm release name")
@@ -19,14 +19,14 @@ func AddGlooInstallFlags(set *pflag.FlagSet, install *options.Install) {
 }
 
 func AddEnterpriseInstallFlags(set *pflag.FlagSet, install *options.Install) {
-	set.BoolVarP(&install.Gloo.DryRun, "dry-run", "d", false, "Dump the raw installation yaml instead of applying it to kubernetes")
+	set.BoolVarP(&install.DryRun, "dry-run", "d", false, "Dump the raw installation yaml instead of applying it to kubernetes")
 	set.StringVar(&install.LicenseKey, "license-key", "", "License key to activate GlooE features")
 	set.BoolVar(&install.WithUi, "with-admin-console", false, "install gloo and a read-only version of its admin console")
 	set.BoolVar(&install.WithGlooFed, "with-gloo-fed", true, "Install Gloo-Fed alongside Gloo Enterprise")
 }
 
 func AddFederationInstallFlags(set *pflag.FlagSet, install *options.Install) {
-	set.BoolVar(&install.Federation.DryRun, "dry-run", false, "Dump the raw installation yaml instead of applying it to kubernetes")
+	set.BoolVar(&install.DryRun, "dry-run", false, "Dump the raw installation yaml instead of applying it to kubernetes")
 	set.StringVar(&install.Federation.HelmChartOverride, "file", "", "Install Gloo Fed from this Helm chart archive file rather than from a release")
 	set.StringSliceVar(&install.Federation.HelmChartValueFileNames, "values", []string{}, "List of files with value overrides for the Gloo Fed Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)")
 	set.StringVar(&install.Federation.HelmReleaseName, "release-name", constants.GlooFedReleaseName, "helm release name")

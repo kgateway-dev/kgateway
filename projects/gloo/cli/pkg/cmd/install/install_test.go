@@ -71,6 +71,16 @@ var _ = Describe("Install", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	It("shouldn't install federation when with-gloo-fed is false", func() {
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --dry-run %s  --with-gloo-fed=false", file, licenseKey))
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("shouldn't install federation when with-gloo-fed is false without file", func() {
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --dry-run %s --with-gloo-fed=false", licenseKey))
+		Expect(err).NotTo(HaveOccurred())
+	})
+
 	It("shouldn't get errors when overriding enterprise version", func() {
 		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --version %s --dry-run %s", overrideVersion, licenseKey))
 		Expect(err).NotTo(HaveOccurred())

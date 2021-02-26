@@ -80,7 +80,6 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 			return err
 		}
 		installerConfig.Mode = Federation
-		installerConfig.InstallCliArgs.Federation.CreateNamespace = true
 		return i.installFromConfig(installerConfig)
 	}
 
@@ -94,7 +93,7 @@ func (i *installer) installFromConfig(installerConfig *InstallerConfig) error {
 	}
 	namespace := helmInstallConfig.Namespace
 	releaseName := helmInstallConfig.HelmReleaseName
-	if !helmInstallConfig.DryRun {
+	if !installerConfig.InstallCliArgs.DryRun {
 		if releaseExists, err := i.helmClient.ReleaseExists(namespace, releaseName); err != nil {
 			return err
 		} else if releaseExists {
@@ -109,9 +108,9 @@ func (i *installer) installFromConfig(installerConfig *InstallerConfig) error {
 		}
 	}
 
-	preInstallMessage(&helmInstallConfig, installerConfig.Mode)
+	preInstallMessage(installerConfig.InstallCliArgs, installerConfig.Mode)
 
-	helmInstall, helmEnv, err := i.helmClient.NewInstall(namespace, releaseName, helmInstallConfig.DryRun)
+	helmInstall, helmEnv, err := i.helmClient.NewInstall(namespace, releaseName, installerConfig.InstallCliArgs.DryRun)
 	if err != nil {
 		return err
 	}
@@ -188,13 +187,13 @@ func (i *installer) installFromConfig(installerConfig *InstallerConfig) error {
 		fmt.Printf("Successfully ran helm install with release %s\n", releaseName)
 	}
 
-	if helmInstallConfig.DryRun {
+	if installerConfig.InstallCliArgs.DryRun {
 		if err := i.printReleaseManifest(rel); err != nil {
 			return err
 		}
 	}
 
-	postInstallMessage(&helmInstallConfig, installerConfig.Mode)
+	postInstallMessage(installerConfig.InstallCliArgs, installerConfig.Mode)
 
 	return nil
 }
@@ -375,7 +374,7 @@ func getDefaultGlooInstallVersion(chartOverride string) (string, error) {
 	return version.Version, nil
 }
 
-func preInstallMessage(installOpts *options.HelmInstall, mode Mode) {
+func preInstallMessage(installOpts *options.Install, mode Mode) {
 	if installOpts.DryRun {
 		return
 	}
@@ -388,7 +387,7 @@ func preInstallMessage(installOpts *options.HelmInstall, mode Mode) {
 		fmt.Println("Starting Gloo Edge installation...")
 	}
 }
-func postInstallMessage(installOpts *options.HelmInstall, mode Mode) {
+func postInstallMessage(installOpts *options.Install, mode Mode) {
 	if installOpts.DryRun {
 		return
 	}
