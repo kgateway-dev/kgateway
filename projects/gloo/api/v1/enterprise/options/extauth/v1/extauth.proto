@@ -286,7 +286,7 @@ message UserSession {
     // Explicitly set to false to disable refreshing.
     google.protobuf.BoolValue allow_refreshing = 4;
   }
-  
+
   // should we fail auth flow when failing to get a session from redis, or allow it to continue,
   // potentially starting a new auth flow and setting a new session.
   bool fail_on_fetch_failure = 1;
@@ -295,10 +295,10 @@ message UserSession {
     // Max age for the cookie. Leave unset for a default of 30 days (2592000 seconds).
     // To disable cookie expiry, set explicitly to 0.
     google.protobuf.UInt32Value max_age = 1;
-    // Use a non-secure cookie. Note - this should only be used for testing and in trusted 
+    // Use a non-secure cookie. Note - this should only be used for testing and in trusted
     // environments.
     bool not_secure = 2;
-    // Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a 
+    // Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a
     // path.
     google.protobuf.StringValue path = 3;
     // Cookie domain
@@ -545,9 +545,13 @@ message Ldap {
 // Authorizes requests by querying a custom extauth server.
 message PassThroughAuth {
 
-  oneof protocol {
-    PassThroughGrpc grpc = 1;
-  }
+    oneof protocol {
+        PassThroughGrpc grpc = 1;
+    }
+
+    // Custom config to be passed per request to the passthrough auth service.
+    google.protobuf.Struct config = 4;
+
 }
 
 // Authorizes requests by querying a custom extauth grpc server
@@ -603,7 +607,7 @@ message ExtAuthConfig {
   }
 
   message OidcAuthorizationCodeConfig {
-    
+
     // your client id as registered with the issuer
     string client_id = 1;
 
