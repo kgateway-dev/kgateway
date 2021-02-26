@@ -33,14 +33,20 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
-    - name: Deploy to Firebase
+    - name: FAKE Deploy to Firebase
       # Do not publish docs if this workflow was triggered by a pull request
       # Only deploy if this was triggered by a push to master, or a successful trivy workflow_run
-      if: ${{ github.event_name != 'pull_request' }}
-      uses: w9jds/firebase-action@master
-      with:
-        args: deploy --only hosting
-      env:
-        PROJECT_ID: solo-corp
-        PROJECT_PATH: ./docs/ci
-        GCP_SA_KEY: ${{ secrets.FIREBASE_APPLICATION_CREDENTIALS }}
+      if: ${{ github.event_name == 'pull_request' }}
+      run: echo "The triggering event was a pull request"
+
+    #- name: Deploy to Firebase
+      # Do not publish docs if this workflow was triggered by a pull request
+      # Only deploy if this was triggered by a push to master, or a successful trivy workflow_run
+    #  if: ${{ github.event_name != 'pull_request' }}
+    #  uses: w9jds/firebase-action@master
+    #  with:
+    ##    args: deploy --only hosting
+    #  env:
+    #    PROJECT_ID: solo-corp
+    #    PROJECT_PATH: ./docs/ci
+    #    GCP_SA_KEY: ${{ secrets.FIREBASE_APPLICATION_CREDENTIALS }}
