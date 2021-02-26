@@ -79,11 +79,10 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 						if inCluster.Name == cluster && inCluster.TransportSocket != nil {
 							tmp := *inCluster.TransportSocket
 							originalTransportSocket = &tmp
-							inCluster.TransportSocket = nil //TODO(kdorosh) configurable?
+							inCluster.TransportSocket = nil        //TODO(kdorosh) configurable?
 							inCluster.TransportSocketMatches = nil //TODO(kdorosh)
 						}
 					}
-
 
 					generatedClusters = append(generatedClusters, &envoy_config_cluster_v3.Cluster{
 						ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{Type: envoy_config_cluster_v3.Cluster_STATIC},
