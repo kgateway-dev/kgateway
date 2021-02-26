@@ -29,7 +29,9 @@ const (
 var _ plugins.Plugin = new(plugin)
 var _ plugins.UpstreamPlugin = new(plugin)
 
-type plugin struct{}
+type plugin struct {
+	settings *v1.Settings
+}
 
 func NewPlugin() plugins.Plugin {
 	return &plugin{}
@@ -48,6 +50,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
+	p.settings = params.Settings
 	return nil
 }
 
@@ -122,7 +125,12 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		// tell envoy to use TLS to connect to this upstream
 		// TODO: support client certificates
 		if out.TransportSocket == nil {
+			commonTlsContext, err := utils.GetCommonTlsContextFromUpstreamOptions(p.settings.GetUpstreamOptions())
+			if err != nil {
+				return err
+			}
 			tlsContext := &envoyauth.UpstreamTlsContext{
+				CommonTlsContext: commonTlsContext,
 				// TODO(yuval-k): Add verification context
 				Sni: hostname,
 			}

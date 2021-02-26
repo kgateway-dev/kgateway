@@ -29,7 +29,7 @@ With your kubectl context set to the admin cluster, run the following command:
 glooctl install federation --license-key <LICENSE_KEY>
 ```
 
-Make sure to change the placeholder `<LICENSE_KEY>` to the license key you have procured for Gloo Edge Federation.
+Make sure to change the placeholder `<LICENSE_KEY>` to the license key you have procured for Gloo Edge Enterprise.
 
 The installation will create the necessary Kubernetes components for running Gloo Edge Federation.
 
@@ -50,7 +50,7 @@ helm repo update
 kubectl create namespace gloo-fed
 
 # Install using helm
-helm install -n gloo-fed gloo-fed gloo-fed/gloo-fed --set license.key <LICENSE_KEY>
+helm install -n gloo-fed gloo-fed gloo-fed/gloo-fed --set license_key <LICENSE_KEY>
 ```
 
 Make sure to change the placeholder `<LICENSE_KEY>` to the license key you have procured for Gloo Edge Federation.

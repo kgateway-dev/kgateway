@@ -1,4 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Remove envoy V2 API server creation from XDS.
-  issueLink: https://github.com/solo-io/gloo/issues/4042
