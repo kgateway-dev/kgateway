@@ -118,7 +118,14 @@ var _ = Describe("Install", func() {
 	})
 
 	It("should not contain license key for gateway enterprise dry run with open-source chart override", func() {
-		outputYaml, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --dry-run %s", file, licenseKey))
+		outputYaml, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --gloo-fed-file %s --dry-run %s", file, file, licenseKey))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(outputYaml).NotTo(BeEmpty())
+		Expect(outputYaml).NotTo(ContainSubstring("license-key"))
+	})
+
+	It("should not contain license key for gateway enterprise dry run with open-source chart override", func() {
+		outputYaml, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --with-gloo-fed=false --dry-run %s", file, licenseKey))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(outputYaml).NotTo(BeEmpty())
 		Expect(outputYaml).NotTo(ContainSubstring("license-key"))

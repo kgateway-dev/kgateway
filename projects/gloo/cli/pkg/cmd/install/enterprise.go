@@ -45,5 +45,10 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 	pFlags := cmd.PersistentFlags()
 	flagutils.AddGlooInstallFlags(cmd.Flags(), &opts.Install)
 	flagutils.AddEnterpriseInstallFlags(pFlags, &opts.Install)
+	pFlags.Lookup("gloo-fed-file").Hidden = true
+	pFlags.Lookup("gloo-fed-values").Hidden = true
+	pFlags.Lookup("gloo-fed-release-name").Hidden = true
+	pFlags.Lookup("gloo-fed-create-namespace").Hidden = true
+	pFlags.Lookup("gloo-fed-namespace").Hidden = true
 	return cmd
 }
