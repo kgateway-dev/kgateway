@@ -197,8 +197,7 @@ func startHttpProxy(useSsl bool) int {
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = true
 	if useSsl {
-		err := setCA([]byte(gloohelpers.Certificate()), []byte(gloohelpers.PrivateKey()))
-		Expect(err).ToNot(HaveOccurred())
+		setCA([]byte(gloohelpers.Certificate()), []byte(gloohelpers.PrivateKey()))
 		proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
 	}
 
@@ -221,7 +220,7 @@ func startHttpProxy(useSsl bool) int {
 	return port
 }
 
-func setCA(caCert, caKey []byte) error {
+func setCA(caCert, caKey []byte) {
 	goproxyCa, err := tls.X509KeyPair(caCert, caKey)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -233,5 +232,4 @@ func setCA(caCert, caKey []byte) error {
 	goproxy.MitmConnect = &goproxy.ConnectAction{Action: goproxy.ConnectMitm, TLSConfig: goproxy.TLSConfigFromCA(&goproxyCa)}
 	goproxy.HTTPMitmConnect = &goproxy.ConnectAction{Action: goproxy.ConnectHTTPMitm, TLSConfig: goproxy.TLSConfigFromCA(&goproxyCa)}
 	goproxy.RejectConnect = &goproxy.ConnectAction{Action: goproxy.ConnectReject, TLSConfig: goproxy.TLSConfigFromCA(&goproxyCa)}
-	return nil
 }
