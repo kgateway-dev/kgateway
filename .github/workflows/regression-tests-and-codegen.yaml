@@ -32,13 +32,6 @@ jobs:
     - name: Generate Code
       run: |
         ./ci/check-generated-code.sh
-    - name: Detect Communinty PR
-      id: community-pr-check
-      if: ${{ github.event.pull_request.head.repo.full_name != 'solo-io/gloo' }}
-      shell: bash
-      run: |
-          echo "Pull Request is from a fork. Setting IS_COMMUNITY_PR to true"
-          echo "::set-output name=IS_COMMUNITY_PR::true"
   regression_tests:
     name: k8s regression tests
     runs-on: ubuntu-18.04
