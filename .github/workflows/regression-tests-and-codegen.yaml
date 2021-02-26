@@ -1,5 +1,8 @@
 name: CI
-on: pull_request
+
+# FOr now, don't run while I test a new github workflow
+on: push
+
 jobs:
   codegen:
     name: codegen check

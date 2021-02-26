@@ -1,0 +1,57 @@
+name: Update Docs Active Versions
+# This is what the event triggers will be
+#on:
+#  release:
+#    types: [created]
+#
+# But for now I'll just test against a branch
+on: pull_request
+
+jobs:
+  create-pull-request:
+    name: Update Docs Active Versions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel Previous Actions
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+      - name: Install SSH Deploy key
+        uses: webfactory/ssh-agent@v0.4.1
+        with:
+          ssh-private-key: ${{ secrets.SOLO_API_DEPLOY_KEY }}
+      - name: Set up Go 1.14
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.14
+        id: go
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+        with:
+          repository: solo-io/gloo
+          path: gloo
+
+      - name: Update Active Versions
+        id: update-versions
+        run: |
+          docs/generate-active-versions.sh
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v3
+        env:
+          RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
+        with:
+          token: ${{ secrets.SOLO_BOT_REPO_SECRET }}
+          commit-message: update docs/active_versions.json
+          title: Update Docs Active Versions
+          body: Update docs active_version.json to reflect latest releases
+          author: soloio-bot <soloio-bot@github.com>
+          branch: bot/update-docs-active-versions-${RELEASE_TAG_NAME}
+          base: master
+          delete: true
+
+      - name: Check outputs
+        run: |
+          echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
+          echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
