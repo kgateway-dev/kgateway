@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      REVERT: Remove envoy V2 API server creation from XDS.
