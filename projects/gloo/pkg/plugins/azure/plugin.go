@@ -32,6 +32,7 @@ var _ plugins.RoutePlugin = new(plugin)
 var _ plugins.UpstreamPlugin = new(plugin)
 
 type plugin struct {
+	settings          *v1.Settings
 	recordedUpstreams map[string]*azure.UpstreamSpec
 	apiKeys           map[string]string
 	ctx               context.Context
@@ -43,6 +44,7 @@ func NewPlugin(transformsAdded *bool) plugins.Plugin {
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
+	p.settings = params.Settings
 	p.ctx = params.Ctx
 	p.recordedUpstreams = make(map[string]*azure.UpstreamSpec)
 	return nil
@@ -67,7 +69,12 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	pluginutils.EnvoySingleEndpointLoadAssignment(out, hostname, 443)
 
+	commonTlsContext, err := utils.GetCommonTlsContextFromUpstreamOptions(p.settings.GetUpstreamOptions())
+	if err != nil {
+		return err
+	}
 	tlsContext := &envoyauth.UpstreamTlsContext{
+		CommonTlsContext: commonTlsContext,
 		// TODO(yuval-k): Add verification context
 		Sni: hostname,
 	}

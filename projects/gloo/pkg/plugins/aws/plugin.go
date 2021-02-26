@@ -55,12 +55,14 @@ type plugin struct {
 	ctx               context.Context
 	transformsAdded   *bool
 	settings          *v1.GlooOptions_AWSOptions
+	upstreamOptions   *v1.UpstreamOptions
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.ctx = params.Ctx
 	p.recordedUpstreams = make(map[string]*aws.UpstreamSpec)
 	p.settings = params.Settings.GetGloo().GetAwsOptions()
+	p.upstreamOptions = params.Settings.GetUpstreamOptions()
 	return nil
 }
 
@@ -83,7 +85,12 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	out.DnsLookupFamily = envoy_config_cluster_v3.Cluster_V4_ONLY
 	pluginutils.EnvoySingleEndpointLoadAssignment(out, lambdaHostname, 443)
 
+	commonTlsContext, err := utils.GetCommonTlsContextFromUpstreamOptions(p.upstreamOptions)
+	if err != nil {
+		return err
+	}
 	tlsContext := &envoyauth.UpstreamTlsContext{
+		CommonTlsContext: commonTlsContext,
 		// TODO(yuval-k): Add verification context
 		Sni: lambdaHostname,
 	}
