@@ -66,6 +66,21 @@ func (mr *MockSslConfigTranslatorMockRecorder) ResolveDownstreamSslConfig(arg0, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveDownstreamSslConfig", reflect.TypeOf((*MockSslConfigTranslator)(nil).ResolveDownstreamSslConfig), arg0, arg1)
 }
 
+// ResolveSslParamsConfig mocks base method
+func (m *MockSslConfigTranslator) ResolveSslParamsConfig(arg0 *v1.SslParameters) (*envoy_extensions_transport_sockets_tls_v3.TlsParameters, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResolveSslParamsConfig", arg0)
+	ret0, _ := ret[0].(*envoy_extensions_transport_sockets_tls_v3.TlsParameters)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ResolveSslParamsConfig indicates an expected call of ResolveSslParamsConfig
+func (mr *MockSslConfigTranslatorMockRecorder) ResolveSslParamsConfig(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResolveSslParamsConfig", reflect.TypeOf((*MockSslConfigTranslator)(nil).ResolveSslParamsConfig), arg0)
+}
+
 // ResolveUpstreamSslConfig mocks base method
 func (m *MockSslConfigTranslator) ResolveUpstreamSslConfig(arg0 v1.SecretList, arg1 *v1.UpstreamSslConfig) (*envoy_extensions_transport_sockets_tls_v3.UpstreamTlsContext, error) {
 	m.ctrl.T.Helper()
