@@ -61,7 +61,7 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 					}
 
 					tunnelingHostname := us.GetHttpProxyHostname()
-					if tunnelingHostname == "" {
+					if tunnelingHostname.GetValue() == "" {
 						continue
 					}
 
@@ -118,7 +118,7 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 
 					cfg := &envoytcp.TcpProxy{
 						StatPrefix:       "soloioTcpStats" + cluster,
-						TunnelingConfig:  &envoytcp.TcpProxy_TunnelingConfig{Hostname: tunnelingHostname},
+						TunnelingConfig:  &envoytcp.TcpProxy_TunnelingConfig{Hostname: tunnelingHostname.GetValue()},
 						ClusterSpecifier: &envoytcp.TcpProxy_Cluster{Cluster: cluster}, // route to original target
 					}
 

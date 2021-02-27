@@ -107,7 +107,7 @@ message Upstream {
     //    host: <envoy>:<port>
     //    user-agent: curl/7.64.1
     //    accept: */*
-    string http_proxy_hostname = 21;
+    google.protobuf.StringValue http_proxy_hostname = 21;
 }
 
 // created by discovery services

@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -102,7 +104,7 @@ var _ = Describe("tunneling", func() {
 					},
 				},
 			},
-			HttpProxyHostname: "host.com:443", // enable HTTP tunneling,
+			HttpProxyHostname: &wrappers.StringValue{Value: "host.com:443"}, // enable HTTP tunneling,
 		}
 
 		if useSsl {
