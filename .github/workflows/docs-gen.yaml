@@ -1,8 +1,10 @@
-  
 name: Docs
 
 on:
   push:
+    branches:
+    - 'master'
+  pull_request:
     branches:
     - 'master'
   workflow_run:
@@ -32,6 +34,9 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
     - name: Deploy to Firebase
+      # Do not publish docs if this workflow was triggered by a pull request
+      # Only deploy if this was triggered by a push to master, or a successful trivy workflow_run
+      if: ${{ github.event_name != 'pull_request' }}
       uses: w9jds/firebase-action@master
       with:
         args: deploy --only hosting
