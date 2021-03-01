@@ -74,9 +74,13 @@ func NewInstallerWithWriter(helmClient HelmClient, kubeNsClient v1.NamespaceInte
 }
 
 func (i *installer) Install(installerConfig *InstallerConfig) error {
-	namespace := installerConfig.InstallCliArgs.Namespace
-	releaseName := installerConfig.InstallCliArgs.HelmReleaseName
-	if !installerConfig.InstallCliArgs.DryRun {
+	helmInstallConfig := installerConfig.InstallCliArgs.Gloo
+	if installerConfig.Mode == Federation {
+		helmInstallConfig = installerConfig.InstallCliArgs.Federation
+	}
+	namespace := helmInstallConfig.Namespace
+	releaseName := helmInstallConfig.HelmReleaseName
+	if !helmInstallConfig.DryRun {
 		if releaseExists, err := i.helmClient.ReleaseExists(namespace, releaseName); err != nil {
 			return err
 		} else if releaseExists {
@@ -85,21 +89,21 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 			}
 			return GlooAlreadyInstalled(namespace)
 		}
-		if installerConfig.InstallCliArgs.CreateNamespace {
+		if helmInstallConfig.CreateNamespace {
 			// Create the namespace if it doesn't exist. Helm3 no longer does this.
 			i.createNamespace(installerConfig.Ctx, namespace)
 		}
 	}
 
-	preInstallMessage(installerConfig.InstallCliArgs, installerConfig.Mode)
+	preInstallMessage(&helmInstallConfig, installerConfig.Mode)
 
-	helmInstall, helmEnv, err := i.helmClient.NewInstall(namespace, releaseName, installerConfig.InstallCliArgs.DryRun)
+	helmInstall, helmEnv, err := i.helmClient.NewInstall(namespace, releaseName, helmInstallConfig.DryRun)
 	if err != nil {
 		return err
 	}
 
-	chartUri, err := getChartUri(installerConfig.InstallCliArgs.HelmChartOverride,
-		strings.TrimPrefix(installerConfig.InstallCliArgs.Version, "v"),
+	chartUri, err := getChartUri(helmInstallConfig.HelmChartOverride,
+		strings.TrimPrefix(helmInstallConfig.Version, "v"),
 		installerConfig.Mode)
 	if err != nil {
 		return err
@@ -132,7 +136,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 
 	// Merge values provided via the '--values' flag
 	valueOpts := &values.Options{
-		ValueFiles: installerConfig.InstallCliArgs.HelmChartValueFileNames,
+		ValueFiles: helmInstallConfig.HelmChartValueFileNames,
 	}
 	cliValues, err := valueOpts.MergeValues(getter.All(helmEnv))
 	if err != nil {
@@ -170,13 +174,13 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		fmt.Printf("Successfully ran helm install with release %s\n", releaseName)
 	}
 
-	if installerConfig.InstallCliArgs.DryRun {
+	if helmInstallConfig.DryRun {
 		if err := i.printReleaseManifest(rel); err != nil {
 			return err
 		}
 	}
 
-	postInstallMessage(installerConfig.InstallCliArgs, installerConfig.Mode)
+	postInstallMessage(&helmInstallConfig, installerConfig.Mode)
 
 	return nil
 }
@@ -357,7 +361,7 @@ func getDefaultGlooInstallVersion(chartOverride string) (string, error) {
 	return version.Version, nil
 }
 
-func preInstallMessage(installOpts *options.Install, mode Mode) {
+func preInstallMessage(installOpts *options.HelmInstall, mode Mode) {
 	if installOpts.DryRun {
 		return
 	}
@@ -370,7 +374,7 @@ func preInstallMessage(installOpts *options.Install, mode Mode) {
 		fmt.Println("Starting Gloo Edge installation...")
 	}
 }
-func postInstallMessage(installOpts *options.Install, mode Mode) {
+func postInstallMessage(installOpts *options.HelmInstall, mode Mode) {
 	if installOpts.DryRun {
 		return
 	}

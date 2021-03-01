@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Added istioMetaMeshId and istioMetaClusterId helm values for the gateway-proxy as well as glooctl.
+    issueLink: https://github.com/solo-io/gloo/issues/4325

@@ -6,7 +6,7 @@ import (
 )
 
 // Sidecar for Istio 1.7.x releases, also works for Istio 1.8.x releases
-func generateIstio17or18Sidecar(version, jwtPolicy string) *corev1.Container {
+func generateIstio17or18Sidecar(version, jwtPolicy string, istioMetaMeshID string, istioMetaClusterID string) *corev1.Container {
 	sidecar := &corev1.Container{
 		Name:  "istio-proxy",
 		Image: "docker.io/istio/proxyv2:" + version,
@@ -61,11 +61,11 @@ func generateIstio17or18Sidecar(version, jwtPolicy string) *corev1.Container {
 			},
 			{
 				Name:  "ISTIO_META_MESH_ID",
-				Value: "cluster.local",
+				Value: istioMetaMeshID,
 			},
 			{
 				Name:  "ISTIO_META_CLUSTER_ID",
-				Value: "Kubernetes",
+				Value: istioMetaClusterID,
 			},
 			{
 				Name: "POD_NAME",

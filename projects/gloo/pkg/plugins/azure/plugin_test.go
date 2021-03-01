@@ -19,64 +19,80 @@ import (
 
 var _ = Describe("Plugin", func() {
 	var (
-		p      plugins.Plugin
-		out    *envoy_config_cluster_v3.Cluster
-		params plugins.Params
+		p            plugins.Plugin
+		namespace    string
+		initParams   plugins.InitParams
+		params       plugins.Params
+		upstream     *v1.Upstream
+		upstreamSpec *azure.UpstreamSpec
+		out          *envoy_config_cluster_v3.Cluster
 	)
 
 	BeforeEach(func() {
 		var b bool
 		p = azureplugin.NewPlugin(&b)
-		p.Init(plugins.InitParams{Ctx: context.TODO()})
-		out = &envoy_config_cluster_v3.Cluster{}
+
+		namespace = ""
+		initParams = plugins.InitParams{
+			Ctx: context.TODO(),
+		}
 		params = plugins.Params{}
+
+		upstreamSpec = &azure.UpstreamSpec{
+			FunctionAppName: "app-name",
+		}
+		upstream = &v1.Upstream{
+			Metadata: &core.Metadata{
+				Name:      "us",
+				Namespace: namespace,
+			},
+			UpstreamType: &v1.Upstream_Azure{
+				Azure: upstreamSpec,
+			},
+		}
+
+		out = &envoy_config_cluster_v3.Cluster{}
+	})
+
+	JustBeforeEach(func() {
+		err := p.Init(initParams)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("with valid upstream spec", func() {
-		var (
-			err      error
-			upstream *v1.Upstream
-		)
 
-		BeforeEach(func() {
-			upstream = &v1.Upstream{
-				Metadata: &core.Metadata{
-					Name: "test",
-					// TODO(yuval-k): namespace
-					Namespace: "",
-				},
-				UpstreamType: &v1.Upstream_Azure{
-					Azure: &azure.UpstreamSpec{
-						FunctionAppName: "my-appwhos",
-					},
-				},
-			}
+		var err error
+
+		JustBeforeEach(func() {
+			err = p.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 		})
+
 		Context("with secrets", func() {
 
 			BeforeEach(func() {
-				upstream.UpstreamType.(*v1.Upstream_Azure).Azure.SecretRef = &core.ResourceRef{
-					Namespace: "",
+				upstreamSpec.SecretRef = &core.ResourceRef{
+					Namespace: namespace,
 					Name:      "azure-secret1",
 				}
-
 				params.Snapshot = &v1.ApiSnapshot{
 					Secrets: v1.SecretList{{
 						Metadata: &core.Metadata{
-							Name: "azure-secret1",
-							// TODO(yuval-k): namespace
-							Namespace: "",
+							Name:      "azure-secret1",
+							Namespace: namespace,
 						},
 						Kind: &v1.Secret_Azure{
 							Azure: &v1.AzureSecret{
-								ApiKeys: map[string]string{"_master": "key1", "foo": "key1", "bar": "key2"},
+								ApiKeys: map[string]string{
+									"_master": "key1",
+									"foo":     "key1",
+									"bar":     "key2",
+								},
 							},
 						},
 					}},
 				}
-
-				err = p.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			})
+
 			It("should not error", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -84,27 +100,113 @@ var _ = Describe("Plugin", func() {
 			It("should have the correct output", func() {
 				Expect(out.LoadAssignment.Endpoints).Should(HaveLen(1))
 
-				tlsContext := utils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
-				Expect(tlsContext.Sni).To(Equal("my-appwhos.azurewebsites.net"))
+				tlsContext := getClusterTlsContext(out)
+				Expect(tlsContext.Sni).To(Equal("app-name.azurewebsites.net"))
 				Expect(out.GetType()).To(Equal(envoy_config_cluster_v3.Cluster_LOGICAL_DNS))
 				Expect(out.DnsLookupFamily).To(Equal(envoy_config_cluster_v3.Cluster_V4_ONLY))
 			})
 
 		})
+
 		Context("without secrets", func() {
-			BeforeEach(func() {
-				err = p.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
-			})
+
 			It("should not error", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
+
 			It("should have the correct output", func() {
 				Expect(out.LoadAssignment.Endpoints).Should(HaveLen(1))
-				tlsContext := utils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
-				Expect(tlsContext.Sni).To(Equal("my-appwhos.azurewebsites.net"))
+				tlsContext := getClusterTlsContext(out)
+
+				Expect(tlsContext.Sni).To(Equal("app-name.azurewebsites.net"))
 				Expect(out.GetType()).To(Equal(envoy_config_cluster_v3.Cluster_LOGICAL_DNS))
 				Expect(out.DnsLookupFamily).To(Equal(envoy_config_cluster_v3.Cluster_V4_ONLY))
 			})
+		})
+
+		Context("with ssl", func() {
+
+			Context("should allow configuring ssl without settings.UpstreamOptions", func() {
+
+				BeforeEach(func() {
+					initParams.Settings = &v1.Settings{}
+				})
+
+				It("should not error", func() {
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("should configure CommonTlsContext without TlsParams", func() {
+					commonTlsContext := getClusterTlsContext(out).GetCommonTlsContext()
+					Expect(commonTlsContext).NotTo(BeNil())
+
+					tlsParams := commonTlsContext.GetTlsParams()
+					Expect(tlsParams).To(BeNil())
+				})
+
+			})
+
+			Context("should allow configuring ssl with settings.UpstreamOptions", func() {
+
+				BeforeEach(func() {
+					initParams.Settings = &v1.Settings{
+						UpstreamOptions: &v1.UpstreamOptions{
+							SslParameters: &v1.SslParameters{
+								MinimumProtocolVersion: v1.SslParameters_TLSv1_1,
+								MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+								CipherSuites:           []string{"cipher-test"},
+								EcdhCurves:             []string{"ec-dh-test"},
+							},
+						},
+					}
+				})
+
+				It("should not error", func() {
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("should configure CommonTlsContext", func() {
+					commonTlsContext := getClusterTlsContext(out).GetCommonTlsContext()
+					Expect(commonTlsContext).NotTo(BeNil())
+
+					tlsParams := commonTlsContext.GetTlsParams()
+					Expect(tlsParams).NotTo(BeNil())
+
+					Expect(tlsParams.GetCipherSuites()).To(Equal([]string{"cipher-test"}))
+					Expect(tlsParams.GetEcdhCurves()).To(Equal([]string{"ec-dh-test"}))
+					Expect(tlsParams.GetTlsMinimumProtocolVersion()).To(Equal(envoyauth.TlsParameters_TLSv1_1))
+					Expect(tlsParams.GetTlsMaximumProtocolVersion()).To(Equal(envoyauth.TlsParameters_TLSv1_2))
+				})
+
+			})
+
+			Context("should error while configuring ssl with invalid tls versions in settings.UpstreamOptions", func() {
+
+				var invalidProtocolVersion v1.SslParameters_ProtocolVersion = 5 // INVALID
+
+				BeforeEach(func() {
+					initParams.Settings = &v1.Settings{
+						UpstreamOptions: &v1.UpstreamOptions{
+							SslParameters: &v1.SslParameters{
+								MinimumProtocolVersion: invalidProtocolVersion,
+								MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+								CipherSuites:           []string{"cipher-test"},
+								EcdhCurves:             []string{"ec-dh-test"},
+							},
+						},
+					}
+				})
+
+				It("should error", func() {
+					Expect(err).To(HaveOccurred())
+				})
+
+			})
+
 		})
 	})
 })
+
+func getClusterTlsContext(cluster *envoy_config_cluster_v3.Cluster) *envoyauth.UpstreamTlsContext {
+	return utils.MustAnyToMessage(cluster.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
+}

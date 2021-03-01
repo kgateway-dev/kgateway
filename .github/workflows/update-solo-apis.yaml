@@ -44,6 +44,6 @@ jobs:
           git config --local user.email soloio-bot@github.com
           git add .
           git commit -m "Sync Gloo APIs to ${TAG_NAME}" --allow-empty
-          git checkout -B gloo-v${TAG_NAME}
+          git checkout -B gloo-${TAG_NAME}
           git remote add solo-apis git@github.com:solo-io/solo-apis.git
-          git push solo-apis gloo-v${TAG_NAME}
+          git push solo-apis gloo-${TAG_NAME}

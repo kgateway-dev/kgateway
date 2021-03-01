@@ -20,6 +20,7 @@ var _ = Describe("Plugin", func() {
 
 	var (
 		p            *plugin
+		initParams   plugins.InitParams
 		params       plugins.Params
 		upstream     *v1.Upstream
 		upstreamSpec *v1static.UpstreamSpec
@@ -30,7 +31,7 @@ var _ = Describe("Plugin", func() {
 		p = new(plugin)
 		out = new(envoy_config_cluster_v3.Cluster)
 
-		p.Init(plugins.InitParams{})
+		initParams = plugins.InitParams{}
 		upstreamSpec = &v1static.UpstreamSpec{
 			Hosts: []*v1static.Host{{
 				Addr: "localhost",
@@ -47,6 +48,11 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 
+	})
+
+	JustBeforeEach(func() {
+		err := p.Init(initParams)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("h2", func() {
@@ -173,6 +179,75 @@ var _ = Describe("Plugin", func() {
 			upstreamSpec.UseTls = true
 			p.ProcessUpstream(params, upstream, out)
 			Expect(tlsContext()).ToNot(BeNil())
+		})
+
+		Context("should allow configuring ssl without settings.UpstreamOptions", func() {
+			BeforeEach(func() {
+				upstreamSpec.UseTls = true
+				initParams.Settings = &v1.Settings{}
+			})
+
+			It("should configure CommonTlsContext without TlsParams", func() {
+				err := p.ProcessUpstream(params, upstream, out)
+				Expect(err).NotTo(HaveOccurred())
+
+				commonTlsContext := tlsContext().GetCommonTlsContext()
+				Expect(commonTlsContext).NotTo(BeNil())
+
+				tlsParams := commonTlsContext.GetTlsParams()
+				Expect(tlsParams).To(BeNil())
+			})
+		})
+
+		Context("should allow configuring ssl with settings.UpstreamOptions", func() {
+			BeforeEach(func() {
+				upstreamSpec.UseTls = true
+				initParams.Settings = &v1.Settings{
+					UpstreamOptions: &v1.UpstreamOptions{
+						SslParameters: &v1.SslParameters{
+							MinimumProtocolVersion: v1.SslParameters_TLSv1_1,
+							MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+							CipherSuites:           []string{"cipher-test"},
+							EcdhCurves:             []string{"ec-dh-test"},
+						},
+					},
+				}
+			})
+
+			It("should configure CommonTlsContext", func() {
+				err := p.ProcessUpstream(params, upstream, out)
+				Expect(err).NotTo(HaveOccurred())
+
+				tlsParams := tlsContext().GetCommonTlsContext().GetTlsParams()
+				Expect(tlsParams).NotTo(BeNil())
+				Expect(tlsParams.GetCipherSuites()).To(Equal([]string{"cipher-test"}))
+				Expect(tlsParams.GetEcdhCurves()).To(Equal([]string{"ec-dh-test"}))
+				Expect(tlsParams.GetTlsMinimumProtocolVersion()).To(Equal(envoyauth.TlsParameters_TLSv1_1))
+				Expect(tlsParams.GetTlsMaximumProtocolVersion()).To(Equal(envoyauth.TlsParameters_TLSv1_2))
+			})
+		})
+
+		Context("should error while configuring ssl with invalid tls versions in settings.UpstreamOptions", func() {
+			var invalidProtocolVersion v1.SslParameters_ProtocolVersion = 5 // INVALID
+
+			BeforeEach(func() {
+				upstreamSpec.UseTls = true
+				initParams.Settings = &v1.Settings{
+					UpstreamOptions: &v1.UpstreamOptions{
+						SslParameters: &v1.SslParameters{
+							MinimumProtocolVersion: invalidProtocolVersion,
+							MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+							CipherSuites:           []string{"cipher-test"},
+							EcdhCurves:             []string{"ec-dh-test"},
+						},
+					},
+				}
+			})
+
+			It("should not ProcessUpstream", func() {
+				err := p.ProcessUpstream(params, upstream, out)
+				Expect(err).To(HaveOccurred())
+			})
 		})
 
 		It("should not override existing tls config", func() {
