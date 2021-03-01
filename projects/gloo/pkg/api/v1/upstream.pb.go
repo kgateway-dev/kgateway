@@ -109,6 +109,8 @@ type Upstream struct {
 	//    host: <envoy>:<port>
 	//    user-agent: curl/7.64.1
 	//    accept: */*
+	//
+	// Note: if setting this field to a hostname rather than IP:PORT, you may want to also set `host_rewrite` on the route
 	HttpProxyHostname *wrappers.StringValue `protobuf:"bytes,21,opt,name=http_proxy_hostname,json=httpProxyHostname,proto3" json:"http_proxy_hostname,omitempty"`
 }
 

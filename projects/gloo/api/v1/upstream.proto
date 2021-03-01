@@ -107,6 +107,8 @@ message Upstream {
     //    host: <envoy>:<port>
     //    user-agent: curl/7.64.1
     //    accept: */*
+    //
+    // Note: if setting this field to a hostname rather than IP:PORT, you may want to also set `host_rewrite` on the route
     google.protobuf.StringValue http_proxy_hostname = 21;
 }
 

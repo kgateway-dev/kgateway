@@ -7,7 +7,6 @@ Name|Version|License
 [udpa/go](https://github.com/cncf/udpa)|v0.0.0-20201120205902-5459f2c99403|Apache License 2.0
 [cratonica/2goarray](https://github.com/cratonica/2goarray)|v0.0.0-20190331194516-514510793eaa|MIT License
 [dgrijalva/jwt-go](https://github.com/dgrijalva/jwt-go)|v3.2.0+incompatible|MIT License
-[elazarl/goproxy](https://github.com/elazarl/goproxy)|v0.0.0-20210110162100-a92cc753f88e|BSD 3-clause "New" or "Revised" License
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.9.8|Apache License 2.0
 [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)|v0.4.0|Apache License 2.0
 [fgrosse/zaptest](https://github.com/fgrosse/zaptest)|v1.1.0|MIT License
