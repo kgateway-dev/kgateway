@@ -20,6 +20,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/del"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/get"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/initpluginmanager"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/remove"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/route"
@@ -112,6 +113,7 @@ func GlooCli() *cobra.Command {
 			federation.RootCmd(opts),
 			plugin.RootCmd(opts),
 			istio.RootCmd(opts),
+			initpluginmanager.Command(context.Background()),
 			completionCmd(),
 		)
 	}

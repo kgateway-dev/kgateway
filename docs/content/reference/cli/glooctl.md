@@ -39,6 +39,7 @@ glooctl is the unified CLI for Gloo.
 * [glooctl demo](../glooctl_demo)	 - Demos (requires 4 tools to be installed and accessible via the PATH: glooctl, kubectl, docker, and kind.)
 * [glooctl edit](../glooctl_edit)	 - Edit a Gloo resource
 * [glooctl get](../glooctl_get)	 - Display one or a list of Gloo resources
+* [glooctl init-plugin-manager](../glooctl_init-plugin-manager)	 - Install the plugin manager
 * [glooctl install](../glooctl_install)	 - install gloo on different platforms
 * [glooctl istio](../glooctl_istio)	 - Commands for interacting with Istio in Gloo
 * [glooctl plugin](../glooctl_plugin)	 - Commands for interacting with glooctl plugins
