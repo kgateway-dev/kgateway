@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -21,7 +22,6 @@ import (
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 
-	"github.com/elazarl/goproxy"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	. "github.com/onsi/ginkgo"
@@ -210,8 +210,6 @@ var _ = Describe("tunneling", func() {
 })
 
 func startHttpProxy(ctx context.Context) int {
-	proxy := goproxy.NewProxyHttpServer()
-	proxy.Verbose = true
 
 	listener, err := net.Listen("tcp", ":0")
 	Expect(err).ToNot(HaveOccurred())
@@ -227,11 +225,54 @@ func startHttpProxy(ctx context.Context) int {
 
 	go func() {
 		defer GinkgoRecover()
-		server := &http.Server{Addr: addr, Handler: proxy}
+		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connextProxy)}
 		server.Serve(listener)
 		<-ctx.Done()
 		server.Close()
 	}()
 
 	return port
+}
+
+func connextProxy(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "CONNECT" {
+		http.Error(w, "not connect", 400)
+		return
+	}
+
+	hij, ok := w.(http.Hijacker)
+	if !ok {
+		Fail("no hijacker")
+	}
+	conn, buf, err := hij.Hijack()
+	if err != nil {
+		Expect(err).ToNot(HaveOccurred())
+	}
+	defer conn.Close()
+	host := r.URL.Host
+	targetConn, err := net.Dial("tcp", host)
+	if err != nil {
+		http.Error(w, "can't connect", 500)
+		return
+	}
+	fmt.Fprintf(GinkgoWriter, "Accepting CONNECT to %s\n", host)
+	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+
+	// no just copy:
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		io.Copy(buf, targetConn)
+		buf.Flush()
+		wg.Done()
+	}()
+	go func() {
+		io.Copy(targetConn, buf)
+		wg.Done()
+	}()
+
+	wg.Wait()
+	fmt.Fprintf(GinkgoWriter, "done proxying\n")
+
 }
