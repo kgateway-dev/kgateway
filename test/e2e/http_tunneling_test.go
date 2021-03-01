@@ -244,17 +244,19 @@ func connextProxy(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		Fail("no hijacker")
 	}
-	conn, buf, err := hij.Hijack()
-	if err != nil {
-		Expect(err).ToNot(HaveOccurred())
-	}
-	defer conn.Close()
 	host := r.URL.Host
 	targetConn, err := net.Dial("tcp", host)
 	if err != nil {
 		http.Error(w, "can't connect", 500)
 		return
 	}
+
+	conn, buf, err := hij.Hijack()
+	if err != nil {
+		Expect(err).ToNot(HaveOccurred())
+	}
+	defer conn.Close()
+
 	fmt.Fprintf(GinkgoWriter, "Accepting CONNECT to %s\n", host)
 	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 
