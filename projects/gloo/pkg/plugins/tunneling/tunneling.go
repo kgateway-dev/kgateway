@@ -20,8 +20,6 @@ func NewPlugin() *Plugin {
 var _ plugins.Plugin = new(Plugin)
 var _ plugins.ResourceGeneratorPlugin = new(Plugin)
 
-//TODO(kdorosh) make sure upgradeable
-
 type Plugin struct {
 }
 
