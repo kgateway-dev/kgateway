@@ -30,16 +30,6 @@ glooctl install gateway enterprise [flags]
       --with-gloo-fed         Install Gloo-Fed alongside Gloo Enterprise (default true)
 ```
 
-### Options for Gloo-Fed
-
-```
-    --gloo-fed-file string          Install Gloo-Fed from this Helm chart archive file rather than from a release
-    --gloo-fed-values               List of files with value overrides for the Gloo-Fed Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
-    --gloo-fed-release-name         helm release name (default "gloo-fed")
-    --gloo-fed-create-namespace     Create the namespace to install gloo-fed into (default true)
-    --gloo-fed-namespace            namespace to install gloo into (default "gloo-fed")
-```
-
 ### Options inherited from parent commands
 
 ```
