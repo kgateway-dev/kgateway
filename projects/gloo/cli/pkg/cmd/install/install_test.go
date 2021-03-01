@@ -131,6 +131,20 @@ var _ = Describe("Install", func() {
 		Expect(outputYaml).NotTo(ContainSubstring("license-key"))
 	})
 
+	It("shouldn't get errors for enterprise dry run with multiple values", func() {
+		outputYaml, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --dry-run --values %s,%s %s", file, values1, values2, licenseKey))
+		Expect(err).NotTo(HaveOccurred())
+		// Test that the values are being merged as we expect
+		Expect(outputYaml).To(ContainSubstring("test-namespace-2\n"))
+	})
+
+	It("shouldn't get errors for enterprise dry run with gloo-fed values", func() {
+		outputYaml, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --dry-run --gloo-fed-values %s,%s %s", file, values1, values2, licenseKey))
+		Expect(err).NotTo(HaveOccurred())
+		// Test that the values are being merged as we expect
+		Expect(outputYaml).To(ContainSubstring("test-namespace-2\n"))
+	})
+
 	It("should error when not overriding helm chart in dev mode", func() {
 		_, err := testutils.GlooctlOut("install ingress --dry-run")
 		Expect(err).To(HaveOccurred())
