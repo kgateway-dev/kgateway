@@ -225,7 +225,7 @@ func startHttpProxy(ctx context.Context) int {
 
 	go func() {
 		defer GinkgoRecover()
-		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connextProxy)}
+		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy)}
 		server.Serve(listener)
 		<-ctx.Done()
 		server.Close()
@@ -234,7 +234,7 @@ func startHttpProxy(ctx context.Context) int {
 	return port
 }
 
-func connextProxy(w http.ResponseWriter, r *http.Request) {
+func connectProxy(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "CONNECT" {
 		http.Error(w, "not connect", 400)
 		return
