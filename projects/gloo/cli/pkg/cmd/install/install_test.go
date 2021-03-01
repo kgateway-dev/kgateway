@@ -15,7 +15,7 @@ import (
 var _ = Describe("Install", func() {
 
 	const licenseKey = "--license-key=fake-license-key"
-	const overrideVersion = "0.20.7"
+	const overrideVersion = "1.7.0-beta11"
 
 	BeforeEach(func() {
 		version.Version = version.UndefinedVersion // we're testing an "unreleased" glooctl

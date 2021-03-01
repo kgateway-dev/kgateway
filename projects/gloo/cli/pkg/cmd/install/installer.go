@@ -80,6 +80,8 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 			return err
 		}
 		installerConfig.Mode = Federation
+		// ensure versions match for enterprise and federation
+		installerConfig.InstallCliArgs.Federation.Version = installerConfig.InstallCliArgs.Gloo.Version
 		return i.installFromConfig(installerConfig)
 	}
 
