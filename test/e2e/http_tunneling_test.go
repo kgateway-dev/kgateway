@@ -3,13 +3,13 @@ package e2e_test
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"strconv"
+
+	"github.com/solo-io/gloo/test/v1helpers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
@@ -38,7 +38,8 @@ var _ = Describe("tunneling", func() {
 		testClients   services.TestClients
 		envoyInstance *services.EnvoyInstance
 		up            *gloov1.Upstream
-		useSsl        bool
+		tuPort        uint32
+		sslPort       uint32
 
 		writeNamespace = defaults.GlooSystem
 	)
@@ -84,11 +85,13 @@ var _ = Describe("tunneling", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
-	})
 
-	JustBeforeEach(func() {
+		// start http proxy and setup upstream that points to it
+		port := startHttpProxy(ctx)
 
-		port := startHttpProxy(useSsl)
+		tu := v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+		tuPort = tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
+
 		up = &gloov1.Upstream{
 			Metadata: &core.Metadata{
 				Name:      "local-1",
@@ -104,22 +107,19 @@ var _ = Describe("tunneling", func() {
 					},
 				},
 			},
-			HttpProxyHostname: &wrappers.StringValue{Value: "host.com:443"}, // enable HTTP tunneling,
+			HttpProxyHostname: &wrappers.StringValue{Value: fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), tuPort)}, // enable HTTP tunneling,
 		}
+	})
 
-		if useSsl {
-			up.SslConfig = &gloov1.UpstreamSslConfig{
-				SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
-					SecretRef: &core.ResourceRef{Name: "secret", Namespace: "default"},
-				},
-			}
-		}
+	JustBeforeEach(func() {
 
 		_, err := testClients.UpstreamClient.Write(up, clients.WriteOpts{OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
 
 		// write a virtual service so we have a proxy to our test upstream
 		testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
+		//testVs.VirtualHost.Routes[0].Options = &gloov1.RouteOptions{}
+		//testVs.VirtualHost.Routes[0].Options.PrefixRewrite = &wrappers.StringValue{Value: fmt.Sprintf("host.docker.internal/"} //TODO(kdorosh)
 		_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -140,7 +140,8 @@ var _ = Describe("tunneling", func() {
 		EventuallyWithOffset(1, func() error {
 			var client http.Client
 			scheme := "http"
-			req, err := http.NewRequest("GET", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), nil)
+			var json = []byte(`{"value":"Hello, world!"}`)
+			req, err := http.NewRequest("GET", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), bytes.NewBuffer(json))
 			if err != nil {
 				return err
 			}
@@ -161,7 +162,7 @@ var _ = Describe("tunneling", func() {
 
 	It("should proxy http", func() {
 		testReq := testRequest()
-		Expect(testReq).Should(ContainSubstring("400 The plain HTTP request was sent to HTTPS port"))
+		Expect(testReq).Should(ContainSubstring("{\"value\":\"Hello, world!\"}"))
 	})
 
 	Context("with SSL", func() {
@@ -177,6 +178,7 @@ var _ = Describe("tunneling", func() {
 					Tls: &gloov1.TlsSecret{
 						CertChain:  gloohelpers.Certificate(),
 						PrivateKey: gloohelpers.PrivateKey(),
+						RootCa:     gloohelpers.Certificate(),
 					},
 				},
 			}
@@ -184,24 +186,26 @@ var _ = Describe("tunneling", func() {
 			_, err := testClients.SecretClient.Write(secret, clients.WriteOpts{OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
 
-			useSsl = true
+			up.SslConfig = &gloov1.UpstreamSslConfig{
+				SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
+					SecretRef: &core.ResourceRef{Name: "secret", Namespace: "default"},
+				},
+			}
+			sslPort = v1helpers.StartSslProxy(ctx, tuPort)
+			up.HttpProxyHostname = &wrappers.StringValue{Value: fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), sslPort)} // enable HTTP tunneling,
 		})
 
 		It("should proxy HTTPS", func() {
 			testReq := testRequest()
-			Expect(testReq).Should(ContainSubstring("403 Forbidden")) //TODO(kdorosh) change to real site
+			Expect(testReq).Should(ContainSubstring("{\"value\":\"Hello, world!\"}"))
 		})
 	})
 
 })
 
-func startHttpProxy(useSsl bool) int {
+func startHttpProxy(ctx context.Context) int {
 	proxy := goproxy.NewProxyHttpServer()
 	proxy.Verbose = true
-	if useSsl {
-		setCA([]byte(gloohelpers.Certificate()), []byte(gloohelpers.PrivateKey()))
-		proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
-	}
 
 	listener, err := net.Listen("tcp", ":0")
 	Expect(err).ToNot(HaveOccurred())
@@ -217,21 +221,9 @@ func startHttpProxy(useSsl bool) int {
 		defer GinkgoRecover()
 		server := &http.Server{Addr: addr, Handler: proxy}
 		server.Serve(listener)
+		<-ctx.Done()
+		server.Close()
 	}()
 
 	return port
-}
-
-func setCA(caCert, caKey []byte) {
-	goproxyCa, err := tls.X509KeyPair(caCert, caKey)
-	Expect(err).ToNot(HaveOccurred())
-
-	goproxyCa.Leaf, err = x509.ParseCertificate(goproxyCa.Certificate[0])
-	Expect(err).ToNot(HaveOccurred())
-
-	goproxy.GoproxyCa = goproxyCa
-	goproxy.OkConnect = &goproxy.ConnectAction{Action: goproxy.ConnectAccept, TLSConfig: goproxy.TLSConfigFromCA(&goproxyCa)}
-	goproxy.MitmConnect = &goproxy.ConnectAction{Action: goproxy.ConnectMitm, TLSConfig: goproxy.TLSConfigFromCA(&goproxyCa)}
-	goproxy.HTTPMitmConnect = &goproxy.ConnectAction{Action: goproxy.ConnectHTTPMitm, TLSConfig: goproxy.TLSConfigFromCA(&goproxyCa)}
-	goproxy.RejectConnect = &goproxy.ConnectAction{Action: goproxy.ConnectReject, TLSConfig: goproxy.TLSConfigFromCA(&goproxyCa)}
 }
