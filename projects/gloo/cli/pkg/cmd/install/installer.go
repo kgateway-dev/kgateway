@@ -394,6 +394,13 @@ func postInstallMessage(installOpts *options.Install, mode Mode) {
 	switch mode {
 	case Federation:
 		fmt.Println("\nGloo Edge Federation was successfully installed!")
+		fmt.Println("\nYou can now register your cluster with:")
+		fmt.Println("\nFor GKE clusters:")
+		fmt.Println(" glooctl cluster register --cluster-name [ex. gloo-fed-remote] --remote-context [gke-context-name] --federation-namespace [default: gloo-fed]")
+		fmt.Println("\nFor kind clusters:")
+		fmt.Println(" glooctl cluster register --cluster-name [ex. kind-local] --remote-context [ex. kind-local] --local-cluster-domain-override [ex. host.docker.internal] --federation-namespace [default: gloo-fed]")
+		fmt.Println("\nTo find the current cluster type:")
+		fmt.Println("kubectl config current-context")
 	case Enterprise:
 		fmt.Println("\nGloo Edge Enterprise was successfully installed!")
 	default:
