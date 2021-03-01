@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/solo-io/gloo/test/v1helpers"
 
@@ -141,7 +142,9 @@ var _ = Describe("tunneling", func() {
 			var client http.Client
 			scheme := "http"
 			var json = []byte(`{"value":"Hello, world!"}`)
-			req, err := http.NewRequest("GET", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), bytes.NewBuffer(json))
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), bytes.NewBuffer(json))
 			if err != nil {
 				return err
 			}
