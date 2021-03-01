@@ -162,18 +162,18 @@ rules:
 			Gloo: options.HelmInstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
-				Version:         "test",
 				CreateNamespace: true,
 			},
+			Version: "test",
 		}
 		if mode == install.Federation {
 			installConfig = &options.Install{
 				Federation: options.HelmInstall{
 					Namespace:       defaults.GlooFed,
 					HelmReleaseName: constants.GlooFedReleaseName,
-					Version:         "test",
 					CreateNamespace: true,
 				},
+				Version: "test",
 			}
 		}
 
@@ -261,9 +261,9 @@ rules:
 			Gloo: options.HelmInstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
-				Version:         glooOsVersion,
 			},
-			DryRun: true,
+			Version: glooOsVersion,
+			DryRun:  true,
 		}
 
 		helmEnv := &cli.EnvSettings{

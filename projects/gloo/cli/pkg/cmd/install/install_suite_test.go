@@ -31,8 +31,8 @@ var dir string
 var file, values1, values2 string
 
 const (
-	unitTestingTaggedVersion = "v1.7.0"
-	expectedHelmFilename     = "gloo-1.7.0.tgz"
+	unitTestingTaggedVersion = "vunit-testing"
+	expectedHelmFilename     = "gloo-unit-testing.tgz"
 )
 
 // NOTE: This needs to be run from the root of the repo as the working directory

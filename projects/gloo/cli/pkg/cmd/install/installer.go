@@ -80,8 +80,6 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 			return err
 		}
 		installerConfig.Mode = Federation
-		// ensure versions match for enterprise and federation
-		installerConfig.InstallCliArgs.Federation.Version = installerConfig.InstallCliArgs.Gloo.Version
 		return i.installFromConfig(installerConfig)
 	}
 
@@ -118,7 +116,7 @@ func (i *installer) installFromConfig(installerConfig *InstallerConfig) error {
 	}
 
 	chartUri, err := getChartUri(helmInstallConfig.HelmChartOverride,
-		strings.TrimPrefix(helmInstallConfig.Version, "v"),
+		strings.TrimPrefix(installerConfig.InstallCliArgs.Version, "v"),
 		installerConfig.Mode)
 	if err != nil {
 		return err

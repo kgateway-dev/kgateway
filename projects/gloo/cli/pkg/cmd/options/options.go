@@ -53,7 +53,6 @@ type HelmInstall struct {
 	HelmChartOverride       string
 	HelmChartValueFileNames []string
 	HelmReleaseName         string
-	Version                 string
 }
 
 type Install struct {
@@ -64,6 +63,7 @@ type Install struct {
 	LicenseKey  string
 	WithGlooFed bool
 	DryRun      bool
+	Version     string
 }
 
 type Knative struct {
