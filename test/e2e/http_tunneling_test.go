@@ -149,6 +149,9 @@ var _ = Describe("tunneling", func() {
 			if err != nil {
 				return err
 			}
+			if res.StatusCode != http.StatusOK {
+				return fmt.Errorf("not ok")
+			}
 			p := new(bytes.Buffer)
 			if _, err := io.Copy(p, res.Body); err != nil {
 				return err
@@ -216,6 +219,8 @@ func startHttpProxy(ctx context.Context) int {
 
 	port, err := strconv.Atoi(portStr)
 	Expect(err).ToNot(HaveOccurred())
+
+	fmt.Fprintln(GinkgoWriter, "go proxy addr", addr)
 
 	go func() {
 		defer GinkgoRecover()
