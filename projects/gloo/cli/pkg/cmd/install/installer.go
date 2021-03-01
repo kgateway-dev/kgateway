@@ -74,13 +74,26 @@ func NewInstallerWithWriter(helmClient HelmClient, kubeNsClient v1.NamespaceInte
 }
 
 func (i *installer) Install(installerConfig *InstallerConfig) error {
+	if installerConfig.Mode == Enterprise && installerConfig.InstallCliArgs.WithGlooFed {
+		err := i.installFromConfig(installerConfig)
+		if err != nil {
+			return err
+		}
+		installerConfig.Mode = Federation
+		return i.installFromConfig(installerConfig)
+	}
+
+	return i.installFromConfig(installerConfig)
+}
+
+func (i *installer) installFromConfig(installerConfig *InstallerConfig) error {
 	helmInstallConfig := installerConfig.InstallCliArgs.Gloo
 	if installerConfig.Mode == Federation {
 		helmInstallConfig = installerConfig.InstallCliArgs.Federation
 	}
 	namespace := helmInstallConfig.Namespace
 	releaseName := helmInstallConfig.HelmReleaseName
-	if !helmInstallConfig.DryRun {
+	if !installerConfig.InstallCliArgs.DryRun {
 		if releaseExists, err := i.helmClient.ReleaseExists(namespace, releaseName); err != nil {
 			return err
 		} else if releaseExists {
@@ -95,15 +108,15 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		}
 	}
 
-	preInstallMessage(&helmInstallConfig, installerConfig.Mode)
+	preInstallMessage(installerConfig.InstallCliArgs, installerConfig.Mode)
 
-	helmInstall, helmEnv, err := i.helmClient.NewInstall(namespace, releaseName, helmInstallConfig.DryRun)
+	helmInstall, helmEnv, err := i.helmClient.NewInstall(namespace, releaseName, installerConfig.InstallCliArgs.DryRun)
 	if err != nil {
 		return err
 	}
 
 	chartUri, err := getChartUri(helmInstallConfig.HelmChartOverride,
-		strings.TrimPrefix(helmInstallConfig.Version, "v"),
+		strings.TrimPrefix(installerConfig.InstallCliArgs.Version, "v"),
 		installerConfig.Mode)
 	if err != nil {
 		return err
@@ -174,13 +187,13 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		fmt.Printf("Successfully ran helm install with release %s\n", releaseName)
 	}
 
-	if helmInstallConfig.DryRun {
+	if installerConfig.InstallCliArgs.DryRun {
 		if err := i.printReleaseManifest(rel); err != nil {
 			return err
 		}
 	}
 
-	postInstallMessage(&helmInstallConfig, installerConfig.Mode)
+	postInstallMessage(installerConfig.InstallCliArgs, installerConfig.Mode)
 
 	return nil
 }
@@ -361,7 +374,7 @@ func getDefaultGlooInstallVersion(chartOverride string) (string, error) {
 	return version.Version, nil
 }
 
-func preInstallMessage(installOpts *options.HelmInstall, mode Mode) {
+func preInstallMessage(installOpts *options.Install, mode Mode) {
 	if installOpts.DryRun {
 		return
 	}
@@ -374,13 +387,19 @@ func preInstallMessage(installOpts *options.HelmInstall, mode Mode) {
 		fmt.Println("Starting Gloo Edge installation...")
 	}
 }
-func postInstallMessage(installOpts *options.HelmInstall, mode Mode) {
+func postInstallMessage(installOpts *options.Install, mode Mode) {
 	if installOpts.DryRun {
 		return
 	}
 	switch mode {
 	case Federation:
 		fmt.Println("\nGloo Edge Federation was successfully installed!")
+		fmt.Println("\nYou can now register your cluster with:")
+		fmt.Println("\nFor GKE clusters:")
+		fmt.Println(" glooctl cluster register --cluster-name [ex. gloo-fed-remote] --remote-context [gke-context-name] --federation-namespace [default: gloo-fed]")
+		fmt.Println("\nFor kind clusters:")
+		fmt.Println(" glooctl cluster register --cluster-name [ex. kind-local] --remote-context [ex. kind-local] --local-cluster-domain-override [ex. host.docker.internal] --federation-namespace [default: gloo-fed]")
+		fmt.Println("\nSee the cluster registration guide for more information: https://docs.solo.io/gloo-edge/latest/guides/gloo_federation/cluster_registration/")
 	case Enterprise:
 		fmt.Println("\nGloo Edge Enterprise was successfully installed!")
 	default:
