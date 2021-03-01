@@ -27,6 +27,7 @@ glooctl install gateway enterprise [flags]
       --values strings        List of files with value overrides for the Gloo Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
       --version string        version to install (e.g. 1.4.0, defaults to latest)
       --with-admin-console    install gloo and a read-only version of its admin console
+      --with-gloo-fed         Install Gloo-Fed alongside Gloo Enterprise (default true)
 ```
 
 ### Options inherited from parent commands

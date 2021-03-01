@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4267
+    resolvesIssue: false
+    description: >
+      Install gloo-fed along with gloo-enterprise

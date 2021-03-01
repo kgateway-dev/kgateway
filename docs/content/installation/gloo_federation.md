@@ -23,7 +23,13 @@ Gloo Edge Federation is installed in an admin cluster, which may or may not incl
 
 The `glooctl` tool uses Helm in the background to perform the deployment of Gloo Edge Federation. By default, the deployment will create the `gloo-fed` namespace and instantiate the Gloo Edge Federation components in that namespace. Additional information and flags can be found by running `glooctl install federation -h`. You can override the default settings by specify the `--values` argument and providing a yaml file with the necessary values.
 
-With your kubectl context set to the admin cluster, run the following command:
+Gloo Edge Federation is installed alongside Gloo Enterprise automatically. With your kubectl context set to the admin cluster, run the following command:
+
+```
+glooctl install gateway enterprise --license-key <LICENSE_KEY>
+```
+
+Gloo Edge Federation can also be installed independently of Gloo Edge Enterprise. With your kubectl context set to the admin cluster, run the following command:
 
 ```
 glooctl install federation --license-key <LICENSE_KEY>
