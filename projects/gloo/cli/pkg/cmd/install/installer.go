@@ -399,8 +399,7 @@ func postInstallMessage(installOpts *options.Install, mode Mode) {
 		fmt.Println(" glooctl cluster register --cluster-name [ex. gloo-fed-remote] --remote-context [gke-context-name] --federation-namespace [default: gloo-fed]")
 		fmt.Println("\nFor kind clusters:")
 		fmt.Println(" glooctl cluster register --cluster-name [ex. kind-local] --remote-context [ex. kind-local] --local-cluster-domain-override [ex. host.docker.internal] --federation-namespace [default: gloo-fed]")
-		fmt.Println("\nTo find the current cluster type:")
-		fmt.Println("kubectl config current-context")
+		fmt.Println("\nSee the cluster registration guide for more information: https://docs.solo.io/gloo-edge/latest/guides/gloo_federation/cluster_registration/")
 	case Enterprise:
 		fmt.Println("\nGloo Edge Enterprise was successfully installed!")
 	default:
