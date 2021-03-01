@@ -130,7 +130,7 @@ rules:
 			Return(helmRelease, nil)
 
 		mockHelmClient.EXPECT().
-			NewInstall(helmInstallConfig.Namespace, helmInstallConfig.HelmReleaseName, helmInstallConfig.DryRun).
+			NewInstall(helmInstallConfig.Namespace, helmInstallConfig.HelmReleaseName, installConfig.DryRun).
 			Return(mockHelmInstallation, helmEnv, nil)
 
 		mockHelmClient.EXPECT().
@@ -162,18 +162,18 @@ rules:
 			Gloo: options.HelmInstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
-				Version:         "test",
 				CreateNamespace: true,
 			},
+			Version: "test",
 		}
 		if mode == install.Federation {
 			installConfig = &options.Install{
 				Federation: options.HelmInstall{
 					Namespace:       defaults.GlooFed,
 					HelmReleaseName: constants.GlooFedReleaseName,
-					Version:         "test",
 					CreateNamespace: true,
 				},
+				Version: "test",
 			}
 		}
 
@@ -261,9 +261,9 @@ rules:
 			Gloo: options.HelmInstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
-				DryRun:          true,
-				Version:         glooOsVersion,
 			},
+			Version: glooOsVersion,
+			DryRun:  true,
 		}
 
 		helmEnv := &cli.EnvSettings{
@@ -279,7 +279,7 @@ rules:
 			Return(helmRelease, nil)
 
 		mockHelmClient.EXPECT().
-			NewInstall(defaults.GlooSystem, installConfig.Gloo.HelmReleaseName, installConfig.Gloo.DryRun).
+			NewInstall(defaults.GlooSystem, installConfig.Gloo.HelmReleaseName, installConfig.DryRun).
 			Return(mockHelmInstallation, helmEnv, nil)
 
 		mockHelmClient.EXPECT().

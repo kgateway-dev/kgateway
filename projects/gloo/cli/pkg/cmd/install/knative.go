@@ -75,7 +75,7 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if opts.Install.Knative.InstallKnative {
-				if !opts.Install.Gloo.DryRun {
+				if !opts.Install.DryRun {
 					installed, _, err := checkKnativeInstallation(opts.Top.Ctx)
 					if err != nil {
 						return eris.Wrapf(err, "checking for existing knative installation")
@@ -96,7 +96,7 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 				// wait for knative apiservice (autoscaler metrics) to be healthy before attempting gloo installation
 				// if we try to install before it's ready, helm is unhappy because it can't get apiservice endpoints
 				// we don't care about this if we're doing a dry run installation
-				if !opts.Install.Gloo.DryRun {
+				if !opts.Install.DryRun {
 					if err := waitKnativeApiserviceReady(); err != nil {
 						return err
 					}
@@ -143,7 +143,7 @@ func installKnativeServing(opts *options.Options) error {
 	if err != nil {
 		return err
 	}
-	if opts.Install.Gloo.DryRun {
+	if opts.Install.DryRun {
 		fmt.Printf("%s", manifests)
 		// For safety, print a YAML separator so multiple invocations of this function will produce valid output
 		fmt.Printf(yamlJoiner)
