@@ -83,7 +83,7 @@ weight: 5
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `providers` | `map<string, .jwt.options.gloo.solo.io.Provider>` | Auth providers can be used instead of the fields above where more than one is required. if this list is provided the fields above are ignored. |
+| `providers` | `map<string, .jwt.options.gloo.solo.io.Provider>` | Map of JWT provider name to Provider. If specified, multiple providers will be `OR`-ed together and will allow validation to any of the providers. |
 | `allowMissingOrFailedJwt` | `bool` | Allow pass through of JWT requests for this virtual host, even if JWT token is missing or JWT auth failed. If this is false (default false), requests that fail JWT authentication will fail authorization immediately. For example, if a request requires either JWT auth OR another auth method, this can be enabled to allow a failed JWT auth request to pass through to the other auth method. |
 
 
