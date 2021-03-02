@@ -119,8 +119,6 @@ var _ = Describe("tunneling", func() {
 
 		// write a virtual service so we have a proxy to our test upstream
 		testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-		//testVs.VirtualHost.Routes[0].Options = &gloov1.RouteOptions{}
-		//testVs.VirtualHost.Routes[0].Options.PrefixRewrite = &wrappers.StringValue{Value: fmt.Sprintf("host.docker.internal/"} //TODO(kdorosh)
 		_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
