@@ -80,6 +80,10 @@ spec:
           - name: VALIDATION_MUST_START
             value: "true"
         {{- end}}
+        {{- if .Values.gateway.deployment.logLevel }}
+          - name: LOG_LEVEL
+            value: {{ .Values.gateway.deployment.logLevel }}
+        {{- end}}
 
 {{- if .Values.gateway.validation.enabled }}
         volumeMounts:

@@ -138,6 +138,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+      {{- if $spec.kind.deployment.logLevel }}
+        - name: LOG_LEVEL
+          value: {{ $spec.kind.deployment.logLevel }}
+      {{- end}}
         image: {{ template "gloo.image" $image }}
         imagePullPolicy: {{ $image.pullPolicy }}
         {{- if $spec.podTemplate.gracefulShutdown }}
