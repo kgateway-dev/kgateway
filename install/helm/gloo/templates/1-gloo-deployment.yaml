@@ -171,9 +171,9 @@ spec:
           - name: DISABLE_USAGE_REPORTING
             value: "true"
         {{- end}}
-        {{- if .Values.gloo.deployment.logLevel }}
+        {{- if .Values.gloo.logLevel }}
           - name: LOG_LEVEL
-            value: {{ .Values.gloo.deployment.logLevel }}
+            value: {{ .Values.gloo.logLevel }}
         {{- end}}
 {{- if not .Values.global.glooMtls.enabled }}
         readinessProbe:

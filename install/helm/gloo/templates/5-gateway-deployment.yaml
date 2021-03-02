@@ -80,9 +80,9 @@ spec:
           - name: VALIDATION_MUST_START
             value: "true"
         {{- end}}
-        {{- if .Values.gateway.deployment.logLevel }}
+        {{- if .Values.gateway.logLevel }}
           - name: LOG_LEVEL
-            value: {{ .Values.gateway.deployment.logLevel }}
+            value: {{ .Values.gateway.logLevel }}
         {{- end}}
 
 {{- if .Values.gateway.validation.enabled }}

@@ -71,9 +71,9 @@ spec:
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
-        {{- if .Values.discovery.deployment.logLevel }}
+        {{- if .Values.discovery.logLevel }}
           - name: LOG_LEVEL
-            value: {{ .Values.discovery.deployment.logLevel }}
+            value: {{ .Values.discovery.logLevel }}
         {{- end}}
       # Pod security context
       securityContext:
