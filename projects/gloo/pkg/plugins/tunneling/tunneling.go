@@ -44,6 +44,7 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 		for _, vh := range rtConfig.VirtualHosts {
 			for _, rt := range vh.Routes {
 				rtAction := rt.GetRoute()
+				// we do not handle the weighted cluster or cluster header cases
 				if cluster := rtAction.GetCluster(); cluster != "" {
 
 					ref, err := translator.ClusterToUpstreamRef(cluster)
@@ -60,94 +61,101 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 						return generatedClusters, nil, nil, generatedListeners, nil
 					}
 
-					tunnelingHostname := us.GetHttpProxyHostname()
-					if tunnelingHostname.GetValue() == "" {
+					tunnelingHostname := us.GetHttpProxyHostname().GetValue()
+					if tunnelingHostname == "" {
 						continue
 					}
 
 					selfCluster := "solo_io_generated_self_cluster_" + cluster
-					selfPipe := "@/" + cluster
+					selfPipe := "@/" + cluster // use an in-memory pipe to ourselves (only works on linux)
 
 					// update the old cluster to route to ourselves first
 					rtAction.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{Cluster: selfCluster}
 
 					var originalTransportSocket *envoy_config_core_v3.TransportSocket
 					for _, inCluster := range inClusters {
-						if inCluster.Name == cluster && inCluster.TransportSocket != nil {
-							tmp := *inCluster.TransportSocket
-							originalTransportSocket = &tmp
+						if inCluster.Name == cluster {
+							originalTransportSocket = inCluster.TransportSocket
 							// we copy the transport socket to the generated cluster.
-							// the generated cluster will use upstream TLS context to leverage TLS,
-							// and when we encapsulate in HTTP Connect the tcp data being proxied will
-							// be secured (thus we don't need the original transport socket metadata here)
+							// the generated cluster will use upstream TLS context to leverage TLS origination;
+							// when we encapsulate in HTTP Connect the tcp data being proxied will
+							// be encrypted (thus we don't need the original transport socket metadata here)
 							inCluster.TransportSocket = nil
 							inCluster.TransportSocketMatches = nil
+							break
 						}
 					}
 
-					generatedClusters = append(generatedClusters, &envoy_config_cluster_v3.Cluster{
-						ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
-							Type: envoy_config_cluster_v3.Cluster_STATIC,
-						},
-						ConnectTimeout:  &duration.Duration{Seconds: 5},
-						Name:            selfCluster,
-						TransportSocket: originalTransportSocket,
-						LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-							ClusterName: selfCluster,
-							Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-								{
-									LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
-										{
-											HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
-												Endpoint: &envoy_config_endpoint_v3.Endpoint{
-													Address: &envoy_config_core_v3.Address{
-														Address: &envoy_config_core_v3.Address_Pipe{
-															Pipe: &envoy_config_core_v3.Pipe{
-																Path: selfPipe,
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					})
-
-					cfg := &envoytcp.TcpProxy{
-						StatPrefix:       "soloioTcpStats" + cluster,
-						TunnelingConfig:  &envoytcp.TcpProxy_TunnelingConfig{Hostname: tunnelingHostname.GetValue()},
-						ClusterSpecifier: &envoytcp.TcpProxy_Cluster{Cluster: cluster}, // route to original target
-					}
-
-					generatedListeners = append(generatedListeners, &envoy_config_listener_v3.Listener{
-						Name: "solo_io_generated_self_listener_" + cluster,
-						Address: &envoy_config_core_v3.Address{
-							Address: &envoy_config_core_v3.Address_Pipe{
-								Pipe: &envoy_config_core_v3.Pipe{
-									Path: selfPipe,
-								},
-							},
-						},
-						FilterChains: []*envoy_config_listener_v3.FilterChain{
-							{
-								Filters: []*envoy_config_listener_v3.Filter{
-									{
-										Name: "tcp",
-										ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
-											TypedConfig: utils.MustMessageToAny(cfg),
-										},
-									},
-								},
-							},
-						},
-					})
+					generatedClusters = append(generatedClusters, generatedCluster(selfCluster, selfPipe, originalTransportSocket))
+					generatedListeners = append(generatedListeners, generatedListener(cluster, selfPipe, tunnelingHostname))
 				}
 			}
 		}
 	}
 
 	return generatedClusters, nil, nil, generatedListeners, nil
+}
+
+func generatedCluster(selfCluster, selfPipe string, originalTransportSocket *envoy_config_core_v3.TransportSocket) *envoy_config_cluster_v3.Cluster {
+	return &envoy_config_cluster_v3.Cluster{
+		ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
+			Type: envoy_config_cluster_v3.Cluster_STATIC,
+		},
+		ConnectTimeout:  &duration.Duration{Seconds: 5},
+		Name:            selfCluster,
+		TransportSocket: originalTransportSocket,
+		LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
+			ClusterName: selfCluster,
+			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
+				{
+					LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
+						{
+							HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
+								Endpoint: &envoy_config_endpoint_v3.Endpoint{
+									Address: &envoy_config_core_v3.Address{
+										Address: &envoy_config_core_v3.Address_Pipe{
+											Pipe: &envoy_config_core_v3.Pipe{
+												Path: selfPipe,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func generatedListener(cluster, selfPipe, tunnelingHostname string) *envoy_config_listener_v3.Listener {
+	cfg := &envoytcp.TcpProxy{
+		StatPrefix:       "soloioTcpStats" + cluster,
+		TunnelingConfig:  &envoytcp.TcpProxy_TunnelingConfig{Hostname: tunnelingHostname},
+		ClusterSpecifier: &envoytcp.TcpProxy_Cluster{Cluster: cluster}, // route to original target
+	}
+
+	return &envoy_config_listener_v3.Listener{
+		Name: "solo_io_generated_self_listener_" + cluster,
+		Address: &envoy_config_core_v3.Address{
+			Address: &envoy_config_core_v3.Address_Pipe{
+				Pipe: &envoy_config_core_v3.Pipe{
+					Path: selfPipe,
+				},
+			},
+		},
+		FilterChains: []*envoy_config_listener_v3.FilterChain{
+			{
+				Filters: []*envoy_config_listener_v3.Filter{
+					{
+						Name: "tcp",
+						ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
+							TypedConfig: utils.MustMessageToAny(cfg),
+						},
+					},
+				},
+			},
+		},
+	}
 }
