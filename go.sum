@@ -1278,6 +1278,8 @@ github.com/solo-io/go-utils v0.19.0/go.mod h1:If8NiehXROCFU65PGeDTrrZCNA5gJXvbcV
 github.com/solo-io/go-utils v0.20.0/go.mod h1:wy4um9xnqPNlASld4eSuQQqjNCXRBtDjVRLJsoGqkdE=
 github.com/solo-io/go-utils v0.20.2 h1:lJFj9MsdosKU1Z/L9FDfiB2r3BFLvzFSLLAGR3p1e4U=
 github.com/solo-io/go-utils v0.20.2/go.mod h1:6e8K1spnMWwlnJRSNp/J84GEyJbrcK4Gm7i+ehzCi8c=
+github.com/solo-io/go-utils v0.20.5 h1:ymRAEVcGP+VUbp7dI/SaO6MmJkEbaH3HhBnEJUTDTw0=
+github.com/solo-io/go-utils v0.20.5/go.mod h1:6e8K1spnMWwlnJRSNp/J84GEyJbrcK4Gm7i+ehzCi8c=
 github.com/solo-io/k8s-utils v0.0.1/go.mod h1:53N9+9Gl2MwqIZJ7/ocA9gKvWt+6z7MPD2qKQix7oFE=
 github.com/solo-io/k8s-utils v0.0.6 h1:jJ7ARv7HBvmkGH1AXCE2KOGgcMCo8PhlWL+6tSlTxlM=
 github.com/solo-io/k8s-utils v0.0.6/go.mod h1:NJFXCtSXXBErviEl7J+fIg4DU8xEvxFCQ2nEjxy2NdI=
