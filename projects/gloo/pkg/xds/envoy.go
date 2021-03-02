@@ -80,6 +80,14 @@ func SetupEnvoyXds(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyC
 		return
 	}
 
+	// The v2 implementation is kept solely to support discovery of ext-auth and rate-limit configuration
+	// Relevant GitHub issue to remove this: https://github.com/solo-io/gloo/issues/4369
+	// Context: Envoy has deprecated the v2 API and no longer providing support for it. We use the v2 xDS
+	//	protocol as a transport mechanism to serve ext-auth and rate-limit with their configuration. Since
+	//	Envoy is not directly involved in this connection, we can continue to rely on the v2 go-control-plane
+	//  code, which, although deprecated, still works.
+	//  A preferred path forward would be for us to maintain the necessary code to support this version of
+	//	xDS, and to not rely on the go-control-plane, since that code might get removed in the future.
 	serverV2 := NewEnvoyServerV2(xdsServer)
 	envoy_api_v2.RegisterEndpointDiscoveryServiceServer(grpcServer, serverV2)
 	envoy_api_v2.RegisterClusterDiscoveryServiceServer(grpcServer, serverV2)
