@@ -23,7 +23,7 @@ var _ plugins.ResourceGeneratorPlugin = new(Plugin)
 type Plugin struct {
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *Plugin) Init(_ plugins.InitParams) error {
 	return nil
 }
 
@@ -86,8 +86,8 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 						}
 					}
 
-					generatedClusters = append(generatedClusters, generatedCluster(selfCluster, selfPipe, originalTransportSocket))
-					generatedListeners = append(generatedListeners, generatedListener(cluster, selfPipe, tunnelingHostname))
+					generatedClusters = append(generatedClusters, generateSelfCluster(selfCluster, selfPipe, originalTransportSocket))
+					generatedListeners = append(generatedListeners, generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname))
 				}
 			}
 		}
@@ -96,7 +96,13 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 	return generatedClusters, nil, nil, generatedListeners, nil
 }
 
-func generatedCluster(selfCluster, selfPipe string, originalTransportSocket *envoy_config_core_v3.TransportSocket) *envoy_config_cluster_v3.Cluster {
+// the initial route is updated to route to this generated cluster, which routes envoy back to itself (to the
+// generated TCP listener, which forwards to the original destination)
+//
+// the purpose of doing this is to allow both the HTTP Connection Manager filter and TCP filter to run.
+// the HTTP Connection Manager runs to allow route-level matching on HTTP parameters (such as request path),
+// but then we forward the bytes as raw TCP to the HTTP Connect proxy (which can only be done on a TCP listener)
+func generateSelfCluster(selfCluster, selfPipe string, originalTransportSocket *envoy_config_core_v3.TransportSocket) *envoy_config_cluster_v3.Cluster {
 	return &envoy_config_cluster_v3.Cluster{
 		ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
 			Type: envoy_config_cluster_v3.Cluster_STATIC,
@@ -129,7 +135,8 @@ func generatedCluster(selfCluster, selfPipe string, originalTransportSocket *env
 	}
 }
 
-func generatedListener(cluster, selfPipe, tunnelingHostname string) *envoy_config_listener_v3.Listener {
+// the generated cluster routes to this generated listener, which forwards TCP traffic to an HTTP Connect proxy
+func generateForwardingTcpListener(cluster, selfPipe, tunnelingHostname string) *envoy_config_listener_v3.Listener {
 	cfg := &envoytcp.TcpProxy{
 		StatPrefix:       "soloioTcpStats" + cluster,
 		TunnelingConfig:  &envoytcp.TcpProxy_TunnelingConfig{Hostname: tunnelingHostname},

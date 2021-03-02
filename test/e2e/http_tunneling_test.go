@@ -135,13 +135,13 @@ var _ = Describe("tunneling", func() {
 		cancel()
 	})
 
-	testRequest := func() string {
+	testRequest := func(jsonStr string) string {
 		By("Make request")
 		responseBody := ""
 		EventuallyWithOffset(1, func() error {
 			var client http.Client
 			scheme := "http"
-			var json = []byte(`{"value":"Hello, world!"}`)
+			var json = []byte(jsonStr)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), bytes.NewBuffer(json))
@@ -167,8 +167,12 @@ var _ = Describe("tunneling", func() {
 	}
 
 	It("should proxy http", func() {
-		testReq := testRequest()
-		Expect(testReq).Should(ContainSubstring("{\"value\":\"Hello, world!\"}"))
+		// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> test upstream
+		// and back. The HTTP proxy is sending unencrypted HTTP bytes over
+		// TCP to the test upstream (an echo server)
+		jsonStr := `{"value":"Hello, world!"}`
+		testReq := testRequest(jsonStr)
+		Expect(testReq).Should(ContainSubstring(jsonStr))
 	})
 
 	Context("with SSL", func() {
@@ -202,8 +206,12 @@ var _ = Describe("tunneling", func() {
 		})
 
 		It("should proxy HTTPS", func() {
-			testReq := testRequest()
-			Expect(testReq).Should(ContainSubstring("{\"value\":\"Hello, world!\"}"))
+			// the request path here is envoy -> local HTTP proxy (HTTP CONNECT) -> local SSL proxy -> test upstream
+			// and back. TLS origination happens in envoy, the HTTP proxy is sending TLS-encrypted HTTP bytes over
+			// TCP to the local SSL proxy, which decrypts and sends to the test upstream (an echo server)
+			jsonStr := `{"value":"Hello, world!"}`
+			testReq := testRequest(jsonStr)
+			Expect(testReq).Should(ContainSubstring(jsonStr))
 		})
 	})
 
@@ -276,5 +284,4 @@ func connectProxy(w http.ResponseWriter, r *http.Request) {
 
 	wg.Wait()
 	fmt.Fprintf(GinkgoWriter, "done proxying\n")
-
 }
