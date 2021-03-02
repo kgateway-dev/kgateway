@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3664
+    description: >
+      Adds support for HTTP Connect upstreams by setting tunneling config on the upstream. This can be used to route to
+      other proxies (such as ones in a DMZ).

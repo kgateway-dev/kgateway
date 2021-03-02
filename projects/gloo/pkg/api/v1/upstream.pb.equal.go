@@ -183,6 +183,16 @@ func (m *Upstream) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetHttpProxyHostname()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHttpProxyHostname()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHttpProxyHostname(), target.GetHttpProxyHostname()) {
+			return false
+		}
+	}
+
 	switch m.UpstreamType.(type) {
 
 	case *Upstream_Kube:

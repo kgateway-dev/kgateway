@@ -2,6 +2,9 @@ package translator
 
 import (
 	"fmt"
+	"strings"
+
+	errors "github.com/rotisserie/eris"
 
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -22,6 +25,24 @@ func UpstreamToClusterName(upstream *core.ResourceRef) string {
 
 	// Don't use dots in the name as it messes up prometheus stats
 	return fmt.Sprintf("%s_%s", upstream.GetName(), upstream.GetNamespace())
+}
+
+// returns the ref of the upstream for a given cluster
+func ClusterToUpstreamRef(cluster string) (*core.ResourceRef, error) {
+
+	split := strings.Split(cluster, "_")
+	if len(split) > 2 || len(split) < 1 {
+		return nil, errors.Errorf("unable to convert cluster %s back to upstream ref", cluster)
+	}
+
+	ref := &core.ResourceRef{
+		Name: split[0],
+	}
+
+	if len(split) == 2 {
+		ref.Namespace = split[1]
+	}
+	return ref, nil
 }
 
 func NewFilterWithTypedConfig(name string, config proto.Message) (*envoy_config_listener_v3.Filter, error) {

@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -124,6 +125,7 @@ func (p *Plugin) tcpProxyFilters(
 		if tcpSettings := plugins.GetTcpProxySettings(); tcpSettings != nil {
 			cfg.MaxConnectAttempts = tcpSettings.GetMaxConnectAttempts()
 			cfg.IdleTimeout = tcpSettings.GetIdleTimeout()
+			cfg.TunnelingConfig = convertToEnvoyTunnelingConfig(tcpSettings.GetTunnelingConfig())
 		}
 	}
 
@@ -258,5 +260,14 @@ func (p *Plugin) newSslFilterChain(
 			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(downstreamConfig)},
 		},
 		UseProxyProto: useProxyProto,
+	}
+}
+
+func convertToEnvoyTunnelingConfig(config *tcp.TcpProxySettings_TunnelingConfig) *envoytcp.TcpProxy_TunnelingConfig {
+	if config == nil {
+		return nil
+	}
+	return &envoytcp.TcpProxy_TunnelingConfig{
+		Hostname: config.GetHostname(),
 	}
 }

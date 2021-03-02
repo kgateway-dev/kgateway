@@ -41,7 +41,7 @@ message SSLFiles {
     string root_ca = 3;
 }
 
-// SslConfig contains the options necessary to configure a virtual host or listener to use TLS
+// SslConfig contains the options necessary to configure an upstream to use TLS origination
 message UpstreamSslConfig {
     oneof ssl_secrets {
 
