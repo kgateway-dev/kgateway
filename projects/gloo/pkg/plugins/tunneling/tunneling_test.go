@@ -14,7 +14,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tunneling"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/skv2/test/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"google.golang.org/protobuf/proto"
 )
 
 var _ = Describe("Plugin", func() {
@@ -124,6 +126,98 @@ var _ = Describe("Plugin", func() {
 		generatedTcpConfig := generatedListeners[0].GetFilterChains()[0].GetFilters()[0].GetTypedConfig()
 		typedTcpConfig := utils.MustAnyToMessage(generatedTcpConfig).(*envoytcp.TcpProxy)
 		Expect(typedTcpConfig.GetCluster()).To(Equal(originalCluster), "should forward to original destination")
+	})
+
+	Context("multiple routes and clusters", func() {
+
+		BeforeEach(func() {
+
+			usCopy := &v1.Upstream{}
+			us.DeepCopyInto(usCopy)
+			usCopy.Metadata.Name = usCopy.Metadata.Name + "-copy"
+
+			// update snapshot with copied upstream, pointing to same HTTP proxy. copied upstream only has different name
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, usCopy)
+
+			// update route input with duplicate route, the copy points to the cluster correlating to the copied upstream
+			inRoute := inRouteConfigurations[0].VirtualHosts[0].Routes[0]
+			cpRoute := proto.Clone(inRoute).(*envoy_config_route_v3.Route)
+			cpRoute.Name = cpRoute.Name + "-copy"
+			cpRoute.Action = &envoy_config_route_v3.Route_Route{
+				Route: &envoy_config_route_v3.RouteAction{
+					ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{
+						Cluster: translator.UpstreamToClusterName(usCopy.Metadata.Ref()),
+					},
+				},
+			}
+			inRouteConfigurations[0].VirtualHosts[0].Routes = append(inRouteConfigurations[0].VirtualHosts[0].Routes, cpRoute)
+
+			// update cluster input such that copied cluster's name matches the copied upstream
+			inCluster := inClusters[0]
+			cpCluster := proto.Clone(inCluster).(*envoy_config_cluster_v3.Cluster)
+			cpCluster.Name = translator.UpstreamToClusterName(usCopy.Metadata.Ref())
+			inClusters = append(inClusters, cpCluster)
+		})
+
+		It("should namespace generated clusters, avoiding duplicates", func() {
+			p := tunneling.NewPlugin()
+
+			generatedClusters, _, _, _, err := p.GeneratedResources(params, inClusters, nil, inRouteConfigurations, nil)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(generatedClusters).To(HaveLen(2), "should generate a cluster for each input route")
+
+			Expect(generatedClusters[0].Name).ToNot(Equal(generatedClusters[1].Name), "should not have name collisions")
+			Expect(generatedClusters[0].LoadAssignment.ClusterName).ToNot(Equal(generatedClusters[1].LoadAssignment.ClusterName), "should not route to same cluster")
+			cluster1Pipe := generatedClusters[0].LoadAssignment.Endpoints[0].LbEndpoints[0].GetEndpoint().GetAddress().GetPipe().GetPath()
+			cluster2Pipe := generatedClusters[1].LoadAssignment.Endpoints[0].LbEndpoints[0].GetEndpoint().GetAddress().GetPipe().GetPath()
+			Expect(cluster1Pipe).ToNot(BeEmpty(), "generated cluster should be in-memory pipe to self")
+			Expect(cluster2Pipe).ToNot(BeEmpty(), "generated cluster should be in-memory pipe to self")
+			Expect(cluster1Pipe).ToNot(Equal(cluster2Pipe), "should not reuse the same pipe to same generated tcp listener")
+
+			// wipe the fields we expect to be different
+			generatedClusters[0].Name = ""
+			generatedClusters[0].LoadAssignment.ClusterName = ""
+			generatedClusters[0].LoadAssignment.Endpoints[0].LbEndpoints[0] = nil
+			generatedClusters[1].Name = ""
+			generatedClusters[1].LoadAssignment.ClusterName = ""
+			generatedClusters[1].LoadAssignment.Endpoints[0].LbEndpoints[0] = nil
+
+			Expect(generatedClusters[0]).To(matchers.MatchProto(generatedClusters[1]), "generated clusters should be identical, barring name, clustername, endpoints")
+
+		})
+
+		It("should namespace generated listeners, avoiding duplicates", func() {
+			p := tunneling.NewPlugin()
+
+			_, _, _, generatedListeners, err := p.GeneratedResources(params, inClusters, nil, inRouteConfigurations, nil)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(generatedListeners).To(HaveLen(2), "should generate a listener for each input route")
+
+			listener1Pipe := generatedListeners[0].GetAddress().GetPipe().GetPath()
+			listener2Pipe := generatedListeners[1].GetAddress().GetPipe().GetPath()
+			Expect(listener1Pipe).ToNot(BeEmpty(), "generated listener should be in-memory pipe to self")
+			Expect(listener2Pipe).ToNot(BeEmpty(), "generated listener should be in-memory pipe to self")
+
+			Expect(listener1Pipe).ToNot(Equal(listener2Pipe), "should not reuse the same pipe to same generated tcp listener")
+			Expect(generatedListeners[0].Name).ToNot(Equal(generatedListeners[1].Name), "should not have name collisions")
+
+			listener1TcpCfg := utils.MustAnyToMessage(generatedListeners[0].FilterChains[0].Filters[0].GetTypedConfig()).(*envoytcp.TcpProxy)
+			listener2TcpCfg := utils.MustAnyToMessage(generatedListeners[1].FilterChains[0].Filters[0].GetTypedConfig()).(*envoytcp.TcpProxy)
+
+			Expect(listener1TcpCfg.GetStatPrefix()).ToNot(Equal(listener2TcpCfg.GetStatPrefix()), "should not reuse the same stats prefix on generated tcp listeners")
+
+			// wipe the fields we expect to be different
+			generatedListeners[0].Name = ""
+			generatedListeners[0].Address = nil
+			generatedListeners[0].FilterChains[0].Filters[0].ConfigType = nil
+			generatedListeners[1].Name = ""
+			generatedListeners[1].Address = nil
+			generatedListeners[1].FilterChains[0].Filters[0].ConfigType = nil
+
+			Expect(generatedListeners[0]).To(matchers.MatchProto(generatedListeners[1]), "generated listeners should be identical, barring name, address, and tcp stats prefix")
+
+		})
+
 	})
 
 })
