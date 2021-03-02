@@ -135,7 +135,7 @@ spec:
         # Address of the grpc auth server to query
         address: example-grpc-auth-service.default.svc.cluster.local:9001
         # Set a connection timeout to external service, default is 5 seconds
-        connectionTimeout: 3s
+        connectionTimeout: 3
 EOF
 {{< /highlight >}}
 
@@ -214,6 +214,10 @@ The sharing state feature was introduced with **Gloo Edge Enterprise**, release 
 A common requirement is to be able to share state between the passthrough service, and other auth steps (either custom plugins, or our built-in authentication) . When writing a custom auth plugin, this is possible, and the steps to achieve it are [outlined here]({{< versioned_link_path fromRoot="/guides/dev/writing_auth_plugins#sharing-state-between-steps" >}}). We support this requirement by leveraging request and response metadata.
 
 We provide some example implementations in the Gloo Edge repository at `docs/examples/passthrough-auth/pkg/auth/v3/auth-with-state.go`.
+
+### Passing in custom configuration to Passthrough from AuthConfig
+
+
 
 ### Reading state from other auth steps
 
