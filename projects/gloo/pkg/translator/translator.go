@@ -175,17 +175,20 @@ ClusterLoop:
 		}
 	}
 
-	// run Cluster Generator Plugins
+	// run Resource Generator Plugins
 	for _, plug := range t.plugins {
-		clusterGeneratorPlugin, ok := plug.(plugins.ClusterGeneratorPlugin)
+		resourceGeneratorPlugin, ok := plug.(plugins.ResourceGeneratorPlugin)
 		if !ok {
 			continue
 		}
-		generated, err := clusterGeneratorPlugin.GeneratedClusters(params)
+		generatedClusters, generatedEndpoints, generatedRouteConfigs, generatedListeners, err := resourceGeneratorPlugin.GeneratedResources(params, clusters, endpoints, routeConfigs, listeners)
 		if err != nil {
 			reports.AddError(proxy, err)
 		}
-		clusters = append(clusters, generated...)
+		clusters = append(clusters, generatedClusters...)
+		endpoints = append(endpoints, generatedEndpoints...)
+		routeConfigs = append(routeConfigs, generatedRouteConfigs...)
+		listeners = append(listeners, generatedListeners...)
 	}
 
 	xdsSnapshot := t.generateXDSSnapshot(clusters, endpoints, routeConfigs, listeners)

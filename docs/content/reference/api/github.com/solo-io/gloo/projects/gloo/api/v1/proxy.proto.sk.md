@@ -97,8 +97,8 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | `name` | `string` | the name of the listener. names must be unique for each listener within a proxy. |
 | `bindAddress` | `string` | the bind address for the listener. both ipv4 and ipv6 formats are supported. |
 | `bindPort` | `int` | the port to bind on ports numbers must be unique for listeners within a proxy. |
-| `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk/#httplistener) | The HTTP Listener is currently the only supported listener type. It contains configuration options for Gloo's HTTP-level features including request-based routing. Only one of `httpListener` or `tcpListener` can be set. |
-| `tcpListener` | [.gloo.solo.io.TcpListener](../proxy.proto.sk/#tcplistener) | The HTTP Listener is currently the only supported listener type. It contains configuration options for GLoo's HTTP-level features including request-based routing. Only one of `tcpListener` or `httpListener` can be set. |
+| `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk/#httplistener) | contains configuration options for Gloo's HTTP-level features including request-based routing. Only one of `httpListener` or `tcpListener` can be set. |
+| `tcpListener` | [.gloo.solo.io.TcpListener](../proxy.proto.sk/#tcplistener) | contains configuration options for Gloo's TCP-level features. Only one of `tcpListener` or `httpListener` can be set. |
 | `sslConfigurations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk/#sslconfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port. Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config. |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener. |
 | `options` | [.gloo.solo.io.ListenerOptions](../options.proto.sk/#listeneroptions) | top level options. |
@@ -169,7 +169,7 @@ Note: the destination spec and subsets are not supported in this context and wil
 | `single` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) | Use SingleDestination to route to a single upstream. Only one of `single`, `multi`, or `forwardSniClusterName` can be set. |
 | `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk/#multidestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight). Only one of `multi`, `single`, or `forwardSniClusterName` can be set. |
 | `upstreamGroup` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Use a reference to an upstream group for routing. Only one of `upstreamGroup`, `single`, or `forwardSniClusterName` can be set. |
-| `forwardSniClusterName` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Forwards the SNI name into the destination cluster https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/network/sni_cluster/empty/sni_cluster Note: This filter will only work properly with TLS connections in which the upstream SNI domain is specified. Only one of `forwardSniClusterName`, `single`, or `upstreamGroup` can be set. |
+| `forwardSniClusterName` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Forwards the request to a cluster name matching the TLS SNI name https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/network/sni_cluster/empty/sni_cluster Note: This filter will only work properly with TLS connections in which the upstream SNI domain is specified. Only one of `forwardSniClusterName`, `single`, or `upstreamGroup` can be set. |
 
 
 
