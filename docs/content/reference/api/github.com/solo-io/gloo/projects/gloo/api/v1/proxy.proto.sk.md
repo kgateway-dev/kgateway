@@ -98,7 +98,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | `bindAddress` | `string` | the bind address for the listener. both ipv4 and ipv6 formats are supported. |
 | `bindPort` | `int` | the port to bind on ports numbers must be unique for listeners within a proxy. |
 | `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk/#httplistener) | contains configuration options for Gloo's HTTP-level features including request-based routing. Only one of `httpListener` or `tcpListener` can be set. |
-| `tcpListener` | [.gloo.solo.io.TcpListener](../proxy.proto.sk/#tcplistener) | contains configuration options for GLoo's TCP-level features. Only one of `tcpListener` or `httpListener` can be set. |
+| `tcpListener` | [.gloo.solo.io.TcpListener](../proxy.proto.sk/#tcplistener) | contains configuration options for Gloo's TCP-level features. Only one of `tcpListener` or `httpListener` can be set. |
 | `sslConfigurations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk/#sslconfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port. Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config. |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener. |
 | `options` | [.gloo.solo.io.ListenerOptions](../options.proto.sk/#listeneroptions) | top level options. |

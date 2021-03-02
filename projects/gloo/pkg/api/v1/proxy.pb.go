@@ -321,7 +321,7 @@ type Listener_HttpListener struct {
 }
 
 type Listener_TcpListener struct {
-	// contains configuration options for GLoo's TCP-level features
+	// contains configuration options for Gloo's TCP-level features
 	TcpListener *TcpListener `protobuf:"bytes,5,opt,name=tcp_listener,json=tcpListener,proto3,oneof"`
 }
 

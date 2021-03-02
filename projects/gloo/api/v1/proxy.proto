@@ -71,7 +71,7 @@ message Listener {
         // contains configuration options for Gloo's HTTP-level features including request-based routing
         HttpListener http_listener = 4;
 
-        // contains configuration options for GLoo's TCP-level features
+        // contains configuration options for Gloo's TCP-level features
         TcpListener tcp_listener = 5;
     }
 
