@@ -135,7 +135,7 @@ spec:
         # Address of the grpc auth server to query
         address: example-grpc-auth-service.default.svc.cluster.local:9001
         # Set a connection timeout to external service, default is 5 seconds
-        connectionTimeout: 3
+        connectionTimeout: 3s
 EOF
 {{< /highlight >}}
 
@@ -244,7 +244,7 @@ kind: AuthConfig
         # Address of the grpc auth server to query
         address: example-grpc-auth-service.default.svc.cluster.local:9001
         # Set a connection timeout to external service, default is 5 seconds
-        connectionTimeout: 3
+        connectionTimeout: 3s
       config:
         customKey1: "customConfigStringValue"
         customKey2: false
