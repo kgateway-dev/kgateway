@@ -1228,20 +1228,21 @@ var _ = Describe("Translator", func() {
 
 	Context("tcp", func() {
 		var (
-			factory     *TcpTranslator
-			idleTimeout *duration.Duration
-			plugins     *gloov1.TcpListenerOptions
-			tcpHost     *gloov1.TcpHost
+			factory            *TcpTranslator
+			idleTimeout        *duration.Duration
+			tcpListenerOptions *gloov1.TcpListenerOptions
+			tcpHost            *gloov1.TcpHost
 		)
 		BeforeEach(func() {
 			factory = &TcpTranslator{}
 			translator = NewTranslator([]ListenerFactory{factory}, Opts{})
 
 			idleTimeout = prototime.DurationToProto(5 * time.Second)
-			plugins = &gloov1.TcpListenerOptions{
+			tcpListenerOptions = &gloov1.TcpListenerOptions{
 				TcpProxySettings: &tcp.TcpProxySettings{
 					MaxConnectAttempts: &wrappers.UInt32Value{Value: 10},
 					IdleTimeout:        idleTimeout,
+					TunnelingConfig:    &tcp.TcpProxySettings_TunnelingConfig{Hostname: "proxyhostname"},
 				},
 			}
 			tcpHost = &gloov1.TcpHost{
@@ -1262,7 +1263,7 @@ var _ = Describe("Translator", func() {
 						Metadata: &core.Metadata{Namespace: ns, Name: "name"},
 						GatewayType: &v1.Gateway_TcpGateway{
 							TcpGateway: &v1.TcpGateway{
-								Options:  plugins,
+								Options:  tcpListenerOptions,
 								TcpHosts: []*gloov1.TcpHost{tcpHost},
 							},
 						},
@@ -1277,7 +1278,7 @@ var _ = Describe("Translator", func() {
 
 			Expect(proxy.Listeners).To(HaveLen(1))
 			listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_TcpListener).TcpListener
-			Expect(listener.Options).To(Equal(plugins))
+			Expect(listener.Options).To(Equal(tcpListenerOptions))
 			Expect(listener.TcpHosts).To(HaveLen(1))
 			Expect(listener.TcpHosts[0]).To(Equal(tcpHost))
 		})

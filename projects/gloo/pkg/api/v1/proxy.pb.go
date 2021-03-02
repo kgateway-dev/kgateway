@@ -316,14 +316,12 @@ type isListener_ListenerType interface {
 }
 
 type Listener_HttpListener struct {
-	// The HTTP Listener is currently the only supported listener type.
-	// It contains configuration options for Gloo's HTTP-level features including request-based routing
+	// contains configuration options for Gloo's HTTP-level features including request-based routing
 	HttpListener *HttpListener `protobuf:"bytes,4,opt,name=http_listener,json=httpListener,proto3,oneof"`
 }
 
 type Listener_TcpListener struct {
-	// The HTTP Listener is currently the only supported listener type.
-	// It contains configuration options for GLoo's HTTP-level features including request-based routing
+	// contains configuration options for Gloo's TCP-level features
 	TcpListener *TcpListener `protobuf:"bytes,5,opt,name=tcp_listener,json=tcpListener,proto3,oneof"`
 }
 
@@ -1629,7 +1627,7 @@ type TcpHost_TcpAction_UpstreamGroup struct {
 }
 
 type TcpHost_TcpAction_ForwardSniClusterName struct {
-	// Forwards the SNI name into the destination cluster
+	// Forwards the request to a cluster name matching the TLS SNI name
 	// https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/network/sni_cluster/empty/sni_cluster
 	// Note: This filter will only work properly with TLS connections in which the upstream SNI domain is specified
 	ForwardSniClusterName *empty.Empty `protobuf:"bytes,4,opt,name=forward_sni_cluster_name,json=forwardSniClusterName,proto3,oneof"`

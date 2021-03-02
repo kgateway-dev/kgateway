@@ -27,6 +27,7 @@ var _ = Describe("UpdateUpstream", func() {
 			OutlierDetection:   &cluster.OutlierDetection{Consecutive_5Xx: &wrappers.UInt32Value{Value: 9}},
 			Failover:           &gloov1.Failover{PrioritizedLocalities: []*gloov1.Failover_PrioritizedLocality{{}}},
 			UseHttp2:           &wrappers.BoolValue{Value: true},
+			HttpProxyHostname:  &wrappers.StringValue{Value: "hostname"},
 		}
 		utils.UpdateUpstream(original, desired)
 		Expect(desired.SslConfig).To(Equal(original.SslConfig))
@@ -37,6 +38,7 @@ var _ = Describe("UpdateUpstream", func() {
 		Expect(desired.OutlierDetection).To(Equal(original.OutlierDetection))
 		Expect(desired.Failover).To(Equal(original.Failover))
 		Expect(desired.UseHttp2).To(Equal(original.UseHttp2))
+		Expect(desired.HttpProxyHostname).To(Equal(original.HttpProxyHostname))
 	})
 
 	It("should update config when one is desired", func() {
@@ -52,6 +54,7 @@ var _ = Describe("UpdateUpstream", func() {
 		desiredOutlierDetection := &cluster.OutlierDetection{Consecutive_5Xx: &wrappers.UInt32Value{Value: 9}}
 		desiredFailover := &gloov1.Failover{PrioritizedLocalities: []*gloov1.Failover_PrioritizedLocality{{}}}
 		desiredUseHttp2 := &wrappers.BoolValue{Value: true}
+		desiredHttpProxyHostname := &wrappers.StringValue{Value: "desiredHostname"}
 		desired := &gloov1.Upstream{
 			SslConfig:          desiredSslConfig,
 			CircuitBreakers:    desiredCircuitBreaker,
@@ -61,6 +64,7 @@ var _ = Describe("UpdateUpstream", func() {
 			OutlierDetection:   desiredOutlierDetection,
 			Failover:           desiredFailover,
 			UseHttp2:           desiredUseHttp2,
+			HttpProxyHostname:  desiredHttpProxyHostname,
 		}
 		original := &gloov1.Upstream{
 			SslConfig:          &gloov1.UpstreamSslConfig{Sni: "testsni"},
@@ -71,6 +75,7 @@ var _ = Describe("UpdateUpstream", func() {
 			OutlierDetection:   &cluster.OutlierDetection{ConsecutiveGatewayFailure: &wrappers.UInt32Value{Value: 9}},
 			Failover:           &gloov1.Failover{PrioritizedLocalities: []*gloov1.Failover_PrioritizedLocality{{}, {}}},
 			UseHttp2:           &wrappers.BoolValue{Value: false},
+			HttpProxyHostname:  &wrappers.StringValue{Value: "originalHostname"},
 		}
 
 		utils.UpdateUpstream(original, desired)
@@ -82,6 +87,7 @@ var _ = Describe("UpdateUpstream", func() {
 		Expect(desired.OutlierDetection).To(Equal(desiredOutlierDetection))
 		Expect(desired.Failover).To(Equal(desiredFailover))
 		Expect(desired.UseHttp2).To(Equal(desiredUseHttp2))
+		Expect(desired.HttpProxyHostname).To(Equal(desiredHttpProxyHostname))
 	})
 
 	It("will fail if the upstream proto has a new top level field", func() {
@@ -89,7 +95,7 @@ var _ = Describe("UpdateUpstream", func() {
 		// This should happen very rarely, and should be used as an indication that the `UpdateUpstream` function
 		// most likely needs to change.
 		Expect(reflect.TypeOf(gloov1.Upstream{}).NumField()).To(
-			Equal(17),
+			Equal(18),
 			"wrong number of fields found",
 		)
 	})

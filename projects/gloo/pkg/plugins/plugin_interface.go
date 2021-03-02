@@ -263,7 +263,12 @@ func RelativeToStage(wellKnown WellKnownFilterStage, weight int) FilterStage {
 /*
 	Generation plugins
 */
-type ClusterGeneratorPlugin interface {
+type ResourceGeneratorPlugin interface {
 	Plugin
-	GeneratedClusters(params Params) ([]*envoy_config_cluster_v3.Cluster, error)
+	GeneratedResources(params Params,
+		inClusters []*envoy_config_cluster_v3.Cluster,
+		inEndpoints []*envoy_config_endpoint_v3.ClusterLoadAssignment,
+		inRouteConfigurations []*envoy_config_route_v3.RouteConfiguration,
+		inListeners []*envoy_config_listener_v3.Listener,
+	) ([]*envoy_config_cluster_v3.Cluster, []*envoy_config_endpoint_v3.ClusterLoadAssignment, []*envoy_config_route_v3.RouteConfiguration, []*envoy_config_listener_v3.Listener, error)
 }

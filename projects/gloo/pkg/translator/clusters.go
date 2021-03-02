@@ -56,7 +56,7 @@ func (t *translatorInstance) computeCluster(
 	reports reporter.ResourceReports,
 ) *envoy_config_cluster_v3.Cluster {
 	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.Metadata.Name)
-	out := t.initializeCluster(upstream, params.Snapshot.Endpoints, upstreamRefKeyToEndpoints, reports, &params.Snapshot.Secrets)
+	out := t.initializeCluster(upstream, upstreamRefKeyToEndpoints, reports, &params.Snapshot.Secrets)
 
 	for _, plug := range t.plugins {
 		upstreamPlugin, ok := plug.(plugins.UpstreamPlugin)
@@ -77,7 +77,6 @@ func (t *translatorInstance) computeCluster(
 
 func (t *translatorInstance) initializeCluster(
 	upstream *v1.Upstream,
-	endpoints []*v1.Endpoint,
 	upstreamRefKeyToEndpoints map[string][]*v1.Endpoint,
 	reports reporter.ResourceReports,
 	secrets *v1.SecretList,
@@ -101,7 +100,7 @@ func (t *translatorInstance) initializeCluster(
 		OutlierDetection: detectCfg,
 		// this field can be overridden by plugins
 		ConnectTimeout:       ptypes.DurationProto(ClusterConnectionTimeout),
-		Http2ProtocolOptions: getHttp2ptions(upstream),
+		Http2ProtocolOptions: getHttp2options(upstream),
 	}
 
 	if sslConfig := upstream.SslConfig; sslConfig != nil {
@@ -227,7 +226,7 @@ func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoy_config_cluster_
 	return nil
 }
 
-func getHttp2ptions(us *v1.Upstream) *envoy_config_core_v3.Http2ProtocolOptions {
+func getHttp2options(us *v1.Upstream) *envoy_config_core_v3.Http2ProtocolOptions {
 	if us.GetUseHttp2().GetValue() {
 		return &envoy_config_core_v3.Http2ProtocolOptions{}
 	}

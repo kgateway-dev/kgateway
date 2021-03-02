@@ -42,6 +42,10 @@ func UpdateUpstream(original, desired *v1.Upstream) {
 		desired.InitialStreamWindowSize = original.InitialStreamWindowSize
 	}
 
+	if desired.HttpProxyHostname == nil {
+		desired.HttpProxyHostname = original.HttpProxyHostname
+	}
+
 	if desiredSubsetMutator, ok := desired.UpstreamType.(v1.SubsetSpecMutator); ok {
 		if desiredSubsetMutator.GetSubsetSpec() == nil {
 			desiredSubsetMutator.SetSubsetSpec(original.UpstreamType.(v1.SubsetSpecGetter).GetSubsetSpec())
