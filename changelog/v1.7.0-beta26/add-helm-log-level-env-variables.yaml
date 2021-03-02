@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    description: Added LOG_LEVEL environment variables to deployments templates
+    issueLink: https://github.com/solo-io/gloo/issues/4090
