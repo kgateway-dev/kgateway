@@ -30,7 +30,7 @@ message JwtStagedRouteExtension {
 
 message VhostExtension {
     // Map of JWT provider name to Provider.
-    // If specified, multiple providers will be `OR` and will allow validation to any.
+    // If specified, multiple providers will be `OR`-ed together and will allow validation to any of the providers.
     map<string, Provider> providers = 4;
 
     // Allow pass through of JWT requests for this virtual host, even if JWT token is missing or JWT auth failed.

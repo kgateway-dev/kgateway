@@ -149,7 +149,7 @@ type VhostExtension struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Map of JWT provider name to Provider.
-	// If specified, multiple providers will be `OR` and will allow validation to any.
+	// If specified, multiple providers will be `OR`-ed together and will allow validation to any of the providers.
 	Providers map[string]*Provider `protobuf:"bytes,4,rep,name=providers,proto3" json:"providers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Allow pass through of JWT requests for this virtual host, even if JWT token is missing or JWT auth failed.
 	// If this is false (default false), requests that fail JWT authentication will fail authorization immediately.
