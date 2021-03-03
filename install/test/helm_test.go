@@ -62,6 +62,13 @@ func GetPodNameEnvVar() v1.EnvVar {
 	}
 }
 
+func GetLogLevelEnvVar() v1.EnvVar {
+	return v1.EnvVar{
+		Name:  "LOG_LEVEL",
+		Value: "debug",
+	}
+}
+
 func GetTestExtraEnvVar() v1.EnvVar {
 	return v1.EnvVar{
 		Name:  "TEST_EXTRA_ENV_VAR",
@@ -999,7 +1006,7 @@ metadata:
 spec:
   bindAddress: '::'
   bindPort: ` + bindPort + `
-  proxyNames: 
+  proxyNames:
   - gateway-proxy
   httpGateway: {}
   options:
@@ -1028,7 +1035,7 @@ metadata:
 spec:
   bindAddress: '::'
   bindPort: ` + bindPort + `
-  proxyNames: 
+  proxyNames:
   - gateway-proxy
   httpGateway: {}
   options:
@@ -2204,6 +2211,28 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
+					It("can set log level env var", func() {
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							[]v1.EnvVar{GetLogLevelEnvVar()},
+							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Env...,
+						)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.logLevel=debug"},
+						})
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("can set the envoy log level arg", func() {
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Args = append(
+							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Args,
+							"--log-level debug",
+						)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.envoyLogLevel=debug"},
+						})
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
 					It("can accept extra env vars", func() {
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Env = append(
 							[]v1.EnvVar{GetTestExtraEnvVar()},
@@ -3003,6 +3032,17 @@ metadata:
 
 					})
 
+					It("can set log level env var", func() {
+						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							[]v1.EnvVar{GetLogLevelEnvVar()},
+							glooDeployment.Spec.Template.Spec.Containers[0].Env...,
+						)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gloo.logLevel=debug"},
+						})
+						testManifest.ExpectDeploymentAppsV1(glooDeployment)
+					})
+
 					It("can accept extra env vars", func() {
 						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
 							[]v1.EnvVar{GetTestExtraEnvVar()},
@@ -3203,6 +3243,17 @@ metadata:
 
 					})
 
+					It("can set log level env var", func() {
+						gatewayDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							[]v1.EnvVar{GetLogLevelEnvVar()},
+							gatewayDeployment.Spec.Template.Spec.Containers[0].Env...,
+						)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gateway.logLevel=debug"},
+						})
+						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
+					})
+
 					It("can accept extra env vars", func() {
 						gatewayDeployment.Spec.Template.Spec.Containers[0].Env = append(
 							[]v1.EnvVar{GetTestExtraEnvVar()},
@@ -3389,6 +3440,17 @@ metadata:
 							},
 						})
 
+					})
+
+					It("can set log level env var", func() {
+						discoveryDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							[]v1.EnvVar{GetLogLevelEnvVar()},
+							discoveryDeployment.Spec.Template.Spec.Containers[0].Env...,
+						)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"discovery.logLevel=debug"},
+						})
+						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 					})
 
 					It("can accept extra env vars", func() {
