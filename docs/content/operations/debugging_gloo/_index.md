@@ -187,6 +187,21 @@ Now you can navigate to http://localhost:9091 and you get a simple page with som
 With these endpoints, you can profile the behavior of the component, adjust its logging, view the prometheus-style telemetry signals, as well as view tracing spans within the process. This is a very handy page to understand the behavior of a particular component. 
 
 
+#### Declaratively setting log levels on start
+
+Setting the `LOG_LEVEL` environment variable within `gloo`, `discovery`, `gateway` or gateway proxy deployments will change the level at which the stats server logs. The default log level for the stats server is `info`.
+
+Other acceptable log levels for Gloo Edge components are:
+
+* `debug`
+* `error`
+* `warn`
+* `panic`
+* `fatal`
+
+With Helm installations, these can be set for you by providing the desired level as a value for the `logLevel` key for each of those components. You can also define the [Envoy log level](https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy) by setting the `envoyLogLevel` value on gateway proxies.
+
+
 ### All else fails
 
 Again, if all else fails, you can capture the state of Gloo Edge configurations and logs and join us on our Slack (https://slack.solo.io) and one of our engineers will be able to help:
