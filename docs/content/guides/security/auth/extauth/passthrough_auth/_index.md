@@ -230,7 +230,7 @@ This feature was introduced with **Gloo Edge Enterprise**, release 1.6.15. If yo
 
 Custom config can be passed from gloo to the passthrough authentication service. This can be achieved using the `config` field under Passthrough Auth in the AuthConfig:
 
-{{< highlight shell "hl_lines=9-14" >}}
+{{< highlight shell "hl_lines=15-17" >}}
 kubectl apply -f - <<EOF
 apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
@@ -241,10 +241,10 @@ kind: AuthConfig
     configs:
     - passThroughAuth:
         grpc:
-        # Address of the grpc auth server to query
-        address: example-grpc-auth-service.default.svc.cluster.local:9001
-        # Set a connection timeout to external service, default is 5 seconds
-        connectionTimeout: 3s
+          # Address of the grpc auth server to query
+          address: example-grpc-auth-service.default.svc.cluster.local:9001
+          # Set a connection timeout to external service, default is 5 seconds
+          connectionTimeout: 3s
       config:
         customKey1: "customConfigStringValue"
         customKey2: false
