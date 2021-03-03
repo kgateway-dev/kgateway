@@ -7,6 +7,8 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tc
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
 
+import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto";
+
 import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
@@ -16,4 +18,15 @@ option (extproto.hash_all) = true;
 message TcpProxySettings {
     google.protobuf.UInt32Value max_connect_attempts = 1;
     google.protobuf.Duration idle_timeout = 2;
+
+    // Configuration for tunneling TCP over other transports or application layers.
+    message TunnelingConfig {
+        // The hostname to send in the synthesized CONNECT headers to the upstream proxy.
+        string hostname = 1;
+    }
+
+    // If set, this configures tunneling, e.g. configuration options to tunnel multiple TCP
+    // payloads over a shared HTTP tunnel. If this message is absent, the payload
+    // will be proxied upstream as per usual.
+    TunnelingConfig tunneling_config = 12;
 }

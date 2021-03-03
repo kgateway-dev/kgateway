@@ -23,7 +23,6 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/azure/azure.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/consul/consul.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/ec2/aws_ec2.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/failover.proto";
 import "google/protobuf/wrappers.proto";
 
@@ -49,7 +48,7 @@ message Upstream {
     // if this upstream is created or modified by Discovery, metadata about the operation will be placed here.
     DiscoveryMetadata discovery_metadata = 3;
 
-
+    // SslConfig contains the options necessary to configure an upstream to use TLS origination
     UpstreamSslConfig ssl_config = 4;
 
     // Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used.
@@ -96,6 +95,21 @@ message Upstream {
     // Requires UseHttp2 to be true to be acknowledged.
     google.protobuf.UInt32Value initial_connection_window_size = 20;
 
+    // Tells envoy that the upstream is an HTTP proxy (e.g., another proxy in a DMZ) that supports HTTP Connect.
+    // This configuration sets the hostname used as part of the HTTP Connect request.
+    // For example, setting to: host.com:443 and making a request routed to the upstream such as `curl <envoy>:<port>/v1`
+    // would result in the following request:
+    //
+    //    CONNECT host.com:443 HTTP/1.1
+    //    host: host.com:443
+    //
+    //    GET /v1 HTTP/1.1
+    //    host: <envoy>:<port>
+    //    user-agent: curl/7.64.1
+    //    accept: */*
+    //
+    // Note: if setting this field to a hostname rather than IP:PORT, you may want to also set `host_rewrite` on the route
+    google.protobuf.StringValue http_proxy_hostname = 21;
 }
 
 // created by discovery services

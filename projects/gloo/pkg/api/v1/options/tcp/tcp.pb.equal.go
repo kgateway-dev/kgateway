@@ -66,5 +66,43 @@ func (m *TcpProxySettings) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetTunnelingConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTunnelingConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTunnelingConfig(), target.GetTunnelingConfig()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *TcpProxySettings_TunnelingConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*TcpProxySettings_TunnelingConfig)
+	if !ok {
+		that2, ok := that.(TcpProxySettings_TunnelingConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetHostname(), target.GetHostname()) != 0 {
+		return false
+	}
+
 	return true
 }

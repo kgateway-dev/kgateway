@@ -68,12 +68,10 @@ message Listener {
 
     // Listeners can listen for HTTP, TCP (unsupported), and UDP (unsupported) connections
     oneof ListenerType {
-        // The HTTP Listener is currently the only supported listener type.
-        // It contains configuration options for Gloo's HTTP-level features including request-based routing
+        // contains configuration options for Gloo's HTTP-level features including request-based routing
         HttpListener http_listener = 4;
 
-        // The HTTP Listener is currently the only supported listener type.
-        // It contains configuration options for GLoo's HTTP-level features including request-based routing
+        // contains configuration options for Gloo's TCP-level features
         TcpListener tcp_listener = 5;
     }
 
@@ -131,7 +129,7 @@ message TcpHost {
             // Use a reference to an upstream group for routing.
             core.solo.io.ResourceRef upstream_group = 3;
 
-            // Forwards the SNI name into the destination cluster
+            // Forwards the request to a cluster name matching the TLS SNI name
             // https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/network/sni_cluster/empty/sni_cluster
             // Note: This filter will only work properly with TLS connections in which the upstream SNI domain is specified
             google.protobuf.Empty forward_sni_cluster_name = 4;
