@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      This is a placeholder changelog to release v1.6.13 after the failed release of 1.6.11 and 1.6.12.
