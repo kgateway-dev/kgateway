@@ -152,6 +152,13 @@ func UpdateAlwaysAcceptSetting(ctx context.Context, alwaysAccept bool, installNa
 	}, ctx, installNamespace)
 }
 
+func UpdateRestEdsSetting(ctx context.Context, enableRestEds bool, installNamespace string) {
+	UpdateSettings(func(settings *v1.Settings) {
+		Expect(settings.Gloo).NotTo(BeNil())
+		settings.Gloo.EnableRestEds = &wrappers.BoolValue{Value: enableRestEds}
+	}, ctx, installNamespace)
+}
+
 func UpdateSettings(f func(settings *v1.Settings), ctx context.Context, installNamespace string) {
 	settingsClient := clienthelpers.MustSettingsClient(ctx)
 	settings, err := settingsClient.Read(installNamespace, "default", clients.ReadOpts{})

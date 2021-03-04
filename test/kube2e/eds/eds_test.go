@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"regexp"
 
+	"github.com/solo-io/gloo/test/kube2e"
+
 	kubeutils "github.com/solo-io/k8s-utils/testutils/kube"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -124,7 +126,7 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 		cancel()
 	})
 
-	It("can modify upstreams repeatedly, and endpoints don't lag via EDS", func() {
+	endpointsDontLagTest := func() {
 		// Initialize a way to track the envoy config dump in order to tell when it has changed, and when the
 		// new upstream changes have been picked up.
 		Eventually(func() int {
@@ -145,6 +147,37 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 			checkClusterEndpoints()
 
 			return nil
-		}, "5m", "5s").Should(BeNil()) // 5 min to be safe, usually repros in ~40s when running locally without REST EDS
+		}, "3m", "5s").Should(BeNil()) // 3 min to be safe, usually repros in ~40s when running locally without REST EDS
+	}
+
+	Context("rest EDS", func() {
+
+		BeforeEach(func() {
+			kube2e.UpdateRestEdsSetting(ctx, true, defaults.GlooSystem)
+		})
+
+		It("can modify upstreams repeatedly, and endpoints don't lag via EDS", endpointsDontLagTest)
 	})
+
+	Context("gRPC", func() {
+
+		BeforeEach(func() {
+			kube2e.UpdateRestEdsSetting(ctx, false, defaults.GlooSystem)
+		})
+
+		// we expect this test to have failures due to upstream envoy bug https://github.com/solo-io/gloo/issues/4151
+		// if this test starts failing.. then upstream fixed the bug! hooray
+		//
+		// we should switch back to gRPC over REST EDS as a default when this happens
+		It("can modify upstreams repeatedly, and endpoints don't lag via EDS", func() {
+			failures := InterceptGomegaFailures(func() {
+				endpointsDontLagTest()
+			})
+			Expect(failures).ToNot(BeEmpty())
+			for _, f := range failures {
+				Expect(f).To(ContainSubstring("petstore endpoints should exist"))
+			}
+		})
+	})
+
 })
