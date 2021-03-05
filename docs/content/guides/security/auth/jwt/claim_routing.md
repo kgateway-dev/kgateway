@@ -67,7 +67,7 @@ openssl genrsa 2048 > private-key.pem
 openssl rsa -in private-key.pem -pubout > public-key.pem
 ```
 
-Please refer to the [JWT and Access Control guide]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control/#create-the-json-web-token-jwt" %}}) to see how to use the using [jwt.io](http://jwt.io) website to two RS256 JWTs:
+Please refer to the [JWT and Access Control guide]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control/#create-the-json-web-token-jwt" %}}) to see how to use the [jwt.io](http://jwt.io) website to two RS256 JWTs:
 
 - one for `solo.io` employees with the following payload:
 ```json
@@ -98,7 +98,7 @@ OTHER_TOKEN=<encoded token with othercompany.com payload from jwt.io>
 Now let's configure our Virtual Service to route requests to one of the two subset based on the JWTs in the incoming 
 requests themselves. 
 
-```yaml
+{{< highlight shell "hl_lines=34-58" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -157,7 +157,7 @@ spec:
                   X7DtYS5ppyaW+Cyt8v5vgjrs5Cu4by//77mHWuxd918O047GhKP17l14O/DySeOF
                   7QIDAQAB
                   -----END PUBLIC KEY-----
-```
+{{< /highlight >}}
 
 The `jwt` configuration defined on the Virtual Host instructs Gloo Edge to verify whether a JWT is present on incoming 
 requests and whether the JWT is valid using the provided public key. If the JWT is valid, the `claimsToHeaders` field 
