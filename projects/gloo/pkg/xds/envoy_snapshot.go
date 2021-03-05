@@ -93,6 +93,19 @@ func NewSnapshotFromResources(
 	}
 }
 
+func NewEndpointsSnapshotFromResources(
+	endpoints cache.Resources,
+	clusters cache.Resources,
+) cache.Snapshot {
+	// TODO: Copy resources and downgrade, maybe maintain hash to not do it too many times
+	return &EnvoySnapshot{
+		Endpoints:                 endpoints,
+		hiddenDeprecatedEndpoints: downgradeCacheResources(endpoints),
+		Clusters:                  clusters,
+		hiddenDeprecatedClusters:  downgradeCacheResources(clusters),
+	}
+}
+
 func downgradeResource(e cache.Resource) *resource.EnvoyResource {
 	res := e.ResourceProto()
 	if res == nil {
