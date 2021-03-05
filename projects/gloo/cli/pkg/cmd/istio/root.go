@@ -35,6 +35,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	cmd.AddCommand(Inject(opts))
 	cmd.AddCommand(Uninject(opts))
 	cmd.AddCommand(EnableMTLS(opts))
+	cmd.AddCommand(DisableMTLS(opts))
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

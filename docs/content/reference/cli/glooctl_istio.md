@@ -35,6 +35,7 @@ glooctl istio [flags]
 ### SEE ALSO
 
 * [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl istio disable-mtls](../glooctl_istio_disable-mtls)	 - Disables Istio mTLS for a given upstream
 * [glooctl istio enable-mtls](../glooctl_istio_enable-mtls)	 - Enables Istio mTLS for a given upstream
 * [glooctl istio inject](../glooctl_istio_inject)	 - Enable SDS & istio-proxy sidecars in gateway-proxy pod
 * [glooctl istio uninject](../glooctl_istio_uninject)	 - Remove SDS & istio-proxy sidecars from gateway-proxy pod

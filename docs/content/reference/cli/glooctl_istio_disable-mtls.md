@@ -1,24 +1,24 @@
 ---
-title: "glooctl istio uninject"
+title: "glooctl istio disable-mtls"
 weight: 5
 ---
-## glooctl istio uninject
+## glooctl istio disable-mtls
 
-Remove SDS & istio-proxy sidecars from gateway-proxy pod
+Disables Istio mTLS for a given upstream
 
 ### Synopsis
 
-Removes the istio-proxy sidecar from the gateway-proxy pod. Also removes the sds sidecar from the gateway-proxy pod. Also removes the gateway_proxy_sds cluster from the gateway-proxy envoy bootstrap ConfigMap.
+Disables Istio mTLS for a given upstream, by removing the sslConfig which lets envoy know to get the certs via SDS
 
 ```
-glooctl istio uninject [flags]
+glooctl istio disable-mtls [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help                help for uninject
-      --include-upstreams   whether or not to modify upstreams when uninstalling mTLS
+  -h, --help              help for disable-mtls
+  -u, --upstream string   upstream for which the istio sslConfig needs to change
 ```
 
 ### Options inherited from parent commands
