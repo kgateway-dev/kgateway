@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4390
+    description: >
+      It was possible to install mTLS, enable it on upstreams, remove mTLS and the configuration still
+      be defined on upstreams. This caused the data plane to become out of sync,
+      since envoy clusters would be configured to get their secrets from a non-existent cluster.
+      Add protection to the `glooctl istio uninject` command to prevent users from unknowingly
+      causing the data plane to become out of sync.
