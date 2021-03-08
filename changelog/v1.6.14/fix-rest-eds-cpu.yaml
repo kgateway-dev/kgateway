@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Improve CPU by using newer marshal / unmarshal functions in protov2 in the REST EDS server.
+    issueLink: https://github.com/solo-io/gloo/issues/4343
+    resolvesIssue: false
