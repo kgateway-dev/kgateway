@@ -23,7 +23,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		waitingResponse = `waiting for reply`
 	)
 
-	FContext("environment with Istio and Gloo pre-installed", func() {
+	Context("environment with Istio and Gloo pre-installed", func() {
 
 		var (
 			err              error
@@ -142,7 +142,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				testHelper.CurlEventuallyShouldOutput(petstoreCurlOpts, goodResponse, 1, 60*time.Second, 1*time.Second)
 			})
 
-			FIt("succeeds when no upstreams contain sds configuration", func() {
+			It("succeeds when no upstreams contain sds configuration", func() {
 				// Disable sslConfig on the upstream
 				err = runGlooctlCommand(strings.Split("istio disable-mtls --upstream default-petstore-8080 -n "+testHelper.InstallNamespace, " ")...)
 				Expect(err).NotTo(HaveOccurred(), "should be able to disable mtls on the petstore upstream via sslConfig")
