@@ -67,17 +67,17 @@ require (
 	github.com/sergi/go-diff v1.1.0
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/smartystreets/assertions v1.0.0 // indirect
-	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
-	github.com/solo-io/go-utils v0.20.1
+	github.com/solo-io/go-list-licenses v0.0.4
+	github.com/solo-io/go-utils v0.20.2
 	github.com/solo-io/k8s-utils v0.0.3
 	github.com/solo-io/protoc-gen-ext v0.0.15
 	github.com/solo-io/reporting-client v0.2.0
 	github.com/solo-io/skv2 v0.15.2
 	github.com/solo-io/solo-apis v0.0.0-20201208172621-1ef725df2bff
-	github.com/solo-io/solo-kit v0.17.1
+	github.com/solo-io/solo-kit v0.17.3
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
-	github.com/spf13/cobra v1.0.0
+	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
 	github.com/yuin/goldmark v1.2.1
