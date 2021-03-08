@@ -144,7 +144,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot, 
 
 			// If the snapshot is invalid, attempt at least to update the EDS information. This is important because
 			// endpoints are relatively ephemeral entities and the previous snapshot Envoy got might be stale by now.
-			sanitizedSnapshot, err = s.updateEndpointsOnly(xdsSnapshot)
+			sanitizedSnapshot, err = s.updateEndpointsOnly(key, xdsSnapshot)
 			if err != nil {
 				logger.Warnf("endpoint update failed. xDS snapshot for proxy %v will not be updated. "+
 					"Error is: %s", proxy.Metadata.Ref().Key(), err)
@@ -201,11 +201,27 @@ func (s *translatorSyncer) ServeXdsSnapshots() error {
 // - CDS/LDS/RDS information from the previous xDS snapshot
 // - EDS from the Gloo API snapshot translated curing this sync
 // The resulting snapshot will be checked for consistency before being returned.
-func (s *translatorSyncer) updateEndpointsOnly(current envoycache.Snapshot) (envoycache.Snapshot, error) {
-	newSnapshot := xds.NewEndpointsSnapshotFromResources(
-		current.GetResources(resource.EndpointTypeV3),
-		current.GetResources(resource.ClusterTypeV3),
-	)
+func (s *translatorSyncer) updateEndpointsOnly(snapshotKey string, current envoycache.Snapshot) (envoycache.Snapshot, error) {
+	var newSnapshot cache.Snapshot
+
+	// Get a copy of the last successful snapshot
+	previous, err := s.xdsCache.GetSnapshot(snapshotKey)
+	if err != nil {
+		// if no previous snapshot exists
+		newSnapshot = xds.NewEndpointsSnapshotFromResources(
+			current.GetResources(resource.EndpointTypeV3),
+			current.GetResources(resource.ClusterTypeV3),
+		)
+	} else {
+		newSnapshot = xds.NewSnapshotFromResources(
+			// Set endpoints and clusters calculated during this sync
+			current.GetResources(resource.EndpointTypeV3),
+			current.GetResources(resource.ClusterTypeV3),
+			// Keep other resources from previous snapshot
+			previous.GetResources(resource.RouteTypeV3),
+			previous.GetResources(resource.ListenerTypeV3),
+		)
+	}
 
 	if err := newSnapshot.Consistent(); err != nil {
 		return nil, err
