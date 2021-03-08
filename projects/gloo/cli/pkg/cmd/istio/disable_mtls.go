@@ -1,8 +1,10 @@
 package istio
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -10,9 +12,13 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/errors"
 
 	"github.com/spf13/cobra"
+)
+
+var (
+	// ErrMTLSAlreadyDisabled occurs when trying to disable mTLS for an upstream that isn't using mTLS
+	ErrMTLSAlreadyDisabled = errors.New("upstream already has mTLS disabled")
 )
 
 // DisableMTLS removes an sslConfig from the given upstream which was previously
@@ -22,9 +28,6 @@ func DisableMTLS(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *co
 		Use:   "disable-mtls",
 		Short: "Disables Istio mTLS for a given upstream",
 		Long:  "Disables Istio mTLS for a given upstream, by removing the sslConfig which lets envoy know to get the certs via SDS",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return nil
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := istioDisableMTLS(args, opts)
 			if err != nil {
@@ -44,7 +47,7 @@ func istioDisableMTLS(args []string, opts *options.Options) error {
 	upClient := helpers.MustNamespacedUpstreamClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	upstream, err := upClient.Read(opts.Metadata.GetNamespace(), opts.Istio.Upstream, clients.ReadOpts{})
 	if err != nil {
-		return errors.Wrapf(err, "Error reading upstream")
+		return eris.Wrapf(err, "Error reading upstream")
 	}
 
 	return disableMTLSOnUpstream(upClient, upstream)
@@ -61,7 +64,7 @@ func disableMTLSOnUpstreamList(client v1.UpstreamClient, upstreamList v1.Upstrea
 
 func disableMTLSOnUpstream(client v1.UpstreamClient, upstream *v1.Upstream) error {
 	if upstream.SslConfig == nil {
-		return errors.Errorf("Error upstream already does not have an sslConfig set")
+		return eris.Wrapf(ErrMTLSAlreadyDisabled, "upstream does not have an sslConfig set")
 	}
 
 	upstream.SslConfig = nil

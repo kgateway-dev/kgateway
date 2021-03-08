@@ -41,9 +41,6 @@ func Uninject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 		Long: "Removes the istio-proxy sidecar from the gateway-proxy pod. " +
 			"Also removes the sds sidecar from the gateway-proxy pod. " +
 			"Also removes the gateway_proxy_sds cluster from the gateway-proxy envoy bootstrap ConfigMap.",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return nil
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := istioUninject(args, opts)
 			if err != nil {
@@ -71,7 +68,7 @@ func istioUninject(args []string, opts *options.Options) error {
 
 	// Ensure that there are no upstreams references the gateway_proxy_sds cluster
 	upClient := helpers.MustNamespacedUpstreamClient(opts.Top.Ctx, glooNS)
-	upstreamsWithSdsClusterName, err := getUpstreamsWithSdsClusterName(upClient, glooNS, sdsClusterName)
+	upstreamsWithSdsClusterName, err := getUpstreamsWithDefaultSdsClusterName(upClient, glooNS)
 	if err != nil {
 		return err
 	}
@@ -213,7 +210,7 @@ func removeSdsCluster(configMap *corev1.ConfigMap) error {
 	return nil
 }
 
-func getUpstreamsWithSdsClusterName(client v1.UpstreamClient, namespace string, sdsClusterName string) (v1.UpstreamList, error) {
+func getUpstreamsWithDefaultSdsClusterName(client v1.UpstreamClient, namespace string) (v1.UpstreamList, error) {
 	upstreamList, err := client.List(namespace, clients.ListOpts{})
 	if err != nil {
 		return nil, err

@@ -114,5 +114,5 @@ func AddUpstreamFlag(set *pflag.FlagSet, strptr *string) {
 }
 
 func AddIncludeUpstreamsFlag(set *pflag.FlagSet, boolptr *bool) {
-	set.BoolVarP(boolptr, "include-upstreams", "", false, "whether or not to modify upstreams when uninstalling mTLS")
+	set.BoolVar(boolptr, "include-upstreams", false, "whether or not to modify upstreams when uninstalling mTLS")
 }

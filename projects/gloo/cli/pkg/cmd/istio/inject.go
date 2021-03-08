@@ -7,14 +7,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ghodss/yaml"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/istio/sidecars"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/go-utils/cliutils"
-
-	"github.com/ghodss/yaml"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -59,9 +58,6 @@ func Inject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 		Short: "Enable SDS & istio-proxy sidecars in gateway-proxy pod",
 		Long: "Adds an istio-proxy sidecar to the gateway-proxy pod for mTLS certificate generation purposes. " +
 			"Also adds an sds sidecar to the gateway-proxy pod for mTLS certificate rotation purposes.",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return nil
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := istioInject(args, opts)
 			if err != nil {
@@ -89,7 +85,20 @@ func istioInject(args []string, opts *options.Options) error {
 		return err
 	}
 
-	// Add gateway_proxy_sds configmap
+	// It would be preferable to delegate to the control plane to manage
+	// the sds cluster. However, doing so produces the following error:
+	//
+	//		gRPC config for type.googleapis.com/envoy.config.cluster.v3.Cluster rejected:
+	//		Error adding/updating cluster(s) [CLUSTER NAME]:
+	//		envoy.config.core.v3.ApiConfigSource must have a statically defined non-EDS cluster:
+	//		[CLUSTER NAME] does not exist, was added via api, or is an EDS cluster
+	//
+	// There is an open envoy issue to track this bug/feature request:
+	// https://github.com/envoyproxy/envoy/issues/12954
+	// Tracking Gloo Issue: https://github.com/solo-io/gloo/issues/4398
+	//
+	// To get around this, we write the gateway_proxy_sds cluster into the configmap that
+	// gateway-proxy loads at bootstrap time.
 	configMaps, err := client.CoreV1().ConfigMaps(glooNS).List(opts.Top.Ctx, metav1.ListOptions{})
 	for _, configMap := range configMaps.Items {
 		if configMap.Name == gatewayProxyConfigMap {
