@@ -6,10 +6,6 @@ weight: 5
 
 Dump YAML representing the current Gloo state (requires Gloo running on Kubernetes)
 
-### Synopsis
-
-Dump YAML representing the current Gloo state (requires Gloo running on Kubernetes)
-
 ```
 glooctl debug yaml [flags]
 ```

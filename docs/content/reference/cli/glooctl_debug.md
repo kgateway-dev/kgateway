@@ -6,10 +6,6 @@ weight: 5
 
 Debug a Gloo resource (requires Gloo running on Kubernetes)
 
-### Synopsis
-
-Debug a Gloo resource (requires Gloo running on Kubernetes)
-
 ```
 glooctl debug [flags]
 ```

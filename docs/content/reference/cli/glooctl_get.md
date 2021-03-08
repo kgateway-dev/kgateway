@@ -6,10 +6,6 @@ weight: 5
 
 Display one or a list of Gloo resources
 
-### Synopsis
-
-Display one or a list of Gloo resources
-
 ```
 glooctl get [flags]
 ```

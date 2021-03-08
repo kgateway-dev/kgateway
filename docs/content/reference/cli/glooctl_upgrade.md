@@ -6,10 +6,6 @@ weight: 5
 
 upgrade glooctl binary
 
-### Synopsis
-
-upgrade glooctl binary
-
 ```
 glooctl upgrade [flags]
 ```

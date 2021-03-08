@@ -6,10 +6,6 @@ weight: 5
 
 List clusters registered to the Gloo Federation control plane
 
-### Synopsis
-
-List clusters registered to the Gloo Federation control plane
-
 ```
 glooctl cluster list [flags]
 ```

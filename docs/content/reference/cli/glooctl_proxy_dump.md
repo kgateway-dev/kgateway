@@ -6,10 +6,6 @@ weight: 5
 
 dump Envoy config from one of the proxy instances
 
-### Synopsis
-
-dump Envoy config from one of the proxy instances
-
 ```
 glooctl proxy dump [flags]
 ```

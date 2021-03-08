@@ -6,10 +6,6 @@ weight: 5
 
 Demos (requires 4 tools to be installed and accessible via the PATH: glooctl, kubectl, docker, and kind.)
 
-### Synopsis
-
-Demos (requires 4 tools to be installed and accessible via the PATH: glooctl, kubectl, docker, and kind.)
-
 ```
 glooctl demo [flags]
 ```

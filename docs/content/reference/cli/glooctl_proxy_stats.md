@@ -6,10 +6,6 @@ weight: 5
 
 stats for one of the proxy instances
 
-### Synopsis
-
-stats for one of the proxy instances
-
 ```
 glooctl proxy stats [flags]
 ```
