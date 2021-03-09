@@ -106,13 +106,13 @@ var _ = Describe("Kube2e: glooctl", func() {
 
 				ExpectIstioInjected()
 
-				// Enable mTLS mode for the petstore app
-				err = toggleStictModePetstore(true)
-				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls strict mode on the petstore app")
-
 				// Enable sslConfig on the upstream
 				err = runGlooctlCommand("istio", "enable-mtls", "--upstream", "default-petstore-8080", "-n", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls on the petstore upstream via sslConfig")
+
+				// Enable mTLS mode for the petstore app
+				err = toggleStictModePetstore(true)
+				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls strict mode on the petstore app")
 
 				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 60*time.Second, 1*time.Second)
 			})
@@ -134,17 +134,21 @@ var _ = Describe("Kube2e: glooctl", func() {
 
 				ExpectIstioInjected()
 
-				err = toggleStictModePetstore(true)
-				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls strict mode on the petstore app")
-
 				err = runGlooctlCommand("istio", "enable-mtls", "--upstream", "default-petstore-8080", "-n", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls on the petstore upstream via sslConfig")
+
+				err = toggleStictModePetstore(true)
+				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls strict mode on the petstore app")
 
 				// mTLS strict mode enabled
 				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 60*time.Second, 1*time.Second)
 			})
 
 			It("succeeds when no upstreams contain sds configuration", func() {
+				// Swap mTLS mode to permissive for the petstore app
+				err = toggleStictModePetstore(false)
+				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls permissive mode on the petstore app")
+
 				// Disable sslConfig on the upstream, by deleting the upstream, and allowing UDS to re-create it without the sslConfig
 				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", testHelper.InstallNamespace, "upstream", "default-petstore-8080")
 				Expect(err).NotTo(HaveOccurred(), "should be able to delete the petstore upstream")
@@ -153,10 +157,6 @@ var _ = Describe("Kube2e: glooctl", func() {
 				Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio uninject' without errors")
 
 				ExpectIstioUninjected()
-
-				// Swap mTLS mode to permissive for the petstore app
-				err = toggleStictModePetstore(false)
-				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls permissive mode on the petstore app")
 
 				// Expect it to work
 				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 60*time.Second, 1*time.Second)
@@ -168,14 +168,14 @@ var _ = Describe("Kube2e: glooctl", func() {
 			})
 
 			It("succeeds when upstreams contain sds configuration and --include-upstreams=true", func() {
+				// Swap mTLS mode to permissive for the petstore app
+				err = toggleStictModePetstore(false)
+				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls permissive mode on the petstore app")
+
 				err = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
 				Expect(err).NotTo(HaveOccurred(), "should not be able to run 'glooctl istio uninject' without errors")
 
 				ExpectIstioUninjected()
-
-				// Swap mTLS mode to permissive for the petstore app
-				err = toggleStictModePetstore(false)
-				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls permissive mode on the petstore app")
 
 				// Expect it to work
 				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 60*time.Second, 1*time.Second)
