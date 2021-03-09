@@ -53,6 +53,9 @@ var _ = Describe("Kube2e: glooctl", func() {
 				Port:              gatewayPort,
 				ConnectionTimeout: 1,
 				WithoutStats:      true,
+				Headers: map[string]string{
+					"Cache-Control": "no-cache",
+				},
 			}
 		})
 
