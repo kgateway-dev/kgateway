@@ -1,4 +1,4 @@
-name: release
+name: security-scan
 on:
   release:
     types: [created]
