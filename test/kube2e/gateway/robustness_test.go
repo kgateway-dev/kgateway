@@ -3,6 +3,7 @@ package gateway_test
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -228,6 +229,141 @@ var _ = Describe("Robustness tests", func() {
 			}
 			return eris.Errorf("waiting for proxy to be warning, but status is %v", proxy.Status)
 		}, 20*time.Second, 1*time.Second).Should(BeNil())
+
+		By("force an update of the service endpoints")
+		initialIps := endpointsFor(kubeClient, appService)
+		// Scale to 0 and back to 1 replicas until we have a different IP for the endpoint
+		Eventually(func() []string {
+			scaleDeploymentTo(kubeClient, appDeployment, 0)
+			scaleDeploymentTo(kubeClient, appDeployment, 1)
+			newIps := endpointsFor(kubeClient, appService)
+			return newIps
+		}, 20*time.Second, 1*time.Second).Should(And(
+			HaveLen(len(initialIps)),
+			Not(BeEquivalentTo(initialIps)),
+		))
+
+		By("verify that the new endpoints have been propagated to Envoy")
+		testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+			Protocol:          "http",
+			Path:              "/1",
+			Method:            "GET",
+			Host:              gatewayProxy,
+			Service:           gatewayProxy,
+			Port:              gatewayPort,
+			ConnectionTimeout: 1,
+			WithoutStats:      true,
+		}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
+	})
+
+	FIt("updates Envoy endpoints even if snapshot cache is reset", func() {
+
+		By("create a deployment and a matching service")
+		appDeployment, appService, err = createDeploymentAndService(kubeClient, namespace, appName)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("create a virtual service routing to the service")
+		virtualService, err = virtualServiceClient.Write(&gatewayv1.VirtualService{
+			Metadata: &core.Metadata{
+				Name:      "echo-vs",
+				Namespace: namespace,
+			},
+			VirtualHost: &gatewayv1.VirtualHost{
+				Domains: []string{"*"},
+				Routes: []*gatewayv1.Route{
+					{
+						Matchers: []*matchers.Matcher{{
+							PathSpecifier: &matchers.Matcher_Prefix{
+								Prefix: "/1",
+							},
+						}},
+						Action: &gatewayv1.Route_RouteAction{
+							RouteAction: &gloov1.RouteAction{
+								Destination: &gloov1.RouteAction_Single{
+									Single: &gloov1.Destination{
+										DestinationType: &gloov1.Destination_Kube{
+											Kube: &gloov1.KubernetesServiceDestination{
+												Ref: &core.ResourceRef{
+													Namespace: appService.Namespace,
+													Name:      appService.Name,
+												},
+												Port: 5678,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}, clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("wait for proxy to be accepted")
+		Eventually(func() error {
+			proxy, err := proxyClient.Read(namespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+			if err != nil {
+				return err
+			}
+			if proxy.GetStatus().GetState() == core.Status_Accepted {
+				return nil
+			}
+			return eris.Errorf("waiting for proxy to be accepted, but status is %v", proxy.Status)
+		}, 60*time.Second, 1*time.Second).Should(BeNil())
+
+		By("verify that we can route to the service")
+		time.Sleep(1 * time.Second) // sleep a sec to save us some unnecessary polling
+		testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+			Protocol:          "http",
+			Path:              "/1",
+			Method:            "GET",
+			Host:              gatewayProxy,
+			Service:           gatewayProxy,
+			Port:              gatewayPort,
+			ConnectionTimeout: 1,
+			WithoutStats:      true,
+		}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
+
+		By("reset snapshot cache")
+
+		pods, err := kubeClient.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+		Expect(err).ToNot(HaveOccurred())
+		glooPod := &corev1.Pod{}
+		for _, pod := range pods.Items {
+			if strings.Contains(pod.Name, "gloo-") {
+				glooPod = &pod
+				err := kubeClient.CoreV1().Pods(namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{
+					GracePeriodSeconds: pointerToInt64(0),
+				})
+				Expect(err).ToNot(HaveOccurred())
+			}
+		}
+
+		// check deleted
+		Eventually(func() bool {
+			podsUpdate, err := kubeClient.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			for _, pod := range podsUpdate.Items {
+				if strings.Contains(pod.Name, "gloo-") {
+					return false
+				}
+			}
+			return true
+		}, 60*time.Second, 2*time.Second).Should(BeTrue())
+
+		// recreate
+		kubeClient.CoreV1().Pods(namespace).Create(ctx, glooPod, metav1.CreateOptions{})
+		Eventually(func() bool {
+			podsUpdate, err := kubeClient.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			for _, pod := range podsUpdate.Items {
+				if strings.Contains(pod.Name, "gloo-") {
+					return true
+				}
+			}
+			return false
+		}, 60*time.Second, 2*time.Second).Should(BeTrue())
 
 		By("force an update of the service endpoints")
 		initialIps := endpointsFor(kubeClient, appService)
