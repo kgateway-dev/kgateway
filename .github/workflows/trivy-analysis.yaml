@@ -1,4 +1,4 @@
-name: security-scan
+name: security-scan-1.6
 on:
   release:
     types: [created]

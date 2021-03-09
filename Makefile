@@ -621,3 +621,12 @@ update-licenses:
 # use `make print-MAKEFILE_VAR` to print the value of MAKEFILE_VAR
 
 print-%  : ; @echo $($*)
+
+SCAN_BUCKET ?= solo-gloo-security-scans
+SCAN_DIR ?= $(OUTPUT_DIR)/scans/$(VERSION)
+
+.PHONY: publish-security-scan
+publish-security-scan:
+ifeq ($(RELEASE),"true")
+	gsutil cp -r $(SCAN_DIR)/$(SCAN_FILE) gs://$(SCAN_BUCKET)/$(VERSION)
+endif
