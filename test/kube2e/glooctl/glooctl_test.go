@@ -20,7 +20,6 @@ var _ = Describe("Kube2e: glooctl", func() {
 		gatewayPort  = int(80)
 
 		goodResponse         = `[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]`
-		noConnectionResponse = `upstream connect error`
 	)
 
 	Context("environment with Istio and Gloo pre-installed", func() {
@@ -149,8 +148,6 @@ var _ = Describe("Kube2e: glooctl", func() {
 				// Disable sslConfig on the upstream, by deleting the upstream, and allowing UDS to re-create it without the sslConfig
 				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", testHelper.InstallNamespace, "upstream", "default-petstore-8080")
 				Expect(err).NotTo(HaveOccurred(), "should be able to delete the petstore upstream")
-
-				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, noConnectionResponse, 1, 60*time.Second, 1*time.Second)
 
 				err = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio uninject' without errors")
