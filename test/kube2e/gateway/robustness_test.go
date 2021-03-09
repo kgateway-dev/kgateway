@@ -35,7 +35,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-var _ = Describe("Robustness tests", func() {
+var _ = FDescribe("Robustness tests", func() {
 
 	const (
 		gatewayProxy = defaults.GatewayProxyName
@@ -94,6 +94,9 @@ var _ = Describe("Robustness tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = proxyClient.Register()
 		Expect(err).NotTo(HaveOccurred())
+
+		appDeployment, appService, err = createDeploymentAndService(kubeClient, namespace, appName)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -108,15 +111,31 @@ var _ = Describe("Robustness tests", func() {
 				return false
 			}, "15s", "0.5s").Should(BeTrue())
 		}
+		if appDeployment != nil {
+			err := kubeClient.AppsV1().Deployments(namespace).Delete(ctx, appDeployment.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(func() bool {
+				deployments, err := kubeClient.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName}).String()})
+				Expect(err).NotTo(HaveOccurred())
+				return len(deployments.Items) == 0
+			}, "15s", "0.5s").Should(BeTrue())
+		}
+		if appService != nil {
+			err := kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(ctx, appService.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(func() bool {
+				services, err := kubeClient.CoreV1().Services(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName}).String()})
+				Expect(err).NotTo(HaveOccurred())
+				return len(services.Items) == 0
+			}, "15s", "0.5s").Should(BeTrue())
+		}
 
 		cancel()
 	})
 
 	It("updates Envoy endpoints even if proxy is rejected", func() {
-
-		By("create a deployment and a matching service")
-		appDeployment, appService, err = createDeploymentAndService(kubeClient, namespace, appName)
-		Expect(err).NotTo(HaveOccurred())
 
 		By("create a virtual service routing to the service")
 		virtualService, err = virtualServiceClient.Write(&gatewayv1.VirtualService{
@@ -256,10 +275,6 @@ var _ = Describe("Robustness tests", func() {
 	})
 
 	It("updates Envoy endpoints even if proxy is invalid and snapshot cache is reset", func() {
-
-		By("create a deployment and a matching service")
-		appDeployment, appService, err = createDeploymentAndService(kubeClient, namespace, appName)
-		Expect(err).NotTo(HaveOccurred())
 
 		By("create a virtual service routing to the service")
 		virtualService, err = virtualServiceClient.Write(&gatewayv1.VirtualService{
