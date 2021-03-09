@@ -19,7 +19,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		gatewayProxy = defaults.GatewayProxyName
 		gatewayPort  = int(80)
 
-		goodResponse         = `[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]`
+		goodResponse = `[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]`
 	)
 
 	Context("environment with Istio and Gloo pre-installed", func() {
