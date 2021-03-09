@@ -35,7 +35,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-var _ = FDescribe("Robustness tests", func() {
+var _ = Describe("Robustness tests", func() {
 
 	const (
 		gatewayProxy = defaults.GatewayProxyName
