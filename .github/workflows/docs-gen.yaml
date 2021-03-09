@@ -8,7 +8,7 @@ on:
     branches:
     - 'master'
   workflow_run:
-    workflows: ["Trivy Scan"]
+    workflows: ["security-scan"]
     types:
       - completed
 jobs:
