@@ -21,7 +21,6 @@ var _ = Describe("Kube2e: glooctl", func() {
 
 		goodResponse         = `[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]`
 		noConnectionResponse = `upstream connect error`
-		waitingOutput        = `waiting for reply`
 	)
 
 	Context("environment with Istio and Gloo pre-installed", func() {
@@ -50,7 +49,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 				Method:            "GET",
 				Host:              gatewayProxy,
 				Service:           gatewayProxy,
-				Verbose:           false,
+				Verbose:           true,
 				Port:              gatewayPort,
 				ConnectionTimeout: 1,
 				WithoutStats:      true,
@@ -109,9 +108,6 @@ var _ = Describe("Kube2e: glooctl", func() {
 				err = toggleStictModePetstore(true)
 				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls strict mode on the petstore app")
 
-				// mTLS strict mode enabled, no mtls on upstream
-				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, noConnectionResponse, 1, 60*time.Second, 1*time.Second)
-
 				// Enable sslConfig on the upstream
 				err = runGlooctlCommand("istio", "enable-mtls", "--upstream", "default-petstore-8080", "-n", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls on the petstore upstream via sslConfig")
@@ -147,16 +143,10 @@ var _ = Describe("Kube2e: glooctl", func() {
 			})
 
 			It("succeeds when no upstreams contain sds configuration", func() {
-				// Disable sslConfig on the upstream
-				err = runGlooctlCommand("istio", "disable-mtls", "--upstream", "default-petstore-8080", "-n", testHelper.InstallNamespace)
-				Expect(err).NotTo(HaveOccurred(), "should be able to disable mtls on the petstore upstream via sslConfig")
+				// Disable sslConfig on the upstream, by deleting the upstream, and allowing UDS to re-create it without the sslConfig
+				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", testHelper.InstallNamespace, "upstream", "default-petstore-8080")
+				Expect(err).NotTo(HaveOccurred(), "should be able to delete the petstore upstream")
 
-				// mTLS strict mode still enabled
-				// `waitingOutput` is emitted by the test container. This is used to ensure that the test waits long enough
-				// before validating that the endpoint returns a noConnectionResponse.
-				// Surprisingly, if we only validate that a noConnectionResponse is returned, the test can return so quickly
-				// that glooctl istio uninject actually fails
-				testHelper.CurlEventuallyShouldOutput(petstoreCurlOpts, waitingOutput, 1, 60*time.Second, 1*time.Second)
 				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, noConnectionResponse, 1, 60*time.Second, 1*time.Second)
 
 				err = runGlooctlCommand("istio", "uninject", "--namespace", testHelper.InstallNamespace)
