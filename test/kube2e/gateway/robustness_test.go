@@ -3,7 +3,6 @@ package gateway_test
 import (
 	"fmt"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -256,7 +255,7 @@ var _ = Describe("Robustness tests", func() {
 		}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
 	})
 
-	FIt("updates Envoy endpoints even if snapshot cache is reset", func() {
+	It("updates Envoy endpoints even if proxy is invalid and snapshot cache is reset", func() {
 
 		By("create a deployment and a matching service")
 		appDeployment, appService, err = createDeploymentAndService(kubeClient, namespace, appName)
@@ -325,45 +324,72 @@ var _ = Describe("Robustness tests", func() {
 			WithoutStats:      true,
 		}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
 
+		// Break config
+		By("add an invalid route to the virtual service")
+		virtualService, err = virtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, &gatewayv1.Route{
+			Matchers: []*matchers.Matcher{{
+				PathSpecifier: &matchers.Matcher_Prefix{
+					Prefix: "/3",
+				},
+			}},
+			Action: &gatewayv1.Route_RouteAction{
+				RouteAction: &gloov1.RouteAction{
+					Destination: &gloov1.RouteAction_Single{
+						Single: &gloov1.Destination{
+							DestinationType: &gloov1.Destination_Kube{
+								Kube: &gloov1.KubernetesServiceDestination{
+									Ref: &core.ResourceRef{
+										Namespace: namespace,
+										Name:      "non-existent-svc",
+									},
+									Port: 1234,
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+
+		// required to prevent gateway webhook from rejecting
+		virtualService.Metadata.Annotations = map[string]string{k8sadmisssion.SkipValidationKey: k8sadmisssion.SkipValidationValue}
+
+		virtualServiceReconciler := gatewayv1.NewVirtualServiceReconciler(virtualServiceClient)
+		err = virtualServiceReconciler.Reconcile(testHelper.InstallNamespace, gatewayv1.VirtualServiceList{virtualService}, nil, clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("wait for proxy to enter warning state")
+		Eventually(func() error {
+			proxy, err := proxyClient.Read(namespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+			if err != nil {
+				return err
+			}
+			if proxy.GetStatus().GetState() == core.Status_Warning {
+				return nil
+			}
+			return eris.Errorf("waiting for proxy to be warning, but status is %v", proxy.Status)
+		}, 20*time.Second, 1*time.Second).Should(BeNil())
+
 		By("reset snapshot cache")
-
-		pods, err := kubeClient.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+		pods, err := kubeClient.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"gloo": "gloo"}).String()})
 		Expect(err).ToNot(HaveOccurred())
-		glooPod := &corev1.Pod{}
-		for _, pod := range pods.Items {
-			if strings.Contains(pod.Name, "gloo-") {
-				glooPod = &pod
-				err := kubeClient.CoreV1().Pods(namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{
-					GracePeriodSeconds: pointerToInt64(0),
-				})
-				Expect(err).ToNot(HaveOccurred())
-			}
-		}
+		Expect(len(pods.Items)).To(Equal(1))
+		oldGlooPod := pods.Items[0]
 
-		// check deleted
-		Eventually(func() bool {
-			podsUpdate, err := kubeClient.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
-			Expect(err).ToNot(HaveOccurred())
-			for _, pod := range podsUpdate.Items {
-				if strings.Contains(pod.Name, "gloo-") {
-					return false
-				}
-			}
-			return true
-		}, 60*time.Second, 2*time.Second).Should(BeTrue())
+		err = kubeClient.CoreV1().Pods(namespace).Delete(ctx, oldGlooPod.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
+		Expect(err).ToNot(HaveOccurred())
 
-		// recreate
-		kubeClient.CoreV1().Pods(namespace).Create(ctx, glooPod, metav1.CreateOptions{})
+		// check deleted and recreated
 		Eventually(func() bool {
-			podsUpdate, err := kubeClient.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+			pods, err := kubeClient.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"gloo": "gloo"}).String()})
 			Expect(err).ToNot(HaveOccurred())
-			for _, pod := range podsUpdate.Items {
-				if strings.Contains(pod.Name, "gloo-") {
-					return true
-				}
-			}
-			return false
-		}, 60*time.Second, 2*time.Second).Should(BeTrue())
+			Expect(len(pods.Items)).To(Equal(1))
+			// new pod name will not match old gloo pod
+			return pods.Items[0].Name == oldGlooPod.Name
+		}, 60*time.Second, 2*time.Second).Should(BeFalse())
 
 		By("force an update of the service endpoints")
 		initialIps := endpointsFor(kubeClient, appService)
