@@ -24,7 +24,8 @@ site-common: clean
 	GO111MODULE=on go run cmd/generate_docs.go gen-minor-releases-changelog-md gloo> content/static/content/gloo-minor-release-changelog.docgen
 	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 	GO111MODULE=on go run cmd/generate_docs.go gen-minor-releases-changelog-md glooe> content/static/content/glooe-minor-release-changelog.docgen
-	GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md > content/static/content/gloo-security-scan.docgen
+	GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md gloo > content/static/content/gloo-security-scan.docgen
+	GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md glooe > content/static/content/glooe-security-scan.docgen
 
 .PHONY: site-test
 site-test: site-common

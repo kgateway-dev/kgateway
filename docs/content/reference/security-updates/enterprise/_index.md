@@ -1,0 +1,9 @@
+---
+title: Security Updates for Gloo Edge Enterprise
+weight: 7
+description: Security Updates and CVEs
+---
+
+Gloo container images are scanned using [Trivy](https://github.com/aquasecurity/trivy) for HIGH and CRITICAL vulnerabilities.
+
+{{< readfile file="static/content/glooe-security-scan.docgen" markdown="true" >}}
