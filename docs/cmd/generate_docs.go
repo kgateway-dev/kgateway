@@ -291,7 +291,7 @@ func generateSecurityScanGloo() error {
 		}
 	}
 
-	return BuildSecurityScanMarkdownReport(tagNames)
+	return BuildSecurityScanReportGloo(tagNames)
 }
 
 func generateSecurityScanGlooE() error {
@@ -315,5 +315,5 @@ func generateSecurityScanGlooE() error {
 		}
 	}
 
-	return BuildSecurityScanMarkdownReport(tagNames)
+	return BuildSecurityScanReportGlooE(tagNames)
 }

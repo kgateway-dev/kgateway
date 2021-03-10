@@ -6,16 +6,39 @@ import (
 	"net/http"
 )
 
-func BuildSecurityScanMarkdownReport(tags []string) error {
+func BuildSecurityScanReportGloo(tags []string) error {
 	images := []string{"gateway", "discovery", "gloo", "gloo_envoy_wrapper", "ingress", "access_logger", "sds", "certgen"}
 	for _, tag := range tags {
-		fmt.Printf("<details><summary> Gloo Release %s </summary>\n", tag)
+		fmt.Printf("<details><summary> Gloo Open Source Release %s </summary>\n", tag)
 		fmt.Println()
 		for _, image := range images {
 			fmt.Printf("**Gloo %s image**\n", image)
 			fmt.Println()
 			// remove `v` from tag
-			url := "https://storage.googleapis.com/solo-gloo-security-scans/" + tag[1:] + "/" + image + "_cve_report.docgen"
+			url := "https://storage.googleapis.com/solo-gloo-security-scans/gloo" + tag[1:] + "/" + image + "_cve_report.docgen"
+			report, err := GetSecurityScanReport(url)
+			if err != nil {
+				return err
+			}
+			fmt.Println(report)
+		}
+		fmt.Println("</details>")
+	}
+
+	return nil
+}
+
+
+func BuildSecurityScanReportGlooE(tags []string) error {
+	images := []string{"rate-limit-ee", "grpcserver-ee", "grpcserver-envoy", "grpcserver-ui", "gloo-ee", "gloo-envoy-wrapper-ee", "observability-ee", "extauth-ee", "ext-auth-plugins", "gloo-fed", "gloo-fed-apiserver", "gloo-fed-apiserver-envoy", "gloo-federation-console", "gloo-fed-rbac-validating-webhook"}
+	for _, tag := range tags {
+		fmt.Printf("<details><summary> Gloo Enterprise Release %s </summary>\n", tag)
+		fmt.Println()
+		for _, image := range images {
+			fmt.Printf("**Gloo %s image**\n", image)
+			fmt.Println()
+			// remove `v` from tag
+			url := "https://storage.googleapis.com/solo-gloo-security-scans/glooe" + tag[1:] + "/" + image + "_cve_report.docgen"
 			report, err := GetSecurityScanReport(url)
 			if err != nil {
 				return err
