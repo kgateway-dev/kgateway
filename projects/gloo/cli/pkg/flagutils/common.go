@@ -112,3 +112,7 @@ func AddVaultSecretFlags(set *pflag.FlagSet, vault *options.Vault) {
 func AddUpstreamFlag(set *pflag.FlagSet, strptr *string) {
 	set.StringVarP(strptr, "upstream", "u", "", "upstream for which the istio sslConfig needs to change")
 }
+
+func AddIncludeUpstreamsFlag(set *pflag.FlagSet, boolptr *bool) {
+	set.BoolVar(boolptr, "include-upstreams", false, "whether or not to modify upstreams when uninstalling mTLS")
+}

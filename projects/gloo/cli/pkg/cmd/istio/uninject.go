@@ -3,6 +3,12 @@ package istio
 import (
 	"bytes"
 	"errors"
+	"fmt"
+
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
@@ -20,6 +26,9 @@ import (
 // ErrMissingSidecars occurs when the user tries to uninject istio & sds, but one or both cannot be find.
 var ErrMissingSidecars = errors.New("istio uninject can only be run when both the sds and istio-proxy sidecars are present on the gateway-proxy pod")
 
+// ErrUpstreamSdsConfigPresent occurs when the user tries to uninject istio & sds, but upstreams still references sds
+var ErrUpstreamSdsConfigPresent = errors.New("istio uninject can only be run when upstreams no longer reference the sds cluster")
+
 // List of istio-specific volumes mounted in the gateway-proxy deployment
 var istioVolumes = []string{"istio-certs", "istiod-ca-cert", "istio-envoy", "istio-token"}
 
@@ -32,9 +41,6 @@ func Uninject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 		Long: "Removes the istio-proxy sidecar from the gateway-proxy pod. " +
 			"Also removes the sds sidecar from the gateway-proxy pod. " +
 			"Also removes the gateway_proxy_sds cluster from the gateway-proxy envoy bootstrap ConfigMap.",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return nil
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := istioUninject(args, opts)
 			if err != nil {
@@ -43,6 +49,8 @@ func Uninject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 			return nil
 		},
 	}
+	pflags := cmd.PersistentFlags()
+	flagutils.AddIncludeUpstreamsFlag(pflags, &opts.Istio.IncludeUpstreams)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
@@ -56,6 +64,25 @@ func istioUninject(args []string, opts *options.Options) error {
 	_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, glooNS, metav1.GetOptions{})
 	if err != nil {
 		return err
+	}
+
+	// Ensure that there are no upstreams references the gateway_proxy_sds cluster
+	upClient := helpers.MustNamespacedUpstreamClient(opts.Top.Ctx, glooNS)
+	upstreamsWithSdsClusterName, err := getUpstreamsWithDefaultSdsClusterName(upClient, glooNS)
+	if err != nil {
+		return err
+	}
+
+	if len(upstreamsWithSdsClusterName) > 0 {
+		if opts.Istio.IncludeUpstreams {
+			fmt.Printf("Warning: Found %d upstreams with sds config referencing the %v cluster, removing\n", len(upstreamsWithSdsClusterName), sdsClusterName)
+			if err := disableMTLSOnUpstreamList(upClient, upstreamsWithSdsClusterName); err != nil {
+				return err
+			}
+		} else {
+			return eris.Wrapf(ErrUpstreamSdsConfigPresent, "There are %d upstreams with sds config referencing the %v cluster. "+
+				"Remove those references or use the --include-upstreams flag", len(upstreamsWithSdsClusterName), sdsClusterName)
+		}
 	}
 
 	// Remove gateway_proxy_sds cluster from the gateway-proxy configmap
@@ -181,4 +208,22 @@ func removeSdsCluster(configMap *corev1.ConfigMap) error {
 
 	configMap.Data[envoyDataKey] = string(yamlConfig)
 	return nil
+}
+
+func getUpstreamsWithDefaultSdsClusterName(client v1.UpstreamClient, namespace string) (v1.UpstreamList, error) {
+	upstreamList, err := client.List(namespace, clients.ListOpts{})
+	if err != nil {
+		return nil, err
+	}
+
+	var upstreamsWithSdsClusterName v1.UpstreamList
+	appendIfSdsCluster := func(upstream *v1.Upstream) {
+		if upstream.GetSslConfig().GetSds().GetClusterName() == sdsClusterName {
+			upstreamsWithSdsClusterName = append(upstreamsWithSdsClusterName, upstream)
+		}
+	}
+
+	upstreamList.Each(appendIfSdsCluster)
+
+	return upstreamsWithSdsClusterName, nil
 }
