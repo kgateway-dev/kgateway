@@ -203,6 +203,7 @@ func (s *translatorSyncer) ServeXdsSnapshots() error {
 // The resulting snapshot will be checked for consistency before being returned.
 func (s *translatorSyncer) updateEndpointsOnly(snapshotKey string, current envoycache.Snapshot) (envoycache.Snapshot, error) {
 	var newSnapshot cache.Snapshot
+	//panic("updateEndpointsOnly")
 
 	// Get a copy of the last successful snapshot
 	previous, err := s.xdsCache.GetSnapshot(snapshotKey)

@@ -2,7 +2,6 @@ package syncer_test
 
 import (
 	"context"
-
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -29,6 +28,7 @@ var _ = Describe("Translate Proxy", func() {
 		syncer      v1.ApiSyncer
 		snap        *v1.ApiSnapshot
 		settings    *v1.Settings
+		upstreamClient clients.ResourceClient
 		proxyClient v1.ProxyClient
 		ctx         context.Context
 		cancel      context.CancelFunc
@@ -38,6 +38,7 @@ var _ = Describe("Translate Proxy", func() {
 	)
 
 	BeforeEach(func() {
+		var err error
 		xdsCache = &MockXdsCache{}
 		sanitizer = &MockXdsSanitizer{}
 		ctx, cancel = context.WithCancel(context.Background())
@@ -48,7 +49,7 @@ var _ = Describe("Translate Proxy", func() {
 
 		proxyClient, _ = v1.NewProxyClient(ctx, resourceClientFactory)
 
-		upstreamClient, err := resourceClientFactory.NewResourceClient(ctx, factory.NewResourceClientParams{ResourceType: &v1.Upstream{}})
+		upstreamClient, err = resourceClientFactory.NewResourceClient(ctx, factory.NewResourceClientParams{ResourceType: &v1.Upstream{}})
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy := &v1.Proxy{
@@ -154,6 +155,112 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(oldRoutes).To(Equal(newRoutes))
 	})
 
+})
+
+var _ = Describe("Empty cache", func() {
+
+	var (
+		xdsCache    *MockXdsCache
+		sanitizer   *MockXdsSanitizer
+		syncer      v1.ApiSyncer
+		settings    *v1.Settings
+		upstreamClient clients.ResourceClient
+		proxyClient v1.ProxyClient
+		ctx         context.Context
+		cancel      context.CancelFunc
+		proxy 	 	*v1.Proxy
+		proxyName   = "proxy-name"
+		ref         = "syncer-test"
+		ns          = "any-ns"
+	)
+
+	BeforeEach(func() {
+		var err error
+		xdsCache = &MockXdsCache{}
+		sanitizer = &MockXdsSanitizer{}
+		ctx, cancel = context.WithCancel(context.Background())
+
+		resourceClientFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+
+		proxyClient, _ = v1.NewProxyClient(ctx, resourceClientFactory)
+
+		upstreamClient, err = resourceClientFactory.NewResourceClient(ctx, factory.NewResourceClientParams{ResourceType: &v1.Upstream{}})
+		Expect(err).NotTo(HaveOccurred())
+
+		proxy = &v1.Proxy{
+			Metadata: &core.Metadata{
+				Namespace: ns,
+				Name:      proxyName,
+			},
+		}
+
+		settings = &v1.Settings{}
+
+		rep := reporter.NewReporter(ref, proxyClient.BaseClient(), upstreamClient)
+
+		xdsHasher := &xds.ProxyKeyHasher{}
+		syncer = NewTranslatorSyncer(&mockTranslator{true, false}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
+
+		_, err = proxyClient.Write(proxy, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+
+		proxies, err := proxyClient.List(proxy.GetMetadata().Namespace, clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(proxies).To(HaveLen(1))
+		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
+
+	})
+
+	AfterEach(func() { cancel() })
+
+	FIt("only updates endpoints and clusters when sanitization fails and there is no previous snapshot", func() {
+		sanitizer.Err = errors.Errorf("we ran out of coffee")
+
+		apiSnap := v1.ApiSnapshot{
+			Proxies: v1.ProxyList{
+				proxy,
+			},
+			Endpoints: v1.EndpointList{
+				{
+					Metadata: &core.Metadata{
+						Namespace:       ns,
+						Name:            "coffee",
+						Labels:          map[string]string{ "test": "coffee"},
+						ResourceVersion: "coffeeversion",
+					},
+
+					Address:     "ipAddress",
+					Port:        8080,
+					Hostname:    "hostname",
+				},
+			},
+		}
+
+		// old snapshot is not set
+		err := syncer.Sync(context.Background(), &apiSnap)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(sanitizer.Called).To(BeTrue())
+		Expect(xdsCache.Called).To(BeTrue())
+
+		newListeners := xdsCache.SetSnap.GetResources(resource.ListenerTypeV3)
+		Expect(newListeners.Items).To(BeNil())
+
+		newRoutes := xdsCache.SetSnap.GetResources(resource.RouteTypeV3)
+		Expect(newRoutes.Items).To(BeNil())
+
+		proxies, err := proxyClient.List(proxy.GetMetadata().Namespace, clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(proxies).To(HaveLen(1))
+		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
+		Expect(proxies[0].Status).To(Equal(&core.Status{
+			State:      2,
+			Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
+			ReportedBy: ref,
+		}))
+	})
 })
 
 var _ = Describe("Translate mulitple proxies with errors", func() {
