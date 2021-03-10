@@ -739,7 +739,7 @@ spec:
             principals:
             - jwtPrincipal:
                 claims:
-                  email: jimhbarton@gmail.com
+                  email: jim.barton@solo.io
 ```
 
 Now when you refresh the browser, you should see just the `X-Solo-Claim-Email` header, which was used by Gloo to authorize the request.  Try a different endpoint, such as `https://glootest.com/base64/R2xvbyBpcyBhd2Vzb21lCg==`, and you will see the `RBAC: access denied` message.
