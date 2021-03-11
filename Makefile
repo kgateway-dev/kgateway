@@ -673,7 +673,7 @@ SCAN_BUCKET ?= solo-gloo-security-scans/gloo
 .PHONY: publish-security-scan
 publish-security-scan:
 ifeq ($(RELEASE),"true")
-	gsutil cp -r $(SCAN_DIR)/$(SCAN_FILE) gs://$(SCAN_BUCKET)/$(VERSION)
+	gsutil cp -r $(SCAN_DIR)/$(VERSION)/$(SCAN_FILE) gs://$(SCAN_BUCKET)/$(VERSION)/$(SCAN_FILE)
 endif
 
 #----------------------------------------------------------------------------------
