@@ -2,12 +2,12 @@ package gateway_test
 
 import (
 	"fmt"
-	"github.com/golang/protobuf/ptypes/wrappers"
-	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"io/ioutil"
 	"regexp"
 	"sort"
 	"time"
+
+	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -47,7 +47,7 @@ const (
 	kubeCtx        = ""
 )
 
-var _ = Describe("Robustness tests", func() {
+var _ = FDescribe("Robustness tests", func() {
 
 	const (
 		gatewayProxy = defaults.GatewayProxyName
@@ -79,7 +79,6 @@ var _ = Describe("Robustness tests", func() {
 
 		namespace = testHelper.InstallNamespace
 
-		var err error
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
@@ -437,20 +436,30 @@ var _ = Describe("Robustness tests", func() {
 
 		By("force an update of the service endpoints")
 		initialIps := endpointsFor(kubeClient, appService)
+		var newIps []string
 		// Scale to 0 and back to 1 replicas until we have a different IP for the endpoint
 		Eventually(func() []string {
 			scaleDeploymentTo(kubeClient, appDeployment, 0)
 			scaleDeploymentTo(kubeClient, appDeployment, 1)
-			newIps := endpointsFor(kubeClient, appService)
+			newIps = endpointsFor(kubeClient, appService)
 			return newIps
-		}, 60*time.Second, 1*time.Second).Should(And(
+		}, 20*time.Second, 1*time.Second).Should(And(
 			HaveLen(len(initialIps)),
 			Not(BeEquivalentTo(initialIps)),
 		))
 
 		By("verify that the new endpoints have been propagated to Envoy")
-		// Find gateway-proxy pod name
-		endpointsCanUpdate(namespace, upstreamClient, gatewayProxyPodName)
+		Eventually(func() bool {
+			clusters := testutils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, "gloo-system", gatewayProxyPodName, clustersPath)
+			testOldClusterEndpoints := regexp.MustCompile(initialIps[0] + ":")
+			oldEndpointMatches := testOldClusterEndpoints.FindAllStringIndex(clusters, -1)
+			testNewClusterEndpoints := regexp.MustCompile(newIps[0] + ":")
+			newEndpointMatches := testNewClusterEndpoints.FindAllStringIndex(clusters, -1)
+			fmt.Println(fmt.Sprintf("Number of cluster stats for old endpoint on clusters page: %d", len(oldEndpointMatches)))
+			fmt.Println(fmt.Sprintf("Number of cluster stats for new endpoint on clusters page: %d", len(newEndpointMatches)))
+			return len(oldEndpointMatches) == 0 && len(newEndpointMatches) > 0
+		}, 20*time.Second, 1*time.Second).Should(BeTrue())
+
 	})
 })
 
@@ -576,67 +585,4 @@ func scaleDeploymentTo(kubeClient kubernetes.Interface, deployment *appsv1.Deplo
 		}
 		return eris.Errorf("expected %d pods but found %d", replicas, len(pods.Items))
 	}, 60*time.Second, 1*time.Second).Should(BeNil())
-}
-
-func endpointsCanUpdate(namespace string, upstreamClient gloov1.UpstreamClient, gatewayProxyPodName string) {
-	// Initialize a way to track the envoy config dump in order to tell when it has changed, and when the
-	// new upstream changes have been picked up.
-	Eventually(func() int {
-		prevConfigDumpLen := findConfigDumpHttp2Count(gatewayProxyPodName)
-		return prevConfigDumpLen
-	}, "30s", "1s").ShouldNot(Equal(0), "cluster count should be nonzero")
-
-	// We should consistently be able to modify upstreams
-	Consistently(func() error {
-		// Modify the upstream
-		us, err := upstreamClient.Read(namespace, "test", clients.ReadOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-		us.UseHttp2 = &wrappers.BoolValue{Value: !us.UseHttp2.GetValue()}
-		_, err = upstreamClient.Write(us, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-		Expect(err).NotTo(HaveOccurred())
-
-		// Check that the changed was picked up and the new config has the correct endpoints
-		currConfigDumpLen := findConfigDumpHttp2Count(gatewayProxyPodName)
-		checkClusterEndpoints(currConfigDumpLen, gatewayProxyPodName)
-
-		return nil
-	}, "3m", "5s").Should(BeNil()) // 3 min to be safe, usually repros in ~40s when running locally without REST EDS
-}
-
-func checkClusterEndpoints(prevConfigDumpLen int, gatewayProxyPodName string) {
-	Eventually(func() bool {
-		if upstreamChangesPickedUp(prevConfigDumpLen, gatewayProxyPodName) {
-			By("check that endpoints were discovered")
-			Expect(findTestClusterEndpoints(gatewayProxyPodName)).Should(BeNumerically(">", 0), "test endpoints should exist")
-			fmt.Println("Endpoints exist for cluster!")
-			return true
-		}
-		return false
-	}, "45s", "1s").Should(BeTrue(), "upstream changes were never picked up!")
-}
-
-func upstreamChangesPickedUp(prevConfigDumpLen int, gatewayProxyPodName string) bool {
-	currConfigDumpLen := findConfigDumpHttp2Count(gatewayProxyPodName)
-	if prevConfigDumpLen != currConfigDumpLen {
-		prevConfigDumpLen = currConfigDumpLen
-		fmt.Println("Upstream changes picked up! (cluster exists)")
-		return true
-	}
-	return false
-}
-
-func findTestClusterEndpoints(gatewayProxyPodName string) int {
-	clusters := testutils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, "gloo-system", gatewayProxyPodName, clustersPath)
-	testClusterEndpoints := regexp.MustCompile("\ntest_")
-	matches := testClusterEndpoints.FindAllStringIndex(clusters, -1)
-	fmt.Println(fmt.Sprintf("Number of cluster stats for test upstream (i.e., checking for endpoints) on clusters page: %d", len(matches)))
-	return len(matches)
-}
-
-func findConfigDumpHttp2Count(gatewayProxyPodName string) int {
-	configDump := testutils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, "gloo-system", gatewayProxyPodName, configDumpPath, "-s")
-	http2Configs := regexp.MustCompile("http2_protocol_options")
-	matches := http2Configs.FindAllStringIndex(configDump, -1)
-	fmt.Println(fmt.Sprintf("Number of http2_protocol_options (i.e., clusters) on config dump page: %d", len(matches)))
-	return len(matches)
 }
