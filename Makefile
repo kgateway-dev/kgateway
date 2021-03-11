@@ -14,7 +14,7 @@ endif
 z := $(shell mkdir -p $(OUTPUT_DIR))
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
-RELEASE := "false"
+RELEASE ?= "false"
 CREATE_TEST_ASSETS := "false"
 CREATE_ASSETS := "true"
 
@@ -31,7 +31,7 @@ ifeq ($(TAGGED_VERSION),)
 	  VERSION ?= $(shell git describe --tags --dirty | cut -c 2-)
 	endif
 else
-	RELEASE := "true"
+	RELEASE ?= "true"
 	VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 endif
 
@@ -663,10 +663,10 @@ security-checks:
 	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/ingress_cve_report.docgen $(IMAGE_REPO)/ingress:$(VERSION) && \
 	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/discovery_cve_report.docgen $(IMAGE_REPO)/discovery:$(VERSION) && \
 	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/gloo_cve_report.docgen $(IMAGE_REPO)/gloo:$(VERSION) && \
-	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/gloo_envoy_wrapper_cve_report.docgen $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
+	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/gloo-envoy-wrapper_cve_report.docgen $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
 	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/certgen_cve_report.docgen $(IMAGE_REPO)/certgen:$(VERSION) && \
 	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/sds_cve_report.docgen $(IMAGE_REPO)/sds:$(VERSION) && \
-	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/access_logger_cve_report.docgen $(IMAGE_REPO)/access-logger:$(VERSION)
+	./trivy --exit-code 0 --severity HIGH,CRITICAL --no-progress --format template --template "@hack/utils/security_scan_report/markdown.tpl" -o $(SCAN_DIR)/access-logger_cve_report.docgen $(IMAGE_REPO)/access-logger:$(VERSION)
 
 SCAN_BUCKET ?= solo-gloo-security-scans/gloo
 

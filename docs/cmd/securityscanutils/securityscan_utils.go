@@ -7,7 +7,7 @@ import (
 )
 
 func BuildSecurityScanReportGloo(tags []string) error {
-	images := []string{"gateway", "discovery", "gloo", "gloo_envoy_wrapper", "ingress", "access_logger", "sds", "certgen"}
+	images := []string{"gateway", "discovery", "gloo", "gloo-envoy-wrapper", "ingress", "access-logger", "sds", "certgen"}
 	for _, tag := range tags {
 		fmt.Printf("<details><summary> Gloo Open Source Release %s </summary>\n", tag)
 		fmt.Println()
