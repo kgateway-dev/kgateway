@@ -295,7 +295,16 @@ func generateSecurityScanGloo() error {
 }
 
 func generateSecurityScanGlooE() error {
-	client := github.NewClient(nil)
+	// Initialize Auth
+	ctx := context.Background()
+	if os.Getenv("GITHUB_TOKEN") == "" {
+		return MissingGithubTokenError()
+	}
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	client := github.NewClient(tc)
 	allReleases, err := GetAllReleases(client, glooEnterpriseRepo)
 	if err != nil {
 		return err
