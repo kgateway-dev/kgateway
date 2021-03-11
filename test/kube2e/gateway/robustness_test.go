@@ -2,6 +2,10 @@ package gateway_test
 
 import (
 	"fmt"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"io/ioutil"
+	"regexp"
 	"sort"
 	"time"
 
@@ -10,6 +14,8 @@ import (
 	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmisssion"
+
+	testutils "github.com/solo-io/k8s-utils/testutils/kube"
 
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
@@ -35,6 +41,12 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
+const (
+	configDumpPath = "http://localhost:19000/config_dump"
+	clustersPath   = "http://localhost:19000/clusters"
+	kubeCtx        = ""
+)
+
 var _ = Describe("Robustness tests", func() {
 
 	const (
@@ -52,6 +64,7 @@ var _ = Describe("Robustness tests", func() {
 		kubeClient           kubernetes.Interface
 		proxyClient          gloov1.ProxyClient
 		virtualServiceClient gatewayv1.VirtualServiceClient
+		upstreamClient       gloov1.UpstreamClient
 
 		appName        = "echo-app-for-robustness-test"
 		appDeployment  *appsv1.Deployment
@@ -84,6 +97,11 @@ var _ = Describe("Robustness tests", func() {
 			Cfg:         cfg,
 			SharedCache: cache,
 		}
+		upstreamClientFactory := &factory.KubeResourceClientFactory{
+			Crd:         gloov1.UpstreamCrd,
+			Cfg:         cfg,
+			SharedCache: cache,
+		}
 
 		virtualServiceClient, err = gatewayv1.NewVirtualServiceClient(ctx, virtualServiceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
@@ -93,6 +111,11 @@ var _ = Describe("Robustness tests", func() {
 		proxyClient, err = gloov1.NewProxyClient(ctx, proxyClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		err = proxyClient.Register()
+		Expect(err).NotTo(HaveOccurred())
+
+		upstreamClient, err = gloov1.NewUpstreamClient(ctx, upstreamClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+		err = upstreamClient.Register()
 		Expect(err).NotTo(HaveOccurred())
 
 		appDeployment, appService, err = createDeploymentAndService(kubeClient, namespace, appName)
@@ -276,6 +299,34 @@ var _ = Describe("Robustness tests", func() {
 
 	It("updates Envoy endpoints even if proxy is invalid and snapshot cache is reset", func() {
 
+		upstream := &gloov1.Upstream{
+			Metadata: &core.Metadata{
+				Name:      "test",
+				Namespace: "gloo-system",
+			},
+			UpstreamType: &gloov1.Upstream_Static{
+				Static: &static_plugin_gloo.UpstreamSpec{
+					Hosts: []*static_plugin_gloo.Host{{
+						Addr: "localhost",
+						Port: 1234,
+					}},
+				},
+			},
+		}
+		_, err := upstreamClient.Write(upstream, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+
+		gatewayProxyPodName := testutils.FindPodNameByLabel(cfg, ctx, "gloo-system", "gloo=gateway-proxy")
+		// We should consistently be able to modify upstreams
+		Eventually(func() error {
+			// Modify the upstream
+			us, err := upstreamClient.Read(namespace, upstream.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			if us.Status.State == core.Status_Accepted {
+				return nil
+			}
+			return eris.Errorf("waiting for proxy to be accepted, but status is %v", us.Status)
+		}, "3m", "5s").Should(BeNil())
+
 		By("create a virtual service routing to the service")
 		virtualService, err = virtualServiceClient.Write(&gatewayv1.VirtualService{
 			Metadata: &core.Metadata{
@@ -340,34 +391,12 @@ var _ = Describe("Robustness tests", func() {
 		}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
 
 		// Break config
-		By("add an invalid route to the virtual service")
+		By("add conflicting domains to the virtual service")
 		virtualService, err = virtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
-		virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, &gatewayv1.Route{
-			Matchers: []*matchers.Matcher{{
-				PathSpecifier: &matchers.Matcher_Prefix{
-					Prefix: "/3",
-				},
-			}},
-			Action: &gatewayv1.Route_RouteAction{
-				RouteAction: &gloov1.RouteAction{
-					Destination: &gloov1.RouteAction_Single{
-						Single: &gloov1.Destination{
-							DestinationType: &gloov1.Destination_Kube{
-								Kube: &gloov1.KubernetesServiceDestination{
-									Ref: &core.ResourceRef{
-										Namespace: namespace,
-										Name:      "non-existent-svc",
-									},
-									Port: 1234,
-								},
-							},
-						},
-					},
-				},
-			},
-		})
+		// conflicting domains
+		virtualService.VirtualHost.Domains = []string{"*", "*"}
 
 		// required to prevent gateway webhook from rejecting
 		virtualService.Metadata.Annotations = map[string]string{k8sadmisssion.SkipValidationKey: k8sadmisssion.SkipValidationValue}
@@ -376,16 +405,16 @@ var _ = Describe("Robustness tests", func() {
 		err = virtualServiceReconciler.Reconcile(testHelper.InstallNamespace, gatewayv1.VirtualServiceList{virtualService}, nil, clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		By("wait for proxy to enter warning state")
+		By("wait for proxy to enter rejected state")
 		Eventually(func() error {
 			proxy, err := proxyClient.Read(namespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return err
 			}
-			if proxy.GetStatus().GetState() == core.Status_Warning {
+			if proxy.GetStatus().GetState() == core.Status_Rejected {
 				return nil
 			}
-			return eris.Errorf("waiting for proxy to be warning, but status is %v", proxy.Status)
+			return eris.Errorf("waiting for proxy to be rejected, but status is %v", proxy.Status)
 		}, 20*time.Second, 1*time.Second).Should(BeNil())
 
 		By("reset snapshot cache")
@@ -414,22 +443,14 @@ var _ = Describe("Robustness tests", func() {
 			scaleDeploymentTo(kubeClient, appDeployment, 1)
 			newIps := endpointsFor(kubeClient, appService)
 			return newIps
-		}, 20*time.Second, 1*time.Second).Should(And(
+		}, 60*time.Second, 1*time.Second).Should(And(
 			HaveLen(len(initialIps)),
 			Not(BeEquivalentTo(initialIps)),
 		))
 
 		By("verify that the new endpoints have been propagated to Envoy")
-		testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-			Protocol:          "http",
-			Path:              "/1",
-			Method:            "GET",
-			Host:              gatewayProxy,
-			Service:           gatewayProxy,
-			Port:              gatewayPort,
-			ConnectionTimeout: 1,
-			WithoutStats:      true,
-		}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
+		// Find gateway-proxy pod name
+		endpointsCanUpdate(namespace, upstreamClient, gatewayProxyPodName)
 	})
 })
 
@@ -555,4 +576,67 @@ func scaleDeploymentTo(kubeClient kubernetes.Interface, deployment *appsv1.Deplo
 		}
 		return eris.Errorf("expected %d pods but found %d", replicas, len(pods.Items))
 	}, 60*time.Second, 1*time.Second).Should(BeNil())
+}
+
+func endpointsCanUpdate(namespace string, upstreamClient gloov1.UpstreamClient, gatewayProxyPodName string) {
+	// Initialize a way to track the envoy config dump in order to tell when it has changed, and when the
+	// new upstream changes have been picked up.
+	Eventually(func() int {
+		prevConfigDumpLen := findConfigDumpHttp2Count(gatewayProxyPodName)
+		return prevConfigDumpLen
+	}, "30s", "1s").ShouldNot(Equal(0), "cluster count should be nonzero")
+
+	// We should consistently be able to modify upstreams
+	Consistently(func() error {
+		// Modify the upstream
+		us, err := upstreamClient.Read(namespace, "test", clients.ReadOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+		us.UseHttp2 = &wrappers.BoolValue{Value: !us.UseHttp2.GetValue()}
+		_, err = upstreamClient.Write(us, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+		Expect(err).NotTo(HaveOccurred())
+
+		// Check that the changed was picked up and the new config has the correct endpoints
+		currConfigDumpLen := findConfigDumpHttp2Count(gatewayProxyPodName)
+		checkClusterEndpoints(currConfigDumpLen, gatewayProxyPodName)
+
+		return nil
+	}, "3m", "5s").Should(BeNil()) // 3 min to be safe, usually repros in ~40s when running locally without REST EDS
+}
+
+func checkClusterEndpoints(prevConfigDumpLen int, gatewayProxyPodName string) {
+	Eventually(func() bool {
+		if upstreamChangesPickedUp(prevConfigDumpLen, gatewayProxyPodName) {
+			By("check that endpoints were discovered")
+			Expect(findTestClusterEndpoints(gatewayProxyPodName)).Should(BeNumerically(">", 0), "test endpoints should exist")
+			fmt.Println("Endpoints exist for cluster!")
+			return true
+		}
+		return false
+	}, "45s", "1s").Should(BeTrue(), "upstream changes were never picked up!")
+}
+
+func upstreamChangesPickedUp(prevConfigDumpLen int, gatewayProxyPodName string) bool {
+	currConfigDumpLen := findConfigDumpHttp2Count(gatewayProxyPodName)
+	if prevConfigDumpLen != currConfigDumpLen {
+		prevConfigDumpLen = currConfigDumpLen
+		fmt.Println("Upstream changes picked up! (cluster exists)")
+		return true
+	}
+	return false
+}
+
+func findTestClusterEndpoints(gatewayProxyPodName string) int {
+	clusters := testutils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, "gloo-system", gatewayProxyPodName, clustersPath)
+	testClusterEndpoints := regexp.MustCompile("\ntest_")
+	matches := testClusterEndpoints.FindAllStringIndex(clusters, -1)
+	fmt.Println(fmt.Sprintf("Number of cluster stats for test upstream (i.e., checking for endpoints) on clusters page: %d", len(matches)))
+	return len(matches)
+}
+
+func findConfigDumpHttp2Count(gatewayProxyPodName string) int {
+	configDump := testutils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, "gloo-system", gatewayProxyPodName, configDumpPath, "-s")
+	http2Configs := regexp.MustCompile("http2_protocol_options")
+	matches := http2Configs.FindAllStringIndex(configDump, -1)
+	fmt.Println(fmt.Sprintf("Number of http2_protocol_options (i.e., clusters) on config dump page: %d", len(matches)))
+	return len(matches)
 }
