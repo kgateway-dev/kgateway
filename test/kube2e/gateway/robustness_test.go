@@ -47,7 +47,7 @@ const (
 	kubeCtx        = ""
 )
 
-var _ = FDescribe("Robustness tests", func() {
+var _ = Describe("Robustness tests", func() {
 
 	const (
 		gatewayProxy = defaults.GatewayProxyName
