@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4413
+    description: Fixes docs issue where clicking the "Copy" button next to code blocks causes unintentional scrolling behaviour.
