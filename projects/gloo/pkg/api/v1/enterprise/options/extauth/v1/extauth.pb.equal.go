@@ -978,6 +978,14 @@ func (m *AccessTokenValidation) Equal(that interface{}) bool {
 		}
 	}
 
+	if strings.Compare(m.GetClientId(), target.GetClientId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetClientSecret(), target.GetClientSecret()) != 0 {
+		return false
+	}
+
 	switch m.ValidationType.(type) {
 
 	case *AccessTokenValidation_IntrospectionUrl:

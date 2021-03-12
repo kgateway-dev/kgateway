@@ -1084,6 +1084,14 @@ func (m *AccessTokenValidation) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if _, err = hasher.Write([]byte(m.GetClientId())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetClientSecret())); err != nil {
+		return 0, err
+	}
+
 	switch m.ValidationType.(type) {
 
 	case *AccessTokenValidation_IntrospectionUrl:
