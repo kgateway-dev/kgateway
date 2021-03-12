@@ -2532,21 +2532,6 @@ func (m *ExtAuthConfig_OAuth2Config) Equal(that interface{}) bool {
 			}
 		}
 
-	case *ExtAuthConfig_OAuth2Config_AccessTokenValidation:
-		if _, ok := target.OauthType.(*ExtAuthConfig_OAuth2Config_AccessTokenValidation); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetAccessTokenValidation()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetAccessTokenValidation()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetAccessTokenValidation(), target.GetAccessTokenValidation()) {
-				return false
-			}
-		}
-
 	case *ExtAuthConfig_OAuth2Config_AccessTokenValidationConfig:
 		if _, ok := target.OauthType.(*ExtAuthConfig_OAuth2Config_AccessTokenValidationConfig); !ok {
 			return false

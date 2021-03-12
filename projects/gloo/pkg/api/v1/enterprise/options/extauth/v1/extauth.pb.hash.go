@@ -2788,28 +2788,6 @@ func (m *ExtAuthConfig_OAuth2Config) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *ExtAuthConfig_OAuth2Config_AccessTokenValidation:
-
-		if h, ok := interface{}(m.GetAccessTokenValidation()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("AccessTokenValidation")); err != nil {
-				return 0, err
-			}
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetAccessTokenValidation(), nil); err != nil {
-				return 0, err
-			} else {
-				if _, err = hasher.Write([]byte("AccessTokenValidation")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-					return 0, err
-				}
-			}
-		}
-
 	case *ExtAuthConfig_OAuth2Config_AccessTokenValidationConfig:
 
 		if h, ok := interface{}(m.GetAccessTokenValidationConfig()).(safe_hasher.SafeHasher); ok {
