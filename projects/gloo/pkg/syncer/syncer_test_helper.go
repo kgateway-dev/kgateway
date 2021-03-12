@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+	"fmt"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
@@ -42,7 +43,7 @@ func (c *MockXdsCache) GetSnapshot(node string) (envoycache.Snapshot, error) {
 	if c.GetSnap != nil {
 		return c.GetSnap, nil
 	}
-	return &envoycache.NilSnapshot{}, nil
+	return &envoycache.NilSnapshot{}, fmt.Errorf("no snapshot found for node %s", node)
 }
 
 func (*MockXdsCache) ClearSnapshot(node string) {

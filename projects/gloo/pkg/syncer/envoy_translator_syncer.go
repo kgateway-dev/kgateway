@@ -202,20 +202,26 @@ func (s *translatorSyncer) ServeXdsSnapshots() error {
 // - EDS from the Gloo API snapshot translated curing this sync
 // The resulting snapshot will be checked for consistency before being returned.
 func (s *translatorSyncer) updateEndpointsOnly(snapshotKey string, current envoycache.Snapshot) (envoycache.Snapshot, error) {
+	var newSnapshot cache.Snapshot
+
 	// Get a copy of the last successful snapshot
 	previous, err := s.xdsCache.GetSnapshot(snapshotKey)
 	if err != nil {
-		return nil, err
+		// if no previous snapshot exists
+		newSnapshot = xds.NewEndpointsSnapshotFromResources(
+			current.GetResources(resource.EndpointTypeV3),
+			current.GetResources(resource.ClusterTypeV3),
+		)
+	} else {
+		newSnapshot = xds.NewSnapshotFromResources(
+			// Set endpoints and clusters calculated during this sync
+			current.GetResources(resource.EndpointTypeV3),
+			current.GetResources(resource.ClusterTypeV3),
+			// Keep other resources from previous snapshot
+			previous.GetResources(resource.RouteTypeV3),
+			previous.GetResources(resource.ListenerTypeV3),
+		)
 	}
-
-	newSnapshot := xds.NewSnapshotFromResources(
-		// Set endpoints and clusters calculated during this sync
-		current.GetResources(resource.EndpointTypeV3),
-		current.GetResources(resource.ClusterTypeV3),
-		// Keep other resources from previous snapshot
-		previous.GetResources(resource.RouteTypeV3),
-		previous.GetResources(resource.ListenerTypeV3),
-	)
 
 	if err := newSnapshot.Consistent(); err != nil {
 		return nil, err
