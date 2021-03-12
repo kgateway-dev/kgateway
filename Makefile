@@ -644,7 +644,7 @@ build-test-chart:
 # Locally run the Trivy security scan to generate result report as markdown
 
 TRIVY_VERSION ?= $(shell curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
-SCAN_DIR ?= $(OUTPUT_DIR)/scans/$(VERSION)
+SCAN_DIR ?= $(OUTPUT_DIR)/scans/
 
 ifeq ($(shell uname), Darwin)
 	machine ?= macOS
