@@ -2553,6 +2553,7 @@ kind: Settings
 metadata:
   labels:
     app: gloo
+    gloo: settings
   name: default
   namespace: gloo-system
 spec:

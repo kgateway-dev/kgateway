@@ -187,3 +187,6 @@ global:
     labelInstallNamespace: false
     whitelistDiscovery: false
     disableAutoinjection: false
+  # AddEnterpriseSettings and extauthCustomYaml control differences in the settings manifest between open source and enterprise
+  AddEnterpriseSettings: false
+  extauthCustomYaml: true

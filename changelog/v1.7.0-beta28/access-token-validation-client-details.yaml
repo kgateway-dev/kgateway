@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4418
+    resolvesIssue: false
+    description: >
+      Allow injection of client_id and client_secret in oauth2 introspection requests.
+      This allows requests to introspection servers which require authentication to be accepted.

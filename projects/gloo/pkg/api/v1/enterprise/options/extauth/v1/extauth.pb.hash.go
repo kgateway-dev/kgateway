@@ -1114,6 +1114,28 @@ func (m *AccessTokenValidation) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
+	case *AccessTokenValidation_Introspection:
+
+		if h, ok := interface{}(m.GetIntrospection()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Introspection")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetIntrospection(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Introspection")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	switch m.ScopeValidation.(type) {
@@ -2203,6 +2225,50 @@ func (m *AccessTokenValidation_JwtValidation) Hash(hasher hash.Hash64) (uint64, 
 }
 
 // Hash function
+func (m *AccessTokenValidation_IntrospectionValidation) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.AccessTokenValidation_IntrospectionValidation")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetIntrospectionUrl())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetClientId())); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetClientSecretRef()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ClientSecretRef")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetClientSecretRef(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("ClientSecretRef")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *AccessTokenValidation_ScopeList) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -2566,6 +2632,126 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Hash(hasher hash.Hash64) (ui
 }
 
 // Hash function
+func (m *ExtAuthConfig_AccessTokenValidationConfig) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_AccessTokenValidationConfig")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetUserinfoUrl())); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetCacheTimeout()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("CacheTimeout")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetCacheTimeout(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("CacheTimeout")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	switch m.ValidationType.(type) {
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_IntrospectionUrl:
+
+		if _, err = hasher.Write([]byte(m.GetIntrospectionUrl())); err != nil {
+			return 0, err
+		}
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_Jwt:
+
+		if h, ok := interface{}(m.GetJwt()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Jwt")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetJwt(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Jwt")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_Introspection:
+
+		if h, ok := interface{}(m.GetIntrospection()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Introspection")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetIntrospection(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Introspection")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	switch m.ScopeValidation.(type) {
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_RequiredScopes:
+
+		if h, ok := interface{}(m.GetRequiredScopes()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("RequiredScopes")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetRequiredScopes(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("RequiredScopes")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *ExtAuthConfig_OAuth2Config) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -2602,20 +2788,20 @@ func (m *ExtAuthConfig_OAuth2Config) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *ExtAuthConfig_OAuth2Config_AccessTokenValidation:
+	case *ExtAuthConfig_OAuth2Config_AccessTokenValidationConfig:
 
-		if h, ok := interface{}(m.GetAccessTokenValidation()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("AccessTokenValidation")); err != nil {
+		if h, ok := interface{}(m.GetAccessTokenValidationConfig()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("AccessTokenValidationConfig")); err != nil {
 				return 0, err
 			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetAccessTokenValidation(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetAccessTokenValidationConfig(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("AccessTokenValidation")); err != nil {
+				if _, err = hasher.Write([]byte("AccessTokenValidationConfig")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -2987,6 +3173,186 @@ func (m *ExtAuthConfig_Config) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *ExtAuthConfig_AccessTokenValidationConfig_JwtValidation) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_AccessTokenValidationConfig_JwtValidation")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetIssuer())); err != nil {
+		return 0, err
+	}
+
+	switch m.JwksSourceSpecifier.(type) {
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_JwtValidation_RemoteJwks_:
+
+		if h, ok := interface{}(m.GetRemoteJwks()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("RemoteJwks")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetRemoteJwks(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("RemoteJwks")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *ExtAuthConfig_AccessTokenValidationConfig_JwtValidation_LocalJwks_:
+
+		if h, ok := interface{}(m.GetLocalJwks()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("LocalJwks")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetLocalJwks(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("LocalJwks")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *ExtAuthConfig_AccessTokenValidationConfig_IntrospectionValidation) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_AccessTokenValidationConfig_IntrospectionValidation")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetIntrospectionUrl())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetClientId())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetClientSecret())); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *ExtAuthConfig_AccessTokenValidationConfig_ScopeList) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_AccessTokenValidationConfig_ScopeList")); err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetScope() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *ExtAuthConfig_AccessTokenValidationConfig_JwtValidation_RemoteJwks) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_AccessTokenValidationConfig_JwtValidation_RemoteJwks")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetUrl())); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetRefreshInterval()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("RefreshInterval")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetRefreshInterval(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("RefreshInterval")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *ExtAuthConfig_AccessTokenValidationConfig_JwtValidation_LocalJwks) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_AccessTokenValidationConfig_JwtValidation_LocalJwks")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetInlineString())); err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil
