@@ -1329,8 +1329,8 @@ github.com/solo-io/skv2 v0.15.2/go.mod h1:VHaqcbvRTzPD/m5lCV+zBOQppbtEB5PTmkZkCm
 github.com/solo-io/solo-apis v0.0.0-20201208172621-1ef725df2bff h1:bZlxXxgFqBEFj0I+lKVBaoqv48+JgRLsTqlEeM+tecQ=
 github.com/solo-io/solo-apis v0.0.0-20201208172621-1ef725df2bff/go.mod h1:4y0+gYZPdlNDPQ09waJs25QjTjht03dkmGUi28AgIrU=
 github.com/solo-io/solo-kit v0.16.0/go.mod h1:zf+vof9HAavbFKRgL80jJ24SeE9PvoB8ooQ7DACtK8I=
-github.com/solo-io/solo-kit v0.17.3 h1:/6RxAkZfWjU8i1v/kbu9O1lqPWePMZq2T08TGPE6e8E=
-github.com/solo-io/solo-kit v0.17.3/go.mod h1:F/2VWhEg1z1d5oN71FgqOuSysHLqSxDuLjibiqRQwYo=
+github.com/solo-io/solo-kit v0.18.2 h1:+YhcFoPy/H1CwMjsittWWJuGY6tJqZOc268DoAVn8LA=
+github.com/solo-io/solo-kit v0.18.2/go.mod h1:F/2VWhEg1z1d5oN71FgqOuSysHLqSxDuLjibiqRQwYo=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3 h1:Am1RMaWH7jOug0ys4gUeBCgwR/94NSfZqu90j9u8eTA=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3/go.mod h1:3lckq1wF8I6I2a1Jx5IsEG+PQArE57Jp3wBE2rQnKmw=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
@@ -1347,7 +1347,6 @@ github.com/spf13/cast v1.3.1/go.mod h1:Qx5cxh0v+4UWYiBimWS+eyWzqEqokIECu5etghLkU
 github.com/spf13/cobra v0.0.2-0.20171109065643-2da4a54c5cee/go.mod h1:1l0Ry5zgKvJasoi3XT1TypsSe7PqH0Sj9dhYf7v3XqQ=
 github.com/spf13/cobra v0.0.3/go.mod h1:1l0Ry5zgKvJasoi3XT1TypsSe7PqH0Sj9dhYf7v3XqQ=
 github.com/spf13/cobra v0.0.5/go.mod h1:3K3wKZymM7VvHMDS9+Akkh4K60UwM26emMESw8tLCHU=
-github.com/spf13/cobra v1.0.0 h1:6m/oheQuQ13N9ks4hubMG6BnvwOeaJrqSPLahSnczz8=
 github.com/spf13/cobra v1.0.0/go.mod h1:/6GTrnGXV9HjY+aR4k0oJ5tcvakLuG6EuKReYlHNrgE=
 github.com/spf13/cobra v1.1.1 h1:KfztREH0tPxJJ+geloSLaAkaPkr4ki2Er5quFV1TDo4=
 github.com/spf13/cobra v1.1.1/go.mod h1:WnodtKOvamDL/PwE2M4iKs8aMDBZ5Q5klgD3qfVJQMI=
