@@ -313,6 +313,7 @@ var _ = Describe("Robustness tests", func() {
 			},
 		}
 		_, err := upstreamClient.Write(upstream, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+		Expect(err).ToNot(HaveOccurred())
 
 		gatewayProxyPodName := testutils.FindPodNameByLabel(cfg, ctx, "gloo-system", "gloo=gateway-proxy")
 		// We should consistently be able to modify upstreams

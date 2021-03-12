@@ -81,7 +81,7 @@ func NewSnapshotFromResources(
 	routes cache.Resources,
 	listeners cache.Resources,
 ) cache.Snapshot {
-	// TODO: Copy resources and downgrade, maybe maintain hash to not do it too many times
+	// TODO: Copy resources and downgrade, maybe maintain hash to not do it too many times (https://github.com/solo-io/gloo/issues/4421)
 	return &EnvoySnapshot{
 		Endpoints:                 endpoints,
 		hiddenDeprecatedEndpoints: downgradeCacheResources(endpoints),
@@ -97,7 +97,6 @@ func NewEndpointsSnapshotFromResources(
 	endpoints cache.Resources,
 	clusters cache.Resources,
 ) cache.Snapshot {
-	// TODO: Copy resources and downgrade, maybe maintain hash to not do it too many times
 	return &EnvoySnapshot{
 		Endpoints:                 endpoints,
 		hiddenDeprecatedEndpoints: downgradeCacheResources(endpoints),
