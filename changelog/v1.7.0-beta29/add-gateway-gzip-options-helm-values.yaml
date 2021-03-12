@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    description: Added gzip options helm values for the gateway.
+    issueLink: https://github.com/solo-io/gloo/issues/4405
