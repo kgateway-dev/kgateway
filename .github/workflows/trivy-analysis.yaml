@@ -9,6 +9,7 @@ jobs:
     env:
       IMAGE_REPO: quay.io/solo-io
       SCAN_DIR: _output/scans
+      TAGGED_VERSION: ${{ github.ref }}
     strategy:
       matrix:
         image-type: [ 'access-logger', 'certgen', 'discovery', 'gateway', 'gloo', 'gloo-envoy-wrapper', 'ingress', 'sds' ]
@@ -63,4 +64,4 @@ jobs:
           severity: 'CRITICAL,HIGH'
       - name: Publish Docs
         run: |
-          VERSION=${{ steps.build-docker-image.outputs.VERSION }} RELEASE='"true"' SCAN_FILE=${{ matrix.image-type }}_cve_report.docgen make publish-security-scan
+          VERSION=${{ steps.build-docker-image.outputs.VERSION }} SCAN_FILE=${{ matrix.image-type }}_cve_report.docgen make publish-security-scan

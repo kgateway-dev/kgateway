@@ -14,7 +14,7 @@ endif
 z := $(shell mkdir -p $(OUTPUT_DIR))
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
-RELEASE ?= "false"
+RELEASE := "false"
 CREATE_TEST_ASSETS := "false"
 CREATE_ASSETS := "true"
 
@@ -31,7 +31,7 @@ ifeq ($(TAGGED_VERSION),)
 	  VERSION ?= $(shell git describe --tags --dirty | cut -c 2-)
 	endif
 else
-	RELEASE ?= "true"
+	RELEASE := "true"
 	VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 endif
 
