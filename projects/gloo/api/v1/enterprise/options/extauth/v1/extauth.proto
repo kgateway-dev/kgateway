@@ -526,6 +526,12 @@ message AccessTokenValidation {
     message ScopeList {
       repeated string scope = 1;
     }
+
+    // your client id as registered with the issuer
+    string client_id = 7;
+
+    // your client secret as registered with the issuer
+    string client_secret = 8 [(extproto.sensitive) = true];
 }
 
 message OauthSecret {
