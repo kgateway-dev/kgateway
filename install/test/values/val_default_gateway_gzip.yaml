@@ -1,0 +1,7 @@
+gatewayProxies:
+  gatewayProxy:
+    gatewaySettings:
+      gzip:
+        compressionLevel: BEST
+        contentType:
+          - text/plain

@@ -1,6 +1,7 @@
 package generate
 
 import (
+	gzip "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	appsv1 "k8s.io/api/core/v1"
@@ -313,12 +314,14 @@ type GatewayProxyGatewaySettings struct {
 	CustomHttpsGateway       string                   `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
 	GatewayOptions           v1.GatewayOptions        `json:"options,omitempty" desc:"custom options for http(s) gateways"`
 	AccessLoggingService     als.AccessLoggingService `json:"accessLoggingService,omitempty"`
+	Gzip                     gzip.Gzip                `json:"gzip,omitempty"`
 }
 
 type GatewayProxyKind struct {
 	Deployment *GatewayProxyDeployment `json:"deployment,omitempty" desc:"set to deploy as a kubernetes deployment, otherwise nil"`
 	DaemonSet  *DaemonSetSpec          `json:"daemonSet,omitempty" desc:"set to deploy as a kubernetes daemonset, otherwise nil"`
 }
+
 type GatewayProxyDeployment struct {
 	*DeploymentSpecSansResources
 }

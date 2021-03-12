@@ -336,6 +336,14 @@
 |gatewayProxies.NAME.gatewaySettings.options.always_sort_route_table_routes|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.compressed_proxy_spec|bool|||
 |gatewayProxies.NAME.gatewaySettings.accessLoggingService.access_log[]|interface|||
+|gatewayProxies.NAME.gatewaySettings.gzip.memory_level.value|uint32|||
+|gatewayProxies.NAME.gatewaySettings.gzip.content_length.value|uint32|||
+|gatewayProxies.NAME.gatewaySettings.gzip.compression_level|int32|||
+|gatewayProxies.NAME.gatewaySettings.gzip.compression_strategy|int32|||
+|gatewayProxies.NAME.gatewaySettings.gzip.content_type[]|string|||
+|gatewayProxies.NAME.gatewaySettings.gzip.disable_on_etag_header|bool|||
+|gatewayProxies.NAME.gatewaySettings.gzip.remove_accept_encoding_header|bool|||
+|gatewayProxies.NAME.gatewaySettings.gzip.window_bits.value|uint32|||
 |gatewayProxies.NAME.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.NAME.extraContainersHelper|string|||
 |gatewayProxies.NAME.extraInitContainersHelper|string|||
@@ -477,6 +485,14 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.options.always_sort_route_table_routes|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.compressed_proxy_spec|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.accessLoggingService.access_log[]|interface|||
+|gatewayProxies.gatewayProxy.gatewaySettings.gzip.memory_level.value|uint32|||
+|gatewayProxies.gatewayProxy.gatewaySettings.gzip.content_length.value|uint32|||
+|gatewayProxies.gatewayProxy.gatewaySettings.gzip.compression_level|int32|0||
+|gatewayProxies.gatewayProxy.gatewaySettings.gzip.compression_strategy|int32|0||
+|gatewayProxies.gatewayProxy.gatewaySettings.gzip.content_type[]|string|||
+|gatewayProxies.gatewayProxy.gatewaySettings.gzip.disable_on_etag_header|bool|false||
+|gatewayProxies.gatewayProxy.gatewaySettings.gzip.remove_accept_encoding_header|bool|false||
+|gatewayProxies.gatewayProxy.gatewaySettings.gzip.window_bits.value|uint32|||
 |gatewayProxies.gatewayProxy.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.gatewayProxy.extraContainersHelper|string|||
 |gatewayProxies.gatewayProxy.extraInitContainersHelper|string|||
