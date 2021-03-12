@@ -28,7 +28,6 @@ func BuildSecurityScanReportGloo(tags []string) error {
 	return nil
 }
 
-
 func BuildSecurityScanReportGlooE(tags []string) error {
 	images := []string{"rate-limit-ee", "grpcserver-ee", "grpcserver-envoy", "grpcserver-ui", "gloo-ee", "gloo-envoy-wrapper-ee", "observability-ee", "extauth-ee", "ext-auth-plugins", "gloo-fed", "gloo-fed-apiserver", "gloo-fed-apiserver-envoy", "gloo-federation-console", "gloo-fed-rbac-validating-webhook"}
 	for _, tag := range tags {
