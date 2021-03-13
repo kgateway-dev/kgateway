@@ -24,15 +24,13 @@ spec:
 {{- if $gatewaySettings.customHttpGateway}}
   httpGateway:
 {{ toYaml $gatewaySettings.customHttpGateway | indent 4}}
-{{- else }}
-  {{- if $gatewaySettings.gzip }}
+{{- else if $gatewaySettings.gzip }}
   httpGateway:
     options:
       gzip:
       {{ toYaml $gatewaySettings.gzip | nindent 8 }}
-  {{- else }}
+{{- else }}
   httpGateway: {}
-  {{- end }}
 {{- end }}
 {{ if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
   options:
@@ -68,15 +66,13 @@ spec:
 {{- if $gatewaySettings.customHttpsGateway}}
   httpGateway:
 {{ toYaml $gatewaySettings.customHttpsGateway | indent 6}}
-{{- else }}
- {{- if $gatewaySettings.gzip }}
+{{- else if $gatewaySettings.gzip }}
   httpGateway:
     options:
       gzip:
       {{ toYaml $gatewaySettings.gzip | nindent 8 }}
-  {{- else }}
+{{- else }}
   httpGateway: {}
-  {{- end }}
 {{- end }}
 {{ if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
   options:
