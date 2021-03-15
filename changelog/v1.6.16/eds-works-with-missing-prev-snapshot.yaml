@@ -3,3 +3,7 @@ changelog:
     description: >
       EDS updates will work even when previous envoy snapshot is missing.
     issueLink: https://github.com/solo-io/gloo/issues/4345
+  - dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.17.4
+    type: DEPENDENCY_BUMP
