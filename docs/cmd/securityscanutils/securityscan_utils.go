@@ -3,8 +3,9 @@ package securityscanutils
 import (
 	"fmt"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/version"
 	"net/http"
+
+	"k8s.io/apimachinery/pkg/util/version"
 )
 
 func BuildSecurityScanReportGloo(tags []string) error {
