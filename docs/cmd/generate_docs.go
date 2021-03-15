@@ -285,7 +285,7 @@ func generateSecurityScanGloo() error {
 	for _, release := range allReleases {
 		// ignore beta releases when display security scan results
 		test, err := semver.NewVersion(release.GetTagName())
-		stableOnlyConstraint, _ := semver.NewConstraint("*")
+		stableOnlyConstraint, _ := semver.NewConstraint(">= 1.4.0")
 		if err == nil && stableOnlyConstraint.Check(test) {
 			tagNames = append(tagNames, release.GetTagName())
 		}
@@ -318,7 +318,7 @@ func generateSecurityScanGlooE() error {
 	for _, release := range allReleases {
 		// ignore beta releases when display security scan results
 		test, err := semver.NewVersion(release.GetTagName())
-		stableOnlyConstraint, _ := semver.NewConstraint("*")
+		stableOnlyConstraint, _ := semver.NewConstraint(">= 1.4.0")
 		if err == nil && stableOnlyConstraint.Check(test) {
 			tagNames = append(tagNames, release.GetTagName())
 		}
