@@ -1,5 +1,5 @@
 ---
-title: Security Updates for Gloo Edge Enterprise
+title: Gloo Edge Enterprise
 weight: 7
 description: Security Updates and CVEs
 ---

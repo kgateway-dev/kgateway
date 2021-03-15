@@ -1,5 +1,5 @@
 ---
-title: Security Updates for Gloo Open Source
+title: Gloo Open Source
 weight: 7
 description: Security Updates and CVEs
 ---
