@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"os/exec"
 	"regexp"
 	"sort"
 	"time"
@@ -584,6 +586,20 @@ func scaleDeploymentTo(kubeClient kubernetes.Interface, deployment *appsv1.Deplo
 func getClusterInfo() string {
 	By("Get stats")
 	envoyClusters := ""
+
+	portFwd := exec.Command("kubectl", "port-forward", "-n", installNamespace,
+		"deployment/gateway-proxy", fmt.Sprint(gloodefaults.EnvoyAdminPort))
+	portFwd.Stdout = os.Stderr
+	portFwd.Stderr = os.Stderr
+	err := portFwd.Start()
+	Expect(err).ToNot(HaveOccurred())
+
+	defer func() {
+		if portFwd.Process != nil {
+			portFwd.Process.Kill()
+		}
+	}()
+
 	EventuallyWithOffset(1, func() error {
 		statsUrl := fmt.Sprintf("http://%s:%d/clusters",
 			"127.0.0.1",
