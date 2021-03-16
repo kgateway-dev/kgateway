@@ -2467,6 +2467,17 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
+					It("correctly sets the `regexMaxProgramSize` field in the settings", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/set_regex_max_program_size.yaml", namespace)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.regexMaxProgramSize=500",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
 					It("correctly sets the `gloo.enableRestEds` to false in the settings", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/enable_rest_eds.yaml", namespace)
 						prepareMakefile(namespace, helmValues{
@@ -2505,6 +2516,7 @@ spec:
     enableRestEds: true
     disableKubernetesDestinations: false
     disableProxyGarbageCollection: false
+  	regexMaxProgramSize: 100
     invalidConfigPolicy:
       invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run ` + "`glooctl check`" + ` to find and fix config errors.
       invalidRouteResponseCode: 404
