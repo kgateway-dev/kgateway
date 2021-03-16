@@ -60,7 +60,7 @@ jobs:
           ${{ runner.os }}-go-
     - uses: engineerd/setup-kind@v0.5.0
       with:
-        name: kind
+        skipClusterCreation: true
     - uses: azure/setup-kubectl@v1
       id: kubectl
       with:
@@ -107,7 +107,7 @@ jobs:
           ${{ runner.os }}-go-
     - uses: engineerd/setup-kind@v0.5.0
       with:
-        name: kind
+        skipClusterCreation: true
     - uses: azure/setup-kubectl@v1
       id: kubectl
       with:
