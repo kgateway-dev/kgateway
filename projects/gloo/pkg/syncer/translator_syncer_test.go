@@ -26,18 +26,18 @@ import (
 var _ = Describe("Translate Proxy", func() {
 
 	var (
-		xdsCache    *mockXdsCache
-		sanitizer   *mockXdsSanitizer
-		syncer      v1.ApiSyncer
-		snap        *v1.ApiSnapshot
-		settings    *v1.Settings
+		xdsCache       *mockXdsCache
+		sanitizer      *mockXdsSanitizer
+		syncer         v1.ApiSyncer
+		snap           *v1.ApiSnapshot
+		settings       *v1.Settings
 		upstreamClient clients.ResourceClient
-		proxyClient v1.ProxyClient
-		ctx         context.Context
-		cancel      context.CancelFunc
-		proxyName   = "proxy-name"
-		ref         = "syncer-test"
-		ns          = "any-ns"
+		proxyClient    v1.ProxyClient
+		ctx            context.Context
+		cancel         context.CancelFunc
+		proxyName      = "proxy-name"
+		ref            = "syncer-test"
+		ns             = "any-ns"
 	)
 
 	BeforeEach(func() {
