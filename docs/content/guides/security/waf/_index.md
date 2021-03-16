@@ -170,7 +170,7 @@ The two methods outlined above represent the two main ways to apply basic rule s
 #### Core Rule Set
 
 {{% notice warning %}}
-Using the `rbl` modsecurity rule in Gloo Edge will cause envoy performance issues and should be avoided. If `rbl` blacklisting is a requirement, an [extauth plugin](../auth/extauth/plugin_auth) can be used to query the rbl list and forbid spam IPs.
+Using the `rbl` modsecurity rule in Gloo Edge will cause envoy performance issues and should be avoided. If `rbl` blacklisting is a requirement, an [extauth plugin]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/plugin_auth">}}) can be used to query the rbl list and forbid spam IPs.
 {{% /notice %}}
 
 As mentioned earlier, the main free Mod Security rule set available is the OWASP Core Rule Set. As with all other rule sets, the Core Rule Set can be applied manually via the rule set configs, Gloo Edge offers an easy way to apply the entire Core Rule Set, and configure it.
