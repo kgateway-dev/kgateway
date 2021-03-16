@@ -1,33 +1,4 @@
-#!/bin/bash -ex
-
-# This config is roughly based on: https://kind.sigs.k8s.io/docs/user/ingress/
-cat <<EOF | kind create cluster --name kind --config=-
-kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha3
-kubeadmConfigPatches:
-- |
-  apiVersion: kubeadm.k8s.io/v1beta2
-  kind: ClusterConfiguration
-  metadata:
-    name: config
-  apiServer:
-    extraArgs:
-      "feature-gates": "EphemeralContainers=true"
-  scheduler:
-    extraArgs:
-      "feature-gates": "EphemeralContainers=true"
-  controllerManager:
-    extraArgs:
-      "feature-gates": "EphemeralContainers=true"
-- |
-  apiVersion: kubeadm.k8s.io/v1beta2
-  kind: InitConfiguration
-  metadata:
-    name: config
-  nodeRegistration:
-    kubeletExtraArgs:
-      "feature-gates": "EphemeralContainers=true"
-EOF
+#!/bin/bash
 
 # make all the docker images
 # write the output to a temp file so that we can grab the image names out of it
