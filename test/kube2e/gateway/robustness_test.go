@@ -1,8 +1,10 @@
 package gateway_test
 
 import (
+	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"net/http"
 	"regexp"
 	"sort"
 	"time"
@@ -11,11 +13,10 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmisssion"
-
-	testutils "github.com/solo-io/k8s-utils/testutils/kube"
 
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
@@ -41,13 +42,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-const (
-	configDumpPath = "http://localhost:19000/config_dump"
-	clustersPath   = "http://localhost:19000/clusters"
-	kubeCtx        = ""
-)
-
-var _ = Describe("Robustness tests", func() {
+var _ = FDescribe("Robustness tests", func() {
 
 	const (
 		gatewayProxy = defaults.GatewayProxyName
@@ -315,7 +310,6 @@ var _ = Describe("Robustness tests", func() {
 		_, err := upstreamClient.Write(upstream, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 		Expect(err).ToNot(HaveOccurred())
 
-		gatewayProxyPodName := testutils.FindPodNameByLabel(cfg, ctx, "gloo-system", "gloo=gateway-proxy")
 		// We should consistently be able to modify upstreams
 		Eventually(func() error {
 			// Modify the upstream
@@ -433,7 +427,7 @@ var _ = Describe("Robustness tests", func() {
 			Expect(len(pods.Items)).To(Equal(1))
 			// new pod name will not match old gloo pod
 			return pods.Items[0].Name == oldGlooPod.Name
-		}, 60*time.Second, 2*time.Second).Should(BeFalse())
+		}, 120*time.Second, 2*time.Second).Should(BeFalse())
 
 		By("force an update of the service endpoints")
 		initialIps := endpointsFor(kubeClient, appService)
@@ -451,7 +445,7 @@ var _ = Describe("Robustness tests", func() {
 
 		By("verify that the new endpoints have been propagated to Envoy")
 		Eventually(func() bool {
-			clusters := testutils.CurlWithEphemeralPod(ctx, ioutil.Discard, kubeCtx, "gloo-system", gatewayProxyPodName, clustersPath)
+			clusters := getClusterInfo()
 			testOldClusterEndpoints := regexp.MustCompile(initialIps[0] + ":")
 			oldEndpointMatches := testOldClusterEndpoints.FindAllStringIndex(clusters, -1)
 			testNewClusterEndpoints := regexp.MustCompile(newIps[0] + ":")
@@ -460,7 +454,6 @@ var _ = Describe("Robustness tests", func() {
 			fmt.Println(fmt.Sprintf("Number of cluster stats for new endpoint on clusters page: %d", len(newEndpointMatches)))
 			return len(oldEndpointMatches) == 0 && len(newEndpointMatches) > 0
 		}, 20*time.Second, 1*time.Second).Should(BeTrue())
-
 	})
 })
 
@@ -586,4 +579,26 @@ func scaleDeploymentTo(kubeClient kubernetes.Interface, deployment *appsv1.Deplo
 		}
 		return eris.Errorf("expected %d pods but found %d", replicas, len(pods.Items))
 	}, 60*time.Second, 1*time.Second).Should(BeNil())
+}
+
+func getClusterInfo() string {
+	By("Get stats")
+	envoyClusters := ""
+	EventuallyWithOffset(1, func() error {
+		statsUrl := fmt.Sprintf("http://%s:%d/clusters",
+			"127.0.0.1",
+			gloodefaults.EnvoyAdminPort)
+		r, err := http.Get(statsUrl)
+		if err != nil {
+			return err
+		}
+		p := new(bytes.Buffer)
+		if _, err := io.Copy(p, r.Body); err != nil {
+			return err
+		}
+		defer r.Body.Close()
+		envoyClusters = p.String()
+		return nil
+	}, "10s", ".1s").Should(BeNil())
+	return envoyClusters
 }
