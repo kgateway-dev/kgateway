@@ -2,6 +2,7 @@ package sanitizer
 
 import (
 	"context"
+	"regexp"
 	"sort"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -13,6 +14,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -175,7 +177,10 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(
 	// mark all valid destination clusters
 	validClusters := getClusters(glooSnapshot)
 
-	replacedRouteConfigs, needsListener := s.replaceMissingClusterRoutes(ctx, validClusters, routeConfigs)
+	proxyReports := reports.FilterByKind("*v1.Proxy")
+	erroredRouteNames := s.removeErroredRoutesFromReport(proxyReports, reports)
+
+	replacedRouteConfigs, needsListener := s.replaceRoutes(ctx, validClusters, routeConfigs, erroredRouteNames)
 
 	clusters := xdsSnapshot.GetResources(resource.ClusterTypeV3)
 	listeners := xdsSnapshot.GetResources(resource.ListenerTypeV3)
@@ -229,16 +234,18 @@ func getClusters(snap *v1.ApiSnapshot) map[string]struct{} {
 	return validClusters
 }
 
-func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(
+func (s *RouteReplacingSanitizer) replaceRoutes(
 	ctx context.Context,
 	validClusters map[string]struct{},
 	routeConfigs []*envoy_config_route_v3.RouteConfiguration,
+	erroredRoutes map[string]struct{},
 ) ([]*envoy_config_route_v3.RouteConfiguration, bool) {
 	var sanitizedRouteConfigs []*envoy_config_route_v3.RouteConfiguration
 
-	isInvalid := func(cluster string) bool {
-		_, ok := validClusters[cluster]
-		return !ok
+	isInvalid := func(cluster string, name string) bool {
+		_, valid := validClusters[cluster]
+		_, errored := erroredRoutes[name]
+		return !valid || errored
 	}
 
 	debugW := contextutils.LoggerFrom(ctx).Debugw
@@ -258,7 +265,7 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(
 				}
 				switch action := routeAction.GetClusterSpecifier().(type) {
 				case *envoy_config_route_v3.RouteAction_Cluster:
-					if isInvalid(action.Cluster) {
+					if isInvalid(action.Cluster, route.Name) {
 						debugW("replacing route in virtual host with invalid cluster",
 							zap.Any("cluster", action.Cluster), zap.Any("route", j), zap.Any("virtualhost", i))
 						action.Cluster = s.fallbackCluster.Name
@@ -267,7 +274,7 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(
 					}
 				case *envoy_config_route_v3.RouteAction_WeightedClusters:
 					for _, weightedCluster := range action.WeightedClusters.GetClusters() {
-						if isInvalid(weightedCluster.GetName()) {
+						if isInvalid(weightedCluster.GetName(), route.Name) {
 							debugW("replacing route in virtual host with invalid weighted cluster",
 								zap.Any("cluster", weightedCluster.GetName()), zap.Any("route", j), zap.Any("virtualhost", i))
 
@@ -289,6 +296,45 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(
 	}
 
 	return sanitizedRouteConfigs, anyRoutesReplaced
+}
+
+func (s *RouteReplacingSanitizer) removeErroredRoutesFromReport(
+	proxyReports reporter.ResourceReports,
+	allReports reporter.ResourceReports,
+) map[string]struct{} {
+	erroredRoutes := make(map[string]struct{})
+	for proxy, report := range proxyReports {
+		if report.Errors == nil {
+			continue
+		}
+
+		// Break out multiple errors
+		errors := report.Errors.(*multierror.Error).Errors
+		modifiedReport := report
+		remainingErrors := make([]error, 0)
+		for _, proxyError := range errors {
+			re := regexp.MustCompile("Route Error.+Route Name: (.*)")
+			proxyErrorStr := proxyError.Error()
+			match := re.FindStringSubmatch(proxyErrorStr)
+			if match != nil {
+				erroredRoutes[match[1]] = struct{}{}
+				modifiedReport.Warnings = append(modifiedReport.Warnings, proxyErrorStr)
+			} else {
+				remainingErrors = append(remainingErrors, proxyError)
+			}
+		}
+		if len(remainingErrors) > 0 {
+			var multiErr *multierror.Error
+			for _, remainingError := range remainingErrors {
+				multiErr = multierror.Append(multiErr, remainingError)
+			}
+			modifiedReport.Errors = multiErr
+		} else {
+			modifiedReport.Errors = nil
+		}
+		allReports[proxy] = modifiedReport
+	}
+	return erroredRoutes
 }
 
 func (s *RouteReplacingSanitizer) insertFallbackListener(listeners *envoycache.Resources) {

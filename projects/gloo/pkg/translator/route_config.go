@@ -111,7 +111,8 @@ func (t *translatorInstance) computeVirtualHost(
 			VirtualHost:       virtualHost,
 		}
 		routeReport := vhostReport.RouteReports[i]
-		computedRoutes := t.envoyRoutes(routeParams, routeReport, route)
+		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.Name, i)
+		computedRoutes := t.envoyRoutes(routeParams, routeReport, route, generatedName)
 		envoyRoutes = append(envoyRoutes, computedRoutes...)
 	}
 	domains := virtualHost.Domains
@@ -152,9 +153,10 @@ func (t *translatorInstance) envoyRoutes(
 	params plugins.RouteParams,
 	routeReport *validationapi.RouteReport,
 	in *v1.Route,
+	generatedName string,
 ) []*envoy_config_route_v3.Route {
 
-	out := initRoutes(params, in, routeReport)
+	out := initRoutes(params, in, routeReport, generatedName)
 
 	for i := range out {
 		t.setAction(params, routeReport, in, out[i])
@@ -168,6 +170,7 @@ func initRoutes(
 	params plugins.RouteParams,
 	in *v1.Route,
 	routeReport *validationapi.RouteReport,
+	generatedName string,
 ) []*envoy_config_route_v3.Route {
 	out := make([]*envoy_config_route_v3.Route, len(in.Matchers))
 
@@ -185,7 +188,7 @@ func initRoutes(
 		if matcher.PathSpecifier == nil {
 			validation.AppendRouteError(routeReport,
 				validationapi.RouteReport_Error_InvalidMatcherError,
-				"no path specifier provided",
+				fmt.Sprintf("no path specifier provided. Route Name: %s", generatedName),
 			)
 		}
 		match := GlooMatcherToEnvoyMatcher(params.Params.Ctx, matcher)
@@ -193,7 +196,9 @@ func initRoutes(
 			Match: &match,
 		}
 		if in.Name != "" {
-			out[i].Name = fmt.Sprintf("%s-%d", in.Name, i)
+			out[i].Name = fmt.Sprintf("%s-%s-matcher-%d", generatedName, in.Name, i)
+		} else {
+			out[i].Name = fmt.Sprintf("%s-matcher-%d", generatedName, i)
 		}
 	}
 
@@ -248,7 +253,7 @@ func (t *translatorInstance) setAction(
 			} else {
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
-					err.Error(),
+					fmt.Sprintf("%v. Route Name: %s", err.Error(), out.Name),
 				)
 			}
 		}
@@ -268,7 +273,7 @@ func (t *translatorInstance) setAction(
 				}
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
-					fmt.Sprintf("%T: %v", routePlugin, err.Error()),
+					fmt.Sprintf("%T: %v. Route Name: %s", routePlugin, err.Error(), out.Name),
 				)
 			}
 		}
@@ -290,7 +295,7 @@ func (t *translatorInstance) setAction(
 				}
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
-					err.Error(),
+					fmt.Sprintf("%v. Route Name: %s", err.Error(), out.Name),
 				)
 			}
 		}
@@ -316,7 +321,7 @@ func (t *translatorInstance) setAction(
 				}
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
-					fmt.Sprintf("%T: %v", routePlugin, err.Error()),
+					fmt.Sprintf("%T: %v. Route Name: %s", routePlugin, err.Error(), out.Name),
 				)
 			}
 		}

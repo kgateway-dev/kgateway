@@ -1,0 +1,8 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Replace errored proxy routes when route replacing is enabled
+    issueLink: https://github.com/solo-io/gloo/issues/4226
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo.io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.18.3
