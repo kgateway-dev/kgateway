@@ -434,7 +434,7 @@ var _ = Describe("Robustness tests", func() {
 				// new pod name will not match old gloo pod
 				return pods.Items[0].Name == oldGlooPod.Name
 			}
-			return false
+			return true
 		}, 80*time.Second, 2*time.Second).Should(BeFalse())
 
 		By("force an update of the service endpoints")
