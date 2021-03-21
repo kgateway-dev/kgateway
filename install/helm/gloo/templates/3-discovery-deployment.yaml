@@ -37,6 +37,11 @@ spec:
         {{- else if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"
         {{- end }}
+        {{- if .Values.discovery.deployment.extraDiscoveryAnnotations }}
+        {{- range $key, $value := .Values.discovery.deployment.extraDiscoveryAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 }}
       serviceAccountName: discovery
