@@ -69,7 +69,7 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 	}
 	var requireClientCert *wrappers.BoolValue
 	if common.ValidationContextType != nil {
-		requireClientCert = &wrappers.BoolValue{Value: true}
+		requireClientCert = &wrappers.BoolValue{Value: !dc.GetOneWayTls()}
 	}
 	// default alpn for downstreams.
 	if len(common.AlpnProtocols) == 0 {
