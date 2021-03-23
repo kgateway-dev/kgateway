@@ -32,10 +32,10 @@ spec:
     awsOptions:
       serviceAccountCredentials:
         cluster: aws_sts_cluster
-{{- if ne .Values.settings.aws.stsCredentialsRegion ""}}
-        uri: sts.{{ .Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
-{{- else }}
+{{- if not .Values.settings.aws.stsCredentialsRegion }}
         uri: sts.amazonaws.com
+{{- else }}
+        uri: sts.{{ .Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
 {{- end }}
 {{- else if .Values.settings.aws.enableCredentialsDiscovery }}
     awsOptions:
@@ -74,7 +74,11 @@ spec:
 {{- end }}
 
   gateway:
+    {{- if .Values.gateway.readGatewaysFromAllNamespaces }}
     readGatewaysFromAllNamespaces: {{ .Values.gateway.readGatewaysFromAllNamespaces }}
+    {{- else }}
+    readGatewaysFromAllNamespaces: false
+    {{- end }}
 {{- if .Values.gateway.validation.enabled }}
     validation:
       proxyValidationServerAddr: gloo:{{ .Values.gloo.deployment.validationPort }}

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"reflect"
+	"strings"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -20,6 +22,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	values "github.com/solo-io/gloo/install/helm/gloo/generate"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -4168,10 +4171,73 @@ metadata:
 
 			})
 		})
+
+		It("All non-embedded fields in values.go have the omitempty tag", func() {
+			// The following code iterates over each struct of values.go,
+			// then iterates over each struct's fields and checks that they either contain the
+			// omitempty tag, or don't have tags at all.
+			// We need this to allow for value deduplication between gloo-OS and gloo-E's charts.
+			// Without the omitempty tag, the gloo-E chart MUST have a value defined or it will override
+			// The OS default with the null equivalent for that variable.
+
+			// keep track of missing values for final error check
+			var missingVals []string
+
+			// All of the structs in values.go form a tree, with the HelmConfig struct as the root.
+			structQueue := []reflect.Type{reflect.TypeOf(values.HelmConfig{})}
+
+			// recursively iterate over every child struct of HelmConfig.
+			for len(structQueue) > 0 {
+				var inspectedStruct reflect.Type
+				inspectedStruct, structQueue = structQueue[0], structQueue[1:]
+				// for some reason, strings and interfaces slip past my earlier checks (including this same condition
+				// in the helper function).
+				structName := inspectedStruct.Name()
+				if structName == "" || structName == "string" {
+					continue
+				}
+				// iterate over struct fields
+				for i := 0; i < inspectedStruct.NumField(); i++ {
+					structField := inspectedStruct.Field(i)
+					// Check that the field contains a json tag, and if so, that it includes the omitempty tag.
+					// Values without any tags are assumed to be embedded structs, and are ignored.
+					tagStr, ok := structField.Tag.Lookup("json")
+					if ok && !strings.Contains(strings.ToLower(tagStr), "omitempty") {
+						fmt.Sprintf("Missing omitempty in %s.%s", inspectedStruct.Name(), structField.Name)
+						missingVals = append(missingVals, fmt.Sprintf("{ no omitempty - %s.%s }", inspectedStruct.Name(), structField.Name))
+					}
+
+					// Extract the field type, and add it to the structs-to-check queue.
+					// The structs can't be cyclic, so don't both with keeping track of what we've seen
+					// It's not worth the code clutter to do so for a test.
+					if structField.Type.Kind() == reflect.Ptr {
+						structQueue = appendIfNilPath(structQueue,  structField.Type.Elem())
+					} else if structField.Type.Kind() == reflect.Array {
+						structQueue = appendIfNilPath(structQueue,  structField.Type.Elem())
+					} else if structField.Type.Kind() == reflect.Map {
+						structQueue = append(structQueue, structField.Type.Elem()) // map keys are exclusively strings, this gets the item type
+					} else if structField.Type.Kind() == reflect.Struct {
+						structQueue = appendIfNilPath(structQueue, structField.Type)
+					}
+				}
+			}
+			Expect(len(missingVals)).To(Equal(0))
+		})
 	}
 
 	runTests(allTests)
 })
+
+// Helper function that adds a reflected type to a queue if it is a struct from the generate package.
+func appendIfNilPath(queue []reflect.Type , newVal reflect.Type ) []reflect.Type {
+	if newVal.Kind() == reflect.Struct {
+		pkgName := newVal.PkgPath()
+		if pkgName == "github.com/solo-io/gloo/install/helm/gloo/generate" {
+			return append(queue, newVal)
+		}
+	}
+	return queue
+}
 
 func cloneMap(input map[string]string) map[string]string {
 	ret := map[string]string{}
