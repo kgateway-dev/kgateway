@@ -7,11 +7,7 @@ import (
 	"html/template"
 	"io/ioutil"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -3561,57 +3557,22 @@ metadata:
 
 				It("can create a gateway proxy with added static clusters", func() {
 					prepareMakefileFromValuesFile("values/val_static_clusters.yaml")
-					envoyBootstrap := readEnvoyConfigFromFile("fixtures/envoy_config/static_clusters.yaml")
 
-					checkedAddedCluster := false
-					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-						return resource.GetKind() == "ConfigMap"
-					}).ExpectAll(func(configMap *unstructured.Unstructured) {
-						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
-						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+					byt, err := ioutil.ReadFile("fixtures/envoy_config/static_clusters.yaml")
+					Expect(err).ToNot(HaveOccurred())
+					envoyBootstrapYaml := string(byt)
 
-						if structuredConfigMap.GetName() == gatewayProxyConfigMapName {
-							addedCluster := envoyBootstrap.GetStaticResources().GetClusters()[len(envoyBootstrap.GetStaticResources().GetClusters())-1]
-							Expect(addedCluster).NotTo(BeNil())
-							Expect(addedCluster).To(test_matchers.MatchProto(&envoy_config_cluster_v3.Cluster{
-								Name:           "test_cluster",
-								ConnectTimeout: &duration.Duration{Seconds: 5},
-								LbPolicy:       envoy_config_cluster_v3.Cluster_ROUND_ROBIN,
-								ClusterDiscoveryType: &envoy_config_cluster_v3.Cluster_Type{
-									Type: envoy_config_cluster_v3.Cluster_STATIC,
-								},
-								LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-									ClusterName: "test_cluster",
-									Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-										{
-											LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
-												{
-													HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
-														Endpoint: &envoy_config_endpoint_v3.Endpoint{
-															Address: &envoy_config_core_v3.Address{
-																Address: &envoy_config_core_v3.Address_SocketAddress{
-																	SocketAddress: &envoy_config_core_v3.SocketAddress{
-																		Address: "127.0.0.1",
-																		PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
-																			PortValue: 8080,
-																		},
-																	},
-																},
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							}))
-							checkedAddedCluster = true
-						}
-					})
-					Expect(checkedAddedCluster).To(BeTrue(), "extra cluster was not found")
+					envoyBootstrapSpec := make(map[string]string)
+					envoyBootstrapSpec["envoy.yaml"] = envoyBootstrapYaml
+
+					cmRb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      gatewayProxyConfigMapName,
+						Labels:    labels,
+						Data:      envoyBootstrapSpec,
+					}
+					envoyBootstrapCm := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(envoyBootstrapCm)
 				})
 
 				It("can create a gateway proxy config with added bootstrap extensions", func() {
