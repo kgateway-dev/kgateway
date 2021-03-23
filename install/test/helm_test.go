@@ -4222,9 +4222,9 @@ metadata:
 					// The structs can't be cyclic, so don't both with keeping track of what we've seen
 					// It's not worth the code clutter to do so for a test.
 					if structField.Type.Kind() == reflect.Ptr {
-						structQueue = appendIfNilPath(structQueue,  structField.Type.Elem())
+						structQueue = appendIfNilPath(structQueue, structField.Type.Elem())
 					} else if structField.Type.Kind() == reflect.Array {
-						structQueue = appendIfNilPath(structQueue,  structField.Type.Elem())
+						structQueue = appendIfNilPath(structQueue, structField.Type.Elem())
 					} else if structField.Type.Kind() == reflect.Map {
 						structQueue = append(structQueue, structField.Type.Elem()) // map keys are exclusively strings, this gets the item type
 					} else if structField.Type.Kind() == reflect.Struct {
@@ -4240,7 +4240,7 @@ metadata:
 })
 
 // Helper function that adds a reflected type to a queue if it is a struct from the generate package.
-func appendIfNilPath(queue []reflect.Type , newVal reflect.Type ) []reflect.Type {
+func appendIfNilPath(queue []reflect.Type, newVal reflect.Type) []reflect.Type {
 	if newVal.Kind() == reflect.Struct {
 		pkgName := newVal.PkgPath()
 		if pkgName == "github.com/solo-io/gloo/install/helm/gloo/generate" {

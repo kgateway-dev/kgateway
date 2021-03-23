@@ -1,7 +1,5 @@
 package generate
 
-//go:generate ./values_parser.sh
-
 import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
