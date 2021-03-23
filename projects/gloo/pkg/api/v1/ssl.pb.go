@@ -88,7 +88,7 @@ func (SslParameters_ProtocolVersion) EnumDescriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_ssl_proto_rawDescGZIP(), []int{5, 0}
 }
 
-// SslConfig contains the options necessary to configure a virtual host or listener to use TLS
+// SslConfig contains the options necessary to configure a virtual host or listener to use TLS termination
 type SslConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

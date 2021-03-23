@@ -33,7 +33,7 @@ weight: 5
 ### SslConfig
 
  
-SslConfig contains the options necessary to configure a virtual host or listener to use TLS
+SslConfig contains the options necessary to configure a virtual host or listener to use TLS termination
 
 ```yaml
 "secretRef": .core.solo.io.ResourceRef
