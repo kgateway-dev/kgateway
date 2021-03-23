@@ -17,7 +17,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	sanitizer "github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"google.golang.org/grpc"
@@ -34,15 +34,15 @@ type validator struct {
 	translator     translator.Translator
 	notifyResync   map[*validation.NotifyOnResyncRequest]chan struct{}
 	ctx            context.Context
-	settings       *v1.Settings
+	xdsSanitizer   sanitizer.XdsSanitizers
 }
 
-func NewValidator(ctx context.Context, translator translator.Translator, settings *v1.Settings) *validator {
+func NewValidator(ctx context.Context, translator translator.Translator, xdsSanitizer sanitizer.XdsSanitizers) *validator {
 	return &validator{
 		translator:   translator,
 		notifyResync: make(map[*validation.NotifyOnResyncRequest]chan struct{}, 1),
 		ctx:          ctx,
-		settings:     settings,
+		xdsSanitizer: xdsSanitizer,
 	}
 }
 
@@ -184,16 +184,7 @@ func (s *validator) ValidateProxy(ctx context.Context, req *validation.ProxyVali
 	}
 
 	// Sanitize routes before sending report to gateway
-	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(s.settings.GetGloo().GetInvalidConfigPolicy())
-	if err != nil {
-		return nil, err
-	}
-	xdsSanitizer := sanitizer.XdsSanitizers{
-		sanitizer.NewUpstreamRemovingSanitizer(),
-		routeReplacingSanitizer,
-	}
-	xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
-
+	s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
 	routeErrorToWarnings(resourceReports, report)
 
 	logger.Infof("proxy validation report result: %v", report.String())

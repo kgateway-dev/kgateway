@@ -16,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -35,6 +36,7 @@ var _ = Describe("Validation Server", func() {
 		translator        Translator
 		params            plugins.Params
 		registeredPlugins []plugins.Plugin
+		xdsSanitizer      sanitizer.XdsSanitizers
 	)
 
 	BeforeEach(func() {
@@ -59,6 +61,12 @@ var _ = Describe("Validation Server", func() {
 			Ctx:      context.Background(),
 			Snapshot: samples.SimpleGlooSnapshot(),
 		}
+
+		routeReplacingSanitizer, _ := sanitizer.NewRouteReplacingSanitizer(settings.GetGloo().GetInvalidConfigPolicy())
+		xdsSanitizer = sanitizer.XdsSanitizers{
+			sanitizer.NewUpstreamRemovingSanitizer(),
+			routeReplacingSanitizer,
+		}
 	})
 
 	JustBeforeEach(func() {
@@ -71,7 +79,7 @@ var _ = Describe("Validation Server", func() {
 	Context("proxy validation", func() {
 		It("validates the requested proxy", func() {
 			proxy := params.Snapshot.Proxies[0]
-			s := NewValidator(context.TODO(), translator, settings)
+			s := NewValidator(context.TODO(), translator, xdsSanitizer)
 			_ = s.Sync(context.TODO(), params.Snapshot)
 			rpt, err := s.ValidateProxy(context.TODO(), &validationgrpc.ProxyValidationServiceRequest{Proxy: proxy})
 			Expect(err).NotTo(HaveOccurred())
@@ -92,7 +100,7 @@ var _ = Describe("Validation Server", func() {
 			}
 			proxy.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].GetRoutes()[0].Action = errorRouteAction
 
-			s := NewValidator(context.TODO(), translator, settings)
+			s := NewValidator(context.TODO(), translator, xdsSanitizer)
 			_ = s.Sync(context.TODO(), params.Snapshot)
 			rpt, err := s.ValidateProxy(context.TODO(), &validationgrpc.ProxyValidationServiceRequest{Proxy: proxy})
 			routeError := rpt.GetProxyReport().GetListenerReports()[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0].GetErrors()
@@ -115,7 +123,7 @@ var _ = Describe("Validation Server", func() {
 
 			srv = grpc.NewServer()
 
-			v = NewValidator(context.TODO(), nil, settings)
+			v = NewValidator(context.TODO(), nil, xdsSanitizer)
 
 			server := NewValidationServer()
 			server.SetValidator(v)

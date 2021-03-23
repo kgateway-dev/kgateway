@@ -21,6 +21,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
@@ -313,14 +314,17 @@ func (s *RouteReplacingSanitizer) removeErroredRoutesFromReport(
 		modifiedReport := report
 		remainingErrors := make([]error, 0)
 		for _, proxyError := range errors {
-			re := regexp.MustCompile("Route Error.+Route Name: (.*)")
-			proxyErrorStr := proxyError.Error()
-			match := re.FindStringSubmatch(proxyErrorStr)
-			if match != nil {
-				erroredRoutes[match[1]] = struct{}{}
-				modifiedReport.Warnings = append(modifiedReport.Warnings, proxyErrorStr)
-			} else {
-				remainingErrors = append(remainingErrors, proxyError)
+			routeError := eris.New(validationutils.RouteErrorMsg)
+			if eris.Is(proxyError, routeError) {
+				proxyErrorStr := proxyError.Error()
+				re := regexp.MustCompile(translator.RouteIdentifierTxt + ": (.*)")
+				match := re.FindStringSubmatch(proxyErrorStr)
+				if match != nil {
+					erroredRoutes[match[1]] = struct{}{}
+					modifiedReport.Warnings = append(modifiedReport.Warnings, proxyErrorStr)
+				} else {
+					remainingErrors = append(remainingErrors, proxyError)
+				}
 			}
 		}
 		if len(remainingErrors) > 0 {

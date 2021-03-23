@@ -1417,7 +1417,7 @@ var _ = Describe("Translator", func() {
 				expectedReport.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[0].RouteReports[0].Errors = []*validation.RouteReport_Error{
 					{
 						Type:   validation.RouteReport_Error_ProcessingError,
-						Reason: fmt.Sprintf("route has a subset config, but none of the subsets in the upstream match it.. Route Name: %s", processingErrorName),
+						Reason: fmt.Sprintf("route has a subset config, but none of the subsets in the upstream match it. Route Name: %s", processingErrorName),
 					},
 				}
 				Expect(report).To(Equal(expectedReport))

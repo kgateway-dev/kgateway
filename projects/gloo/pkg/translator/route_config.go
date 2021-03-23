@@ -30,7 +30,9 @@ import (
 var (
 	NoDestinationSpecifiedError = errors.New("must specify at least one weighted destination for multi destination routes")
 
-	SubsetsMisconfiguredErr = errors.New("route has a subset config, but the upstream does not.")
+	SubsetsMisconfiguredErr = errors.New("route has a subset config, but the upstream does not")
+
+	RouteIdentifierTxt = "Route Name"
 )
 
 func (t *translatorInstance) computeRouteConfig(
@@ -188,7 +190,7 @@ func initRoutes(
 		if matcher.PathSpecifier == nil {
 			validation.AppendRouteError(routeReport,
 				validationapi.RouteReport_Error_InvalidMatcherError,
-				fmt.Sprintf("no path specifier provided. Route Name: %s", generatedName),
+				fmt.Sprintf("no path specifier provided. %s: %s", RouteIdentifierTxt, generatedName),
 			)
 		}
 		match := GlooMatcherToEnvoyMatcher(params.Params.Ctx, matcher)
@@ -253,7 +255,7 @@ func (t *translatorInstance) setAction(
 			} else {
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
-					fmt.Sprintf("%v. Route Name: %s", err.Error(), out.Name),
+					fmt.Sprintf("%v. %s: %s", err.Error(), RouteIdentifierTxt, out.Name),
 				)
 			}
 		}
@@ -273,7 +275,7 @@ func (t *translatorInstance) setAction(
 				}
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
-					fmt.Sprintf("%T: %v. Route Name: %s", routePlugin, err.Error(), out.Name),
+					fmt.Sprintf("%T: %v. %s: %s", routePlugin, err.Error(), RouteIdentifierTxt, out.Name),
 				)
 			}
 		}
@@ -295,7 +297,7 @@ func (t *translatorInstance) setAction(
 				}
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
-					fmt.Sprintf("%v. Route Name: %s", err.Error(), out.Name),
+					fmt.Sprintf("%v. %s: %s", err.Error(), RouteIdentifierTxt, out.Name),
 				)
 			}
 		}
@@ -321,7 +323,7 @@ func (t *translatorInstance) setAction(
 				}
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
-					fmt.Sprintf("%T: %v. Route Name: %s", routePlugin, err.Error(), out.Name),
+					fmt.Sprintf("%T: %v. %s: %s", routePlugin, err.Error(), RouteIdentifierTxt, out.Name),
 				)
 			}
 		}
