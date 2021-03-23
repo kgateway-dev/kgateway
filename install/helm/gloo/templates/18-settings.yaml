@@ -28,6 +28,9 @@ spec:
 {{- end }}
     disableKubernetesDestinations: {{ .Values.settings.disableKubernetesDestinations | default false }}
     disableProxyGarbageCollection: {{ .Values.settings.disableProxyGarbageCollection | default false }}
+{{- if .Values.settings.regexMaxProgramSize }}
+    regexMaxProgramSize: {{ .Values.settings.regexMaxProgramSize }}
+{{- end }}
 {{- if .Values.settings.aws.enableServiceAccountCredentials }}
     awsOptions:
       serviceAccountCredentials:

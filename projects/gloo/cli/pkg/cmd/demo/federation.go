@@ -139,7 +139,7 @@ gloo:
       service:
         type: NodePort
 EOF
-glooctl install gateway enterprise --version $3 --values basic-enterprise.yaml --license-key=$4
+glooctl install gateway enterprise --version $3 --values basic-enterprise.yaml --license-key=$4 --with-gloo-fed=false
 rm basic-enterprise.yaml
 kubectl -n gloo-system rollout status deployment gloo --timeout=2m || true
 kubectl -n gloo-system rollout status deployment discovery --timeout=2m || true

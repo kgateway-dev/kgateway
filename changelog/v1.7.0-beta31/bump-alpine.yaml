@@ -1,0 +1,5 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: linux
+    dependencyRepo: alpine
+    dependencyTag: v3.13.2

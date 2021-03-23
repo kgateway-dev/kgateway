@@ -430,10 +430,12 @@ var _ = Describe("Robustness tests", func() {
 		Eventually(func() bool {
 			pods, err := kubeClient.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"gloo": "gloo"}).String()})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(len(pods.Items)).To(Equal(1))
-			// new pod name will not match old gloo pod
-			return pods.Items[0].Name == oldGlooPod.Name
-		}, 60*time.Second, 2*time.Second).Should(BeFalse())
+			if len(pods.Items) > 0 {
+				// new pod name will not match old gloo pod
+				return pods.Items[0].Name == oldGlooPod.Name
+			}
+			return true
+		}, 80*time.Second, 2*time.Second).Should(BeFalse())
 
 		By("force an update of the service endpoints")
 		initialIps := endpointsFor(kubeClient, appService)
