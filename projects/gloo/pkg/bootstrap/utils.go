@@ -157,7 +157,7 @@ func KubeServiceClientForSettings(ctx context.Context,
 	return skkube.NewServiceClientWithBase(inMemoryClient), nil
 }
 
-// sharedCach OR resourceCrd+cfg must be non-nil
+// sharedCache OR resourceCrd+cfg must be non-nil
 func SecretFactoryForSettings(ctx context.Context,
 	settings *v1.Settings,
 	sharedCache memory.InMemoryResourceCache,
