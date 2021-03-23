@@ -25,9 +25,6 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 			}
 
 			mode := Enterprise
-			if opts.Install.WithUi {
-				mode = GlooWithUI
-			}
 			if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
 				InstallCliArgs: &opts.Install,
 				ExtraValues:    extraValues,
