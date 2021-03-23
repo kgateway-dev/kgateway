@@ -3596,6 +3596,27 @@ metadata:
 					testManifest.ExpectConfigMapWithYamlData(envoyBootstrapCm)
 				})
 
+				FIt("can create a gateway proxy config with custom static layer", func() {
+
+					prepareMakefileFromValuesFile("values/val_custom_static_bootstrap.yaml")
+
+					byt, err := ioutil.ReadFile("fixtures/envoy_config/custom_static_bootstrap.yaml")
+					Expect(err).ToNot(HaveOccurred())
+					envoyBootstrapYaml := string(byt)
+
+					envoyBootstrapSpec := make(map[string]string)
+					envoyBootstrapSpec["envoy.yaml"] = envoyBootstrapYaml
+
+					cmRb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      gatewayProxyConfigMapName,
+						Labels:    labels,
+						Data:      envoyBootstrapSpec,
+					}
+					envoyBootstrapCm := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(envoyBootstrapCm)
+				})
+
 				Describe("gateway proxy - AWS", func() {
 
 					It("has a global cluster", func() {
