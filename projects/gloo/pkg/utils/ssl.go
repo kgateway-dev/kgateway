@@ -69,7 +69,7 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 	}
 	var requireClientCert *wrappers.BoolValue
 	if common.ValidationContextType != nil {
-		requireClientCert = &wrappers.BoolValue{Value: true}
+		requireClientCert = &wrappers.BoolValue{Value: !dc.GetOneWayTls()}
 	}
 	// default alpn for downstreams.
 	if len(common.AlpnProtocols) == 0 {
@@ -163,7 +163,7 @@ func buildDeprecatedSDS(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSec
 		},
 		CredentialsFactoryName: MetadataPluginName,
 		CallCredentials: []*envoycore.GrpcService_GoogleGrpc_CallCredentials{
-			&envoycore.GrpcService_GoogleGrpc_CallCredentials{
+			{
 				CredentialSpecifier: &envoycore.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
 					FromPlugin: &envoycore.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
 						Name: MetadataPluginName,
