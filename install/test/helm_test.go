@@ -3596,7 +3596,7 @@ metadata:
 					testManifest.ExpectConfigMapWithYamlData(envoyBootstrapCm)
 				})
 
-				FIt("can create a gateway proxy config with custom static layer", func() {
+				It("can create a gateway proxy config with custom static layer", func() {
 
 					prepareMakefileFromValuesFile("values/val_custom_static_bootstrap.yaml")
 
