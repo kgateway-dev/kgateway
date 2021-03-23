@@ -163,7 +163,7 @@ func buildDeprecatedSDS(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSec
 		},
 		CredentialsFactoryName: MetadataPluginName,
 		CallCredentials: []*envoycore.GrpcService_GoogleGrpc_CallCredentials{
-			&envoycore.GrpcService_GoogleGrpc_CallCredentials{
+			{
 				CredentialSpecifier: &envoycore.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
 					FromPlugin: &envoycore.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
 						Name: MetadataPluginName,
