@@ -97,6 +97,7 @@ SslConfig contains the options necessary to configure an upstream to use TLS ori
 "verifySubjectAltName": []string
 "parameters": .gloo.solo.io.SslParameters
 "alpnProtocols": []string
+"oneWayTls": bool
 
 ```
 
@@ -109,6 +110,7 @@ SslConfig contains the options necessary to configure an upstream to use TLS ori
 | `verifySubjectAltName` | `[]string` | Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used. |
 | `parameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk/#sslparameters) |  |
 | `alpnProtocols` | `[]string` | Set Application Level Protocol Negotiation. If empty, it is not set. |
+| `oneWayTls` | `bool` | if the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default. Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA. |
 
 
 

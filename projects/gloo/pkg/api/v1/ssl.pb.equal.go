@@ -243,6 +243,10 @@ func (m *UpstreamSslConfig) Equal(that interface{}) bool {
 
 	}
 
+	if m.GetOneWayTls() != target.GetOneWayTls() {
+		return false
+	}
+
 	switch m.SslSecrets.(type) {
 
 	case *UpstreamSslConfig_SecretRef:
