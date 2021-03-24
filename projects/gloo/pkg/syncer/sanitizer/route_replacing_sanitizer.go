@@ -317,7 +317,7 @@ func (s *RouteReplacingSanitizer) removeErroredRoutesFromReport(
 			routeError := eris.New(validationutils.RouteErrorMsg)
 			if eris.Is(proxyError, routeError) {
 				proxyErrorStr := proxyError.Error()
-				re := regexp.MustCompile(translator.RouteIdentifierTxt + ": (.*)")
+				re := regexp.MustCompile(validationutils.RouteIdentifierTxt + ": (.*)")
 				match := re.FindStringSubmatch(proxyErrorStr)
 				if match != nil {
 					erroredRoutes[match[1]] = struct{}{}

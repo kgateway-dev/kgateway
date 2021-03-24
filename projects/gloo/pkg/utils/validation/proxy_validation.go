@@ -9,7 +9,10 @@ import (
 	"go.uber.org/multierr"
 )
 
-var RouteErrorMsg = "Route Error"
+var (
+	RouteErrorMsg      = "Route Error"
+	RouteIdentifierTxt = "Route Name"
+)
 
 func MakeReport(proxy *v1.Proxy) *validation.ProxyReport {
 	listeners := proxy.GetListeners()
@@ -209,10 +212,10 @@ func AppendHTTPListenerError(httpListenerReport *validation.HttpListenerReport, 
 	})
 }
 
-func AppendRouteError(routeReport *validation.RouteReport, errType validation.RouteReport_Error_Type, reason string) {
+func AppendRouteError(routeReport *validation.RouteReport, errType validation.RouteReport_Error_Type, reason string, routeName string) {
 	routeReport.Errors = append(routeReport.Errors, &validation.RouteReport_Error{
 		Type:   errType,
-		Reason: reason,
+		Reason: fmt.Sprintf("%s. %s: %s", reason, RouteIdentifierTxt, routeName),
 	})
 }
 

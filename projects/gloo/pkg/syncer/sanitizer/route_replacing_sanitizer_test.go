@@ -256,7 +256,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 	})
 	It("replaces routes that have errored", func() {
 		var multiErr *multierror.Error
-		baseError := eris.Errorf("abc. Reason: plugin. %s: %s", translator.RouteIdentifierTxt, erroredRouteName)
+		baseError := eris.Errorf("abc. Reason: plugin. %s: %s", validationutils.RouteIdentifierTxt, erroredRouteName)
 		multiErr = multierror.Append(
 			multiErr,
 			eris.Wrap(baseError, validationutils.RouteErrorMsg),

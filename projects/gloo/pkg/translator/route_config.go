@@ -31,8 +31,6 @@ var (
 	NoDestinationSpecifiedError = errors.New("must specify at least one weighted destination for multi destination routes")
 
 	SubsetsMisconfiguredErr = errors.New("route has a subset config, but the upstream does not")
-
-	RouteIdentifierTxt = "Route Name"
 )
 
 func (t *translatorInstance) computeRouteConfig(
@@ -190,7 +188,8 @@ func initRoutes(
 		if matcher.PathSpecifier == nil {
 			validation.AppendRouteError(routeReport,
 				validationapi.RouteReport_Error_InvalidMatcherError,
-				fmt.Sprintf("no path specifier provided. %s: %s", RouteIdentifierTxt, generatedName),
+				"no path specifier provided",
+				generatedName,
 			)
 		}
 		match := GlooMatcherToEnvoyMatcher(params.Params.Ctx, matcher)
@@ -246,7 +245,7 @@ func (t *translatorInstance) setAction(
 		out.Action = &envoy_config_route_v3.Route_Route{
 			Route: &envoy_config_route_v3.RouteAction{},
 		}
-		if err := t.setRouteAction(params, action.RouteAction, out.Action.(*envoy_config_route_v3.Route_Route).Route, routeReport); err != nil {
+		if err := t.setRouteAction(params, action.RouteAction, out.Action.(*envoy_config_route_v3.Route_Route).Route, routeReport, out.Name); err != nil {
 			if isWarningErr(err) {
 				validation.AppendRouteWarning(routeReport,
 					validationapi.RouteReport_Warning_InvalidDestinationWarning,
@@ -255,7 +254,8 @@ func (t *translatorInstance) setAction(
 			} else {
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
-					fmt.Sprintf("%v. %s: %s", err.Error(), RouteIdentifierTxt, out.Name),
+					err.Error(),
+					out.Name,
 				)
 			}
 		}
@@ -275,7 +275,8 @@ func (t *translatorInstance) setAction(
 				}
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
-					fmt.Sprintf("%T: %v. %s: %s", routePlugin, err.Error(), RouteIdentifierTxt, out.Name),
+					fmt.Sprintf("%T: %v", routePlugin, err.Error()),
+					out.Name,
 				)
 			}
 		}
@@ -297,7 +298,8 @@ func (t *translatorInstance) setAction(
 				}
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
-					fmt.Sprintf("%v. %s: %s", err.Error(), RouteIdentifierTxt, out.Name),
+					err.Error(),
+					out.Name,
 				)
 			}
 		}
@@ -323,7 +325,8 @@ func (t *translatorInstance) setAction(
 				}
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
-					fmt.Sprintf("%T: %v. %s: %s", routePlugin, err.Error(), RouteIdentifierTxt, out.Name),
+					fmt.Sprintf("%T: %v", routePlugin, err.Error()),
+					out.Name,
 				)
 			}
 		}
@@ -351,7 +354,7 @@ func (t *translatorInstance) setAction(
 	}
 }
 
-func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.RouteAction, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport) error {
+func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.RouteAction, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport, routeName string) error {
 	switch dest := in.Destination.(type) {
 	case *v1.RouteAction_Single:
 		usRef, err := usconversion.DestinationToUpstreamRef(dest.Single)
@@ -366,7 +369,7 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 
 		return checkThatSubsetMatchesUpstream(params.Params, dest.Single)
 	case *v1.RouteAction_Multi:
-		return t.setWeightedClusters(params, dest.Multi, out, routeReport)
+		return t.setWeightedClusters(params, dest.Multi, out, routeReport, routeName)
 	case *v1.RouteAction_UpstreamGroup:
 		upstreamGroupRef := dest.UpstreamGroup
 		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
@@ -380,7 +383,7 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 		md := &v1.MultiDestination{
 			Destinations: upstreamGroup.Destinations,
 		}
-		return t.setWeightedClusters(params, md, out, routeReport)
+		return t.setWeightedClusters(params, md, out, routeReport, routeName)
 	case *v1.RouteAction_ClusterHeader:
 		// ClusterHeader must use the naming convention {{namespace}}_{{clustername}}
 		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_ClusterHeader{
@@ -391,7 +394,7 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 	return errors.Errorf("unknown upstream destination type")
 }
 
-func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, multiDest *v1.MultiDestination, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport) error {
+func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, multiDest *v1.MultiDestination, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport, routeName string) error {
 	if len(multiDest.Destinations) == 0 {
 		return NoDestinationSpecifiedError
 	}
@@ -426,6 +429,7 @@ func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, mul
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
 					err.Error(),
+					routeName,
 				)
 			}
 		}
