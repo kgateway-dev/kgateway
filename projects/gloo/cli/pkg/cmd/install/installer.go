@@ -54,6 +54,7 @@ type Mode int
 
 const (
 	Gloo Mode = iota
+	GlooWithUI
 	Enterprise
 	Federation
 )
