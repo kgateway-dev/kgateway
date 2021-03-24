@@ -320,8 +320,6 @@ func getChartUri(chartOverride, versionOverride string, mode Mode) (string, erro
 		helmChartRepoTemplate = GlooFedHelmRepoTemplate
 	case Enterprise:
 		helmChartRepoTemplate = GlooEHelmRepoTemplate
-	case GlooWithUI:
-		helmChartRepoTemplate = constants.GlooWithUiHelmRepoTemplate
 	case Gloo:
 		helmChartRepoTemplate = constants.GlooHelmRepoTemplate
 	default:
@@ -339,8 +337,6 @@ func getChartUri(chartOverride, versionOverride string, mode Mode) (string, erro
 			}
 			helmChartVersion = glooFedVersion
 		case Enterprise:
-			fallthrough
-		case GlooWithUI:
 			enterpriseVersion, err := version.GetLatestEnterpriseVersion(true)
 			if err != nil {
 				return "", err

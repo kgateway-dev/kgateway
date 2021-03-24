@@ -1,0 +1,4 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: Removes gloo UI with-admin-console flag for gloo installation in favor of new gloo-fed UI.
+    issueLink: https://github.com/solo-io/gloo/issues/4267
