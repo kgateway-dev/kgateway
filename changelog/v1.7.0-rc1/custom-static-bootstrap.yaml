@@ -1,0 +1,8 @@
+changelog:
+  - type: HELM
+    description: >-
+      Add support for a new helm value (`gatewayProxies.gatewayProxy.customStaticLayer`) that allows the customization
+      of envoy's static layer bootstrap yaml.
+    issueLink: https://github.com/solo-io/gloo/issues/4327
+  - type: NON_USER_FACING
+    description: Fix some broken helm unit tests and delete some unused test fixtures
