@@ -19,9 +19,6 @@ func gatewayCmd(opts *options.Options) *cobra.Command {
 			helmClient := DefaultHelmClient()
 			installer := NewInstaller(helmClient)
 			mode := Gloo
-			if opts.Install.WithUi {
-				mode = GlooWithUI
-			}
 			if err := installer.Install(&InstallerConfig{
 				InstallCliArgs: &opts.Install,
 				Mode:           mode,

@@ -15,13 +15,11 @@ func AddGlooInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	set.StringVar(&install.Version, "version", "", "version to install (e.g. 1.4.0, defaults to latest)")
 	set.BoolVar(&install.Gloo.CreateNamespace, "create-namespace", true, "Create the namespace to install gloo into")
 	set.StringVarP(&install.Gloo.Namespace, "namespace", "n", defaults.GlooSystem, "namespace to install gloo into")
-	set.BoolVar(&install.WithUi, "with-admin-console", false, "install gloo and a read-only version of its admin console")
 }
 
 func AddEnterpriseInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	set.BoolVarP(&install.DryRun, "dry-run", "d", false, "Dump the raw installation yaml instead of applying it to kubernetes")
 	set.StringVar(&install.LicenseKey, "license-key", "", "License key to activate GlooE features")
-	set.BoolVar(&install.WithUi, "with-admin-console", false, "install gloo and a read-only version of its admin console")
 	set.BoolVar(&install.WithGlooFed, "with-gloo-fed", true, "Install Gloo-Fed alongside Gloo Enterprise")
 	// Gloo-fed
 	set.StringVar(&install.Federation.HelmChartOverride, "gloo-fed-file", "", "Install Gloo Federation from this Helm chart archive file rather than from a release")

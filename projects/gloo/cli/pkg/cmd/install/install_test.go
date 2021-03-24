@@ -2,14 +2,12 @@ package install_test
 
 import (
 	"fmt"
-	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	"github.com/solo-io/go-utils/testutils/exec"
 )
 
 var _ = Describe("Install", func() {
@@ -154,14 +152,6 @@ var _ = Describe("Install", func() {
 		_, err := testutils.GlooctlOut("install gateway --file foo.tgz --dry-run")
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("no such file or directory"))
-	})
-
-	It("should not error when providing the admin console flag", func() {
-		// This test fetches the corresponding GlooE helm chart, thus it needs the version that gets linked
-		// into the glooctl binary at build time
-		out, err := exec.RunCommandOutput(RootDir, true, filepath.Join("_output", "glooctl"), "install", "gateway", "--dry-run", "--with-admin-console")
-		Expect(err).NotTo(HaveOccurred())
-		Expect(out).NotTo(BeEmpty())
 	})
 
 	It("should not error when providing a new release-name flag value", func() {

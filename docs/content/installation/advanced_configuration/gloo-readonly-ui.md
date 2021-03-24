@@ -14,7 +14,7 @@ backend service.
 
 Once installed, access the read-only UI with `glooctl ui` or `glooctl dashboard`.
 
-## Install Gloo Edge OSS Read-Only UI
+## Install Gloo Edge OSS Read-Only UI (Deprecated in 1.7.0)
 
 Along with each release of Gloo Edge Enterprise, we build and release a helm chart that deploys open-source Gloo Edge alongside
 a read-only version of the UI. The helm chart is located at [https://storage.googleapis.com/gloo-os-ui-helm](https://storage.googleapis.com/gloo-os-ui-helm).
