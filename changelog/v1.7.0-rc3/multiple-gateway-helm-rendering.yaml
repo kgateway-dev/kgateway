@@ -1,0 +1,7 @@
+changelog:
+  - type: HELM
+    description: >-
+      Fix custom gateways not overriding the disabled state of the default gateway
+  - type: HELM
+    description: >-
+      Fix rendering of multiple gateway manifests

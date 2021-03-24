@@ -5,7 +5,7 @@
 {{- $global := .Values.global }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
-{{- $spec := deepCopy $gatewayProxy | merge $gatewaySpec -}}
+{{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{- if not $spec.disabled }}
 {{- $statsConfig := coalesce $spec.stats $global.glooStats }}
 ---

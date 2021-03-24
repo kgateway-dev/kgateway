@@ -950,6 +950,26 @@ var _ = Describe("Helm Test", func() {
 						testManifest.Expect("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
 					})
 
+					It("renders custom gateway when gatewayProxy is disabled", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.disabled=true",
+								"gatewayProxies.anotherGatewayProxy.disabled=true",
+							},
+						})
+						testManifest.Expect("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
+						testManifest.Expect("Gateway", namespace, "another-gateway-proxy").To(BeNil())
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.disabled=true",
+								"gatewayProxies.anotherGatewayProxy.disabled=false",
+							},
+						})
+						testManifest.Expect("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
+						testManifest.ExpectCustomResource("Gateway", namespace, "another-gateway-proxy")
+					})
+
 					var (
 						proxyNames = []string{defaults.GatewayProxyName}
 					)
@@ -1411,6 +1431,36 @@ spec:
 							configMapStr := configMap.(*v1.ConfigMap)
 							Expect(configMapStr.Data).To(Equal(map[string]string{"customData": "someData"}))
 						})
+					})
+				})
+
+				Context("when multiple custom gatewayproxy override disabled default proxy", func() {
+					BeforeEach(func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.disabled=true",
+								"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpGateway=true",
+								"gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway.virtualServiceSelector.gateway=default",
+								"gatewayProxies.firstGatewayProxy.disabled=false",
+								"gatewayProxies.firstGatewayProxy.gatewaySettings.customHttpsGateway.virtualServiceSelector.gateway=first",
+								"gatewayProxies.secondGatewayProxy.disabled=false",
+								"gatewayProxies.secondGatewayProxy.gatewaySettings.customHttpsGateway.virtualServiceSelector.gateway=second",
+							},
+						})
+					})
+					It("correctly merges custom gatewayproxy values", func() {
+						testManifest.Expect("Gateway", namespace, "gateway-proxy").To(BeNil())
+						testManifest.Expect("Gateway", namespace, "first-gateway-proxy").To(BeNil())
+						firstGatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, "first-gateway-proxy-ssl")
+						var firstGateway gwv1.Gateway
+						ConvertKubeResource(firstGatewayUns, &firstGateway)
+						Expect(firstGateway.GetHttpGateway().VirtualServiceSelector).To(HaveKeyWithValue("gateway", "first"))
+
+						testManifest.Expect("Gateway", namespace, "second-gateway-proxy").To(BeNil())
+						secondGatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, "second-gateway-proxy-ssl")
+						var secondGateway gwv1.Gateway
+						ConvertKubeResource(secondGatewayUns, &secondGateway)
+						Expect(secondGateway.GetHttpGateway().VirtualServiceSelector).To(HaveKeyWithValue("gateway", "second"))
 					})
 				})
 

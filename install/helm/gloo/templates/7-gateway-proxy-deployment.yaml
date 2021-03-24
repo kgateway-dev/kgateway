@@ -7,7 +7,7 @@
 {{- $isUpgrade := .Values.gateway.upgrade }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
-{{- $spec := deepCopy $gatewayProxy | merge $gatewaySpec -}}
+{{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{- $image := $spec.podTemplate.image }}
 {{- if $global }}
 {{- $image = merge $spec.podTemplate.image $global.image }}
