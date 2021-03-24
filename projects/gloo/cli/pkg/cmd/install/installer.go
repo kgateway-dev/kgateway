@@ -337,11 +337,7 @@ func getChartUri(chartOverride, versionOverride string, mode Mode) (string, erro
 			}
 			helmChartVersion = glooFedVersion
 		case Enterprise:
-			enterpriseVersion, err := version.GetLatestEnterpriseVersion(true)
-			if err != nil {
-				return "", err
-			}
-			helmChartVersion = enterpriseVersion
+			panic("!")
 		case Gloo:
 			glooOsVersion, err := getDefaultGlooInstallVersion(chartOverride)
 			if err != nil {
