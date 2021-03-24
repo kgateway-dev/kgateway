@@ -501,7 +501,7 @@ Outerloop:
 	}
 
 	if !found {
-		return errors.Errorf("route has a subset config, but none of the subsets in the upstream match it.")
+		return errors.Errorf("route has a subset config, but none of the subsets in the upstream match it")
 
 	}
 	return nil
