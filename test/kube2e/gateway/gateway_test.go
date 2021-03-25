@@ -598,18 +598,14 @@ var _ = Describe("Kube2e: gateway", func() {
 				vsWithFunctionRoute, err = virtualServiceClient.Write(vsWithFunctionRoute, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
-				// the VS should be rejected
-				// the err message should be that the rest spec is missing
-				var reason string
+				// the VS should not be rejected since the failure is sanitized by route replacement
 				Eventually(func() (core.Status_State, error) {
 					vs, err := virtualServiceClient.Read(testHelper.InstallNamespace, petstoreName, clients.ReadOpts{})
 					if err != nil {
 						return 0, err
 					}
-					reason = vs.GetStatus().GetReason()
 					return vs.GetStatus().GetState(), nil
-				}, "15s", "0.5s").Should(Equal(core.Status_Rejected))
-				Expect(reason).To(ContainSubstring("does not have a rest service spec"))
+				}, "15s", "0.5s").Should(Equal(core.Status_Accepted))
 
 				// wrapped in eventually to get around resource version errors
 				Eventually(func() error {
