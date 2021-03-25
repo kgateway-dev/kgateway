@@ -516,11 +516,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, getPlugins)
 
-	validator := validation.NewValidator(watchOpts.Ctx, t)
-	if opts.ValidationServer.Server != nil {
-		opts.ValidationServer.Server.SetValidator(validator)
-	}
-
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {
 		return err
@@ -529,6 +524,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	xdsSanitizer := sanitizer.XdsSanitizers{
 		sanitizer.NewUpstreamRemovingSanitizer(),
 		routeReplacingSanitizer,
+	}
+
+	validator := validation.NewValidator(watchOpts.Ctx, t, xdsSanitizer)
+	if opts.ValidationServer.Server != nil {
+		opts.ValidationServer.Server.SetValidator(validator)
 	}
 
 	params := syncer.TranslatorSyncerExtensionParams{

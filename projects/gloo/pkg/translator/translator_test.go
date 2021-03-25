@@ -80,6 +80,7 @@ var _ = Describe("Translator", func() {
 		endpoints          envoycache.Resources
 		hcmCfg             *envoyhttp.HttpConnectionManager
 		routeConfiguration *envoy_config_route_v3.RouteConfiguration
+		virtualHostName    string
 	)
 
 	beforeEach := func() {
@@ -158,6 +159,7 @@ var _ = Describe("Translator", func() {
 				},
 			},
 		}}
+		virtualHostName = "virt1"
 	}
 	BeforeEach(beforeEach)
 
@@ -173,7 +175,7 @@ var _ = Describe("Translator", func() {
 			ListenerType: &v1.Listener_HttpListener{
 				HttpListener: &v1.HttpListener{
 					VirtualHosts: []*v1.VirtualHost{{
-						Name:    "virt1",
+						Name:    virtualHostName,
 						Domains: []string{"*"},
 						Routes:  routes,
 					}},
@@ -358,12 +360,13 @@ var _ = Describe("Translator", func() {
 			_, errs, report, err := translator.Translate(params, proxy)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(errs.Validate()).To(HaveOccurred())
-			Expect(errs.Validate().Error()).To(ContainSubstring("Route Error: InvalidMatcherError. Reason: no path specifier provided"))
+			invalidMatcherName := fmt.Sprintf("%s-route-0", virtualHostName)
+			Expect(errs.Validate().Error()).To(ContainSubstring(fmt.Sprintf("Route Error: InvalidMatcherError. Reason: no path specifier provided. Route Name: %s", invalidMatcherName)))
 			expectedReport := validationutils.MakeReport(proxy)
 			expectedReport.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[0].RouteReports[0].Errors = []*validation.RouteReport_Error{
 				{
 					Type:   validation.RouteReport_Error_InvalidMatcherError,
-					Reason: "no path specifier provided",
+					Reason: fmt.Sprintf("no path specifier provided. Route Name: %s", invalidMatcherName),
 				},
 			}
 			Expect(report).To(Equal(expectedReport))
@@ -382,17 +385,24 @@ var _ = Describe("Translator", func() {
 			_, errs, report, err := translator.Translate(params, proxy)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(errs.Validate()).To(HaveOccurred())
-			Expect(errs.Validate().Error()).To(ContainSubstring("Route Error: InvalidMatcherError. Reason: no path specifier provided; Route Error: ProcessingError. Reason: *grpc.plugin: missing path for grpc route"))
+			invalidMatcherName := fmt.Sprintf("%s-route-0", virtualHostName)
+			processingErrorName := fmt.Sprintf("%s-route-0-%s-matcher-0", virtualHostName, routes[0].Name)
+			Expect(errs.Validate().Error()).To(ContainSubstring(
+				fmt.Sprintf(
+					"Route Error: InvalidMatcherError. Reason: no path specifier provided. Route Name: %s; Route Error: ProcessingError. Reason: *grpc.plugin: missing path for grpc route. Route Name: %s",
+					invalidMatcherName,
+					processingErrorName,
+				)))
 
 			expectedReport := validationutils.MakeReport(proxy)
 			expectedReport.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[0].RouteReports[0].Errors = []*validation.RouteReport_Error{
 				{
 					Type:   validation.RouteReport_Error_InvalidMatcherError,
-					Reason: "no path specifier provided",
+					Reason: fmt.Sprintf("no path specifier provided. Route Name: %s", invalidMatcherName),
 				},
 				{
 					Type:   validation.RouteReport_Error_ProcessingError,
-					Reason: "*grpc.plugin: missing path for grpc route",
+					Reason: fmt.Sprintf("*grpc.plugin: missing path for grpc route. Route Name: %s", processingErrorName),
 				},
 			}
 			Expect(report).To(Equal(expectedReport))
@@ -1402,11 +1412,12 @@ var _ = Describe("Translator", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(errs.Validate()).To(HaveOccurred())
 				Expect(errs.Validate().Error()).To(ContainSubstring("route has a subset config, but none of the subsets in the upstream match it"))
+				processingErrorName := fmt.Sprintf("%s-route-0-matcher-0", virtualHostName)
 				expectedReport := validationutils.MakeReport(proxy)
 				expectedReport.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_HttpListenerReport).HttpListenerReport.VirtualHostReports[0].RouteReports[0].Errors = []*validation.RouteReport_Error{
 					{
 						Type:   validation.RouteReport_Error_ProcessingError,
-						Reason: "route has a subset config, but none of the subsets in the upstream match it.",
+						Reason: fmt.Sprintf("route has a subset config, but none of the subsets in the upstream match it. Route Name: %s", processingErrorName),
 					},
 				}
 				Expect(report).To(Equal(expectedReport))

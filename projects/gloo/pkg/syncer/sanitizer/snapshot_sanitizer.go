@@ -35,5 +35,10 @@ func (s XdsSanitizers) SanitizeSnapshot(
 			return nil, err
 		}
 	}
+	// Snapshot is consistent, so check if we have errors not related to the upstreams
+	if resourcesErr := reports.Validate(); resourcesErr != nil {
+		return nil, resourcesErr
+	}
+
 	return xdsSnapshot, nil
 }
