@@ -325,6 +325,8 @@ func (s *RouteReplacingSanitizer) removeErroredRoutesFromReport(
 				} else {
 					remainingErrors = append(remainingErrors, proxyError)
 				}
+			} else {
+				remainingErrors = append(remainingErrors, proxyError)
 			}
 		}
 		if len(remainingErrors) > 0 {
