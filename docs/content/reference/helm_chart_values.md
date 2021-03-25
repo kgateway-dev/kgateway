@@ -15,14 +15,13 @@ therefore the sub-chart values have to be prefixed with the name of the sub-char
 This applies to all values except:
 
 - `global.*`
-- `settings.*`
 
 For example, if you are installing Gloo Edge Enterprise:
 
 - `crds.create` needs to be `gloo.crds.create`
 - `gateway.certGenJob.enabled` needs to be `gloo.gateway.certGenJob.enabled`
 
-but `settings.watchNamespaces` or `global.glooRbac.create` remain the same.
+but `global.glooRbac.create` remains the same.
 {{% /notice %}}
 
 {{% notice note %}}

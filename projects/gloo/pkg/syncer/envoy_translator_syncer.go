@@ -133,8 +133,6 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot, 
 			logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.Metadata.Ref()), zap.Error(validateErr))
 		}
 
-		allReports.Merge(reports)
-
 		key := xds.SnapshotKey(proxy)
 
 		sanitizedSnapshot, err := s.sanitizer.SanitizeSnapshot(ctx, snap, xdsSnapshot, reports)
@@ -152,6 +150,9 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot, 
 			}
 			logger.Infof("successfully updated EDS information for proxy %v", proxy.Metadata.Ref().Key())
 		}
+
+		// Merge reports after sanitization to capture changes made by the sanitizers
+		allReports.Merge(reports)
 
 		if err := s.xdsCache.SetSnapshot(key, sanitizedSnapshot); err != nil {
 			err := eris.Wrapf(err, "failed while updating xDS snapshot cache")
