@@ -24,6 +24,15 @@ spec:
 {{- if $gatewaySettings.customHttpGateway}}
   httpGateway:
 {{ toYaml $gatewaySettings.customHttpGateway | indent 4}}
+{{- else if $gatewayProxy.tracing }}
+{{- if $gatewayProxy.tracing.provider }}
+  httpGateway:
+    options:
+      http_connection_manager_settings:
+        tracing:
+          provider:
+{{ toYaml $gatewayProxy.tracing.provider | indent 12 }}
+{{- else }} {{/* if gatewayProxy.tracing.provider */}}
 {{- else }}
   httpGateway: {}
 {{- end }}
@@ -61,6 +70,15 @@ spec:
 {{- if $gatewaySettings.customHttpsGateway}}
   httpGateway:
 {{ toYaml $gatewaySettings.customHttpsGateway | indent 6}}
+{{- else if $gatewayProxy.tracing }}
+{{- if $gatewayProxy.tracing.provider }}
+  httpGateway:
+    options:
+      http_connection_manager_settings:
+        tracing:
+          provider:
+{{ toYaml $gatewayProxy.tracing.provider | indent 12 }}
+{{- else }} {{/* if gatewayProxy.tracing.provider */}}
 {{- else }}
   httpGateway: {}
 {{- end }}
