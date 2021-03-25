@@ -94,8 +94,9 @@ The Gloo Edge Enterprise components are instantiated using pods and services. Th
 
 | Pod | Port | Usage |
 |-----|------|-------|
-| api-server | 8080 | UI server |
-| api-server | 10101 | API Server |
+| gloo-fed-console | 8090 | UI server |
+| gloo-fed-console | 10101 | API Server |
+| gloo-fed-console | 8081 | healthcheck |
 | extauth | 8083 | External authentication |
 | grafana | 80 | Grafana (unused) |
 | grafana | 3000 | Grafana UI |
@@ -112,7 +113,9 @@ The following table lists the services backed by the deployed pods.
 
 | Service | Port | Target | Target Port | Usage |
 |---------|------|--------|-------------|-------|
-| apiserver-ui | 8080 | api-server | 8080 | Gloo Edge UI |
+| gloo-fed-console | 8090 | UI server |
+| gloo-fed-console | 10101 | API Server |
+| gloo-fed-console | 8081 | healthcheck |
 | extauth | 8083 | extauth | 8083 | External authentication |
 | glooe-grafana | 80 | grafana | 3000 | Grafana UI |
 | glooe-prometheus-kube-state-metrics | 80 | prometheus-kube-state-metrics | 8080 | Kubernetes metric collection |
