@@ -47,7 +47,7 @@ cluster that already has Gloo Edge CRDs). This field is deprecated and is includ
 }
 
 type Rbac struct {
-	Create     *bool   `json:"create" desc:"create rbac rules for the gloo-system service account"`
+	Create     *bool   `json:"create,omitempty" desc:"create rbac rules for the gloo-system service account"`
 	Namespaced bool   `json:"namespaced" desc:"use Roles instead of ClusterRoles"`
 	NameSuffix string `json:"nameSuffix" desc:"When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo Edge RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'"`
 }
@@ -59,7 +59,7 @@ type Image struct {
 	Registry   string `json:"registry,omitempty" desc:"image prefix/registry e.g. (quay.io/solo-io)"`
 	PullPolicy string `json:"pullPolicy,omitempty"  desc:"image pull policy for the container"`
 	PullSecret string `json:"pullSecret,omitempty" desc:"image pull policy for the container "`
-	Extended   *bool   `json:"extended" desc:"if true, deploy an extended version of the container with additional debug tools"`
+	Extended   *bool   `json:"extended,omitempty" desc:"if true, deploy an extended version of the container with additional debug tools"`
 }
 
 type ResourceAllocation struct {
@@ -159,7 +159,7 @@ type Settings struct {
 	WatchNamespaces               []string             `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces"`
 	WriteNamespace                string               `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery."`
 	Integrations                  *Integrations        `json:"integrations,omitempty"`
-	Create                        *bool                 `json:"create" desc:"create a Settings CRD which provides bootstrap configuration to Gloo Edge controllers"`
+	Create                        *bool                 `json:"create,omitempty" desc:"create a Settings CRD which provides bootstrap configuration to Gloo Edge controllers"`
 	Extensions                    interface{}          `json:"extensions,omitempty"`
 	SingleNamespace               *bool                 `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
 	InvalidConfigPolicy           *InvalidConfigPolicy `json:"invalidConfigPolicy,omitempty" desc:"Define policies for Gloo Edge to handle invalid configuration"`
@@ -221,14 +221,14 @@ type DiscoveryDeployment struct {
 }
 
 type Gateway struct {
-	Enabled                       *bool              `json:"enabled" desc:"enable Gloo Edge API Gateway features"`
+	Enabled                       *bool              `json:"enabled,omitempty" desc:"enable Gloo Edge API Gateway features"`
 	Validation                    GatewayValidation `json:"validation,omitempty" desc:"enable Validation Webhook on the Gateway. This will cause requests to modify Gateway-related Custom Resources to be validated by the Gateway."`
 	Deployment                    *GatewayDeployment `json:"deployment,omitempty"`
 	CertGenJob                    *CertGenJob        `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
-	UpdateValues                  *bool               `json:"updateValues" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
+	UpdateValues                  *bool               `json:"updateValues,omitempty" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
 	ProxyServiceAccount           ServiceAccount     `json:"proxyServiceAccount,omitempty" `
 	ServiceAccount                ServiceAccount     `json:"serviceAccount,omitempty" `
-	ReadGatewaysFromAllNamespaces *bool               `json:"readGatewaysFromAllNamespaces" desc:"if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller"`
+	ReadGatewaysFromAllNamespaces *bool               `json:"readGatewaysFromAllNamespaces,omitempty" desc:"if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller"`
 }
 
 type ServiceAccount struct {
@@ -237,9 +237,9 @@ type ServiceAccount struct {
 }
 
 type GatewayValidation struct {
-	Enabled               *bool     `json:"enabled" desc:"enable Gloo Edge API Gateway validation hook (default true)"`
-	AlwaysAcceptResources *bool     `json:"alwaysAcceptResources" desc:"unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright."`
-	AllowWarnings         *bool     `json:"allowWarnings" desc:"set this to false in order to ensure validation webhook rejects resources that would have warning status or rejected status, rather than just rejected."`
+	Enabled               *bool     `json:"enabled,omitempty" desc:"enable Gloo Edge API Gateway validation hook (default true)"`
+	AlwaysAcceptResources *bool     `json:"alwaysAcceptResources,omitempty" desc:"unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright."`
+	AllowWarnings         *bool     `json:"allowWarnings,omitempty" desc:"set this to false in order to ensure validation webhook rejects resources that would have warning status or rejected status, rather than just rejected."`
 	SecretName            string   `json:"secretName,omitempty" desc:"Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled."`
 	FailurePolicy         string   `json:"failurePolicy,omitempty" desc:"failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore "`
 	Webhook               *Webhook `json:"webhook,omitempty" desc:"webhook specific configuration"`
@@ -356,11 +356,11 @@ type GatewayProxyPodTemplate struct {
 	Tolerations                   []*appsv1.Toleration  `json:"tolerations,omitEmpty"`
 	Probes                        *bool                  `json:"probes" desc:"enable liveness and readiness probes"`
 	Resources                     *ResourceRequirements `json:"resources,omitempty"`
-	DisableNetBind                *bool                  `json:"disableNetBind" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
-	RunUnprivileged               *bool                  `json:"runUnprivileged" desc:"run envoy as an unprivileged user"`
+	DisableNetBind                *bool                  `json:"disableNetBind,omitempty" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
+	RunUnprivileged               *bool                  `json:"runUnprivileged,omitempty" desc:"run envoy as an unprivileged user"`
 	FloatingUserId                *bool                  `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser                     *float64               `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
-	FsGroup                       *float64               `json:"fsGroup" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
+	FsGroup                       *float64               `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
 	GracefulShutdown              *GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
 	TerminationGracePeriodSeconds int                   `json:"terminationGracePeriodSeconds" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info"`
 	CustomReadinessProbe          *appsv1.Probe         `json:"customReadinessProbe,omitEmpty"`
