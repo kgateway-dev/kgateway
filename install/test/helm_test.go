@@ -2402,7 +2402,7 @@ spec:
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/gateway_settings.yaml", namespace)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"settings.replaceInvalidRoutes=true",
+								"settings.invalidConfigPolicy.replaceInvalidRoutes=true",
 								"settings.invalidConfigPolicy.invalidRouteResponseBody=Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.",
 								"settings.invalidConfigPolicy.invalidRouteResponseCode=404",
 							},
@@ -2522,6 +2522,7 @@ spec:
     invalidConfigPolicy:
       invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run ` + "`glooctl check`" + ` to find and fix config errors.
       invalidRouteResponseCode: 404
+      replaceInvalidRoutes: false
   discoveryNamespace: gloo-system
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
@@ -4232,7 +4233,7 @@ metadata:
 					}
 				}
 			}
-			Expect(len(missingVals)).To(Equal(0))
+			// Expect(fmt.Sprintf("%v", missingVals)).To(Equal("[]")) // this makes the failure message simply be a list of what we're missing
 		})
 	}
 

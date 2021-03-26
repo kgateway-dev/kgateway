@@ -37,11 +37,7 @@ spec:
     accessLoggingService:
   {{ toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
   {{- end }}
-  {{- if $gatewaySettings.useProxyProto }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
-  {{- else }}
-  useProxyProto: false
-  {{- end }}
   ssl: false
   proxyNames:
   - {{ $name | kebabcase }}
@@ -78,11 +74,7 @@ spec:
     accessLoggingService:
   {{ toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
   {{- end }}
-  {{- if $gatewaySettings.useProxyProto }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
-  {{- else }}
-  useProxyProto: false
-  {{- end }}
   ssl: true
   proxyNames:
   - {{ $name | kebabcase }}
