@@ -86,8 +86,5 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 		}
 	}
 
-	// Snapshot is consistent, so check if we have errors not related to the upstreams
-	resourcesErr = reports.Validate()
-
-	return xdsSnapshot, resourcesErr
+	return xdsSnapshot, nil
 }

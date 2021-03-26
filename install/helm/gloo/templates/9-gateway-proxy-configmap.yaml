@@ -26,6 +26,9 @@ data:
       layers:
       - name: static_layer
         static_layer:
+{{- if $spec.customStaticLayer }}
+{{ toYaml $spec.customStaticLayer | indent 10 }}
+{{- end}}
           overload:
             global_downstream_max_connections: {{ $spec.globalDownstreamMaxConnections }}
           upstream:

@@ -42,18 +42,17 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				return err
 			}
 
-			deployment, err := client.AppsV1().Deployments(opts.Metadata.Namespace).Get(opts.Top.Ctx, "api-server", metav1.GetOptions{})
+			deployment, err := client.AppsV1().Deployments("gloo-fed").Get(opts.Top.Ctx, "gloo-fed-console", metav1.GetOptions{})
 			if err != nil {
 				if apierrors.IsNotFound(err) {
-					fmt.Printf("No Gloo dashboard found as part of the installation in namespace %s. The full dashboard is part of Gloo Enterprise by default. "+
-						"The open-source read-only dashboard can be installed by `glooctl install <installType> --with-admin-console`.\n", opts.Metadata.Namespace)
+					fmt.Printf("No Gloo dashboard found as part of the installation in namespace %s. The full dashboard is part of Gloo Enterprise by default. ", opts.Metadata.Namespace)
 				}
 				return err
 			}
 
 			var staticPort string
 			for _, container := range deployment.Spec.Template.Spec.Containers {
-				if container.Name == "apiserver-ui" {
+				if container.Name == "console" {
 					for _, port := range container.Ports {
 						if port.Name == "static" {
 							staticPort = strconv.Itoa(int(port.ContainerPort))
@@ -62,12 +61,12 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				}
 			}
 			if staticPort == "" {
-				return eris.Errorf("Could not find static port for 'apiserver-ui' container in the 'api-server' deployment")
+				return eris.Errorf("Could not find static port for 'console' container in the 'gloo-fed-console' deployment")
 			}
 
 			/** port-forward command **/
 
-			_, portFwdCmd, err := cliutil.PortForwardGet(opts.Top.Ctx, opts.Metadata.Namespace, "deployment/api-server",
+			_, portFwdCmd, err := cliutil.PortForwardGet(opts.Top.Ctx, "gloo-fed", "deployment/gloo-fed-console",
 				staticPort, staticPort, opts.Top.Verbose, "")
 			if err != nil {
 				return err

@@ -89,6 +89,10 @@ func (m *SslConfig) Equal(that interface{}) bool {
 
 	}
 
+	if m.GetOneWayTls() != target.GetOneWayTls() {
+		return false
+	}
+
 	switch m.SslSecrets.(type) {
 
 	case *SslConfig_SecretRef:

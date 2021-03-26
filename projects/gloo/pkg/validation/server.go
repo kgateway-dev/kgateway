@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"go.uber.org/zap/zapcore"
 
@@ -16,7 +17,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"google.golang.org/grpc"
 )
 
@@ -31,10 +34,16 @@ type validator struct {
 	translator     translator.Translator
 	notifyResync   map[*validation.NotifyOnResyncRequest]chan struct{}
 	ctx            context.Context
+	xdsSanitizer   sanitizer.XdsSanitizers
 }
 
-func NewValidator(ctx context.Context, translator translator.Translator) *validator {
-	return &validator{translator: translator, notifyResync: make(map[*validation.NotifyOnResyncRequest]chan struct{}, 1), ctx: ctx}
+func NewValidator(ctx context.Context, translator translator.Translator, xdsSanitizer sanitizer.XdsSanitizers) *validator {
+	return &validator{
+		translator:   translator,
+		notifyResync: make(map[*validation.NotifyOnResyncRequest]chan struct{}, 1),
+		ctx:          ctx,
+		xdsSanitizer: xdsSanitizer,
+	}
 }
 
 // only call within a lock
@@ -168,13 +177,60 @@ func (s *validator) ValidateProxy(ctx context.Context, req *validation.ProxyVali
 	logger := contextutils.LoggerFrom(ctx)
 
 	logger.Infof("received proxy validation request")
-	_, _, report, err := s.translator.Translate(params, req.GetProxy())
+	xdsSnapshot, resourceReports, report, err := s.translator.Translate(params, req.GetProxy())
 	if err != nil {
 		logger.Errorw("failed to validate proxy", zap.Error(err))
 		return nil, err
 	}
+
+	// Sanitize routes before sending report to gateway
+	s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
+	routeErrorToWarnings(resourceReports, report)
+
 	logger.Infof("proxy validation report result: %v", report.String())
 	return &validation.ProxyValidationServiceResponse{ProxyReport: report}, nil
+}
+
+// Update the validation report so that route errors that were changed into warnings during sanitization
+// are also switched in the report results
+func routeErrorToWarnings(resourceReport reporter.ResourceReports, validationReport *validation.ProxyReport) {
+	// Only proxy reports are needed
+	resourceReport = resourceReport.FilterByKind("*v1.Proxy")
+	resourceReportErrors := make(map[string]struct{})
+	resourceReportWarnings := make(map[string]struct{})
+	for _, report := range resourceReport {
+		if report.Errors != nil {
+			for _, rError := range report.Errors.(*multierror.Error).Errors {
+				resourceReportErrors[rError.Error()] = struct{}{}
+			}
+		}
+
+		for _, rWarning := range report.Warnings {
+			resourceReportWarnings[rWarning] = struct{}{}
+		}
+	}
+
+	for _, listenerReport := range validationReport.GetListenerReports() {
+		for _, virtualHostReport := range listenerReport.GetHttpListenerReport().GetVirtualHostReports() {
+			for _, routeReport := range virtualHostReport.GetRouteReports() {
+				modifiedErrors := make([]*validation.RouteReport_Error, 0)
+				for _, rError := range routeReport.GetErrors() {
+					if _, inErrors := resourceReportErrors[rError.String()]; !inErrors {
+						if _, inWarnings := resourceReportWarnings[rError.String()]; inWarnings {
+							warning := &validation.RouteReport_Warning{
+								Type:   validation.RouteReport_Warning_Type(rError.GetType()),
+								Reason: rError.GetReason(),
+							}
+							routeReport.Warnings = append(routeReport.Warnings, warning)
+						}
+					} else {
+						modifiedErrors = append(modifiedErrors, rError)
+					}
+				}
+				routeReport.Errors = modifiedErrors
+			}
+		}
+	}
 }
 
 type ValidationServer interface {

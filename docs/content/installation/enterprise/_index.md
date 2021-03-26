@@ -164,7 +164,6 @@ Open source helm values in Gloo Edge enterprise must be prefixed with `gloo`, un
 | observability.customGrafana.password                      | string   | set this and the `username` field to authenticate to the custom grafana instance using basic auth
 | observability.customGrafana.apiKey                        | string   | authenticate to the custom grafana instance using this api key
 | observability.customGrafana.url                           | string   | the URL for the custom grafana instance
-| apiServer.enterprise                                      | bool     | deploy UI with permissions to modify Gloo Edge resources. default is `true`
 ---
 ## Verify your Installation
 
@@ -192,7 +191,6 @@ pod/rate-limit-6b847b95c8-kwcbd                            1/1     Running   1  
 pod/redis-7f6954b84d-ff4ck                                 1/1     Running   0          5m21s
 
 NAME                                          TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
-service/apiserver-ui                          NodePort       10.107.135.104   <none>        8088:31160/TCP               5m22s
 service/extauth                               ClusterIP      10.109.93.97     <none>        8080/TCP                     5m22s
 service/gateway-proxy                         LoadBalancer   10.106.26.131    <pending>     80:31627/TCP,443:30931/TCP   5m22s
 service/gloo                                  ClusterIP      10.103.56.88     <none>        9977/TCP                     5m22s
@@ -229,6 +227,27 @@ replicaset.apps/glooe-prometheus-server-6bd6f4667d               1         1    
 replicaset.apps/observability-6db6c659dd                         1         1         1       5m21s
 replicaset.apps/rate-limit-6b847b95c8                            1         1         1       5m21s
 replicaset.apps/redis-7f6954b84d                                 1         1         1       5m21s
+```
+
+```shell script
+kubectl --namespace gloo-fed get all
+```
+
+```noop
+NAME                                    READY   STATUS    RESTARTS   AGE
+pod/gloo-fed-695d6dd44c-v2l64           1/1     Running   0          57m
+pod/gloo-fed-console-774f958867-j7bwc   3/3     Running   0          57m
+
+NAME                       TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)                       AGE
+service/gloo-fed-console   ClusterIP   10.96.107.54   <none>        10101/TCP,8090/TCP,8081/TCP   72m
+
+NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/gloo-fed           1/1     1            1           72m
+deployment.apps/gloo-fed-console   1/1     1            1           72m
+
+NAME                                          DESIRED   CURRENT   READY   AGE
+replicaset.apps/gloo-fed-695d6dd44c           1         1         1       72m
+replicaset.apps/gloo-fed-console-774f958867   1         1         1       72m
 ```
 
 #### Looking for opened ports?

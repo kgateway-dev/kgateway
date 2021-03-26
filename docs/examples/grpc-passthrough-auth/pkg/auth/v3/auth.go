@@ -30,7 +30,7 @@ func (s *server) Check(
 	req *envoy_service_auth_v3.CheckRequest) (*envoy_service_auth_v3.CheckResponse, error) {
 	authorization := req.Attributes.Request.Http.Headers["authorization"]
 	if strings.Contains(authorization, "authorize me") {
-		log.Println("Recieved request with correct authorization header")
+		log.Println("Received request with correct authorization header")
 		return &envoy_service_auth_v3.CheckResponse{
 			HttpResponse: &envoy_service_auth_v3.CheckResponse_OkResponse{
 				OkResponse: &envoy_service_auth_v3.OkHttpResponse{

@@ -16,8 +16,8 @@ This behavior is used in order to ensure that invalid configuration does not lea
 In some cases, it may be desirable to update a virtual service even if its config becomes partially invalid. 
 This is particularly useful when [delegating to Route Tables]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/delegation/">}}) as it ensures that a single Route Table will not block updates for other Route Tables which share the same Virtual Service. 
 
-For this reason, Gloo Edge supports the ability to enable *automatic replacement of invalid routes* (specifically, routes which point to a missing **Upstream**
-or **UpstreamGroup**). 
+For this reason, Gloo Edge supports the ability to enable *automatic replacement of invalid routes* (including routes which point to a missing **Upstream**
+or **UpstreamGroup** or routes that Gloo could not successfully process). 
 
 This document demonstrates how to enable and use this feature. 
 
