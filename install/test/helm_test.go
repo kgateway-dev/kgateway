@@ -1044,6 +1044,66 @@ apiVersion: gateway.solo.io/v1
 						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gw))
 					})
 
+					It("can set tracing provider", func() {
+						name := defaults.GatewayProxyName
+						bindPort := "8080"
+						ssl := "false"
+						gw := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+  name: ` + name + `
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: ` + bindPort + `
+  proxyNames:
+  - gateway-proxy
+  httpGateway:
+    options:
+      httpConnectionManagerSettings:
+        tracing:
+          zipkinConfig:
+            collector_cluster: zipkin
+            collector_endpoint: /api/v2/spans
+  ssl: ` + ssl + `
+  useProxyProto: false
+`)
+						prepareMakefileFromValuesFile("values/val_tracing_provider_cluster.yaml")
+						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
+
+						name = defaults.GatewayProxyName + "-ssl"
+						bindPort = "8443"
+						ssl = "true"
+						gw = makeUnstructured(`
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+  name: ` + name + `
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: ` + bindPort + `
+  proxyNames:
+  - gateway-proxy
+  httpGateway:
+    options:
+      httpConnectionManagerSettings:
+        tracing:
+          zipkinConfig:
+            collector_cluster: zipkin
+            collector_endpoint: /api/v2/spans
+  ssl: ` + ssl + `
+  useProxyProto: false
+`)
+
+						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gw))
+					})
+
 					It("gwp hpa disabled by default", func() {
 
 						testManifest.ExpectUnstructured("HorizontalPodAutoscaler", namespace, defaults.GatewayProxyName+"-hpa").To(BeNil())
