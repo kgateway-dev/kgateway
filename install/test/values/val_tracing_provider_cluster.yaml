@@ -2,10 +2,9 @@ gatewayProxies:
   gatewayProxy:
     tracing:
       provider:
-        typed_config:
-          "@type": "type.googleapis.com/envoy.config.trace.v2.ZipkinConfig"
+        zipkinConfig:
           collector_cluster: zipkin
-          collector_endpoint: "/api/v2/spans"
+          collector_endpoint: /api/v2/spans
       cluster:
         - name: zipkin
           connect_timeout: 1s
@@ -16,8 +15,8 @@ gatewayProxies:
             cluster_name: zipkin
             endpoints:
               - lb_endpoints:
-                  - endpoint:
-                      address:
-                        socket_address:
-                          address: zipkin
-                          port_value: 1234
+                - endpoint:
+                    address:
+                      socket_address:
+                        address: zipkin
+                        port_value: 1234
