@@ -2285,6 +2285,10 @@ func (m *AccessTokenValidation_IntrospectionValidation) Hash(hasher hash.Hash64)
 		}
 	}
 
+	if _, err = hasher.Write([]byte(m.GetUserIdSource())); err != nil {
+		return 0, err
+	}
+
 	return hasher.Sum64(), nil
 }
 

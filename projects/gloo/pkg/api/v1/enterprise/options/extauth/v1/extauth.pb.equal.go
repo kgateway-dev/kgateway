@@ -2048,6 +2048,10 @@ func (m *AccessTokenValidation_IntrospectionValidation) Equal(that interface{}) 
 		}
 	}
 
+	if strings.Compare(m.GetUserIdSource(), target.GetUserIdSource()) != 0 {
+		return false
+	}
+
 	return true
 }
 
