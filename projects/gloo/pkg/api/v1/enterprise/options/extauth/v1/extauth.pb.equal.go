@@ -890,12 +890,12 @@ func (m *JwksOnDemandCacheRefreshPolicy) Equal(that interface{}) bool {
 			}
 		}
 
-	case *JwksOnDemandCacheRefreshPolicy_FixedWindowPerInterval:
-		if _, ok := target.Policy.(*JwksOnDemandCacheRefreshPolicy_FixedWindowPerInterval); !ok {
+	case *JwksOnDemandCacheRefreshPolicy_MaxIdpReqPerPollingInterval:
+		if _, ok := target.Policy.(*JwksOnDemandCacheRefreshPolicy_MaxIdpReqPerPollingInterval); !ok {
 			return false
 		}
 
-		if m.GetFixedWindowPerInterval() != target.GetFixedWindowPerInterval() {
+		if m.GetMaxIdpReqPerPollingInterval() != target.GetMaxIdpReqPerPollingInterval() {
 			return false
 		}
 

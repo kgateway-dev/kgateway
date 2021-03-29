@@ -387,10 +387,9 @@ message JwksOnDemandCacheRefreshPolicy {
         google.protobuf.Empty always = 2;
 
         // If a key is not in the cache, fetch the most recent keys from the IdP and update the cache.
-        // However, this is protected by fixed window rate limiting. The window is the interval specified to
-        // poll the discovery endpoint. The fixed_window_per_interval value is the number of times we will fetch
-        // the JWKS from the IdP during this interval. If the limit is exceeded, we will not stop fetching from the IdP.
-        uint32 fixed_window_per_interval = 3;
+        // This value sets the number of requests to the IdP per polling interval. If that limit is exceeded,
+        // we will stop fetching from the IdP for the remainder of the polling interval.
+        uint32 max_idp_req_per_polling_interval = 3;
     }
 }
 

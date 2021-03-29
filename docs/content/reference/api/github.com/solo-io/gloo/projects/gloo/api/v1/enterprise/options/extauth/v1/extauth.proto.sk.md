@@ -608,15 +608,15 @@ not yet in the local cache.
 ```yaml
 "never": .google.protobuf.Empty
 "always": .google.protobuf.Empty
-"fixedWindowPerInterval": int
+"maxIdpReqPerPollingInterval": int
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `never` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Never refresh the local JWKS cache on demand. If a key is not in the cache, it is assumed to be malicious. This is the default policy since we assume that IdPs publish keys before they rotate them, and frequent polling finds the newest keys. Only one of `never`, or `fixedWindowPerInterval` can be set. |
-| `always` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | If a key is not in the cache, fetch the most recent keys from the IdP and update the cache. NOTE: This should only be done in trusted environments, since missing keys will each trigger a request to the IdP. Using this in an environment exposed to the internet will allow malicious agents to execute a DDoS attack by spamming protected endpoints with tokens signed by invalid keys. Only one of `always`, or `fixedWindowPerInterval` can be set. |
-| `fixedWindowPerInterval` | `int` | If a key is not in the cache, fetch the most recent keys from the IdP and update the cache. However, this is protected by fixed window rate limiting. The window is the interval specified to poll the discovery endpoint. The fixed_window_per_interval value is the number of times we will fetch the JWKS from the IdP during this interval. If the limit is exceeded, we will not stop fetching from the IdP. Only one of `fixedWindowPerInterval`, or `always` can be set. |
+| `never` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Never refresh the local JWKS cache on demand. If a key is not in the cache, it is assumed to be malicious. This is the default policy since we assume that IdPs publish keys before they rotate them, and frequent polling finds the newest keys. Only one of `never`, or `maxIdpReqPerPollingInterval` can be set. |
+| `always` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | If a key is not in the cache, fetch the most recent keys from the IdP and update the cache. NOTE: This should only be done in trusted environments, since missing keys will each trigger a request to the IdP. Using this in an environment exposed to the internet will allow malicious agents to execute a DDoS attack by spamming protected endpoints with tokens signed by invalid keys. Only one of `always`, or `maxIdpReqPerPollingInterval` can be set. |
+| `maxIdpReqPerPollingInterval` | `int` | If a key is not in the cache, fetch the most recent keys from the IdP and update the cache. This value sets the number of requests to the IdP per polling interval. If that limit is exceeded, we will stop fetching from the IdP for the remainder of the polling interval. Only one of `maxIdpReqPerPollingInterval`, or `always` can be set. |
 
 
 

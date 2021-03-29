@@ -959,9 +959,9 @@ func (m *JwksOnDemandCacheRefreshPolicy) Hash(hasher hash.Hash64) (uint64, error
 			}
 		}
 
-	case *JwksOnDemandCacheRefreshPolicy_FixedWindowPerInterval:
+	case *JwksOnDemandCacheRefreshPolicy_MaxIdpReqPerPollingInterval:
 
-		err = binary.Write(hasher, binary.LittleEndian, m.GetFixedWindowPerInterval())
+		err = binary.Write(hasher, binary.LittleEndian, m.GetMaxIdpReqPerPollingInterval())
 		if err != nil {
 			return 0, err
 		}
