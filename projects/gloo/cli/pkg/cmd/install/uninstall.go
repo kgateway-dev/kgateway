@@ -3,13 +3,14 @@ package install
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"os"
 	"sigs.k8s.io/yaml"
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"

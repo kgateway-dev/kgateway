@@ -107,8 +107,9 @@ var _ = Describe("Debug", func() {
 			expectedOutput = strings.Split(strings.Repeat("dummy-data-ignore_", len(cmds)), "_")
 
 			kubeCli = install.NewMockKubectl(cmds, expectedOutput)
+			mockKubectls := install.NewMockKubectlCalls([]*install.MockKubectl{kubeCli})
 
-			err = DumpYaml(tempFile.Name(), "test-namespace", kubeCli)
+			err = DumpYaml(tempFile.Name(), "test-namespace", mockKubectls)
 			Expect(err).NotTo(HaveOccurred(), "Should be able to dump yaml without returning an error")
 
 			writtenBytes, err := ioutil.ReadFile(tempFile.Name())
