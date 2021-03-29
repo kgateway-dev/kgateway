@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4507
+    resolvesIssue: false
+    description: >
+      Allow the user to define behaviors for when a token is provided with a
+      key ID that is not contained in the local JWKS cache.

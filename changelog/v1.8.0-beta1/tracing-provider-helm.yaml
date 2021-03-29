@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    description: Allow tracing to be configured via helm on the default gateway.
+    issueLink: https://github.com/solo-io/gloo/issues/4494
