@@ -32,6 +32,7 @@ weight: 5
 - [RedisSession](#redissession)
 - [CookieOptions](#cookieoptions)
 - [HeaderConfiguration](#headerconfiguration)
+- [JwksOnDemandCacheRefreshPolicy](#jwksondemandcacherefreshpolicy)
 - [OidcAuthorizationCode](#oidcauthorizationcode)
 - [AccessTokenValidation](#accesstokenvalidation)
 - [OauthSecret](#oauthsecret)
@@ -516,6 +517,35 @@ Deprecated: Prefer OAuth2
 
 
 ---
+### JwksOnDemandCacheRefreshPolicy
+
+ 
+The json web key set (JWKS) (https://tools.ietf.org/html/rfc7517) is discovered at an interval
+from a remote source. When keys rotate in the remote source, there may be a delay in the
+local source picking up those new keys. Therefore, a user could execute a request with a token
+that has been signed by a key in the remote JWKS, but the local cache doesn't have the key yet.
+The request would fail because the key isn't contained in the local set. Since most IdPs publish key
+keys in their remote JWKS before they are used, this is not an issue most of the time.
+This policy lets you define the behavior for when a user has a token with a key
+not yet in the local cache.
+
+```yaml
+"never": .google.protobuf.Empty
+"always": .google.protobuf.Empty
+"maxIdpReqPerPollingInterval": int
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `never` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Never refresh the local JWKS cache on demand. If a key is not in the cache, it is assumed to be malicious. This is the default policy since we assume that IdPs publish keys before they rotate them, and frequent polling finds the newest keys. Only one of `never`, or `maxIdpReqPerPollingInterval` can be set. |  |
+| `always` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | If a key is not in the cache, fetch the most recent keys from the IdP and update the cache. NOTE: This should only be done in trusted environments, since missing keys will each trigger a request to the IdP. Using this in an environment exposed to the internet will allow malicious agents to execute a DDoS attack by spamming protected endpoints with tokens signed by invalid keys. Only one of `always`, or `maxIdpReqPerPollingInterval` can be set. |  |
+| `maxIdpReqPerPollingInterval` | `int` | If a key is not in the cache, fetch the most recent keys from the IdP and update the cache. This value sets the number of requests to the IdP per polling interval. If that limit is exceeded, we will stop fetching from the IdP for the remainder of the polling interval. Only one of `maxIdpReqPerPollingInterval`, or `always` can be set. |  |
+
+
+
+
+---
 ### OidcAuthorizationCode
 
 
@@ -532,6 +562,7 @@ Deprecated: Prefer OAuth2
 "session": .enterprise.gloo.solo.io.UserSession
 "headers": .enterprise.gloo.solo.io.HeaderConfiguration
 "discoveryPollInterval": .google.protobuf.Duration
+"jwksCacheRefreshPolicy": .enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy
 
 ```
 
@@ -548,6 +579,7 @@ Deprecated: Prefer OAuth2
 | `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) | Configuration related to the user session. |  |
 | `headers` | [.enterprise.gloo.solo.io.HeaderConfiguration](../extauth.proto.sk/#headerconfiguration) | Configures headers added to requests. |  |
 | `discoveryPollInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The interval at which OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration If not specified, the default value is 30 minutes. |  |
+| `jwksCacheRefreshPolicy` | [.enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy](../extauth.proto.sk/#jwksondemandcacherefreshpolicy) | If a user executes a request with a key that is not found in the JWKS, it could be that the keys have rotated on the remote source, and not yet in the local cache. This policy lets you define the behavior for how to refresh the local cache during a request where an invalid key is provided. |  |
 
 
 
@@ -794,6 +826,7 @@ Deprecated, prefer OAuth2Config
 "session": .enterprise.gloo.solo.io.UserSession
 "headers": .enterprise.gloo.solo.io.HeaderConfiguration
 "discoveryPollInterval": .google.protobuf.Duration
+"jwksCacheRefreshPolicy": .enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy
 
 ```
 
@@ -810,6 +843,7 @@ Deprecated, prefer OAuth2Config
 | `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) |  |  |
 | `headers` | [.enterprise.gloo.solo.io.HeaderConfiguration](../extauth.proto.sk/#headerconfiguration) | Configures headers added to requests. |  |
 | `discoveryPollInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The interval at which OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration If not specified, the default value is 30 minutes. |  |
+| `jwksCacheRefreshPolicy` | [.enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy](../extauth.proto.sk/#jwksondemandcacherefreshpolicy) | If a user executes a request with a key that is not found in the JWKS, it could be that the keys have rotated on the remote source, and not yet in the local cache. This policy lets you define the behavior for how to refresh the local cache during a request where an invalid key is provided. |  |
 
 
 
