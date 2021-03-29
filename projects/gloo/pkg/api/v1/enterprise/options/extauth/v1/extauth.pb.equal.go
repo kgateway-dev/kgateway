@@ -838,6 +838,78 @@ func (m *DiscoveryOverride) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *JwksOnDemandCacheRefreshPolicy) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*JwksOnDemandCacheRefreshPolicy)
+	if !ok {
+		that2, ok := that.(JwksOnDemandCacheRefreshPolicy)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Policy.(type) {
+
+	case *JwksOnDemandCacheRefreshPolicy_Never:
+		if _, ok := target.Policy.(*JwksOnDemandCacheRefreshPolicy_Never); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetNever()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetNever()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetNever(), target.GetNever()) {
+				return false
+			}
+		}
+
+	case *JwksOnDemandCacheRefreshPolicy_Always:
+		if _, ok := target.Policy.(*JwksOnDemandCacheRefreshPolicy_Always); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAlways()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAlways()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAlways(), target.GetAlways()) {
+				return false
+			}
+		}
+
+	case *JwksOnDemandCacheRefreshPolicy_MaxIdpReqPerPollingInterval:
+		if _, ok := target.Policy.(*JwksOnDemandCacheRefreshPolicy_MaxIdpReqPerPollingInterval); !ok {
+			return false
+		}
+
+		if m.GetMaxIdpReqPerPollingInterval() != target.GetMaxIdpReqPerPollingInterval() {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Policy != target.Policy {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -946,6 +1018,16 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetDiscoveryPollInterval(), target.GetDiscoveryPollInterval()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetJwksCacheRefreshPolicy()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetJwksCacheRefreshPolicy()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetJwksCacheRefreshPolicy(), target.GetJwksCacheRefreshPolicy()) {
 			return false
 		}
 	}
@@ -2397,6 +2479,16 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool
 		}
 	} else {
 		if !proto.Equal(m.GetDiscoveryPollInterval(), target.GetDiscoveryPollInterval()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetJwksCacheRefreshPolicy()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetJwksCacheRefreshPolicy()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetJwksCacheRefreshPolicy(), target.GetJwksCacheRefreshPolicy()) {
 			return false
 		}
 	}
