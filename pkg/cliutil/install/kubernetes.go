@@ -44,7 +44,7 @@ func (k *CmdKubectl) KubectlOut(stdin io.Reader, args ...string) ([]byte, error)
 
 type MockKubectlCalls struct {
 	Mocks []*MockKubectl
-	Next            int
+	Next  int
 }
 
 type MockKubectl struct {
@@ -58,8 +58,8 @@ var _ KubeCli = &MockKubectlCalls{}
 
 func NewMockKubectlCalls(mocks []*MockKubectl) *MockKubectlCalls {
 	return &MockKubectlCalls{
-		Mocks:    mocks,
-		Next:        0,
+		Mocks: mocks,
+		Next:  0,
 	}
 }
 
