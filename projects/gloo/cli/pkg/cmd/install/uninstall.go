@@ -3,12 +3,13 @@ package install
 import (
 	"context"
 	"fmt"
-	"io"
-	"os"
-
 	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"os"
 	"sigs.k8s.io/yaml"
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"
@@ -52,6 +53,27 @@ func NewUninstallerWithOutput(helmClient HelmClient, kubeCli install.KubeCli, ou
 }
 
 func (u *uninstaller) Uninstall(ctx context.Context, cliArgs *options.HelmUninstall, mode Mode) error {
+	err := u.runUninstall(ctx, cliArgs, mode)
+	if err != nil {
+		return err
+	}
+	// Attempt to delete gloo fed if installed alongside with gloo
+	if mode == Gloo && cliArgs.DeleteAll {
+		fedExists, _ := u.helmClient.ReleaseExists(defaults.GlooFed, constants.GlooFedReleaseName)
+		if fedExists {
+			uninstallFedArgs := cliArgs
+			uninstallFedArgs.Namespace = defaults.GlooFed
+			uninstallFedArgs.HelmReleaseName = constants.GlooFedReleaseName
+			err := u.runUninstall(ctx, uninstallFedArgs, Federation)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (u *uninstaller) runUninstall(ctx context.Context, cliArgs *options.HelmUninstall, mode Mode) error {
 	namespace := cliArgs.Namespace
 	releaseName := cliArgs.HelmReleaseName
 

@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Uninstall gloo federation when the --all flag is specified.
+    issueLink: https://github.com/solo-io/gloo/issues/4502
