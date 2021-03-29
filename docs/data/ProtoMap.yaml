@@ -125,6 +125,9 @@ apis:
   enterprise.gloo.solo.io.HttpService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HttpService
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#JwksOnDemandCacheRefreshPolicy
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.Ldap:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#Ldap
     package: enterprise.gloo.solo.io
