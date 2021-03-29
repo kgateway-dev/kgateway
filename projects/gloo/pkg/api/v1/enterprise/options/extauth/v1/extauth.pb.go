@@ -1294,13 +1294,14 @@ func (x *DiscoveryOverride) GetClaims() []string {
 	return nil
 }
 
-// The json web key set is discovered at an interval from a remote source. When keys rotate
-// in the remote source, there may be a delay in the local source picking up those new keys.
-// Most IdPs publish new keys in the web key set before they are used so this may not be an issue.
-// However, if a user executes a request with a key that is not found in the JWKS, it could be
-// that the keys have rotated on the remote source, and not yet in the local cache.
-// This policy lets you define the behavior for how to refresh the local cache during a request
-// where an invalid key is provided
+// The json web key set (JWKS) (https://tools.ietf.org/html/rfc7517) is discovered at an interval
+// from a remote source. When keys rotate in the remote source, there may be a delay in the
+// local source picking up those new keys. Therefore, a user could execute a request with a token
+// that has been signed by a key in the remote JWKS, but the local cache doesn't have the key yet.
+// The request would fail because the key isn't contained in the local set. Since most IdPs publish key
+// keys in their remote JWKS before they are used, this is not an issue most of the time.
+// This policy lets you define the behavior for when a user has a token with a key
+// not yet in the local cache.
 type JwksOnDemandCacheRefreshPolicy struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1378,21 +1379,25 @@ type isJwksOnDemandCacheRefreshPolicy_Policy interface {
 }
 
 type JwksOnDemandCacheRefreshPolicy_Never struct {
-	// Never refresh the local jwks cache on demand. If a key is not in the cache, it is assumed to be malicious.
+	// Never refresh the local JWKS cache on demand. If a key is not in the cache, it is assumed to be malicious.
+	// This is the default policy since we assume that IdPs publish keys before they rotate them,
+	// and frequent polling finds the newest keys.
 	Never *empty.Empty `protobuf:"bytes,1,opt,name=never,proto3,oneof"`
 }
 
 type JwksOnDemandCacheRefreshPolicy_Always struct {
 	// If a key is not in the cache, fetch the most recent keys from the IdP and update the cache.
-	// NOTE: This should only be done in trusted environments.
+	// NOTE: This should only be done in trusted environments, since missing keys will each trigger
+	// a request to the IdP. Using this in an environment exposed to the internet will allow malicious agents to
+	// execute a DDoS attack by spamming protected endpoints with tokens signed by invalid keys.
 	Always *empty.Empty `protobuf:"bytes,2,opt,name=always,proto3,oneof"`
 }
 
 type JwksOnDemandCacheRefreshPolicy_FixedWindowPerInterval struct {
 	// If a key is not in the cache, fetch the most recent keys from the IdP and update the cache.
-	// However, this enables fixed window rate limiting. The window is the interval specified to
-	// poll discovery. The fixed_window_per_interval value is the number of time we will fetch the jwks from
-	// the IdP during this interval. If the limit is exceeded, we will not fetch from the IdP.
+	// However, this is protected by fixed window rate limiting. The window is the interval specified to
+	// poll the discovery endpoint. The fixed_window_per_interval value is the number of times we will fetch
+	// the JWKS from the IdP during this interval. If the limit is exceeded, we will not stop fetching from the IdP.
 	FixedWindowPerInterval uint32 `protobuf:"varint,3,opt,name=fixed_window_per_interval,json=fixedWindowPerInterval,proto3,oneof"`
 }
 
