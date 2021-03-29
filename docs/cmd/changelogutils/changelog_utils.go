@@ -44,7 +44,7 @@ func ParseReleases(releases []*github.RepositoryRelease, byMinorVersion bool) (m
 		var header string
 		// If byMinorVersion, we only want to include the release notes in the string and not the release header
 		if byMinorVersion {
-			header = fmt.Sprintf("##### %v\n", version.String())
+			header = fmt.Sprintf("##### %v\n", GetReleaseMdLink(version.String(), "gloo"))
 			version.LabelVersion, version.Patch, version.Label = 0, 0, ""
 		}
 		minorReleaseMap[*version] = minorReleaseMap[*version] + header + release.GetBody()
@@ -315,4 +315,8 @@ func SortReleases(releases []*github.RepositoryRelease) []*github.RepositoryRele
 		return versionA.MustIsGreaterThan(*versionB)
 	})
 	return releasesCopy
+}
+
+func GetReleaseMdLink(releaseTag, repo string) string {
+	return fmt.Sprintf("[%s](https://github.com/solo-io/%s/releases/tag/%s)", releaseTag, repo, releaseTag)
 }

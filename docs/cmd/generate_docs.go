@@ -65,6 +65,9 @@ func securityScanMdFromCmd(opts *options) *cobra.Command {
 		Use:   "gen-security-scan-md",
 		Short: "generate a markdown file from gcloud bucket",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if os.Getenv(skipSecurityScan) != "" {
+				return nil
+			}
 			return generateSecurityScanMd(args)
 		},
 	}
@@ -107,6 +110,7 @@ const (
 	glooDocGen              = "gloo"
 	glooEDocGen             = "glooe"
 	skipChangelogGeneration = "SKIP_CHANGELOG_GENERATION"
+	skipSecurityScan        = "SKIP_SECURITY_SCAN"
 )
 
 const (
@@ -121,8 +125,8 @@ var (
 			glooEDocGen,
 			arg)
 	}
-	MissingGithubTokenError = func() error {
-		return eris.Errorf("Must either set GITHUB_TOKEN or set %s environment variable to true", skipChangelogGeneration)
+	MissingGithubTokenError = func(envVar string) error {
+		return eris.Errorf("Must either set GITHUB_TOKEN or set %s environment variable to true", envVar)
 	}
 )
 
@@ -144,7 +148,7 @@ func generateChangelogMd(args []string) error {
 		}
 
 		for _, release := range allReleases {
-			fmt.Printf("### %v\n\n", release.GetTagName())
+			fmt.Printf("### %s\n\n", GetReleaseMdLink(release.GetTagName(), glooOpenSourceRepo))
 			fmt.Printf("%v", release.GetBody())
 		}
 	case glooEDocGen:
@@ -202,7 +206,7 @@ func generateGlooEChangelog(sortedByVersion bool) error {
 	// Initialize Auth
 	ctx := context.Background()
 	if os.Getenv("GITHUB_TOKEN") == "" {
-		return MissingGithubTokenError()
+		return MissingGithubTokenError(skipChangelogGeneration)
 	}
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
@@ -298,7 +302,7 @@ func generateSecurityScanGlooE() error {
 	// Initialize Auth
 	ctx := context.Background()
 	if os.Getenv("GITHUB_TOKEN") == "" {
-		return MissingGithubTokenError()
+		return MissingGithubTokenError(skipSecurityScan)
 	}
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
