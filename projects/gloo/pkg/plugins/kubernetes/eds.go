@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/go-utils/hashutils"
 	"hash/fnv"
 	"sort"
 	"strings"
@@ -64,10 +65,11 @@ func newEndpointWatcherForUpstreams(kubeFactoryFactory func(ns []string) KubePlu
 }
 
 type edsWatcher struct {
-	upstreams        map[*core.ResourceRef]*kubeplugin.UpstreamSpec
-	kubeShareFactory KubePluginSharedFactory
-	kubeCoreCache    corecache.KubeCoreCache
-	namespaces       []string
+	upstreams         map[*core.ResourceRef]*kubeplugin.UpstreamSpec
+	kubeShareFactory  KubePluginSharedFactory
+	kubeCoreCache     corecache.KubeCoreCache
+	namespaces        []string
+	lastEndpointsHash uint64
 }
 
 func newEndpointsWatcher(kubeCoreCache corecache.KubeCoreCache, namespaces []string, kubeShareFactory KubePluginSharedFactory, upstreams v1.UpstreamList) *edsWatcher {
@@ -118,7 +120,28 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 		}
 		endpointList = append(endpointList, endpoints...)
 	}
-	return filterEndpoints(ctx, writeNamespace, endpointList, serviceList, podList, c.upstreams), nil
+
+	eps, errsToLog := filterEndpoints(ctx, writeNamespace, endpointList, serviceList, podList, c.upstreams)
+
+	hash, err := hashutils.HashAllSafe(nil, eps)
+	if err != nil {
+		return nil, err
+	}
+	if c.lastEndpointsHash == hash {
+		return nil, nil
+	}
+	c.lastEndpointsHash = hash
+
+	// We return and log any messages here later because endpoints are constantly being updated / triggering the
+	// EDS loop by the endpoint shared informer. By ensuring the hash is different, we know the endpoints are
+	// functionally different and logging any new information might mean different / new information.
+	//
+	// This change helps avoid disk filling up from endless logs and cluttering the logs with the same message.
+	for _, errToLog := range errsToLog {
+		logger.Errorf(errToLog)
+	}
+
+	return eps, nil
 }
 
 func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
@@ -126,6 +149,7 @@ func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-cha
 
 	endpointsChan := make(chan v1.EndpointList)
 	errs := make(chan error)
+
 	updateResourceList := func() {
 		list, err := c.List(writeNamespace, clients.ListOpts{
 			Ctx:      opts.Ctx,
@@ -133,6 +157,9 @@ func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-cha
 		})
 		if err != nil {
 			errs <- err
+			return
+		}
+		if list == nil {
 			return
 		}
 		select {
@@ -171,10 +198,10 @@ func filterEndpoints(
 	services []*kubev1.Service,
 	pods []*kubev1.Pod,
 	upstreams map[*core.ResourceRef]*kubeplugin.UpstreamSpec,
-) v1.EndpointList {
+) (v1.EndpointList, []string) {
 	var endpoints v1.EndpointList
 
-	logger := contextutils.LoggerFrom(ctx)
+	var errorsToLog []string
 
 	type Epkey struct {
 		Address      string
@@ -209,7 +236,7 @@ func filterEndpoints(
 			}
 		}
 		if kubeServicePort == nil {
-			logger.Errorf("upstream %v: port %v not found for service %v", usRef.Key(), spec.ServicePort, spec.ServiceName)
+			errorsToLog = append(errorsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v", usRef.Key(), spec.ServicePort, spec.ServiceName))
 			continue
 		}
 		// find each matching endpoint
@@ -231,7 +258,7 @@ func filterEndpoints(
 					}
 				}
 				if port == 0 {
-					logger.Warnf("upstream %v: port %v not found for service %v in endpoint %v", usRef.Key(), spec.ServicePort, spec.ServiceName, subset)
+					errorsToLog = append(errorsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v in endpoint %v", usRef.Key(), spec.ServicePort, spec.ServiceName, subset))
 					continue
 				}
 				for _, addr := range subset.Addresses {
@@ -248,7 +275,7 @@ func filterEndpoints(
 						podLabels, err := getPodLabelsForIp(addr.IP, podName, podNamespace, pods)
 						if err != nil {
 							// pod not found for ip? what's that about?
-							logger.Warnf("error for upstream %v service %v: %v", usRef.Key(), spec.ServiceName, err)
+							errorsToLog = append(errorsToLog, fmt.Sprintf("error for upstream %v service %v: %v", usRef.Key(), spec.ServiceName, err))
 							continue
 						}
 						if !labels.AreLabelsInWhiteList(spec.Selector, podLabels) {
@@ -291,7 +318,7 @@ func filterEndpoints(
 	// sort refs for idempotency
 	sort.Slice(endpoints, func(i, j int) bool { return endpoints[i].Metadata.Name < endpoints[j].Metadata.Name })
 
-	return endpoints
+	return endpoints, errorsToLog
 }
 
 func createEndpoint(namespace, name string, upstreams []*core.ResourceRef, address string, port uint32, pod *kubev1.Pod) *v1.Endpoint {
