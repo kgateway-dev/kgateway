@@ -42,6 +42,11 @@ func (k *CmdKubectl) KubectlOut(stdin io.Reader, args ...string) ([]byte, error)
 	return KubectlOut(stdin, args...)
 }
 
+type MockKubectlCalls struct {
+	Mocks []*MockKubectl
+	Next            int
+}
+
 type MockKubectl struct {
 	Expected        []string
 	Next            int
@@ -49,7 +54,14 @@ type MockKubectl struct {
 	StdoutLineIndex int
 }
 
-var _ KubeCli = &MockKubectl{}
+var _ KubeCli = &MockKubectlCalls{}
+
+func NewMockKubectlCalls(mocks []*MockKubectl) *MockKubectlCalls {
+	return &MockKubectlCalls{
+		Mocks:    mocks,
+		Next:        0,
+	}
+}
 
 func NewMockKubectl(cmds []string, stdoutLines []string) *MockKubectl {
 	return &MockKubectl{
@@ -59,17 +71,22 @@ func NewMockKubectl(cmds []string, stdoutLines []string) *MockKubectl {
 	}
 }
 
-func (k *MockKubectl) Kubectl(stdin io.Reader, args ...string) error {
+func (kMocks *MockKubectlCalls) Kubectl(stdin io.Reader, args ...string) error {
+	k := kMocks.Mocks[kMocks.Next]
 	// If this fails then the CLI tried to run commands we didn't account for in the mock
 	Expect(k.Next < len(k.Expected)).To(BeTrue())
 	Expect(stdin).To(BeNil())
 	cmd := strings.Join(args, " ")
 	Expect(cmd).To(BeEquivalentTo(k.Expected[k.Next]))
 	k.Next = k.Next + 1
+	if k.Next == len(k.Expected) {
+		kMocks.Next = kMocks.Next + 1
+	}
 	return nil
 }
 
-func (k *MockKubectl) KubectlOut(stdin io.Reader, args ...string) ([]byte, error) {
+func (kMocks *MockKubectlCalls) KubectlOut(stdin io.Reader, args ...string) ([]byte, error) {
+	k := kMocks.Mocks[kMocks.Next]
 	Expect(k.Next < len(k.Expected)).To(BeTrue(), "MockKubectl did not have a next command for KubectlOut")
 	Expect(stdin).To(BeNil(), "Should have passed nil to MockKubectl.KubectlOut")
 	cmd := strings.Join(args, " ")
@@ -78,6 +95,9 @@ func (k *MockKubectl) KubectlOut(stdin io.Reader, args ...string) ([]byte, error
 	Expect(k.StdoutLineIndex < len(k.StdoutLines)).To(BeTrue(), "Mock kubectl has run out of stdout lines on command "+cmd)
 	stdOutLine := k.StdoutLines[k.StdoutLineIndex]
 	k.StdoutLineIndex = k.StdoutLineIndex + 1
+	if k.Next == len(k.Expected) {
+		kMocks.Next = kMocks.Next + 1
+	}
 	return []byte(stdOutLine), nil
 }
 
