@@ -13,6 +13,7 @@ glooctl init-plugin-manager [flags]
 ### Options
 
 ```
+  -f, --force              Delete any existing plugin data if found and reinitialize
       --gloo-home string   Gloo home directory (default: $HOME/.gloo)
   -h, --help               help for init-plugin-manager
 ```
