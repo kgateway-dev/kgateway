@@ -220,7 +220,7 @@ func filterEndpoints(
 			for _, subset := range eps.Subsets {
 				var port uint32
 				for _, p := range subset.Ports {
-					// if the edpoint port is not named, it implies that
+					// if the endpoint port is not named, it implies that
 					// the kube service only has a single unnamed port as well.
 					switch {
 					case singlePortService:
@@ -324,7 +324,7 @@ func getPodForIp(ip string, podName, podNamespace string, pods []*kubev1.Pod) (*
 
 	for _, pod := range pods {
 		if podName != "" && podNamespace != "" {
-			// no need for hueristics!
+			// no need for heuristics!
 			if podName == pod.Name && podNamespace == pod.Namespace {
 				return pod, nil
 			}
@@ -337,11 +337,11 @@ func getPodForIp(ip string, podName, podNamespace string, pods []*kubev1.Pod) (*
 			continue
 		}
 		if pod.Spec.HostNetwork {
-			// we cant tell pods apart if they are all on the host network.
+			// we can't tell pods apart if they are all on the host network.
 			continue
 		}
 		return pod, nil
 	}
 
-	return nil, errors.Errorf("running pod not found with ip %v", ip)
+	return nil, errors.Errorf("running pod not found with IP %v", ip)
 }
