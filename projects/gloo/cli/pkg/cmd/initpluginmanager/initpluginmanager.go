@@ -11,7 +11,6 @@ import (
 	"runtime"
 
 	"github.com/rotisserie/eris"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -36,12 +35,10 @@ func Command(ctx context.Context) *cobra.Command {
 				return err
 			}
 			const defaultIndexURL = "https://github.com/solo-io/glooctl-plugin-index.git"
-			if out, err := binary.run("index", "add", "default", defaultIndexURL); err != nil {
-				fmt.Println(out)
+			if err := binary.run("index", "add", "default", defaultIndexURL); err != nil {
 				return err
 			}
-			if out, err := binary.run("install", "plugin"); err != nil {
-				fmt.Println(out)
+			if err := binary.run("install", "plugin"); err != nil {
 				return err
 			}
 			homeStr := opts.home
@@ -81,7 +78,7 @@ func (o options) getHome() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(userHome, ".gloo-mesh"), nil
+	return filepath.Join(userHome, ".gloo"), nil
 }
 
 func checkExisting(home string, force bool) error {
@@ -151,7 +148,7 @@ func downloadTempBinary(ctx context.Context, home string) (*pluginBinary, error)
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		logrus.Debug(string(b))
+		fmt.Println(string(b))
 		return nil, eris.Errorf("could not download plugin manager binary: %d %s", res.StatusCode, res.Status)
 	}
 	if err := ioutil.WriteFile(binPath, b, 0755); err != nil {
@@ -160,9 +157,8 @@ func downloadTempBinary(ctx context.Context, home string) (*pluginBinary, error)
 	return &pluginBinary{path: binPath, home: home}, nil
 }
 
-func (binary pluginBinary) run(args ...string) (string, error) {
+func (binary pluginBinary) run(args ...string) error {
 	cmd := exec.Command(binary.path, args...)
 	cmd.Env = append(cmd.Env, "GLOOCTL_HOME="+binary.home)
-	out, err := cmd.CombinedOutput()
-	return string(out), err
+	return cmd.Run()
 }
