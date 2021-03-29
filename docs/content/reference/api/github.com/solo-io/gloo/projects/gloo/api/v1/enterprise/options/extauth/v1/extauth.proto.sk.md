@@ -34,6 +34,7 @@ weight: 5
 - [CookieOptions](#cookieoptions)
 - [HeaderConfiguration](#headerconfiguration)
 - [DiscoveryOverride](#discoveryoverride)
+- [JwksOnDemandCacheRefreshPolicy](#jwksondemandcacherefreshpolicy)
 - [OidcAuthorizationCode](#oidcauthorizationcode)
 - [AccessTokenValidation](#accesstokenvalidation)
 - [JwtValidation](#jwtvalidation)
@@ -592,6 +593,34 @@ https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
 
 
 ---
+### JwksOnDemandCacheRefreshPolicy
+
+ 
+The json web key set is discovered at an interval from a remote source. When keys rotate
+in the remote source, there may be a delay in the local source picking up those new keys.
+Most IdPs publish new keys in the web key set before they are used so this may not be an issue.
+However, if a user executes a request with a key that is not found in the JWKS, it could be
+that the keys have rotated on the remote source, and not yet in the local cache.
+This policy lets you define the behavior for how to refresh the local cache during a request
+where an invalid key is provided
+
+```yaml
+"never": .google.protobuf.Empty
+"always": .google.protobuf.Empty
+"fixedWindowPerInterval": int
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `never` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Never refresh the local jwks cache on demand. If a key is not in the cache, it is assumed to be malicious. Only one of `never`, or `fixedWindowPerInterval` can be set. |
+| `always` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | If a key is not in the cache, fetch the most recent keys from the IdP and update the cache. NOTE: This should only be done in trusted environments. Only one of `always`, or `fixedWindowPerInterval` can be set. |
+| `fixedWindowPerInterval` | `int` | If a key is not in the cache, fetch the most recent keys from the IdP and update the cache. However, this enables fixed window rate limiting. The window is the interval specified to poll discovery. The fixed_window_per_interval value is the number of time we will fetch the jwks from the IdP during this interval. If the limit is exceeded, we will not fetch from the IdP. Only one of `fixedWindowPerInterval`, or `always` can be set. |
+
+
+
+
+---
 ### OidcAuthorizationCode
 
 
@@ -609,6 +638,7 @@ https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
 "headers": .enterprise.gloo.solo.io.HeaderConfiguration
 "discoveryOverride": .enterprise.gloo.solo.io.DiscoveryOverride
 "discoveryPollInterval": .google.protobuf.Duration
+"jwksCacheRefreshPolicy": .enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy
 
 ```
 
@@ -626,6 +656,7 @@ https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
 | `headers` | [.enterprise.gloo.solo.io.HeaderConfiguration](../extauth.proto.sk/#headerconfiguration) | Configures headers added to requests. |
 | `discoveryOverride` | [.enterprise.gloo.solo.io.DiscoveryOverride](../extauth.proto.sk/#discoveryoverride) | OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration The discovery override defines any properties that should override this discovery configuration For example, the following AuthConfig CRD could be defined as: ```yaml apiVersion: enterprise.gloo.solo.io/v1 kind: AuthConfig metadata: name: google-oidc namespace: gloo-system spec: configs: - oauth: app_url: http://localhost:8080 callback_path: /callback client_id: $CLIENT_ID client_secret_ref: name: google namespace: gloo-system issuer_url: https://accounts.google.com discovery_override: token_endpoint: "https://token.url/gettoken" ``` And this will ensure that regardless of what value is discovered at <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint. |
 | `discoveryPollInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The interval at which OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration If not specified, the default value is 30 minutes. |
+| `jwksCacheRefreshPolicy` | [.enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy](../extauth.proto.sk/#jwksondemandcacherefreshpolicy) | If a user executes a request with a key that is not found in the JWKS, it could be that the keys have rotated on the remote source, and not yet in the local cache. This policy lets you define the behavior for how to refresh the local cache during a request where an invalid key is provided. |
 
 
 
@@ -1042,6 +1073,7 @@ Deprecated, prefer OAuth2Config
 "headers": .enterprise.gloo.solo.io.HeaderConfiguration
 "discoveryOverride": .enterprise.gloo.solo.io.DiscoveryOverride
 "discoveryPollInterval": .google.protobuf.Duration
+"jwksCacheRefreshPolicy": .enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy
 
 ```
 
@@ -1059,6 +1091,7 @@ Deprecated, prefer OAuth2Config
 | `headers` | [.enterprise.gloo.solo.io.HeaderConfiguration](../extauth.proto.sk/#headerconfiguration) | Configures headers added to requests. |
 | `discoveryOverride` | [.enterprise.gloo.solo.io.DiscoveryOverride](../extauth.proto.sk/#discoveryoverride) | OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration The configuration override defines any properties that should override this discovery configuration For example, the following AuthConfig CRD could be defined as: ```yaml apiVersion: enterprise.gloo.solo.io/v1 kind: AuthConfig metadata: name: google-oidc namespace: gloo-system spec: configs: - oauth: app_url: http://localhost:8080 callback_path: /callback client_id: $CLIENT_ID client_secret_ref: name: google namespace: gloo-system issuer_url: https://accounts.google.com discovery_override: token_endpoint: "https://token.url/gettoken" ``` And this will ensure that regardless of what value is discovered at <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint. |
 | `discoveryPollInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The interval at which OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration If not specified, the default value is 30 minutes. |
+| `jwksCacheRefreshPolicy` | [.enterprise.gloo.solo.io.JwksOnDemandCacheRefreshPolicy](../extauth.proto.sk/#jwksondemandcacherefreshpolicy) | If a user executes a request with a key that is not found in the JWKS, it could be that the keys have rotated on the remote source, and not yet in the local cache. This policy lets you define the behavior for how to refresh the local cache during a request where an invalid key is provided. |
 
 
 
