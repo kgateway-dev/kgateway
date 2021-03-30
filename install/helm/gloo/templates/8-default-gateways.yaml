@@ -30,7 +30,7 @@ spec:
     options:
       httpConnectionManagerSettings:
         tracing:
-{{ toYaml $gatewayProxy.tracing.provider | indent 10 }}
+{{ toYaml $spec.tracing.provider | indent 10 }}
 {{- end }}
 {{- else }}
   httpGateway: {}
@@ -75,7 +75,7 @@ spec:
     options:
       httpConnectionManagerSettings:
         tracing:
-{{ toYaml $gatewayProxy.tracing.provider | indent 10 }}
+{{ toYaml $spec.tracing.provider | indent 10 }}
 {{- end }}
 {{- else }}
   httpGateway: {}
