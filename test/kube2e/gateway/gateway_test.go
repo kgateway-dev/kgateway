@@ -1510,43 +1510,43 @@ spec:
 
 				cancel()
 			})
-		})
 
-		It("will not reject invalid transformation", func() {
-			injaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %`
-			t := &glootransformation.Transformations{
-				ClearRouteCache: true,
-				ResponseTransformation: &transformation.Transformation{
-					TransformationType: &transformation.Transformation_TransformationTemplate{
-						TransformationTemplate: &transformation.TransformationTemplate{
-							Headers: map[string]*transformation.InjaTemplate{
-								":status": {Text: injaTransform},
+			It("will not reject invalid transformation", func() {
+				injaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %`
+				t := &glootransformation.Transformations{
+					ClearRouteCache: true,
+					ResponseTransformation: &transformation.Transformation{
+						TransformationType: &transformation.Transformation_TransformationTemplate{
+							TransformationTemplate: &transformation.TransformationTemplate{
+								Headers: map[string]*transformation.InjaTemplate{
+									":status": {Text: injaTransform},
+								},
 							},
 						},
 					},
-				},
-			}
+				}
 
-			dest := &gloov1.Destination{
-				DestinationType: &gloov1.Destination_Upstream{
-					Upstream: &core.ResourceRef{
-						Namespace: testHelper.InstallNamespace,
-						Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+				dest := &gloov1.Destination{
+					DestinationType: &gloov1.Destination_Upstream{
+						Upstream: &core.ResourceRef{
+							Namespace: testHelper.InstallNamespace,
+							Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+						},
 					},
-				},
-			}
+				}
 
-			vs := getVirtualService(dest, nil)
-			vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: t}
+				vs := getVirtualService(dest, nil)
+				vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: t}
 
-			// give settings a chance to propogate
-			Eventually(func() error {
-				_, err := virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
-				return err
-			}).ShouldNot(HaveOccurred())
+				// give settings a chance to propogate
+				Eventually(func() error {
+					_, err := virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
+					return err
+				}).ShouldNot(HaveOccurred())
 
-			err := virtualServiceClient.Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
-			Expect(err).ToNot(HaveOccurred())
+				err := virtualServiceClient.Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).ToNot(HaveOccurred())
+			})
 		})
 	})
 
