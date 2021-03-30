@@ -34,7 +34,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(err).NotTo(HaveOccurred(), "should be able to install petstore")
 
 			// Add the gloo route to petstore
-			err = runGlooctlCommand("add", "route", "--name", "petstore", "--namespace", testHelper.InstallNamespace, "--path-prefix", "/", "--dest-name", "default-petstore-8080" , "--dest-namespace", testHelper.InstallNamespace)
+			err = runGlooctlCommand("add", "route", "--name", "petstore", "--namespace", testHelper.InstallNamespace, "--path-prefix", "/", "--dest-name", "default-petstore-8080", "--dest-namespace", testHelper.InstallNamespace)
 			Expect(err).NotTo(HaveOccurred(), "should be able to add gloo route to petstore")
 
 			// Enable Istio Injection on default namespace
