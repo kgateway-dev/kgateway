@@ -122,7 +122,8 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 		endpointList = append(endpointList, endpoints...)
 	}
 
-	eps, errsToLog := filterEndpoints(ctx, writeNamespace, endpointList, serviceList, podList, c.upstreams)
+	eps, warns, errsToLog := filterEndpoints(ctx, writeNamespace, endpointList, serviceList, podList, c.upstreams)
+	warnsToLog = append(warnsToLog, warns...)
 
 	hash, err := hashutils.HashAllSafe(nil, eps)
 	if err != nil {
@@ -203,10 +204,10 @@ func filterEndpoints(
 	services []*kubev1.Service,
 	pods []*kubev1.Pod,
 	upstreams map[*core.ResourceRef]*kubeplugin.UpstreamSpec,
-) (v1.EndpointList, []string) {
+) (v1.EndpointList, []string, []string) {
 	var endpoints v1.EndpointList
 
-	var errorsToLog []string
+	var warnsToLog, errorsToLog []string
 
 	type Epkey struct {
 		Address      string
@@ -263,7 +264,7 @@ func filterEndpoints(
 					}
 				}
 				if port == 0 {
-					errorsToLog = append(errorsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v in endpoint %v", usRef.Key(), spec.ServicePort, spec.ServiceName, subset))
+					warnsToLog = append(warnsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v in endpoint %v", usRef.Key(), spec.ServicePort, spec.ServiceName, subset))
 					continue
 				}
 				for _, addr := range subset.Addresses {
@@ -279,8 +280,8 @@ func filterEndpoints(
 						// determine whether labels for the owner of this ip (pod) matches the spec
 						podLabels, err := getPodLabelsForIp(addr.IP, podName, podNamespace, pods)
 						if err != nil {
-							// pod not found for ip? what's that about?
-							errorsToLog = append(errorsToLog, fmt.Sprintf("error for upstream %v service %v: %v", usRef.Key(), spec.ServiceName, err))
+							// pod not found for IP? what's that about?
+							warnsToLog = append(warnsToLog, fmt.Sprintf("error for upstream %v service %v: %v", usRef.Key(), spec.ServiceName, err))
 							continue
 						}
 						if !labels.AreLabelsInWhiteList(spec.Selector, podLabels) {
@@ -323,7 +324,7 @@ func filterEndpoints(
 	// sort refs for idempotency
 	sort.Slice(endpoints, func(i, j int) bool { return endpoints[i].Metadata.Name < endpoints[j].Metadata.Name })
 
-	return endpoints, errorsToLog
+	return endpoints, warnsToLog, errorsToLog
 }
 
 func createEndpoint(namespace, name string, upstreams []*core.ResourceRef, address string, port uint32, pod *kubev1.Pod) *v1.Endpoint {
