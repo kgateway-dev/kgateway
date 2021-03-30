@@ -895,7 +895,6 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeNil())
 					})
 
-
 					It("can set tracing provider", func() {
 						name := defaults.GatewayProxyName
 						bindPort := "8080"
