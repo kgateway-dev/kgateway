@@ -4,5 +4,3 @@ changelog:
     resolvesIssue: false
     description: >
       Fix a glooctl test flake that slowed down development.
-
-
