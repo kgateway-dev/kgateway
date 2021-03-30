@@ -193,7 +193,7 @@ func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-cha
 }
 
 func filterEndpoints(
-	ctx context.Context,
+	_ context.Context, // do not use for logging! return logging messages as strings and log them after hashing (see https://github.com/solo-io/gloo/issues/3761)
 	writeNamespace string,
 	kubeEndpoints []*kubev1.Endpoints,
 	services []*kubev1.Service,
