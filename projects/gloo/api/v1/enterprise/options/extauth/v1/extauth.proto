@@ -514,7 +514,7 @@ message AccessTokenValidation {
         // authenticated user and add it to the request headers and/or dynamic metadata (depending on how the
         // server is configured); if the field is set and the attribute cannot be found, the request will be denied.
         // This field is optional and by default the server will not try to derive the user ID.
-        string user_id_source = 4;
+        string user_id_attribute_name = 4;
     }
 
     oneof validation_type {

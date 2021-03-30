@@ -2048,7 +2048,7 @@ func (m *AccessTokenValidation_IntrospectionValidation) Equal(that interface{}) 
 		}
 	}
 
-	if strings.Compare(m.GetUserIdSource(), target.GetUserIdSource()) != 0 {
+	if strings.Compare(m.GetUserIdAttributeName(), target.GetUserIdAttributeName()) != 0 {
 		return false
 	}
 
