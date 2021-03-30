@@ -2,14 +2,13 @@ package kubernetes
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"hash/fnv"
 	"sort"
 	"strings"
 
 	errors "github.com/rotisserie/eris"
-
-	proto2 "google.golang.org/protobuf/proto"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -127,22 +126,14 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 	warnsToLog = append(warnsToLog, warns...)
 
 	hasher := fnv.New64()
-
-	// 8kb capacity, consider raising if we find the buffer is frequently being
-	// re-allocated by MarshalAppend to fit larger protos.
-	// the goal is to keep allocations constant for GC, without allocating an
-	// unnecessarily large buffer.
-	buffer := make([]byte, 0, 8*1024)
-	mo := proto2.MarshalOptions{Deterministic: true}
-	for _, r := range eps {
-		buf := buffer[:0]
-		out, err := mo.MarshalAppend(buf, r)
+	for _, ep := range eps {
+		result, err := ep.Hash(hasher)
 		if err != nil {
-			return nil, errors.Wrap(err, "marshalling envoy snapshot components")
+			return nil, err
 		}
-		_, err = hasher.Write(out)
+		err = binary.Write(hasher, binary.LittleEndian, result)
 		if err != nil {
-			return nil, errors.Wrap(err, "constructing hash for envoy snapshot components")
+			return nil, err
 		}
 	}
 	hash := hasher.Sum64()
