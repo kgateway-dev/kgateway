@@ -7,7 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/solo-io/go-utils/hashutils"
+	errors "github.com/rotisserie/eris"
+
+	proto2 "google.golang.org/protobuf/proto"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -16,7 +18,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -125,10 +126,27 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 	eps, warns, errsToLog := filterEndpoints(ctx, writeNamespace, endpointList, serviceList, podList, c.upstreams)
 	warnsToLog = append(warnsToLog, warns...)
 
-	hash, err := hashutils.HashAllSafe(nil, eps)
-	if err != nil {
-		return nil, err
+	hasher := fnv.New64()
+
+	// 8kb capacity, consider raising if we find the buffer is frequently being
+	// re-allocated by MarshalAppend to fit larger protos.
+	// the goal is to keep allocations constant for GC, without allocating an
+	// unnecessarily large buffer.
+	buffer := make([]byte, 0, 8*1024)
+	mo := proto2.MarshalOptions{Deterministic: true}
+	for _, r := range eps {
+		buf := buffer[:0]
+		out, err := mo.MarshalAppend(buf, r)
+		if err != nil {
+			return nil, errors.Wrap(err, "marshalling envoy snapshot components")
+		}
+		_, err = hasher.Write(out)
+		if err != nil {
+			return nil, errors.Wrap(err, "constructing hash for envoy snapshot components")
+		}
 	}
+	hash := hasher.Sum64()
+
 	if c.lastEndpointsHash == hash {
 		return nil, nil
 	}
