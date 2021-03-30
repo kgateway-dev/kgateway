@@ -47,20 +47,14 @@ func (m *CustomTag) Hash(hasher hash.Hash64) (uint64, error) {
 	case *CustomTag_Literal_:
 
 		if h, ok := interface{}(m.GetLiteral()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Literal")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetLiteral(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetLiteral(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Literal")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -69,20 +63,14 @@ func (m *CustomTag) Hash(hasher hash.Hash64) (uint64, error) {
 	case *CustomTag_Environment_:
 
 		if h, ok := interface{}(m.GetEnvironment()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Environment")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetEnvironment(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetEnvironment(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Environment")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -91,20 +79,14 @@ func (m *CustomTag) Hash(hasher hash.Hash64) (uint64, error) {
 	case *CustomTag_RequestHeader:
 
 		if h, ok := interface{}(m.GetRequestHeader()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("RequestHeader")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetRequestHeader(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetRequestHeader(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("RequestHeader")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -113,20 +95,14 @@ func (m *CustomTag) Hash(hasher hash.Hash64) (uint64, error) {
 	case *CustomTag_Metadata_:
 
 		if h, ok := interface{}(m.GetMetadata()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("Metadata")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetMetadata(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetMetadata(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("Metadata")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -219,40 +195,28 @@ func (m *CustomTag_Metadata) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetKind()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Kind")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetKind(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetKind(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Kind")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetMetadataKey()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("MetadataKey")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMetadataKey(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMetadataKey(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("MetadataKey")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}

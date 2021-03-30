@@ -196,9 +196,6 @@ func (m *Upstream) Equal(that interface{}) bool {
 	switch m.UpstreamType.(type) {
 
 	case *Upstream_Kube:
-		if _, ok := target.UpstreamType.(*Upstream_Kube); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetKube()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetKube()) {
@@ -211,9 +208,6 @@ func (m *Upstream) Equal(that interface{}) bool {
 		}
 
 	case *Upstream_Static:
-		if _, ok := target.UpstreamType.(*Upstream_Static); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetStatic()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetStatic()) {
@@ -226,9 +220,6 @@ func (m *Upstream) Equal(that interface{}) bool {
 		}
 
 	case *Upstream_Pipe:
-		if _, ok := target.UpstreamType.(*Upstream_Pipe); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetPipe()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetPipe()) {
@@ -241,9 +232,6 @@ func (m *Upstream) Equal(that interface{}) bool {
 		}
 
 	case *Upstream_Aws:
-		if _, ok := target.UpstreamType.(*Upstream_Aws); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetAws()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAws()) {
@@ -256,9 +244,6 @@ func (m *Upstream) Equal(that interface{}) bool {
 		}
 
 	case *Upstream_Azure:
-		if _, ok := target.UpstreamType.(*Upstream_Azure); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetAzure()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAzure()) {
@@ -271,9 +256,6 @@ func (m *Upstream) Equal(that interface{}) bool {
 		}
 
 	case *Upstream_Consul:
-		if _, ok := target.UpstreamType.(*Upstream_Consul); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetConsul()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConsul()) {
@@ -286,9 +268,6 @@ func (m *Upstream) Equal(that interface{}) bool {
 		}
 
 	case *Upstream_AwsEc2:
-		if _, ok := target.UpstreamType.(*Upstream_AwsEc2); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetAwsEc2()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAwsEc2()) {
@@ -300,11 +279,6 @@ func (m *Upstream) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.UpstreamType != target.UpstreamType {
-			return false
-		}
 	}
 
 	return true

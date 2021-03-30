@@ -94,9 +94,6 @@ func (m *MetadataKind) Equal(that interface{}) bool {
 	switch m.Kind.(type) {
 
 	case *MetadataKind_Request_:
-		if _, ok := target.Kind.(*MetadataKind_Request_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetRequest()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRequest()) {
@@ -109,9 +106,6 @@ func (m *MetadataKind) Equal(that interface{}) bool {
 		}
 
 	case *MetadataKind_Route_:
-		if _, ok := target.Kind.(*MetadataKind_Route_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetRoute()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRoute()) {
@@ -124,9 +118,6 @@ func (m *MetadataKind) Equal(that interface{}) bool {
 		}
 
 	case *MetadataKind_Cluster_:
-		if _, ok := target.Kind.(*MetadataKind_Cluster_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetCluster()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetCluster()) {
@@ -139,9 +130,6 @@ func (m *MetadataKind) Equal(that interface{}) bool {
 		}
 
 	case *MetadataKind_Host_:
-		if _, ok := target.Kind.(*MetadataKind_Host_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetHost()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetHost()) {
@@ -153,11 +141,6 @@ func (m *MetadataKind) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Kind != target.Kind {
-			return false
-		}
 	}
 
 	return true
@@ -187,19 +170,11 @@ func (m *MetadataKey_PathSegment) Equal(that interface{}) bool {
 	switch m.Segment.(type) {
 
 	case *MetadataKey_PathSegment_Key:
-		if _, ok := target.Segment.(*MetadataKey_PathSegment_Key); !ok {
-			return false
-		}
 
 		if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
 			return false
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Segment != target.Segment {
-			return false
-		}
 	}
 
 	return true

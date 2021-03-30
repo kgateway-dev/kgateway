@@ -97,28 +97,17 @@ func (m *SocketAddress) Equal(that interface{}) bool {
 	switch m.PortSpecifier.(type) {
 
 	case *SocketAddress_PortValue:
-		if _, ok := target.PortSpecifier.(*SocketAddress_PortValue); !ok {
-			return false
-		}
 
 		if m.GetPortValue() != target.GetPortValue() {
 			return false
 		}
 
 	case *SocketAddress_NamedPort:
-		if _, ok := target.PortSpecifier.(*SocketAddress_NamedPort); !ok {
-			return false
-		}
 
 		if strings.Compare(m.GetNamedPort(), target.GetNamedPort()) != 0 {
 			return false
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.PortSpecifier != target.PortSpecifier {
-			return false
-		}
 	}
 
 	return true
@@ -263,9 +252,6 @@ func (m *Address) Equal(that interface{}) bool {
 	switch m.Address.(type) {
 
 	case *Address_SocketAddress:
-		if _, ok := target.Address.(*Address_SocketAddress); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetSocketAddress()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetSocketAddress()) {
@@ -278,9 +264,6 @@ func (m *Address) Equal(that interface{}) bool {
 		}
 
 	case *Address_Pipe:
-		if _, ok := target.Address.(*Address_Pipe); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetPipe()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetPipe()) {
@@ -292,11 +275,6 @@ func (m *Address) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Address != target.Address {
-			return false
-		}
 	}
 
 	return true

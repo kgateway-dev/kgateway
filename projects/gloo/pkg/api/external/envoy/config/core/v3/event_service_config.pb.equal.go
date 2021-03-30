@@ -49,9 +49,6 @@ func (m *EventServiceConfig) Equal(that interface{}) bool {
 	switch m.ConfigSourceSpecifier.(type) {
 
 	case *EventServiceConfig_GrpcService:
-		if _, ok := target.ConfigSourceSpecifier.(*EventServiceConfig_GrpcService); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetGrpcService()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetGrpcService()) {
@@ -63,11 +60,6 @@ func (m *EventServiceConfig) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ConfigSourceSpecifier != target.ConfigSourceSpecifier {
-			return false
-		}
 	}
 
 	return true

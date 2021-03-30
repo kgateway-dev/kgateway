@@ -131,9 +131,6 @@ func (m *PluginConfig) Equal(that interface{}) bool {
 	switch m.Vm.(type) {
 
 	case *PluginConfig_VmConfig:
-		if _, ok := target.Vm.(*PluginConfig_VmConfig); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetVmConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetVmConfig()) {
@@ -145,11 +142,6 @@ func (m *PluginConfig) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Vm != target.Vm {
-			return false
-		}
 	}
 
 	return true

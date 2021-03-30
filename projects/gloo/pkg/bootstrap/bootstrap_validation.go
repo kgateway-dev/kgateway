@@ -6,20 +6,18 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-
-	"github.com/golang/protobuf/ptypes/any"
-
 	envoy_config_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v34 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/rotisserie/eris"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
@@ -33,7 +31,12 @@ func getEnvoyPath() string {
 	return ep
 }
 
-func ValidateBootstrap(ctx context.Context, bootstrapYaml string) error {
+func ValidateBootstrap(ctx context.Context, settings *v1.Settings, bootstrapYaml string) error {
+	// If the user has disabled transformation validation, then always return nil
+	if settings.GetGateway().GetValidation().GetDisableTransformationValidation().GetValue() {
+		return nil
+	}
+
 	envoyPath := getEnvoyPath()
 	validateCmd := exec.Command(envoyPath, "--mode", "validate", "--config-yaml", bootstrapYaml, "-l", "critical", "--log-format", "%v")
 	if output, err := validateCmd.CombinedOutput(); err != nil {

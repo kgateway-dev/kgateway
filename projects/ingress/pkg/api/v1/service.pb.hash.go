@@ -39,60 +39,42 @@ func (m *KubeService) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetKubeServiceSpec()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("KubeServiceSpec")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetKubeServiceSpec(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetKubeServiceSpec(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("KubeServiceSpec")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetKubeServiceStatus()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("KubeServiceStatus")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetKubeServiceStatus(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetKubeServiceStatus(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("KubeServiceStatus")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetMetadata()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Metadata")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMetadata(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetMetadata(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Metadata")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}

@@ -47,40 +47,28 @@ func (m *VmConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetCode()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Code")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetCode(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetCode(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Code")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
 	}
 
 	if h, ok := interface{}(m.GetConfiguration()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Configuration")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetConfiguration(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetConfiguration(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Configuration")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -121,20 +109,14 @@ func (m *PluginConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetConfiguration()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Configuration")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetConfiguration(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetConfiguration(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Configuration")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
@@ -150,20 +132,14 @@ func (m *PluginConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	case *PluginConfig_VmConfig:
 
 		if h, ok := interface{}(m.GetVmConfig()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("VmConfig")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetVmConfig(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetVmConfig(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("VmConfig")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -188,20 +164,14 @@ func (m *WasmService) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if h, ok := interface{}(m.GetConfig()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Config")); err != nil {
-			return 0, err
-		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetConfig(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetConfig(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Config")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 				return 0, err
 			}
 		}
