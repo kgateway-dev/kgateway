@@ -3,10 +3,11 @@ package kubernetes
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/go-utils/hashutils"
 	"hash/fnv"
 	"sort"
 	"strings"
+
+	"github.com/solo-io/go-utils/hashutils"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
