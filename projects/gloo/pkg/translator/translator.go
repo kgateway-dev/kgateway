@@ -278,7 +278,7 @@ func (t *translatorInstance) generateXDSSnapshot(
 }
 
 func EnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint64 {
-	hasher := fnv.New32()
+	hasher := fnv.New64()
 	// 8kb capacity, consider raising if we find the buffer is frequently being
 	// re-allocated by MarshalAppend to fit larger protos.
 	// the goal is to keep allocations constant for GC, without allocating an
@@ -299,7 +299,7 @@ func EnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) uint64 {
 			panic(errors.Wrap(err, "constructing hash for envoy snapshot components"))
 		}
 	}
-	return uint64(hasher.Sum32())
+	return hasher.Sum64()
 }
 
 // deprecated, slower than EnvoyCacheResourcesListToFnvHash
