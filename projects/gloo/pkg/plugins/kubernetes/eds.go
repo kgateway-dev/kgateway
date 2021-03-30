@@ -96,12 +96,12 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 	var serviceList []*kubev1.Service
 	var podList []*kubev1.Pod
 	ctx := contextutils.WithLogger(opts.Ctx, "kubernetes_eds")
-	logger := contextutils.LoggerFrom(ctx)
+	var warnsToLog []string
 
 	for _, ns := range c.namespaces {
 		if c.kubeCoreCache.NamespacedServiceLister(ns) == nil {
 			// this namespace is not watched, ignore it.
-			logger.Warnw("namespace is not watched, and has upstreams pointing to it", "namespace", ns)
+			warnsToLog = append(warnsToLog, fmt.Sprintf("namespace %v is not watched, and has upstreams pointing to it", ns))
 			continue
 		}
 		services, err := c.kubeCoreCache.NamespacedServiceLister(ns).List(labels.SelectorFromSet(opts.Selector))
@@ -138,8 +138,12 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 	// functionally different and logging any new information might mean different / new information.
 	//
 	// This change helps avoid disk filling up from endless logs and cluttering the logs with the same message.
+	logger := contextutils.LoggerFrom(ctx)
+	for _, warnToLog := range warnsToLog {
+		logger.Warn(warnToLog)
+	}
 	for _, errToLog := range errsToLog {
-		logger.Errorf(errToLog)
+		logger.Error(errToLog)
 	}
 
 	return eps, nil
