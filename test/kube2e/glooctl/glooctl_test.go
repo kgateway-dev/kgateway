@@ -2,7 +2,6 @@ package glooctl_test
 
 import (
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -34,12 +33,12 @@ var _ = Describe("Kube2e: glooctl", func() {
 			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", "https://raw.githubusercontent.com/solo-io/gloo/v1.4.12/example/petstore/petstore.yaml")
 			Expect(err).NotTo(HaveOccurred(), "should be able to install petstore")
 
-			// Add the gloo route
-			err = runGlooctlCommand(strings.Split("add route --name petstore --namespace "+testHelper.InstallNamespace+" --path-prefix / --dest-name default-petstore-8080  --dest-namespace "+testHelper.InstallNamespace, " ")...)
+			// Add the gloo route to petstore
+			err = runGlooctlCommand("add", "route", "--name", "petstore", "--namespace", testHelper.InstallNamespace, "--path-prefix", "/", "--dest-name", "default-petstore-8080", "--dest-namespace", testHelper.InstallNamespace)
 			Expect(err).NotTo(HaveOccurred(), "should be able to add gloo route to petstore")
 
 			// Enable Istio Injection on default namespace
-			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "label", "namespace", "default", "istio-injection=enabled")
+			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "label", "namespace", "default", "istio-injection=enabled", "--overwrite")
 			Expect(err).NotTo(HaveOccurred(), "should be able to add a label to enable istio injection")
 
 			petstoreCurlOpts = helper.CurlOpts{
@@ -62,6 +61,10 @@ var _ = Describe("Kube2e: glooctl", func() {
 			// Disable Istio Injection on default namespace
 			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "label", "namespace", "default", "istio-injection-")
 			Expect(err).NotTo(HaveOccurred(), "should be able to remove the istio injection label")
+
+			// Remove the gloo route to petstore
+			err = runGlooctlCommand("remove", "route", "--name", "petstore", "--namespace", testHelper.InstallNamespace)
+			Expect(err).NotTo(HaveOccurred(), "should be able to remove gloo route to petstore")
 		})
 
 		ExpectIstioInjected := func() {
@@ -101,6 +104,8 @@ var _ = Describe("Kube2e: glooctl", func() {
 		Context("istio inject", func() {
 
 			It("works on gateway-pod", func() {
+				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 60*time.Second, 1*time.Second)
+
 				err = runGlooctlCommand("istio", "inject", "--namespace", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio inject' without errors")
 
@@ -129,6 +134,8 @@ var _ = Describe("Kube2e: glooctl", func() {
 		Context("istio uninject", func() {
 
 			BeforeEach(func() {
+				testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, goodResponse, 1, 60*time.Second, 1*time.Second)
+
 				err = runGlooctlCommand("istio", "inject", "--namespace", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio inject' without errors")
 
