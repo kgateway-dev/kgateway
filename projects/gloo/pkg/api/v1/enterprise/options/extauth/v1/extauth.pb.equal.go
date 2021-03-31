@@ -2130,6 +2130,10 @@ func (m *AccessTokenValidation_IntrospectionValidation) Equal(that interface{}) 
 		}
 	}
 
+	if strings.Compare(m.GetUserIdAttributeName(), target.GetUserIdAttributeName()) != 0 {
+		return false
+	}
+
 	return true
 }
 
