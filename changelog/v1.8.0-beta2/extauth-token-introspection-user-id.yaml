@@ -1,0 +1,6 @@
+changelog:
+- type: NON_USER_FACING
+  description: >
+    Add a new attribute to the `AccessTokenValidation` API through which users can optionally tell the
+    ext auth server which attribute in a token introspection response to get the user ID from.
+  issueLink: https://github.com/solo-io/gloo/issues/4505
