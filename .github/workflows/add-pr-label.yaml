@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Detect Community PR
         id: community-pr-check
-        if: ${{ github.event.pull_request.head.repo.full_name != 'solo-io/gloo' }}
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'solo-io/gloo' }}
         shell: bash
         run: |
           echo "Pull Request is from a fork. Setting IS_COMMUNITY_PR to true"
