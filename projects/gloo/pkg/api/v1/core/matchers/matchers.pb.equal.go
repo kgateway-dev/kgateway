@@ -104,23 +104,37 @@ func (m *Matcher) Equal(that interface{}) bool {
 	switch m.PathSpecifier.(type) {
 
 	case *Matcher_Prefix:
+		if _, ok := target.PathSpecifier.(*Matcher_Prefix); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetPrefix(), target.GetPrefix()) != 0 {
 			return false
 		}
 
 	case *Matcher_Exact:
+		if _, ok := target.PathSpecifier.(*Matcher_Exact); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetExact(), target.GetExact()) != 0 {
 			return false
 		}
 
 	case *Matcher_Regex:
+		if _, ok := target.PathSpecifier.(*Matcher_Regex); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetRegex(), target.GetRegex()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.PathSpecifier != target.PathSpecifier {
+			return false
+		}
 	}
 
 	return true

@@ -63,11 +63,19 @@ func (m *HttpUri) Equal(that interface{}) bool {
 	switch m.HttpUpstreamType.(type) {
 
 	case *HttpUri_Cluster:
+		if _, ok := target.HttpUpstreamType.(*HttpUri_Cluster); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetCluster(), target.GetCluster()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.HttpUpstreamType != target.HttpUpstreamType {
+			return false
+		}
 	}
 
 	return true

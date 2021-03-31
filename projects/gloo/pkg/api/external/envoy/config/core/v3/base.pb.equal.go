@@ -256,12 +256,18 @@ func (m *Node) Equal(that interface{}) bool {
 	switch m.UserAgentVersionType.(type) {
 
 	case *Node_UserAgentVersion:
+		if _, ok := target.UserAgentVersionType.(*Node_UserAgentVersion); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetUserAgentVersion(), target.GetUserAgentVersion()) != 0 {
 			return false
 		}
 
 	case *Node_UserAgentBuildVersion:
+		if _, ok := target.UserAgentVersionType.(*Node_UserAgentBuildVersion); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetUserAgentBuildVersion()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetUserAgentBuildVersion()) {
@@ -273,6 +279,11 @@ func (m *Node) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.UserAgentVersionType != target.UserAgentVersionType {
+			return false
+		}
 	}
 
 	return true
@@ -562,23 +573,37 @@ func (m *DataSource) Equal(that interface{}) bool {
 	switch m.Specifier.(type) {
 
 	case *DataSource_Filename:
+		if _, ok := target.Specifier.(*DataSource_Filename); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetFilename(), target.GetFilename()) != 0 {
 			return false
 		}
 
 	case *DataSource_InlineBytes:
+		if _, ok := target.Specifier.(*DataSource_InlineBytes); !ok {
+			return false
+		}
 
 		if bytes.Compare(m.GetInlineBytes(), target.GetInlineBytes()) != 0 {
 			return false
 		}
 
 	case *DataSource_InlineString:
+		if _, ok := target.Specifier.(*DataSource_InlineString); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetInlineString(), target.GetInlineString()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.Specifier != target.Specifier {
+			return false
+		}
 	}
 
 	return true
@@ -700,6 +725,9 @@ func (m *AsyncDataSource) Equal(that interface{}) bool {
 	switch m.Specifier.(type) {
 
 	case *AsyncDataSource_Local:
+		if _, ok := target.Specifier.(*AsyncDataSource_Local); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetLocal()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetLocal()) {
@@ -712,6 +740,9 @@ func (m *AsyncDataSource) Equal(that interface{}) bool {
 		}
 
 	case *AsyncDataSource_Remote:
+		if _, ok := target.Specifier.(*AsyncDataSource_Remote); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRemote()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRemote()) {
@@ -723,6 +754,11 @@ func (m *AsyncDataSource) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.Specifier != target.Specifier {
+			return false
+		}
 	}
 
 	return true
@@ -756,6 +792,9 @@ func (m *TransportSocket) Equal(that interface{}) bool {
 	switch m.ConfigType.(type) {
 
 	case *TransportSocket_TypedConfig:
+		if _, ok := target.ConfigType.(*TransportSocket_TypedConfig); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetTypedConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTypedConfig()) {
@@ -767,6 +806,11 @@ func (m *TransportSocket) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.ConfigType != target.ConfigType {
+			return false
+		}
 	}
 
 	return true

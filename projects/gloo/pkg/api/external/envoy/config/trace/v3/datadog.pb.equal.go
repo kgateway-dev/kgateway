@@ -53,6 +53,9 @@ func (m *DatadogConfig) Equal(that interface{}) bool {
 	switch m.CollectorCluster.(type) {
 
 	case *DatadogConfig_CollectorUpstreamRef:
+		if _, ok := target.CollectorCluster.(*DatadogConfig_CollectorUpstreamRef); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetCollectorUpstreamRef()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetCollectorUpstreamRef()) {
@@ -65,11 +68,19 @@ func (m *DatadogConfig) Equal(that interface{}) bool {
 		}
 
 	case *DatadogConfig_ClusterName:
+		if _, ok := target.CollectorCluster.(*DatadogConfig_ClusterName); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetClusterName(), target.GetClusterName()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.CollectorCluster != target.CollectorCluster {
+			return false
+		}
 	}
 
 	return true

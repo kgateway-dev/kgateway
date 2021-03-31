@@ -407,6 +407,9 @@ func (m *Route) Equal(that interface{}) bool {
 	switch m.Action.(type) {
 
 	case *Route_Route:
+		if _, ok := target.Action.(*Route_Route); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRoute()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRoute()) {
@@ -419,6 +422,9 @@ func (m *Route) Equal(that interface{}) bool {
 		}
 
 	case *Route_Redirect:
+		if _, ok := target.Action.(*Route_Redirect); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRedirect()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRedirect()) {
@@ -431,6 +437,9 @@ func (m *Route) Equal(that interface{}) bool {
 		}
 
 	case *Route_DirectResponse:
+		if _, ok := target.Action.(*Route_DirectResponse); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetDirectResponse()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetDirectResponse()) {
@@ -442,6 +451,11 @@ func (m *Route) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.Action != target.Action {
+			return false
+		}
 	}
 
 	return true
@@ -590,23 +604,37 @@ func (m *RouteMatch) Equal(that interface{}) bool {
 	switch m.PathSpecifier.(type) {
 
 	case *RouteMatch_Prefix:
+		if _, ok := target.PathSpecifier.(*RouteMatch_Prefix); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetPrefix(), target.GetPrefix()) != 0 {
 			return false
 		}
 
 	case *RouteMatch_Path:
+		if _, ok := target.PathSpecifier.(*RouteMatch_Path); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetPath(), target.GetPath()) != 0 {
 			return false
 		}
 
 	case *RouteMatch_Regex:
+		if _, ok := target.PathSpecifier.(*RouteMatch_Regex); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetRegex(), target.GetRegex()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.PathSpecifier != target.PathSpecifier {
+			return false
+		}
 	}
 
 	return true
@@ -694,6 +722,9 @@ func (m *CorsPolicy) Equal(that interface{}) bool {
 	switch m.EnabledSpecifier.(type) {
 
 	case *CorsPolicy_Enabled:
+		if _, ok := target.EnabledSpecifier.(*CorsPolicy_Enabled); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetEnabled()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetEnabled()) {
@@ -706,6 +737,9 @@ func (m *CorsPolicy) Equal(that interface{}) bool {
 		}
 
 	case *CorsPolicy_FilterEnabled:
+		if _, ok := target.EnabledSpecifier.(*CorsPolicy_FilterEnabled); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetFilterEnabled()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetFilterEnabled()) {
@@ -717,6 +751,11 @@ func (m *CorsPolicy) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.EnabledSpecifier != target.EnabledSpecifier {
+			return false
+		}
 	}
 
 	return true
@@ -913,18 +952,27 @@ func (m *RouteAction) Equal(that interface{}) bool {
 	switch m.ClusterSpecifier.(type) {
 
 	case *RouteAction_Cluster:
+		if _, ok := target.ClusterSpecifier.(*RouteAction_Cluster); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetCluster(), target.GetCluster()) != 0 {
 			return false
 		}
 
 	case *RouteAction_ClusterHeader:
+		if _, ok := target.ClusterSpecifier.(*RouteAction_ClusterHeader); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetClusterHeader(), target.GetClusterHeader()) != 0 {
 			return false
 		}
 
 	case *RouteAction_WeightedClusters:
+		if _, ok := target.ClusterSpecifier.(*RouteAction_WeightedClusters); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetWeightedClusters()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetWeightedClusters()) {
@@ -936,17 +984,28 @@ func (m *RouteAction) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.ClusterSpecifier != target.ClusterSpecifier {
+			return false
+		}
 	}
 
 	switch m.HostRewriteSpecifier.(type) {
 
 	case *RouteAction_HostRewrite:
+		if _, ok := target.HostRewriteSpecifier.(*RouteAction_HostRewrite); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetHostRewrite(), target.GetHostRewrite()) != 0 {
 			return false
 		}
 
 	case *RouteAction_AutoHostRewrite:
+		if _, ok := target.HostRewriteSpecifier.(*RouteAction_AutoHostRewrite); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetAutoHostRewrite()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAutoHostRewrite()) {
@@ -959,11 +1018,19 @@ func (m *RouteAction) Equal(that interface{}) bool {
 		}
 
 	case *RouteAction_AutoHostRewriteHeader:
+		if _, ok := target.HostRewriteSpecifier.(*RouteAction_AutoHostRewriteHeader); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetAutoHostRewriteHeader(), target.GetAutoHostRewriteHeader()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.HostRewriteSpecifier != target.HostRewriteSpecifier {
+			return false
+		}
 	}
 
 	return true
@@ -1157,33 +1224,55 @@ func (m *RedirectAction) Equal(that interface{}) bool {
 	switch m.SchemeRewriteSpecifier.(type) {
 
 	case *RedirectAction_HttpsRedirect:
+		if _, ok := target.SchemeRewriteSpecifier.(*RedirectAction_HttpsRedirect); !ok {
+			return false
+		}
 
 		if m.GetHttpsRedirect() != target.GetHttpsRedirect() {
 			return false
 		}
 
 	case *RedirectAction_SchemeRedirect:
+		if _, ok := target.SchemeRewriteSpecifier.(*RedirectAction_SchemeRedirect); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetSchemeRedirect(), target.GetSchemeRedirect()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.SchemeRewriteSpecifier != target.SchemeRewriteSpecifier {
+			return false
+		}
 	}
 
 	switch m.PathRewriteSpecifier.(type) {
 
 	case *RedirectAction_PathRedirect:
+		if _, ok := target.PathRewriteSpecifier.(*RedirectAction_PathRedirect); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetPathRedirect(), target.GetPathRedirect()) != 0 {
 			return false
 		}
 
 	case *RedirectAction_PrefixRewrite:
+		if _, ok := target.PathRewriteSpecifier.(*RedirectAction_PrefixRewrite); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetPrefixRewrite(), target.GetPrefixRewrite()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.PathRewriteSpecifier != target.PathRewriteSpecifier {
+			return false
+		}
 	}
 
 	return true
@@ -1432,18 +1521,27 @@ func (m *HeaderMatcher) Equal(that interface{}) bool {
 	switch m.HeaderMatchSpecifier.(type) {
 
 	case *HeaderMatcher_ExactMatch:
+		if _, ok := target.HeaderMatchSpecifier.(*HeaderMatcher_ExactMatch); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetExactMatch(), target.GetExactMatch()) != 0 {
 			return false
 		}
 
 	case *HeaderMatcher_RegexMatch:
+		if _, ok := target.HeaderMatchSpecifier.(*HeaderMatcher_RegexMatch); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetRegexMatch(), target.GetRegexMatch()) != 0 {
 			return false
 		}
 
 	case *HeaderMatcher_RangeMatch:
+		if _, ok := target.HeaderMatchSpecifier.(*HeaderMatcher_RangeMatch); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRangeMatch()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRangeMatch()) {
@@ -1456,23 +1554,37 @@ func (m *HeaderMatcher) Equal(that interface{}) bool {
 		}
 
 	case *HeaderMatcher_PresentMatch:
+		if _, ok := target.HeaderMatchSpecifier.(*HeaderMatcher_PresentMatch); !ok {
+			return false
+		}
 
 		if m.GetPresentMatch() != target.GetPresentMatch() {
 			return false
 		}
 
 	case *HeaderMatcher_PrefixMatch:
+		if _, ok := target.HeaderMatchSpecifier.(*HeaderMatcher_PrefixMatch); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetPrefixMatch(), target.GetPrefixMatch()) != 0 {
 			return false
 		}
 
 	case *HeaderMatcher_SuffixMatch:
+		if _, ok := target.HeaderMatchSpecifier.(*HeaderMatcher_SuffixMatch); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetSuffixMatch(), target.GetSuffixMatch()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.HeaderMatchSpecifier != target.HeaderMatchSpecifier {
+			return false
+		}
 	}
 
 	return true
@@ -1752,6 +1864,9 @@ func (m *RouteAction_HashPolicy) Equal(that interface{}) bool {
 	switch m.PolicySpecifier.(type) {
 
 	case *RouteAction_HashPolicy_Header_:
+		if _, ok := target.PolicySpecifier.(*RouteAction_HashPolicy_Header_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetHeader()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetHeader()) {
@@ -1764,6 +1879,9 @@ func (m *RouteAction_HashPolicy) Equal(that interface{}) bool {
 		}
 
 	case *RouteAction_HashPolicy_Cookie_:
+		if _, ok := target.PolicySpecifier.(*RouteAction_HashPolicy_Cookie_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetCookie()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetCookie()) {
@@ -1776,6 +1894,9 @@ func (m *RouteAction_HashPolicy) Equal(that interface{}) bool {
 		}
 
 	case *RouteAction_HashPolicy_ConnectionProperties_:
+		if _, ok := target.PolicySpecifier.(*RouteAction_HashPolicy_ConnectionProperties_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetConnectionProperties()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConnectionProperties()) {
@@ -1787,6 +1908,11 @@ func (m *RouteAction_HashPolicy) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.PolicySpecifier != target.PolicySpecifier {
+			return false
+		}
 	}
 
 	return true
@@ -1956,6 +2082,9 @@ func (m *RetryPolicy_RetryPriority) Equal(that interface{}) bool {
 	switch m.ConfigType.(type) {
 
 	case *RetryPolicy_RetryPriority_Config:
+		if _, ok := target.ConfigType.(*RetryPolicy_RetryPriority_Config); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConfig()) {
@@ -1968,6 +2097,9 @@ func (m *RetryPolicy_RetryPriority) Equal(that interface{}) bool {
 		}
 
 	case *RetryPolicy_RetryPriority_TypedConfig:
+		if _, ok := target.ConfigType.(*RetryPolicy_RetryPriority_TypedConfig); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetTypedConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTypedConfig()) {
@@ -1979,6 +2111,11 @@ func (m *RetryPolicy_RetryPriority) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.ConfigType != target.ConfigType {
+			return false
+		}
 	}
 
 	return true
@@ -2012,6 +2149,9 @@ func (m *RetryPolicy_RetryHostPredicate) Equal(that interface{}) bool {
 	switch m.ConfigType.(type) {
 
 	case *RetryPolicy_RetryHostPredicate_Config:
+		if _, ok := target.ConfigType.(*RetryPolicy_RetryHostPredicate_Config); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConfig()) {
@@ -2024,6 +2164,9 @@ func (m *RetryPolicy_RetryHostPredicate) Equal(that interface{}) bool {
 		}
 
 	case *RetryPolicy_RetryHostPredicate_TypedConfig:
+		if _, ok := target.ConfigType.(*RetryPolicy_RetryHostPredicate_TypedConfig); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetTypedConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTypedConfig()) {
@@ -2035,6 +2178,11 @@ func (m *RetryPolicy_RetryHostPredicate) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.ConfigType != target.ConfigType {
+			return false
+		}
 	}
 
 	return true
@@ -2108,6 +2256,9 @@ func (m *RateLimit_Action) Equal(that interface{}) bool {
 	switch m.ActionSpecifier.(type) {
 
 	case *RateLimit_Action_SourceCluster_:
+		if _, ok := target.ActionSpecifier.(*RateLimit_Action_SourceCluster_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetSourceCluster()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetSourceCluster()) {
@@ -2120,6 +2271,9 @@ func (m *RateLimit_Action) Equal(that interface{}) bool {
 		}
 
 	case *RateLimit_Action_DestinationCluster_:
+		if _, ok := target.ActionSpecifier.(*RateLimit_Action_DestinationCluster_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetDestinationCluster()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetDestinationCluster()) {
@@ -2132,6 +2286,9 @@ func (m *RateLimit_Action) Equal(that interface{}) bool {
 		}
 
 	case *RateLimit_Action_RequestHeaders_:
+		if _, ok := target.ActionSpecifier.(*RateLimit_Action_RequestHeaders_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRequestHeaders()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRequestHeaders()) {
@@ -2144,6 +2301,9 @@ func (m *RateLimit_Action) Equal(that interface{}) bool {
 		}
 
 	case *RateLimit_Action_RemoteAddress_:
+		if _, ok := target.ActionSpecifier.(*RateLimit_Action_RemoteAddress_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRemoteAddress()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRemoteAddress()) {
@@ -2156,6 +2316,9 @@ func (m *RateLimit_Action) Equal(that interface{}) bool {
 		}
 
 	case *RateLimit_Action_GenericKey_:
+		if _, ok := target.ActionSpecifier.(*RateLimit_Action_GenericKey_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetGenericKey()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetGenericKey()) {
@@ -2168,6 +2331,9 @@ func (m *RateLimit_Action) Equal(that interface{}) bool {
 		}
 
 	case *RateLimit_Action_HeaderValueMatch_:
+		if _, ok := target.ActionSpecifier.(*RateLimit_Action_HeaderValueMatch_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetHeaderValueMatch()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetHeaderValueMatch()) {
@@ -2179,6 +2345,11 @@ func (m *RateLimit_Action) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.ActionSpecifier != target.ActionSpecifier {
+			return false
+		}
 	}
 
 	return true
