@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"reflect"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	values "github.com/solo-io/gloo/install/helm/gloo/generate"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -2451,7 +2454,7 @@ spec:
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/gateway_settings.yaml", namespace)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"settings.replaceInvalidRoutes=true",
+								"settings.invalidConfigPolicy.replaceInvalidRoutes=true",
 								"settings.invalidConfigPolicy.invalidRouteResponseBody=Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.",
 								"settings.invalidConfigPolicy.invalidRouteResponseCode=404",
 							},
@@ -2571,6 +2574,7 @@ spec:
     invalidConfigPolicy:
       invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run ` + "`glooctl check`" + ` to find and fix config errors.
       invalidRouteResponseCode: 404
+      replaceInvalidRoutes: false
   discoveryNamespace: gloo-system
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
@@ -4158,10 +4162,103 @@ metadata:
 
 			})
 		})
+
+		Context("Reflection", func() {
+			// Values which, for whatever reason, are excluded from pointer-checking, all of which should
+			// include an explanation here for why they're present.
+			//  - 3 of the image values are used in our helm generate code, which doesn't like pointers.
+			//    We're not changing them for this test, since that code is likely to be removed/changed soon.
+			//  - The one exception is the Repository value, which is instead needed by value during codegen.
+			var (
+				pointerExceptions = map[string]interface{}{
+					"Image.Tag":        nil,
+					"Image.Registry":   nil,
+					"Image.PullPolicy": nil,
+					"Image.Repository": nil,
+				}
+			)
+			It("All non-embedded fields in values.go have the omitempty tag", func() {
+				// The following code iterates over each struct in values.go,
+				// then iterates over each struct's fields and checks that they either contain the
+				// omitempty tag, or don't have tags at all. It also ensures that a variety of primitive types (and strings)
+				// are pointers to said types instead of direct values.
+				// These changes are necessary to make value deduplication possible between gloo-OS and gloo-E's charts.
+				// Without the omitempty tag and pointers, a bunch of problems can crop up. See the slab doc
+				// https://soloio.slab.com/posts/helm-chart-merging-issues-r7r2617z for more info.
+
+				// keep track of missing values for final error check
+				var missingVals []string
+
+				// All of the structs in values.go form a tree, with the HelmConfig struct as the root.
+				structQueue := []reflect.Type{reflect.TypeOf(values.HelmConfig{})}
+
+				// recursively iterate over every child struct of HelmConfig.
+				for len(structQueue) > 0 {
+					var inspectedStruct reflect.Type
+					inspectedStruct, structQueue = structQueue[0], structQueue[1:]
+					// for some reason, strings and interfaces slip past my earlier checks (including this same condition
+					// in the helper function).
+					structName := inspectedStruct.Name()
+					if structName == "" || structName == "string" {
+						continue
+					}
+					// iterate over struct fields
+					for i := 0; i < inspectedStruct.NumField(); i++ {
+						structField := inspectedStruct.Field(i)
+						// Check that the field contains a json tag, and if so, that it includes the omitempty tag.
+						// Values without any tags are assumed to be embedded structs, and are ignored.
+						tagStr, ok := structField.Tag.Lookup("json")
+						if ok && !strings.Contains(strings.ToLower(tagStr), "omitempty") {
+							fmt.Sprintf("Missing omitempty in %s.%s", inspectedStruct.Name(), structField.Name)
+							missingVals = append(missingVals, fmt.Sprintf("{ no omitempty - %s.%s }", inspectedStruct.Name(), structField.Name))
+						}
+
+						// Extract the field type, and add it to the structs-to-check queue.
+						// The structs can't be cyclic, so don't both with keeping track of what we've seen
+						// It's not worth the code clutter to do so for a test.
+						fieldType := structField.Type.Kind()
+						if fieldType == reflect.Ptr {
+							structQueue = appendIfNilPath(structQueue, structField.Type.Elem())
+						} else if fieldType == reflect.Array {
+							structQueue = appendIfNilPath(structQueue, structField.Type.Elem())
+						} else if fieldType == reflect.Map {
+							structQueue = append(structQueue, structField.Type.Elem()) // map keys are exclusively strings, this gets the item type
+						} else if fieldType == reflect.Struct {
+							structQueue = appendIfNilPath(structQueue, structField.Type)
+						} else if fieldType == reflect.String ||
+							fieldType == reflect.Bool ||
+							fieldType == reflect.Int ||
+							fieldType == reflect.Int8 ||
+							fieldType == reflect.Int32 ||
+							fieldType == reflect.Int64 ||
+							fieldType == reflect.Uint ||
+							fieldType == reflect.Uint32 ||
+							fieldType == reflect.Float64 {
+							_, found := pointerExceptions[fmt.Sprintf("%s.%s", inspectedStruct.Name(), structField.Name)]
+							if !found {
+								missingVals = append(missingVals, fmt.Sprintf("{ primitive or simple value not pointer-ed - %s.%s }", inspectedStruct.Name(), structField.Name))
+							}
+						}
+					}
+				}
+				Expect(fmt.Sprintf("%v", missingVals)).To(Equal("[]")) // this makes the failure message simply be a list of what we're missing
+			})
+		})
 	}
 
 	runTests(allTests)
 })
+
+// Helper function that adds a reflected type to a queue if it is a struct from the generate package.
+func appendIfNilPath(queue []reflect.Type, newVal reflect.Type) []reflect.Type {
+	if newVal.Kind() == reflect.Struct {
+		pkgName := newVal.PkgPath()
+		if pkgName == "github.com/solo-io/gloo/install/helm/gloo/generate" {
+			return append(queue, newVal)
+		}
+	}
+	return queue
+}
 
 func cloneMap(input map[string]string) map[string]string {
 	ret := map[string]string{}

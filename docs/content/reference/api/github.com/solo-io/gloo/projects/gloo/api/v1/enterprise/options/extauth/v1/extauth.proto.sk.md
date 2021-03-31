@@ -152,7 +152,7 @@ Auth configurations defined on virtual hosts, routes, and weighted destinations 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `disable` | `bool` | Set to true to disable auth on the virtual host/route. Only one of `disable`, or `customAuth` can be set. |
-| `configRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A reference to an AuthConfig. This is used to configure the GlooE extauth server. Only one of `configRef`, or `customAuth` can be set. |
+| `configRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A reference to an AuthConfig. This is used to configure the Gloo Edge Enterprise extauth server. Only one of `configRef`, or `customAuth` can be set. |
 | `customAuth` | [.enterprise.gloo.solo.io.CustomAuth](../extauth.proto.sk/#customauth) | Use this field if you are running your own custom extauth server. Only one of `customAuth`, or `configRef` can be set. |
 
 
@@ -321,7 +321,7 @@ This is used with custom auth servers.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `name` | `string` | Name of the plugin. |
-| `pluginFileName` | `string` | Name of the compiled plugin file. If not specified, GlooE will look for an ".so" file with same name as the plugin. |
+| `pluginFileName` | `string` | Name of the compiled plugin file. If not specified, Gloo Edge will look for an ".so" file with same name as the plugin. |
 | `exportedSymbolName` | `string` | Name of the exported symbol that implements the plugin interface in the plugin. If not specified, defaults to the name of the plugin. |
 | `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) |  |
 
@@ -781,6 +781,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 "introspectionUrl": string
 "clientId": string
 "clientSecretRef": .core.solo.io.ResourceRef
+"userIdAttributeName": string
 
 ```
 
@@ -789,6 +790,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `introspectionUrl` | `string` | The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint. If provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. |
 | `clientId` | `string` | Your client id as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
 | `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Your client secret as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
+| `userIdAttributeName` | `string` | The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2) attribute that contains the ID of the resource owner (e.g. `sub`, `username`). If specified, the external auth server will use the value of the attribute as the identifier of the authenticated user and add it to the request headers and/or dynamic metadata (depending on how the server is configured); if the field is set and the attribute cannot be found, the request will be denied. This field is optional and by default the server will not try to derive the user ID. |
 
 
 
@@ -844,7 +846,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | ----- | ---- | ----------- | 
 | `labelSelector` | `map<string, string>` | Identify all valid API key secrets that match the provided label selector.<br/> API key secrets must be in one of the watch namespaces for gloo to locate them. |
 | `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A way to directly reference API key secrets. This configuration can be useful for testing, but in general the more flexible label selector should be preferred. |
-| `headerName` | `string` | When receiving a request, the Gloo Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
+| `headerName` | `string` | When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
 | `headersFromMetadata` | `map<string, .enterprise.gloo.solo.io.ApiKeyAuth.SecretKey>` | API key secrets might contain additional data (e.g. the ID of the user that the API key belongs to) in the form of extra keys included in the secret's `data` field. This configuration can be used to add this data to the headers of successfully authenticated requests. Each key in the map represents the name of header to be added; the corresponding value determines the key in the secret data that will be inspected to determine the value for the header. |
 
 
@@ -1280,7 +1282,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `validApiKeys` | `map<string, .enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig.KeyMetadata>` | A mapping of valid API keys to their associated metadata. This map is automatically populated with the information from the relevant `ApiKeySecret`s. |
-| `headerName` | `string` | (Optional) When receiving a request, the Gloo Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
+| `headerName` | `string` | (Optional) When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
 | `headersFromKeyMetadata` | `map<string, string>` | Determines the key metadata that will be included as headers on the upstream request. Each entry represents a header to add: the key is the name of the header, and the value is the key that will be used to look up the data entry in the key metadata. |
 
 

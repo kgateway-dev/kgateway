@@ -77,7 +77,7 @@ message ExtAuthExtension {
     oneof spec {
         //  Set to true to disable auth on the virtual host/route.
         bool disable = 1;
-        // A reference to an AuthConfig. This is used to configure the GlooE extauth server.
+        // A reference to an AuthConfig. This is used to configure the Gloo Edge Enterprise extauth server.
         core.solo.io.ResourceRef config_ref = 2;
         // Use this field if you are running your own custom extauth server.
         CustomAuth custom_auth = 3;
@@ -207,7 +207,7 @@ message CustomAuth {
 message AuthPlugin {
     // Name of the plugin
     string name = 1;
-    // Name of the compiled plugin file. If not specified, GlooE will look for an ".so" file with same name as the plugin.
+    // Name of the compiled plugin file. If not specified, Gloo Edge will look for an ".so" file with same name as the plugin.
     string plugin_file_name = 2;
     // Name of the exported symbol that implements the plugin interface in the plugin.
     // If not specified, defaults to the name of the plugin
@@ -541,6 +541,14 @@ message AccessTokenValidation {
         // Your client secret as registered with the issuer.
         // Optional: Use if the token introspection url requires client authentication.
         core.solo.io.ResourceRef client_secret_ref = 3;
+
+        // The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2)
+        // attribute that contains the ID of the resource owner (e.g. `sub`, `username`).
+        // If specified, the external auth server will use the value of the attribute as the identifier of the
+        // authenticated user and add it to the request headers and/or dynamic metadata (depending on how the
+        // server is configured); if the field is set and the attribute cannot be found, the request will be denied.
+        // This field is optional and by default the server will not try to derive the user ID.
+        string user_id_attribute_name = 4;
     }
 
     oneof validation_type {
@@ -605,7 +613,7 @@ message ApiKeyAuth {
     // but in general the more flexible label selector should be preferred.
     repeated core.solo.io.ResourceRef api_key_secret_refs = 2;
 
-    // When receiving a request, the Gloo Enterprise external auth server will look for an API key in a header
+    // When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header
     // with this name. This field is optional; if not provided it defaults to `api-key`.
     string header_name = 3;
 
@@ -982,7 +990,7 @@ message ExtAuthConfig {
         // This map is automatically populated with the information from the relevant `ApiKeySecret`s.
         map<string, KeyMetadata> valid_api_keys = 1 [(extproto.sensitive) = true];
 
-        // (Optional) When receiving a request, the Gloo Enterprise external auth server will look for an API key
+        // (Optional) When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key
         // in a header with this name. This field is optional; if not provided it defaults to `api-key`.
         string header_name = 2;
 

@@ -91,7 +91,8 @@ gateway:
 gatewayProxies:
   gatewayProxy:
     envoyApiVersion: V3
-    gatewaySettings: {}
+    gatewaySettings:
+      useProxyProto: false
     failover:
       enabled: false
       port: 15443
@@ -170,6 +171,7 @@ global:
     extended: false
   glooRbac:
     create: true
+    namespaced: false
   glooStats:
     enabled: true
     routePrefixRewrite: /stats/prometheus

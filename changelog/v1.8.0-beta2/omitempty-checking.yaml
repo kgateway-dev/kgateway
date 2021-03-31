@@ -1,0 +1,8 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/3470
+    description: >
+      Add 'omitempty' tag to all values defined in the gloo chart, and made most primitive
+      values pointers to said values instead. Also added a test to ensure that new
+      values require these features as well. Finally, modified a couple chart values to avoid plugging
+      in nil values. 
