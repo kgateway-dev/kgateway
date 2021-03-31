@@ -26,10 +26,15 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
-      {{- if .Values.global.istioIntegration.disableAutoinjection }}
       annotations:
+        {{- if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"
-      {{- end }}
+        {{- end }}
+        {{- if .Values.settings.integrations.knative.extraKnativeExternalAnnotations }}
+        {{- range $key, $value := .Values.settings.integrations.knative.extraKnativeExternalAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 }}
       containers:

@@ -25,10 +25,15 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
-      {{- if .Values.global.istioIntegration.disableAutoinjection }}
       annotations:
+        {{- if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"
-      {{- end }}
+        {{- end }}
+        {{- if .Values.ingress.deployment.extraIngressAnnotations }}
+        {{- range $key, $value := .Values.ingress.deployment.extraIngressAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 }}
       securityContext:
