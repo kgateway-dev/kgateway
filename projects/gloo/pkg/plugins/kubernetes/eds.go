@@ -174,9 +174,6 @@ func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-cha
 			errs <- err
 			return
 		}
-		if list == nil {
-			return
-		}
 		select {
 		case <-opts.Ctx.Done():
 			return
