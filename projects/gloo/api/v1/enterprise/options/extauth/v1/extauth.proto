@@ -906,6 +906,14 @@ message ExtAuthConfig {
             // Your client secret as registered with the issuer.
             // Optional: Use if the token introspection url requires client authentication.
             string client_secret = 3 [(extproto.sensitive) = true];
+
+            // The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2)
+            // attribute that contains the ID of the resource owner (e.g. `sub`, `username`).
+            // If specified, the external auth server will use the value of the attribute as the identifier of the
+            // authenticated user and add it to the request headers and/or dynamic metadata (depending on how the
+            // server is configured); if the field is set and the attribute cannot be found, the request will be denied.
+            // This field is optional and by default the server will not try to derive the user ID.
+            string user_id_attribute_name = 4;
         }
 
         oneof validation_type {
