@@ -1543,7 +1543,7 @@ spec:
 				Eventually(func() error {
 					_, err := virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
 					return err
-				}).ShouldNot(HaveOccurred())
+				}, "5s", "0.1s").ShouldNot(HaveOccurred())
 
 				err := virtualServiceClient.Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
 				Expect(err).ToNot(HaveOccurred())
