@@ -171,6 +171,9 @@ func (m *HealthCheck) Equal(that interface{}) bool {
 	switch m.HealthChecker.(type) {
 
 	case *HealthCheck_HttpHealthCheck_:
+		if _, ok := target.HealthChecker.(*HealthCheck_HttpHealthCheck_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetHttpHealthCheck()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetHttpHealthCheck()) {
@@ -183,6 +186,9 @@ func (m *HealthCheck) Equal(that interface{}) bool {
 		}
 
 	case *HealthCheck_TcpHealthCheck_:
+		if _, ok := target.HealthChecker.(*HealthCheck_TcpHealthCheck_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetTcpHealthCheck()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTcpHealthCheck()) {
@@ -195,6 +201,9 @@ func (m *HealthCheck) Equal(that interface{}) bool {
 		}
 
 	case *HealthCheck_GrpcHealthCheck_:
+		if _, ok := target.HealthChecker.(*HealthCheck_GrpcHealthCheck_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetGrpcHealthCheck()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetGrpcHealthCheck()) {
@@ -207,6 +216,9 @@ func (m *HealthCheck) Equal(that interface{}) bool {
 		}
 
 	case *HealthCheck_CustomHealthCheck_:
+		if _, ok := target.HealthChecker.(*HealthCheck_CustomHealthCheck_); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetCustomHealthCheck()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetCustomHealthCheck()) {
@@ -218,6 +230,11 @@ func (m *HealthCheck) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.HealthChecker != target.HealthChecker {
+			return false
+		}
 	}
 
 	return true
@@ -247,11 +264,19 @@ func (m *HealthCheck_Payload) Equal(that interface{}) bool {
 	switch m.Payload.(type) {
 
 	case *HealthCheck_Payload_Text:
+		if _, ok := target.Payload.(*HealthCheck_Payload_Text); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetText(), target.GetText()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.Payload != target.Payload {
+			return false
+		}
 	}
 
 	return true
@@ -481,6 +506,9 @@ func (m *HealthCheck_CustomHealthCheck) Equal(that interface{}) bool {
 	switch m.ConfigType.(type) {
 
 	case *HealthCheck_CustomHealthCheck_Config:
+		if _, ok := target.ConfigType.(*HealthCheck_CustomHealthCheck_Config); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConfig()) {
@@ -493,6 +521,9 @@ func (m *HealthCheck_CustomHealthCheck) Equal(that interface{}) bool {
 		}
 
 	case *HealthCheck_CustomHealthCheck_TypedConfig:
+		if _, ok := target.ConfigType.(*HealthCheck_CustomHealthCheck_TypedConfig); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetTypedConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTypedConfig()) {
@@ -504,6 +535,11 @@ func (m *HealthCheck_CustomHealthCheck) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.ConfigType != target.ConfigType {
+			return false
+		}
 	}
 
 	return true

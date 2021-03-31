@@ -126,17 +126,28 @@ func (m *CoreRuleSet) Equal(that interface{}) bool {
 	switch m.CustomSettingsType.(type) {
 
 	case *CoreRuleSet_CustomSettingsString:
+		if _, ok := target.CustomSettingsType.(*CoreRuleSet_CustomSettingsString); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetCustomSettingsString(), target.GetCustomSettingsString()) != 0 {
 			return false
 		}
 
 	case *CoreRuleSet_CustomSettingsFile:
+		if _, ok := target.CustomSettingsType.(*CoreRuleSet_CustomSettingsFile); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetCustomSettingsFile(), target.GetCustomSettingsFile()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.CustomSettingsType != target.CustomSettingsType {
+			return false
+		}
 	}
 
 	return true

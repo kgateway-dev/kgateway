@@ -53,6 +53,9 @@ func (m *RegexMatcher) Equal(that interface{}) bool {
 	switch m.EngineType.(type) {
 
 	case *RegexMatcher_GoogleRe2:
+		if _, ok := target.EngineType.(*RegexMatcher_GoogleRe2); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetGoogleRe2()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetGoogleRe2()) {
@@ -64,6 +67,11 @@ func (m *RegexMatcher) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.EngineType != target.EngineType {
+			return false
+		}
 	}
 
 	return true

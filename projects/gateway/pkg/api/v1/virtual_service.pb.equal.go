@@ -230,6 +230,9 @@ func (m *Route) Equal(that interface{}) bool {
 	switch m.Action.(type) {
 
 	case *Route_RouteAction:
+		if _, ok := target.Action.(*Route_RouteAction); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRouteAction()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRouteAction()) {
@@ -242,6 +245,9 @@ func (m *Route) Equal(that interface{}) bool {
 		}
 
 	case *Route_RedirectAction:
+		if _, ok := target.Action.(*Route_RedirectAction); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRedirectAction()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRedirectAction()) {
@@ -254,6 +260,9 @@ func (m *Route) Equal(that interface{}) bool {
 		}
 
 	case *Route_DirectResponseAction:
+		if _, ok := target.Action.(*Route_DirectResponseAction); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetDirectResponseAction()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetDirectResponseAction()) {
@@ -266,6 +275,9 @@ func (m *Route) Equal(that interface{}) bool {
 		}
 
 	case *Route_DelegateAction:
+		if _, ok := target.Action.(*Route_DelegateAction); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetDelegateAction()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetDelegateAction()) {
@@ -277,6 +289,11 @@ func (m *Route) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.Action != target.Action {
+			return false
+		}
 	}
 
 	return true
@@ -314,6 +331,9 @@ func (m *DelegateAction) Equal(that interface{}) bool {
 	switch m.DelegationType.(type) {
 
 	case *DelegateAction_Ref:
+		if _, ok := target.DelegationType.(*DelegateAction_Ref); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRef()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRef()) {
@@ -326,6 +346,9 @@ func (m *DelegateAction) Equal(that interface{}) bool {
 		}
 
 	case *DelegateAction_Selector:
+		if _, ok := target.DelegationType.(*DelegateAction_Selector); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetSelector()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetSelector()) {
@@ -337,6 +360,11 @@ func (m *DelegateAction) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.DelegationType != target.DelegationType {
+			return false
+		}
 	}
 
 	return true

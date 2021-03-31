@@ -242,6 +242,9 @@ func (m *Settings) Equal(that interface{}) bool {
 	switch m.ConfigSource.(type) {
 
 	case *Settings_KubernetesConfigSource:
+		if _, ok := target.ConfigSource.(*Settings_KubernetesConfigSource); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetKubernetesConfigSource()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetKubernetesConfigSource()) {
@@ -254,6 +257,9 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 
 	case *Settings_DirectoryConfigSource:
+		if _, ok := target.ConfigSource.(*Settings_DirectoryConfigSource); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetDirectoryConfigSource()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetDirectoryConfigSource()) {
@@ -266,6 +272,9 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 
 	case *Settings_ConsulKvSource:
+		if _, ok := target.ConfigSource.(*Settings_ConsulKvSource); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetConsulKvSource()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConsulKvSource()) {
@@ -277,11 +286,19 @@ func (m *Settings) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.ConfigSource != target.ConfigSource {
+			return false
+		}
 	}
 
 	switch m.SecretSource.(type) {
 
 	case *Settings_KubernetesSecretSource:
+		if _, ok := target.SecretSource.(*Settings_KubernetesSecretSource); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetKubernetesSecretSource()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetKubernetesSecretSource()) {
@@ -294,6 +311,9 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 
 	case *Settings_VaultSecretSource:
+		if _, ok := target.SecretSource.(*Settings_VaultSecretSource); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetVaultSecretSource()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetVaultSecretSource()) {
@@ -306,6 +326,9 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 
 	case *Settings_DirectorySecretSource:
+		if _, ok := target.SecretSource.(*Settings_DirectorySecretSource); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetDirectorySecretSource()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetDirectorySecretSource()) {
@@ -317,11 +340,19 @@ func (m *Settings) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.SecretSource != target.SecretSource {
+			return false
+		}
 	}
 
 	switch m.ArtifactSource.(type) {
 
 	case *Settings_KubernetesArtifactSource:
+		if _, ok := target.ArtifactSource.(*Settings_KubernetesArtifactSource); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetKubernetesArtifactSource()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetKubernetesArtifactSource()) {
@@ -334,6 +365,9 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 
 	case *Settings_DirectoryArtifactSource:
+		if _, ok := target.ArtifactSource.(*Settings_DirectoryArtifactSource); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetDirectoryArtifactSource()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetDirectoryArtifactSource()) {
@@ -346,6 +380,9 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 
 	case *Settings_ConsulKvArtifactSource:
+		if _, ok := target.ArtifactSource.(*Settings_ConsulKvArtifactSource); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetConsulKvArtifactSource()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConsulKvArtifactSource()) {
@@ -357,6 +394,11 @@ func (m *Settings) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.ArtifactSource != target.ArtifactSource {
+			return false
+		}
 	}
 
 	return true
@@ -1171,12 +1213,18 @@ func (m *GlooOptions_AWSOptions) Equal(that interface{}) bool {
 	switch m.CredentialsFetcher.(type) {
 
 	case *GlooOptions_AWSOptions_EnableCredentialsDiscovey:
+		if _, ok := target.CredentialsFetcher.(*GlooOptions_AWSOptions_EnableCredentialsDiscovey); !ok {
+			return false
+		}
 
 		if m.GetEnableCredentialsDiscovey() != target.GetEnableCredentialsDiscovey() {
 			return false
 		}
 
 	case *GlooOptions_AWSOptions_ServiceAccountCredentials:
+		if _, ok := target.CredentialsFetcher.(*GlooOptions_AWSOptions_ServiceAccountCredentials); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetServiceAccountCredentials()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetServiceAccountCredentials()) {
@@ -1188,6 +1236,11 @@ func (m *GlooOptions_AWSOptions) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.CredentialsFetcher != target.CredentialsFetcher {
+			return false
+		}
 	}
 
 	return true

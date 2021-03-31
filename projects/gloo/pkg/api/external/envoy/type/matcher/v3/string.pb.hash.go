@@ -66,14 +66,20 @@ func (m *StringMatcher) Hash(hasher hash.Hash64) (uint64, error) {
 	case *StringMatcher_SafeRegex:
 
 		if h, ok := interface{}(m.GetSafeRegex()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("SafeRegex")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetSafeRegex(), nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetSafeRegex(), nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("SafeRegex")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}
@@ -100,14 +106,20 @@ func (m *ListStringMatcher) Hash(hasher hash.Hash64) (uint64, error) {
 	for _, v := range m.GetPatterns() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(v, nil); err != nil {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
 					return 0, err
 				}
 			}

@@ -498,6 +498,9 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 	switch m.RateLimitConfigType.(type) {
 
 	case *VirtualHostOptions_Ratelimit:
+		if _, ok := target.RateLimitConfigType.(*VirtualHostOptions_Ratelimit); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRatelimit()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRatelimit()) {
@@ -510,6 +513,9 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 		}
 
 	case *VirtualHostOptions_RateLimitConfigs:
+		if _, ok := target.RateLimitConfigType.(*VirtualHostOptions_RateLimitConfigs); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRateLimitConfigs()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRateLimitConfigs()) {
@@ -521,11 +527,19 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.RateLimitConfigType != target.RateLimitConfigType {
+			return false
+		}
 	}
 
 	switch m.JwtConfig.(type) {
 
 	case *VirtualHostOptions_Jwt:
+		if _, ok := target.JwtConfig.(*VirtualHostOptions_Jwt); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetJwt()) {
@@ -538,6 +552,9 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 		}
 
 	case *VirtualHostOptions_JwtStaged:
+		if _, ok := target.JwtConfig.(*VirtualHostOptions_JwtStaged); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetJwtStaged()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetJwtStaged()) {
@@ -549,6 +566,11 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.JwtConfig != target.JwtConfig {
+			return false
+		}
 	}
 
 	return true
@@ -812,12 +834,18 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:
+		if _, ok := target.HostRewriteType.(*RouteOptions_HostRewrite); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetHostRewrite(), target.GetHostRewrite()) != 0 {
 			return false
 		}
 
 	case *RouteOptions_AutoHostRewrite:
+		if _, ok := target.HostRewriteType.(*RouteOptions_AutoHostRewrite); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetAutoHostRewrite()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAutoHostRewrite()) {
@@ -829,11 +857,19 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.HostRewriteType != target.HostRewriteType {
+			return false
+		}
 	}
 
 	switch m.RateLimitConfigType.(type) {
 
 	case *RouteOptions_Ratelimit:
+		if _, ok := target.RateLimitConfigType.(*RouteOptions_Ratelimit); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRatelimit()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRatelimit()) {
@@ -846,6 +882,9 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 
 	case *RouteOptions_RateLimitConfigs:
+		if _, ok := target.RateLimitConfigType.(*RouteOptions_RateLimitConfigs); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRateLimitConfigs()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRateLimitConfigs()) {
@@ -857,11 +896,19 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.RateLimitConfigType != target.RateLimitConfigType {
+			return false
+		}
 	}
 
 	switch m.JwtConfig.(type) {
 
 	case *RouteOptions_Jwt:
+		if _, ok := target.JwtConfig.(*RouteOptions_Jwt); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetJwt()) {
@@ -874,6 +921,9 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 
 	case *RouteOptions_JwtStaged:
+		if _, ok := target.JwtConfig.(*RouteOptions_JwtStaged); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetJwtStaged()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetJwtStaged()) {
@@ -885,6 +935,11 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.JwtConfig != target.JwtConfig {
+			return false
+		}
 	}
 
 	return true
@@ -914,6 +969,9 @@ func (m *DestinationSpec) Equal(that interface{}) bool {
 	switch m.DestinationType.(type) {
 
 	case *DestinationSpec_Aws:
+		if _, ok := target.DestinationType.(*DestinationSpec_Aws); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetAws()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAws()) {
@@ -926,6 +984,9 @@ func (m *DestinationSpec) Equal(that interface{}) bool {
 		}
 
 	case *DestinationSpec_Azure:
+		if _, ok := target.DestinationType.(*DestinationSpec_Azure); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetAzure()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAzure()) {
@@ -938,6 +999,9 @@ func (m *DestinationSpec) Equal(that interface{}) bool {
 		}
 
 	case *DestinationSpec_Rest:
+		if _, ok := target.DestinationType.(*DestinationSpec_Rest); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetRest()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRest()) {
@@ -950,6 +1014,9 @@ func (m *DestinationSpec) Equal(that interface{}) bool {
 		}
 
 	case *DestinationSpec_Grpc:
+		if _, ok := target.DestinationType.(*DestinationSpec_Grpc); !ok {
+			return false
+		}
 
 		if h, ok := interface{}(m.GetGrpc()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetGrpc()) {
@@ -961,6 +1028,11 @@ func (m *DestinationSpec) Equal(that interface{}) bool {
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.DestinationType != target.DestinationType {
+			return false
+		}
 	}
 
 	return true

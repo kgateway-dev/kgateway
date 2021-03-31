@@ -97,17 +97,28 @@ func (m *GrpcJsonTranscoder) Equal(that interface{}) bool {
 	switch m.DescriptorSet.(type) {
 
 	case *GrpcJsonTranscoder_ProtoDescriptor:
+		if _, ok := target.DescriptorSet.(*GrpcJsonTranscoder_ProtoDescriptor); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetProtoDescriptor(), target.GetProtoDescriptor()) != 0 {
 			return false
 		}
 
 	case *GrpcJsonTranscoder_ProtoDescriptorBin:
+		if _, ok := target.DescriptorSet.(*GrpcJsonTranscoder_ProtoDescriptorBin); !ok {
+			return false
+		}
 
 		if bytes.Compare(m.GetProtoDescriptorBin(), target.GetProtoDescriptorBin()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.DescriptorSet != target.DescriptorSet {
+			return false
+		}
 	}
 
 	return true

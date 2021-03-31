@@ -122,17 +122,28 @@ func (m *WasmFilter) Equal(that interface{}) bool {
 	switch m.Src.(type) {
 
 	case *WasmFilter_Image:
+		if _, ok := target.Src.(*WasmFilter_Image); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetImage(), target.GetImage()) != 0 {
 			return false
 		}
 
 	case *WasmFilter_FilePath:
+		if _, ok := target.Src.(*WasmFilter_FilePath); !ok {
+			return false
+		}
 
 		if strings.Compare(m.GetFilePath(), target.GetFilePath()) != 0 {
 			return false
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.Src != target.Src {
+			return false
+		}
 	}
 
 	return true
