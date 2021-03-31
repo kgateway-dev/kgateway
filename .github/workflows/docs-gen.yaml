@@ -39,6 +39,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         SKIP_CHANGELOG_GENERATION: ${{ steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
+        SKIP_SECURITY_SCAN: ${{ steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
     - name: Deploy to Firebase
       # Do not publish docs if this workflow was triggered by a pull request
       # Only deploy if this was triggered by a push to master, or a successful trivy workflow_run
