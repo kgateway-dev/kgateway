@@ -29,15 +29,20 @@ spec:
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
-      {{- if $statsConfig.enabled }}
       annotations:
+        {{- if $statsConfig.enabled }}
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
+        {{- end }}
         {{- if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"
         {{- end }}
-      {{- end }}
+        {{- if .Values.accessLogger.extraAccessLoggerAnnotations }}
+        {{- range $key, $value := .Values.accessLogger.extraAccessLoggerAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 }}
       serviceAccountName: gateway-proxy
