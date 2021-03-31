@@ -280,10 +280,10 @@ data:
           name: envoy.transport_sockets.tls
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-{{- if ne $.Values.settings.aws.stsCredentialsRegion ""}}
-            sni: sts.{{ $.Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
-{{- else }}
+{{- if not $.Values.settings.aws.stsCredentialsRegion }}
             sni: sts.amazonaws.com
+{{- else }}
+            sni: sts.{{ $.Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
 {{- end }}
         load_assignment:
           cluster_name: aws_sts_cluster
@@ -293,10 +293,10 @@ data:
                 address:
                   socket_address:
                     port_value: 443
-{{- if ne $.Values.settings.aws.stsCredentialsRegion ""}}
-                    address: sts.{{ $.Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
-{{- else }}
+{{- if not $.Values.settings.aws.stsCredentialsRegion }}
                     address: sts.amazonaws.com
+{{- else }}
+                    address: sts.{{ $.Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
 {{- end }}
 {{- end}} {{/* if $.Values.settings.aws.enableServiceAccountCredentials */}}
 
