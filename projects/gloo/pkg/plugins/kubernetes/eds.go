@@ -139,7 +139,7 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 	hash := hasher.Sum64()
 
 	if c.lastEndpointsHash == hash {
-		return nil, nil
+		return eps, nil
 	}
 	c.lastEndpointsHash = hash
 
