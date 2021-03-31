@@ -1460,9 +1460,10 @@ spec:
 			Expect(err).To(MatchError(ContainSubstring("Failed to parse response template: Failed to parse " +
 				"header template ':status': [inja.exception.parser_error] expected statement close, got '%'")))
 		})
+
 		// Using a seperate Context here in order to take advantage of Before/After Each.
 		// They are safer for cleaning up state as they will run regardless of whether a test fails
-		FContext("disable_transformation_validation is set", func() {
+		Context("disable_transformation_validation is set", func() {
 
 			var (
 				settingsClient gloov1.SettingsClient
