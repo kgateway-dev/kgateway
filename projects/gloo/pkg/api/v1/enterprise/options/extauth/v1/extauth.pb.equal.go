@@ -3046,6 +3046,10 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig_IntrospectionValidation) Equa
 		return false
 	}
 
+	if strings.Compare(m.GetUserIdAttributeName(), target.GetUserIdAttributeName()) != 0 {
+		return false
+	}
+
 	return true
 }
 
