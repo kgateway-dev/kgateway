@@ -265,6 +265,14 @@ var _ = Describe("Helm Test", func() {
 							"settings.integrations.knative.enabled=true", // required to test cluster ingress proxy and knative labels.
 							"settings.integrations.knative.extraKnativeExternalLabels.foo=bar",
 							"settings.integrations.knative.extraKnativeInternalLabels.foo=bar",
+							"gloo.deployment.extraGlooAnnotations.foo=bar",
+							"ingress.deployment.extraIngressAnnotations.foo=bar",
+							"settings.integrations.knative.extraKnativeExternalAnnotations.foo=bar",
+							"settings.integrations.knative.extraKnativeInternalAnnotations.foo=bar",
+							"discovery.deployment.extraDiscoveryAnnotations.foo=bar",
+							"gateway.deployment.extraGatewayAnnotations.foo=bar",
+							"accessLogger.extraAccessLoggerAnnotations.foo=bar",
+							"settings.integrations.knative.proxy.extraClusterIngressProxyAnnotations.foo=bar",
 						},
 					})
 
