@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4428
+    resolvesIssue: false
+    description: >
+      Fix a glooctl test flake that slowed down development.
