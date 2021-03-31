@@ -2594,6 +2594,7 @@ spec:
       proxyValidationServerAddr: gloo:9988
       alwaysAccept: true
       allowWarnings: true
+      disableTransformationValidation: false
   discovery:
     fdsMode: WHITELIST
   extauth:
