@@ -27,12 +27,19 @@ jobs:
         hugo-version: '0.69.2'
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
-
+    - name: Detect Community PR
+      id: community-pr-check
+      if: ${{ github.event.pull_request.head.repo.full_name != 'solo-io/gloo' }}
+      shell: bash
+      run: |
+        echo "Pull Request is from a fork. Setting IS_COMMUNITY_PR to true"
+        echo "::set-output name=IS_COMMUNITY_PR::true"
     - name: Generate versioned docs site
       run: make -C docs build-site
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-
+        SKIP_CHANGELOG_GENERATION: ${{ steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
+        SKIP_SECURITY_SCAN: ${{ steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
     - name: Deploy to Firebase
       # Do not publish docs if this workflow was triggered by a pull request
       # Only deploy if this was triggered by a push to master, or a successful trivy workflow_run
