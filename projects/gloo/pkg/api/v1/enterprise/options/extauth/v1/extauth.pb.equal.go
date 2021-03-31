@@ -120,18 +120,12 @@ func (m *ExtAuthExtension) Equal(that interface{}) bool {
 	switch m.Spec.(type) {
 
 	case *ExtAuthExtension_Disable:
-		if _, ok := target.Spec.(*ExtAuthExtension_Disable); !ok {
-			return false
-		}
 
 		if m.GetDisable() != target.GetDisable() {
 			return false
 		}
 
 	case *ExtAuthExtension_ConfigRef:
-		if _, ok := target.Spec.(*ExtAuthExtension_ConfigRef); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetConfigRef()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetConfigRef()) {
@@ -144,9 +138,6 @@ func (m *ExtAuthExtension) Equal(that interface{}) bool {
 		}
 
 	case *ExtAuthExtension_CustomAuth:
-		if _, ok := target.Spec.(*ExtAuthExtension_CustomAuth); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetCustomAuth()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetCustomAuth()) {
@@ -158,11 +149,6 @@ func (m *ExtAuthExtension) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Spec != target.Spec {
-			return false
-		}
 	}
 
 	return true
@@ -551,9 +537,6 @@ func (m *OAuth2) Equal(that interface{}) bool {
 	switch m.OauthType.(type) {
 
 	case *OAuth2_OidcAuthorizationCode:
-		if _, ok := target.OauthType.(*OAuth2_OidcAuthorizationCode); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetOidcAuthorizationCode()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetOidcAuthorizationCode()) {
@@ -566,9 +549,6 @@ func (m *OAuth2) Equal(that interface{}) bool {
 		}
 
 	case *OAuth2_AccessTokenValidation:
-		if _, ok := target.OauthType.(*OAuth2_AccessTokenValidation); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetAccessTokenValidation()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAccessTokenValidation()) {
@@ -580,11 +560,6 @@ func (m *OAuth2) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.OauthType != target.OauthType {
-			return false
-		}
 	}
 
 	return true
@@ -664,9 +639,6 @@ func (m *UserSession) Equal(that interface{}) bool {
 	switch m.Session.(type) {
 
 	case *UserSession_Cookie:
-		if _, ok := target.Session.(*UserSession_Cookie); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetCookie()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetCookie()) {
@@ -679,9 +651,6 @@ func (m *UserSession) Equal(that interface{}) bool {
 		}
 
 	case *UserSession_Redis:
-		if _, ok := target.Session.(*UserSession_Redis); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetRedis()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRedis()) {
@@ -693,11 +662,6 @@ func (m *UserSession) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Session != target.Session {
-			return false
-		}
 	}
 
 	return true
@@ -861,9 +825,6 @@ func (m *JwksOnDemandCacheRefreshPolicy) Equal(that interface{}) bool {
 	switch m.Policy.(type) {
 
 	case *JwksOnDemandCacheRefreshPolicy_Never:
-		if _, ok := target.Policy.(*JwksOnDemandCacheRefreshPolicy_Never); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetNever()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetNever()) {
@@ -876,9 +837,6 @@ func (m *JwksOnDemandCacheRefreshPolicy) Equal(that interface{}) bool {
 		}
 
 	case *JwksOnDemandCacheRefreshPolicy_Always:
-		if _, ok := target.Policy.(*JwksOnDemandCacheRefreshPolicy_Always); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetAlways()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAlways()) {
@@ -891,19 +849,11 @@ func (m *JwksOnDemandCacheRefreshPolicy) Equal(that interface{}) bool {
 		}
 
 	case *JwksOnDemandCacheRefreshPolicy_MaxIdpReqPerPollingInterval:
-		if _, ok := target.Policy.(*JwksOnDemandCacheRefreshPolicy_MaxIdpReqPerPollingInterval); !ok {
-			return false
-		}
 
 		if m.GetMaxIdpReqPerPollingInterval() != target.GetMaxIdpReqPerPollingInterval() {
 			return false
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Policy != target.Policy {
-			return false
-		}
 	}
 
 	return true
@@ -1073,18 +1023,12 @@ func (m *AccessTokenValidation) Equal(that interface{}) bool {
 	switch m.ValidationType.(type) {
 
 	case *AccessTokenValidation_IntrospectionUrl:
-		if _, ok := target.ValidationType.(*AccessTokenValidation_IntrospectionUrl); !ok {
-			return false
-		}
 
 		if strings.Compare(m.GetIntrospectionUrl(), target.GetIntrospectionUrl()) != 0 {
 			return false
 		}
 
 	case *AccessTokenValidation_Jwt:
-		if _, ok := target.ValidationType.(*AccessTokenValidation_Jwt); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetJwt()) {
@@ -1097,9 +1041,6 @@ func (m *AccessTokenValidation) Equal(that interface{}) bool {
 		}
 
 	case *AccessTokenValidation_Introspection:
-		if _, ok := target.ValidationType.(*AccessTokenValidation_Introspection); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetIntrospection()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetIntrospection()) {
@@ -1111,19 +1052,11 @@ func (m *AccessTokenValidation) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ValidationType != target.ValidationType {
-			return false
-		}
 	}
 
 	switch m.ScopeValidation.(type) {
 
 	case *AccessTokenValidation_RequiredScopes:
-		if _, ok := target.ScopeValidation.(*AccessTokenValidation_RequiredScopes); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetRequiredScopes()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRequiredScopes()) {
@@ -1135,11 +1068,6 @@ func (m *AccessTokenValidation) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ScopeValidation != target.ScopeValidation {
-			return false
-		}
 	}
 
 	return true
@@ -1436,9 +1364,6 @@ func (m *PassThroughAuth) Equal(that interface{}) bool {
 	switch m.Protocol.(type) {
 
 	case *PassThroughAuth_Grpc:
-		if _, ok := target.Protocol.(*PassThroughAuth_Grpc); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetGrpc()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetGrpc()) {
@@ -1450,11 +1375,6 @@ func (m *PassThroughAuth) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Protocol != target.Protocol {
-			return false
-		}
 	}
 
 	return true
@@ -1587,9 +1507,6 @@ func (m *AuthConfig_Config) Equal(that interface{}) bool {
 	switch m.AuthConfig.(type) {
 
 	case *AuthConfig_Config_BasicAuth:
-		if _, ok := target.AuthConfig.(*AuthConfig_Config_BasicAuth); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetBasicAuth()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetBasicAuth()) {
@@ -1602,9 +1519,6 @@ func (m *AuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *AuthConfig_Config_Oauth:
-		if _, ok := target.AuthConfig.(*AuthConfig_Config_Oauth); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetOauth()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetOauth()) {
@@ -1617,9 +1531,6 @@ func (m *AuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *AuthConfig_Config_Oauth2:
-		if _, ok := target.AuthConfig.(*AuthConfig_Config_Oauth2); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetOauth2()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetOauth2()) {
@@ -1632,9 +1543,6 @@ func (m *AuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *AuthConfig_Config_ApiKeyAuth:
-		if _, ok := target.AuthConfig.(*AuthConfig_Config_ApiKeyAuth); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetApiKeyAuth()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetApiKeyAuth()) {
@@ -1647,9 +1555,6 @@ func (m *AuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *AuthConfig_Config_PluginAuth:
-		if _, ok := target.AuthConfig.(*AuthConfig_Config_PluginAuth); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetPluginAuth()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetPluginAuth()) {
@@ -1662,9 +1567,6 @@ func (m *AuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *AuthConfig_Config_OpaAuth:
-		if _, ok := target.AuthConfig.(*AuthConfig_Config_OpaAuth); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetOpaAuth()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetOpaAuth()) {
@@ -1677,9 +1579,6 @@ func (m *AuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *AuthConfig_Config_Ldap:
-		if _, ok := target.AuthConfig.(*AuthConfig_Config_Ldap); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetLdap()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetLdap()) {
@@ -1692,9 +1591,6 @@ func (m *AuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *AuthConfig_Config_Jwt:
-		if _, ok := target.AuthConfig.(*AuthConfig_Config_Jwt); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetJwt()) {
@@ -1707,9 +1603,6 @@ func (m *AuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *AuthConfig_Config_PassThroughAuth:
-		if _, ok := target.AuthConfig.(*AuthConfig_Config_PassThroughAuth); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetPassThroughAuth()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetPassThroughAuth()) {
@@ -1721,11 +1614,6 @@ func (m *AuthConfig_Config) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.AuthConfig != target.AuthConfig {
-			return false
-		}
 	}
 
 	return true
@@ -2052,9 +1940,6 @@ func (m *AccessTokenValidation_JwtValidation) Equal(that interface{}) bool {
 	switch m.JwksSourceSpecifier.(type) {
 
 	case *AccessTokenValidation_JwtValidation_RemoteJwks_:
-		if _, ok := target.JwksSourceSpecifier.(*AccessTokenValidation_JwtValidation_RemoteJwks_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetRemoteJwks()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRemoteJwks()) {
@@ -2067,9 +1952,6 @@ func (m *AccessTokenValidation_JwtValidation) Equal(that interface{}) bool {
 		}
 
 	case *AccessTokenValidation_JwtValidation_LocalJwks_:
-		if _, ok := target.JwksSourceSpecifier.(*AccessTokenValidation_JwtValidation_LocalJwks_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetLocalJwks()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetLocalJwks()) {
@@ -2081,11 +1963,6 @@ func (m *AccessTokenValidation_JwtValidation) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.JwksSourceSpecifier != target.JwksSourceSpecifier {
-			return false
-		}
 	}
 
 	return true
@@ -2538,18 +2415,12 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Equal(that interface{}) bool
 	switch m.ValidationType.(type) {
 
 	case *ExtAuthConfig_AccessTokenValidationConfig_IntrospectionUrl:
-		if _, ok := target.ValidationType.(*ExtAuthConfig_AccessTokenValidationConfig_IntrospectionUrl); !ok {
-			return false
-		}
 
 		if strings.Compare(m.GetIntrospectionUrl(), target.GetIntrospectionUrl()) != 0 {
 			return false
 		}
 
 	case *ExtAuthConfig_AccessTokenValidationConfig_Jwt:
-		if _, ok := target.ValidationType.(*ExtAuthConfig_AccessTokenValidationConfig_Jwt); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetJwt()) {
@@ -2562,9 +2433,6 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Equal(that interface{}) bool
 		}
 
 	case *ExtAuthConfig_AccessTokenValidationConfig_Introspection:
-		if _, ok := target.ValidationType.(*ExtAuthConfig_AccessTokenValidationConfig_Introspection); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetIntrospection()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetIntrospection()) {
@@ -2576,19 +2444,11 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Equal(that interface{}) bool
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ValidationType != target.ValidationType {
-			return false
-		}
 	}
 
 	switch m.ScopeValidation.(type) {
 
 	case *ExtAuthConfig_AccessTokenValidationConfig_RequiredScopes:
-		if _, ok := target.ScopeValidation.(*ExtAuthConfig_AccessTokenValidationConfig_RequiredScopes); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetRequiredScopes()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRequiredScopes()) {
@@ -2600,11 +2460,6 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Equal(that interface{}) bool
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.ScopeValidation != target.ScopeValidation {
-			return false
-		}
 	}
 
 	return true
@@ -2634,9 +2489,6 @@ func (m *ExtAuthConfig_OAuth2Config) Equal(that interface{}) bool {
 	switch m.OauthType.(type) {
 
 	case *ExtAuthConfig_OAuth2Config_OidcAuthorizationCode:
-		if _, ok := target.OauthType.(*ExtAuthConfig_OAuth2Config_OidcAuthorizationCode); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetOidcAuthorizationCode()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetOidcAuthorizationCode()) {
@@ -2649,9 +2501,6 @@ func (m *ExtAuthConfig_OAuth2Config) Equal(that interface{}) bool {
 		}
 
 	case *ExtAuthConfig_OAuth2Config_AccessTokenValidationConfig:
-		if _, ok := target.OauthType.(*ExtAuthConfig_OAuth2Config_AccessTokenValidationConfig); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetAccessTokenValidationConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAccessTokenValidationConfig()) {
@@ -2663,11 +2512,6 @@ func (m *ExtAuthConfig_OAuth2Config) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.OauthType != target.OauthType {
-			return false
-		}
 	}
 
 	return true
@@ -2802,9 +2646,6 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 	switch m.AuthConfig.(type) {
 
 	case *ExtAuthConfig_Config_Oauth:
-		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_Oauth); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetOauth()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetOauth()) {
@@ -2817,9 +2658,6 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *ExtAuthConfig_Config_Oauth2:
-		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_Oauth2); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetOauth2()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetOauth2()) {
@@ -2832,9 +2670,6 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *ExtAuthConfig_Config_BasicAuth:
-		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_BasicAuth); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetBasicAuth()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetBasicAuth()) {
@@ -2847,9 +2682,6 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *ExtAuthConfig_Config_ApiKeyAuth:
-		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_ApiKeyAuth); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetApiKeyAuth()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetApiKeyAuth()) {
@@ -2862,9 +2694,6 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *ExtAuthConfig_Config_PluginAuth:
-		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_PluginAuth); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetPluginAuth()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetPluginAuth()) {
@@ -2877,9 +2706,6 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *ExtAuthConfig_Config_OpaAuth:
-		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_OpaAuth); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetOpaAuth()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetOpaAuth()) {
@@ -2892,9 +2718,6 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *ExtAuthConfig_Config_Ldap:
-		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_Ldap); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetLdap()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetLdap()) {
@@ -2907,9 +2730,6 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *ExtAuthConfig_Config_Jwt:
-		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_Jwt); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetJwt()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetJwt()) {
@@ -2922,9 +2742,6 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 		}
 
 	case *ExtAuthConfig_Config_PassThroughAuth:
-		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_PassThroughAuth); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetPassThroughAuth()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetPassThroughAuth()) {
@@ -2936,11 +2753,6 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.AuthConfig != target.AuthConfig {
-			return false
-		}
 	}
 
 	return true
@@ -2974,9 +2786,6 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig_JwtValidation) Equal(that int
 	switch m.JwksSourceSpecifier.(type) {
 
 	case *ExtAuthConfig_AccessTokenValidationConfig_JwtValidation_RemoteJwks_:
-		if _, ok := target.JwksSourceSpecifier.(*ExtAuthConfig_AccessTokenValidationConfig_JwtValidation_RemoteJwks_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetRemoteJwks()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRemoteJwks()) {
@@ -2989,9 +2798,6 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig_JwtValidation) Equal(that int
 		}
 
 	case *ExtAuthConfig_AccessTokenValidationConfig_JwtValidation_LocalJwks_:
-		if _, ok := target.JwksSourceSpecifier.(*ExtAuthConfig_AccessTokenValidationConfig_JwtValidation_LocalJwks_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetLocalJwks()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetLocalJwks()) {
@@ -3003,11 +2809,6 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig_JwtValidation) Equal(that int
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.JwksSourceSpecifier != target.JwksSourceSpecifier {
-			return false
-		}
 	}
 
 	return true

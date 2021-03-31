@@ -69,9 +69,6 @@ func (m *LoadBalancerConfig) Equal(that interface{}) bool {
 	switch m.Type.(type) {
 
 	case *LoadBalancerConfig_RoundRobin_:
-		if _, ok := target.Type.(*LoadBalancerConfig_RoundRobin_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetRoundRobin()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRoundRobin()) {
@@ -84,9 +81,6 @@ func (m *LoadBalancerConfig) Equal(that interface{}) bool {
 		}
 
 	case *LoadBalancerConfig_LeastRequest_:
-		if _, ok := target.Type.(*LoadBalancerConfig_LeastRequest_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetLeastRequest()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetLeastRequest()) {
@@ -99,9 +93,6 @@ func (m *LoadBalancerConfig) Equal(that interface{}) bool {
 		}
 
 	case *LoadBalancerConfig_Random_:
-		if _, ok := target.Type.(*LoadBalancerConfig_Random_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetRandom()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRandom()) {
@@ -114,9 +105,6 @@ func (m *LoadBalancerConfig) Equal(that interface{}) bool {
 		}
 
 	case *LoadBalancerConfig_RingHash_:
-		if _, ok := target.Type.(*LoadBalancerConfig_RingHash_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetRingHash()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRingHash()) {
@@ -129,9 +117,6 @@ func (m *LoadBalancerConfig) Equal(that interface{}) bool {
 		}
 
 	case *LoadBalancerConfig_Maglev_:
-		if _, ok := target.Type.(*LoadBalancerConfig_Maglev_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetMaglev()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetMaglev()) {
@@ -143,19 +128,11 @@ func (m *LoadBalancerConfig) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Type != target.Type {
-			return false
-		}
 	}
 
 	switch m.LocalityConfig.(type) {
 
 	case *LoadBalancerConfig_LocalityWeightedLbConfig:
-		if _, ok := target.LocalityConfig.(*LoadBalancerConfig_LocalityWeightedLbConfig); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetLocalityWeightedLbConfig()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetLocalityWeightedLbConfig()) {
@@ -167,11 +144,6 @@ func (m *LoadBalancerConfig) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.LocalityConfig != target.LocalityConfig {
-			return false
-		}
 	}
 
 	return true

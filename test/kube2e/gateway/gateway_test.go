@@ -18,6 +18,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -1470,17 +1471,7 @@ spec:
 			)
 
 			BeforeEach(func() {
-				var err error
-				settingsClientFactory := &factory.KubeResourceClientFactory{
-					Crd:         gloov1.SettingsCrd,
-					Cfg:         cfg,
-					SharedCache: kube.NewKubeCache(ctx),
-				}
-
-				settingsClient, err = gloov1.NewSettingsClient(ctx, settingsClientFactory)
-				Expect(err).NotTo(HaveOccurred())
-				err = settingsClient.Register()
-				Expect(err).NotTo(HaveOccurred())
+				settingsClient = clienthelpers.MustSettingsClient(ctx)
 
 				settingsList, err := settingsClient.List(testHelper.InstallNamespace, clients.ListOpts{})
 				Expect(err).NotTo(HaveOccurred())
@@ -1508,11 +1499,10 @@ spec:
 					OverwriteExisting: true,
 				})
 				Expect(err).NotTo(HaveOccurred())
-
-				cancel()
 			})
 
 			It("will not reject invalid transformation", func() {
+				// this inja template is invalid since it is missing a trailing "}",
 				injaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %`
 				t := &glootransformation.Transformations{
 					ClearRouteCache: true,
@@ -1557,17 +1547,7 @@ spec:
 		)
 
 		BeforeEach(func() {
-			var err error
-			settingsClientFactory := &factory.KubeResourceClientFactory{
-				Crd:         gloov1.SettingsCrd,
-				Cfg:         cfg,
-				SharedCache: kube.NewKubeCache(ctx),
-			}
-
-			settingsClient, err = gloov1.NewSettingsClient(ctx, settingsClientFactory)
-			Expect(err).NotTo(HaveOccurred())
-			err = settingsClient.Register()
-			Expect(err).NotTo(HaveOccurred())
+			settingsClient = clienthelpers.MustSettingsClient(ctx)
 
 			settingsList, err := settingsClient.List(testHelper.InstallNamespace, clients.ListOpts{})
 			Expect(err).NotTo(HaveOccurred())
@@ -1598,7 +1578,6 @@ spec:
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			cancel()
 			err = virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{IgnoreNotExist: true})
 			Expect(err).NotTo(HaveOccurred())
 		})

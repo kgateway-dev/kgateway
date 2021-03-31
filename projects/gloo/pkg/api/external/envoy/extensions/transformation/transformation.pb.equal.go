@@ -298,9 +298,6 @@ func (m *Transformation) Equal(that interface{}) bool {
 	switch m.TransformationType.(type) {
 
 	case *Transformation_TransformationTemplate:
-		if _, ok := target.TransformationType.(*Transformation_TransformationTemplate); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetTransformationTemplate()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTransformationTemplate()) {
@@ -313,9 +310,6 @@ func (m *Transformation) Equal(that interface{}) bool {
 		}
 
 	case *Transformation_HeaderBodyTransform:
-		if _, ok := target.TransformationType.(*Transformation_HeaderBodyTransform); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetHeaderBodyTransform()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetHeaderBodyTransform()) {
@@ -327,11 +321,6 @@ func (m *Transformation) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.TransformationType != target.TransformationType {
-			return false
-		}
 	}
 
 	return true
@@ -369,18 +358,12 @@ func (m *Extraction) Equal(that interface{}) bool {
 	switch m.Source.(type) {
 
 	case *Extraction_Header:
-		if _, ok := target.Source.(*Extraction_Header); !ok {
-			return false
-		}
 
 		if strings.Compare(m.GetHeader(), target.GetHeader()) != 0 {
 			return false
 		}
 
 	case *Extraction_Body:
-		if _, ok := target.Source.(*Extraction_Body); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetBody()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetBody()) {
@@ -392,11 +375,6 @@ func (m *Extraction) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Source != target.Source {
-			return false
-		}
 	}
 
 	return true
@@ -506,9 +484,6 @@ func (m *TransformationTemplate) Equal(that interface{}) bool {
 	switch m.BodyTransformation.(type) {
 
 	case *TransformationTemplate_Body:
-		if _, ok := target.BodyTransformation.(*TransformationTemplate_Body); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetBody()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetBody()) {
@@ -521,9 +496,6 @@ func (m *TransformationTemplate) Equal(that interface{}) bool {
 		}
 
 	case *TransformationTemplate_Passthrough:
-		if _, ok := target.BodyTransformation.(*TransformationTemplate_Passthrough); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetPassthrough()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetPassthrough()) {
@@ -536,9 +508,6 @@ func (m *TransformationTemplate) Equal(that interface{}) bool {
 		}
 
 	case *TransformationTemplate_MergeExtractorsToBody:
-		if _, ok := target.BodyTransformation.(*TransformationTemplate_MergeExtractorsToBody); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetMergeExtractorsToBody()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetMergeExtractorsToBody()) {
@@ -550,11 +519,6 @@ func (m *TransformationTemplate) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.BodyTransformation != target.BodyTransformation {
-			return false
-		}
 	}
 
 	return true
@@ -736,9 +700,6 @@ func (m *RouteTransformations_RouteTransformation) Equal(that interface{}) bool 
 	switch m.Match.(type) {
 
 	case *RouteTransformations_RouteTransformation_RequestMatch_:
-		if _, ok := target.Match.(*RouteTransformations_RouteTransformation_RequestMatch_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetRequestMatch()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetRequestMatch()) {
@@ -751,9 +712,6 @@ func (m *RouteTransformations_RouteTransformation) Equal(that interface{}) bool 
 		}
 
 	case *RouteTransformations_RouteTransformation_ResponseMatch_:
-		if _, ok := target.Match.(*RouteTransformations_RouteTransformation_ResponseMatch_); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetResponseMatch()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetResponseMatch()) {
@@ -765,11 +723,6 @@ func (m *RouteTransformations_RouteTransformation) Equal(that interface{}) bool 
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Match != target.Match {
-			return false
-		}
 	}
 
 	return true

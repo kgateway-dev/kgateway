@@ -41,20 +41,14 @@ func (m *AccessLoggingService) Hash(hasher hash.Hash64) (uint64, error) {
 	for _, v := range m.GetAccessLog() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -83,20 +77,14 @@ func (m *AccessLog) Hash(hasher hash.Hash64) (uint64, error) {
 	case *AccessLog_FileSink:
 
 		if h, ok := interface{}(m.GetFileSink()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("FileSink")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetFileSink(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetFileSink(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("FileSink")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -105,20 +93,14 @@ func (m *AccessLog) Hash(hasher hash.Hash64) (uint64, error) {
 	case *AccessLog_GrpcService:
 
 		if h, ok := interface{}(m.GetGrpcService()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("GrpcService")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetGrpcService(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetGrpcService(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("GrpcService")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}
@@ -157,20 +139,14 @@ func (m *FileSink) Hash(hasher hash.Hash64) (uint64, error) {
 	case *FileSink_JsonFormat:
 
 		if h, ok := interface{}(m.GetJsonFormat()).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("JsonFormat")); err != nil {
-				return 0, err
-			}
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if fieldValue, err := hashstructure.Hash(m.GetJsonFormat(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetJsonFormat(), nil); err != nil {
 				return 0, err
 			} else {
-				if _, err = hasher.Write([]byte("JsonFormat")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
 					return 0, err
 				}
 			}

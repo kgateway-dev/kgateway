@@ -59,9 +59,6 @@ func (m *Secret) Equal(that interface{}) bool {
 	switch m.Kind.(type) {
 
 	case *Secret_Aws:
-		if _, ok := target.Kind.(*Secret_Aws); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetAws()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAws()) {
@@ -74,9 +71,6 @@ func (m *Secret) Equal(that interface{}) bool {
 		}
 
 	case *Secret_Azure:
-		if _, ok := target.Kind.(*Secret_Azure); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetAzure()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetAzure()) {
@@ -89,9 +83,6 @@ func (m *Secret) Equal(that interface{}) bool {
 		}
 
 	case *Secret_Tls:
-		if _, ok := target.Kind.(*Secret_Tls); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetTls()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetTls()) {
@@ -104,9 +95,6 @@ func (m *Secret) Equal(that interface{}) bool {
 		}
 
 	case *Secret_Oauth:
-		if _, ok := target.Kind.(*Secret_Oauth); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetOauth()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetOauth()) {
@@ -119,9 +107,6 @@ func (m *Secret) Equal(that interface{}) bool {
 		}
 
 	case *Secret_ApiKey:
-		if _, ok := target.Kind.(*Secret_ApiKey); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetApiKey()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetApiKey()) {
@@ -134,9 +119,6 @@ func (m *Secret) Equal(that interface{}) bool {
 		}
 
 	case *Secret_Header:
-		if _, ok := target.Kind.(*Secret_Header); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetHeader()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetHeader()) {
@@ -149,9 +131,6 @@ func (m *Secret) Equal(that interface{}) bool {
 		}
 
 	case *Secret_Extensions:
-		if _, ok := target.Kind.(*Secret_Extensions); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetExtensions()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetExtensions()) {
@@ -163,11 +142,6 @@ func (m *Secret) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Kind != target.Kind {
-			return false
-		}
 	}
 
 	return true

@@ -83,18 +83,12 @@ func (m *BufferPerRoute) Equal(that interface{}) bool {
 	switch m.Override.(type) {
 
 	case *BufferPerRoute_Disabled:
-		if _, ok := target.Override.(*BufferPerRoute_Disabled); !ok {
-			return false
-		}
 
 		if m.GetDisabled() != target.GetDisabled() {
 			return false
 		}
 
 	case *BufferPerRoute_Buffer:
-		if _, ok := target.Override.(*BufferPerRoute_Buffer); !ok {
-			return false
-		}
 
 		if h, ok := interface{}(m.GetBuffer()).(equality.Equalizer); ok {
 			if !h.Equal(target.GetBuffer()) {
@@ -106,11 +100,6 @@ func (m *BufferPerRoute) Equal(that interface{}) bool {
 			}
 		}
 
-	default:
-		// m is nil but target is not nil
-		if m.Override != target.Override {
-			return false
-		}
 	}
 
 	return true
