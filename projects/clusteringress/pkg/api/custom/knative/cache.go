@@ -37,7 +37,7 @@ func NewClusterIngreessCache(ctx context.Context, knativeClient knativeclient.In
 	}
 
 	kubeController := controller.NewController("knative-resources-cache",
-		controller.NewLockingSyncHandler(k.updatedOccured),
+		controller.NewLockingSyncHandler(k.updatedOccurred),
 		clusterIngress.Informer())
 
 	stop := ctx.Done()
@@ -72,7 +72,7 @@ func (k *knativeCache) Unsubscribe(c <-chan struct{}) {
 	}
 }
 
-func (k *knativeCache) updatedOccured() {
+func (k *knativeCache) updatedOccurred() {
 	k.cacheUpdatedWatchersMutex.Lock()
 	defer k.cacheUpdatedWatchersMutex.Unlock()
 	for _, cacheUpdated := range k.cacheUpdatedWatchers {
