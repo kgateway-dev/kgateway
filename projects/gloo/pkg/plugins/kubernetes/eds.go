@@ -2,10 +2,13 @@ package kubernetes
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"hash/fnv"
 	"sort"
 	"strings"
+
+	errors "github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -14,7 +17,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -64,10 +66,11 @@ func newEndpointWatcherForUpstreams(kubeFactoryFactory func(ns []string) KubePlu
 }
 
 type edsWatcher struct {
-	upstreams        map[*core.ResourceRef]*kubeplugin.UpstreamSpec
-	kubeShareFactory KubePluginSharedFactory
-	kubeCoreCache    corecache.KubeCoreCache
-	namespaces       []string
+	upstreams         map[*core.ResourceRef]*kubeplugin.UpstreamSpec
+	kubeShareFactory  KubePluginSharedFactory
+	kubeCoreCache     corecache.KubeCoreCache
+	namespaces        []string
+	lastEndpointsHash uint64
 }
 
 func newEndpointsWatcher(kubeCoreCache corecache.KubeCoreCache, namespaces []string, kubeShareFactory KubePluginSharedFactory, upstreams v1.UpstreamList) *edsWatcher {
@@ -93,12 +96,12 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 	var serviceList []*kubev1.Service
 	var podList []*kubev1.Pod
 	ctx := contextutils.WithLogger(opts.Ctx, "kubernetes_eds")
-	logger := contextutils.LoggerFrom(ctx)
+	var warnsToLog []string
 
 	for _, ns := range c.namespaces {
 		if c.kubeCoreCache.NamespacedServiceLister(ns) == nil {
 			// this namespace is not watched, ignore it.
-			logger.Warnw("namespace is not watched, and has upstreams pointing to it", "namespace", ns)
+			warnsToLog = append(warnsToLog, fmt.Sprintf("namespace %v is not watched, and has upstreams pointing to it", ns))
 			continue
 		}
 		services, err := c.kubeCoreCache.NamespacedServiceLister(ns).List(labels.SelectorFromSet(opts.Selector))
@@ -118,7 +121,42 @@ func (c *edsWatcher) List(writeNamespace string, opts clients.ListOpts) (v1.Endp
 		}
 		endpointList = append(endpointList, endpoints...)
 	}
-	return filterEndpoints(ctx, writeNamespace, endpointList, serviceList, podList, c.upstreams), nil
+
+	eps, warns, errsToLog := filterEndpoints(ctx, writeNamespace, endpointList, serviceList, podList, c.upstreams)
+	warnsToLog = append(warnsToLog, warns...)
+
+	hasher := fnv.New64()
+	for _, ep := range eps {
+		result, err := ep.Hash(hasher)
+		if err != nil {
+			return nil, err
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return nil, err
+		}
+	}
+	hash := hasher.Sum64()
+
+	if c.lastEndpointsHash == hash {
+		return eps, nil
+	}
+	c.lastEndpointsHash = hash
+
+	// We return and log any messages here later because endpoints are constantly being updated / triggering the
+	// EDS loop by the endpoint shared informer. By ensuring the hash is different, we know the endpoints are
+	// functionally different and logging any new information might mean different / new information.
+	//
+	// This change helps avoid disk filling up from endless logs and cluttering the logs with the same message.
+	logger := contextutils.LoggerFrom(ctx)
+	for _, warnToLog := range warnsToLog {
+		logger.Warn(warnToLog)
+	}
+	for _, errToLog := range errsToLog {
+		logger.Error(errToLog)
+	}
+
+	return eps, nil
 }
 
 func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
@@ -126,6 +164,7 @@ func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-cha
 
 	endpointsChan := make(chan v1.EndpointList)
 	errs := make(chan error)
+
 	updateResourceList := func() {
 		list, err := c.List(writeNamespace, clients.ListOpts{
 			Ctx:      opts.Ctx,
@@ -165,16 +204,16 @@ func (c *edsWatcher) watch(writeNamespace string, opts clients.WatchOpts) (<-cha
 }
 
 func filterEndpoints(
-	ctx context.Context,
+	_ context.Context, // do not use for logging! return logging messages as strings and log them after hashing (see https://github.com/solo-io/gloo/issues/3761)
 	writeNamespace string,
 	kubeEndpoints []*kubev1.Endpoints,
 	services []*kubev1.Service,
 	pods []*kubev1.Pod,
 	upstreams map[*core.ResourceRef]*kubeplugin.UpstreamSpec,
-) v1.EndpointList {
+) (v1.EndpointList, []string, []string) {
 	var endpoints v1.EndpointList
 
-	logger := contextutils.LoggerFrom(ctx)
+	var warnsToLog, errorsToLog []string
 
 	type Epkey struct {
 		Address      string
@@ -209,7 +248,7 @@ func filterEndpoints(
 			}
 		}
 		if kubeServicePort == nil {
-			logger.Errorf("upstream %v: port %v not found for service %v", usRef.Key(), spec.ServicePort, spec.ServiceName)
+			errorsToLog = append(errorsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v", usRef.Key(), spec.ServicePort, spec.ServiceName))
 			continue
 		}
 		// find each matching endpoint
@@ -220,7 +259,7 @@ func filterEndpoints(
 			for _, subset := range eps.Subsets {
 				var port uint32
 				for _, p := range subset.Ports {
-					// if the edpoint port is not named, it implies that
+					// if the endpoint port is not named, it implies that
 					// the kube service only has a single unnamed port as well.
 					switch {
 					case singlePortService:
@@ -231,7 +270,7 @@ func filterEndpoints(
 					}
 				}
 				if port == 0 {
-					logger.Warnf("upstream %v: port %v not found for service %v in endpoint %v", usRef.Key(), spec.ServicePort, spec.ServiceName, subset)
+					warnsToLog = append(warnsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v in endpoint %v", usRef.Key(), spec.ServicePort, spec.ServiceName, subset))
 					continue
 				}
 				for _, addr := range subset.Addresses {
@@ -247,8 +286,8 @@ func filterEndpoints(
 						// determine whether labels for the owner of this ip (pod) matches the spec
 						podLabels, err := getPodLabelsForIp(addr.IP, podName, podNamespace, pods)
 						if err != nil {
-							// pod not found for ip? what's that about?
-							logger.Warnf("error for upstream %v service %v: %v", usRef.Key(), spec.ServiceName, err)
+							// pod not found for IP? what's that about?
+							warnsToLog = append(warnsToLog, fmt.Sprintf("error for upstream %v service %v: %v", usRef.Key(), spec.ServiceName, err))
 							continue
 						}
 						if !labels.AreLabelsInWhiteList(spec.Selector, podLabels) {
@@ -291,7 +330,7 @@ func filterEndpoints(
 	// sort refs for idempotency
 	sort.Slice(endpoints, func(i, j int) bool { return endpoints[i].Metadata.Name < endpoints[j].Metadata.Name })
 
-	return endpoints
+	return endpoints, warnsToLog, errorsToLog
 }
 
 func createEndpoint(namespace, name string, upstreams []*core.ResourceRef, address string, port uint32, pod *kubev1.Pod) *v1.Endpoint {
@@ -324,7 +363,7 @@ func getPodForIp(ip string, podName, podNamespace string, pods []*kubev1.Pod) (*
 
 	for _, pod := range pods {
 		if podName != "" && podNamespace != "" {
-			// no need for hueristics!
+			// no need for heuristics!
 			if podName == pod.Name && podNamespace == pod.Namespace {
 				return pod, nil
 			}
@@ -337,11 +376,11 @@ func getPodForIp(ip string, podName, podNamespace string, pods []*kubev1.Pod) (*
 			continue
 		}
 		if pod.Spec.HostNetwork {
-			// we cant tell pods apart if they are all on the host network.
+			// we can't tell pods apart if they are all on the host network.
 			continue
 		}
 		return pod, nil
 	}
 
-	return nil, errors.Errorf("running pod not found with ip %v", ip)
+	return nil, errors.Errorf("running pod not found with IP %v", ip)
 }

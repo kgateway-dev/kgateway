@@ -61,7 +61,7 @@ func startInformerFactory(ctx context.Context, client kubernetes.Interface, watc
 	}
 
 	kubeController := controller.NewController("kube-plugin-controller",
-		controller.NewLockingSyncHandler(k.updatedOccured),
+		controller.NewLockingSyncHandler(k.updatedOccurred),
 		informers...)
 
 	stop := ctx.Done()
@@ -109,7 +109,7 @@ func (k *KubePluginListers) Unsubscribe(c <-chan struct{}) {
 	}
 }
 
-func (k *KubePluginListers) updatedOccured() {
+func (k *KubePluginListers) updatedOccurred() {
 	k.cacheUpdatedWatchersMutex.Lock()
 	defer k.cacheUpdatedWatchersMutex.Unlock()
 	for _, cacheUpdated := range k.cacheUpdatedWatchers {
