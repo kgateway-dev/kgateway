@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix noisy error logs on kubernetes EDS control loop, which will help with log noise and disk space.
+    issueLink: https://github.com/solo-io/gloo/issues/3761
