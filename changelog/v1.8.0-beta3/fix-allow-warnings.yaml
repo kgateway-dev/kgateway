@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: >-
+      Fix allowWarnings setting so it is honored when set to false (the default) in configuration validation
+      API and admission webhook.
+    issueLink: https://github.com/solo-io/gloo/issues/4466
