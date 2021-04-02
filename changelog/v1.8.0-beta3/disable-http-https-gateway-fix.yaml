@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Yaml separators should only be used if the corresponding gateway will be created
+    issueLink: https://github.com/solo-io/gloo/issues/4500
