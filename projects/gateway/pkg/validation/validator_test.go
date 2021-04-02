@@ -97,7 +97,7 @@ var _ = Describe("Validator", func() {
 				BeforeEach(func() {
 					v = NewValidator(NewValidatorConfig(t, vc, ns, true, false))
 				})
-				It("accepts a vs with missing route table ref", func() {
+				It("rejects a vs with missing route table ref", func() {
 					vc.validateProxy = warnProxy
 					us := samples.SimpleUpstream()
 					snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
