@@ -37,6 +37,8 @@ var _ plugins.HttpFilterPlugin = new(Plugin)
 type Plugin struct {
 	RequireTransformationFilter bool
 	requireEarlyTransformation  bool
+
+	settings *v1.Settings
 }
 
 func NewPlugin() *Plugin {
@@ -46,6 +48,7 @@ func NewPlugin() *Plugin {
 func (p *Plugin) Init(params plugins.InitParams) error {
 	p.RequireTransformationFilter = false
 	p.requireEarlyTransformation = false
+	p.settings = params.Settings
 	return nil
 }
 
@@ -64,7 +67,7 @@ func (p *Plugin) ProcessVirtualHost(
 		return nil
 	}
 	p.RequireTransformationFilter = true
-	err := validateTransformation(params.Ctx, envoyTransformation)
+	err := p.validateTransformation(params.Ctx, envoyTransformation)
 	if err != nil {
 		return err
 	}
@@ -83,7 +86,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return nil
 	}
 	p.RequireTransformationFilter = true
-	err := validateTransformation(params.Ctx, envoyTransformation)
+	err := p.validateTransformation(params.Ctx, envoyTransformation)
 	if err != nil {
 		return err
 	}
@@ -107,7 +110,7 @@ func (p *Plugin) ProcessWeightedDestination(
 	}
 
 	p.RequireTransformationFilter = true
-	err := validateTransformation(params.Ctx, envoyTransformation)
+	err := p.validateTransformation(params.Ctx, envoyTransformation)
 	if err != nil {
 		return err
 	}
@@ -173,6 +176,14 @@ func (p *Plugin) convertTransformation(
 	return ret
 }
 
+func (p *Plugin) validateTransformation(ctx context.Context, transformations *envoytransformation.RouteTransformations) error {
+	err := bootstrap.ValidateBootstrap(ctx, p.settings, FilterName, transformations)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func getTransformations(ctx context.Context, stage uint32, transformations *transformation.RequestResponseTransformations) []*envoytransformation.RouteTransformations_RouteTransformation {
 	var outTransformations []*envoytransformation.RouteTransformations_RouteTransformation
 	for _, transformation := range transformations.GetResponseTransforms() {
@@ -201,14 +212,6 @@ func getTransformations(ctx context.Context, stage uint32, transformations *tran
 		})
 	}
 	return outTransformations
-}
-
-func validateTransformation(ctx context.Context, transformations *envoytransformation.RouteTransformations) error {
-	err := bootstrap.ValidateBootstrap(ctx, bootstrap.BuildPerFilterBootstrapYaml(FilterName, transformations))
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // Note: these are copied from the translator and adapted to v3 apis. Once the transformer

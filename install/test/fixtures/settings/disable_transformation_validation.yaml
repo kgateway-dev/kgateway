@@ -14,7 +14,7 @@ spec:
    validation:
      alwaysAccept: true
      allowWarnings: true
-     disableTransformationValidation: false
+     disableTransformationValidation: true
      proxyValidationServerAddr: gloo:9988
  gloo:
    enableRestEds: true
@@ -23,15 +23,9 @@ spec:
    disableKubernetesDestinations: false
    disableProxyGarbageCollection: false
    invalidConfigPolicy:
+     replaceInvalidRoutes: false
      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.
      invalidRouteResponseCode: 404 
- consulUpstreamDiscovery:
-   useTlsDiscovery: true
-   tlsTagName: tag
-   splitTlsServices: true
-   discoveryRootCa:
-     name: testName
-     namespace: testNamespace
  kubernetesArtifactSource: {}
  kubernetesConfigSource: {}
  kubernetesSecretSource: {}

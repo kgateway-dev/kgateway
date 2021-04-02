@@ -84,6 +84,7 @@ spec:
 {{- /* need to do this weird if/else because Helm cannot differentiate between 'false' and 'unset' */}}
       alwaysAccept: {{ .Values.gateway.validation.alwaysAcceptResources }}
       allowWarnings: {{ .Values.gateway.validation.allowWarnings }}
+      disableTransformationValidation: {{ .Values.gateway.validation.disableTransformationValidation }}
 {{- end }}
 
 {{- if ne .Values.discovery.fdsMode "" }}

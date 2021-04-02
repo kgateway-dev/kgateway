@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Allow the user to disable validation of transformations, to speed up validation when many transformations are in use.
+    issueLink: https://github.com/solo-io/gloo/issues/4526
+    resolvesIssue: false
