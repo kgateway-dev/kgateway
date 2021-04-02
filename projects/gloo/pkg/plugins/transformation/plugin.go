@@ -177,7 +177,7 @@ func (p *Plugin) convertTransformation(
 }
 
 func (p *Plugin) validateTransformation(ctx context.Context, transformations *envoytransformation.RouteTransformations) error {
-	err := bootstrap.ValidateBootstrap(ctx, p.settings, bootstrap.BuildPerFilterBootstrapYaml(FilterName, transformations))
+	err := bootstrap.ValidateBootstrap(ctx, p.settings, FilterName, transformations)
 	if err != nil {
 		return err
 	}
