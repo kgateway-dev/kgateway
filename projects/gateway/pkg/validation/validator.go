@@ -256,6 +256,12 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 			errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
 			continue
 		}
+		if warnings := validationutils.GetProxyWarning(proxyReport.ProxyReport); !v.allowWarnings && len(warnings) > 0 {
+			for _, warning := range warnings {
+				errs = multierr.Append(errs, errors.New(warning))
+			}
+			continue
+		}
 	}
 
 	if errs != nil {

@@ -92,6 +92,27 @@ var _ = Describe("Validator", func() {
 				Expect(err.Error()).To(ContainSubstring("failed to validate Proxy with Gloo validation server"))
 				Expect(proxyReports).To(HaveLen(1))
 			})
+
+			Context("allowWarnings=false", func() {
+				BeforeEach(func() {
+					v = NewValidator(NewValidatorConfig(t, vc, ns, true, false))
+				})
+				It("rejects a vs with missing route table ref", func() {
+					vc.validateProxy = warnProxy
+					us := samples.SimpleUpstream()
+					snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
+					err := v.Sync(context.TODO(), snap)
+					Expect(err).NotTo(HaveOccurred())
+
+					// change something to change the hash
+					snap.RouteTables[0].Metadata.Labels = map[string]string{"change": "my mind"}
+
+					proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0], false)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Route Warning: InvalidDestinationWarning. Reason: you should try harder next time"))
+					Expect(proxyReports).To(HaveLen(1))
+				})
+			})
 		})
 
 		Context("proxy validation fails (bad connection)", func() {
@@ -844,6 +865,12 @@ func acceptProxy(ctx context.Context, in *validation.ProxyValidationServiceReque
 func failProxy(ctx context.Context, in *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
 	rpt := validationutils.MakeReport(in.Proxy)
 	validationutils.AppendListenerError(rpt.ListenerReports[0], validation.ListenerReport_Error_SSLConfigError, "you should try harder next time")
+	return &validation.ProxyValidationServiceResponse{ProxyReport: rpt}, nil
+}
+
+func warnProxy(ctx context.Context, in *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
+	rpt := validationutils.MakeReport(in.Proxy)
+	validationutils.AppendRouteWarning(rpt.ListenerReports[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0], validation.RouteReport_Warning_InvalidDestinationWarning, "you should try harder next time")
 	return &validation.ProxyValidationServiceResponse{ProxyReport: rpt}, nil
 }
 
