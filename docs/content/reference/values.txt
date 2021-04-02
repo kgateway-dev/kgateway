@@ -73,7 +73,7 @@
 |settings.create|bool|true|create a Settings CRD which provides bootstrap configuration to Gloo Edge controllers|
 |settings.extensions|interface|||
 |settings.singleNamespace|bool||Enable to use install namespace as WatchNamespace and WriteNamespace|
-|settings.invalidConfigPolicy.replaceInvalidRoutes|bool|false|Rather than pausing configuration updates, in the event of an invalid Route defined on a virtual service or route table, Gloo Edge will serve the route with a predefined direct response action. This allows valid routes to be updated when other routes are invalid.|
+|settings.invalidConfigPolicy.replaceInvalidRoutes|bool||Rather than pausing configuration updates, in the event of an invalid Route defined on a virtual service or route table, Gloo Edge will serve the route with a predefined direct response action. This allows valid routes to be updated when other routes are invalid.|
 |settings.invalidConfigPolicy.invalidRouteResponseCode|int64|404|the response code for the direct response|
 |settings.invalidConfigPolicy.invalidRouteResponseBody|string|Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.|the response body for the direct response|
 |settings.linkerd|bool|false|Enable automatic Linkerd integration in Gloo Edge|

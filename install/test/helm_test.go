@@ -2574,7 +2574,6 @@ spec:
     invalidConfigPolicy:
       invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run ` + "`glooctl check`" + ` to find and fix config errors.
       invalidRouteResponseCode: 404
-      replaceInvalidRoutes: false
   discoveryNamespace: gloo-system
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
@@ -4171,10 +4170,6 @@ metadata:
 			//  - The one exception is the Repository value, which is instead needed by value during codegen.
 			var (
 				pointerExceptions = map[string]interface{}{
-					"Image.Tag":        nil,
-					"Image.Registry":   nil,
-					"Image.PullPolicy": nil,
-					"Image.Repository": nil,
 				}
 			)
 			It("All non-embedded fields in values.go have the omitempty tag", func() {

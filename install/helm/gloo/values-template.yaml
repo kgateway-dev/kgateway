@@ -12,7 +12,6 @@ settings:
   enableRestEds: true
   aws: {}
   invalidConfigPolicy:
-    replaceInvalidRoutes: false
     invalidRouteResponseCode: 404
     invalidRouteResponseBody: 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'
   integrations:
