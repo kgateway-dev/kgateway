@@ -18,6 +18,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -1464,6 +1465,84 @@ spec:
 			Expect(err).To(MatchError(ContainSubstring("Failed to parse response template: Failed to parse " +
 				"header template ':status': [inja.exception.parser_error] expected statement close, got '%'")))
 		})
+
+		// Using a seperate Context here in order to take advantage of Before/After Each.
+		// They are safer for cleaning up state as they will run regardless of whether a test fails
+		Context("disable_transformation_validation is set", func() {
+
+			var (
+				settingsClient gloov1.SettingsClient
+			)
+
+			BeforeEach(func() {
+				settingsClient = clienthelpers.MustSettingsClient(ctx)
+
+				settingsList, err := settingsClient.List(testHelper.InstallNamespace, clients.ListOpts{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(settingsList).To(HaveLen(1))
+				settings := settingsList[0]
+
+				settings.Gateway.Validation.DisableTransformationValidation = &wrappers.BoolValue{
+					Value: true,
+				}
+
+				_, err = settingsClient.Write(settings, clients.WriteOpts{
+					OverwriteExisting: true,
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+			})
+
+			AfterEach(func() {
+				settingsList, err := settingsClient.List(testHelper.InstallNamespace, clients.ListOpts{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(settingsList).To(HaveLen(1))
+				settings := settingsList[0]
+				settings.Gateway.Validation.DisableTransformationValidation = nil
+				_, err = settingsClient.Write(settings, clients.WriteOpts{
+					OverwriteExisting: true,
+				})
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("will not reject invalid transformation", func() {
+				// this inja template is invalid since it is missing a trailing "}",
+				injaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %`
+				t := &glootransformation.Transformations{
+					ClearRouteCache: true,
+					ResponseTransformation: &transformation.Transformation{
+						TransformationType: &transformation.Transformation_TransformationTemplate{
+							TransformationTemplate: &transformation.TransformationTemplate{
+								Headers: map[string]*transformation.InjaTemplate{
+									":status": {Text: injaTransform},
+								},
+							},
+						},
+					},
+				}
+
+				dest := &gloov1.Destination{
+					DestinationType: &gloov1.Destination_Upstream{
+						Upstream: &core.ResourceRef{
+							Namespace: testHelper.InstallNamespace,
+							Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+						},
+					},
+				}
+
+				vs := getVirtualService(dest, nil)
+				vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: t}
+
+				// give settings a chance to propogate
+				Eventually(func() error {
+					_, err := virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
+					return err
+				}, "5s", "0.1s").ShouldNot(HaveOccurred())
+
+				err := virtualServiceClient.Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
 	})
 
 	Context("compressed spec is working", func() {
@@ -1472,17 +1551,7 @@ spec:
 		)
 
 		BeforeEach(func() {
-			var err error
-			settingsClientFactory := &factory.KubeResourceClientFactory{
-				Crd:         gloov1.SettingsCrd,
-				Cfg:         cfg,
-				SharedCache: kube.NewKubeCache(ctx),
-			}
-
-			settingsClient, err = gloov1.NewSettingsClient(ctx, settingsClientFactory)
-			Expect(err).NotTo(HaveOccurred())
-			err = settingsClient.Register()
-			Expect(err).NotTo(HaveOccurred())
+			settingsClient = clienthelpers.MustSettingsClient(ctx)
 
 			settingsList, err := settingsClient.List(testHelper.InstallNamespace, clients.ListOpts{})
 			Expect(err).NotTo(HaveOccurred())
@@ -1513,7 +1582,6 @@ spec:
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			cancel()
 			err = virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{IgnoreNotExist: true})
 			Expect(err).NotTo(HaveOccurred())
 		})

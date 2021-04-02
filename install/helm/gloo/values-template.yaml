@@ -71,6 +71,7 @@ gateway:
     secretName: gateway-validation-certs
     alwaysAcceptResources: true
     allowWarnings: true
+    disableTransformationValidation: false
     webhook:
       enabled: true
   deployment:

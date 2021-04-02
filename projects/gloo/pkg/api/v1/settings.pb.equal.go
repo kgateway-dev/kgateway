@@ -1349,5 +1349,15 @@ func (m *GatewayOptions_ValidationOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetDisableTransformationValidation()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDisableTransformationValidation()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDisableTransformationValidation(), target.GetDisableTransformationValidation()) {
+			return false
+		}
+	}
+
 	return true
 }
