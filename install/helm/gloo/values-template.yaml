@@ -14,6 +14,7 @@ settings:
   invalidConfigPolicy:
     invalidRouteResponseCode: 404
     invalidRouteResponseBody: 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'
+    replaceInvalidRoutes: false
   integrations:
     knative:
       enabled: false
