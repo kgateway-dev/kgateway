@@ -216,6 +216,8 @@ message VirtualHostOptions {
     enterprise.gloo.solo.io.ExtAuthExtension extauth = 12;
     // Enterprise-only: Config for data loss prevention
     dlp.options.gloo.solo.io.Config dlp = 13;
+    // Enterprise-only: Config for XSLT (XSL Transformations)
+    xslt.options.gloo.solo.io.Config xslt = 20;
     // BufferPerRoute can be used to set the maximum request size
     // that the filter will buffer before the connection
     // manager will stop buffering and return a 413 response.

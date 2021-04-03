@@ -1,0 +1,22 @@
+syntax = "proto3";
+package xslt.options.gloo.solo.io;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/xslt";
+
+import "extproto/ext.proto";
+option (extproto.equal_all) = true;
+option (extproto.hash_all) = true;
+
+// Defines an XSLT Transformation.
+message XsltTransformation{
+    // XSLT transformation template which you want to transform requests/responses with.
+    // Invalid XSLT transformation templates will result will result in a NACK during envoy configuration-time and envoy will fail to start.
+    string xslt = 1;
+    // Sets the content-type of the HTTP request to what is set here.
+    // This is useful in situations where an XSLT transformation is used to transform XML to JSON and the content-type
+    // should be changed to `application/xml` to `application/json`
+    string set_content_type = 2;
+    // This should be set to true if the content being transformed is not XML.
+    // For example, if the content being transformed is from JSON to XML, this should be set to true.
+    // defaults to false.
+    bool non_xml_transform = 3;
+}

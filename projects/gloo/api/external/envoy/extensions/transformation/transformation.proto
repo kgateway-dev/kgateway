@@ -13,6 +13,7 @@ import "validate/validate.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/route/v3/route_components.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/extension.proto";
 
 message FilterTransformations {
   // Specifies transformations based on the route matches. The first matched
@@ -122,6 +123,8 @@ message Transformation {
     // 'headers', containing the headers, and 'body', containing the original
     // body.
     HeaderBodyTransform header_body_transform = 2;
+    // Configuration for an externally implemented transformer.
+    solo.io.envoy.config.core.v3.TypedExtensionConfig transformer_config = 3;
   }
 }
 
