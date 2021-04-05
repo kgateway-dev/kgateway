@@ -35,7 +35,7 @@ kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/p
 ```
 
 ### Creating a Virtual Service
-Now we can create a Virtual Service that routes all requests (note the `/app` prefix) to the `petclinic` service.
+Now we can create a Virtual Service that routes all requests (note the `/all-pets` prefix) to the `petstore` service.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -115,7 +115,7 @@ glooctl create secret oauth --namespace gloo-system --name google --client-secre
 
 Now let's create the `AuthConfig` resource that we will use to secure our Virtual Service.
 
-{{< highlight shell "hl_lines=9-16" >}}
+```shell
 kubectl apply -f - <<EOF
 apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
@@ -139,7 +139,7 @@ spec:
         scopes:
         - email
 EOF
-{{< /highlight >}}
+```
 
 {{% notice note %}}
 The above configuration uses the new `oauth2` syntax. The older `oauth` syntax is still supported, but has been deprecated.
@@ -151,7 +151,7 @@ Notice how we set the `CLIENT_ID` and reference the client secret we just create
 ### Update the Virtual Service
 Once the AuthConfig has been created, we can use it to secure our Virtual Service:
 
-{{< highlight yaml "hl_lines=11-19" >}}
+{{< highlight yaml "hl_lines=11-19 29-33" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -180,10 +180,15 @@ spec:
           upstream:
             name: default-petstore-8080
             namespace: gloo-system
+    options:
+      extauth:
+        configRef:
+          name: google-oidc
+          namespace: gloo-system
 {{< /highlight >}}
 
 {{% notice note %}}
-This example is sending the `/callback` prefix to `/login`, a path that does not exist. The request will not be interpreted by the petclinic service, but you could easily add code for the `/login` path that would parse the state information from Google and use it to load a profile of the user.
+This example is sending the `/callback` prefix to `/login`, a path that does not exist. The request will not be interpreted by the petstore service, but you could easily add code for the `/login` path that would parse the state information from Google and use it to load a profile of the user.
 {{% /notice %}}
 
 ## Testing our configuration
@@ -194,7 +199,7 @@ kubectl port-forward -n gloo-system deploy/gateway-proxy 8080 &
 portForwardPid=$! # Store the port-forward pid so we can kill the process later
 ```
 
-Now if you open your browser and go to http://localhost:8080/all-pets you should be redirected to the Google login screen:
+Now if you open your browser and go to [http://localhost:8080/all-pets](http://localhost:8080/all-pets) you should be redirected to the Google login screen:
 
 ![Google login page](google-login.png)
  
@@ -220,8 +225,8 @@ To clean up the resources we created during this tutorial you can run the follow
 
 ```bash
 kill $portForwardPid
-kubectl delete virtualservice -n gloo-system petclinic
+kubectl delete virtualservice -n gloo-system default
 kubectl delete authconfig -n gloo-system google-oidc
 kubectl delete secret -n gloo-system google
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
