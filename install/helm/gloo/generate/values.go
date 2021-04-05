@@ -54,10 +54,10 @@ type Rbac struct {
 
 // Common
 type Image struct {
-	Tag        string  `json:"tag,omitempty"  desc:"tag for the container"`
-	Repository string  `json:"repository,omitempty"  desc:"image name (repository) for the container."`
-	Registry   string  `json:"registry,omitempty" desc:"image prefix/registry e.g. (quay.io/solo-io)"`
-	PullPolicy string  `json:"pullPolicy,omitempty"  desc:"image pull policy for the container"`
+	Tag        *string `json:"tag,omitempty"  desc:"tag for the container"`
+	Repository *string `json:"repository,omitempty"  desc:"image name (repository) for the container."`
+	Registry   *string `json:"registry,omitempty" desc:"image prefix/registry e.g. (quay.io/solo-io)"`
+	PullPolicy *string `json:"pullPolicy,omitempty"  desc:"image pull policy for the container"`
 	PullSecret *string `json:"pullSecret,omitempty" desc:"image pull policy for the container "`
 	Extended   *bool   `json:"extended,omitempty" desc:"if true, deploy an extended version of the container with additional debug tools"`
 }
@@ -268,7 +268,7 @@ type CertGenJob struct {
 	Job
 	Enabled                 *bool    `json:"enabled,omitempty" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
 	SetTtlAfterFinished     *bool    `json:"setTtlAfterFinished,omitempty" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
-	TtlSecondsAfterFinished *int     `json:"ttlSecondsAfterFinished, omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
+	TtlSecondsAfterFinished *int     `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
 	FloatingUserId          *bool    `json:"floatingUserId,omitempty" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser               *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 }

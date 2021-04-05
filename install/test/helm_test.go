@@ -4240,12 +4240,7 @@ metadata:
 			//    We're not changing them for this test, since that code is likely to be removed/changed soon.
 			//  - The one exception is the Repository value, which is instead needed by value during codegen.
 			var (
-				pointerExceptions = map[string]interface{}{
-					"Image.Tag":        nil,
-					"Image.Registry":   nil,
-					"Image.PullPolicy": nil,
-					"Image.Repository": nil,
-				}
+				pointerExceptions = map[string]interface{}{}
 			)
 			It("All non-embedded fields in values.go have the omitempty tag", func() {
 				// The following code iterates over each struct in values.go,
