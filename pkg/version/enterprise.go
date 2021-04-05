@@ -17,7 +17,7 @@ const GlooEE = "gloo-ee"
 
 // The version of GlooE installed by the CLI.
 // Calculated from the largest semver gloo-ee version in the helm repo index
-// Should only use the latest based from the current minot
+// Should only use the latest based from the current minor
 func GetLatestEnterpriseVersion(stableOnly bool) (string, error) {
 
 	version, err := versionutils.ParseVersion(git.AppendTagPrefix(Version))
