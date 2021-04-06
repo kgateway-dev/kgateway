@@ -76,6 +76,10 @@ print-git-info:
 	@echo ON_DEFAULT_BRANCH: $(ON_DEFAULT_BRANCH)
 	@echo ASSETS_ONLY_RELEASE: $(ASSETS_ONLY_RELEASE)
 
+.PHONY: print-version
+print-version:
+	@echo $(VERSION)
+
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
