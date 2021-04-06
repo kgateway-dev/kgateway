@@ -15,9 +15,9 @@ var _ = Describe("Install", func() {
 	const licenseKey = "--license-key=fake-license-key"
 	const overrideVersion = "1.7.0-beta11"
 
-	BeforeEach(func() {
-		version.Version = version.UndefinedVersion // we're testing an "unreleased" glooctl
-	})
+	// BeforeEach(func() {
+	// 	version.Version = version.UndefinedVersion // we're testing an "unreleased" glooctl
+	// })
 
 	It("should error for gateway dry run on unreleased glooctl", func() {
 		_, err := testutils.GlooctlOut("install gateway --dry-run")
@@ -25,7 +25,6 @@ var _ = Describe("Install", func() {
 	})
 
 	It("shouldn't error for gateway dry run on released glooctl", func() {
-		version.Version = "1.3.2" // pretend we set this using linker on a release build of glooctl
 		_, err := testutils.GlooctlOut("install gateway --dry-run")
 		Expect(err).ToNot(HaveOccurred())
 	})
