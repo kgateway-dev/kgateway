@@ -83,6 +83,7 @@ steps:
   id: 'get-test-credentials'
 
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
+  entrypoint: make
   env:
   - 'ENVOY_BINARY=/workspace/envoy'
   - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
@@ -91,7 +92,7 @@ steps:
   - 'RUN_VAULT_TESTS=1'
   - 'DOCKER_CONFIG=/workspace/.docker/'
   dir: *dir
-  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor']
+  args: ['run-tests']
   waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials']
   secretEnv: ['AWS_ARN_ROLE_1', "AWS_ROLE_ARN_STS", "JWT_PRIVATE_KEY"]
   id: 'test'
