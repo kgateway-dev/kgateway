@@ -31,17 +31,17 @@ minikube start --docker-opt="default-ulimit=nofile=102400:102400"
 
 Let's deploy a sample web application that we will use to demonstrate these features:
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 ### Creating a Virtual Service
-Now we can create a Virtual Service that routes all requests (note the `/app` prefix) to the `petclinic` service.
+Now we can create a Virtual Service that routes all requests (note the `/all-pets` prefix) to the `petstore` service.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: petclinic
+  name: default
   namespace: gloo-system
 spec:
   virtualHost:
@@ -49,16 +49,14 @@ spec:
     - '*'
     routes:
     - matchers:
-      - prefix: /app
+      - exact: /all-pets
+      options:
+        prefixRewrite: /api/pets
       routeAction:
         single:
-          kube:
-            ref:
-              name: petclinic
-              namespace: default
-            port: 80
-      options:
-        prefixRewrite: '/'
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
 ```
 
 To verify that the Virtual Service has been accepted by Gloo Edge, let's port-forward the Gateway Proxy service so that it is 
@@ -67,9 +65,12 @@ reachable from you machine at `localhost:8080`:
 kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80
 ```
 
-If you open your browser and navigate to [http://localhost:8080/app](http://localhost:8080/app) you should see the following page (you might need to wait a minute for the containers to start):
+If you open your browser and navigate to [http://localhost:8080/all-pets](http://localhost:8080/all-pets) you should
+see the following text (you might need to wait a minute for the containers to start):
 
-![Pet Clinic app homepage](petclinic-home.png)
+```
+[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+```
 
 ## Securing the Virtual Service
 As we just saw, we were able to reach our application without having to provide any credentials. This is because by default Gloo Edge allows any request on routes that do not specify authentication configuration. Let's change this behavior. We will update the Virtual Service so that each request to the sample application is authenticated using an **OpenID Connect** flow.
@@ -114,7 +115,7 @@ glooctl create secret oauth --namespace gloo-system --name google --client-secre
 
 Now let's create the `AuthConfig` resource that we will use to secure our Virtual Service.
 
-{{< highlight shell "hl_lines=9-16" >}}
+```shell
 kubectl apply -f - <<EOF
 apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
@@ -138,7 +139,7 @@ spec:
         scopes:
         - email
 EOF
-{{< /highlight >}}
+```
 
 {{% notice note %}}
 The above configuration uses the new `oauth2` syntax. The older `oauth` syntax is still supported, but has been deprecated.
@@ -150,11 +151,11 @@ Notice how we set the `CLIENT_ID` and reference the client secret we just create
 ### Update the Virtual Service
 Once the AuthConfig has been created, we can use it to secure our Virtual Service:
 
-{{< highlight yaml "hl_lines=11-21" >}}
+{{< highlight yaml "hl_lines=11-19 29-33" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: petclinic
+  name: default
   namespace: gloo-system
 spec:
   virtualHost:
@@ -163,26 +164,22 @@ spec:
     routes:
     - matchers:
       - prefix: /callback
-      routeAction:
-        single:
-          kube:
-            ref:
-              name: petclinic
-              namespace: default
-            port: 80
       options:
         prefixRewrite: '/login'
-    - matchers:
-      - prefix: /app
       routeAction:
         single:
-          kube:
-            ref:
-              name: petclinic
-              namespace: default
-            port: 80
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
+    - matchers:
+      - exact: /all-pets
       options:
-          prefixRewrite: '/'
+        prefixRewrite: /api/pets
+      routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
     options:
       extauth:
         configRef:
@@ -191,7 +188,7 @@ spec:
 {{< /highlight >}}
 
 {{% notice note %}}
-This example is sending the `/callback` prefix to `/login`, a path that does not exist. The request will not be interpreted by the petclinic service, but you could easily add code for the `/login` path that would parse the state information from Google and use it to load a profile of the user.
+This example is sending the `/callback` prefix to `/login`, a path that does not exist. The request will not be interpreted by the petstore service, but you could easily add code for the `/login` path that would parse the state information from Google and use it to load a profile of the user.
 {{% /notice %}}
 
 ## Testing our configuration
@@ -202,7 +199,7 @@ kubectl port-forward -n gloo-system deploy/gateway-proxy 8080 &
 portForwardPid=$! # Store the port-forward pid so we can kill the process later
 ```
 
-Now if you open your browser and go to http://localhost:8080/app you should be redirected to the Google login screen:
+Now if you open your browser and go to [http://localhost:8080/all-pets](http://localhost:8080/all-pets) you should be redirected to the Google login screen:
 
 ![Google login page](google-login.png)
  
@@ -228,8 +225,8 @@ To clean up the resources we created during this tutorial you can run the follow
 
 ```bash
 kill $portForwardPid
-kubectl delete virtualservice -n gloo-system petclinic
+kubectl delete virtualservice -n gloo-system default
 kubectl delete authconfig -n gloo-system google-oidc
 kubectl delete secret -n gloo-system google
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
