@@ -1382,14 +1382,14 @@ spec:
 							serviceStr := service.(*v1.Service)
 							Expect(serviceStr.Spec.Type).To(Equal(v1.ServiceType("LoadBalancer")))
 						})
-						//It("uses default values for the config map", func() {
-						//	configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, "another-gateway-proxy-envoy-config")
-						//	configMap, err := kuberesource.ConvertUnstructured(configMapUns)
-						//	Expect(err).NotTo(HaveOccurred())
-						//	Expect(configMap).To(BeAssignableToTypeOf(&v1.ConfigMap{}))
-						//	configMapStr := configMap.(*v1.ConfigMap)
-						//	Expect(configMapStr.Data).ToNot(BeNil()) // Uses the default config data
-						//})
+						It("uses default values for the config map", func() {
+							configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, "another-gateway-proxy-envoy-config")
+							configMap, err := kuberesource.ConvertUnstructured(configMapUns)
+							Expect(err).NotTo(HaveOccurred())
+							Expect(configMap).To(BeAssignableToTypeOf(&v1.ConfigMap{}))
+							configMapStr := configMap.(*v1.ConfigMap)
+							Expect(configMapStr.Data).ToNot(BeNil()) // Uses the default config data
+						})
 					})
 					Context("when default values are overridden by custom gatewayproxy", func() {
 						BeforeEach(func() {
