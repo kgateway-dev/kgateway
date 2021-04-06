@@ -19,16 +19,22 @@ const GlooEE = "gloo-ee"
 // Calculated from the largest semver gloo-ee version in the helm repo index
 func GetLatestEnterpriseVersion(stableOnly bool) (string, error) {
 
-	version, err := versionutils.ParseVersion(git.AppendTagPrefix(Version))
-	if err != nil {
-		return "", err
+	maxVersion := &versionutils.Version{
+		Major: math.MaxInt32,
+		Minor: math.MaxInt32,
+		Patch: math.MaxInt32,
 	}
 
-	return GetLatestHelmChartVersionWithMaxVersion(EnterpriseHelmRepoIndex, GlooEE, stableOnly, &versionutils.Version{
-		Major: version.Major,
-		Minor: version.Minor,
-		Patch: math.MaxInt32,
-	})
+	if Version != UndefinedVersion {
+		version, err := versionutils.ParseVersion(git.AppendTagPrefix(Version))
+		if err != nil {
+			return "", err
+		}
+		maxVersion.Major = version.Major
+		maxVersion.Minor = version.Minor
+	}
+
+	return GetLatestHelmChartVersionWithMaxVersion(EnterpriseHelmRepoIndex, GlooEE, stableOnly, maxVersion)
 }
 
 // Calculated from the largest gloo-ee version in the helm repo index with version constraints
