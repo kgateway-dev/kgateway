@@ -99,7 +99,7 @@ steps:
   dir: *dir
   args: ['run-tests']
   waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials', 'install-go-tools']
-  secretEnv: ['AWS_ARN_RO LE_1', "AWS_ROLE_ARN_STS", "JWT_PRIVATE_KEY"]
+  secretEnv: ['AWS_ARN_ROLE_1', "AWS_ROLE_ARN_STS", "JWT_PRIVATE_KEY"]
   id: 'test'
 
 # Build and tag docker images
