@@ -68,7 +68,10 @@ const changelogDataSetter = new Proxy(changelogData, {
 });
 
 function getText(){
-  return fetch("/static/content/gloo-changelog.docgen")
+  if (!changelogPath){
+    console.err("changelogPath must be defined")
+  }
+  return fetch(changelogPath)
   .then(response => response.json()).then(resJson => resJson);
 }   
 
@@ -322,7 +325,7 @@ class VersionComparer{
 
   renderChangelogNotes(input){
     var output = "";
-    let sortedByCategory = Object.entries(input.categories).sort((a, b) => a[0] > b[0])
+    let sortedByCategory = Object.entries(input.categories).sort((a , b) => a[0] > b[0])
     for (const [header,notes] of sortedByCategory){
       if (this.discludeHeaders.includes(header)){
         continue;
@@ -356,26 +359,32 @@ class VersionComparer{
     let data = new Map()
     for (const [version, changelogNotes] of Object.entries(this.versions).slice(index1, index+1)){
       for (const [header, notes] of Object.entries(changelogNotes.categories).sort((a, b) => a[0] > b[0])){
-        for (const note of notes){
-          if (!data[header]){
-            data[header] = {}
+        if (!this.discludeHeaders.includes(header)){
+          for (const note of notes){
+            if (!data[header]){
+              data[header] = {}
+            }
+            if (!data[header][version]){
+              data[header][version] = []
+            }
+            data[header][version].push(note);
           }
-          if (!data[header][version]){
-            data[header][version] = []
-          }
-          data[header][version].push(note);
         }
       }
     }
     let output = "";
     for (const [header, versionData] of Object.entries(data)){
-      let version = Object.keys(versionData)[0];
-      let notes = H4("From " + version);
-      for (const note of versionData[version]){
-        notes += UnorderedListItem(note);
+      let noteStr = "";
+      let count = 0
+      for (const [version, notes] of Object.entries(versionData)){
+        noteStr += H4("Added in " + version);
+        for (const note of notes){
+          noteStr += UnorderedListItem(note);
+          count += 1
+        }
       }
-  
-      output += Collapsible(`${header} (${versionData[version].length})`, notes)
+      output += Collapsible(`${header} (${count})`, noteStr)
+      
     }
     $("#compareversionstextdiv").html(this.markdownToHtml(output))
   }
@@ -393,7 +402,7 @@ class VersionComparer{
     }
     var parentDiv = $('<div />')
     var textDiv = $('<div id="compareversionstextdiv"/>')
-    var div = $('<div style="display:flex"/>')
+    var div = $('<div style="display:flex;width:20%;justify-content:space-between"/>')
     this.select = $('<select/>')
     this.select.change(this.onSelectChange.bind(this));
     Object.entries(this.versions).forEach(([k]) => this.select.append($("<option>").attr('value', k).text(k)))
