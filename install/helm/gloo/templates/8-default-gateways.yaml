@@ -39,7 +39,7 @@ spec:
   options:
 {{- end }}
   {{- if $gatewaySettings.options }}
-  {{ toYaml $gatewaySettings.options | indent 4 }}
+  {{ toYaml $gatewaySettings.options | nindent 6 }}
   {{- end }}
   {{- if $gatewaySettings.accessLoggingService }}
     accessLoggingService:
@@ -84,7 +84,7 @@ spec:
   options:
 {{- end }}
   {{- if $gatewaySettings.options }}
-  {{ toYaml $gatewaySettings.options | indent 4 }}
+  {{ toYaml $gatewaySettings.options | nindent 6 }}
   {{- end }}
   {{- if $gatewaySettings.accessLoggingService }}
     accessLoggingService:
