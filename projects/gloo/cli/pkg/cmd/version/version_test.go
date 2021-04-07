@@ -3,11 +3,13 @@ package version
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
+	gloo_version "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	mock_version "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version/mocks"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
@@ -80,25 +82,25 @@ var _ = Describe("version command", func() {
 			}
 		})
 
-		var osTableOutput = `Client: version: undefined
+		var osTableOutput = fmt.Sprintf(`Client: version: %s
 +-------------+-----------------+-----------------+
 |  NAMESPACE  | DEPLOYMENT-TYPE |   CONTAINERS    |
 +-------------+-----------------+-----------------+
 | gloo-system | Gateway         | gloo: v0.0.1    |
 |             |                 | gateway: v0.0.2 |
 +-------------+-----------------+-----------------+
-`
+`, gloo_version.Version)
 
-		var eTableOutput = `Client: version: undefined
+		var eTableOutput = fmt.Sprintf(`Client: version: %s
 +-------------+--------------------+-----------------+
 |  NAMESPACE  |  DEPLOYMENT-TYPE   |   CONTAINERS    |
 +-------------+--------------------+-----------------+
 | gloo-system | Gateway Enterprise | gloo: v0.0.1    |
 |             |                    | gateway: v0.0.2 |
 +-------------+--------------------+-----------------+
-`
+`, gloo_version.Version)
 
-		var osYamlOutput = `Client: version: undefined
+		var osYamlOutput = fmt.Sprintf(`Client: version: %s
 Server:
 kubernetes:
   containers:
@@ -111,9 +113,9 @@ kubernetes:
   namespace: gloo-system
 type: Gateway
 
-`
+`, gloo_version.Version)
 
-		var eYamlOutput = `Client: version: undefined
+		var eYamlOutput = fmt.Sprintf(`Client: version: %s
 Server:
 enterprise: true
 kubernetes:
@@ -127,15 +129,15 @@ kubernetes:
   namespace: gloo-system
 type: Gateway
 
-`
+`, gloo_version.Version)
 
-		var osJsonOutput = `Client: {"version":"undefined"}
+		var osJsonOutput = fmt.Sprintf(`Client: {"version":"%s"}
 Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"v0.0.1","Name":"gloo","Registry":"quay.io/solo-io"},{"Tag":"v0.0.2","Name":"gateway","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
-`
+`, gloo_version.Version)
 
-		var eJsonOutput = `Client: {"version":"undefined"}
+		var eJsonOutput = fmt.Sprintf(`Client: {"version":"%s"}
 Server: {"type":"Gateway","enterprise":true,"kubernetes":{"containers":[{"Tag":"v0.0.1","Name":"gloo","Registry":"quay.io/solo-io"},{"Tag":"v0.0.2","Name":"gateway","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
-`
+`, gloo_version.Version)
 
 		tests := []struct {
 			name       string

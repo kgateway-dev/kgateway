@@ -79,7 +79,7 @@ var _ = Describe("VirtualService", func() {
 
 			out, err := testutils.GlooctlOut("get vs default")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out).To(Equal(`+-----------------+--------------+---------+------+---------+-----------------+--------------------------------+
+			Expect(out).To(ContainSubstring(`+-----------------+--------------+---------+------+---------+-----------------+--------------------------------+
 | VIRTUAL SERVICE | DISPLAY NAME | DOMAINS | SSL  | STATUS  | LISTENERPLUGINS |             ROUTES             |
 +-----------------+--------------+---------+------+---------+-----------------+--------------------------------+
 | default         |              | *       | none | Pending |                 | testRouteName: /foo, /bar ->   |
@@ -94,7 +94,7 @@ var _ = Describe("VirtualService", func() {
 
 			out, err := testutils.GlooctlOut("get vs route default")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out).To(Equal(`Route Action
+			Expect(out).To(ContainSubstring(`Route Action
 +----+---------------+----------+-------------+-------+---------+--------------+---------+---------+
 | ID |     NAME      | MATCHERS |    TYPES    | VERBS | HEADERS |    ACTION    | CUSTOM1 | CUSTOM2 |
 +----+---------------+----------+-------------+-------+---------+--------------+---------+---------+

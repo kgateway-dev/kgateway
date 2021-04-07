@@ -76,7 +76,7 @@ var _ = Describe("ExtauthApiKey", func() {
 		out, err := testutils.GlooctlOut("create secret apikey --name user --namespace gloo-system --apikey secretApiKey --apikey-labels k1=v1,k2=v2 --dry-run")
 		Expect(err).NotTo(HaveOccurred())
 		fmt.Print(out)
-		Expect(out).To(Equal(`metadata:
+		Expect(out).To(ContainSubstring(`metadata:
   creationTimestamp: null
   labels:
     k1: v1
