@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix enterprise install commands to use latest patch version based off of the CLI minor version.
+    issueLink: https://github.com/solo-io/gloo/issues/4555

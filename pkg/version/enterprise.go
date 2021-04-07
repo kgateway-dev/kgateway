@@ -18,11 +18,23 @@ const GlooEE = "gloo-ee"
 // The version of GlooE installed by the CLI.
 // Calculated from the largest semver gloo-ee version in the helm repo index
 func GetLatestEnterpriseVersion(stableOnly bool) (string, error) {
-	return GetLatestHelmChartVersionWithMaxVersion(EnterpriseHelmRepoIndex, GlooEE, stableOnly, &versionutils.Version{
+
+	maxVersion := &versionutils.Version{
 		Major: math.MaxInt32,
 		Minor: math.MaxInt32,
 		Patch: math.MaxInt32,
-	})
+	}
+
+	if Version != UndefinedVersion {
+		version, err := versionutils.ParseVersion(git.AppendTagPrefix(Version))
+		if err != nil {
+			return "", err
+		}
+		maxVersion.Major = version.Major
+		maxVersion.Minor = version.Minor
+	}
+
+	return GetLatestHelmChartVersionWithMaxVersion(EnterpriseHelmRepoIndex, GlooEE, stableOnly, maxVersion)
 }
 
 // Calculated from the largest gloo-ee version in the helm repo index with version constraints
