@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	mock_consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul/mocks"
 	proto_matchers "github.com/solo-io/solo-kit/test/matchers"
 
@@ -160,6 +161,9 @@ var _ = Describe("Consul EDS", func() {
 			}).Return(updatedIps, nil).Times(2)
 
 			eds := NewPlugin(consulWatcherMock, mockDnsResolver, nil)
+			eds.Init(plugins.InitParams{
+				Settings: &v1.Settings{},
+			})
 
 			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
 
@@ -427,6 +431,9 @@ var _ = Describe("Consul EDS", func() {
 
 		It("works as expected", func() {
 			eds := NewPlugin(consulWatcherMock, nil, nil)
+			eds.Init(plugins.InitParams{
+				Settings: &v1.Settings{},
+			})
 
 			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
 
