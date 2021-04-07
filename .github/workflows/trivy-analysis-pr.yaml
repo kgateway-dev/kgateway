@@ -1,11 +1,11 @@
 name: security-scan
 on:
   push:
-    branches:
-      - master
-      - v1.7.x
-      - v1.6.x
+    branches:  [ master, v1.5.x, v1.6.x, v1.7.x ]
   pull_request:
+    branches: [ master ]
+  schedule:
+    - cron: "30 2 * * 1-5"
 jobs:
   release:
     name: Trivy Scan
