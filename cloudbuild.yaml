@@ -82,7 +82,13 @@ steps:
   waitFor: ['set-gcr-zone']
   id: 'get-test-credentials'
 
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
+  args: ['install-go-tools']
+  dir: *dir
+  id: 'install-go-tools'
+
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
+  entrypoint: make
   env:
   - 'ENVOY_BINARY=/workspace/envoy'
   - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
@@ -91,8 +97,8 @@ steps:
   - 'RUN_VAULT_TESTS=1'
   - 'DOCKER_CONFIG=/workspace/.docker/'
   dir: *dir
-  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor']
-  waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials']
+  args: ['run-tests']
+  waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials', 'install-go-tools']
   secretEnv: ['AWS_ARN_ROLE_1', "AWS_ROLE_ARN_STS", "JWT_PRIVATE_KEY"]
   id: 'test'
 
