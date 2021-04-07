@@ -3,3 +3,6 @@ changelog:
     description: Allow the user to disable validation of transformations, to speed up validation when many transformations are in use.
     issueLink: https://github.com/solo-io/gloo/issues/4526
     resolvesIssue: false
+  - type: FIX
+    description: Fix enterprise install commands to use latest patch version based off of the CLI minor version.
+    issueLink: https://github.com/solo-io/gloo/issues/4555

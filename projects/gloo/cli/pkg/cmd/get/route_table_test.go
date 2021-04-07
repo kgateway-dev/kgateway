@@ -41,7 +41,7 @@ var _ = Describe("Get RouteTable", func() {
 
 		out, err := testutils.GlooctlOut("get rt")
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out).To(Equal(`+-------------+--------------------------------+---------+
+		Expect(out).To(ContainSubstring(`+-------------+--------------------------------+---------+
 | ROUTE TABLE |             ROUTES             | STATUS  |
 +-------------+--------------------------------+---------+
 | node-0      | testRouteName: /root/0 ->      | Pending |
