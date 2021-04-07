@@ -20,7 +20,7 @@ For example, Gloo Edge's data plane (the `gateway-proxy` pod) has ReadOnly file 
 ## Enable replacing invalid routes
 
 * **Configure invalidConfigPolicy**
-    - In some cases, it may be desirable to update a virtual service even if its config becomes partially invalid. This is particularly useful when delegating to Route Tables as it ensures that a single Route Table will not block updates for other Route Tables which share the same Virtual Service. More information on why and how to enable this can be found [here]({{% versioned_link_path fromRoot="/traffic_management/configuration_validation/invalid_route_replacement/" %}})
+    - In some cases, it may be desirable to update a virtual service even if its config becomes partially invalid. This is particularly useful when delegating to Route Tables as it ensures that a single Route Table will not block updates for other Route Tables which share the same Virtual Service. More information on why and how to enable this can be found [here]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/invalid_route_replacement/" %}})
 
 ## Enable health checks
 
