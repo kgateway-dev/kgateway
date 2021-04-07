@@ -2,14 +2,12 @@ package install_test
 
 import (
 	"fmt"
-	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	"github.com/solo-io/go-utils/testutils/exec"
 )
 
 var _ = Describe("Install", func() {
@@ -133,11 +131,9 @@ var _ = Describe("Install", func() {
 	})
 
 	It("should not error when providing the admin console flag", func() {
-		// This test fetches the corresponding GlooE helm chart, thus it needs the version that gets linked
-		// into the glooctl binary at build time
-		out, err := exec.RunCommandOutput(RootDir, true, filepath.Join("_output", "glooctl"), "install", "gateway", "--dry-run", "--with-admin-console")
+		version.Version = "1.3.2" // pretend we set this using linker on a release build of glooctl
+		_, err := testutils.GlooctlOut("install gateway --dry-run --with-admin-console")
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out).NotTo(BeEmpty())
 	})
 
 	It("should not error when providing a new release-name flag value", func() {
