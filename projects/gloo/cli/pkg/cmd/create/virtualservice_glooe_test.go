@@ -88,7 +88,7 @@ var _ = Describe("VirtualService", func() {
 			out, err := testutils.GlooctlOut("create virtualservice kube --dry-run --name vs --domains foo.bar,baz.qux")
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Print(out)
-			Expect(out).To(Equal(`apiVersion: gateway.solo.io/v1
+			Expect(out).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   creationTimestamp: null
@@ -108,7 +108,7 @@ status: {}
 			out, err := testutils.GlooctlOut("create virtualservice kube --dry-run -oyaml --name vs --domains foo.bar,baz.qux")
 			Expect(err).NotTo(HaveOccurred())
 			fmt.Print(out)
-			Expect(out).To(Equal(`---
+			Expect(out).To(ContainSubstring(`---
 displayName: vs
 metadata:
   name: vs

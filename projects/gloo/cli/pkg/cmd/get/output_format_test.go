@@ -81,7 +81,7 @@ static:
 		It("should override/allow -o flags as expected", func() {
 			output, err := testutils.GlooctlOut("create upstream static jsonplaceholder-80 --static-hosts jsonplaceholder.typicode.com:80")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(output).To(Equal(tableOutput))
+			Expect(output).To(ContainSubstring(tableOutput))
 
 			// make sure that we created the upstream that we intended
 			up := getUpstream("jsonplaceholder-80")
@@ -92,22 +92,22 @@ static:
 			By("should default to -o table")
 			output, err = testutils.GlooctlOut("get upstreams")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(output).To(Equal(tableOutput))
+			Expect(output).To(ContainSubstring(tableOutput))
 
 			By("should respect (unnecessary) -o table flag")
 			output, err = testutils.GlooctlOut("get upstreams -o table")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(output).To(Equal(tableOutput))
+			Expect(output).To(ContainSubstring(tableOutput))
 
 			By("should respect -o yaml flag")
 			output, err = testutils.GlooctlOut("get upstreams -o yaml")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(output).To(Equal(yamlOutput))
+			Expect(output).To(ContainSubstring(yamlOutput))
 
 			By("should respect -o kube-yaml flag")
 			output, err = testutils.GlooctlOut("get upstreams -o kube-yaml")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(output).To(Equal(kubeYamlOutput))
+			Expect(output).To(ContainSubstring(kubeYamlOutput))
 		})
 	})
 })
