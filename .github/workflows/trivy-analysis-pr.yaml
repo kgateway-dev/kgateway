@@ -1,5 +1,11 @@
 name: security-scan
-on: pull_request
+on:
+  push:
+    branches:
+      - master
+      - v1.7.x
+      - v1.6.x
+  pull_request:
 jobs:
   release:
     name: Trivy Scan
