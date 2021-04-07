@@ -41,6 +41,7 @@ type plugin struct {
 	dnsPollingInterval              time.Duration
 	consulUpstreamDiscoverySettings *v1.Settings_ConsulUpstreamDiscoveryConfiguration
 	settings                        *v1.Settings
+	previousDnsResolutions          map[string][]string
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
@@ -112,6 +113,7 @@ func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInte
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.settings = params.Settings
+	p.previousDnsResolutions = make(map[string][]string)
 	p.consulUpstreamDiscoverySettings = params.Settings.ConsulDiscovery
 	if p.consulUpstreamDiscoverySettings == nil {
 		p.consulUpstreamDiscoverySettings = &v1.Settings_ConsulUpstreamDiscoveryConfiguration{UseTlsTagging: false}

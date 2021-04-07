@@ -68,8 +68,6 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		timer := time.NewTicker(DefaultDnsPollingInterval)
 		defer timer.Stop()
 
-		previousResolutions := make(map[string][]string)
-
 		publishEndpoints := func(endpoints v1.EndpointList) bool {
 			if opts.Ctx.Err() != nil {
 				return false
@@ -97,7 +95,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				// Here is where the specs are produced; each resulting spec is a grouping of serviceInstances (aka endpoints)
 				// associated with a single consul service on one datacenter.
 				specs := refreshSpecs(ctx, p.client, serviceMeta, errChan)
-				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams, previousResolutions)
+				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams, p.previousDnsResolutions)
 
 				previousHash = hashutils.MustHash(endpoints)
 				previousSpecs = specs
@@ -108,7 +106,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 			case <-timer.C:
 				// Poll to ensure any DNS updates get picked up in endpoints for EDS
-				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams, previousResolutions)
+				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams, p.previousDnsResolutions)
 
 				currentHash := hashutils.MustHash(endpoints)
 				if previousHash == currentHash {
