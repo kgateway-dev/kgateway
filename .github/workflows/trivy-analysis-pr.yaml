@@ -5,7 +5,8 @@ on:
   pull_request:
     branches: [ master ]
   schedule:
-    - cron: "30 2 * * 1-5"
+    # Monday-Friday 9pm EST
+    - cron: "0 13 * * 1-5"
 jobs:
   release:
     name: Trivy Scan
