@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/2576
+    description: Use previous resolved IP address if Consul DNS fails to resolve
