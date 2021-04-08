@@ -1,12 +1,8 @@
 name: security-scan-scheduled
 on:
-  push:
-    branches:  [ master, v1.5.x, v1.6.x, v1.7.x ]
-  pull_request:
-    branches: [ master ]
   schedule:
-    # Monday-Friday 9pm EST
-    - cron: "0 13 * * 1-5"
+    # Monday 9pm EST
+    - cron: "0 13 * * 1"
 jobs:
   scan-images:
     name: Trivy Scan
