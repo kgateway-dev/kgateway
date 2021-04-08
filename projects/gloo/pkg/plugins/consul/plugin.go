@@ -108,12 +108,12 @@ func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInte
 	if dnsPollingInterval != nil {
 		pollingInterval = *dnsPollingInterval
 	}
-	return &plugin{client: client, resolver: resolver, dnsPollingInterval: pollingInterval}
+	previousDnsResolutions := make(map[string][]string)
+	return &plugin{client: client, resolver: resolver, dnsPollingInterval: pollingInterval, previousDnsResolutions: previousDnsResolutions}
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.settings = params.Settings
-	p.previousDnsResolutions = make(map[string][]string)
 	p.consulUpstreamDiscoverySettings = params.Settings.ConsulDiscovery
 	if p.consulUpstreamDiscoverySettings == nil {
 		p.consulUpstreamDiscoverySettings = &v1.Settings_ConsulUpstreamDiscoveryConfiguration{UseTlsTagging: false}
