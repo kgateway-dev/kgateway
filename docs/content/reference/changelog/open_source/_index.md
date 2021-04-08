@@ -13,4 +13,4 @@ description: Changelogs for Open Source Gloo Edge
 <div id="changelogdiv"></div>
 <script>const changelogPath = "/static/content/gloo-changelog.docgen"</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js" integrity="sha512-L03kznCrNOfVxOUovR6ESfCz9Gfny7gihUX/huVbQB9zjODtYpxaVtIaAkpetoiyV2eqWbvxMH9fiSv5enX7bw==" crossorigin="anonymous"></script>
-<script src="/static/content/test.js"></script>
+<script src="/static/content/render_changelog.js"></script>

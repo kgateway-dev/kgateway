@@ -18,13 +18,20 @@ function copyAnchorToClipboard(elem){
 }
 // Extension for adding header anchor links
 showdown.extension('header-anchors', function() {
-
-	var ancTpl = '$1<a id="user-content-$3" onclick="copyAnchorToClipboard($3)" class="anchor" href="#$3" aria-hidden="true"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>$4';
-
+  var ancTpl = '$1<a id="user-content-$3" onclick="copyAnchorToClipboard($3)" class="anchor" href="#$3" aria-hidden="true"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>$4';
   return [{
     type: 'html',
     regex: /(<h([1-5]) id="([^"]+?)">.*)(<\/h\2>)/g,
     replace: ancTpl
+  }];
+});
+
+showdown.extension('auto-url', function() {
+  var ancTpl = '$1<a id="user-content-$3" onclick="copyAnchorToClipboard($3)" class="anchor" href="#$3" aria-hidden="true"><svg aria-hidden="true" class="octicon octicon-link" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>$4';
+  return [{
+    type: 'lang',
+    regex: /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=\+\$,\w]+@)?[A-Za-z0-9.-]+|(?:www.|[-;:&=\+\$,\w]+@)[A-Za-z0-9.-]+)((?:\/[\+~%\/.\w-_]*)?\??(?:[-\+=&;%@.\w_]*)#?(?:[\w]*))?)/g,
+    replace: '[$1]($1)'
   }];
 });
 
@@ -67,6 +74,12 @@ const changelogDataSetter = new Proxy(changelogData, {
   }
 });
 
+let showOpenSource = true
+$('#showOpenSource').click(function() {
+  showOpenSource = this.checked
+  evaluateHash();
+})
+
 function getText(){
   if (!changelogPath){
     console.err("changelogPath must be defined")
@@ -79,10 +92,10 @@ function generateChangelog(type){
   if (!changelogJsonData){
     getText().then(json => {
       changelogJsonData = json;
-      changelogDataSetter.data = generateMarkdown(type, changelogJsonData);
+      changelogDataSetter.data = generateMarkdown(type, changelogJsonData, showOpenSource);
     });
   }else{
-    changelogDataSetter.data = generateMarkdown(type, changelogJsonData);
+    changelogDataSetter.data = generateMarkdown(type, changelogJsonData, showOpenSource);
   }
 }
 
@@ -97,8 +110,9 @@ function getRenderer(type){
   }
 }
 
-function generateMarkdown(type, input){
-  return getRenderer(type).renderMarkdown(new ReleaseData(input));;
+function generateMarkdown(type, input, showOSNotes){
+  console.log(showOSNotes)
+  return getRenderer(type).renderMarkdown(new ReleaseData(input), showOSNotes);;
 }
 
 function H1 (s){
@@ -149,6 +163,15 @@ function Collapsible(title, content){
   return `\n<details><summary>\n${title}</summary>\n${content}</details>\n `
 }
 
+function Note(note){
+  let out = "";
+  if (note.FromDependentVersion){
+    out += `(From OSS ${note.FromDependentVersion}) `
+  }
+  out += `${note.Note}`
+  return out
+}
+
 class ReleaseData{
   constructor(input){
     if (!input instanceof Array){
@@ -195,25 +218,26 @@ class ChangelogNotes{
 }
 
 class MarkdownRenderer{
-  render(obj){
+  render(obj, showOSNotes){
     if (obj instanceof ChangelogNotes){
-      return this.renderChangelogNotes(obj);
+      return this.renderChangelogNotes(obj, showOSNotes);
     }
     if (obj instanceof VersionData){
-      return this.renderVersionData(obj);
+      return this.renderVersionData(obj, showOSNotes);
     }
     if (obj instanceof ReleaseData){
-      return this.renderReleaseData(obj);
+      return this.renderReleaseData(obj, showOSNotes);
     }
   }
 
-  renderMarkdown(input){
+  renderMarkdown(input, showOSNotes){
     const renderer = new showdown.Converter({
       extensions: this.discludeHeaderAnchors ? []: ['header-anchors'],
       headerLevelStart: 3,
-      prefixHeaderId: this.headerIdPrefix+HASH_SEPARATOR
+      prefixHeaderId: this.headerIdPrefix+HASH_SEPARATOR,
+      simplifiedAutoLink: true,
     });
-    const markdown = this.render(input);
+    const markdown = this.render(input, showOSNotes);
     return renderer.makeHtml(markdown);
   }
 }
@@ -224,32 +248,35 @@ class MinorReleaseRenderer extends MarkdownRenderer{
     this.headerIdPrefix = MINOR_RELEASE
   }
 
-  renderChangelogNotes(input){
+  renderChangelogNotes(input, showOSNotes){
     var output = "";
-    for (const [header,notes] of Object.entries(input.categories)){
-      output += H5(header);
-      for (const note of notes){
-        output += UnorderedListItem(note);
+    for (let [header,notes] of Object.entries(input.categories)){
+      notes = notes.filter(note => !note.FromDependentVersion || showOSNotes)
+        if (notes.length > 0){
+        output += H4(header);
+        for (const note of notes){
+            output += UnorderedListItem(Note(note));
+        }
       }
     }
     return output
   }
 
-  renderVersionData(input){
+  renderVersionData(input, showOSNotes){
     var output = "";
     for (const [header, notes] of Object.entries(input.changelogNotes)){
 
       output += H3(header + notes.headerSuffix);
-      output += this.renderChangelogNotes(notes);
+      output += this.renderChangelogNotes(notes, showOSNotes);
     }
     return output
   }
 
-  renderReleaseData(input){
+  renderReleaseData(input, showOSNotes){
     var output = "";
     for (const [header, notes] of Object.entries(input.versionData)){
       output += H2(header);
-      output += this.renderVersionData(notes);
+      output += this.renderVersionData(notes, showOSNotes);
     }
     return output
   }
@@ -261,38 +288,41 @@ class ChronologicalRenderer extends MarkdownRenderer{
     super()
     this.headerIdPrefix = CHRONOLOGICAL
   }
-  renderChangelogNotes(input){
+  renderChangelogNotes(input, showOSNotes){
     input.sort((a, b) => {return b[1].createdAt - a[1].createdAt});
     let output = ""
     for (const [header, changelogNotes] of input){
       output += H3(header + changelogNotes.headerSuffix)
-      for (const [category,notes] of Object.entries(changelogNotes.categories)){
-        output += H4(category);
-        for (const note of notes){
-          output += UnorderedListItem(note);
+      for (let [category,notes] of Object.entries(changelogNotes.categories)){
+        notes = notes.filter(note => !note.FromDependentVersion || showOSNotes)
+          if (notes.length > 0){
+          output += H4(category);
+          for (const note of notes){
+            output += UnorderedListItem(Note(note));
+          }
         }
       }
     }
     return output
   }
 
-  renderVersionData(input){
+  renderVersionData(input, showOSNotes){
     var notes = []
     for (const versionData of input){
       for (const [version, data] of Object.entries(versionData.changelogNotes)){
         notes.push([version, data])
       }
     }
-    let output = this.renderChangelogNotes(notes)
+    let output = this.renderChangelogNotes(notes, showOSNotes)
     return output
   }
 
-  renderReleaseData(input){
+  renderReleaseData(input, showOSNotes){
     var notes = []
     for (const [_, version] of Object.entries(input.versionData)){
       notes.push(version)
     }
-    let output = this.renderVersionData(notes);
+    let output = this.renderVersionData(notes, showOSNotes);
     return output
   }
 }
@@ -312,38 +342,43 @@ class VersionComparer{
     this.discludeHeaders = ["Dependency Bumps", "Pre-release"]
   }
 
-  renderVersionData(input){
+  renderVersionData(input, showOSNotes){
     var notes = []
     for (const versionData of input){
       for (const [version, data] of Object.entries(versionData.changelogNotes)){
         notes.push([version, data])
       }
     }
-    let output = this.renderChangelogNotes(notes)
+    console.log(notes)
+    let output = this.renderChangelogNotes(notes, showOSNotes)
     return output
   }
 
-  renderChangelogNotes(input){
+  renderChangelogNotes(input, showOSNotes){
     var output = "";
     let sortedByCategory = Object.entries(input.categories).sort((a , b) => a[0] > b[0])
-    for (const [header,notes] of sortedByCategory){
+    for (let [header,notes] of sortedByCategory){
       if (this.discludeHeaders.includes(header)){
         continue;
       }
+      console.log(showOSNotes)
       let section = ""
-      for (const note of notes){
-        section += UnorderedListItem(note);
+      notes = notes.filter(note => !note.FromDependentVersion || showOSNotes)
+      if (notes.length > 0){
+        for (const note of notes){
+          section += UnorderedListItem(Note(note));
+        }
+        output += Collapsible(`${header} (${notes.length})`, section)
       }
-      output += Collapsible(`${header} (${notes.length})`, section)
-    }
+  }
     return output
   }
 
   markdownToHtml(markdown){
     const renderer = new showdown.Converter({
-      extensions: this.discludeHeaderAnchors ? []: ['header-anchors'],
+      extensions: ['auto-url'],
       headerLevelStart: 3,
-      prefixHeaderId: this.headerIdPrefix+HASH_SEPARATOR
+      prefixHeaderId: this.headerIdPrefix+HASH_SEPARATOR,
     });
     return renderer.makeHtml(markdown);
   }
@@ -376,11 +411,14 @@ class VersionComparer{
     for (const [header, versionData] of Object.entries(data)){
       let noteStr = "";
       let count = 0
-      for (const [version, notes] of Object.entries(versionData)){
-        noteStr += H4("Added in " + version);
-        for (const note of notes){
-          noteStr += UnorderedListItem(note);
-          count += 1
+      for (let [version, notes] of Object.entries(versionData)){
+        notes = notes.filter(note => !note.FromDependentVersion || showOpenSource)
+        if (notes.length > 0){
+          noteStr += H4("Added in " + version);
+          for (const note of notes){
+            noteStr += UnorderedListItem(Note(note));
+            count += 1
+          }
         }
       }
       output += Collapsible(`${header} (${count})`, noteStr)
@@ -413,7 +451,5 @@ class VersionComparer{
     parentDiv.append(div).append(textDiv)
     return parentDiv
   }
-
-  
 
 }

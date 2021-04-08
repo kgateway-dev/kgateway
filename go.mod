@@ -31,6 +31,7 @@ require (
 	github.com/golang/protobuf v1.4.3
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v31 v31.0.0
+	github.com/google/go-github/v32 v32.0.0
 	github.com/gorilla/mux v1.7.4
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
 	github.com/hashicorp/consul/api v1.3.0
@@ -66,7 +67,7 @@ require (
 	github.com/sergi/go-diff v1.1.0
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/solo-io/go-list-licenses v0.1.0
-	github.com/solo-io/go-utils v0.21.4-0.20210406213058-05d5bb7709d9
+	github.com/solo-io/go-utils v0.21.4-0.20210408010006-1f2efa7ea915
 	github.com/solo-io/k8s-utils v0.0.7
 	github.com/solo-io/protoc-gen-ext v0.0.15
 	github.com/solo-io/reporting-client v0.2.0
@@ -124,6 +125,8 @@ replace (
 	github.com/opencontainers/go-digest => github.com/opencontainers/go-digest v1.0.0-rc1
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
+
+	github.com/solo-io/go-utils => /Users/sai/go/src/github.com/solo-io/go-utils
 
 	//the following block of replacements are needed to have locked these packages to before versions they switched to using proto4
 	golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
