@@ -95,7 +95,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				// Here is where the specs are produced; each resulting spec is a grouping of serviceInstances (aka endpoints)
 				// associated with a single consul service on one datacenter.
 				specs := refreshSpecs(ctx, p.client, serviceMeta, errChan)
-				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
+				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams, p.previousDnsResolutions)
 
 				previousHash = hashutils.MustHash(endpoints)
 				previousSpecs = specs
@@ -106,7 +106,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 			case <-timer.C:
 				// Poll to ensure any DNS updates get picked up in endpoints for EDS
-				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams)
+				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams, p.previousDnsResolutions)
 
 				currentHash := hashutils.MustHash(endpoints)
 				if previousHash == currentHash {
@@ -184,13 +184,18 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 // using getIpAddresses(), each of which will be labeled to reflect which of its tags/datacenters are associated with that endpoint.
 // This awkward labeling is needed because our constructed endpoints are made on a per datacenter basis, but gloo
 // upstreams are not divided this way, so we have to divide them ourselves with metadata.
-func buildEndpointsFromSpecs(ctx context.Context, writeNamespace string, resolver DnsResolver, specs []*consulapi.CatalogService, trackedServiceToUpstreams map[string][]*v1.Upstream) v1.EndpointList {
+func buildEndpointsFromSpecs(
+	ctx context.Context,
+	writeNamespace string,
+	resolver DnsResolver,
+	specs []*consulapi.CatalogService,
+	trackedServiceToUpstreams map[string][]*v1.Upstream,
+	previousResolutions map[string][]string,
+) v1.EndpointList {
 	var endpoints v1.EndpointList
 	for _, spec := range specs {
 		if upstreams, ok := trackedServiceToUpstreams[spec.ServiceName]; ok {
-			// TODO if buildEndpoints fails temporarily due to dns failure, we will remove it from eds.
-			// tracking issue: https://github.com/solo-io/gloo/issues/2576
-			if eps, err := buildEndpoints(ctx, writeNamespace, resolver, spec, upstreams); err != nil {
+			if eps, err := buildEndpoints(ctx, writeNamespace, resolver, spec, upstreams, previousResolutions); err != nil {
 				contextutils.LoggerFrom(ctx).Warnf("consul eds plugin encountered error resolving DNS for consul service %v", spec, err)
 			} else {
 				endpoints = append(endpoints, eps...)
@@ -262,7 +267,14 @@ func BuildDataCenterMetadata(dataCenters []string, upstreams []*v1.Upstream) map
 // Produces 1 endpoint for each ip address discovered by the DNS resolver.
 // Each resulting endpoint has labels representing all tags/datacenters on the upstreams, with flags for
 // which of those is or isn't in the current catalog service (see BuildTagMetadata function)
-func buildEndpoints(ctx context.Context, namespace string, resolver DnsResolver, service *consulapi.CatalogService, upstreams []*v1.Upstream) ([]*v1.Endpoint, error) {
+func buildEndpoints(
+	ctx context.Context,
+	namespace string,
+	resolver DnsResolver,
+	service *consulapi.CatalogService,
+	upstreams []*v1.Upstream,
+	previousResolutions map[string][]string,
+) ([]*v1.Endpoint, error) {
 
 	// Address is the IP address of the Consul node on which the service is registered.
 	// ServiceAddress is the IP address of the service host — if empty, node address should be used
@@ -273,7 +285,13 @@ func buildEndpoints(ctx context.Context, namespace string, resolver DnsResolver,
 
 	ipAddresses, err := getIpAddresses(ctx, address, resolver)
 	if err != nil {
-		return nil, err
+		addresses, resolvedPreviously := previousResolutions[address]
+		if !resolvedPreviously {
+			return nil, err
+		}
+		ipAddresses = addresses
+	} else {
+		previousResolutions[address] = ipAddresses
 	}
 
 	var endpoints []*v1.Endpoint

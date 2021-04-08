@@ -41,6 +41,7 @@ type plugin struct {
 	dnsPollingInterval              time.Duration
 	consulUpstreamDiscoverySettings *v1.Settings_ConsulUpstreamDiscoveryConfiguration
 	settings                        *v1.Settings
+	previousDnsResolutions          map[string][]string
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
@@ -107,7 +108,8 @@ func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInte
 	if dnsPollingInterval != nil {
 		pollingInterval = *dnsPollingInterval
 	}
-	return &plugin{client: client, resolver: resolver, dnsPollingInterval: pollingInterval}
+	previousDnsResolutions := make(map[string][]string)
+	return &plugin{client: client, resolver: resolver, dnsPollingInterval: pollingInterval, previousDnsResolutions: previousDnsResolutions}
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {

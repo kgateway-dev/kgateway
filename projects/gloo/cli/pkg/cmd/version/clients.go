@@ -60,16 +60,16 @@ func (k *kube) Get(ctx context.Context) ([]*version.ServerVersion, error) {
 		for _, container := range v.Spec.Template.Spec.Containers {
 			containerInfo := parseContainerString(container)
 			kubeContainerList = append(kubeContainerList, &version.Kubernetes_Container{
-				Tag:      containerInfo.Tag,
-				Name:     containerInfo.Repository,
-				Registry: containerInfo.Registry,
+				Tag:      *containerInfo.Tag,
+				Name:     *containerInfo.Repository,
+				Registry: *containerInfo.Registry,
 			})
 			switch {
-			case stringutils.ContainsString(containerInfo.Repository, KnativeUniqueContainers):
+			case stringutils.ContainsString(*containerInfo.Repository, KnativeUniqueContainers):
 				foundKnative = true
-			case stringutils.ContainsString(containerInfo.Repository, IngressUniqueContainers):
+			case stringutils.ContainsString(*containerInfo.Repository, IngressUniqueContainers):
 				foundIngress = true
-			case stringutils.ContainsString(containerInfo.Repository, GlooEUniqueContainers):
+			case stringutils.ContainsString(*containerInfo.Repository, GlooEUniqueContainers):
 				foundGlooE = true
 			}
 		}
@@ -108,10 +108,11 @@ func parseContainerString(container kubev1.Container) *generate.Image {
 	if len(splitImageVersion) == 2 {
 		tag = splitImageVersion[1]
 	}
-	img.Tag = tag
+	img.Tag = &tag
 	name = splitImageVersion[0]
 	splitRepoName := strings.Split(name, "/")
-	img.Repository = splitRepoName[len(splitRepoName)-1]
-	img.Registry = strings.Join(splitRepoName[:len(splitRepoName)-1], "/")
+	registry := strings.Join(splitRepoName[:len(splitRepoName)-1], "/")
+	img.Repository = &splitRepoName[len(splitRepoName)-1]
+	img.Registry = &registry
 	return img
 }

@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4551
+    resolvesIssue: false
+    description: Fixed bug where listener options were not able to be parsed.
