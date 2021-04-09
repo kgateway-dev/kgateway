@@ -1,7 +1,7 @@
 name: security-scan-scheduled
 on:
   schedule:
-    # Monday 9pm EST
+    # Monday 9am EST
     - cron: "0 13 * * 1"
 jobs:
   scan-images:
