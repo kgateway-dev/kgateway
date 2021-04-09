@@ -2,6 +2,7 @@
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
+{{$gatewaySettings := $spec.gatewaySettings}}
 {{- if not $spec.disabled }}
 {{- $svcName := default $name $spec.service.name }}
 ---
@@ -35,6 +36,7 @@ spec:
   # port order matters due to this issue: https://github.com/solo-io/gloo/issues/2571
   ports:
 {{- if $spec.service.httpsFirst }}
+  {{- if not $gatewaySettings.disableHttpsGateway }}
   - port: {{ $spec.service.httpsPort }}
     targetPort: {{ $spec.podTemplate.httpsPort }}
     protocol: TCP
@@ -42,7 +44,9 @@ spec:
     {{- if and (eq $spec.service.type "NodePort") $spec.service.httpsNodePort }}
     nodePort: {{ $spec.service.httpsNodePort }}
     {{- end}}
+  {{- end }}
 {{- end }}
+  {{- if not $gatewaySettings.disableHttpGateway }}
   - port: {{ $spec.service.httpPort }}
     targetPort: {{ $spec.podTemplate.httpPort }}
     protocol: TCP
@@ -50,7 +54,9 @@ spec:
     {{- if and (eq $spec.service.type "NodePort") $spec.service.httpNodePort }}
     nodePort: {{ $spec.service.httpNodePort }}
     {{- end}}
+  {{- end }}
 {{- if not $spec.service.httpsFirst }}
+  {{- if not $gatewaySettings.disableHttpsGateway }}
   - port: {{ $spec.service.httpsPort }}
     targetPort: {{ $spec.podTemplate.httpsPort }}
     protocol: TCP
@@ -58,6 +64,7 @@ spec:
     {{- if and (eq $spec.service.type "NodePort") $spec.service.httpsNodePort }}
     nodePort: {{ $spec.service.httpsNodePort }}
     {{- end}}
+  {{- end }}
 {{- end }}
 {{- if $spec.failover }}
 {{- if $spec.failover.enabled }}
@@ -113,3 +120,4 @@ spec:
 {{- end }} {{/* range $name, $spec := .Values.gatewayProxies */}}
 {{- end }} {{/* if not $spec.disabled */}}
 {{ end }} {{/* if .Values.gateway.enabled */}}
+
