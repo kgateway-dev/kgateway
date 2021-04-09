@@ -19,8 +19,12 @@ jobs:
       - name: Cancel Previous Actions
         uses: styfle/cancel-workflow-action@0.4.1
         with:
-          fetch-depth: 0
           access_token: ${{ github.token }}
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: ${{ matrix.gloo-version }}
       - name: Pull latest tagged image
         id: build-docker-image
         run: |
