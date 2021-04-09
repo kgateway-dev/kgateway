@@ -71,7 +71,7 @@ func NewSetupFunc() setuputils.SetupFunc {
 //noinspection GoUnusedExportedFunction
 func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
 	runWithExtensions := func(opts bootstrap.Opts) error {
-		return RunGlooWithExtensions(opts, extensions)
+		return RunGlooWithExtensions(opts, extensions, make(chan struct{}))
 	}
 	return NewSetupFuncWithRunAndExtensions(runWithExtensions, &extensions)
 }
