@@ -1,6 +1,5 @@
 name: security-scan-scheduled
 on:
-  pull_request:
   schedule:
     # Monday 9pm EST
     - cron: "0 13 * * 1"
