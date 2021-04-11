@@ -1,0 +1,44 @@
+name: security-scan-scheduled
+on:
+  schedule:
+    # Monday 9am EST
+    - cron: "0 13 * * 1"
+jobs:
+  scan-images:
+    name: Trivy Scan
+    runs-on: "ubuntu-18.04"
+    env:
+      IMAGE_REPO: quay.io/solo-io
+      TAGGED_VERSION: ${{ github.ref }}
+    strategy:
+      matrix:
+        image-type: [ 'access-logger', 'certgen', 'discovery', 'gateway', 'gloo', 'gloo-envoy-wrapper', 'ingress', 'sds' ]
+        gloo-version: [ 'master', 'v1.7.x', 'v1.6.x', 'v1.5.x']
+    steps:
+      - name: Cancel Previous Actions
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          ref: ${{ matrix.gloo-version }}
+      - name: Pull latest tagged image
+        id: build-docker-image
+        run: |
+          VERSION=$( git describe --tags --abbrev=0 |  cut -c 2- )
+          docker pull ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:$(echo $VERSION)
+          docker image tag ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:$(echo $VERSION) ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:${{ matrix.gloo-version }}
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:${{ matrix.gloo-version }}
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: trivy-results-${{ matrix.image-type }}.sarif
+          severity: 'CRITICAL,HIGH'
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v1
+        with:
+          sarif_file: trivy-results-${{ matrix.image-type }}.sarif
