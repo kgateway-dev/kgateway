@@ -556,6 +556,7 @@ func getKubernetesConfig(timeout time.Duration) (*rest.Config, error) {
 		return nil, fmt.Errorf("Error retrieving Kubernetes configuration: %v \n", err)
 	}
 	config.Timeout = timeout
+	config.Burst = 30
 	return config, nil
 }
 
