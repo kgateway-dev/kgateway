@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	envoyroutev3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
@@ -18,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
 const (
@@ -34,9 +33,9 @@ var (
 
 var _ plugins.Plugin = new(Plugin)
 
-//var _ plugins.VirtualHostPlugin = new(Plugin)
-//var _ plugins.WeightedDestinationPlugin = new(Plugin)
-//var _ plugins.RoutePlugin = new(Plugin)
+var _ plugins.VirtualHostPlugin = new(Plugin)
+var _ plugins.WeightedDestinationPlugin = new(Plugin)
+var _ plugins.RoutePlugin = new(Plugin)
 var _ plugins.HttpFilterPlugin = new(Plugin)
 
 type TranslateTransformationFn func(*transformation.Transformation) (*envoytransformation.Transformation, error)
