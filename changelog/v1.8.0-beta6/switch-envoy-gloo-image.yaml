@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Switch envoy image to envoy-gloo-private.
