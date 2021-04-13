@@ -1,7 +1,5 @@
 changelog:
-  - type: NON_USER_FACING
+  - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/4228
     resolvesIssue: false
-    description: >
-      Pass a notification channel into the setup syncer. This will allow us to send messages that
-      will force emit the API.
+    description: Make upstream failover DNS polling frequency configurable in the Gloo settings
