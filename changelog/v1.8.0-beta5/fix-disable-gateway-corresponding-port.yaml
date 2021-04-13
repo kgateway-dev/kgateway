@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4578
+    description: Disabling http/s gateway should disable corresponding port

@@ -39,18 +39,6 @@ jobs:
           VERSION=$(git describe --tags | cut -c 2-)
           TAGGED_VERSION=v$(echo $VERSION) make ${{ matrix.image-type }}-docker
           echo "::set-output name=VERSION::$(echo $VERSION)"
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:${{ steps.build-docker-image.outputs.VERSION }}
-          format: 'template'
-          template: '@/contrib/sarif.tpl'
-          output: trivy-results-${{ matrix.image-type }}.sarif
-          severity: 'CRITICAL,HIGH'
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v1
-        with:
-          sarif_file: trivy-results-${{ matrix.image-type }}.sarif
       - name: Setup Gloo Docs Output
         run: |
           mkdir -p ${{ env.SCAN_DIR }}/${{ steps.build-docker-image.outputs.VERSION }}

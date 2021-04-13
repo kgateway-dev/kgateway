@@ -151,7 +151,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 	glooOpts.ControlPlane.StartGrpcServer = true
 	glooOpts.ValidationServer.StartGrpcServer = true
-	go setup.RunGlooWithExtensions(glooOpts, runOptions.Extensions)
+	go setup.RunGlooWithExtensions(glooOpts, runOptions.Extensions, make(chan struct{}))
 
 	// gloo is dependency of gateway, needs to run second if we want to test validation
 	if !runOptions.WhatToRun.DisableGateway {
