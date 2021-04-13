@@ -31,6 +31,12 @@ var (
 	pluginStage      = plugins.AfterStage(plugins.AuthZStage)
 )
 
+var (
+	UnsupportedTransformationType = func(transformation interface{}) error {
+		return fmt.Errorf("transformation type %T is not supported in this version of Gloo Edge", transformation)
+	}
+)
+
 var _ plugins.Plugin = new(Plugin)
 
 var _ plugins.VirtualHostPlugin = new(Plugin)
@@ -237,7 +243,7 @@ func TranslateTransformation(glooTransform *transformation.Transformation) (*env
 			break
 		}
 	default:
-		return nil, fmt.Errorf("transformation type %T is not supported in this version of Gloo Edge", typedTransformation)
+		return nil, UnsupportedTransformationType(typedTransformation)
 	}
 	return out, nil
 }
