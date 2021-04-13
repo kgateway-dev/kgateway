@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4228
+    resolvesIssue: false
+    description: >
+      Pass a notification channel into the setup syncer. This will allow us to send messages that
+      will force emit the API.
