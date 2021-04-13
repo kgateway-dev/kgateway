@@ -228,6 +228,7 @@ weight: 5
 
  
 This message defines a transformation.
+This proto is for envoy filter config, not user-facing API.
 
 ```yaml
 "transformationTemplate": .envoy.api.v2.filter.http.TransformationTemplate

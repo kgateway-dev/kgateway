@@ -38,7 +38,7 @@ Defines an XSLT Transformation.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `xslt` | `string` | XSLT transformation template which you want to transform requests/responses with. Invalid XSLT transformation templates will result will result in a NACK during envoy configuration-time and envoy will fail to start. |
-| `setContentType` | `string` | Sets the content-type of the HTTP request to what is set here. This is useful in situations where an XSLT transformation is used to transform XML to JSON and the content-type should be changed to `application/xml` to `application/json`. |
+| `setContentType` | `string` | Sets the content-type of the HTTP request to what is set here. This is useful in situations where an XSLT transformation is used to transform XML to JSON and the content-type should be changed from `application/xml` to `application/json`. |
 | `nonXmlTransform` | `bool` | This should be set to true if the content being transformed is not XML. For example, if the content being transformed is from JSON to XML, this should be set to true. defaults to false. |
 
 

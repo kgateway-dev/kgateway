@@ -113,6 +113,7 @@ message ResponseTransformationRule {
 }
 
 // This message defines a transformation.
+// This proto is for envoy filter config, not user-facing API.
 message Transformation {
   // The type of transformation to apply.
   oneof transformation_type {

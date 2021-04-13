@@ -411,6 +411,7 @@ func (x *ResponseTransformationRule) GetResponseTransformation() *Transformation
 }
 
 // This message defines a transformation.
+// This proto is for envoy filter config, not user-facing API.
 type Transformation struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
