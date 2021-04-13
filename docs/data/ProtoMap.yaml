@@ -497,6 +497,9 @@ apis:
   gloo.solo.io.TlsSecret:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#TlsSecret
     package: gloo.solo.io
+  gloo.solo.io.Transformation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/transformation/transformation.proto.sk/#Transformation
+    package: gloo.solo.io
   gloo.solo.io.Upstream:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/#Upstream
     package: gloo.solo.io
@@ -1331,6 +1334,9 @@ apis:
   transformation.options.gloo.solo.io.ResponseMatch:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#ResponseMatch
     package: transformation.options.gloo.solo.io
+  transformation.options.gloo.solo.io.Transformation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#Transformation
+    package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.TransformationStages:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#TransformationStages
     package: transformation.options.gloo.solo.io
@@ -1421,6 +1427,3 @@ apis:
   wasm.options.gloo.solo.io.WasmFilter:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto.sk/#WasmFilter
     package: wasm.options.gloo.solo.io
-  xslt.options.gloo.solo.io.XsltTransformation:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/xslt/xslt.proto.sk/#XsltTransformation
-    package: xslt.options.gloo.solo.io

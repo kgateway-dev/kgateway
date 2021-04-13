@@ -102,8 +102,8 @@ var _ = Describe("Plugin", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 			// construct transformation with all the options, to make sure translation is correct
-			earlyRequestTransform := &envoytransformation.Transformation{
-				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+			earlyRequestTransform := &transformation.Transformation{
+				TransformationType: &transformation.Transformation_TransformationTemplate{
 					TransformationTemplate: &envoytransformation.TransformationTemplate{
 						AdvancedTemplates: true,
 						BodyTransformation: &envoytransformation.TransformationTemplate_Body{
@@ -112,8 +112,8 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}
-			earlyResponseTransform := &envoytransformation.Transformation{
-				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+			earlyResponseTransform := &transformation.Transformation{
+				TransformationType: &transformation.Transformation_TransformationTemplate{
 					TransformationTemplate: &envoytransformation.TransformationTemplate{
 						AdvancedTemplates: true,
 						BodyTransformation: &envoytransformation.TransformationTemplate_Body{
@@ -122,8 +122,8 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}
-			requestTransform := &envoytransformation.Transformation{
-				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+			requestTransform := &transformation.Transformation{
+				TransformationType: &transformation.Transformation_TransformationTemplate{
 					TransformationTemplate: &envoytransformation.TransformationTemplate{
 						AdvancedTemplates: true,
 						BodyTransformation: &envoytransformation.TransformationTemplate_Body{
@@ -132,8 +132,8 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}
-			responseTransform := &envoytransformation.Transformation{
-				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+			responseTransform := &transformation.Transformation{
+				TransformationType: &transformation.Transformation_TransformationTemplate{
 					TransformationTemplate: &envoytransformation.TransformationTemplate{
 						AdvancedTemplates: true,
 						BodyTransformation: &envoytransformation.TransformationTemplate_Body{

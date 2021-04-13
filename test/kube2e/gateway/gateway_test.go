@@ -1425,8 +1425,8 @@ spec:
 			injaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %}`
 			t := &glootransformation.Transformations{
 				ClearRouteCache: true,
-				ResponseTransformation: &transformation.Transformation{
-					TransformationType: &transformation.Transformation_TransformationTemplate{
+				ResponseTransformation: &glootransformation.Transformation{
+					TransformationType: &glootransformation.Transformation_TransformationTemplate{
 						TransformationTemplate: &transformation.TransformationTemplate{
 							Headers: map[string]*transformation.InjaTemplate{
 								":status": {Text: injaTransform},
@@ -1506,8 +1506,8 @@ spec:
 				injaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %`
 				t := &glootransformation.Transformations{
 					ClearRouteCache: true,
-					ResponseTransformation: &transformation.Transformation{
-						TransformationType: &transformation.Transformation_TransformationTemplate{
+					ResponseTransformation: &glootransformation.Transformation{
+						TransformationType: &glootransformation.Transformation_TransformationTemplate{
 							TransformationTemplate: &transformation.TransformationTemplate{
 								Headers: map[string]*transformation.InjaTemplate{
 									":status": {Text: injaTransform},

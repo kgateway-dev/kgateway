@@ -22,7 +22,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Transformations", func() {
+var _ = FDescribe("Transformations", func() {
 
 	var (
 		ctx           context.Context
@@ -64,8 +64,8 @@ var _ = Describe("Transformations", func() {
 		_, err = testClients.UpstreamClient.Write(tu.Upstream, opts)
 		Expect(err).NotTo(HaveOccurred())
 		transform = &transformation.Transformations{
-			ResponseTransformation: &envoy_transform.Transformation{
-				TransformationType: &envoy_transform.Transformation_TransformationTemplate{
+			ResponseTransformation: &transformation.Transformation{
+				TransformationType: &transformation.Transformation_TransformationTemplate{
 					TransformationTemplate: &envoy_transform.TransformationTemplate{
 						BodyTransformation: &envoy_transform.TransformationTemplate_Body{
 							Body: &envoy_transform.InjaTemplate{

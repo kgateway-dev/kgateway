@@ -2,9 +2,12 @@ package transformation
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	envoyroutev3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
@@ -15,12 +18,13 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
 const (
 	FilterName       = "io.solo.transformation"
 	EarlyStageNumber = 1
+
+	PluginName = "transformation.plugin.solo"
 )
 
 var (
@@ -29,16 +33,27 @@ var (
 )
 
 var _ plugins.Plugin = new(Plugin)
-var _ plugins.VirtualHostPlugin = new(Plugin)
-var _ plugins.WeightedDestinationPlugin = new(Plugin)
-var _ plugins.RoutePlugin = new(Plugin)
+
+//var _ plugins.VirtualHostPlugin = new(Plugin)
+//var _ plugins.WeightedDestinationPlugin = new(Plugin)
+//var _ plugins.RoutePlugin = new(Plugin)
 var _ plugins.HttpFilterPlugin = new(Plugin)
+
+type TranslateTransformationFn func(*transformation.Transformation) (*envoytransformation.Transformation, error)
 
 type Plugin struct {
 	RequireTransformationFilter bool
 	requireEarlyTransformation  bool
+	TranslateTransformation     TranslateTransformationFn
+	settings                    *v1.Settings
+}
 
-	settings *v1.Settings
+func (p *Plugin) PluginName() string {
+	return PluginName
+}
+
+func (p *Plugin) IsUpgrade() bool {
+	return false
 }
 
 func NewPlugin() *Plugin {
@@ -49,6 +64,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	p.RequireTransformationFilter = false
 	p.requireEarlyTransformation = false
 	p.settings = params.Settings
+	p.TranslateTransformation = TranslateTransformation
 	return nil
 }
 
@@ -58,16 +74,19 @@ func (p *Plugin) ProcessVirtualHost(
 	in *v1.VirtualHost,
 	out *envoy_config_route_v3.VirtualHost,
 ) error {
-	envoyTransformation := p.convertTransformation(
+	envoyTransformation, err := p.convertTransformation(
 		params.Ctx,
 		in.GetOptions().GetTransformations(),
 		in.GetOptions().GetStagedTransformations(),
 	)
+	if err != nil {
+		return err
+	}
 	if envoyTransformation == nil {
 		return nil
 	}
 	p.RequireTransformationFilter = true
-	err := p.validateTransformation(params.Ctx, envoyTransformation)
+	err = p.validateTransformation(params.Ctx, envoyTransformation)
 	if err != nil {
 		return err
 	}
@@ -77,16 +96,19 @@ func (p *Plugin) ProcessVirtualHost(
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	envoyTransformation := p.convertTransformation(
+	envoyTransformation, err := p.convertTransformation(
 		params.Ctx,
 		in.GetOptions().GetTransformations(),
 		in.GetOptions().GetStagedTransformations(),
 	)
+	if err != nil {
+		return err
+	}
 	if envoyTransformation == nil {
 		return nil
 	}
 	p.RequireTransformationFilter = true
-	err := p.validateTransformation(params.Ctx, envoyTransformation)
+	err = p.validateTransformation(params.Ctx, envoyTransformation)
 	if err != nil {
 		return err
 	}
@@ -100,17 +122,20 @@ func (p *Plugin) ProcessWeightedDestination(
 	in *v1.WeightedDestination,
 	out *envoy_config_route_v3.WeightedCluster_ClusterWeight,
 ) error {
-	envoyTransformation := p.convertTransformation(
+	envoyTransformation, err := p.convertTransformation(
 		params.Ctx,
 		in.GetOptions().GetTransformations(),
 		in.GetOptions().GetStagedTransformations(),
 	)
+	if err != nil {
+		return err
+	}
 	if envoyTransformation == nil {
 		return nil
 	}
 
 	p.RequireTransformationFilter = true
-	err := p.validateTransformation(params.Ctx, envoyTransformation)
+	err = p.validateTransformation(params.Ctx, envoyTransformation)
 	if err != nil {
 		return err
 	}
@@ -140,27 +165,34 @@ func (p *Plugin) convertTransformation(
 	ctx context.Context,
 	t *transformation.Transformations,
 	stagedTransformations *transformation.TransformationStages,
-) *envoytransformation.RouteTransformations {
+) (*envoytransformation.RouteTransformations, error) {
 	if t == nil && stagedTransformations == nil {
-		return nil
+		return nil, nil
 	}
-
 	ret := &envoytransformation.RouteTransformations{}
 	if t != nil && stagedTransformations.GetRegular() == nil {
 		// keep deprecated config until we are sure we don't need it.
 		// on newer envoys it will be ignored.
-		ret.RequestTransformation = t.RequestTransformation
+		requestTransform, err := p.TranslateTransformation(t.RequestTransformation)
+		if err != nil {
+			return nil, err
+		}
+		responseTransform, err := p.TranslateTransformation(t.ResponseTransformation)
+		if err != nil {
+			return nil, err
+		}
+		ret.RequestTransformation = requestTransform
 		ret.ClearRouteCache = t.ClearRouteCache
-		ret.ResponseTransformation = t.ResponseTransformation
+		ret.ResponseTransformation = responseTransform
 		// new config:
 		// we have to have it too, as if any new config is defined the deprecated config is ignored.
 		ret.Transformations = append(ret.Transformations, &envoytransformation.RouteTransformations_RouteTransformation{
 			Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
 				RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
 					Match:                  nil,
-					RequestTransformation:  t.RequestTransformation,
+					RequestTransformation:  requestTransform,
 					ClearRouteCache:        t.ClearRouteCache,
-					ResponseTransformation: t.ResponseTransformation,
+					ResponseTransformation: responseTransform,
 				},
 			},
 		})
@@ -168,12 +200,47 @@ func (p *Plugin) convertTransformation(
 
 	if early := stagedTransformations.GetEarly(); early != nil {
 		p.requireEarlyTransformation = true
-		ret.Transformations = append(ret.Transformations, getTransformations(ctx, EarlyStageNumber, early)...)
+		transformations, err := p.getTransformations(ctx, EarlyStageNumber, early)
+		if err != nil {
+			return nil, err
+		}
+		ret.Transformations = append(ret.Transformations, transformations...)
 	}
 	if regular := stagedTransformations.GetRegular(); regular != nil {
-		ret.Transformations = append(ret.Transformations, getTransformations(ctx, 0, regular)...)
+		transformations, err := p.getTransformations(ctx, 0, regular)
+		if err != nil {
+			return nil, err
+		}
+		ret.Transformations = append(ret.Transformations, transformations...)
 	}
-	return ret
+	return ret, nil
+}
+
+func TranslateTransformation(glooTransform *transformation.Transformation) (*envoytransformation.Transformation, error) {
+	if glooTransform == nil {
+		return nil, nil
+	}
+	out := &envoytransformation.Transformation{}
+
+	switch typedTransformation := glooTransform.GetTransformationType().(type) {
+	case *transformation.Transformation_HeaderBodyTransform:
+		{
+			out.TransformationType = &envoytransformation.Transformation_HeaderBodyTransform{
+				HeaderBodyTransform: typedTransformation.HeaderBodyTransform,
+			}
+			break
+		}
+	case *transformation.Transformation_TransformationTemplate:
+		{
+			out.TransformationType = &envoytransformation.Transformation_TransformationTemplate{
+				TransformationTemplate: typedTransformation.TransformationTemplate,
+			}
+			break
+		}
+	default:
+		return nil, fmt.Errorf("transformation type %T is not supported in this version of Gloo Edge", typedTransformation)
+	}
+	return out, nil
 }
 
 func (p *Plugin) validateTransformation(ctx context.Context, transformations *envoytransformation.RouteTransformations) error {
@@ -184,34 +251,46 @@ func (p *Plugin) validateTransformation(ctx context.Context, transformations *en
 	return nil
 }
 
-func getTransformations(ctx context.Context, stage uint32, transformations *transformation.RequestResponseTransformations) []*envoytransformation.RouteTransformations_RouteTransformation {
+func (p *Plugin) getTransformations(ctx context.Context, stage uint32, transformations *transformation.RequestResponseTransformations) ([]*envoytransformation.RouteTransformations_RouteTransformation, error) {
 	var outTransformations []*envoytransformation.RouteTransformations_RouteTransformation
 	for _, transformation := range transformations.GetResponseTransforms() {
+		responseTransform, err := p.TranslateTransformation(transformation.ResponseTransformation)
+		if err != nil {
+			return nil, err
+		}
 		outTransformations = append(outTransformations, &envoytransformation.RouteTransformations_RouteTransformation{
 			Stage: stage,
 			Match: &envoytransformation.RouteTransformations_RouteTransformation_ResponseMatch_{
 				ResponseMatch: &envoytransformation.RouteTransformations_RouteTransformation_ResponseMatch{
 					Match:                  getResponseMatcher(ctx, transformation),
-					ResponseTransformation: transformation.ResponseTransformation,
+					ResponseTransformation: responseTransform,
 				},
 			},
 		})
 	}
 
 	for _, transformation := range transformations.GetRequestTransforms() {
+		requestTransform, err := p.TranslateTransformation(transformation.RequestTransformation)
+		if err != nil {
+			return nil, err
+		}
+		responseTransform, err := p.TranslateTransformation(transformation.ResponseTransformation)
+		if err != nil {
+			return nil, err
+		}
 		outTransformations = append(outTransformations, &envoytransformation.RouteTransformations_RouteTransformation{
 			Stage: stage,
 			Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
 				RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
 					Match:                  getRequestMatcher(ctx, transformation.GetMatcher()),
-					RequestTransformation:  transformation.RequestTransformation,
+					RequestTransformation:  requestTransform,
 					ClearRouteCache:        transformation.ClearRouteCache,
-					ResponseTransformation: transformation.ResponseTransformation,
+					ResponseTransformation: responseTransform,
 				},
 			},
 		})
 	}
-	return outTransformations
+	return outTransformations, nil
 }
 
 // Note: these are copied from the translator and adapted to v3 apis. Once the transformer
