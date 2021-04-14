@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4228
+    resolvesIssue: false
+    description: Make upstream failover DNS polling frequency configurable in the Gloo settings
