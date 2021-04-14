@@ -499,6 +499,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 "regexMaxProgramSize": .google.protobuf.UInt32Value
 "restXdsBindAddr": string
 "enableRestEds": .google.protobuf.BoolValue
+"failoverUpstreamDnsPollingInterval": .google.protobuf.Duration
 
 ```
 
@@ -516,6 +517,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 | `regexMaxProgramSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Set this option to specify the default max program size for regexes. If not specified, defaults to 100. |
 | `restXdsBindAddr` | `string` | Where the `gloo` REST xDS server should bind. Defaults to `0.0.0.0:9976`. |
 | `enableRestEds` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether or not to use rest xds for all EDS by default. Set to true by default in versions > `v1.6.0`. This setting is meant to solve the bug which causes updated upstreams to dissapear, or have 0 endpoints. Some examples are: 1. https://github.com/solo-io/gloo/issues/3673 2. https://github.com/solo-io/gloo/issues/3710 3. https://github.com/solo-io/gloo/issues/3219 Rest XDS, as opposed to grpc, uses http polling rather than streaming. |
+| `failoverUpstreamDnsPollingInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The polling interval for the DNS server if upstream failover is configured. If there is a failover upstream address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 10s. |
 
 
 

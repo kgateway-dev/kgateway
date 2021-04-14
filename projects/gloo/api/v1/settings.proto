@@ -494,6 +494,12 @@ message GlooOptions {
     // 3. https://github.com/solo-io/gloo/issues/3219
     // Rest XDS, as opposed to grpc, uses http polling rather than streaming
     google.protobuf.BoolValue enable_rest_eds = 12;
+
+    // The polling interval for the DNS server if upstream failover is configured.
+    // If there is a failover upstream address with a hostname instead of an IP, Gloo will resolve the
+    // hostname with the configured frequency to update endpoints with any changes to DNS resolution.
+    // Defaults to 10s.
+    google.protobuf.Duration failover_upstream_dns_polling_interval = 13;
 }
 
 // Settings specific to the Gateway controller
