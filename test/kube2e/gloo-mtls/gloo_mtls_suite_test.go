@@ -10,6 +10,7 @@ import (
 	"time"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/cliutil"
@@ -41,7 +42,8 @@ func TestGlooMtls(t *testing.T) {
 	skhelpers.SetupLog()
 	_ = os.Remove(cliutil.GetLogsPath())
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, installNamespace))
-	RunSpecs(t, "Gloo mTLS Suite")
+	junitReporter := reporters.NewJUnitReporter("junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Gloo mTLS Suite", []Reporter{junitReporter})
 }
 
 var _ = BeforeSuite(func() {

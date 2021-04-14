@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 )
 
@@ -14,5 +15,6 @@ var (
 func TestVersion(t *testing.T) {
 	T = t
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Version Suite")
+	junitReporter := reporters.NewJUnitReporter("junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Version Suite", []Reporter{junitReporter})
 }
