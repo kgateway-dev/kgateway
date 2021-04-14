@@ -1,0 +1,34 @@
+name: CI
+on: pull_request
+jobs:
+  codegen:
+    name: codegen check
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Cancel Previous Actions
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+      - name: Set up Go 1.14
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.14
+        id: go
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1.1.2
+        with:
+          version: '3.6.1'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Generate Code
+        run: |
+          ./ci/check-generated-code.sh

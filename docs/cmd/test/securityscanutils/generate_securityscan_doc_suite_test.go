@@ -3,13 +3,16 @@ package securityscanutils_test
 import (
 	"testing"
 
+	"github.com/onsi/ginkgo/reporters"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/testutils"
 )
 
-func TestGenerateSecuritScanDoc(t *testing.T) {
+func TestGenerateSecurityScanDoc(t *testing.T) {
 	RegisterFailHandler(Fail)
 	testutils.RegisterCommonFailHandlers()
-	RunSpecs(t, "Generate Security Scan Docs Suite")
+	junitReporter := reporters.NewJUnitReporter("junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Generate Security Scan Docs Suite", []Reporter{junitReporter})
 }

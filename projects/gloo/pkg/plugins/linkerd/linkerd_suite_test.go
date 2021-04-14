@@ -4,10 +4,12 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 )
 
 func TestLinkerd(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Linkerd Suite")
+	junitReporter := reporters.NewJUnitReporter("junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Linkerd Suite", []Reporter{junitReporter})
 }

@@ -4,10 +4,12 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 )
 
 func TestLoadbalancer(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Loadbalancer Suite")
+	junitReporter := reporters.NewJUnitReporter("junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Loadbalancer Suite", []Reporter{junitReporter})
 }

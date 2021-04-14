@@ -1,37 +1,10 @@
 name: CI
-on: pull_request
+on:
+  push:
+    branches:
+      - 'master'
+  pull_request:
 jobs:
-  codegen:
-    name: codegen check
-    runs-on: ubuntu-18.04
-    steps:
-    - name: Cancel Previous Actions
-      uses: styfle/cancel-workflow-action@0.4.1
-      with:
-        access_token: ${{ github.token }}
-    - name: Set up Go 1.14
-      uses: actions/setup-go@v1
-      with:
-        go-version: 1.14
-      id: go
-    - name: Install Protoc
-      uses: arduino/setup-protoc@v1.1.2
-      with:
-        version: '3.6.1'
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - uses: actions/cache@v1
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-    - name: Generate Code
-      run: |
-        ./ci/check-generated-code.sh
   regression_tests:
     name: k8s regression tests
     runs-on: ubuntu-18.04
@@ -78,6 +51,14 @@ jobs:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
       run: |
         make run-ci-regression-tests
+    - uses: testspace-com/setup-testspace@v1
+      with:
+        domain: solo-io.testspace.com
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+    - name: Push result to Testspace server
+      run: |
+        testspace */junit.xml
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
     - name: Debug Info
       if: failure()
       run: |

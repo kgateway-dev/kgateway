@@ -9,6 +9,8 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/onsi/ginkgo/reporters"
+
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -36,7 +38,8 @@ import (
 func TestHelm(t *testing.T) {
 	RegisterFailHandler(Fail)
 	testutils.RegisterCommonFailHandlers()
-	RunSpecs(t, "Helm Suite")
+	junitReporter := reporters.NewJUnitReporter("junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Helm Suite", []Reporter{junitReporter})
 }
 
 var _ = BeforeSuite(func() {
