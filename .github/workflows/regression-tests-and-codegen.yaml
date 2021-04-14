@@ -78,6 +78,14 @@ jobs:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
       run: |
         make run-ci-regression-tests
+    - uses: testspace-com/setup-testspace@v1
+      with:
+        domain: solo-io.testspace.com
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+    - name: Push result to Testspace server
+      run: |
+        testspace */junit.xml
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
     - name: Debug Info
       if: failure()
       run: |
