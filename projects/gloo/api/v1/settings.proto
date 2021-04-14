@@ -495,7 +495,7 @@ message GlooOptions {
     // Rest XDS, as opposed to grpc, uses http polling rather than streaming
     google.protobuf.BoolValue enable_rest_eds = 12;
 
-    // The polling interval for the DNS server if service failover is configured.
+    // The polling interval for the DNS server if upstream failover is configured.
     // If there is a failover upstream address with a hostname instead of an IP, Gloo will resolve the
     // hostname with the configured frequency to update endpoints with any changes to DNS resolution.
     // Defaults to 10s.

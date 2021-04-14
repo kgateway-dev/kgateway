@@ -614,7 +614,7 @@ type GlooOptions struct {
 	// 3. https://github.com/solo-io/gloo/issues/3219
 	// Rest XDS, as opposed to grpc, uses http polling rather than streaming
 	EnableRestEds *wrappers.BoolValue `protobuf:"bytes,12,opt,name=enable_rest_eds,json=enableRestEds,proto3" json:"enable_rest_eds,omitempty"`
-	// The polling interval for the DNS server if service failover is configured.
+	// The polling interval for the DNS server if upstream failover is configured.
 	// If there is a failover upstream address with a hostname instead of an IP, Gloo will resolve the
 	// hostname with the configured frequency to update endpoints with any changes to DNS resolution.
 	// Defaults to 10s.
