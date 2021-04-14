@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/go-utils/log"
 )
@@ -11,5 +12,6 @@ import (
 func TestGrpc(t *testing.T) {
 	RegisterFailHandler(Fail)
 	log.DefaultOut = GinkgoWriter
-	RunSpecs(t, "Grpc Suite")
+	junitReporter := reporters.NewJUnitReporter("junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Grpc Suite", []Reporter{junitReporter})
 }

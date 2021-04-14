@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
 
@@ -41,5 +42,6 @@ func TestE2e(t *testing.T) {
 	helpers.RegisterCommonFailHandlers()
 	helpers.SetupLog()
 	contextutils.SetLogLevel(zapcore.DebugLevel)
-	RunSpecs(t, "E2e Suite")
+	junitReporter := reporters.NewJUnitReporter("junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "E2e Suite", []Reporter{junitReporter})
 }
