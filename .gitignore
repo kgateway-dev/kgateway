@@ -31,4 +31,4 @@ old_docs_temp_dir/
 .vscode/settings.json
 
 # junit
-*/junit.xml
+junit.xml
