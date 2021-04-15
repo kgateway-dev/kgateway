@@ -196,7 +196,7 @@ spec:
 EOF
 {{< /highlight >}}
 
-In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will inherit its `AuthConfig`, unless it [overwrites or disables]({{% versioned_link_path fromRoot="/guides/security/auth#inheritance-rules" %}}) it.
+In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will inherit its `AuthConfig`, unless it [overwrites or disables]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/#inheritance-rules" %}}) it.
 
 ### Testing the configuration
 Paths that don't start with `/api/pets` are not authorized (should return 403):
