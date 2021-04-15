@@ -18,7 +18,7 @@ If a request matches a route on which Basic Authentication is configured, Gloo E
 standard `Authorization` header before sending the request to its destination. If the user associated with the credentials 
 is not explicitly allowed to access that route, Gloo Edge will return a 401 response to the downstream client.
 
-Be sure to check the external auth [configuration overview]({{< versioned_link_path fromRoot="/guides/security/auth#auth-configuration-overview" >}}) 
+Be sure to check the external auth [configuration overview]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/#auth-configuration-overview" >}}) 
 for detailed information about how authentication is configured on Virtual Services.
 
 ## Setup
@@ -140,7 +140,7 @@ EOF
 {{< /highlight >}}
 
 In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will 
-inherit its `AuthConfig`, unless it [overwrites or disables]({{< versioned_link_path fromRoot="/guides/security/auth#inheritance-rules" >}}) it.
+inherit its `AuthConfig`, unless it [overwrites or disables]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/#inheritance-rules" >}}) it.
 
 ### Testing denied requests
 Let's try and resend the same request we sent earlier:
