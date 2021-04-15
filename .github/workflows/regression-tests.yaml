@@ -57,7 +57,7 @@ jobs:
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
     - name: Push result to Testspace server
       run: |
-        testspace junit.xml
+        testspace push --verbose "**/junit.xml"
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
     - name: Debug Info
       if: failure()
