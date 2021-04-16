@@ -93,7 +93,7 @@ status: {}
 			By("should respect -o yaml flag")
 			output, err = testutils.GlooctlOut("get upstreams -o yaml")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(output).To(Equal(yamlOutput))
+			Expect(output).To(ContainSubstring(yamlOutput))
 
 			By("should respect -o kube-yaml flag")
 			output, err = testutils.GlooctlOut("get upstreams -o kube-yaml")
