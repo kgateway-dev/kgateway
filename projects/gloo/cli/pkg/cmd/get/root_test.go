@@ -30,7 +30,7 @@ var _ = Describe("Root", func() {
 	Context("Empty args and flags", func() {
 		It("should give clear error message", func() {
 			msg, err := testutils.GlooctlOut("get")
-			Expect(msg).To(Equal(emptyFlagsMsg))
+			Expect(msg).To(ContainSubstring(emptyFlagsMsg))
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(get.EmptyGetError))
 		})

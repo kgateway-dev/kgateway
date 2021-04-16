@@ -47,7 +47,7 @@ var _ = Describe("ExtauthOauth", func() {
 		out, err := testutils.GlooctlOut("create secret oauth --name oauth --namespace gloo-system --client-secret 123 --dry-run")
 		Expect(err).NotTo(HaveOccurred())
 		fmt.Print(out)
-		Expect(out).To(Equal(`data:
+		Expect(out).To(ContainSubstring(`data:
   oauth: Y2xpZW50U2VjcmV0OiAiMTIzIgo=
 metadata:
   annotations:

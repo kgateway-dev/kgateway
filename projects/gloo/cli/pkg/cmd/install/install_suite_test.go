@@ -1,6 +1,7 @@
 package install_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -10,6 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	gotestutils "github.com/solo-io/go-utils/testutils"
 )
@@ -25,8 +27,7 @@ var dir string
 var file, values1, values2 string
 
 const (
-	unitTestingTaggedVersion = "vunit-testing"
-	expectedHelmFilename     = "gloo-unit-testing.tgz"
+	expectedHelmFilenameFmt = "gloo-%s.tgz"
 )
 
 // NOTE: This needs to be run from the root of the repo as the working directory
@@ -44,14 +45,14 @@ var _ = BeforeSuite(func() {
 	dir = filepath.Join(RootDir, "_unit_test/")
 	os.Mkdir(dir, 0755)
 
-	err = testutils.Make(RootDir, "build-test-chart TEST_ASSET_DIR=\""+dir+"\" TAGGED_VERSION="+unitTestingTaggedVersion)
+	err = testutils.Make(RootDir, "build-test-chart TEST_ASSET_DIR=\""+dir+"\"")
 	Expect(err).NotTo(HaveOccurred())
 
 	// Some tests need the Gloo/GlooE version that gets linked into the glooctl binary at build time
 	err = testutils.Make(RootDir, "glooctl")
 	Expect(err).NotTo(HaveOccurred())
 
-	file = filepath.Join(dir, expectedHelmFilename)
+	file = filepath.Join(dir, fmt.Sprintf(expectedHelmFilenameFmt, version.Version))
 
 	values1 = filepath.Join(dir, "values-namespace1.yaml")
 	values2 = filepath.Join(dir, "values-namespace2.yaml")
