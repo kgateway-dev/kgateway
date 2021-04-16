@@ -16,7 +16,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SOLO_API_DEPLOY_KEY }}
       - name: Set up Go 1.16.3
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v2
         with:
           go-version: 1.16.3
         id: go
