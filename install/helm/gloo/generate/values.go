@@ -266,11 +266,12 @@ type Job struct {
 
 type CertGenJob struct {
 	Job
-	Enabled                 *bool    `json:"enabled,omitempty" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
-	SetTtlAfterFinished     *bool    `json:"setTtlAfterFinished,omitempty" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
-	TtlSecondsAfterFinished *int     `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
-	FloatingUserId          *bool    `json:"floatingUserId,omitempty" desc:"set to true to allow the cluster to dynamically assign a user ID"`
-	RunAsUser               *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	Enabled                 *bool             `json:"enabled,omitempty" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
+	SetTtlAfterFinished     *bool             `json:"setTtlAfterFinished,omitempty" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
+	TtlSecondsAfterFinished *int              `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
+	FloatingUserId          *bool             `json:"floatingUserId,omitempty" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser               *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	NodeSelector            map[string]string `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
 }
 
 type GatewayProxy struct {

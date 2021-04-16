@@ -3038,6 +3038,56 @@ metadata:
 						testManifest.ExpectUnstructured(serviceAccount.GetKind(), serviceAccount.GetNamespace(), serviceAccount.GetName()).To(BeEquivalentTo(serviceAccount))
 
 					})
+
+					It("creates the certgen job with a nodeSelector", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.certGenJob.nodeSelector.special=true",
+							},
+						})
+						job := makeUnstructured(`
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway-certgen
+  name: gateway-certgen
+  namespace: ` + namespace + `
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-delete-policy": "hook-succeeded"
+    "helm.sh/hook-weight": "10"
+spec:
+  ttlSecondsAfterFinished: 60
+  template:
+    metadata:
+      labels:
+        gloo: gateway-certgen
+    spec:
+      serviceAccountName: certgen
+      containers:
+        - image: quay.io/solo-io/certgen:` + version + `
+          imagePullPolicy: IfNotPresent
+          name: certgen
+          securityContext:
+            runAsUser: 10101
+            runAsNonRoot: true
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          args:
+            - "--secret-name=gateway-validation-certs"
+            - "--svc-name=gateway"
+            - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-` + namespace + `"
+			nodeSelector:
+				special: "true"
+      restartPolicy: OnFailure
+`)
+						testManifest.ExpectUnstructured(job.GetKind(), job.GetNamespace(), job.GetName()).To(BeEquivalentTo(job))
+					})
 				})
 			})
 
