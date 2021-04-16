@@ -1,0 +1,6 @@
+
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4595
+    resolvesIssue: true
+    description: Allow for tolerations to be passed to the gateway-certgen job template
