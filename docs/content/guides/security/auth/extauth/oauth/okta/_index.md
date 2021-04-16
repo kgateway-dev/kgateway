@@ -240,7 +240,11 @@ For new developer accounts, you need to establish one or more Okta users for tes
 
 ### Establish Okta Application
 
-You will need to establish an Okta application to integrate with Gloo Edge.  In this guide we prioritized providing a quickstart for testing over production readiness.  In establishing the Okta application from the dashboard wizard, we defined this as a `Web` type application and gave the application a name `GlooTest`.  Beyond that, we changed only one of the default settings from the new-application wizard: `Login redirect URIs`, for which we provided a single value `https://glootest.com/callback`.  For more details on creating `Web` type application integrations with Okta, we found [this guide](https://developer.okta.com/docs/guides/implement-auth-code/overview/) helpful.
+You will need to establish an Okta application to integrate with Gloo Edge.  In this guide we prioritized providing a quickstart for testing over production readiness.  In establishing the Okta application from the dashboard wizard, we defined this as a `Web` type application, set a `Sign on method` of `OpenID Connect`, and gave the application a name `GlooTest`.  
+
+![Okta New Application Dialog](./okta-create-new-app-integration.png)
+
+Beyond that, we changed only one of the default settings from the new-application wizard: `Login redirect URIs`, for which we provided a single value `https://glootest.com/callback`.  For more details on creating `Web` type application integrations with Okta, we found [this guide](https://developer.okta.com/docs/guides/implement-auth-code/overview/) helpful.
 
 Our final Okta `GlooTest` application profile looked like this.
 
