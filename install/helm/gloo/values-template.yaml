@@ -74,6 +74,8 @@ gateway:
     disableTransformationValidation: false
     webhook:
       enabled: true
+      disableHelmHook: false
+      extraAnnotations: {}
   deployment:
     image:
       repository: gateway
