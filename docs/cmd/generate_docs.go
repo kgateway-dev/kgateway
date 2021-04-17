@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"regexp"
 
@@ -161,7 +161,7 @@ func generateChangelogMd(args []string) error {
 	target := args[0]
 	switch target {
 	case glooDocGen:
-		generator := changelogdocutils.NewMinorReleaseGroupedChangelogGenerator(client, "solo-io", glooOpenSourceRepo)
+		generator := changelogdocutils.NewMinorReleaseGroupedChangelogGenerator(changelogdocutils.Options{}, client, "solo-io", glooOpenSourceRepo)
 		out, err := generator.GenerateJSON(context.Background())
 		if err != nil {
 			return err
@@ -191,7 +191,10 @@ func generateGlooEChangelog() error {
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
-	generator := changelogdocutils.NewMergedReleaseGenerator(client, "solo-io", glooEnterpriseRepo, glooOpenSourceRepo, FindDependentVersionFn)
+	opts := changelogdocutils.Options{
+		NumVersions: 200,
+	}
+	generator := changelogdocutils.NewMergedReleaseGenerator(opts, client, "solo-io", glooEnterpriseRepo, glooOpenSourceRepo, FindDependentVersionFn)
 	out, err := generator.GenerateJSON(context.Background())
 	if err != nil {
 		return err
