@@ -161,7 +161,7 @@ func generateChangelogMd(args []string) error {
 	target := args[0]
 	switch target {
 	case glooDocGen:
-		generator := changelogdocutils.NewMinorReleaseGroupedChangelogGenerator(changelogdocutils.Options{}, client, "solo-io", glooOpenSourceRepo)
+		generator := changelogdocutils.NewMinorReleaseGroupedChangelogGenerator(changelogdocutils.Options{}, client, "solo-io", "gloo-mesh")
 		out, err := generator.GenerateJSON(context.Background())
 		if err != nil {
 			return err
