@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -119,6 +121,8 @@ type routeInfo struct {
 	inheritableMatchers bool
 	// Whether any child route objects should inherit path matchers from the parent.
 	inheritablePathMatchers bool
+	// Whether any child route objects should inherit staged transformations from the parent.
+	inheritableTransformations bool
 }
 
 // Helper object for reporting errors and warnings
@@ -185,6 +189,18 @@ func (rv *routeVisitor) visit(
 				reporterHelper.addError(resource.InputResource(), err)
 				continue
 			}
+		} else {
+			// if parent route is nil, parent is virtual host
+			// copy InheritableStagedTransformation value from virtualHost to child route
+			if routeClone.InheritableStagedTransformation == nil {
+				routeClone.InheritableStagedTransformation = &wrappers.BoolValue{
+					Value: reporterHelper.topLevelVirtualService.GetVirtualHost().GetInheritableStagedTransformation().GetValue(),
+				}
+			}
+
+			// merge StagedTransformations config from virtualHost to child route
+			inheritableStagedTransformations(routeClone,
+				reporterHelper.topLevelVirtualService.GetVirtualHost().GetOptions().GetStagedTransformations())
 		}
 
 		switch action := routeClone.Action.(type) {
@@ -230,12 +246,13 @@ func (rv *routeVisitor) visit(
 
 					// Collect information about this route that are relevant when visiting the delegated route table
 					currentRouteInfo := &routeInfo{
-						matcher:                 delegateMatcher,
-						options:                 routeClone.Options,
-						name:                    name,
-						hasName:                 routeHasName,
-						inheritableMatchers:     routeClone.InheritableMatchers.GetValue(),
-						inheritablePathMatchers: routeClone.InheritablePathMatchers.GetValue(),
+						matcher:                    delegateMatcher,
+						options:                    routeClone.Options,
+						name:                       name,
+						hasName:                    routeHasName,
+						inheritableMatchers:        routeClone.InheritableMatchers.GetValue(),
+						inheritablePathMatchers:    routeClone.InheritablePathMatchers.GetValue(),
+						inheritableTransformations: routeClone.InheritableStagedTransformation.GetValue(),
 					}
 
 					// Make a copy of the existing set of visited route tables. We need to pass this information into
@@ -448,6 +465,14 @@ func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*ga
 		}
 	}
 
+	if child.InheritableStagedTransformation == nil {
+		child.InheritableStagedTransformation = &wrappers.BoolValue{
+			Value: parent.inheritableTransformations,
+		}
+	}
+
+	inheritableStagedTransformations(child, parent.options.GetStagedTransformations())
+
 	// Verify that the matchers are compatible with the parent prefix
 	if err := isRouteTableValidForDelegateMatcher(parent.matcher, child); err != nil {
 		return nil, err
@@ -531,4 +556,35 @@ func buildCycleInfoString(routeTables gatewayv1.RouteTableList) string {
 		visitedTables = append(visitedTables, fmt.Sprintf("[%s]", rt.Metadata.Ref().Key()))
 	}
 	return strings.Join(visitedTables, " -> ")
+}
+
+func inheritableStagedTransformations(child *gatewayv1.Route, parentTransformationStages *transformation.TransformationStages) {
+	childTransformationStages := child.GetOptions().GetStagedTransformations()
+	// inherit transformation config from parent
+	if child.GetInheritableStagedTransformation().GetValue() {
+		mergeTransformations(&childTransformationStages.Regular,
+			parentTransformationStages.GetRegular())
+		mergeTransformations(&childTransformationStages.Early,
+			parentTransformationStages.GetEarly())
+	}
+
+}
+
+func mergeTransformations(childTransformationsPtr **transformation.RequestResponseTransformations, parentTransformations *transformation.RequestResponseTransformations) {
+	if parentTransformations == nil {
+		// no transformations from parent to merge in
+		return
+	}
+	childTransformations := *childTransformationsPtr
+	if childTransformations == nil {
+		// if child has no transformation config, merge in parent config
+		*childTransformationsPtr = parentTransformations
+		return
+	}
+	// Append transformations from parent after child transformation
+	// This means that on conflicting transformations, the transformation from the child will be applied
+	childTransformations.ResponseTransforms = append(childTransformations.GetResponseTransforms(),
+		parentTransformations.GetResponseTransforms()...)
+	childTransformations.RequestTransforms = append(childTransformations.GetRequestTransforms(),
+		parentTransformations.GetRequestTransforms()...)
 }
