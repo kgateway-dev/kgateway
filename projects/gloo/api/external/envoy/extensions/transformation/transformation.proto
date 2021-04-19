@@ -124,7 +124,8 @@ message Transformation {
     // 'headers', containing the headers, and 'body', containing the original
     // body.
     HeaderBodyTransform header_body_transform = 2;
-    // Configuration for an externally implemented transformer.
+    // Configuration for an externally implemented transformer, used by
+    // envoy transformation filter.
     solo.io.envoy.config.core.v3.TypedExtensionConfig transformer_config = 3;
   }
 }

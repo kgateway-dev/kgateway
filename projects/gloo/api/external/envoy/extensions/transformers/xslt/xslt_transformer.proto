@@ -18,6 +18,9 @@ message XsltTransformation{
   string set_content_type = 2;
   // This should be set to true if the content being transformed is not XML.
   // For example, if the content being transformed is from JSON to XML, this should be set to true.
+  // XSLT transformations can only take valid XML as input to be transformed. If the body is not a valid XML
+  // (e.g. using JSON as input in a JSON-to-XML transformation), setting `non_xml_transform` to true will allow the
+  // XSLT to accept the non-XML input without throwing an error by passing the input as XML CDATA.
   // defaults to false.
   bool non_xml_transform = 3;
 }
