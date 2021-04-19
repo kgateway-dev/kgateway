@@ -41,6 +41,9 @@ type XsltTransformation struct {
 	SetContentType string `protobuf:"bytes,2,opt,name=set_content_type,json=setContentType,proto3" json:"set_content_type,omitempty"`
 	// This should be set to true if the content being transformed is not XML.
 	// For example, if the content being transformed is from JSON to XML, this should be set to true.
+	// XSLT transformations can only take valid XML as input to be transformed. If the body is not a valid XML
+	// (e.g. using JSON as input in a JSON-to-XML transformation), setting `non_xml_transform` to true will allow the
+	// XSLT to accept the non-XML input without throwing an error by passing the input as XML CDATA.
 	// defaults to false.
 	NonXmlTransform bool `protobuf:"varint,3,opt,name=non_xml_transform,json=nonXmlTransform,proto3" json:"non_xml_transform,omitempty"`
 }

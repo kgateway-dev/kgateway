@@ -504,7 +504,8 @@ type Transformation_HeaderBodyTransform struct {
 }
 
 type Transformation_TransformerConfig struct {
-	// Configuration for an externally implemented transformer.
+	// Configuration for an externally implemented transformer, used by
+	// envoy transformation filter.
 	TransformerConfig *v32.TypedExtensionConfig `protobuf:"bytes,3,opt,name=transformer_config,json=transformerConfig,proto3,oneof"`
 }
 
