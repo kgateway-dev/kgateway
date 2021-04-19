@@ -4,10 +4,12 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 )
 
 func TestUpstream(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Upstream Suite")
+	junitReporter := reporters.NewJUnitReporter("junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Upstream Suite", []Reporter{junitReporter})
 }

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/test/helpers"
 )
@@ -11,5 +12,6 @@ import (
 func TestSyncer(t *testing.T) {
 	RegisterFailHandler(Fail)
 	helpers.SetupLog()
-	RunSpecs(t, "Syncer Suite")
+	junitReporter := reporters.NewJUnitReporter("junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Syncer Suite", []Reporter{junitReporter})
 }

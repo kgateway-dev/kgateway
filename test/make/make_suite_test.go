@@ -8,12 +8,14 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 )
 
 func TestMake(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Make Suite")
+	junitReporter := reporters.NewJUnitReporter("junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Make Suite", []Reporter{junitReporter})
 }
 
 type EnvVar struct {

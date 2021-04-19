@@ -556,6 +556,11 @@ func getKubernetesConfig(timeout time.Duration) (*rest.Config, error) {
 		return nil, fmt.Errorf("Error retrieving Kubernetes configuration: %v \n", err)
 	}
 	config.Timeout = timeout
+	// The burst & QPS values are set at a higher number to enable the triggering of up to this many
+	// requests so that the KubeCoreCache that is created does not throttle as it get resources for
+	// each watched namespace.
+	config.QPS = 50
+	config.Burst = 100
 	return config, nil
 }
 

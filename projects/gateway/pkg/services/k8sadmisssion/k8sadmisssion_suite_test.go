@@ -4,10 +4,12 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 )
 
 func TestK8sAdmission(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "K8sAdmission Suite")
+	junitReporter := reporters.NewJUnitReporter("junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "K8sAdmission Suite", []Reporter{junitReporter})
 }

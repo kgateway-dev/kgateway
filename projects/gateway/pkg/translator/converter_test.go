@@ -9,8 +9,10 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	glootransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
@@ -595,6 +597,192 @@ var _ = Describe("Route converter", func() {
 				Expect(converted[0].Matchers[0].GetPrefix()).To(Equal("/foo"))
 			})
 
+		})
+
+		Context("transformation inheritance mode", func() {
+
+			var (
+				routeOnlyTransformation *transformation.Transformation
+				rtOnlyTransformation    *transformation.Transformation
+				vsOnlyTransformation    *transformation.Transformation
+				vs                      *v1.VirtualService
+				rt                      *v1.RouteTable
+				rv                      translator.RouteConverter
+			)
+
+			BeforeEach(func() {
+				rtOnlyTransformation = &transformation.Transformation{
+					TransformationType: &transformation.Transformation_TransformationTemplate{
+						TransformationTemplate: &transformation.TransformationTemplate{
+							Headers: map[string]*transformation.InjaTemplate{
+								"route-table-header": {
+									Text: "route table header",
+								},
+							},
+						},
+					},
+				}
+				routeOnlyTransformation = &transformation.Transformation{
+					TransformationType: &transformation.Transformation_TransformationTemplate{
+						TransformationTemplate: &transformation.TransformationTemplate{
+							Headers: map[string]*transformation.InjaTemplate{
+								"route-header": {
+									Text: "route header",
+								},
+							},
+						},
+					},
+				}
+				vsOnlyTransformation = &transformation.Transformation{
+					TransformationType: &transformation.Transformation_TransformationTemplate{
+						TransformationTemplate: &transformation.TransformationTemplate{
+							Headers: map[string]*transformation.InjaTemplate{
+								"vs-header": {
+									Text: "vs header",
+								},
+							},
+						},
+					},
+				}
+
+				rt = &v1.RouteTable{
+					Metadata: &core.Metadata{
+						Name:      "rt",
+						Namespace: "default",
+					},
+					Routes: []*v1.Route{{
+						Matchers: []*matchers.Matcher{{
+							PathSpecifier: &matchers.Matcher_Prefix{
+								Prefix: "/foo/1",
+							},
+						}},
+						Options: &gloov1.RouteOptions{
+							StagedTransformations: &glootransformation.TransformationStages{
+								Regular: &glootransformation.RequestResponseTransformations{
+									RequestTransforms: []*glootransformation.RequestMatch{
+										{
+											RequestTransformation: routeOnlyTransformation,
+										},
+									},
+								},
+							},
+						},
+						Name: "route-1",
+						Action: &v1.Route_DirectResponseAction{
+							DirectResponseAction: &gloov1.DirectResponseAction{
+								Status: 200,
+								Body:   "foo",
+							},
+						},
+					}},
+				}
+
+				vs = &v1.VirtualService{
+					Metadata: &core.Metadata{
+						Name:      "vs",
+						Namespace: "default",
+					},
+					VirtualHost: &v1.VirtualHost{
+						InheritableStagedTransformation: &wrappers.BoolValue{Value: true},
+						Options: &gloov1.VirtualHostOptions{
+							StagedTransformations: &glootransformation.TransformationStages{
+								Regular: &glootransformation.RequestResponseTransformations{
+									RequestTransforms: []*glootransformation.RequestMatch{
+										{
+											RequestTransformation: vsOnlyTransformation,
+										},
+									},
+								},
+							},
+						},
+						Routes: []*v1.Route{
+							{
+								Matchers: []*matchers.Matcher{{
+									PathSpecifier: &matchers.Matcher_Prefix{
+										Prefix: "/foo",
+									},
+								}},
+								Action: &v1.Route_DelegateAction{
+									DelegateAction: &v1.DelegateAction{
+										DelegationType: &v1.DelegateAction_Ref{
+											Ref: &core.ResourceRef{
+												Name:      "rt",
+												Namespace: "default",
+											},
+										},
+									},
+								},
+								Options: &gloov1.RouteOptions{
+									StagedTransformations: &glootransformation.TransformationStages{
+										Regular: &glootransformation.RequestResponseTransformations{
+											RequestTransforms: []*glootransformation.RequestMatch{
+												{
+													RequestTransformation: rtOnlyTransformation,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				rv = translator.NewRouteConverter(
+					translator.NewRouteTableSelector(v1.RouteTableList{rt}),
+					translator.NewRouteTableIndexer(),
+				)
+
+			})
+
+			It("assigns vhost transformation config to route level", func() {
+				rpt := reporter.ResourceReports{}
+				converted, err := rv.ConvertVirtualService(vs, rpt)
+				Expect(rpt).To(HaveLen(0))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(HaveLen(1))
+				transforms := converted[0].GetOptions().GetStagedTransformations().GetRegular().GetRequestTransforms()
+				Expect(transforms).To(HaveLen(3))
+
+				By("verify order of transformations, child first")
+				Expect(transforms[0]).To(Equal(&glootransformation.RequestMatch{
+					RequestTransformation: routeOnlyTransformation,
+				}))
+				Expect(transforms[1]).To(Equal(&glootransformation.RequestMatch{
+					RequestTransformation: rtOnlyTransformation,
+				}))
+				Expect(transforms[2]).To(Equal(&glootransformation.RequestMatch{
+					RequestTransformation: vsOnlyTransformation,
+				}))
+
+			})
+
+			It("merges transformations from different stages to child routes", func() {
+				vs.GetVirtualHost().GetOptions().GetStagedTransformations().Early =
+					vs.GetVirtualHost().GetOptions().GetStagedTransformations().GetRegular()
+				vs.GetVirtualHost().GetOptions().GetStagedTransformations().Regular = nil
+
+				rpt := reporter.ResourceReports{}
+				converted, err := rv.ConvertVirtualService(vs, rpt)
+				Expect(rpt).To(HaveLen(0))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(HaveLen(1))
+				regularStageTransforms := converted[0].GetOptions().GetStagedTransformations().GetRegular().GetRequestTransforms()
+				earlyStageTransforms := converted[0].GetOptions().GetStagedTransformations().GetEarly().GetRequestTransforms()
+				Expect(regularStageTransforms).To(HaveLen(2))
+				Expect(earlyStageTransforms).To(HaveLen(1))
+
+				By("verify order of transformations, child first")
+				Expect(regularStageTransforms[0]).To(Equal(&glootransformation.RequestMatch{
+					RequestTransformation: routeOnlyTransformation,
+				}))
+				Expect(regularStageTransforms[1]).To(Equal(&glootransformation.RequestMatch{
+					RequestTransformation: rtOnlyTransformation,
+				}))
+				Expect(earlyStageTransforms[0]).To(Equal(&glootransformation.RequestMatch{
+					RequestTransformation: vsOnlyTransformation,
+				}))
+			})
 		})
 	})
 
