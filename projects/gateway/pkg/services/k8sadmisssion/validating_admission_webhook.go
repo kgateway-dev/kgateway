@@ -122,7 +122,7 @@ func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
 	readGatewaysFromAllNamespaces := cfg.readGatewaysFromAllNamespaces
 	webhookNamespace := cfg.webhookNamespace
 
-	keyPair, err := tls.LoadX509KeyPair(serverCertPath, serverKeyPath)
+	certProvider, err := NewCertificateProvider(serverCertPath, serverKeyPath, log.New(&debugLogger{ctx: ctx}, "validation-webhook-certificate-watcher", log.LstdFlags), ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "loading x509 key pair")
 	}
@@ -141,7 +141,7 @@ func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
 
 	return &http.Server{
 		Addr:      fmt.Sprintf(":%v", port),
-		TLSConfig: &tls.Config{Certificates: []tls.Certificate{keyPair}},
+		TLSConfig: &tls.Config{GetCertificate: certProvider.GetCertificateFunc()},
 		Handler:   mux,
 		ErrorLog:  log.New(&debugLogger{ctx: ctx}, "validation-webhook-server", log.LstdFlags),
 	}, nil
