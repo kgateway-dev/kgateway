@@ -2,7 +2,8 @@ changelog:
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/3798
     description: >
-      Staged transformations can be inherited from parent routes (Virtual Host -> Route tables -> Routes). Parent
+      Staged transformations can be inherited from parent routes (Virtual Host -> Route tables -> Routes). This can be
+      enabled using the `inheritTransformation` option in StagedTransformations. Parent
       staged transformations will be appended to a child's [Transformations](https://github.com/solo-io/gloo/blob/01d04751f72c168e304977c4f67fdbcbf30232a9/projects/gloo/api/v1/options/transformation/transformation.proto#L44).
       Only the first transformation to match the route will be evaluated, with child transformations receiving priority over parent
       transformations.
