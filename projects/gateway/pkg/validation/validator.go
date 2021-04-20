@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"google.golang.org/grpc"
+
 	utils2 "github.com/solo-io/gloo/pkg/utils"
 	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
@@ -77,18 +79,21 @@ type validator struct {
 	ignoreProxyValidationFailure bool
 	allowWarnings                bool
 	writeNamespace               string
+	settings                     *gloov1.Settings
 }
 
 type ValidatorConfig struct {
 	translator                   translator.Translator
 	validationClient             validation.ProxyValidationServiceClient
+	settings                     *gloov1.Settings
 	writeNamespace               string
 	ignoreProxyValidationFailure bool
 	allowWarnings                bool
 }
 
-func NewValidatorConfig(translator translator.Translator, validationClient validation.ProxyValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool) ValidatorConfig {
+func NewValidatorConfig(translator translator.Translator, validationClient validation.ProxyValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool, settings *gloov1.Settings) ValidatorConfig {
 	return ValidatorConfig{
+		settings:                     settings,
 		translator:                   translator,
 		validationClient:             validationClient,
 		writeNamespace:               writeNamespace,
@@ -104,6 +109,7 @@ func NewValidator(cfg ValidatorConfig) *validator {
 		writeNamespace:               cfg.writeNamespace,
 		ignoreProxyValidationFailure: cfg.ignoreProxyValidationFailure,
 		allowWarnings:                cfg.allowWarnings,
+		settings:                     cfg.settings,
 	}
 }
 
@@ -233,6 +239,10 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 
 		// validate the proxy with gloo
 		var proxyReport *validation.ProxyValidationServiceResponse
+		var validateGrpcCallOpts []grpc.CallOption
+		if maxGrpcSize := v.settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSize(); maxGrpcSize != nil {
+			validateGrpcCallOpts = append(validateGrpcCallOpts, grpc.MaxCallSendMsgSize(int(maxGrpcSize.GetValue())))
+		}
 		err := retry.Do(func() error {
 			rpt, err := v.validationClient.ValidateProxy(ctx, &validation.ProxyValidationServiceRequest{Proxy: proxy})
 			proxyReport = rpt

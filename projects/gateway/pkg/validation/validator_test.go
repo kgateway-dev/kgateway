@@ -35,7 +35,7 @@ var _ = Describe("Validator", func() {
 		t = translator.NewDefaultTranslator(translator.Opts{})
 		vc = &mockValidationClient{}
 		ns = "my-namespace"
-		v = NewValidator(NewValidatorConfig(t, vc, ns, false, false))
+		v = NewValidator(NewValidatorConfig(t, vc, ns, false, false, nil))
 	})
 	It("returns error before sync called", func() {
 		_, err := v.ValidateVirtualService(nil, nil, false)
