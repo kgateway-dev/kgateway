@@ -785,7 +785,7 @@ var _ = Describe("Route converter", func() {
 				}))
 			})
 
-			FIt("doesn't merge in parent transformations, if specified", func() {
+			It("doesn't merge in parent transformations, if specified", func() {
 				vs.GetVirtualHost().GetRoutes()[0].GetOptions().GetStagedTransformations().InheritTransformation = false
 
 				rpt := reporter.ResourceReports{}
