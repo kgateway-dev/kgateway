@@ -658,6 +658,7 @@ var _ = Describe("Route converter", func() {
 						}},
 						Options: &gloov1.RouteOptions{
 							StagedTransformations: &glootransformation.TransformationStages{
+								InheritTransformation: true,
 								Regular: &glootransformation.RequestResponseTransformations{
 									RequestTransforms: []*glootransformation.RequestMatch{
 										{
@@ -683,7 +684,6 @@ var _ = Describe("Route converter", func() {
 						Namespace: "default",
 					},
 					VirtualHost: &v1.VirtualHost{
-						InheritableStagedTransformation: &wrappers.BoolValue{Value: true},
 						Options: &gloov1.VirtualHostOptions{
 							StagedTransformations: &glootransformation.TransformationStages{
 								Regular: &glootransformation.RequestResponseTransformations{
@@ -714,6 +714,7 @@ var _ = Describe("Route converter", func() {
 								},
 								Options: &gloov1.RouteOptions{
 									StagedTransformations: &glootransformation.TransformationStages{
+										InheritTransformation: true,
 										Regular: &glootransformation.RequestResponseTransformations{
 											RequestTransforms: []*glootransformation.RequestMatch{
 												{
