@@ -159,6 +159,7 @@ Gateway* Virtual Hosts can **delegate** their routes to `RouteTables`.
 ```yaml
 "domains": []string
 "routes": []gateway.solo.io.Route
+"inheritableStagedTransformation": .google.protobuf.BoolValue
 "options": .gloo.solo.io.VirtualHostOptions
 
 ```
@@ -167,6 +168,7 @@ Gateway* Virtual Hosts can **delegate** their routes to `RouteTables`.
 | ----- | ---- | ----------- | 
 | `domains` | `[]string` | The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host. Note that the wildcard will not match the empty string. e.g. “*-bar.foo.com” will match “baz-bar.foo.com” but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header. Only a single virtual host on a gateway can match on “*”. A domain must be unique across all virtual hosts on a gateway or the config will be invalidated by Gloo Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto). |
 | `routes` | [[]gateway.solo.io.Route](../virtual_service.proto.sk/#route) | The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |
+| `inheritableStagedTransformation` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether this route as a child should inherit transformation configuration from the parent. Defaults to value of parent; for virtual services (no parent) defaults to false. |
 | `options` | [.gloo.solo.io.VirtualHostOptions](../../../../gloo/api/v1/options.proto.sk/#virtualhostoptions) | Virtual host options contain additional configuration to be applied to all traffic served by the Virtual Host. Some configuration here can be overridden by Route Options. |
 
 
@@ -190,6 +192,7 @@ top-level `RouteTable` resources.
 "matchers": []matchers.core.gloo.solo.io.Matcher
 "inheritableMatchers": .google.protobuf.BoolValue
 "inheritablePathMatchers": .google.protobuf.BoolValue
+"inheritableStagedTransformation": .google.protobuf.BoolValue
 "routeAction": .gloo.solo.io.RouteAction
 "redirectAction": .gloo.solo.io.RedirectAction
 "directResponseAction": .gloo.solo.io.DirectResponseAction
@@ -204,6 +207,7 @@ top-level `RouteTable` resources.
 | `matchers` | [[]matchers.core.gloo.solo.io.Matcher](../../../../gloo/api/v1/core/matchers/matchers.proto.sk/#matcher) | Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.). If empty, the route will match all requests (i.e, a single "/" path prefix matcher). For delegated routes, any parent matcher must have a `prefix` path matcher. |
 | `inheritableMatchers` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether this route as a child should inherit headers, methods, and query parameter matchers from the parent. Defaults to value of parent; for virtual services (no parent) defaults to false. |
 | `inheritablePathMatchers` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether this route as a child should inherit path matchers (i.e., path itself, case-sensitive setting) from the parent. Defaults to value of parent; for virtual services (no parent) defaults to false. |
+| `inheritableStagedTransformation` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Whether this route as a child should inherit transformation configuration from the parent. Defaults to value of parent; for virtual services (no parent) defaults to false. |
 | `routeAction` | [.gloo.solo.io.RouteAction](../../../../gloo/api/v1/proxy.proto.sk/#routeaction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. Only one of `routeAction`, `redirectAction`, or `delegateAction` can be set. |
 | `redirectAction` | [.gloo.solo.io.RedirectAction](../../../../gloo/api/v1/proxy.proto.sk/#redirectaction) | Redirect actions tell the proxy to return a redirect response to the downstream client. Only one of `redirectAction`, `routeAction`, or `delegateAction` can be set. |
 | `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../../../../gloo/api/v1/proxy.proto.sk/#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. Only one of `directResponseAction`, `routeAction`, or `delegateAction` can be set. |

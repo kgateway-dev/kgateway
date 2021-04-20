@@ -165,6 +165,10 @@ message VirtualHost {
     // If the list of routes is empty, the virtual host will be ignored by Gloo.
     repeated Route routes = 3;
 
+    // Whether this route as a child should inherit transformation configuration from
+    // the parent. Defaults to value of parent; for virtual services (no parent) defaults to false.
+    google.protobuf.BoolValue inheritable_staged_transformation = 10;
+
     // Virtual host options contain additional configuration to be applied to all traffic served by the Virtual Host.
     // Some configuration here can be overridden by Route Options.
     gloo.solo.io.VirtualHostOptions options = 4;
@@ -194,6 +198,10 @@ message Route {
     // Whether this route as a child should inherit path matchers (i.e., path itself, case-sensitive setting) from
     // the parent. Defaults to value of parent; for virtual services (no parent) defaults to false.
     google.protobuf.BoolValue inheritable_path_matchers = 9;
+
+    // Whether this route as a child should inherit transformation configuration from
+    // the parent. Defaults to value of parent; for virtual services (no parent) defaults to false.
+    google.protobuf.BoolValue inheritable_staged_transformation = 10;
 
     // The Route Action Defines what action the proxy should take when a request matches the route.
     oneof action {
