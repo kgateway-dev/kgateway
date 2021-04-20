@@ -1,0 +1,12 @@
+changelog:
+  - type: HELM
+    description: >-
+      Allow users to set custom annotations on gateway webhook, which enables for example use of 
+      cert-manager's ca-injector to inject the caBundle.
+    issueLink: https://github.com/solo-io/gloo/issues/3790
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/2679
+    description: >-
+      Allow users to opt-out from using Helm pre-install Hook to install gateway webhook. This 
+      can be usefull for GitOps workflows in which case the webhook must be updated 
+      (not just installed) via Helm.
