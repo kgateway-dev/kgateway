@@ -658,6 +658,7 @@ var _ = Describe("Route converter", func() {
 						}},
 						Options: &gloov1.RouteOptions{
 							StagedTransformations: &glootransformation.TransformationStages{
+								InheritTransformation: true,
 								Regular: &glootransformation.RequestResponseTransformations{
 									RequestTransforms: []*glootransformation.RequestMatch{
 										{
@@ -683,7 +684,6 @@ var _ = Describe("Route converter", func() {
 						Namespace: "default",
 					},
 					VirtualHost: &v1.VirtualHost{
-						InheritableStagedTransformation: &wrappers.BoolValue{Value: true},
 						Options: &gloov1.VirtualHostOptions{
 							StagedTransformations: &glootransformation.TransformationStages{
 								Regular: &glootransformation.RequestResponseTransformations{
@@ -714,6 +714,7 @@ var _ = Describe("Route converter", func() {
 								},
 								Options: &gloov1.RouteOptions{
 									StagedTransformations: &glootransformation.TransformationStages{
+										InheritTransformation: true,
 										Regular: &glootransformation.RequestResponseTransformations{
 											RequestTransforms: []*glootransformation.RequestMatch{
 												{
@@ -772,15 +773,36 @@ var _ = Describe("Route converter", func() {
 				Expect(regularStageTransforms).To(HaveLen(2))
 				Expect(earlyStageTransforms).To(HaveLen(1))
 
-				By("verify order of transformations, child first")
 				Expect(regularStageTransforms[0]).To(Equal(&glootransformation.RequestMatch{
 					RequestTransformation: routeOnlyTransformation,
 				}))
 				Expect(regularStageTransforms[1]).To(Equal(&glootransformation.RequestMatch{
 					RequestTransformation: rtOnlyTransformation,
 				}))
+				// has transformation from early stage as well from vhost level
 				Expect(earlyStageTransforms[0]).To(Equal(&glootransformation.RequestMatch{
 					RequestTransformation: vsOnlyTransformation,
+				}))
+			})
+
+			It("doesn't merge in parent transformations, if specified", func() {
+				vs.GetVirtualHost().GetRoutes()[0].GetOptions().GetStagedTransformations().InheritTransformation = false
+
+				rpt := reporter.ResourceReports{}
+				converted, err := rv.ConvertVirtualService(vs, rpt)
+				Expect(rpt).To(HaveLen(0))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(HaveLen(1))
+				regularStageTransforms := converted[0].GetOptions().GetStagedTransformations().GetRegular().GetRequestTransforms()
+				// Should only have 2 transformations because we didn't merge in parent transformations on the RT
+				Expect(regularStageTransforms).To(HaveLen(2))
+
+				By("verify order of transformations, child first")
+				Expect(regularStageTransforms[0]).To(Equal(&glootransformation.RequestMatch{
+					RequestTransformation: routeOnlyTransformation,
+				}))
+				Expect(regularStageTransforms[1]).To(Equal(&glootransformation.RequestMatch{
+					RequestTransformation: rtOnlyTransformation,
 				}))
 			})
 		})
