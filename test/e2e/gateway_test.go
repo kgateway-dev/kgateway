@@ -153,7 +153,7 @@ var _ = Describe("Gateway", func() {
 				Expect(numssl).To(Equal(1))
 			})
 
-			FIt("correctly configures gateway for a virtual service which contains a route to a service", func() {
+			It("correctly configures gateway for a virtual service which contains a route to a service", func() {
 
 				// Create a service so gloo can generate "fake" upstreams for it
 				svc := kubernetes.NewService("default", "my-service")
