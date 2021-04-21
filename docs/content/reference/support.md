@@ -18,7 +18,7 @@ When stable branches are created for a particular release, i.e. a Gloo Edge Ente
 
 Gloo Edge Enterprise customers can purchase additional N-x support, _but the max support that can be purchased is N-3_.
 
-The recommended version for helm charts is v3.0 or greater, but helm v2 will also work.
+The recommended version for helm clients is v3.0 or greater, but helm v2 will also work.
 
 | Gloo Edge | Kubernetes | Envoy | Helm | Istio |
 |------|----------|---------|--------|------|
