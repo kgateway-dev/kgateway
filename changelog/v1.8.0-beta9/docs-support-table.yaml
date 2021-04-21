@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Updated the Gloo Edge docs around supported versions of components. 
+      There is a table that displays the versions of Gloo Edge and the 
+      corresponding versions of kubernetes, envoy, helm, and istio that
+      are supported
