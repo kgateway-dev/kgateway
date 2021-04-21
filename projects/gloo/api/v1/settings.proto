@@ -550,7 +550,10 @@ message GatewayOptions {
         // When disabling this, ensure that your transformations are valid prior to applying them.
         google.protobuf.BoolValue disable_transformation_validation = 9;
 
-        // Max size for the grpc validation message. This may have unknown performance implications.
+        // By default, gRPC validation messages between gateway and gloo pods have a max message size of 4 MB.
+        // Setting this value sets the gRPC max message size in bytes for the gloo validation server. This should
+        // only be changed if necessary.
+        // If not included, the gRPC max message size will be the default of 4 MB.
         google.protobuf.Int64Value validation_server_grpc_max_size = 10;
     }
 
