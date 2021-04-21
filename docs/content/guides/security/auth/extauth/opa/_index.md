@@ -294,7 +294,7 @@ kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80
 
 If you open your browser and navigate to [http://localhost:8080](http://localhost:8080) you should see the following page:
 
-![Pet Clinic app homepage](petclinic-home.png)
+![Pet Clinic app homepage]({{% versioned_link_path fromRoot="/img/petclinic-home.png" %}})
 
 ### Secure the Virtual Service
 As we just saw, we were able to reach the service without having to provide any credentials. This is because by default 
@@ -527,7 +527,7 @@ portForwardPid2=$!
 Now we are ready to test our complete setup! Open you browser and navigate to
 [http://localhost:8080](http://localhost:8080). You should see the following login page:
 
-![Dex login page](./dex-login.png)
+![Dex login page]({{% versioned_link_path fromRoot="/img/dex-login.png" %}})
 
 {{% notice note %}}
 As the demo app doesn't have a sign-out button, use a private browser window (also known as incognito mode) to access the demo app. This will make it easy to change the user we logged in with.
