@@ -247,7 +247,9 @@ type GatewayValidation struct {
 }
 
 type Webhook struct {
-	Enabled *bool `json:"enabled,omitempty" desc:"enable validation webhook (default true)"`
+	Enabled          *bool             `json:"enabled,omitempty" desc:"enable validation webhook (default true)"`
+	DisableHelmHook  *bool             `json:"disableHelmHook,omitempty" desc:"do not create the webhook as helm hook (default false)"`
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the webhook"`
 }
 
 type GatewayDeployment struct {
