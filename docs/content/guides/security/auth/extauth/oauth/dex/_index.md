@@ -4,13 +4,13 @@ weight: 20
 description: Integrating Gloo Edge and Dex Identity Provider
 ---
 
-[Dex](https://github.com/dexidp/dex) is an **OpenID Connect identity hub**. Dex can be used to expose a consistent 
+[Dex](https://dexidp.io/) is an **OpenID Connect identity hub**. Dex can be used to expose a consistent 
 OpenID Connect interface to your applications while allowing your users to authenticate using their existing credentials 
 from various back-ends, including LDAP, SAML, and other OIDC providers. Using an identity hub like Dex has the advantage 
 of allowing you to change your authentication back-ends without affecting the rest of the system. 
 You can also use Dex for authentication to the Kubernetes API server itself; for example, to allow LDAP logins to work 
 with `kubectl`. This is outside the scope of this document, but you can read more about it 
-[here](https://github.com/dexidp/dex/blob/master/Documentation/kubernetes.md).
+[here](https://dexidp.io/docs/kubernetes/).
 
 In this guide we will see how to authenticate users with your application via an OIDC flow that uses Dex as an identity 
 provider. This guide is just an example to get you started and does not cover all aspects of a complete setup, 
@@ -76,7 +76,7 @@ kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80
 If you open your browser and navigate to [http://localhost:8080](http://localhost:8080) you should see the following page (you might need to wait a 
 minute for the containers to start):
 
-![Pet Clinic app homepage](./../petclinic-home.png)
+![Pet Clinic app homepage]({{% versioned_link_path fromRoot="/img/petclinic-home.png" %}})
 
 ## Securing the Virtual Service
 As we just saw, we were able to reach our application without having to provide any credentials. This is because by 
@@ -86,7 +86,7 @@ We will update the Virtual Service so that each request to the sample applicatio
 
 ### Install Dex
 To implement the authentication flow, we need an OpenID Connect provider to be running in your cluster. To this end, we 
-will deploy the [Dex](https://github.com/dexidp/dex) identity service, as it easy to install and configure.
+will deploy the [Dex](https://dexidp.io/) identity service, as it easy to install and configure.
 
 Let's start by defining a `dex-values.yaml` Helm values file with some bootstrap configuration for Dex:
 
@@ -123,10 +123,10 @@ Note that the above configuration uses unsecured http traffic without SSL certif
 
 Using this configuration, we can deploy Dex to our cluster using Helm.
 
-If `help repo list` doesn't list the `stable` repo, invoke:
+If `helm repo list` doesn't list the `stable` repo, invoke:
 
 ```shell
-helm repo add stable https://kubernetes-charts.storage.googleapis.com
+helm repo add stable https://charts.helm.sh/stable
 ```
 
 And then install dex (helm 3 command follows):
@@ -263,12 +263,12 @@ portForwardPid2=$! # Store the port-forward pid so we can kill the process later
 Now we are ready to test our complete setup! Open you browser and navigate to [http://localhost:8080](http://localhost:8080). You should see the 
 following login page:
 
-![Dex login page](./dex-login.png)
+![Dex login page]({{% versioned_link_path fromRoot="/img/dex-login.png" %}})
 
 If you login as the `admin@example.com` user with the password `password`, Gloo Edge should redirect you to the main page 
 of our sample application!
 
-![Pet Clinic app homepage](./../petclinic-home.png)
+![Pet Clinic app homepage]({{% versioned_link_path fromRoot="/img/petclinic-home.png" %}})
 
 If this does not work, one thing to check is the `requestTimeout` setting on your `extauth` Settings. See the warning in the [setup section](#setup) for more details.
 
