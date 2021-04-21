@@ -162,12 +162,9 @@ var _ = Describe("Gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Create a virtual service with a route pointing to the above service
-				for i := 0; i < 1; i += 1 {
-					vsName := fmt.Sprintf("vs%d", i)
-					vs := getTrivialVirtualServiceForServiceWithName("gloo-system", vsName, kubeutils.FromKubeMeta(svc.ObjectMeta).Ref(), uint32(svc.Spec.Ports[0].Port))
-					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
-					Expect(err).NotTo(HaveOccurred())
-				}
+				vs := getTrivialVirtualServiceForService("gloo-system", kubeutils.FromKubeMeta(svc.ObjectMeta).Ref(), uint32(svc.Spec.Ports[0].Port))
+				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
 
 				// Wait for proxy to be accepted
 				var proxy *gloov1.Proxy
@@ -720,29 +717,10 @@ var _ = Describe("Gateway", func() {
 	})
 })
 
-func getTrivialVirtualServiceForUpstreamWithName(ns, name string, upstream *core.ResourceRef) *gatewayv1.VirtualService {
-	vs := getTrivialVirtualServiceWithName(ns, name)
-	vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_Upstream{
-		Upstream: upstream,
-	}
-	return vs
-}
-
 func getTrivialVirtualServiceForUpstream(ns string, upstream *core.ResourceRef) *gatewayv1.VirtualService {
 	vs := getTrivialVirtualService(ns)
 	vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_Upstream{
 		Upstream: upstream,
-	}
-	return vs
-}
-
-func getTrivialVirtualServiceForServiceWithName(ns, name string, service *core.ResourceRef, port uint32) *gatewayv1.VirtualService {
-	vs := getTrivialVirtualServiceWithName(ns, name)
-	vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_Kube{
-		Kube: &gloov1.KubernetesServiceDestination{
-			Ref:  service,
-			Port: port,
-		},
 	}
 	return vs
 }
@@ -759,18 +737,13 @@ func getTrivialVirtualServiceForService(ns string, service *core.ResourceRef, po
 }
 
 func getTrivialVirtualService(ns string) *gatewayv1.VirtualService {
-	return getTrivialVirtualServiceWithName(ns, "vs")
-}
-
-func getTrivialVirtualServiceWithName(ns, name string) *gatewayv1.VirtualService {
-	domain := fmt.Sprintf("%s.com", name)
 	return &gatewayv1.VirtualService{
 		Metadata: &core.Metadata{
-			Name:      name,
+			Name:      "vs",
 			Namespace: ns,
 		},
 		VirtualHost: &gatewayv1.VirtualHost{
-			Domains: []string{domain},
+			Domains: []string{"*"},
 			Routes: []*gatewayv1.Route{{
 				Action: &gatewayv1.Route_RouteAction{
 					RouteAction: &gloov1.RouteAction{
