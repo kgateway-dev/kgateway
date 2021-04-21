@@ -229,7 +229,6 @@ func RunGateway(opts translator.Opts, settings *gloov1.Settings) error {
 		opts.WriteNamespace,
 		ignoreProxyValidationFailure,
 		allowWarnings,
-		settings,
 	))
 
 	proxyReconciler := reconciler.NewProxyReconciler(validationClient, proxyClient)
