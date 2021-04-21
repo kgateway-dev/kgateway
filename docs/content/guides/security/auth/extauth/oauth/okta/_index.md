@@ -230,25 +230,29 @@ In this section, we will establish an Okta account and application, then modify 
 
 If you are an existing Okta customer, then this section is optional for you.  But even if you are not an established Okta customer, it is easy to establish a free developer account that allows you to complete the integration exercise outlined in this guide.  First, visit the [developer signup page](https://developer.okta.com/signup/) and walk through their process.  Okta then provisions a developer account that you can access via a URL like this:  https://dev-2933640-admin.okta.com/ .  This provides access to an account dashboard and tools to manage Okta applications and users.
 
-![Okta Developer Account Dashboard](./okta-dashboard.png)
+![Okta Developer Account Dashboard]({{% versioned_link_path fromRoot="/img/okta-dashboard.png" %}})
 
 ### Establish Okta Users
 
 For new developer accounts, you need to establish one or more Okta users for testing.  The simplest quickstart approach for adding new users is via the [console](https://developer.okta.com/docs/guides/quickstart/add-user/), although Okta offers other options as well.  A full description is beyond the scope of this guide, and we recommend you follow Okta's own [technical docs](https://developer.okta.com/docs/guides/) to find the best approach for your requirements.
 
-![Okta User List](./okta-user-list.png)
+![Okta User List]({{% versioned_link_path fromRoot="/img/okta-user-list.png" %}})
 
 ### Establish Okta Application
 
-You will need to establish an Okta application to integrate with Gloo Edge.  In this guide we prioritized providing a quickstart for testing over production readiness.  In establishing the Okta application from the dashboard wizard, we defined this as a `Web` type application and gave the application a name `GlooTest`.  Beyond that, we changed only one of the default settings from the new-application wizard: `Login redirect URIs`, for which we provided a single value `https://glootest.com/callback`.  For more details on creating `Web` type application integrations with Okta, we found [this guide](https://developer.okta.com/docs/guides/implement-auth-code/overview/) helpful.
+You will need to establish an Okta application to integrate with Gloo Edge.  In this guide we prioritized providing a quickstart for testing over production readiness.  In establishing the Okta application from the dashboard wizard, we defined this as a `Web` type application, set a `Sign on method` of `OpenID Connect`, and gave the application a name `GlooTest`.  
+
+![Okta New Application Dialog]({{% versioned_link_path fromRoot="/img/okta-create-new-app-integration.png" %}})
+
+Beyond that, we changed only one of the default settings from the new-application wizard: `Login redirect URIs`, for which we provided a single value `https://glootest.com/callback`.  For more details on creating `Web` type application integrations with Okta, we found [this guide](https://developer.okta.com/docs/guides/implement-auth-code/overview/) helpful.
 
 Our final Okta `GlooTest` application profile looked like this.
 
-![Okta Application Profile](./okta-app-profile.png)
+![Okta Application Profile]({{% versioned_link_path fromRoot="/img/okta-app-profile.png" %}})
 
 Finally, ensure from the Okta application's Assignment tab that at least some of your Okta users have been assigned to your new application.
 
-![Okta Application Assignments](./okta-app-assignments.png)
+![Okta Application Assignments]({{% versioned_link_path fromRoot="/img/okta-app-assignments.png" %}})
 
 ### Establish Gloo Edge AuthConfig for Okta App
 
@@ -331,17 +335,17 @@ You may encounter issues in completing this section.  If so, check out the `Trou
 
 We will now confirm that the initial Okta integration using a web browser.  First, navigate to https://glootest.com.  You should be redirected to the Okta Login page.  Sign in as one of your configured Okta users who is authorized for this application.
 
-![Okta Sign In](./okta-sign-in.png)
+![Okta Sign In]({{% versioned_link_path fromRoot="/img/okta-sign-in.png" %}})
 
 Gloo Edge has redirected you to the `/callback` endpoint we configured in the AuthConfig, with the information it received from Okta OIDC added as a query string to create a Cookie.  This cookie contains both an `access_token` and an `id_token` from Okta.  The `id_token` is a JWT from which we will extract claims to drive fine-grained RBAC decisions later in this exercise.  
 
 After this callback, the normal request flow continues and the upstream application responds.  You should get output that looks something like below.  In particular, note the `Cookie` header supplied by Okta containing both an `access_token` and an `id_token`.
 
-![GlooTest Response](./glootest-get-1.png)
+![GlooTest Response]({{% versioned_link_path fromRoot="/img/glootest-get-1.png" %}})
 
 You can also test other `httpbin` endpoints via the Gloo Edge gateway.  For example, consider this base64 conversion service endpoint:  https://glootest.com/base64/R2xvbyBpcyBhd2Vzb21lCg==
 
-![GlooTest Base64 Conversion](./httpbin-base64.png)
+![GlooTest Base64 Conversion]({{% versioned_link_path fromRoot="/img/httpbin-base64.png" %}})
 
 ### Troubleshooting Okta Integration
 
@@ -422,11 +426,11 @@ spec:
 
 Below is the type of output you should see when you refresh the web page.  Note that the `Cookie` header has been replaced by a `Jwt` header.
 
-![GlooTest JWT Response](./glootest-get-2.png)
+![GlooTest JWT Response]({{% versioned_link_path fromRoot="/img/glootest-get-2.png" %}})
 
 If we paste the contents of the `Jwt` header into the JWT decoder at jwt.io, we can see some of the JWT claims that are available for us to make routing and authorization decisions.  In particular, note the `email` claim that we specified in the AuthConfig resource.
 
-![JWT Claims Decoded](./jwt-claims-decoded.png)
+![JWT Claims Decoded]({{% versioned_link_path fromRoot="/img/jwt-claims-decoded.png" %}})
 
 ### Convert JWT to Request Header
 
@@ -514,7 +518,7 @@ spec:
 
 Refreshing the web page yields output like the following.  Note in particular that the `Jwt` header is removed and has been replaced by the `X-Solo-Claim-Email` header, whose contents match the `email` claim in the JWT from the Okta callback.
 
-![JWT Claim to Header](./glootest-get-3.png)
+![JWT Claim to Header]({{% versioned_link_path fromRoot="/img/glootest-get-3.png" %}})
 
 ## Driving RBAC Decisions Using JWT Claims
 
@@ -596,7 +600,7 @@ spec:
 
 If authenticated using the `email` in the `rbac` policy, the `https://glootest.com/get` endpoint will respond in the web browser exactly as before.  However, authenticating as a different user or exercising a different endpoint will result in an `access denied` error like this.
 
-![GlooTest Access Denied](./glootest-access-denied.png)
+![GlooTest Access Denied]({{% versioned_link_path fromRoot="/img/glootest-access-denied.png" %}})
 
 ## Cache the JWT in Redis
 
@@ -674,7 +678,7 @@ spec:
 
 Refresh your web browser and note that the cookie now contains a single `okta-session` header as shown below.  This session header is not the JWT itself, but a pointer to a Redis key that now securely holds the JWT.
 
-![Okta Session Cookie](./okta-session-cookie.png)
+![Okta Session Cookie]({{% versioned_link_path fromRoot="/img/okta-session-cookie.png" %}})
 
 ## Re-establish JWT header to drive RBAC decisions
 
@@ -715,7 +719,7 @@ spec:
 
 After applying that AuthConfig change, note that the `Jwt` header re-appears in the list of headers returned from `httpbin`.
 
-![Okta JWT Request Header](./okta-jwt-request.png)
+![Okta JWT Request Header]({{% versioned_link_path fromRoot="/img/okta-jwt-request.png" %}})
 
 Now we can restore our Virtual Service's RBAC policies from the end of the previous session and confirm that they still work as before.  But now we are doing in a more secure way that does not risk exceeding cookie size thresholds in the web browser.
 
@@ -780,7 +784,7 @@ spec:
 
 Now when you refresh the browser, you should see just the `X-Solo-Claim-Email` header, which was used by Gloo to authorize the request.  Try a different endpoint, such as `https://glootest.com/base64/R2xvbyBpcyBhd2Vzb21lCg==`, and you will see the `RBAC: access denied` message.
 
-![Okta Email Claim Success](./glootest-get-3.png)
+![Okta Email Claim Success]({{% versioned_link_path fromRoot="/img/glootest-get-3.png" %}})
 
 ## Enable Logout Redirect to Remove Session Cookie
 
