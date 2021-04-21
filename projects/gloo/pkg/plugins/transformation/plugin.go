@@ -52,7 +52,6 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-// TODO(yuval-k): We need to figure out what\if to do in edge cases where there is cluster weight transform
 func (p *Plugin) ProcessVirtualHost(
 	params plugins.VirtualHostParams,
 	in *v1.VirtualHost,

@@ -285,5 +285,9 @@ func (m *TransformationStages) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetInheritTransformation() != target.GetInheritTransformation() {
+		return false
+	}
+
 	return true
 }

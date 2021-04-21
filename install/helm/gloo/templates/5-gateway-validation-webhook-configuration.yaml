@@ -7,8 +7,13 @@ metadata:
     app: gloo
     gloo: gateway
   annotations:
+    {{- if not .Values.gateway.validation.webhook.disableHelmHook }}
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "5" # must be executed before cert-gen job
+    {{- end }}
+    {{- range $key, $value := .Values.gateway.validation.webhook.extraAnnotations }}
+    {{ $key | quote }}: {{ $value | quote }}
+    {{- end }}
 webhooks:
 - name: gateway.{{ .Release.Namespace }}.svc  # must be a domain with at least three segments separated by dots
   clientConfig:
@@ -16,7 +21,7 @@ webhooks:
       name: gateway
       namespace: {{ .Release.Namespace }}
       path: "/validation"
-    caBundle: "" # update manually or use certgen job
+    caBundle: "" # update manually or use certgen job or cert-manager's ca-injector
   rules:
   - operations: [ "CREATE", "UPDATE", "DELETE" ]
     apiGroups: ["gateway.solo.io"]
