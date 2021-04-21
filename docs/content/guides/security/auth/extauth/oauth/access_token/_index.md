@@ -64,7 +64,7 @@ kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80
 
 If you open your browser and navigate to [http://localhost:8080](http://localhost:8080) you should see the following page (you might need to wait a minute for the containers to start):
 
-![Pet Clinic app homepage](./../petclinic-home.png)
+![Pet Clinic app homepage]({{% versioned_link_path fromRoot="/img/petclinic-home.png" %}})
 
 ## Securing the Virtual Service
 As we just saw, we were able to reach our application without having to provide any credentials. This is because by default Gloo Edge allows any request on routes that do not specify authentication configuration. Let's change this behavior.
