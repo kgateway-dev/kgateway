@@ -15,10 +15,10 @@ jobs:
         uses: webfactory/ssh-agent@v0.4.1
         with:
           ssh-private-key: ${{ secrets.SOLO_API_DEPLOY_KEY }}
-      - name: Set up Go 1.14
-        uses: actions/setup-go@v1
+      - name: Set up Go 1.16.3
+        uses: actions/setup-go@v2
         with:
-          go-version: 1.14
+          go-version: 1.16.3
         id: go
       - name: Install Protoc
         uses: arduino/setup-protoc@v1.1.2

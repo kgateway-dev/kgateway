@@ -28,15 +28,16 @@ and then package them in a way which they can be deployed to firebase. The versi
   2. "versions" is the list of tags/branches which are considered up-to-date
   3. "oldVersions" is the list of supported tags/branches which are behind latest.
 
-`build-docs.sh` clones gloo into a subdir, checks the repo out at each "version", and builds the docs. Each version
-which is built is then moved into `docs/ci/public/edge/<tag>`. Once each version has been build, the whole folder can
+`build-docs.sh` clones gloo into a subdir, checks the repo out at each "version", and copies the [content](content) 
+directory to a temporary location. The master branch is then checked out, and each "version" of the docs are built by 
+replacing the master's content directory with content previously stored for that "version". The built docs are then
+moved into `docs/ci/public/edge/<tag>`. Once each version has been built, the whole folder can
 be deployed to firebase using the following command:
 
 `firebase deploy --only hosting --project=solo-corp --config=ci/firebase.json`
 
 Building the docs from master allows us to make changes to the way the docs are packaged and published without 
-needing to backport the changes each time. Currently, the `build-docs.sh` script copies the `layouts` folder, and the
-`Makefile` before building the docs. This allows the build, and styles to remain consistent.
+needing to backport the changes each time. This allows the build, and styles to remain consistent.
 
 
 # Shortcode/Hugo tips
