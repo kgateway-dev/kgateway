@@ -47,7 +47,7 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.18.0-rc2
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.18.0
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
@@ -140,7 +140,7 @@ install-go-tools: mod-download
 
 .PHONY: run-tests
 run-tests:
-	$(DEPSGOBIN)/ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor $(TEST_PKG)
+	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor $(TEST_PKG)
 
 .PHONY: run-ci-regression-tests
 run-ci-regression-tests: TEST_PKG=./test/kube2e/...

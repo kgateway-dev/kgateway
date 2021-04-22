@@ -4,10 +4,12 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 )
 
 func TestRbac(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Rbac Suite")
+	junitReporter := reporters.NewJUnitReporter("junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Rbac Suite", []Reporter{junitReporter})
 }

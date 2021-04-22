@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/3470
+    description: Change helm image struct values to pointers to conform with standards, and update generate code to work with this.

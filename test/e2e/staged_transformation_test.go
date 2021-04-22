@@ -249,6 +249,58 @@ var _ = Describe("Staged Transformation", func() {
 			fmt.Printf("%+v\n", res.Header)
 			Expect(res.Header["X-Custom-Header"]).To(ContainElements("original header", "APPENDED HEADER 1", "APPENDED HEADER 2"))
 		})
+
+		It("should apply transforms from most specific level only", func() {
+			vhostTransform := &transformation.TransformationStages{
+				Regular: &transformation.RequestResponseTransformations{
+					ResponseTransforms: []*transformation.ResponseMatch{{
+						ResponseTransformation: &envoytransformation.Transformation{
+							TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+								TransformationTemplate: &envoytransformation.TransformationTemplate{
+									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
+									Headers: map[string]*envoytransformation.InjaTemplate{
+										"x-solo-1": {Text: "vhost header"},
+									},
+								},
+							},
+						},
+					}},
+				},
+			}
+			setProxyWithModifier(vhostTransform, func(vhost *gloov1.VirtualHost) {
+				vhost.GetRoutes()[0].Options = &gloov1.RouteOptions{
+					StagedTransformations: &transformation.TransformationStages{
+						Regular: &transformation.RequestResponseTransformations{
+							ResponseTransforms: []*transformation.ResponseMatch{{
+								ResponseTransformation: &envoytransformation.Transformation{
+									TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+										TransformationTemplate: &envoytransformation.TransformationTemplate{
+											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
+											Headers: map[string]*envoytransformation.InjaTemplate{
+												"x-solo-2": {Text: "route header"},
+											},
+										},
+									},
+								},
+							}},
+						},
+					},
+				}
+			})
+			TestUpstreamReachable()
+			var response *http.Response
+			Eventually(func() error {
+				var err error
+				response, err = http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d/1", envoyPort))
+				return err
+			}, "30s", "1s").ShouldNot(HaveOccurred())
+			// Only route level transformations should be applied here due to the nature of envoy choosing
+			// the most specific config (weighted cluster > route > vhost)
+			// This behaviour can be overridden (in the control plane) by using `inheritableTransformations` to merge
+			// transformations down to the route level.
+			Expect(response.Header.Get("x-solo-2")).To(Equal("route header"))
+			Expect(response.Header.Get("x-solo-1")).To(BeEmpty())
+		})
 	})
 
 	Context("with auth", func() {

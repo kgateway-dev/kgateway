@@ -4,6 +4,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/onsi/ginkgo/reporters"
+
 	. "github.com/onsi/ginkgo"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -22,5 +24,6 @@ func TestDiscovery(t *testing.T) {
 	skhelpers.SetupLog()
 	_ = os.Remove(cliutil.GetLogsPath())
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, defaults.GlooSystem))
-	RunSpecs(t, "Endpoint discovery (EDS) Suite")
+	junitReporter := reporters.NewJUnitReporter("junit.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Endpoint discovery (EDS) Suite", []Reporter{junitReporter})
 }

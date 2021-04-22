@@ -1008,11 +1008,77 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
 					})
 
+					It("disabling http gateway disables corresponding service port", func() {
+						var gatewayProxyService *v1.Service
+
+						serviceLabels := map[string]string{
+							"app":              "gloo",
+							"gloo":             "gateway-proxy",
+							"gateway-proxy-id": "gateway-proxy",
+						}
+						rb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      "gateway-proxy",
+							Args:      nil,
+							Labels:    serviceLabels,
+						}
+						gatewayProxyService = rb.GetService()
+						selectorLabels := map[string]string{
+							"gateway-proxy-id": "gateway-proxy",
+							"gateway-proxy":    "live",
+						}
+						gatewayProxyService.Spec.Selector = selectorLabels
+						gatewayProxyService.Spec.Ports = []v1.ServicePort{
+							{
+								Name:       "https",
+								Protocol:   "TCP",
+								Port:       443,
+								TargetPort: intstr.IntOrString{IntVal: 8443},
+							},
+						}
+						gatewayProxyService.Spec.Type = v1.ServiceTypeLoadBalancer
+
+						testManifest.ExpectService(gatewayProxyService)
+					})
+
 					It("can disable https gateway", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpsGateway=true"},
 						})
 						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeNil())
+					})
+
+					It("disabling https gateway disables corresponding service port", func() {
+						var gatewayProxyService *v1.Service
+
+						serviceLabels := map[string]string{
+							"app":              "gloo",
+							"gloo":             "gateway-proxy",
+							"gateway-proxy-id": "gateway-proxy",
+						}
+						rb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      "gateway-proxy",
+							Args:      nil,
+							Labels:    serviceLabels,
+						}
+						gatewayProxyService = rb.GetService()
+						selectorLabels := map[string]string{
+							"gateway-proxy-id": "gateway-proxy",
+							"gateway-proxy":    "live",
+						}
+						gatewayProxyService.Spec.Selector = selectorLabels
+						gatewayProxyService.Spec.Ports = []v1.ServicePort{
+							{
+								Name:       "http",
+								Protocol:   "TCP",
+								Port:       80,
+								TargetPort: intstr.IntOrString{IntVal: 8080},
+							},
+						}
+						gatewayProxyService.Spec.Type = v1.ServiceTypeLoadBalancer
+
+						testManifest.ExpectService(gatewayProxyService)
 					})
 
 					It("can set accessLoggingService", func() {
@@ -1356,6 +1422,7 @@ spec:
 							prepareMakefile(namespace, helmValues{
 								valuesArgs: []string{
 									"gatewayProxies.anotherGatewayProxy.specKey=testing",
+									"gatewayProxies.anotherGatewayProxy.gatewaySettings.options.socketOptions[0].description=enable keep-alive}",
 								},
 							})
 						})
@@ -4240,12 +4307,7 @@ metadata:
 			//    We're not changing them for this test, since that code is likely to be removed/changed soon.
 			//  - The one exception is the Repository value, which is instead needed by value during codegen.
 			var (
-				pointerExceptions = map[string]interface{}{
-					"Image.Tag":        nil,
-					"Image.Registry":   nil,
-					"Image.PullPolicy": nil,
-					"Image.Repository": nil,
-				}
+				pointerExceptions = map[string]interface{}{}
 			)
 			It("All non-embedded fields in values.go have the omitempty tag", func() {
 				// The following code iterates over each struct in values.go,

@@ -118,6 +118,7 @@ weight: 5
 ```yaml
 "early": .transformation.options.gloo.solo.io.RequestResponseTransformations
 "regular": .transformation.options.gloo.solo.io.RequestResponseTransformations
+"inheritTransformation": bool
 
 ```
 
@@ -125,6 +126,7 @@ weight: 5
 | ----- | ---- | ----------- | 
 | `early` | [.transformation.options.gloo.solo.io.RequestResponseTransformations](../transformation.proto.sk/#requestresponsetransformations) | Early transformations happen before most other options (Like Auth and Rate Limit). |
 | `regular` | [.transformation.options.gloo.solo.io.RequestResponseTransformations](../transformation.proto.sk/#requestresponsetransformations) | Regular transformations happen after Auth and Rate limit decisions has been made. |
+| `inheritTransformation` | `bool` | Inherit transformation config from parent. This has no affect on VirtualHost level transformations. If a RouteTable or Route wants to inherit transformations from it's parent RouteTable or VirtualHost, this should be set to true, else transformations from parents will not be inherited. Transformations are ordered so the child's transformation gets priority, so in the case where a child and parent's transformation matchers are the same, only the child's transformation will run because only one transformation will run per stage. Defaults to false. |
 
 
 

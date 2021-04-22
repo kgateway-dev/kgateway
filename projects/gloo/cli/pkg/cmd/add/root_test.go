@@ -27,7 +27,7 @@ var _ = Describe("Root", func() {
 		out, err := testutils.GlooctlOut("add route --path-exact /all-pets --dest-name default-petstore-8080" +
 			"--prefix-rewrite /api/pets --dry-run --name test")
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out).To(Equal(`apiVersion: gateway.solo.io/v1
+		Expect(out).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   creationTimestamp: null

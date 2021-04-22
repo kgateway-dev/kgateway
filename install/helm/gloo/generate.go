@@ -160,29 +160,29 @@ func generateValuesConfig(version, repositoryPrefix, globalPullPolicy string) (*
 		return nil, err
 	}
 
-	cfg.Gloo.Deployment.Image.Tag = version
-	cfg.Discovery.Deployment.Image.Tag = version
-	cfg.Gateway.Deployment.Image.Tag = version
-	cfg.Gateway.CertGenJob.Image.Tag = version
+	cfg.Gloo.Deployment.Image.Tag = &version
+	cfg.Discovery.Deployment.Image.Tag = &version
+	cfg.Gateway.Deployment.Image.Tag = &version
+	cfg.Gateway.CertGenJob.Image.Tag = &version
 
-	cfg.AccessLogger.Image.Tag = version
+	cfg.AccessLogger.Image.Tag = &version
 
-	cfg.Ingress.Deployment.Image.Tag = version
-	cfg.IngressProxy.Deployment.Image.Tag = version
-	cfg.Settings.Integrations.Knative.Proxy.Image.Tag = version
-	cfg.Global.GlooMtls.Sds.Image.Tag = version
-	cfg.Global.GlooMtls.EnvoySidecar.Image.Tag = version
+	cfg.Ingress.Deployment.Image.Tag = &version
+	cfg.IngressProxy.Deployment.Image.Tag = &version
+	cfg.Settings.Integrations.Knative.Proxy.Image.Tag = &version
+	cfg.Global.GlooMtls.Sds.Image.Tag = &version
+	cfg.Global.GlooMtls.EnvoySidecar.Image.Tag = &version
 
 	for _, v := range cfg.GatewayProxies {
-		v.PodTemplate.Image.Tag = version
+		v.PodTemplate.Image.Tag = &version
 	}
 
 	if repositoryPrefix != "" {
-		cfg.Global.Image.Registry = repositoryPrefix
+		cfg.Global.Image.Registry = &repositoryPrefix
 	}
 
 	if globalPullPolicy != "" {
-		cfg.Global.Image.PullPolicy = globalPullPolicy
+		cfg.Global.Image.PullPolicy = &globalPullPolicy
 	}
 
 	return cfg, nil
