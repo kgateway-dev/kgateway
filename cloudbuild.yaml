@@ -35,7 +35,7 @@ steps:
 # Run all the tests with ginkgo -r -failFast -trace -progress --noColor
 # This requires setting up envoy, AWS, helm, and docker
 # The e2e-go-mod-ginkgo container provides everything else needed for running tests
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
   entrypoint: 'bash'
   args:
   - '-c'
@@ -47,7 +47,7 @@ steps:
   waitFor: ['prepare-workspace']
   id: 'get-envoy'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
   entrypoint: 'bash'
   args: ['-c', 'make proxycontroller']
   dir: '/workspace/gloo/example/proxycontroller'
@@ -82,7 +82,7 @@ steps:
   waitFor: ['set-gcr-zone']
   id: 'get-test-credentials'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
   args: ['install-go-tools']
   dir: *dir
   id: 'install-go-tools'
@@ -114,7 +114,7 @@ steps:
   id: 'docker-login'
 
   # 1) Run make targets to push docker images
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
   args: ['docker-push-extended']
   env:
   - 'DOCKER_CONFIG=/workspace/docker-config'
@@ -135,7 +135,7 @@ steps:
   waitFor: ['docker-push-extended']
   id: 'gcr-auth'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
   args: ['fetch-package-and-save-helm', 'render-manifests', 'upload-github-release-assets', 'push-chart-to-registry', '-B']
   env:
     - 'DOCKER_CONFIG=/workspace/docker-config'
