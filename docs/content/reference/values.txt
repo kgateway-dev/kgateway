@@ -338,6 +338,7 @@
 |gatewayProxies.NAME.gatewaySettings.options.validation.allow_warnings.value|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.validation.warn_route_short_circuiting.value|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.validation.disable_transformation_validation.value|bool|||
+|gatewayProxies.NAME.gatewaySettings.options.validation.validation_server_grpc_max_size.value|int64|||
 |gatewayProxies.NAME.gatewaySettings.options.read_gateways_from_all_namespaces|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.always_sort_route_table_routes|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.compressed_proxy_spec|bool|||
@@ -481,6 +482,7 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.allow_warnings.value|bool|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.warn_route_short_circuiting.value|bool|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.disable_transformation_validation.value|bool|||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.validation_server_grpc_max_size.value|int64|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.read_gateways_from_all_namespaces|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.always_sort_route_table_routes|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.compressed_proxy_spec|bool|false||
