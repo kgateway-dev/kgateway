@@ -146,11 +146,11 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		Validation:                    validation,
 	}
 
-	return RunGateway(opts, settings)
+	return RunGateway(opts)
 }
 
 // the need for the namespace is limited to this function, whereas the opts struct's use is more widespread.
-func RunGateway(opts translator.Opts, settings *gloov1.Settings) error {
+func RunGateway(opts translator.Opts) error {
 	opts.WatchOpts = opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gateway")
 	ctx := opts.WatchOpts.Ctx
