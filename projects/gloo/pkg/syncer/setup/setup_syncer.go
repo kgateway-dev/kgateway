@@ -84,17 +84,20 @@ func NewSetupFuncWithRun(runFunc RunFunc) setuputils.SetupFunc {
 func NewSetupFuncWithRunAndExtensions(runFunc RunFunc, extensions *Extensions) setuputils.SetupFunc {
 	s := &setupSyncer{
 		extensions: extensions,
-		makeGrpcServer: func(ctx context.Context) *grpc.Server {
-			return grpc.NewServer(grpc.StreamInterceptor(
-				grpc_middleware.ChainStreamServer(
-					grpc_ctxtags.StreamServerInterceptor(),
-					grpc_zap.StreamServerInterceptor(zap.NewNop()),
-					func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-						contextutils.LoggerFrom(ctx).Debugf("gRPC call: %v", info.FullMethod)
-						return handler(srv, ss)
-					},
-				)),
-			)
+		makeGrpcServer: func(ctx context.Context, options ...grpc.ServerOption) *grpc.Server {
+			serverOpts := []grpc.ServerOption{
+				grpc.StreamInterceptor(
+					grpc_middleware.ChainStreamServer(
+						grpc_ctxtags.StreamServerInterceptor(),
+						grpc_zap.StreamServerInterceptor(zap.NewNop()),
+						func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+							contextutils.LoggerFrom(ctx).Debugf("gRPC call: %v", info.FullMethod)
+							return handler(srv, ss)
+						},
+					)),
+			}
+			serverOpts = append(serverOpts, options...)
+			return grpc.NewServer(serverOpts...)
 		},
 		runFunc: runFunc,
 	}
@@ -109,7 +112,7 @@ type grpcServer struct {
 type setupSyncer struct {
 	extensions               *Extensions
 	runFunc                  RunFunc
-	makeGrpcServer           func(ctx context.Context) *grpc.Server
+	makeGrpcServer           func(ctx context.Context, options ...grpc.ServerOption) *grpc.Server
 	previousXdsServer        grpcServer
 	previousValidationServer grpcServer
 	controlPlane             bootstrap.ControlPlane
@@ -235,7 +238,11 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	if s.validationServer == emptyValidationServer {
 		// create new context as the grpc server might survive multiple iterations of this loop.
 		ctx, cancel := context.WithCancel(context.Background())
-		s.validationServer = NewValidationServer(ctx, s.makeGrpcServer(ctx), validationTcpAddress, true)
+		var validationGrpcServerOpts []grpc.ServerOption
+		if maxGrpcMsgSize := settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSize(); maxGrpcMsgSize != nil {
+			validationGrpcServerOpts = append(validationGrpcServerOpts, grpc.MaxRecvMsgSize(int(maxGrpcMsgSize.GetValue())))
+		}
+		s.validationServer = NewValidationServer(ctx, s.makeGrpcServer(ctx, validationGrpcServerOpts...), validationTcpAddress, true)
 		s.previousValidationServer.cancel = cancel
 		s.previousValidationServer.addr = validationAddr
 	}
