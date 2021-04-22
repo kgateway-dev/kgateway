@@ -111,7 +111,6 @@ function getRenderer(type){
 }
 
 function generateMarkdown(type, input, showOSNotes){
-  console.log(showOSNotes)
   return getRenderer(type).renderMarkdown(new ReleaseData(input), showOSNotes);;
 }
 
@@ -349,7 +348,6 @@ class VersionComparer{
         notes.push([version, data])
       }
     }
-    console.log(notes)
     let output = this.renderChangelogNotes(notes, showOSNotes)
     return output
   }
@@ -361,7 +359,6 @@ class VersionComparer{
       if (this.discludeHeaders.includes(header)){
         continue;
       }
-      console.log(showOSNotes)
       let section = ""
       notes = notes.filter(note => !note.FromDependentVersion || showOSNotes)
       if (notes.length > 0){
