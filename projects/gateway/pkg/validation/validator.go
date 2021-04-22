@@ -77,7 +77,6 @@ type validator struct {
 	ignoreProxyValidationFailure bool
 	allowWarnings                bool
 	writeNamespace               string
-	settings                     *gloov1.Settings
 }
 
 type ValidatorConfig struct {
