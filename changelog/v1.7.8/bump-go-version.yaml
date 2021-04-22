@@ -1,0 +1,6 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    description: Updated go to 1.16.3
+    dependencyOwner: golang
+    dependencyRepo: go
+    dependencyTag: v1.16.3

@@ -1,12 +1,11 @@
 module proxycontroller
 
-go 1.14
-
+go 1.16
 
 require (
-	github.com/solo-io/gloo v1.6.0-beta16
-	github.com/solo-io/k8s-utils v0.0.3 // indirect
-	github.com/solo-io/solo-kit v0.15.2 // indirect
+       github.com/solo-io/gloo v1.6.0-beta16
+       github.com/solo-io/k8s-utils v0.0.3 // indirect
+       github.com/solo-io/solo-kit v0.15.2 // indirect
 )
 
 replace (
