@@ -14,7 +14,6 @@ function copyAnchorToClipboard(elem){
   el.select();
   document.execCommand('copy');
   document.body.removeChild(el);
-  // e.preventDefault();
 }
 // Extension for adding header anchor links
 showdown.extension('header-anchors', function() {
@@ -99,19 +98,19 @@ function generateChangelog(type){
   }
 }
 
-function getRenderer(type){
+function getRenderer(type, data){
   switch(type){
     case CHRONOLOGICAL:
-      return new ChronologicalRenderer();
+      return new ChronologicalRenderer(data);
     case MINOR_RELEASE:
-      return new MinorReleaseRenderer();
+      return new MinorReleaseRenderer(data);
     case COMPARE_VERSIONS:
-      return new VersionComparer();
+      return new VersionComparer(data);
   }
 }
 
 function generateMarkdown(type, input, showOSNotes){
-  return getRenderer(type).renderMarkdown(new ReleaseData(input), showOSNotes);;
+  return getRenderer(type, input).renderMarkdown(showOSNotes);;
 }
 
 function H1 (s){
@@ -217,6 +216,10 @@ class ChangelogNotes{
 }
 
 class MarkdownRenderer{
+  constructor(changelogJSON){
+    this.options = changelogJSON["Opts"];
+    this.releaseData = new ReleaseData(changelogJSON["ReleaseData"]);
+  }
   render(obj, showOSNotes){
     if (obj instanceof ChangelogNotes){
       return this.renderChangelogNotes(obj, showOSNotes);
@@ -229,21 +232,21 @@ class MarkdownRenderer{
     }
   }
 
-  renderMarkdown(input, showOSNotes){
+  renderMarkdown(showOSNotes){
     const renderer = new showdown.Converter({
       extensions: this.discludeHeaderAnchors ? []: ['header-anchors'],
       headerLevelStart: 3,
       prefixHeaderId: this.headerIdPrefix+HASH_SEPARATOR,
       simplifiedAutoLink: true,
     });
-    const markdown = this.render(input, showOSNotes);
+    const markdown = this.render(this.releaseData, showOSNotes);
     return renderer.makeHtml(markdown);
   }
 }
 
 class MinorReleaseRenderer extends MarkdownRenderer{
-  constructor(){
-    super()
+  constructor(data){
+    super(data)
     this.headerIdPrefix = MINOR_RELEASE
   }
 
@@ -283,9 +286,9 @@ class MinorReleaseRenderer extends MarkdownRenderer{
 
 
 class ChronologicalRenderer extends MarkdownRenderer{
-  constructor(){
-    super()
-    this.headerIdPrefix = CHRONOLOGICAL
+  constructor(data){
+    super(data);
+    this.headerIdPrefix = CHRONOLOGICAL;
   }
   renderChangelogNotes(input, showOSNotes){
     input.sort((a, b) => {return b[1].createdAt - a[1].createdAt});
@@ -336,7 +339,9 @@ let previousVersion_compare = new Proxy({}, {
 let laterVersion_compare;
 
 class VersionComparer{
-  constructor(){
+  constructor(data){
+    this.opts = data["Opts"];
+    this.releaseData = new ReleaseData(data["ReleaseData"]);
     this.headerIdPrefix = COMPARE_VERSIONS
     this.discludeHeaders = ["Dependency Bumps", "Pre-release"]
   }
@@ -424,9 +429,10 @@ class VersionComparer{
     $("#compareversionstextdiv").html(this.markdownToHtml(output))
   }
 
-  renderMarkdown(releaseData){
+  renderMarkdown(showOSNotes){
     this.versions = new Map();
-    for (const [, v] of Object.entries(releaseData.versionData)){
+    console.log(this.releaseData);
+    for (const [, v] of Object.entries(this.releaseData.versionData)){
       for (const [version, data] of Object.entries(v.changelogNotes)){
         // Don't include betas, only include releases
         // if (version.includes('-')){
