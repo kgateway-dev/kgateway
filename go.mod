@@ -1,6 +1,6 @@
 module github.com/solo-io/gloo
 
-go 1.14
+go 1.16
 
 require (
 	github.com/Masterminds/semver v1.5.0 // indirect

@@ -549,6 +549,12 @@ message GatewayOptions {
         // validation time considerably, but may also cause the transformation config to fail after being sent to envoy. 
         // When disabling this, ensure that your transformations are valid prior to applying them.
         google.protobuf.BoolValue disable_transformation_validation = 9;
+
+        // By default, gRPC validation messages between gateway and gloo pods have a max message size of 4 MB.
+        // Setting this value sets the gRPC max message size in bytes for the gloo validation server. This should
+        // only be changed if necessary.
+        // If not included, the gRPC max message size will be the default of 4 MB.
+        google.protobuf.Int64Value validation_server_grpc_max_size = 10;
     }
 
     // If provided, the Gateway will perform [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)

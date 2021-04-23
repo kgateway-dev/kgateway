@@ -16,7 +16,17 @@ For both Gloo Edge Enterprise and open-source Gloo Edge, we release stable build
 
 When stable branches are created for a particular release, i.e. a Gloo Edge Enterprise release, we'll support both EE and OSS from that branch. We will support the current release as well as the two previous releases. For example, if Gloo Edge 1.5 is the latest Enterprise release, we will be releasing 1.6.x from master (OSS) but supporting Enterprise/OSS 1.5.x, 1.4.x, and 1.3.x. Support in this context means bug fixes and critical security fixes. Gloo Edge Enterprise customers will always have priority-fix support from Solo.io, but the OSS project will eventually get those fixes as well as whatever else the community contributes.
 
-Gloo Edge Enterprise customers can purchase additional N-x support.
+Gloo Edge Enterprise customers can purchase additional N-x support, _but the max support that can be purchased is N-3_.
+
+The recommended version for helm clients is v3.0 or greater, but helm v2 will also work.
+
+| Gloo Edge | Kubernetes | Envoy | Helm | Istio |
+|------|----------|---------|--------|------|
+| 1.8.x | 1.19, 1.20, 1.21 | v3 xDS API | >= 3.0 | 1.7, 1.8 |
+| 1.7.x | 1.19, 1.20, 1.21 | v3 xDS API | >= 3.0 | 1.7, 1.8 |
+| 1.6.x | 1.19, 1.20, 1.21| v2 xDS API, v3 xDS API  | >= 3.0 | 1.7, 1.8 |
+
+
 
 ## New features developed on master
 
