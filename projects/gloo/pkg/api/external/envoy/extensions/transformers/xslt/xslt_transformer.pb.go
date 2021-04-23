@@ -33,11 +33,12 @@ type XsltTransformation struct {
 	unknownFields protoimpl.UnknownFields
 
 	// XSLT transformation template which you want to transform requests/responses with.
-	// Invalid XSLT transformation templates will result will result in a NACK during envoy configuration-time and envoy will fail to start.
+	// Invalid XSLT transformation templates will result will result in a NACK during envoy configuration-time and the configuration will not be loaded.
 	Xslt string `protobuf:"bytes,1,opt,name=xslt,proto3" json:"xslt,omitempty"`
-	// Sets the content-type of the HTTP request to what is set here.
+	// Changes the content-type header of the HTTP request/response to what is set here.
 	// This is useful in situations where an XSLT transformation is used to transform XML to JSON and the content-type
-	// should be changed from `application/xml` to `application/json`
+	// should be changed from `application/xml` to `application/json`.
+	// If left empty, the content-type header remains unmodified by default.
 	SetContentType string `protobuf:"bytes,2,opt,name=set_content_type,json=setContentType,proto3" json:"set_content_type,omitempty"`
 	// This should be set to true if the content being transformed is not XML.
 	// For example, if the content being transformed is from JSON to XML, this should be set to true.
