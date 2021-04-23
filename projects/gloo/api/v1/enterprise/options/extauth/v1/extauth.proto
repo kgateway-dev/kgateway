@@ -406,10 +406,17 @@ message OidcAuthorizationCode {
     string issuer_url = 3;
 
     // extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider.
+    // this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/)
+    // to set the `code_challenge` and `code_challenge_method`.
     map<string, string> auth_endpoint_query_params = 4;
 
-    // we to redirect after successful auth, if we can't determine the original
-    // url this should be your publicly available app url.
+    // extra query parameters to apply to the Ext-Auth service's token request to the identity provider.
+    // this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/)
+    // to set the `code_verifier`.
+    map<string, string> token_endpoint_query_params = 14;
+
+    // where to redirect after successful auth, if we can't determine the original url.
+    // this should be your publicly available app url.
     string app_url = 5;
 
     // a callback path relative to app url that will be used for OIDC callbacks.
