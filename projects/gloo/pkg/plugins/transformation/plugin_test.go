@@ -92,7 +92,7 @@ var _ = Describe("Plugin", func() {
 			output, err := p.TranslateTransformation(input)
 			Expect(output).To(BeNil())
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(UnsupportedTransformationType(&transformation.Transformation_XsltTransformation{})))
+			Expect(err).To(MatchError(UnknownTransformationType(&transformation.Transformation_XsltTransformation{})))
 
 		})
 	})

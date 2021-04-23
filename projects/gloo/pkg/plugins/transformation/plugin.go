@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rotisserie/eris"
+
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
@@ -32,8 +34,8 @@ var (
 )
 
 var (
-	UnsupportedTransformationType = func(transformation interface{}) error {
-		return fmt.Errorf("transformation type %T is not supported in this version of Gloo Edge", transformation)
+	UnknownTransformationType = func(transformation interface{}) error {
+		return fmt.Errorf("unknown transformation type %T", transformation)
 	}
 )
 
@@ -220,6 +222,14 @@ func (p *Plugin) convertTransformation(
 	return ret, nil
 }
 
+func (p *Plugin) translateOSSTransformations(glooTransform *transformation.Transformation) (*envoytransformation.Transformation, error) {
+	transform, err := p.TranslateTransformation(glooTransform)
+	if err != nil {
+		return nil, eris.Wrap(err, "this transformation type is not supported in open source Gloo Edge")
+	}
+	return transform, nil
+}
+
 func TranslateTransformation(glooTransform *transformation.Transformation) (*envoytransformation.Transformation, error) {
 	if glooTransform == nil {
 		return nil, nil
@@ -232,17 +242,15 @@ func TranslateTransformation(glooTransform *transformation.Transformation) (*env
 			out.TransformationType = &envoytransformation.Transformation_HeaderBodyTransform{
 				HeaderBodyTransform: typedTransformation.HeaderBodyTransform,
 			}
-			break
 		}
 	case *transformation.Transformation_TransformationTemplate:
 		{
 			out.TransformationType = &envoytransformation.Transformation_TransformationTemplate{
 				TransformationTemplate: typedTransformation.TransformationTemplate,
 			}
-			break
 		}
 	default:
-		return nil, UnsupportedTransformationType(typedTransformation)
+		return nil, UnknownTransformationType(typedTransformation)
 	}
 	return out, nil
 }

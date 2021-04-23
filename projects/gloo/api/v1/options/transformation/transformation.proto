@@ -78,8 +78,8 @@ message Transformation {
         // 'headers', containing the headers, and 'body', containing the original
         // body.
         envoy.api.v2.filter.http.HeaderBodyTransform header_body_transform = 2;
-        // Xslt Transformation
-        envoy.config.transformer.xslt.v2.XsltTransformation xslt_transformation = 4;
+        // (Enterprise Only): Xslt Transformation
+        envoy.config.transformer.xslt.v2.XsltTransformation xslt_transformation = 3;
 
     }
 }
