@@ -602,17 +602,17 @@ var _ = Describe("Route converter", func() {
 		Context("transformation inheritance mode", func() {
 
 			var (
-				routeOnlyTransformation *transformation.Transformation
-				rtOnlyTransformation    *transformation.Transformation
-				vsOnlyTransformation    *transformation.Transformation
+				routeOnlyTransformation *glootransformation.Transformation
+				rtOnlyTransformation    *glootransformation.Transformation
+				vsOnlyTransformation    *glootransformation.Transformation
 				vs                      *v1.VirtualService
 				rt                      *v1.RouteTable
 				rv                      translator.RouteConverter
 			)
 
 			BeforeEach(func() {
-				rtOnlyTransformation = &transformation.Transformation{
-					TransformationType: &transformation.Transformation_TransformationTemplate{
+				rtOnlyTransformation = &glootransformation.Transformation{
+					TransformationType: &glootransformation.Transformation_TransformationTemplate{
 						TransformationTemplate: &transformation.TransformationTemplate{
 							Headers: map[string]*transformation.InjaTemplate{
 								"route-table-header": {
@@ -622,8 +622,8 @@ var _ = Describe("Route converter", func() {
 						},
 					},
 				}
-				routeOnlyTransformation = &transformation.Transformation{
-					TransformationType: &transformation.Transformation_TransformationTemplate{
+				routeOnlyTransformation = &glootransformation.Transformation{
+					TransformationType: &glootransformation.Transformation_TransformationTemplate{
 						TransformationTemplate: &transformation.TransformationTemplate{
 							Headers: map[string]*transformation.InjaTemplate{
 								"route-header": {
@@ -633,8 +633,8 @@ var _ = Describe("Route converter", func() {
 						},
 					},
 				}
-				vsOnlyTransformation = &transformation.Transformation{
-					TransformationType: &transformation.Transformation_TransformationTemplate{
+				vsOnlyTransformation = &glootransformation.Transformation{
+					TransformationType: &glootransformation.Transformation_TransformationTemplate{
 						TransformationTemplate: &transformation.TransformationTemplate{
 							Headers: map[string]*transformation.InjaTemplate{
 								"vs-header": {

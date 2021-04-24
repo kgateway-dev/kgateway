@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/2180
+    description: >
+      Adds API for Transformer config, which will be an extension point for enterprise-only transformers such as XSLT transformer.
