@@ -142,8 +142,8 @@ var _ = Describe("Staged Transformation", func() {
 								Value: "200",
 							},
 						},
-						ResponseTransformation: &envoytransformation.Transformation{
-							TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+						ResponseTransformation: &transformation.Transformation{
+							TransformationType: &transformation.Transformation_TransformationTemplate{
 								TransformationTemplate: &envoytransformation.TransformationTemplate{
 									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
 									BodyTransformation: &envoytransformation.TransformationTemplate_Body{
@@ -165,8 +165,8 @@ var _ = Describe("Staged Transformation", func() {
 								Value: "200",
 							},
 						},
-						ResponseTransformation: &envoytransformation.Transformation{
-							TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+						ResponseTransformation: &transformation.Transformation{
+							TransformationType: &transformation.Transformation_TransformationTemplate{
 								TransformationTemplate: &envoytransformation.TransformationTemplate{
 									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
 									BodyTransformation: &envoytransformation.TransformationTemplate_Body{
@@ -192,8 +192,8 @@ var _ = Describe("Staged Transformation", func() {
 				Early: &transformation.RequestResponseTransformations{
 					ResponseTransforms: []*transformation.ResponseMatch{{
 						ResponseCodeDetails: "ext_authz_error",
-						ResponseTransformation: &envoytransformation.Transformation{
-							TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+						ResponseTransformation: &transformation.Transformation{
+							TransformationType: &transformation.Transformation_TransformationTemplate{
 								TransformationTemplate: &envoytransformation.TransformationTemplate{
 									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
 									BodyTransformation: &envoytransformation.TransformationTemplate_Body{
@@ -218,8 +218,8 @@ var _ = Describe("Staged Transformation", func() {
 			setProxy(&transformation.TransformationStages{
 				Regular: &transformation.RequestResponseTransformations{
 					ResponseTransforms: []*transformation.ResponseMatch{{
-						ResponseTransformation: &envoytransformation.Transformation{
-							TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+						ResponseTransformation: &transformation.Transformation{
+							TransformationType: &transformation.Transformation_TransformationTemplate{
 								TransformationTemplate: &envoytransformation.TransformationTemplate{
 									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
 									Headers: map[string]*envoytransformation.InjaTemplate{
@@ -254,8 +254,8 @@ var _ = Describe("Staged Transformation", func() {
 			vhostTransform := &transformation.TransformationStages{
 				Regular: &transformation.RequestResponseTransformations{
 					ResponseTransforms: []*transformation.ResponseMatch{{
-						ResponseTransformation: &envoytransformation.Transformation{
-							TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+						ResponseTransformation: &transformation.Transformation{
+							TransformationType: &transformation.Transformation_TransformationTemplate{
 								TransformationTemplate: &envoytransformation.TransformationTemplate{
 									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
 									Headers: map[string]*envoytransformation.InjaTemplate{
@@ -272,8 +272,8 @@ var _ = Describe("Staged Transformation", func() {
 					StagedTransformations: &transformation.TransformationStages{
 						Regular: &transformation.RequestResponseTransformations{
 							ResponseTransforms: []*transformation.ResponseMatch{{
-								ResponseTransformation: &envoytransformation.Transformation{
-									TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+								ResponseTransformation: &transformation.Transformation{
+									TransformationType: &transformation.Transformation_TransformationTemplate{
 										TransformationTemplate: &envoytransformation.TransformationTemplate{
 											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
 											Headers: map[string]*envoytransformation.InjaTemplate{
@@ -316,8 +316,8 @@ var _ = Describe("Staged Transformation", func() {
 				Early: &transformation.RequestResponseTransformations{
 					ResponseTransforms: []*transformation.ResponseMatch{{
 						ResponseCodeDetails: "ext_authz_error",
-						ResponseTransformation: &envoytransformation.Transformation{
-							TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+						ResponseTransformation: &transformation.Transformation{
+							TransformationType: &transformation.Transformation_TransformationTemplate{
 								TransformationTemplate: &envoytransformation.TransformationTemplate{
 									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
 									BodyTransformation: &envoytransformation.TransformationTemplate_Body{

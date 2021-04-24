@@ -291,3 +291,81 @@ func (m *TransformationStages) Equal(that interface{}) bool {
 
 	return true
 }
+
+// Equal function
+func (m *Transformation) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Transformation)
+	if !ok {
+		that2, ok := that.(Transformation)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.TransformationType.(type) {
+
+	case *Transformation_TransformationTemplate:
+		if _, ok := target.TransformationType.(*Transformation_TransformationTemplate); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetTransformationTemplate()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetTransformationTemplate()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetTransformationTemplate(), target.GetTransformationTemplate()) {
+				return false
+			}
+		}
+
+	case *Transformation_HeaderBodyTransform:
+		if _, ok := target.TransformationType.(*Transformation_HeaderBodyTransform); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetHeaderBodyTransform()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHeaderBodyTransform()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetHeaderBodyTransform(), target.GetHeaderBodyTransform()) {
+				return false
+			}
+		}
+
+	case *Transformation_XsltTransformation:
+		if _, ok := target.TransformationType.(*Transformation_XsltTransformation); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetXsltTransformation()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetXsltTransformation()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetXsltTransformation(), target.GetXsltTransformation()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.TransformationType != target.TransformationType {
+			return false
+		}
+	}
+
+	return true
+}
