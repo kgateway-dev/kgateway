@@ -2435,6 +2435,17 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool
 
 	}
 
+	if len(m.GetTokenEndpointQueryParams()) != len(target.GetTokenEndpointQueryParams()) {
+		return false
+	}
+	for k, v := range m.GetTokenEndpointQueryParams() {
+
+		if strings.Compare(v, target.GetTokenEndpointQueryParams()[k]) != 0 {
+			return false
+		}
+
+	}
+
 	if strings.Compare(m.GetAppUrl(), target.GetAppUrl()) != 0 {
 		return false
 	}

@@ -1070,6 +1070,7 @@ Deprecated, prefer OAuth2Config
 "clientSecret": string
 "issuerUrl": string
 "authEndpointQueryParams": map<string, string>
+"tokenEndpointQueryParams": map<string, string>
 "appUrl": string
 "callbackPath": string
 "logoutPath": string
@@ -1087,7 +1088,8 @@ Deprecated, prefer OAuth2Config
 | `clientId` | `string` | your client id as registered with the issuer. |
 | `clientSecret` | `string` | your client secret as registered with the issuer. |
 | `issuerUrl` | `string` | The url of the issuer. We will look for OIDC information in issuerUrl+ ".well-known/openid-configuration". |
-| `authEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. |
+| `authEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`. |
+| `tokenEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's token request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application. |
 | `logoutPath` | `string` | a path relative to app url that will be used for logging out from an OIDC session. should not be used by the application. If not provided, logout functionality will be disabled. |
