@@ -220,7 +220,7 @@ gatewayProxies:
 
 ### TLS Termination at Load Balancer Level
 
-The TLS Termination configuration options manage the encryption between your clients and microservices. TLS Termination at the AWS load balancer provides integration with AWS Certificate Manager (ACM) and AWS IAM, as well as offloading CPU workload associated with managing a TLS connection from the Gloo Edge proxy.
+The TLS Termination configuration options manages the encryption between your clients and microservices. TLS Termination at the AWS load balancer provides integration with AWS Certificate Manager (ACM) and AWS IAM, as well as offloading CPU workload associated with managing a TLS connection from the Gloo Edge proxy.
 
 {{% notice warning %}}
 For TLS Termination at the load balancer you will need to set the http port to 443 and then disable the https gateway in Gloo. You can set the http port to 443, then change the https port (ex. change the port to 6443) or delete the gateway. Once traffic hits Gloo from the load balancer it will be http traffic over port 443. Starting from Gloo v1.8 you can use the `disableHttpsGateway` helm value to disable https gateway generation and the `disableHttpGateway` helm value to disable http gateway generation.
