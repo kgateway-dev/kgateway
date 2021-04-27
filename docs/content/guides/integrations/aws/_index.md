@@ -347,7 +347,7 @@ curl --verbose -cert client.pem  --key client.decrypted.key --connect-to "gloo.e
 curl -verbose --location --insecure --header "Host: gloo.example.com" $(glooctl proxy url --port='http')
 ```
 
-Terminating SSL Traffic at AWS NLB with a virtual service that redirects HTTP to HTTPS. See the guide to (https redirects)[https://docs.solo.io/gloo-edge/latest/guides/traffic_management/request_processing/https_redirect/] for more information.
+Terminating SSL Traffic at AWS NLB with a virtual service redirects from HTTP to HTTPS. See the guide for [https redirects]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/https_redirect" %}}) for more information on configuration.
 
 ## Load Balancer Annotations
 
