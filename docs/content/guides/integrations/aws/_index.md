@@ -192,7 +192,7 @@ Spending a few minutes thinking through the deployment architecture of your TLS 
 
 ### TLS certificates entities
 
-Gloo can be configured to use TLS certificates entities such as AWS ACM issued certificates outside of k8s secrets such as Let's Encrypt. You will need to configure the Gloo Gateway Proxy and VirtualService to use HTTPS only listener and AWS ACM issued TLS certificates with a few steps.
+Gloo can be configured to use TLS certificates entities such as AWS ACM-issued certificates outside of k8s secrets such as Let's Encrypt. You will need to configure the Gloo Gateway Proxy and VirtualService to use HTTPS only listener and AWS ACM-issued TLS certificates with a few steps.
 
 1. Set the necessary annotations for Gloo Gateway Proxy.
 
