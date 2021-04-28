@@ -93,6 +93,16 @@ func (m *ListenerOptions) Equal(that interface{}) bool {
 
 	}
 
+	if h, ok := interface{}(m.GetMaxDirectResponseBodySizeBytes()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMaxDirectResponseBodySizeBytes()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMaxDirectResponseBodySizeBytes(), target.GetMaxDirectResponseBodySizeBytes()) {
+			return false
+		}
+	}
+
 	return true
 }
 
