@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix typo is istioMetaClusterId helm chart value
+    issueLink: https://github.com/solo-io/gloo/issues/4667

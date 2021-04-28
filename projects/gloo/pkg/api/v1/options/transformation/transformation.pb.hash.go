@@ -355,3 +355,89 @@ func (m *TransformationStages) Hash(hasher hash.Hash64) (uint64, error) {
 
 	return hasher.Sum64(), nil
 }
+
+// Hash function
+func (m *Transformation) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation.Transformation")); err != nil {
+		return 0, err
+	}
+
+	switch m.TransformationType.(type) {
+
+	case *Transformation_TransformationTemplate:
+
+		if h, ok := interface{}(m.GetTransformationTemplate()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("TransformationTemplate")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetTransformationTemplate(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("TransformationTemplate")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *Transformation_HeaderBodyTransform:
+
+		if h, ok := interface{}(m.GetHeaderBodyTransform()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("HeaderBodyTransform")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetHeaderBodyTransform(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("HeaderBodyTransform")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *Transformation_XsltTransformation:
+
+		if h, ok := interface{}(m.GetXsltTransformation()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("XsltTransformation")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetXsltTransformation(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("XsltTransformation")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
