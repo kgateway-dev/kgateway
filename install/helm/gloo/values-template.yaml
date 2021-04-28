@@ -10,6 +10,7 @@ settings:
   create: true
   linkerd: false
   enableRestEds: true
+  helm2: false
   aws: {}
   invalidConfigPolicy:
     replaceInvalidRoutes: false
