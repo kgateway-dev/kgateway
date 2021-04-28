@@ -41,7 +41,7 @@ However, if `inheritTransformation` is set to true on the `stagedTransformations
 from its parent as illustrated below.
 
 Let's define the `virtualHost` and it's child route is defined as follows:
-{{< highlight yaml "hl_lines=15-22" >}}
+{{< highlight yaml "hl_lines=7-13 20-27" >}}
 # This snippet has been abridged for brevity, and only includes transformation-relevant config
 virtualHost:
   options:
@@ -73,7 +73,7 @@ virtualHost:
 Because `inheritTransformation` is set to `true` on the child route, the parent `virtualHost` transformation config will
 be merged into the child. The child route's transformations will look like:
 
-{{< highlight yaml "hl_lines=15-22" >}}
+{{< highlight yaml "hl_lines=8-22" >}}
 # This snippet has been abridged for brevity, and only includes transformation-relevant config
 routes:
 - options:
