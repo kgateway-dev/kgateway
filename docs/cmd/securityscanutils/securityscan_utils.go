@@ -79,11 +79,16 @@ func printImageReportGloo(tag string) error {
 
 func printImageReportGlooE(semver *version.Version) error {
 	tag := semver.String()
-	images := []string{"rate-limit-ee", "grpcserver-ee", "grpcserver-envoy", "grpcserver-ui", "gloo-ee", "gloo-envoy-ee-wrapper", "observability-ee", "extauth-ee", "ext-auth-plugins"}
+	images := []string{"rate-limit-ee", "gloo-ee", "gloo-envoy-ee-wrapper", "observability-ee", "extauth-ee", "ext-auth-plugins"}
+
+	// gloo-fed images replaced grpcserver images in 1.7+
+	grpcserverImages := []string{"grpcserver-ee", "grpcserver-envoy", "grpcserver-ui"}
 	fedImages := []string{"gloo-fed", "gloo-fed-apiserver", "gloo-fed-apiserver-envoy", "gloo-federation-console", "gloo-fed-rbac-validating-webhook"}
 	hasFedVersion, _ := semver.Compare("1.7.0")
 	if hasFedVersion >= 0 {
 		images = append(images, fedImages...)
+	} else {
+		images = append(images, grpcserverImages...)
 	}
 
 	for _, image := range images {

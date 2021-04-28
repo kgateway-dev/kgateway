@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update doc generation for security scans to include grpcserver image reports only in gloo releases before 1.7.

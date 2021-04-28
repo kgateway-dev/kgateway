@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3994
+    description: Apply alpn protocols when resolving common ssl config to support Istio mtls in permissive mode.
