@@ -19,12 +19,14 @@ The configuration format is the same in all three cases and must be specified un
 # This snippet has been abridged for brevity
 virtualHost:
   options:
-    transformations:
-      requestTransformation: 
-        transformationTemplate:
-          headers:
-            foo:
-              text: 'bar'
+    stagedTransformations:
+      regular:
+        requestTransforms:
+        - requestTransformation:
+            transformationTemplate:
+              headers:
+                foo:
+                  text: 'bar'
 {{< /highlight >}}
 
 #### Inheritance rules
@@ -34,22 +36,104 @@ By default, a transformation defined on a Virtual Service attribute is **inherit
 - transformations defined on `VirtualHosts` are inherited by `Route`s and `WeightedDestination`s.
 - transformations defined on `Route`s are inherited by `WeightedDestination`s.
 
-If however a child attribute defines its own transformation, it will override the configuration on its parent.
+If a child attribute defines its own transformation, it will override the configuration on its parent.
+However, if `inheritTransformation` is set to true on the `stagedTransformations` for a Route, it can inherit transformations
+from its parent as illustrated below.
+
+Let's define the `virtualHost` and it's child route is defined as follows:
+{{< highlight yaml "hl_lines=7-13 20-27" >}}
+# This snippet has been abridged for brevity, and only includes transformation-relevant config
+virtualHost:
+  options:
+    stagedTransformations:
+      regular:
+        requestTransforms:
+        - matchers:
+            - prefix: '/parent'
+          requestTransformation:
+            transformationTemplate:
+              headers:
+                foo:
+                  text: 'bar'
+  routes:
+    - options:
+        stagedTransformations:
+          inheritTransformation: true
+          regular:
+            requestTransforms:
+            - matchers:
+              - prefix: '/child'
+              requestTransformation:
+                transformationTemplate:
+                  headers:
+                    foo:
+                      text: 'baz'
+{{< /highlight >}}
+
+Because `inheritTransformation` is set to `true` on the child route, the parent `virtualHost` transformation config will
+be merged into the child. The child route's transformations will look like:
+
+{{< highlight yaml "hl_lines=8-22" >}}
+# This snippet has been abridged for brevity, and only includes transformation-relevant config
+routes:
+- options:
+  stagedTransformations:
+    inheritTransformation: true
+    regular:
+      requestTransforms:
+      - matchers:
+        - prefix: '/child'
+        requestTransformation:
+          transformationTemplate:
+            headers:
+              foo:
+                text: 'baz'
+      - matchers:
+        - prefix: '/parent'
+        requestTransformation:
+          transformationTemplate:
+            headers:
+              foo:
+                text: 'bar'
+{{< /highlight >}}
+
+As stated above, the route's configuration will override its parent's, but now it also inherits the parent's transformations. So in this case,
+routes matching `/parent` will also be transformed. If `inheritTransformation` was set to `false`, this would not be the case. 
+Note that only the first matched transformation will run, so if both the child and the parent had the same matchers, the child's transformation
+would run.
 
 ### Configuration format
-In this section we will detail all the properties of the `transformations` {{< protobuf display="object" name="envoy.api.v2.filter.http.RouteTransformations" >}},
+In this section we will detail all the properties of the `stagedTransformations` {{< protobuf display="object" name="transformation.options.gloo.solo.io.TransformationStages" >}},
 which has the following structure:
 
 ```yaml
-transformations:
-  clearRouteCache: bool
-  requestTransformation: {}
-  responseTransformation: {}
+stagedTransformations:
+  early:
+    # early transformations
+  regular: 
+    requestTransforms:
+      - matcher:
+          prefix : '/'
+        clearRouteCache: bool
+        requestTransformation: {}
+        responseTransformation: {}
+    responseTransforms: {}
+  inheritTransformations: bool
 ```
+
+The `early` and `regular` attributes are used to specify when in the envoy filter chain the transformations run. The following diagram illustrates the stages at which each of the transformation filters run in relation to other envoy filters. 
+
+![Transformation Filter Stages]({{% versioned_link_path fromRoot="/img/transformation_stages.png" %}})
+
+The `inheritTransformation` attribute allows child routes to inherit transformations from their parent RouteTables and/or VirtualHosts. This is detailed in the Inheritance rules section.
+
+The `requestTransforms` attribute specifies a list of transformations which will be evaluated based on the request attributes. The first transformation which has a `matcher` that matches the request attributes will run.
+
+The `responseTransforms` attribute specifies a list of transformations which will be evaluated based on the response attributes. A transformation will only be chosen from this list if no transformation in `requestTransform` matched the request.
 
 The `clearRouteCache` attribute is a boolean value that determines whether the route cache should be cleared if the request transformation was applied. If the transformation modifies the headers in a way that affects routing, this attribute must be set to `true`. The default value is `false`.
 
-The `requestTransformation` and `responseTransformation` attributes have the {{< protobuf display="same format" name="envoy.api.v2.filter.http.Transformation" >}} and specify transformations that will be applied to requests and responses respectively. The format can take one of two forms:
+The `requestTransformation` and `responseTransformation` attributes have the {{< protobuf display="same format" name="transformation.options.gloo.solo.io.Transformation" >}} and specify transformations that will be applied to requests and responses respectively. The format can take one of two forms:
 
 - `headerBodyTransform`: this type of transformation will make all the headers available in the body. The result will be a JSON body that consists of two attributes: `headers`, containing the headers, and `body`, containing the original body.
 - `transformationTemplate`: this type of transformation allows you to define transformation templates. This is the more powerful and flexible type of transformation. We will spend the rest of this guide to describe its properties.
