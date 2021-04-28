@@ -120,6 +120,26 @@ func (m *Gateway) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	if h, ok := interface{}(m.GetRouteOptions()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("RouteOptions")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetRouteOptions(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("RouteOptions")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	switch m.GatewayType.(type) {
 
 	case *Gateway_HttpGateway:

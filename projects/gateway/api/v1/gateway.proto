@@ -76,6 +76,8 @@ message Gateway {
     * Defaults to `["gateway-proxy"]`
     */
     repeated string proxy_names = 12;
+
+    gloo.solo.io.RouteConfigurationOptions route_options = 13;
 }
 
 message HttpGateway {
