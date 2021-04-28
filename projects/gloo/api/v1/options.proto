@@ -67,11 +67,17 @@ message ListenerOptions {
 
     // Soft limit on size of the listener's new connection read and write buffers. If unspecified, defaults to 1MiB
     // For more info, check out the [Envoy docs](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/listener.proto)
+    // TODO: Investigate this
     google.protobuf.UInt32Value per_connection_buffer_limit_bytes = 3;
 
     // Additional socket options that may not be present in Envoy source code or
     // precompiled binaries.
     repeated .solo.io.envoy.api.v2.core.SocketOption socket_options = 4;
+
+    // The maximum bytes of the response direct response body size. If not specified the default is 4096.
+    // Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-v3-api-field-config-route-v3-routeconfiguration-max-direct-response-body-size-bytes)
+    // for more details about the `max_direct_response_body_size_bytes` attribute.
+    google.protobuf.UInt32Value max_direct_response_body_size_bytes = 5;
 }
 
 // Optional, feature-specific configuration that lives on http listeners
@@ -374,7 +380,7 @@ message RouteOptions {
     // For requests matched on this route, rewrite the HTTP request path according to the provided regex pattern before forwarding upstream
     // Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-regex-rewrite)
     // for more details about the `regex_rewrite` attribute
-     .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute regex_rewrite = 27;
+    .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute regex_rewrite = 27;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
