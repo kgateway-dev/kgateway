@@ -64,7 +64,7 @@ func (t *translatorInstance) computeRouteConfig(
 	return &envoy_config_route_v3.RouteConfiguration{
 		Name:         routeCfgName,
 		VirtualHosts: virtualHosts,
-		MaxDirectResponseBodySizeBytes: listener.Options.MaxDirectResponseBodySizeBytes,
+		MaxDirectResponseBodySizeBytes: listener.Options.GetMaxDirectResponseBodySizeBytes(),
 	}
 }
 
