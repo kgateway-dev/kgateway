@@ -133,13 +133,20 @@ and use it to override default values in the Gloo Edge Helm chart:
 {{< tabs >}}
 {{< tab name="Helm 2" codelang="shell">}}
 helm install glooe/gloo-ee --name gloo --namespace gloo-system \
-  -f value-overrides.yaml --set gloo.crds.create=true --set-string license_key=YOUR_LICENSE_KEY
+  -f value-overrides.yaml --set gloo.crds.create=true,settings.helm2=true --set-string license_key=YOUR_LICENSE_KEY
 {{< /tab >}}
 {{< tab name="Helm 3" codelang="shell">}}
 helm install gloo glooe/gloo-ee --namespace gloo-system \
   -f value-overrides.yaml --create-namespace --set-string license_key=YOUR_LICENSE_KEY
 {{< /tab >}}
 {{< /tabs >}}
+
+{{% notice warning %}}
+Helm 2 support will be deprecated in Gloo Edge v1.8.0.
+
+Using Helm 2 with open source Gloo Edge v1.7.4 and later or Gloo Edge Enterprise v1.7.4 requires explicitly setting `settings.helm2=true`
+on the first install.
+{{% /notice %}}
 
 #### List of Gloo Edge Helm chart values
 

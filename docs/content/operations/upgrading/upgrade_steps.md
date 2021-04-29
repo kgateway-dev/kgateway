@@ -195,8 +195,13 @@ quay.io/solo-io/gloo:1.2.1
 ##### Helm 2
 
 {{% notice warning %}}
+Helm 2 support will be deprecated in Gloo Edge v1.8.0.
+
 Using Helm 2 with open source Gloo Edge v1.2.3 and later or Gloo Edge Enterprise v1.2.0 and later requires explicitly setting
 `crds.create=true` on the first install, as this is how we are managing compatibility between Helm 2 and 3.
+
+Using Helm 2 with open source Gloo Edge v1.7.4 and later or Gloo Edge Enterprise v1.7.4 requires explicitly setting `settings.helm2=true`
+on the first install.
 {{% /notice %}}
 
 Helm upgrade command should just work:
@@ -210,7 +215,7 @@ try to upgrade through deleting a helm release (`helm delete --purge gloo`) and 
 may encounter an error stating that a CRD already exists.
 
 ```bash
-~ > helm install gloo/gloo --name gloo --namespace gloo-system --set crds.create=true
+~ > helm install gloo/gloo --name gloo --namespace gloo-system --set crds.create=true,settings.helm2=true
 Error: customresourcedefinitions.apiextensions.k8s.io "authconfigs.enterprise.gloo.solo.io" already exists
 ```
 

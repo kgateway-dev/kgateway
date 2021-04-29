@@ -39,10 +39,19 @@ helm install gloo gloo-os-with-ui/gloo-os-with-ui --namespace gloo-system
 ```
 {{< /tab >}}
 {{< tab name="Helm 2" codelang="shell">}}
-helm install --name gloo gloo-os-with-ui/gloo-os-with-ui --namespace my-namespace --set crds.create=true
+helm install --name gloo gloo-os-with-ui/gloo-os-with-ui --namespace my-namespace --set crds.create=true,settings.helm2=true
 {{< /tab >}}
 {{< /tabs >}}
 
+{{% notice warning %}}
+Helm 2 support will be deprecated in Gloo Edge v1.8.0.
+
+Using Helm 2 with open source Gloo Edge v1.2.3 and later or Gloo Edge Enterprise v1.2.0 and later requires explicitly setting
+`crds.create=true` on the first install, as this is how we are managing compatibility between Helm 2 and 3.
+
+Using Helm 2 with open source Gloo Edge v1.7.4 and later or Gloo Edge Enterprise v1.7.4 requires explicitly setting `settings.helm2=true`
+on the first install.
+{{% /notice %}}
 
 ## Install Gloo Edge Enterprise Read-Only UI
 
