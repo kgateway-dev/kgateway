@@ -170,7 +170,7 @@ type Settings struct {
 	Aws                           AwsSettings          `json:"aws,omitempty"`
 	RateLimit                     interface{}          `json:"rateLimit,omitempty" desc:"Partial config for Gloo Edge Enterprise’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes."`
 	EnableRestEds                 bool                 `json:"enableRestEds,omitempty" desc:"Whether or not to use rest xds for all EDS by default. Set to true by default in versions > v1.6.0."`
-	Helm2                         bool                 `json:"helm2,omitempty" desc:"Helm2 will be deprecated after 1.7.0. If using helm2 set to true to correctly render helm charts. Set to false by default in versions > v1.7.0."`
+	Helm2                         bool                 `json:"helm2,omitempty" desc:"Helm2 will be deprecated after 1.7.0. If using helm2 set to true to correctly render helm charts. Set to false by default."`
 }
 
 type AwsSettings struct {

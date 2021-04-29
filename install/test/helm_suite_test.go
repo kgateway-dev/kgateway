@@ -61,7 +61,6 @@ type renderTestCase struct {
 
 var renderers = []renderTestCase{
 	{"Helm 3", helm3Renderer{chartDir}},
-	//{"Helm 2", helm2Renderer{chartDir}},
 }
 
 func runTests(callback func(testCase renderTestCase)) {
@@ -164,7 +163,6 @@ func (h2 helm2Renderer) RenderManifest(namespace string, values helmValues) (Tes
 		return nil, err
 	}
 
-	values.valuesArgs = append(values.valuesArgs, "settings.helm2=true")
 	helmValues, err := buildHelmValues(h2.chartDir, values)
 	if err != nil {
 		return nil, err
