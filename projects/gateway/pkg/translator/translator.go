@@ -49,7 +49,6 @@ func NewDefaultTranslator(opts Opts) *translator {
 	return NewTranslator([]ListenerFactory{&HttpTranslator{WarnOnRouteShortCircuiting: warnOnRouteShortCircuiting}, &TcpTranslator{}}, opts)
 }
 
-// TODO: Test
 func (t *translator) Translate(ctx context.Context, proxyName, namespace string, snap *v1.ApiSnapshot, gatewaysByProxy v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
 	logger := contextutils.LoggerFrom(ctx)
 
