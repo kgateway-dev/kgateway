@@ -55,9 +55,9 @@ message Transformation {
 message DlpTransformation {
     // list of actions to apply
     repeated Action actions = 1;
-    // If true, headers will be transformed for access logging. Should only be used for the
-    // on_stream_complete_transformation route transformation type
-    bool transform_access_logs = 2;
+    // If true, headers will be transformed. Should only be used for the
+    // on_stream_complete_transformation route transformation type.
+    bool enable_header_transformation = 2;
 }
 
 message Action {

@@ -110,14 +110,14 @@ weight: 5
 
 ```yaml
 "actions": []envoy.config.filter.http.transformation_ee.v2.Action
-"transformAccessLogs": bool
+"enableHeaderTransformation": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `actions` | [[]envoy.config.filter.http.transformation_ee.v2.Action](../transformation.proto.sk/#action) | list of actions to apply. |
-| `transformAccessLogs` | `bool` | If true, headers will be transformed for access logging. Should only be used for the on_stream_complete_transformation route transformation type. |
+| `enableHeaderTransformation` | `bool` | If true, headers will be transformed. Should only be used for the on_stream_complete_transformation route transformation type. |
 
 
 
