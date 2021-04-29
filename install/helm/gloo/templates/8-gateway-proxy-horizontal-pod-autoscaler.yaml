@@ -1,9 +1,9 @@
 {{- if .Values.gateway.enabled }}
+{{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
 {{- range $name, $spec := .Values.gatewayProxies }}
 {{ if not $.Values.settings.helm2 }}
-{{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
 {{- $spec = deepCopy $spec | mergeOverwrite (deepCopy $gatewayProxy) -}}
-{{- end }}
+{{- end}}
 {{- if $spec.kind.deployment}}
 {{- if $spec.horizontalPodAutoscaler }}
 ---

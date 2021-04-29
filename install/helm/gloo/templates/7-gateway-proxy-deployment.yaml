@@ -5,11 +5,11 @@
 {{- $global := .Values.global }}
 {{- $settings := .Values.settings }}
 {{- $isUpgrade := .Values.gateway.upgrade }}
+{{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
 {{- range $name, $spec := .Values.gatewayProxies }}
 {{ if not $.Values.settings.helm2 }}
-{{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
 {{- $spec = deepCopy $spec | mergeOverwrite (deepCopy $gatewayProxy) -}}
-{{- end }}
+{{- end}}
 {{- $image := $spec.podTemplate.image }}
 {{- if $global }}
 {{- $image = merge $spec.podTemplate.image $global.image }}
