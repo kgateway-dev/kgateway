@@ -145,6 +145,8 @@ func istioUninject(args []string, opts *options.Options) error {
 		}
 	}
 
+	fmt.Println("Istio was successfully uninjected")
+
 	return nil
 }
 
