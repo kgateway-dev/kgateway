@@ -80,7 +80,9 @@ type Gateway struct {
 	// for this field
 	//
 	// Defaults to `["gateway-proxy"]`
-	ProxyNames   []string                      `protobuf:"bytes,12,rep,name=proxy_names,json=proxyNames,proto3" json:"proxy_names,omitempty"`
+	ProxyNames []string `protobuf:"bytes,12,rep,name=proxy_names,json=proxyNames,proto3" json:"proxy_names,omitempty"`
+	//
+	// Route configuration options that live under Envoy's [RouteConfigurationOptions](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#config-route-v3-routeconfiguration)
 	RouteOptions *v1.RouteConfigurationOptions `protobuf:"bytes,13,opt,name=route_options,json=routeOptions,proto3" json:"route_options,omitempty"`
 }
 
