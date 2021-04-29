@@ -1,0 +1,5 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/4282
+  resolvesIssue: false
+  description: Update API to support DLP masking on enterprise access logs
