@@ -1,9 +1,7 @@
-{{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
 {{- range $name, $spec := .Values.gatewayProxies }}
-{{ if $.Values.settings.helm2 }}
-{{- $spec := $spec | mergeOverwrite $spec -}}
-{{- else }}
-{{- $spec := deepCopy $spec | mergeOverwrite (deepCopy $spec) -}}
+{{ if not $.Values.settings.helm2 }}
+{{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
+{{- $spec = deepCopy $spec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{- end }}
 {{- if and $spec.gatewaySettings (not $spec.disabled) }}
 {{$gatewaySettings := $spec.gatewaySettings}}
