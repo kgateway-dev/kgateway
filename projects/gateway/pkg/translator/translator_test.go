@@ -129,6 +129,7 @@ var _ = Describe("Translator", func() {
 				AccessLoggingService: als,
 			}
 
+			Expect(snap.Gateways[1].RouteOptions.MaxDirectResponseBodySizeBytes.Value).To(BeEquivalentTo(2048))
 
 			httpGateway := snap.Gateways[0].GetHttpGateway()
 			Expect(httpGateway).NotTo(BeNil())
