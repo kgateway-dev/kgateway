@@ -34,10 +34,7 @@ In this section we'll deploy Gloo Edge twice, each instance to a different names
 
 Create a file named `gloo1-overrides.yaml` and paste the following inside:
 
-{{< tabs >}}
-{{< tab name="Helm 2" codelang="yaml" >}}
-crds:
-  create: true
+```shell
 settings:
   create: true
   writeNamespace: gloo1
@@ -47,19 +44,7 @@ settings:
 grafana: # The grafana settings can be removed for Gloo Edge OSS
   rbac:
     namespaced: true
-{{< /tab >}}
-{{< tab name="Helm 3" codelang="yaml">}}
-settings:
-  create: true
-  writeNamespace: gloo1
-  watchNamespaces:
-  - default
-  - gloo1
-grafana: # The grafana settings can be removed for Gloo Edge OSS
-  rbac:
-    namespaced: true
-{{< /tab >}}
-{{< /tabs >}}
+```
 
 Now, let's install Gloo Edge. Review our [Kubernetes installation guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) if you need a refresher.
 
@@ -75,23 +60,14 @@ Then install Gloo Edge using one of the following methods:
 {{< tab name="glooctl" codelang="shell" >}}
 glooctl install gateway -n gloo1 --values gloo1-overrides.yaml
 {{< /tab >}}
-{{% tab name="Helm 2" %}}
-Either:
-
-```shell script
-helm install gloo/gloo --name gloo1 --namespace gloo1 -f gloo1-overrides.yaml
-```
-
-or:
-
-```shell script
-helm template gloo --namespace gloo1 --values gloo1-overrides.yaml  | k apply -f - -n gloo1
-```
-{{% /tab %}}
 {{< tab name="Helm 3" codelang="shell">}}
 helm install gloo gloo/gloo --namespace gloo1 -f gloo1-overrides.yaml
 {{< /tab >}}
 {{< /tabs >}}
+
+{{% notice warning %}}
+Using Helm 2 is not supported in Gloo Edge v1.8.0.
+{{% /notice %}}
 
 Check that gloo pods are running: 
 
@@ -125,20 +101,7 @@ Let's repeat the above process, substituting `gloo2` for `gloo1`:
 
 Create a file named `gloo2-overrides.yaml` and paste the following inside:
 
-{{< tabs >}}
-{{< tab name="Helm 2" codelang="yaml" >}}
-crds:
-  create: true
-settings:
-  create: true
-  writeNamespace: gloo2
-  watchNamespaces:
-  - default
-  - gloo2
-grafana: # The grafana settings can be removed for Gloo Edge OSS
-  rbac:
-    namespaced: true
-{{< /tab >}}
+```shell
 {{< tab name="Helm 3" codelang="yaml">}}
 settings:
   create: true
@@ -149,8 +112,7 @@ settings:
 grafana: # The grafana settings can be removed for Gloo Edge OSS
   rbac:
     namespaced: true
-{{< /tab >}}
-{{< /tabs >}}
+```
 
 Now, let's install Gloo Edge for the second time. First create the second namespace:
 
@@ -165,19 +127,6 @@ Then perform the second installation using one of the following methods:
 {{< tab name="glooctl" codelang="shell" >}}
 glooctl install gateway -n gloo2 --values gloo2-overrides.yaml
 {{< /tab >}}
-{{% tab name="Helm 2" %}}
-Either:
-
-```shell script
-helm install gloo/gloo --name gloo2 --namespace gloo2 -f gloo2-overrides.yaml
-```
-
-or:
-
-```shell script
-helm template gloo --namespace gloo2 --values gloo2-overrides.yaml  | k apply -f - -n gloo2
-```
-{{% /tab %}}
 {{< tab name="Helm 3" codelang="shell">}}
 helm install gloo gloo/gloo --namespace gloo2 -f gloo2-overrides.yaml
 {{< /tab >}}
