@@ -62,24 +62,7 @@ type Gateway struct {
 	//	*Gateway_HttpGateway
 	//	*Gateway_TcpGateway
 	GatewayType isGateway_GatewayType `protobuf_oneof:"GatewayType"`
-	//
-	// Names of the [`Proxy`](https://gloo.solo.io/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/)
-	// resources to generate from this gateway. If other gateways exist which point to the same proxy,
-	// Gloo will join them together.
-	//
-	// Proxies have a one-to-many relationship with Envoy bootstrap configuration.
-	// In order to connect to Gloo, the Envoy bootstrap configuration sets a `role` in
-	// the [node metadata](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/base.proto#envoy-api-msg-core-node)
-	// Envoy instances announce their `role` to Gloo, which maps to the  `{{ .Namespace }}~{{ .Name }}`
-	// of the Proxy resource.
-	//
-	// The template for this value can be seen in the [Gloo Helm chart](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/9-gateway-proxy-configmap.yaml#L22)
-	//
-	// Note: this field also accepts fields written in camel-case. They will be converted
-	// to kebab-case in the Proxy name. This allows use of the [Gateway Name Helm value](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/values-gateway-template.yaml#L47)
-	// for this field
-	//
-	// Defaults to `["gateway-proxy"]`
+	// TODO: Look at where this is translated
 	ProxyNames   []string                      `protobuf:"bytes,12,rep,name=proxy_names,json=proxyNames,proto3" json:"proxy_names,omitempty"`
 	RouteOptions *v1.RouteConfigurationOptions `protobuf:"bytes,13,opt,name=route_options,json=routeOptions,proto3" json:"route_options,omitempty"`
 }
