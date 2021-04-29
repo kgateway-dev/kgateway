@@ -55,6 +55,7 @@ The route matching functions exactly the same as the envoy routes in the virtual
 ```yaml
 "matcher": .matchers.core.gloo.solo.io.Matcher
 "actions": []dlp.options.gloo.solo.io.Action
+"transformAccessLogs": bool
 
 ```
 
@@ -62,6 +63,7 @@ The route matching functions exactly the same as the envoy routes in the virtual
 | ----- | ---- | ----------- | 
 | `matcher` | [.matchers.core.gloo.solo.io.Matcher](../../../../core/matchers/matchers.proto.sk/#matcher) | Matcher by which to determine if the given transformation should be applied if omitted, will it match all (i.e., default to / prefix matcher). |
 | `actions` | [[]dlp.options.gloo.solo.io.Action](../dlp.proto.sk/#action) | List of data loss prevention actions to be applied. These actions will be applied in order, one at a time. |
+| `transformAccessLogs` | `bool` | If true, headers will be transformed for access logging. Should only be used for the on_stream_complete_transformation route transformation type. |
 
 
 

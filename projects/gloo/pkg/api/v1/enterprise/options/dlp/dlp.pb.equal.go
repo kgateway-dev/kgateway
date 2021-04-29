@@ -114,6 +114,10 @@ func (m *DlpRule) Equal(that interface{}) bool {
 
 	}
 
+	if m.GetTransformAccessLogs() != target.GetTransformAccessLogs() {
+		return false
+	}
+
 	return true
 }
 

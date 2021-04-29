@@ -31,6 +31,9 @@ message DlpRule {
     // List of data loss prevention actions to be applied.
     // These actions will be applied in order, one at a time.
     repeated Action actions = 2;
+    // If true, headers will be transformed for access logging. Should only be used for the
+    // on_stream_complete_transformation route transformation type
+    bool transform_access_logs = 3;
 }
 
 /*
