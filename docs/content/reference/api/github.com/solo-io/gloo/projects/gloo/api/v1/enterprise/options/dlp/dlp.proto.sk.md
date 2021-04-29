@@ -14,6 +14,7 @@ weight: 5
 - [FilterConfig](#filterconfig)
 - [DlpRule](#dlprule)
 - [Config](#config)
+- [EnableFor](#enablefor)
 - [Action](#action)
 - [ActionType](#actiontype)
 - [CustomAction](#customaction)
@@ -77,14 +78,28 @@ listener level config.
 
 ```yaml
 "actions": []dlp.options.gloo.solo.io.Action
-"transformAccessLogs": bool
+"enabledFor": .dlp.options.gloo.solo.io.Config.EnableFor
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `actions` | [[]dlp.options.gloo.solo.io.Action](../dlp.proto.sk/#action) | List of data loss prevention actions to be applied. These actions will be applied in order, one at a time. |
-| `transformAccessLogs` | `bool` | If true, headers will be transformed for access logging. Should only be used for the on_stream_complete_transformation route transformation type. |
+| `enabledFor` | [.dlp.options.gloo.solo.io.Config.EnableFor](../dlp.proto.sk/#enablefor) | Whether responses, access logs, or both should be masked by the applied actions. If not defined, masking will only be enabled for responses. |
+
+
+
+
+---
+### EnableFor
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `ONLY_RESPONSES` |  |
+| `ONLY_ACCESS_LOGS` |  |
+| `ALL` |  |
 
 
 

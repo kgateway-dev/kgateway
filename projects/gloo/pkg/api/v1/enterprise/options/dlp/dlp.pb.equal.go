@@ -155,7 +155,7 @@ func (m *Config) Equal(that interface{}) bool {
 
 	}
 
-	if m.GetTransformAccessLogs() != target.GetTransformAccessLogs() {
+	if m.GetEnabledFor() != target.GetEnabledFor() {
 		return false
 	}
 

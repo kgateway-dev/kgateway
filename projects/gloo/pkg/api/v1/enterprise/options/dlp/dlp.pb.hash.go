@@ -162,7 +162,7 @@ func (m *Config) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetTransformAccessLogs())
+	err = binary.Write(hasher, binary.LittleEndian, m.GetEnabledFor())
 	if err != nil {
 		return 0, err
 	}

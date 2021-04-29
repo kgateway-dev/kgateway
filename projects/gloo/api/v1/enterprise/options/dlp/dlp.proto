@@ -12,7 +12,7 @@ option (extproto.hash_all) = true;
 /*
     DLP (data loss prevention)
     The purpose of this filter is to prevent sensitive data from being exposed.
-    This is accomplished by doing a series of regex replacements on the response body.
+    This is accomplished by doing a series of regex replacements on the response body or headers.
 */
 
 // Listener level config for dlp filter
@@ -40,12 +40,18 @@ message DlpRule {
     listener level config.
 */
 message Config {
+    enum EnableFor {
+        ONLY_RESPONSES = 0;
+        ONLY_ACCESS_LOGS = 1;
+        ALL = 2;
+    }
+
     // List of data loss prevention actions to be applied.
     // These actions will be applied in order, one at a time.
     repeated Action actions = 1;
-    // If true, headers will be transformed for access logging. Should only be used for the
-    // on_stream_complete_transformation route transformation type
-    bool transform_access_logs = 3;
+    // Whether responses, access logs, or both should be masked by the applied actions.
+    // If not defined, masking will only be enabled for responses.
+    EnableFor enabled_for = 2;
 }
 /*
     A single action meant to mask sensitive data.
