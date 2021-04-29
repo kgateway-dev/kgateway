@@ -97,9 +97,9 @@ listener level config.
 
 | Name | Description |
 | ----- | ----------- | 
-| `ONLY_RESPONSES` |  |
-| `ONLY_ACCESS_LOGS` |  |
-| `ALL` |  |
+| `ONLY_RESPONSES` | Only enable DLP masking of responses. Defaults to this value. |
+| `ONLY_ACCESS_LOGS` | Only enable DLP masking of access logs. |
+| `ALL` | Enable DLP masking for both responses and access logs. |
 
 
 

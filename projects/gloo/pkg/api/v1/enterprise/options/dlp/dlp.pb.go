@@ -32,9 +32,12 @@ const _ = proto.ProtoPackageIsVersion4
 type Config_EnableFor int32
 
 const (
-	Config_ONLY_RESPONSES   Config_EnableFor = 0
+	// Only enable DLP masking of responses. Defaults to this value.
+	Config_ONLY_RESPONSES Config_EnableFor = 0
+	// Only enable DLP masking of access logs.
 	Config_ONLY_ACCESS_LOGS Config_EnableFor = 1
-	Config_ALL              Config_EnableFor = 2
+	// Enable DLP masking for both responses and access logs.
+	Config_ALL Config_EnableFor = 2
 )
 
 // Enum value maps for Config_EnableFor.

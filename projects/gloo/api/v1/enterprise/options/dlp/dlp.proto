@@ -41,8 +41,11 @@ message DlpRule {
 */
 message Config {
     enum EnableFor {
+        // Only enable DLP masking of responses. Defaults to this value.
         ONLY_RESPONSES = 0;
+        // Only enable DLP masking of access logs.
         ONLY_ACCESS_LOGS = 1;
+        // Enable DLP masking for both responses and access logs.
         ALL = 2;
     }
 
