@@ -17,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	glooVersion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/go-utils/versionutils/git"
@@ -29,9 +28,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	helm2chartutil "k8s.io/helm/pkg/chartutil"
-	helm2chartapi "k8s.io/helm/pkg/proto/hapi/chart"
-	helm2renderutil "k8s.io/helm/pkg/renderutil"
 	k8syamlutil "sigs.k8s.io/yaml"
 )
 
@@ -104,7 +100,6 @@ type ChartRenderer interface {
 }
 
 var _ ChartRenderer = &helm3Renderer{}
-var _ ChartRenderer = &helm2Renderer{}
 
 type helm3Renderer struct {
 	chartDir string
@@ -154,51 +149,6 @@ func BuildHelm3Release(chartDir, namespace string, values helmValues) (*release.
 	}
 
 	return client.Run(chartRequested, helmValues)
-}
-
-type helm2Renderer struct {
-	chartDir string
-}
-
-func (h2 helm2Renderer) RenderManifest(namespace string, values helmValues) (TestManifest, error) {
-	chart, err := helm2chartutil.Load(h2.chartDir)
-	if err != nil {
-		return nil, err
-	}
-
-	helmValues, err := buildHelmValues(h2.chartDir, values)
-	if err != nil {
-		return nil, err
-	}
-
-	helmValuesRaw, err := yaml.Marshal(helmValues)
-	if err != nil {
-		return nil, err
-	}
-
-	templateConfig := &helm2chartapi.Config{Raw: string(helmValuesRaw), Values: map[string]*helm2chartapi.Value{}}
-
-	renderedTemplates, err := helm2renderutil.Render(chart, templateConfig, helm2renderutil.Options{
-		ReleaseOptions: helm2chartutil.ReleaseOptions{
-			Name:      constants.GlooReleaseName,
-			Namespace: namespace,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// the test manifest utils can only read from a file, ugh
-	f, err := ioutil.TempFile("", "*.yaml")
-	Expect(err).NotTo(HaveOccurred(), "Should be able to write a temp file for the helm unit test manifest")
-	defer func() { _ = os.Remove(f.Name()) }()
-
-	for _, manifest := range renderedTemplates {
-		_, err := f.WriteString(manifest + "\n---\n")
-		Expect(err).NotTo(HaveOccurred(), "Should be able to write the release manifest to the temp file for the helm unit tests")
-	}
-
-	return NewTestManifest(f.Name()), nil
 }
 
 // each entry in valuesArgs should look like `path.to.helm.field=value`
