@@ -1,10 +1,8 @@
 package test
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"reflect"
 	"strings"
@@ -27,7 +25,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	test_matchers "github.com/solo-io/solo-kit/test/matchers"
-	"helm.sh/helm/v3/pkg/releaseutil"
 	appsv1 "k8s.io/api/apps/v1"
 	jobsv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -80,39 +77,6 @@ func ConvertKubeResource(unst *unstructured.Unstructured, res resources.Resource
 }
 
 var _ = Describe("Helm Test", func() {
-	Context("CRD creation", func() {
-		It("has not diverged between Helm 2 and 3", func() {
-			release, err := BuildHelm3Release(chartDir, namespace, helmValues{})
-			Expect(err).NotTo(HaveOccurred())
-
-			foundCrdFile := false
-			for _, f := range release.Chart.Raw {
-				if f.Name == "templates/100-crds.yaml" {
-					foundCrdFile = true
-					legacyCrdTemplateData := string(f.Data)
-
-					for _, helm3Crd := range release.Chart.CRDs() {
-						Expect(legacyCrdTemplateData).To(ContainSubstring(string(helm3Crd.Data)), "CRD "+helm3Crd.Name+" does not match legacy duplicate")
-					}
-
-					legacyCrdTemplate, err := template.New("").Parse(legacyCrdTemplateData)
-					Expect(err).NotTo(HaveOccurred())
-
-					renderedLegacyCrds := new(bytes.Buffer)
-					err = legacyCrdTemplate.Execute(renderedLegacyCrds, map[string]interface{}{
-						"Values": map[string]interface{}{
-							"crds": map[string]interface{}{
-								"create": true,
-							},
-						},
-					})
-					Expect(err).NotTo(HaveOccurred(), "Should be able to render the legacy CRDs")
-					Expect(len(releaseutil.SplitManifests(renderedLegacyCrds.String()))).To(Equal(len(release.Chart.CRDs())), "Should have the same number of CRDs")
-				}
-			}
-			Expect(foundCrdFile).To(BeTrue(), "Should have found the legacy CRD file")
-		})
-	})
 
 	var allTests = func(rendererTestCase renderTestCase) {
 		var (

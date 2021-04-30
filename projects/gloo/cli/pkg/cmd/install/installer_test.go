@@ -182,11 +182,7 @@ rules:
 
 	It("installs cleanly by default", func() {
 		defaultInstall(install.Gloo,
-			map[string]interface{}{
-				"crds": map[string]interface{}{
-					"create": false,
-				},
-			},
+			map[string]interface{}{},
 			glooOsChartUri)
 	})
 
@@ -194,13 +190,7 @@ rules:
 
 		chart.AddDependency(&helmchart.Chart{Metadata: &helmchart.Metadata{Name: constants.GlooReleaseName}})
 		defaultInstall(install.Enterprise,
-			map[string]interface{}{
-				"gloo": map[string]interface{}{
-					"crds": map[string]interface{}{
-						"create": false,
-					},
-				},
-			},
+			map[string]interface{}{},
 			glooEnterpriseChartUri)
 	})
 
@@ -224,13 +214,7 @@ rules:
 
 		chart.AddDependency(&helmchart.Chart{Metadata: &helmchart.Metadata{Name: constants.GlooReleaseName}})
 		installWithConfig(install.Gloo,
-			map[string]interface{}{
-				"gloo": map[string]interface{}{
-					"crds": map[string]interface{}{
-						"create": false,
-					},
-				},
-			},
+			map[string]interface{}{},
 			glooEnterpriseChartUri,
 			installConfig)
 	})
@@ -247,11 +231,7 @@ rules:
 		}
 
 		installWithConfig(install.Gloo,
-			map[string]interface{}{
-				"crds": map[string]interface{}{
-					"create": false,
-				},
-			},
+			map[string]interface{}{},
 			glooOsChartUri,
 			installConfig)
 	})
@@ -271,11 +251,7 @@ rules:
 		}
 
 		mockHelmInstallation.EXPECT().
-			Run(chart, map[string]interface{}{
-				"crds": map[string]interface{}{
-					"create": false,
-				},
-			}).
+			Run(chart, map[string]interface{}{}).
 			Return(helmRelease, nil)
 
 		mockHelmClient.EXPECT().
