@@ -73,7 +73,7 @@ require (
 	github.com/solo-io/reporting-client v0.2.0
 	github.com/solo-io/skv2 v0.17.2
 	// Pinned to the `rate-limiter-v0.1.8` tag of solo-apis
-	github.com/solo-io/solo-apis v0.0.0-20210430145845-3ce8bfe3c382
+	github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10
 	github.com/solo-io/solo-kit v0.18.3
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
@@ -102,6 +102,7 @@ require (
 	k8s.io/apimachinery v0.19.6
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	k8s.io/code-generator v0.19.6
+	k8s.io/helm v2.17.0+incompatible
 	k8s.io/kubectl v0.19.6
 	k8s.io/kubernetes v1.19.6
 	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
