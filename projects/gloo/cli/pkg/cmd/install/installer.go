@@ -156,12 +156,6 @@ func (i *installer) installFromConfig(installerConfig *InstallerConfig) error {
 		return err
 	}
 
-	if installerConfig.Mode != Federation {
-		// We need this to avoid rendering the CRDs we include in the /templates directory
-		// for backwards-compatibility with Helm 2.
-		setCrdCreateToFalse(installerConfig)
-	}
-
 	// Merge the CLI flag values into the extra values, giving the latter higher precedence.
 	// (The first argument to CoalesceTables has higher priority)
 	completeValues := chartutil.CoalesceTables(installerConfig.ExtraValues, cliValues)
@@ -259,27 +253,6 @@ func setExtraValues(config *InstallerConfig) error {
 
 	config.ExtraValues = newExtraValues
 	return nil
-}
-
-// Note: can be removed if we add {"gloo":{"crds":{"create":false}}} to default enterprise chart
-func setCrdCreateToFalse(config *InstallerConfig) {
-	if config.ExtraValues == nil {
-		config.ExtraValues = map[string]interface{}{}
-	}
-
-	mapWithCrdValueToOverride := config.ExtraValues
-
-	// If this is an enterprise install, `crds.create` is nested under the `gloo` field
-	if config.Mode == Enterprise {
-		if _, ok := config.ExtraValues[constants.GlooReleaseName]; !ok {
-			config.ExtraValues[constants.GlooReleaseName] = map[string]interface{}{}
-		}
-		mapWithCrdValueToOverride = config.ExtraValues[constants.GlooReleaseName].(map[string]interface{})
-	}
-
-	mapWithCrdValueToOverride["crds"] = map[string]interface{}{
-		"create": false,
-	}
 }
 
 func (i *installer) printReleaseManifest(release *release.Release) error {

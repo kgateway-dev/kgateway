@@ -18,7 +18,6 @@ This applies to all values except:
 
 For example, if you are installing Gloo Edge Enterprise:
 
-- `crds.create` needs to be `gloo.crds.create`
 - `gateway.certGenJob.enabled` needs to be `gloo.gateway.certGenJob.enabled`
 
 but `global.glooRbac.create` remains the same.

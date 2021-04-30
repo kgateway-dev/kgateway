@@ -1,5 +1,3 @@
-crds:
-  create: true
 discovery:
   fdsMode: WHITELIST
 gateway:

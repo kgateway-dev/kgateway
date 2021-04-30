@@ -102,7 +102,6 @@ require (
 	k8s.io/apimachinery v0.19.6
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	k8s.io/code-generator v0.19.6
-	k8s.io/helm v2.17.0+incompatible
 	k8s.io/kubectl v0.19.6
 	k8s.io/kubernetes v1.19.6
 	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
