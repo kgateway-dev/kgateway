@@ -30,19 +30,15 @@ With helm, add the following repo:
 helm repo add gloo-os-with-ui https://storage.googleapis.com/gloo-os-ui-helm
 ```
 
-and install it:
+and install it with Helm 3:
 
-{{< tabs >}}
-{{% tab name="Helm 3" %}}
 ```shell script
 helm install gloo gloo-os-with-ui/gloo-os-with-ui --namespace gloo-system
 ```
-{{< /tab >}}
-{{< tab name="Helm 2" codelang="shell">}}
-helm install --name gloo gloo-os-with-ui/gloo-os-with-ui --namespace my-namespace --set crds.create=true
-{{< /tab >}}
-{{< /tabs >}}
 
+{{% notice warning %}}
+Using Helm 2 is not supported in Gloo Edge v1.8.0.
+{{% /notice %}}
 
 ## Install Gloo Edge Enterprise Read-Only UI
 

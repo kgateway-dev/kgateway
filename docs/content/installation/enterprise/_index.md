@@ -99,16 +99,14 @@ helm repo add glooe http://storage.googleapis.com/gloo-ee-helm
 
 Finally, install Gloo Edge using the following command:
 
-{{< tabs >}}
-{{< tab name="Helm 2" codelang="shell">}}
-helm install glooe/gloo-ee --name gloo --namespace gloo-system \
-  --set gloo.crds.create=true --set-string license_key=YOUR_LICENSE_KEY
-{{< /tab >}}
-{{< tab name="Helm 3" codelang="shell">}}
+```shell
 helm install gloo glooe/gloo-ee --namespace gloo-system \
   --create-namespace --set-string license_key=YOUR_LICENSE_KEY
-{{< /tab >}}
-{{< /tabs >}}
+```
+
+{{% notice warning %}}
+Using Helm 2 is not supported in Gloo Edge v1.8.0.
+{{% /notice %}}
 
 Once you've installed Gloo Edge, please be sure [to verify your installation](#verify-your-installation).
 
@@ -128,18 +126,16 @@ settings:
   writeNamespace: my-custom-namespace
 ```
 
-and use it to override default values in the Gloo Edge Helm chart:
+and use it to override default values in the Gloo Edge Helm chart with Helm 3:
 
-{{< tabs >}}
-{{< tab name="Helm 2" codelang="shell">}}
-helm install glooe/gloo-ee --name gloo --namespace gloo-system \
-  -f value-overrides.yaml --set gloo.crds.create=true --set-string license_key=YOUR_LICENSE_KEY
-{{< /tab >}}
-{{< tab name="Helm 3" codelang="shell">}}
+```shell
 helm install gloo glooe/gloo-ee --namespace gloo-system \
   -f value-overrides.yaml --create-namespace --set-string license_key=YOUR_LICENSE_KEY
-{{< /tab >}}
-{{< /tabs >}}
+```
+
+{{% notice warning %}}
+Using Helm 2 is not supported in Gloo Edge v1.8.0.
+{{% /notice %}}
 
 #### List of Gloo Edge Helm chart values
 
