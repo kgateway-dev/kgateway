@@ -1289,8 +1289,8 @@ github.com/solo-io/reporting-client v0.2.0/go.mod h1:FmBDzwc1zEwayCCrlP+1w7NcpM0
 github.com/solo-io/skv2 v0.17.0/go.mod h1:52/0ETq6fkr/abuoUYd3qgV8DEFBI72Sd5frl2dFGJs=
 github.com/solo-io/skv2 v0.17.2 h1:wHQ/e77UlxTciDebXeEjy1G7U9SKUDGqxG0Ce5zfjUI=
 github.com/solo-io/skv2 v0.17.2/go.mod h1:8Mo/EqmRGTu3UWb6ldnbN/9QyzI788MyG3SSpP2NaBc=
-github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10 h1:Qbq966MqBQ2hlvrg0RuoB2rWXJOwSJq+kT5z4P3Nk50=
-github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10/go.mod h1:pAKKsh7pWK1nkzSfSV67RlmiynYzZlu+IWAylvEqkUI=
+github.com/solo-io/solo-apis v0.0.0-20210430145845-3ce8bfe3c382 h1:q5y1d01YslTJ2xqKeSuxX8ckEYc8xwquoSXjjpes8+g=
+github.com/solo-io/solo-apis v0.0.0-20210430145845-3ce8bfe3c382/go.mod h1:pAKKsh7pWK1nkzSfSV67RlmiynYzZlu+IWAylvEqkUI=
 github.com/solo-io/solo-kit v0.16.0/go.mod h1:zf+vof9HAavbFKRgL80jJ24SeE9PvoB8ooQ7DACtK8I=
 github.com/solo-io/solo-kit v0.18.3 h1:2Mxq9j1XQR6FOGCYBGwapjtVBRE3XJnLrBU/W1wdBO0=
 github.com/solo-io/solo-kit v0.18.3/go.mod h1:F/2VWhEg1z1d5oN71FgqOuSysHLqSxDuLjibiqRQwYo=
