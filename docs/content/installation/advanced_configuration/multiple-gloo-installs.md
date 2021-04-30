@@ -102,7 +102,6 @@ Let's repeat the above process, substituting `gloo2` for `gloo1`:
 Create a file named `gloo2-overrides.yaml` and paste the following inside:
 
 ```shell
-{{< tab name="Helm 3" codelang="yaml">}}
 settings:
   create: true
   writeNamespace: gloo2
