@@ -12,6 +12,7 @@ weight: 5
 
 
 - [FilterConfig](#filterconfig)
+- [EnableFor](#enablefor)
 - [DlpRule](#dlprule)
 - [Config](#config)
 - [EnableFor](#enablefor)
@@ -36,12 +37,28 @@ Listener level config for dlp filter
 
 ```yaml
 "dlpRules": []dlp.options.gloo.solo.io.DlpRule
+"enabledFor": .dlp.options.gloo.solo.io.FilterConfig.EnableFor
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `dlpRules` | [[]dlp.options.gloo.solo.io.DlpRule](../dlp.proto.sk/#dlprule) | The list of transformation, matcher pairs. The first rule which matches will be applied. |
+| `enabledFor` | [.dlp.options.gloo.solo.io.FilterConfig.EnableFor](../dlp.proto.sk/#enablefor) | Whether responses, access logs, or both should be masked by the applied actions. If not defined, masking will only be enabled for responses. |
+
+
+
+
+---
+### EnableFor
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `ONLY_RESPONSES` | Only enable DLP masking of responses. Defaults to this value. |
+| `ONLY_ACCESS_LOGS` | Only enable DLP masking of access logs. |
+| `ALL` | Enable DLP masking for both responses and access logs. |
 
 
 

@@ -72,7 +72,7 @@ weight: 5
 "requestTransformation": .envoy.config.filter.http.transformation_ee.v2.Transformation
 "clearRouteCache": bool
 "responseTransformation": .envoy.config.filter.http.transformation_ee.v2.Transformation
-"onStreamCompleteTransformation": .envoy.config.filter.http.transformation_ee.v2.Transformation
+"onStreamCompletionTransformation": .envoy.config.filter.http.transformation_ee.v2.Transformation
 
 ```
 
@@ -81,7 +81,7 @@ weight: 5
 | `requestTransformation` | [.envoy.config.filter.http.transformation_ee.v2.Transformation](../transformation.proto.sk/#transformation) |  |
 | `clearRouteCache` | `bool` | clear the route cache if the request transformation was applied. |
 | `responseTransformation` | [.envoy.config.filter.http.transformation_ee.v2.Transformation](../transformation.proto.sk/#transformation) |  |
-| `onStreamCompleteTransformation` | [.envoy.config.filter.http.transformation_ee.v2.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation in the onStreamComplete callback. |
+| `onStreamCompletionTransformation` | [.envoy.config.filter.http.transformation_ee.v2.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation in the onStreamComplete callback. |
 
 
 
