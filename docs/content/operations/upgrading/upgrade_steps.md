@@ -25,7 +25,6 @@ Once you have reviewed the changes in the new release, there are two components 
     * [Download release asset](#download-release-asset)
 * [Gloo Edge (server components)](#upgrading-the-server-components)
     * [Helm 3](#helm-3)
-    * [Helm 2](#helm-2)
 
 Before upgrading, always make sure to check our changelogs (refer to our 
 [open-source]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}}) or 
@@ -159,7 +158,7 @@ load-balancer.
 
 #### Using Helm
 
-For Enterprise users of Gloo Edge, the process with either Helm 2 or 3 is the same. You'll just need to set your license
+For Enterprise users of Gloo Edge, the process with either Helm 3 is the same. You'll just need to set your license
 key during installation by using `--set license_key="$license"` (or include the line `license_key: $LICENSE-KEY` in
 your values file).
 
@@ -171,6 +170,10 @@ additional steps to ensure there is no downtime because the charts do not have t
 {{% /notice %}}
 
 ##### Helm 3
+
+{{% notice warning %}}
+Using Helm 2 is not supported in Gloo Edge v1.8.0.
+{{% /notice %}}
 
 If we have Gloo Edge released under the Helm release name `gloo` to `gloo-system`, upgrading the server components is easy:
 
@@ -191,27 +194,3 @@ Verify that Gloo Edge has the expected version:
 ~ > kubectl -n gloo-system get pod -l gloo=gloo -ojsonpath='{.items[0].spec.containers[0].image}'
 quay.io/solo-io/gloo:1.2.1
 ```
-
-##### Helm 2
-
-{{% notice warning %}}
-Using Helm 2 with open source Gloo Edge v1.2.3 and later or Gloo Edge Enterprise v1.2.0 and later requires explicitly setting
-`crds.create=true` on the first install, as this is how we are managing compatibility between Helm 2 and 3.
-{{% /notice %}}
-
-Helm upgrade command should just work:
-```bash
-~ > helm upgrade gloo gloo/gloo --namespace gloo-system
-```
-
-If you'd rather delete and reinstall to get a clean slate, take care to manage your CRDs as Helm v2 
-[does not support managing CRDs](https://github.com/helm/helm/issues/5871#issuecomment-522096388). As a result, if you
-try to upgrade through deleting a helm release (`helm delete --purge gloo`) and reinstalling via `helm install`, you
-may encounter an error stating that a CRD already exists.
-
-```bash
-~ > helm install gloo/gloo --name gloo --namespace gloo-system --set crds.create=true
-Error: customresourcedefinitions.apiextensions.k8s.io "authconfigs.enterprise.gloo.solo.io" already exists
-```
-
-To successfully reinstall, run the same install command with `crds.create=false`.

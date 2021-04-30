@@ -85,12 +85,7 @@ may not be correct if you install by directly applying the dry run manifests, e.
 ### Installing on Kubernetes with Helm
 
 {{% notice warning %}}
-
-##### Helm 2 Compatibility
-* Using Helm 2 with open source Gloo Edge v1.2.3 and later or Gloo Edge Enterprise v1.2.0 and later requires explicitly setting `crds.create=true`, as this is how we are managing compatibility between Helm 2 and 3.
-* Helm 2 **IS NOT** compatible with the open source Gloo Edge chart in Gloo Edge versions v1.2.0 through v1.2.2.
-* However, Helm 2 **IS** compatible with all stable versions of the Gloo Edge Enterprise chart.
-* `glooctl` prior to v1.2.0 cannot be used to install open source Gloo Edge v1.2.0 and later or Gloo Edge Enterprise v1.0.0 and later. 
+Using Helm 2 is not supported in Gloo Edge v1.8.0.
 {{% /notice %}}
 
 As a first step, you have to add the Gloo Edge repository to the list of known chart repositories, as well as prepare the installation namespace:
@@ -103,31 +98,9 @@ kubectl create namespace my-namespace
 
 For an installation with all the default values, use one of the following commands:
 
-{{< tabs >}}
-{{% tab name="Helm 2" %}}
-There are two options for installing with Helm 2. Note that in Gloo Edge including and later than v1.2.3, you will have to explicitly set `crds.create=true`, as that is how we are managing compatibility between Helm 2 and 3.
-
-You may use `helm install`:
-
-```shell script
-helm install --name gloo gloo/gloo --namespace my-namespace --set crds.create=true
-```
-
-or `helm template`:
-```shell script
-# download the gloo chart with helm cli. this is required 
-# as helm template does not support remote repos
-# https://github.com/helm/helm/issues/4527
-helm fetch --untar --untardir . 'gloo/gloo'
-
-# deploy gloo resources to my-namespace with our value overrides
-helm template gloo --namespace my-namespace  --set crds.create=true | kubectl apply -f - -n my-namespace
-```
-{{< /tab >}}
-{{< tab name="Helm 3" codelang="shell">}}
+```shell
 helm install gloo gloo/gloo --namespace my-namespace
-{{< /tab >}}
-{{< /tabs >}}
+```
 
 Once you've installed Gloo Edge, please be sure [to verify your installation]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" %}}).
 
@@ -151,14 +124,9 @@ settings:
 
 and use it to override default values in the Gloo Edge Helm chart:
 
-{{< tabs >}}
-{{< tab name="Helm 2" codelang="shell">}}
-helm install gloo/gloo --name gloo-custom-0-7-6 --namespace my-namespace -f value-overrides.yaml
-{{< /tab >}}
-{{< tab name="Helm 3" codelang="shell">}}
+```shell
 helm install gloo-custom-0-7-6 gloo/gloo --namespace my-namespace -f value-overrides.yaml
-{{< /tab >}}
-{{< /tabs >}}
+```
 
 #### List of Gloo Edge Helm chart values
 
