@@ -449,6 +449,9 @@ apis:
   gloo.solo.io.RouteAction:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#RouteAction
     package: gloo.solo.io
+  gloo.solo.io.RouteConfigurationOptions:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#RouteConfigurationOptions
+    package: gloo.solo.io
   gloo.solo.io.RouteOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#RouteOptions
     package: gloo.solo.io
