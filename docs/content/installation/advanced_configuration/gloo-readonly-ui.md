@@ -44,7 +44,7 @@ helm install --name gloo gloo-os-with-ui/gloo-os-with-ui --namespace my-namespac
 {{< /tabs >}}
 
 {{% notice warning %}}
-Helm 2 support will be deprecated in Gloo Edge v1.8.0.
+Helm 2 support will be dropped in Gloo Edge v1.8.0.
 
 Using Helm 2 with open source Gloo Edge v1.2.3 and later or Gloo Edge Enterprise v1.2.0 and later requires explicitly setting
 `crds.create=true` on the first install, as this is how we are managing compatibility between Helm 2 and 3.

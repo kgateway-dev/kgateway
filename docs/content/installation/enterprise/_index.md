@@ -142,7 +142,7 @@ helm install gloo glooe/gloo-ee --namespace gloo-system \
 {{< /tabs >}}
 
 {{% notice warning %}}
-Helm 2 support will be deprecated in Gloo Edge v1.8.0.
+Helm 2 support will be dropped in Gloo Edge v1.8.0.
 
 Using Helm 2 with open source Gloo Edge v1.7.4 and later or Gloo Edge Enterprise v1.7.4 requires explicitly setting `settings.helm2=true`
 on the first install.
