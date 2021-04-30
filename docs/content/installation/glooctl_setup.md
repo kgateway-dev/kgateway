@@ -38,6 +38,4 @@ Fortunately, `glooctl` is able to update itself to different versions. To change
 glooctl upgrade --release v1.6.0
 ```
 
-{{% notice note %}}
-The glooctl upgrade command can also be used to roll back your glooctl version to previous releases. This can be convenient if you are using an older version of Gloo Edge and want to use the same verison of glooctl to ensure compatability.
-{{% /notice %}}
+**Note**: The glooctl upgrade command can also be used to roll back your glooctl version to previous releases. This can be convenient if you are using an older version of Gloo Edge and want to use the same verison of glooctl to ensure compatability.
