@@ -522,8 +522,6 @@ endif
 define HELM_VALUES
 namespace:
   create: true
-crds:
-  create: true
 endef
 
 # Export as a shell variable, make variables do not play well with multiple lines
