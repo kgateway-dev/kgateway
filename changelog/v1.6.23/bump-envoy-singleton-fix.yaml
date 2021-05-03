@@ -1,0 +1,7 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoy-gloo
+    dependencyRepo: solo-io
+    dependencyTag: v1.17.3-patch1
+    description: >-
+      Upgrade envoy-gloo version with singleton fix for wasm plugin
