@@ -2618,7 +2618,8 @@ var _ = Describe("Translator", func() {
 				_, errs, _, _ := translator.Translate(params, proxy)
 				proxyKind := resources.Kind(proxy)
 				_, reports := errs.Find(proxyKind, proxy.Metadata.Ref())
-				Expect(reports.Errors.Error()).To(ContainSubstring("Tried to apply multiple filter chains with the same FilterChainMatch."))
+				Expect(reports.Errors.Error()).To(ContainSubstring("Tried to apply multiple filter chains with the" +
+					" same FilterChainMatch {server_names:\"a.com\"}. This is usually caused by overlapping sniDomains or multiple empty sniDomains in virtual services"))
 			})
 			It("should error when different parameters have no sni domains", func() {
 
@@ -2659,7 +2660,8 @@ var _ = Describe("Translator", func() {
 				_, errs, _, _ := translator.Translate(params, proxy)
 				proxyKind := resources.Kind(proxy)
 				_, reports := errs.Find(proxyKind, proxy.Metadata.Ref())
-				Expect(reports.Errors.Error()).To(ContainSubstring("Tried to apply multiple filter chains with the same FilterChainMatch."))
+				Expect(reports.Errors.Error()).To(ContainSubstring("Tried to apply multiple filter chains with the" +
+					" same FilterChainMatch {}. This is usually caused by overlapping sniDomains or multiple empty sniDomains in virtual services"))
 			})
 			It("should work when different parameters have different sni domains", func() {
 
