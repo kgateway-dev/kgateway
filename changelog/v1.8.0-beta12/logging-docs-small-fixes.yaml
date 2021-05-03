@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4675
+    description: Add note to docs about potential way to crash envoy
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4668
+    description: Improve format of logging error message to be clearer to users
