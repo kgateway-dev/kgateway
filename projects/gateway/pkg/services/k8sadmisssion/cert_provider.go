@@ -24,7 +24,7 @@ type certificateProvider struct {
 	keyMtime  time.Time
 }
 
-func NewCertificateProvider(certPath, keyPath string, logger *log.Logger, ctx context.Context) (*certificateProvider, error) {
+func NewCertificateProvider(certPath, keyPath string, logger *log.Logger, ctx context.Context, interval time.Duration) (*certificateProvider, error) {
 	mReloadSuccess := utils.MakeSumCounter("validation.gateway.solo.io/certificate_reload_success", "Number of successful certificate reloads")
 	mReloadFailed := utils.MakeSumCounter("validation.gateway.solo.io/certificate_reload_failed", "Number of failed certificate reloads")
 	tagKey, err := tag.NewKey("error")
@@ -60,7 +60,11 @@ func NewCertificateProvider(certPath, keyPath string, logger *log.Logger, ctx co
 			// that a Secret has changed and applies the update to the mounted secret files.
 			// So, we can safely sleep some time here to safe CPU/IO resources and do not
 			// have to spin in a tight loop, watching for changes.
-			time.Sleep(10 * time.Second)
+			time.Sleep(interval)
+			if ctx.Err() != nil {
+				// Avoid error messages if Context has been cancelled while we were sleeping (best effort).
+				break
+			}
 			certFileInfo, err := os.Stat(certPath)
 			if err != nil {
 				result.logger.Printf("Error while checking if validating admission webhook certificate file changed %s", err)

@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
 
@@ -122,7 +123,7 @@ func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
 	readGatewaysFromAllNamespaces := cfg.readGatewaysFromAllNamespaces
 	webhookNamespace := cfg.webhookNamespace
 
-	certProvider, err := NewCertificateProvider(serverCertPath, serverKeyPath, log.New(&debugLogger{ctx: ctx}, "validation-webhook-certificate-watcher", log.LstdFlags), ctx)
+	certProvider, err := NewCertificateProvider(serverCertPath, serverKeyPath, log.New(&debugLogger{ctx: ctx}, "validation-webhook-certificate-watcher", log.LstdFlags), ctx, 10*time.Second)
 	if err != nil {
 		return nil, errors.Wrapf(err, "loading TLS certificate provider")
 	}
