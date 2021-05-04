@@ -29,7 +29,7 @@ metadata:
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
   name: {{ $name | kebabcase }}
-  namespace: {{ $.Release.Namespace }}
+  namespace: {{ .Release.Namespace }}
 spec:
   {{- if $spec.kind.deployment}}
   {{- if $spec.kind.deployment.replicas}}
@@ -461,14 +461,14 @@ spec:
       {{- end }}
 {{- end }}
 {{- end }} {{/* with */}}
-{{- end }} {{ /* define */}}
+{{- end }} {{/* define gatewayProxy.deploymentSpec*/}}
 
 {{- if .Values.gateway.enabled }}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
-{{/* Render template with yaml overrides */}}
-{{- $var := (cat ".Values.gatewayProxy." $name ".yamlOverride") }}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . $var) }}
-{{- $ctx := (list . $name $gatewaySpec)}}
+{{/* Render each gatewayProxy template with it's yaml overrides */}}
+{{- $var := (print ".Values.gatewayProxies." $name ".yamlOverride") }}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list $ $var) }}
+{{- $ctx := (list $ $name $gatewaySpec)}}
 {{- template "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.deploymentSpec") -}}
 {{- end }}
 {{- end }}

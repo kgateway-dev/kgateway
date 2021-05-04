@@ -1,6 +1,8 @@
-{{- if .Values.gateway.enabled }}
+{{- define "gatewayProxy.serviceSpec" }}
+{{- $name := (index . 1) }}
+{{- $gatewaySpec := (index . 2) }}
+{{- with (first .) }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
-{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{$gatewaySettings := $spec.gatewaySettings}}
 {{- if not $spec.disabled }}
@@ -14,7 +16,7 @@ metadata:
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
   name: {{ $svcName | kebabcase }}
-  namespace: {{ $.Release.Namespace }}
+  namespace: {{ .Release.Namespace }}
 {{- if $spec.service.extraAnnotations }}
   annotations:
   {{- range $key, $value := $spec.service.extraAnnotations }}
@@ -104,7 +106,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ $name | kebabcase }}-config-dump-service
-  namespace: {{ $.Release.Namespace }}
+  namespace: {{ .Release.Namespace }}
   labels:
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
@@ -117,7 +119,17 @@ spec:
     - protocol: TCP
       port: 8082
 {{- end }} {{/* if and ($spec.readConfig $spec.readConfigMulticluster) */}}
-{{- end }} {{/* range $name, $spec := .Values.gatewayProxies */}}
 {{- end }} {{/* if not $spec.disabled */}}
-{{ end }} {{/* if .Values.gateway.enabled */}}
+{{- end }} {{/* with */}}
+{{- end }} {{/* define gatewayProxy.deploymentSpec*/}}
+
+{{- if .Values.gateway.enabled }}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{/* Render each gatewayProxy template with it's yaml overrides */}}
+{{- $var := (print ".Values.gatewayProxies." $name ".service.yamlOverride") }}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list $ $var) }}
+{{- $ctx := (list $ $name $gatewaySpec)}}
+{{- template "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.serviceSpec") -}}
+{{- end }} {{/* range $name, $spec := .Values.gatewayProxies */}}
+{{- end }} {{/* if .Values.gateway.enabled */}}
 

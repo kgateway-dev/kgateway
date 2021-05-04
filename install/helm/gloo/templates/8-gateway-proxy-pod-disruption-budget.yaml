@@ -1,6 +1,8 @@
-{{- if .Values.gateway.enabled }}
+{{- define "gatewayProxy.disruptionBudgetSpec"}}
+{{- $name := (index . 1) }}
+{{- $gatewaySpec := (index . 2) }}
+{{- with (first .) }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
-{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{- if $spec.kind.deployment}}
 {{- if $spec.podDisruptionBudget }}
@@ -22,5 +24,15 @@ spec:
       gloo: gateway-proxy
 {{- end }}
 {{- end }}
+{{- end }} {{/* with */}}
+{{- end }} {{/* define gatewayProxy.deploymentSpec*/}}
+
+{{- if .Values.gateway.enabled }}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{/* Render each gatewayProxy template with it's yaml overrides */}}
+{{- $var := (print ".Values.gatewayProxies." $name ".podDisruptionBudget.yamlOverride") }}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list $ $var) }}
+{{- $ctx := (list $ $name $gatewaySpec)}}
+{{- template "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.disruptionBudgetSpec") -}}
 {{- end }}
 {{- end }}
