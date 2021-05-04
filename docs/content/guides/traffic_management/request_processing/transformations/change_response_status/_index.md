@@ -91,6 +91,10 @@ As you can see from the response above, the upstream service echoes the JSON pay
 #### Update Virtual Service
 To implement this behavior, we need to add the following to our Virtual Service definition:
 
+{{% notice warning %}}
+Without the else statement, the status header is set to empty which will CRASH envoy since it expects the status header to have a nonempty value.
+{{% /notice %}}
+
 {{< highlight yaml "hl_lines=20-35" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
