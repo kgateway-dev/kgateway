@@ -1,12 +1,14 @@
 {{- if .Values.gateway.updateValues -}}
 {{- include "gloo.updatevalues" . -}}
 {{- end -}}
-{{- if .Values.gateway.enabled }}
+{{- define "gatewayProxy.deploymentSpec" }}
+{{- $name := (index . 1) }}
+{{- $gatewaySpec := (index . 2) }}
+{{- with (first .) }}
 {{- $global := .Values.global }}
 {{- $settings := .Values.settings }}
 {{- $isUpgrade := .Values.gateway.upgrade }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
-{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{- $image := $spec.podTemplate.image }}
 {{- if $global }}
@@ -458,5 +460,15 @@ spec:
       {{- include $spec.extraVolumeHelper $ | nindent 6 }}
       {{- end }}
 {{- end }}
+{{- end }} {{/* with */}}
+{{- end }} {{ /* define */}}
+
+{{- if .Values.gateway.enabled }}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{/* Render template with yaml overrides */}}
+{{- $var := (cat ".Values.gatewayProxy." $name ".yamlOverride") }}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . $var) }}
+{{- $ctx := (list . $name $gatewaySpec)}}
+{{- template "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.deploymentSpec") -}}
 {{- end }}
 {{- end }}
