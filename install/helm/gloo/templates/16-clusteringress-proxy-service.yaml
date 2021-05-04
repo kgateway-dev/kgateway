@@ -1,3 +1,4 @@
+{{- define "clusterIngressProxy.serviceSpec"}}
 {{- if .Values.settings.integrations.knative.enabled }}
 {{- if (semverCompare "< 0.8.0" .Values.settings.integrations.knative.version ) }}
 apiVersion: v1
@@ -23,3 +24,8 @@ spec:
   type: {{ .Values.settings.integrations.knative.proxy.service.type }}
 {{- end }}
 {{- end }}
+{{- end }} {{/*define "clusterIngressProxy.serviceSpec"*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.settings.integrations.knative.service.yamlOverride") }}
+{{- template "gloo.util.merge" (list . $yamlOverride "clusterIngressProxy.serviceSpec") -}}

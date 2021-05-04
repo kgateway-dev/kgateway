@@ -1,3 +1,4 @@
+{{- define "ingress.deploymentSpec"}}
 {{- if or (.Values.ingress.enabled) (.Values.settings.integrations.knative.enabled) }}
 {{- $image := .Values.ingress.deployment.image }}
 {{- if .Values.global  }}
@@ -81,6 +82,10 @@ spec:
           value: "{{ .Values.ingress.customIngressClass }}"
   {{- end }}
 {{- end }}
-
-
 {{- end }}
+{{- end }}
+
+{{/* Render template with yaml overrides */}}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.ingress.deployment.yamlOverride") }}
+{{- template "gloo.util.merge" (list . $yamlOverride "ingress.deploymentSpec") -}}
+

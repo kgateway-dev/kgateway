@@ -1,3 +1,4 @@
+{{- define "discovery.deploymentSpec"}}
 {{- if .Values.discovery.enabled }}
 {{- $statsConfig := coalesce .Values.discovery.deployment.stats .Values.global.glooStats -}}
 {{- $image := .Values.discovery.deployment.image }}
@@ -86,3 +87,9 @@ spec:
         fsGroup: {{ printf "%.0f" (float64 .Values.discovery.deployment.fsGroup) }}
         {{- end}}
 {{- end }}
+{{- end }} {{/* define "discovery.deploymentSpec"*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.discovery.deployment.yamlOverride") }}
+{{- template "gloo.util.merge" (list . $yamlOverride "discovery.deploymentSpec") -}}
+

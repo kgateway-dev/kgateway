@@ -1,3 +1,4 @@
+{{- define "knativeExternalProxy.serviceSpec"}}
 {{- if .Values.settings.integrations.knative.enabled }}
 {{- if (semverCompare ">= 0.8.0" .Values.settings.integrations.knative.version ) }}
 apiVersion: v1
@@ -34,3 +35,8 @@ spec:
   {{- end }}
 {{- end }}
 {{- end }}
+{{- end }} {{/*define "knativeExternalProxy.serviceSpec"*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.settings.integrations.knative.service.yamlOverride") }}
+{{- template "gloo.util.merge" (list . $yamlOverride "knativeExternalProxy.serviceSpec") -}}

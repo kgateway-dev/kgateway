@@ -1,3 +1,4 @@
+{{- define "clusterIngressProxy.configMapSpec"}}
 {{- if .Values.settings.integrations.knative.enabled }}
 {{- if (semverCompare "< 0.8.0" .Values.settings.integrations.knative.version ) }}
 
@@ -134,3 +135,8 @@ data:
           port_value: 19000
 {{- end }}
 {{- end }}
+{{- end }} {{/*define "clusterIngressProxy.configMapSpec"*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.settings.integrations.knative.configMap.yamlOverride") }}
+{{- template "gloo.util.merge" (list . $yamlOverride "clusterIngressProxy.configMapSpec") -}}

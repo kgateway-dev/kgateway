@@ -1,3 +1,4 @@
+{{- define "accessLogger.serviceSpec"}}
 {{- if and .Values.gateway.enabled .Values.accessLogger.enabled }}
 
 apiVersion: v1
@@ -18,3 +19,8 @@ spec:
     app: gloo
     gloo: gateway-proxy-access-logger
 {{- end }}
+{{- end }}
+
+{{/* Render template with yaml overrides */}}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.accessLogger.service.yamlOverride") }}
+{{- template "gloo.util.merge" (list . $yamlOverride "accessLogger.serviceSpec") -}}

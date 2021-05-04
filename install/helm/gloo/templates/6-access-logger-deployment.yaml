@@ -1,3 +1,4 @@
+{{- define "accessLogger.deploymentSpec"}}
 {{- if and .Values.gateway.enabled .Values.accessLogger.enabled }}
 {{- $image := .Values.accessLogger.image }}
 {{- $statsConfig := coalesce .Values.accessLogger.stats .Values.global.glooStats -}}
@@ -82,3 +83,8 @@ spec:
             name: http
             protocol: TCP
 {{- end }}
+{{- end }}
+
+{{/* Render template with yaml overrides */}}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.accessLogger.deployment.yamlOverride") }}
+{{- template "gloo.util.merge" (list . $yamlOverride "accessLogger.deploymentSpec") -}}

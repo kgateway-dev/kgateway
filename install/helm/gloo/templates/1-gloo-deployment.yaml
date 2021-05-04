@@ -1,3 +1,4 @@
+{{ define "gloo.deploymentSpec" }}
 {{- $image := .Values.gloo.deployment.image }}
 {{- $statsConfig := coalesce .Values.gloo.deployment.stats .Values.global.glooStats -}}
 {{- if .Values.global  }}
@@ -188,3 +189,8 @@ spec:
           periodSeconds: 2
           failureThreshold: 10
 {{- end }}
+{{- end }} {{/* define "gloo.deploymentSpec "*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.gloo.deployment.yamlOverride") }}
+{{- template "gloo.util.merge" (list . $yamlOverride "gloo.deploymentSpec") -}}

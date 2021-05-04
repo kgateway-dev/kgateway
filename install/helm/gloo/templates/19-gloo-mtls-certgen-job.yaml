@@ -1,3 +1,4 @@
+{{ define "glooMtls.certGenJobSpec" }}
 {{- $image := .Values.gateway.certGenJob.image }}
 {{- if .Values.global  }}
 {{- $image = merge .Values.gateway.certGenJob.image .Values.global.image }}
@@ -48,3 +49,8 @@ spec:
   ttlSecondsAfterFinished: 60
   {{- end }}
 {{- end }}
+{{- end }} {{/* define gateway.certGenJob.JobSpec*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.gateway.certGenJob.yamlOverride") }}
+{{- template "gloo.util.merge" (list . $yamlOverride "glooMtls.certGenJobSpec") -}}

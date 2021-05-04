@@ -1,3 +1,4 @@
+{{- define "gateway.validationWebhookSpec" }}
 {{- if and (and .Values.gateway.enabled .Values.gateway.validation.enabled) .Values.gateway.validation.webhook.enabled }}
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
@@ -32,3 +33,8 @@ webhooks:
   failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
 {{- end }}
 {{- end }}
+{{- end }}
+
+{{/* Render template with yaml overrides */}}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.gateway.validation.webhook.yamlOverride") }}
+{{- template "gloo.util.merge" (list . $yamlOverride "gateway.validationWebhookSpec") -}}

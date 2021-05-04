@@ -1,3 +1,4 @@
+{{- define "ingressProxy.serviceSpec"}}
 {{- if .Values.ingress.enabled }}
 apiVersion: v1
 kind: Service
@@ -32,3 +33,8 @@ spec:
   loadBalancerIP: {{ .Values.ingressProxy.service.loadBalancerIP }}
   {{- end }}
 {{- end }}
+{{- end }} {{/* define ingressProxy.serviceSpec */}}
+
+{{/* Render template with yaml overrides */}}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.ingressProxy.service.yamlOverride") }}
+{{- template "gloo.util.merge" (list . $yamlOverride "ingressProxy.serviceSpec") -}}

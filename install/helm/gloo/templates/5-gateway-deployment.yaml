@@ -1,3 +1,4 @@
+{{- define "gateway.deploymentSpec"}}
 {{- $image := .Values.gateway.deployment.image }}
 {{- $statsConfig := coalesce .Values.gateway.deployment.stats .Values.global.glooStats -}}
 {{- if .Values.global  }}
@@ -107,3 +108,8 @@ spec:
             secretName: {{ .Values.gateway.validation.secretName }}
 {{- end}}
 {{- end }}
+{{- end }}
+
+{{/* Render template with yaml overrides */}}
+{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.gateway.deployment.yamlOverride") }}
+{{- template "gloo.util.merge" (list . $yamlOverride "gateway.deploymentSpec") -}}
