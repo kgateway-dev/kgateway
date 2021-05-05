@@ -37,7 +37,7 @@ spec:
         {{- end }}
       {{- end }}
     spec:
-      {{- include "gloo.pullSecret" $image | nindent 6 }}
+      {{- include "gloo.pullSecret" $image | nindent 6 -}}
       containers:
       - args: ["--disable-hot-restart"]
         env:
