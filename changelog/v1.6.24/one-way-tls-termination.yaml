@@ -1,5 +1,5 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: FIX
     description: >-
       Add `oneWayTls` boolean configuration to the `SslConfig` (referenced on `VirtualService`s) to allow users to
       configure TLS termination to use one-way TLS rather than mTLS even if the root CA is provided (e.g., by default
