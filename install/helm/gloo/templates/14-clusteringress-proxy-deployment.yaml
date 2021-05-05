@@ -84,5 +84,8 @@ spec:
 {{- end }} {{/* define clusterIngressProxy.deploymentSpec */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.settings.integrations.knative.proxy.yamlOverride") }}
+{{- $yamlOverride := (dict ) | toYaml -}}
+{{- if .Values.settings.integrations.knative.proxy.yamlOverride -}}
+{{- $yamlOverride = .Values.settings.integrations.knative.proxy.yamlOverride | toYaml -}}
+{{- end -}}
 {{- template "gloo.util.merge" (list . $yamlOverride "clusterIngressProxy.deploymentSpec") -}}

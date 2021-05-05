@@ -137,5 +137,10 @@ data:
 {{- end }} {{/*define "knativeExternalProxy.configMapSpec"*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.settings.integrations.knative.configMap.yamlOverride") }}
-{{- template "gloo.util.merge" (list . $yamlOverride "knativeExternalProxy.configMapSpec") -}}
+{{- $yamlOverride := (dict ) | toYaml -}}
+{{- if .Values.settings.integrations.knative.configMap -}}
+{{- if .Values.settings.integrations.knative.configMap.yamlOverride -}}
+{{- $yamlOverride = .Values.settings.integrations.knative.configMap.yamlOverride | toYaml -}}
+{{- end -}}
+{{- end -}}
+{{- template "gloo.util.merge" (list . $yamlOverride "clusterIngressProxy.configMapSpec") -}}

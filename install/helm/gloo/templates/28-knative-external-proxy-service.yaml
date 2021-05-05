@@ -38,5 +38,10 @@ spec:
 {{- end }} {{/*define "knativeExternalProxy.serviceSpec"*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.settings.integrations.knative.service.yamlOverride") }}
-{{- template "gloo.util.merge" (list . $yamlOverride "knativeExternalProxy.serviceSpec") -}}
+{{- $yamlOverride := (dict ) | toYaml -}}
+{{- if .Values.settings.integrations.knative.service -}}
+{{- if .Values.settings.integrations.knative.service.yamlOverride -}}
+{{- $yamlOverride = .Values.settings.integrations.knative.service.yamlOverride | toYaml -}}
+{{- end -}}
+{{- end -}}
+{{- template "gloo.util.merge" (list . $yamlOverride "clusterIngressProxy.serviceSpec") -}}

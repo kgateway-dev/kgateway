@@ -22,5 +22,10 @@ spec:
 {{- end }}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.gateway.service.yamlOverride") }}
+{{- $yamlOverride := (dict ) | toYaml -}}
+{{- if .Values.gateway.service -}}
+{{- if .Values.gateway.service.yamlOverride -}}
+{{- $yamlOverride = .Values.gateway.service.yamlOverride | toYaml -}}
+{{- end -}}
+{{- end -}}
 {{- template "gloo.util.merge" (list . $yamlOverride "gateway.serviceSpec") -}}

@@ -119,5 +119,10 @@ rules:
 {{- end }} {{/* define "gateway.certGenJobSpec" */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.gateway.certGenJob.yamlOverride") }}
+{{- $yamlOverride := (dict ) | toYaml -}}
+{{- if .Values.gateway.certGenJob -}}
+{{- if .Values.gateway.certGenJob.yamlOverride -}}
+{{- $yamlOverride = .Values.gateway.certGenJob.yamlOverride | toYaml -}}
+{{- end -}}
+{{- end -}}
 {{- template "gloo.util.merge" (list . $yamlOverride "gateway.certGenJobSpec") -}}

@@ -86,5 +86,10 @@ spec:
 {{- end }}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.accessLogger.deployment.yamlOverride") }}
+{{- $yamlOverride := (dict ) | toYaml -}}
+{{- if .Values.accessLogger.deployment -}}
+{{- if .Values.accessLogger.deployment.yamlOverride -}}
+{{- $yamlOverride = .Values.accessLogger.deployment.yamlOverride | toYaml -}}
+{{- end -}}
+{{- end -}}
 {{- template "gloo.util.merge" (list . $yamlOverride "accessLogger.deploymentSpec") -}}

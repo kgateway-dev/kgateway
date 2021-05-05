@@ -36,5 +36,12 @@ webhooks:
 {{- end }}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.gateway.validation.webhook.yamlOverride") }}
+{{- $yamlOverride := (dict ) | toYaml -}}
+{{- if .Values.gateway.validation -}}
+{{- if .Values.gateway.validation.webhook -}}
+{{- if .Values.gateway.validation.webhook.yamlOverride -}}
+{{- $yamlOverride = .Values.gateway.validation.webhook.yamlOverride  | toYaml -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
 {{- template "gloo.util.merge" (list . $yamlOverride "gateway.validationWebhookSpec") -}}

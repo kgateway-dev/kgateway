@@ -136,6 +136,11 @@ data:
 {{- end}} {{/* define "ingressProxy.configMapSpec "*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.ingressProxy.configMap.yamlOverride") }}
+{{- $yamlOverride := (dict ) | toYaml -}}
+{{- if .Values.ingressProxy.configMap -}}
+{{- if .Values.ingressProxy.configMap.yamlOverride -}}
+{{- $yamlOverride = .Values.ingressProxy.configMap.yamlOverride | toYaml -}}
+{{- end -}}
+{{- end -}}
 {{- template "gloo.util.merge" (list . $yamlOverride "ingressProxy.configMapSpec") -}}
 

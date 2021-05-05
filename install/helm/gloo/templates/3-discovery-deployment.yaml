@@ -90,6 +90,11 @@ spec:
 {{- end }} {{/* define "discovery.deploymentSpec"*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.discovery.deployment.yamlOverride") }}
+{{- $yamlOverride := (dict ) | toYaml -}}
+{{- if .Values.discovery.deployment -}}
+{{- if .Values.discovery.deployment.yamlOverride -}}
+{{- $yamlOverride = .Values.gloo.serviceAccount.yamlOverride | toYaml -}}
+{{- end -}}
+{{- end -}}
 {{- template "gloo.util.merge" (list . $yamlOverride "discovery.deploymentSpec") -}}
 

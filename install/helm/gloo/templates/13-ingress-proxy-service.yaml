@@ -36,5 +36,10 @@ spec:
 {{- end }} {{/* define ingressProxy.serviceSpec */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.ingressProxy.service.yamlOverride") }}
+{{- $yamlOverride := (dict ) | toYaml -}}
+{{- if .Values.ingressProxy.service -}}
+{{- if .Values.ingressProxy.service.yamlOverride -}}
+{{- $yamlOverride = .Values.gateway.deployment.yamlOverride | toYaml -}}
+{{- end -}}
+{{- end -}}
 {{- template "gloo.util.merge" (list . $yamlOverride "ingressProxy.serviceSpec") -}}

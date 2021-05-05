@@ -133,6 +133,11 @@ spec:
 {{- end }}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.settings.yamlOverride") }}
+{{- $yamlOverride := (dict ) | toYaml -}}
+{{- if .Values.settings -}}
+{{- if .Values.settings.yamlOverride -}}
+{{- $yamlOverride = .Values.gateway.deployment.yamlOverride | toYaml -}}
+{{- end -}}
+{{- end -}}
 {{- template "gloo.util.merge" (list . $yamlOverride "settings.settingsSpec") -}}
 

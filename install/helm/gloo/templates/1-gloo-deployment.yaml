@@ -192,5 +192,5 @@ spec:
 {{- end }} {{/* define "gloo.deploymentSpec "*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.gloo.deployment.yamlOverride") }}
-{{- template "gloo.util.merge" (list . $yamlOverride "gloo.deploymentSpec") -}}
+{{/*{{- $yamlOverride := include "gloo.util.safeAccessVar" (list . ".Values.gloo.deployment.yamlOverride") }}*/}}
+{{- template "gloo.util.merge" (list . (.Values.gloo.deployment.yamlOverride | toYaml) "gloo.deploymentSpec") -}}
