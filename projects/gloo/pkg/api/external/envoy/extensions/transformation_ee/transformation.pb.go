@@ -153,7 +153,7 @@ type RouteTransformations struct {
 	// clear the route cache if the request transformation was applied
 	ClearRouteCache        bool            `protobuf:"varint,3,opt,name=clear_route_cache,json=clearRouteCache,proto3" json:"clear_route_cache,omitempty"`
 	ResponseTransformation *Transformation `protobuf:"bytes,2,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"`
-	// Apply a transformation to headers before they are logged by access loggers
+	// Apply a transformation to values that are logged by access loggers
 	AccessLogTransformation *Transformation `protobuf:"bytes,4,opt,name=access_log_transformation,json=accessLogTransformation,proto3" json:"access_log_transformation,omitempty"`
 }
 

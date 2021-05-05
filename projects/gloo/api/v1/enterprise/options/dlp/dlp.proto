@@ -12,7 +12,7 @@ option (extproto.hash_all) = true;
 /*
     DLP (data loss prevention)
     The purpose of this filter is to prevent sensitive data from being exposed.
-    This is accomplished by doing a series of regex replacements on the response body or headers.
+    This is accomplished by doing a series of regex replacements on the response body and/or headers.
 */
 
 // Listener level config for dlp filter

@@ -81,7 +81,7 @@ weight: 5
 | `requestTransformation` | [.envoy.config.filter.http.transformation_ee.v2.Transformation](../transformation.proto.sk/#transformation) |  |
 | `clearRouteCache` | `bool` | clear the route cache if the request transformation was applied. |
 | `responseTransformation` | [.envoy.config.filter.http.transformation_ee.v2.Transformation](../transformation.proto.sk/#transformation) |  |
-| `accessLogTransformation` | [.envoy.config.filter.http.transformation_ee.v2.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation to headers before they are logged by access loggers. |
+| `accessLogTransformation` | [.envoy.config.filter.http.transformation_ee.v2.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation to values that are logged by access loggers. |
 
 
 
