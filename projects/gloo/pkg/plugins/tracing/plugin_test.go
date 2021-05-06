@@ -23,7 +23,24 @@ var _ = Describe("Plugin", func() {
 		hcmSettings := &hcm.HttpConnectionManagerSettings{
 			Tracing: &tracing.ListenerTracingSettings{
 				RequestHeadersForTags: []string{"header1", "header2"},
-				Verbose:               true,
+				EnvironmentVariablesForTags: []*tracing.TracingTagEnvironmentVariable{
+					{
+						Tag:  "k8s.pod.name",
+						Name: "POD_NAME",
+					},
+					{
+						Tag:          "k8s.pod.ip",
+						Name:         "POD_IP",
+						DefaultValue: "NO_POD_IP",
+					},
+				},
+				LiteralsForTags: []*tracing.TracingTagLiteral{
+					{
+						Tag:   "foo",
+						Value: "bar",
+					},
+				},
+				Verbose: true,
 				TracePercentages: &tracing.TracePercentages{
 					ClientSamplePercentage:  &types.FloatValue{Value: 10},
 					RandomSamplePercentage:  &types.FloatValue{Value: 20},
@@ -49,6 +66,31 @@ var _ = Describe("Plugin", func() {
 						Type: &envoytracing.CustomTag_RequestHeader{
 							RequestHeader: &envoytracing.CustomTag_Header{
 								Name: "header2",
+							},
+						},
+					},
+					{
+						Tag: "k8s.pod.name",
+						Type: &envoytracing.CustomTag_Environment_{
+							Environment: &envoytracing.CustomTag_Environment{
+								Name: "POD_NAME",
+							},
+						},
+					},
+					{
+						Tag: "k8s.pod.ip",
+						Type: &envoytracing.CustomTag_Environment_{
+							Environment: &envoytracing.CustomTag_Environment{
+								Name:         "POD_IP",
+								DefaultValue: "NO_POD_IP",
+							},
+						},
+					},
+					{
+						Tag: "foo",
+						Type: &envoytracing.CustomTag_Literal_{
+							Literal: &envoytracing.CustomTag_Literal{
+								Value: "bar",
 							},
 						},
 					},

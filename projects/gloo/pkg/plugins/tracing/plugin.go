@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	hcmp "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
@@ -48,18 +49,7 @@ func (p *Plugin) ProcessHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSet
 	// this plugin will overwrite any prior tracing config
 	trCfg := &envoyhttp.HttpConnectionManager_Tracing{}
 
-	var customTags []*envoytracing.CustomTag
-	for _, h := range tracingSettings.RequestHeadersForTags {
-		tag := &envoytracing.CustomTag{
-			Tag: h,
-			Type: &envoytracing.CustomTag_RequestHeader{
-				RequestHeader: &envoytracing.CustomTag_Header{
-					Name: h,
-				},
-			},
-		}
-		customTags = append(customTags, tag)
-	}
+	customTags := customTags(tracingSettings)
 	trCfg.CustomTags = customTags
 	trCfg.Verbose = tracingSettings.Verbose
 
@@ -79,6 +69,159 @@ func (p *Plugin) ProcessHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSet
 	return nil
 }
 
+func customTags(tracingSettings *tracing.ListenerTracingSettings) []*envoytracing.CustomTag {
+	var customTags []*envoytracing.CustomTag
+	for _, requestHeaderTag := range tracingSettings.RequestHeadersForTags {
+		tag := &envoytracing.CustomTag{
+			Tag: requestHeaderTag,
+			Type: &envoytracing.CustomTag_RequestHeader{
+				RequestHeader: &envoytracing.CustomTag_Header{
+					Name: requestHeaderTag,
+				},
+			},
+		}
+		customTags = append(customTags, tag)
+	}
+	for _, envVarTag := range tracingSettings.EnvironmentVariablesForTags {
+		tag := &envoytracing.CustomTag{
+			Tag: envVarTag.Tag,
+			Type: &envoytracing.CustomTag_Environment_{
+				Environment: &envoytracing.CustomTag_Environment{
+					Name:         envVarTag.Name,
+					DefaultValue: envVarTag.DefaultValue,
+				},
+			},
+		}
+		customTags = append(customTags, tag)
+	}
+	for _, literalTag := range tracingSettings.LiteralsForTags {
+		tag := &envoytracing.CustomTag{
+			Tag: literalTag.Tag,
+			Type: &envoytracing.CustomTag_Literal_{
+				Literal: &envoytracing.CustomTag_Literal{
+					Value: literalTag.Value,
+				},
+			},
+		}
+		customTags = append(customTags, tag)
+	}
+
+	return customTags
+}
+
+func processEnvoyTracingProvider(
+	snapshot *v1.ApiSnapshot,
+	tracingSettings *tracing.ListenerTracingSettings,
+) (*envoy_config_trace_v3.Tracing_Http, error) {
+	if tracingSettings.GetProviderConfig() == nil {
+		return nil, nil
+	}
+
+	switch typed := tracingSettings.GetProviderConfig().(type) {
+	case *tracing.ListenerTracingSettings_ZipkinConfig:
+		return processEnvoyZipkinTracing(snapshot, typed)
+
+	case *tracing.ListenerTracingSettings_DatadogConfig:
+		return processEnvoyDatadogTracing(snapshot, typed)
+
+	default:
+		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", typed)
+	}
+}
+
+func processEnvoyZipkinTracing(
+	snapshot *v1.ApiSnapshot,
+	zipkinTracingSettings *tracing.ListenerTracingSettings_ZipkinConfig,
+) (*envoy_config_trace_v3.Tracing_Http, error) {
+	var collectorClusterName string
+
+	switch collectorCluster := zipkinTracingSettings.ZipkinConfig.GetCollectorCluster().(type) {
+	case *v3.ZipkinConfig_CollectorUpstreamRef:
+		// Support upstreams as the collector cluster
+		var err error
+		collectorClusterName, err = getEnvoyTracingCollectorClusterName(snapshot, collectorCluster.CollectorUpstreamRef)
+		if err != nil {
+			return nil, err
+		}
+	case *v3.ZipkinConfig_ClusterName:
+		// Support static clusters as the collector cluster
+		collectorClusterName = collectorCluster.ClusterName
+	}
+
+	envoyConfig, err := api_conversion.ToEnvoyZipkinConfiguration(zipkinTracingSettings.ZipkinConfig, collectorClusterName)
+	if err != nil {
+		return nil, err
+	}
+
+	marshalledEnvoyConfig, err := ptypes.MarshalAny(envoyConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return &envoy_config_trace_v3.Tracing_Http{
+		Name: "envoy.tracers.zipkin",
+		ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
+			TypedConfig: marshalledEnvoyConfig,
+		},
+	}, nil
+}
+
+func processEnvoyDatadogTracing(
+	snapshot *v1.ApiSnapshot,
+	datadogTracingSettings *tracing.ListenerTracingSettings_DatadogConfig,
+) (*envoy_config_trace_v3.Tracing_Http, error) {
+	var collectorClusterName string
+
+	switch collectorCluster := datadogTracingSettings.DatadogConfig.GetCollectorCluster().(type) {
+	case *v3.DatadogConfig_CollectorUpstreamRef:
+		// Support upstreams as the collector cluster
+		var err error
+		collectorClusterName, err = getEnvoyTracingCollectorClusterName(snapshot, collectorCluster.CollectorUpstreamRef)
+		if err != nil {
+			return nil, err
+		}
+	case *v3.DatadogConfig_ClusterName:
+		// Support static clusters as the collector cluster
+		collectorClusterName = collectorCluster.ClusterName
+	}
+
+	envoyConfig, err := api_conversion.ToEnvoyDatadogConfiguration(datadogTracingSettings.DatadogConfig, collectorClusterName)
+	if err != nil {
+		return nil, err
+	}
+
+	marshalledEnvoyConfig, err := ptypes.MarshalAny(envoyConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return &envoy_config_trace_v3.Tracing_Http{
+		Name: "envoy.tracers.datadog",
+		ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
+			TypedConfig: marshalledEnvoyConfig,
+		},
+	}, nil
+}
+
+func getEnvoyTracingCollectorClusterName(snapshot *v1.ApiSnapshot, collectorUpstreamRef *core.ResourceRef) (string, error) {
+	if snapshot == nil {
+		return "", errors.Errorf("Invalid Snapshot (nil provided)")
+	}
+
+	if collectorUpstreamRef == nil {
+		return "", errors.Errorf("Invalid CollectorUpstreamRef (nil ref provided)")
+	}
+
+	// Make sure the upstream exists
+	_, err := snapshot.Upstreams.Find(collectorUpstreamRef.GetNamespace(), collectorUpstreamRef.GetName())
+	if err != nil {
+		return "", errors.Errorf("Invalid CollectorUpstreamRef (no upstream found for ref %v)", collectorUpstreamRef)
+	}
+
+	return translatorutil.UpstreamToClusterName(collectorUpstreamRef), nil
+}
+
+>>>>>>> 1eb675672... Expose envoy custom tags via environment variable & literal (#4707)
 func envoySimplePercent(numerator float32) *envoy_type.Percent {
 	return &envoy_type.Percent{Value: float64(numerator)}
 }
