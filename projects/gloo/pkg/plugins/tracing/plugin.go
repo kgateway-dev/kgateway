@@ -59,18 +59,7 @@ func (p *Plugin) ProcessHcmSettings(
 	// this plugin will overwrite any prior tracing config
 	trCfg := &envoyhttp.HttpConnectionManager_Tracing{}
 
-	var customTags []*envoytracing.CustomTag
-	for _, h := range tracingSettings.RequestHeadersForTags {
-		tag := &envoytracing.CustomTag{
-			Tag: h,
-			Type: &envoytracing.CustomTag_RequestHeader{
-				RequestHeader: &envoytracing.CustomTag_Header{
-					Name: h,
-				},
-			},
-		}
-		customTags = append(customTags, tag)
-	}
+	customTags := customTags(tracingSettings)
 	trCfg.CustomTags = customTags
 	trCfg.Verbose = tracingSettings.Verbose
 
@@ -94,6 +83,47 @@ func (p *Plugin) ProcessHcmSettings(
 	}
 	cfg.Tracing = trCfg
 	return nil
+}
+
+func customTags(tracingSettings *tracing.ListenerTracingSettings) []*envoytracing.CustomTag {
+	var customTags []*envoytracing.CustomTag
+
+	for _, requestHeaderTag := range tracingSettings.RequestHeadersForTags {
+		tag := &envoytracing.CustomTag{
+			Tag: requestHeaderTag,
+			Type: &envoytracing.CustomTag_RequestHeader{
+				RequestHeader: &envoytracing.CustomTag_Header{
+					Name: requestHeaderTag,
+				},
+			},
+		}
+		customTags = append(customTags, tag)
+	}
+	for _, envVarTag := range tracingSettings.EnvironmentVariablesForTags {
+		tag := &envoytracing.CustomTag{
+			Tag: envVarTag.Tag,
+			Type: &envoytracing.CustomTag_Environment_{
+				Environment: &envoytracing.CustomTag_Environment{
+					Name:         envVarTag.Name,
+					DefaultValue: envVarTag.DefaultValue,
+				},
+			},
+		}
+		customTags = append(customTags, tag)
+	}
+	for _, literalTag := range tracingSettings.LiteralsForTags {
+		tag := &envoytracing.CustomTag{
+			Tag: literalTag.Tag,
+			Type: &envoytracing.CustomTag_Literal_{
+				Literal: &envoytracing.CustomTag_Literal{
+					Value: literalTag.Value,
+				},
+			},
+		}
+		customTags = append(customTags, tag)
+	}
+
+	return customTags
 }
 
 func processEnvoyTracingProvider(
