@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4699
+    description: Exposes envoy functionality to define tracing custom tags based on environment variables and literals.

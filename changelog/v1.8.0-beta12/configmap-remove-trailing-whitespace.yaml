@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Remove trailing whitespace from helm templates to make gateway-proxy-envoy-config configmap readable.
+    issueLink: https://github.com/solo-io/gloo/issues/4645
