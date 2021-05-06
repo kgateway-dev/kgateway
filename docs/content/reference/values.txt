@@ -371,6 +371,8 @@
 |gatewayProxies.NAME.gatewaySettings.options.always_sort_route_table_routes|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.compressed_proxy_spec|bool|||
 |gatewayProxies.NAME.gatewaySettings.accessLoggingService.access_log[]|interface|||
+|gatewayProxies.NAME.gatewaySettings.httpGatewayYamlOverride.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
+|gatewayProxies.NAME.gatewaySettings.httpsGatewayYamlOverride.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.NAME.gatewaySettings.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.NAME.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.NAME.extraContainersHelper|string|||
@@ -389,6 +391,7 @@
 |gatewayProxies.NAME.failover.port|uint||(Enterprise Only): Port to use for failover Gateway Bind port, and service. Default is 15443|
 |gatewayProxies.NAME.failover.nodePort|uint||(Enterprise Only): Optional NodePort for failover Service|
 |gatewayProxies.NAME.failover.secretName|string||(Enterprise Only): Secret containing downstream Ssl Secrets Default is failover-downstream|
+|gatewayProxies.NAME.failover.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.NAME.disabled|bool||Skips creation of this gateway proxy. Used to turn off gateway proxies created by preceding configurations|
 |gatewayProxies.NAME.envoyApiVersion|string||Version of the envoy API to use for the xDS transport and resources. Default is V3|
 |gatewayProxies.NAME.envoyBootstrapExtensions[].NAME|interface||List of bootstrap extensions to add to envoy bootstrap config. Examples include Wasm Service (https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-wasmservice).|
@@ -533,6 +536,8 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.options.always_sort_route_table_routes|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.compressed_proxy_spec|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.accessLoggingService.access_log[]|interface|||
+|gatewayProxies.gatewayProxy.gatewaySettings.httpGatewayYamlOverride.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
+|gatewayProxies.gatewayProxy.gatewaySettings.httpsGatewayYamlOverride.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.gatewayProxy.gatewaySettings.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.gatewayProxy.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.gatewayProxy.extraContainersHelper|string|||
@@ -551,6 +556,7 @@
 |gatewayProxies.gatewayProxy.failover.port|uint|15443|(Enterprise Only): Port to use for failover Gateway Bind port, and service. Default is 15443|
 |gatewayProxies.gatewayProxy.failover.nodePort|uint||(Enterprise Only): Optional NodePort for failover Service|
 |gatewayProxies.gatewayProxy.failover.secretName|string|failover-downstream|(Enterprise Only): Secret containing downstream Ssl Secrets Default is failover-downstream|
+|gatewayProxies.gatewayProxy.failover.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.gatewayProxy.disabled|bool||Skips creation of this gateway proxy. Used to turn off gateway proxies created by preceding configurations|
 |gatewayProxies.gatewayProxy.envoyApiVersion|string|V3|Version of the envoy API to use for the xDS transport and resources. Default is V3|
 |gatewayProxies.gatewayProxy.envoyBootstrapExtensions[].NAME|interface||List of bootstrap extensions to add to envoy bootstrap config. Examples include Wasm Service (https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-wasmservice).|

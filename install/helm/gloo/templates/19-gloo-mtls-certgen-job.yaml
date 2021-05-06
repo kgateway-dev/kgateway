@@ -48,12 +48,12 @@ spec:
   {{- if semverCompare ">=1.12" .Capabilities.KubeVersion.GitVersion }}
   ttlSecondsAfterFinished: 60
   {{- end }}
-{{- end }}
+{{- end }} {{/* if .Values.global.glooMtls.enablede */}}
 {{- end }} {{/* define gateway.certGenJob.JobSpec*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict )  -}}
-{{- if .Values.gateway.certGenJob.yamlOverride -}}
-{{- $yamlOverride = .Values.gateway.deployment.yamlOverride  -}}
+{{- $yamlOverride := dict -}}
+{{- if .Values.gateway.certGenJob -}}
+{{- $yamlOverride = .Values.gateway.certGenJob.yamlOverride -}}
 {{- end -}}
 {{- include "gloo.util.merge" (list . $yamlOverride "glooMtls.certGenJobSpec") -}}

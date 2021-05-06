@@ -33,15 +33,13 @@ spec:
   {{- if and (eq .Values.settings.integrations.knative.proxy.service.type "LoadBalancer") .Values.settings.integrations.knative.proxy.service.loadBalancerIP }}
   loadBalancerIP: {{ .Values.settings.integrations.knative.proxy.service.loadBalancerIP }}
   {{- end }}
-{{- end }}
-{{- end }}
+{{- end }} {{/* if (semverCompare ">= 0.8.0" .Values.settings.integrations.knative.version ) */}}
+{{- end }} {{/* if .Values.settings.integrations.knative.enabled */}}
 {{- end }} {{/*define "knativeExternalProxy.serviceSpec"*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict )  -}}
+{{- $yamlOverride := dict -}}
 {{- if .Values.settings.integrations.knative.service -}}
-{{- if .Values.settings.integrations.knative.service.yamlOverride -}}
 {{- $yamlOverride = .Values.settings.integrations.knative.service.yamlOverride  -}}
-{{- end -}}
 {{- end -}}
 {{- include "gloo.util.merge" (list . $yamlOverride "knativeExternalProxy.serviceSpec") -}}

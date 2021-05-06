@@ -134,13 +134,13 @@ data:
           address: {{ .Values.settings.integrations.knative.proxy.loopBackAddress }}
           port_value: 19000
 {{- end }}
-{{- end }}
+{{- end }} {{/* if .Values.settings.integrations.knative.enabled */}}
 {{- end }} {{/*define "clusterIngressProxy.configMapSpec"*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict )  -}}
+{{- $yamlOverride := dict -}}
+{{- if .Values.settings.integrations.knative -}}
 {{- if .Values.settings.integrations.knative.configMap -}}
-{{- if .Values.settings.integrations.knative.configMap.yamlOverride -}}
 {{- $yamlOverride = .Values.settings.integrations.knative.configMap.yamlOverride  -}}
 {{- end -}}
 {{- end -}}

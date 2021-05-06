@@ -82,14 +82,12 @@ spec:
           - containerPort: {{ .Values.accessLogger.port }}
             name: http
             protocol: TCP
-{{- end }}
-{{- end }}
+{{- end }} {{/* if and .Values.gateway.enabled .Values.accessLogger.enabled */}}
+{{- end }} {{/* define "accessLogger.deploymentSpec" */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict )  -}}
+{{- $yamlOverride := dict  -}}
 {{- if .Values.accessLogger.deployment -}}
-{{- if .Values.accessLogger.deployment.yamlOverride -}}
 {{- $yamlOverride = .Values.accessLogger.deployment.yamlOverride  -}}
-{{- end -}}
 {{- end -}}
 {{- include "gloo.util.merge" (list . $yamlOverride "accessLogger.deploymentSpec") -}}

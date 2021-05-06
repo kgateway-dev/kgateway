@@ -136,9 +136,9 @@ data:
 {{- end}} {{/* define "ingressProxy.configMapSpec "*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict )  -}}
+{{- $yamlOverride := dict -}}
+{{- if .Values.ingressProxy -}}
 {{- if .Values.ingressProxy.configMap -}}
-{{- if .Values.ingressProxy.configMap.yamlOverride -}}
 {{- $yamlOverride = .Values.ingressProxy.configMap.yamlOverride  -}}
 {{- end -}}
 {{- end -}}

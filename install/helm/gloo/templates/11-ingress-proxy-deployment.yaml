@@ -90,9 +90,9 @@ spec:
 {{- end}} {{/* define "ingressProxy.deploymentSpec "*/}}
 
 {{/* Render template with yaml overrides */}}
-  {{- $yamlOverride := (dict )  -}}
+  {{- $yamlOverride := dict -}}
+  {{- if .Values.ingressProxy -}}
   {{- if .Values.ingressProxy.deployment -}}
-  {{- if .Values.ingressProxy.deployment.yamlOverride -}}
   {{- $yamlOverride = .Values.ingressProxy.deployment.yamlOverride  -}}
   {{- end -}}
   {{- end -}}

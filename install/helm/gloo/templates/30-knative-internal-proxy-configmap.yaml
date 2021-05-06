@@ -132,14 +132,14 @@ data:
         socket_address:
           address: {{ .Values.settings.integrations.knative.proxy.loopBackAddress }}
           port_value: 19000
-{{- end }}
-{{- end }}
+{{- end }} {{/* if (semverCompare ">= 0.8.0" .Values.settings.integrations.knative.version ) */}}
+{{- end }} {{/* if .Values.settings.integrations.knative.enabled */}}
 {{- end }} {{/*define "knativeInternalProxy.configMapSpec"*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict )  -}}
+{{- $yamlOverride := dict -}}
+{{- if .Values.settings.integrations.knative -}}
 {{- if .Values.settings.integrations.knative.configMap -}}
-{{- if .Values.settings.integrations.knative.configMap.yamlOverride -}}
 {{- $yamlOverride = .Values.settings.integrations.knative.configMap.yamlOverride  -}}
 {{- end -}}
 {{- end -}}

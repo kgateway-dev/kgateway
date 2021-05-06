@@ -48,5 +48,5 @@ spec:
 {{- end -}} {{/*if $gatewaySpec.horizontalPodAutoscaler*/}}
 {{- $ctx := (list $ $name $gatewaySpec)}}
 {{- include "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.autoscalerSpec") -}}
-{{- end }}
-{{- end }}
+{{- end }} {{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}
+{{- end }} {{/* if .Values.gateway.enabled */}}

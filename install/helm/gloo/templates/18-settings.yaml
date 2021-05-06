@@ -129,15 +129,13 @@ spec:
 {{- end }}
 {{- end }}
 
-{{- end }}
-{{- end }}
+{{- end }} {{/* if .Values.settings.create  */}}
+{{- end }} {{/* define "settings.settingsSpec" */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict )  -}}
+{{- $yamlOverride := dict -}}
 {{- if .Values.settings -}}
-{{- if .Values.settings.yamlOverride -}}
-{{- $yamlOverride = .Values.gateway.deployment.yamlOverride  -}}
-{{- end -}}
+{{- $yamlOverride = .Values.settings.yamlOverride  -}}
 {{- end -}}
 {{- include "gloo.util.merge" (list . $yamlOverride "settings.settingsSpec") -}}
 

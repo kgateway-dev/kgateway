@@ -18,14 +18,13 @@ spec:
     targetPort: 8443
   selector:
     gloo: gateway
-{{- end}}
-{{- end }}
+{{- end }} {{/* if .Values.gateway.enabled and .Values.gateway.validation.enabled */}}
+{{- end }} {{/* define "gateway.serviceSpec" */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict )  -}}
+{{- $yamlOverride := dict -}}
+{{/* todo: once helm 3.5 becomes "normal" replace these with sprig dig function */}}
 {{- if .Values.gateway.service -}}
-{{- if .Values.gateway.service.yamlOverride -}}
 {{- $yamlOverride = .Values.gateway.service.yamlOverride  -}}
-{{- end -}}
 {{- end -}}
 {{- include "gloo.util.merge" (list . $yamlOverride "gateway.serviceSpec") -}}

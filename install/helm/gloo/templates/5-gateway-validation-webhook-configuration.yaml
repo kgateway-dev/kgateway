@@ -31,17 +31,15 @@ webhooks:
   sideEffects: None
 {{- if .Values.gateway.validation.failurePolicy }}
   failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
-{{- end }}
-{{- end }}
-{{- end }}
+{{- end }} {{/* if .Values.gateway.validation.failurePolicy */}}
+{{- end }} {{/* if and (and .Values.gateway.enabled .Values.gateway.validation.enabled) .Values.gateway.validation.webhook.enabled */}}
+{{- end }} {{/* define "gateway.validationWebhookSpec" */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict )  -}}
+{{- $yamlOverride := dict -}}
 {{- if .Values.gateway.validation -}}
 {{- if .Values.gateway.validation.webhook -}}
-{{- if .Values.gateway.validation.webhook.yamlOverride -}}
 {{- $yamlOverride = .Values.gateway.validation.webhook.yamlOverride   -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
+{{- end -}} {{/* if .Values.gateway.validation.webhook */}}
+{{- end -}} {{/* if .Values.gateway.validation */}}
 {{- include "gloo.util.merge" (list . $yamlOverride "gateway.validationWebhookSpec") -}}

@@ -2,7 +2,7 @@
 {{- $name := (index . 1) }}
 {{- $spec := (index . 2) }}
 {{- with (first .) }}
-{{$gatewaySettings := $spec.gatewaySettings}}
+{{ $gatewaySettings := $spec.gatewaySettings }}
 {{- $svcName := default $name $spec.service.name }}
 apiVersion: v1
 kind: Service
@@ -125,7 +125,6 @@ spec:
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{/* Render each gatewayProxy template with it's yaml overrides */}}
----
 {{- $serviceYamlOverride := dict  -}}
 {{- $configDumpServiceYamlOverride := dict  -}}
 {{- if $gatewaySpec.service -}}
@@ -136,6 +135,7 @@ spec:
 {{- end -}}{{/* if $gatewaySpec.service */}}
 {{- $ctx := (list $ $name $spec)}}
 {{- if not $spec.disabled }}
+---
 {{- include "gloo.util.merge" (list $ctx $serviceYamlOverride "gatewayProxy.serviceSpec") -}}
 {{- if and $spec.readConfig $spec.readConfigMulticluster }}
 ---

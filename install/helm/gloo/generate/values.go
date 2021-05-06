@@ -327,6 +327,8 @@ type GatewayProxyGatewaySettings struct {
 	CustomHttpsGateway       *string                  `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
 	GatewayOptions           v1.GatewayOptions        `json:"options,omitempty" desc:"custom options for http(s) gateways"`
 	AccessLoggingService     als.AccessLoggingService `json:"accessLoggingService,omitempty"`
+	HttpGatewayOverride      *YamlOverride            `json:"httpGatewayYamlOverride,omitempty"`
+	HttpsGatewayOverride     *YamlOverride            `json:"httpsGatewayYamlOverride,omitempty"`
 	*YamlOverride
 }
 
@@ -415,6 +417,7 @@ type Failover struct {
 	Port       *uint   `json:"port,omitempty" desc:"(Enterprise Only): Port to use for failover Gateway Bind port, and service. Default is 15443"`
 	NodePort   *uint   `json:"nodePort,omitempty" desc:"(Enterprise Only): Optional NodePort for failover Service"`
 	SecretName *string `json:"secretName,omitempty" desc:"(Enterprise Only): Secret containing downstream Ssl Secrets Default is failover-downstream"`
+	*YamlOverride
 }
 
 type AccessLogger struct {

@@ -106,15 +106,13 @@ spec:
           secret:
             defaultMode: 420
             secretName: {{ .Values.gateway.validation.secretName }}
-{{- end}}
-{{- end }}
-{{- end }}
+{{- end}} {{/* if .Values.gateway.validation.enabled */}}
+{{- end }} {{/* if .Values.gateway.enabled */}}
+{{- end }} {{/* define "gateway.deploymentSpec" */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict )  -}}
+{{- $yamlOverride := dict -}}
 {{- if .Values.gateway.deployment -}}
-{{- if .Values.gateway.deployment.yamlOverride -}}
 {{- $yamlOverride = .Values.gateway.deployment.yamlOverride  -}}
-{{- end -}}
 {{- end -}}
 {{- include "gloo.util.merge" (list . $yamlOverride "gateway.deploymentSpec") -}}

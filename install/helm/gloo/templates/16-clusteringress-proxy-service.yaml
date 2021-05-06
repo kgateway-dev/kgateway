@@ -23,13 +23,13 @@ spec:
     gloo: clusteringress-proxy
   type: {{ .Values.settings.integrations.knative.proxy.service.type }}
 {{- end }}
-{{- end }}
+{{- end }} {{/* if .Values.settings.integrations.knative.enabled */}}
 {{- end }} {{/*define "clusterIngressProxy.serviceSpec"*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict )  -}}
+{{- $yamlOverride := dict -}}
+{{- if .Values.settings.integrations.knative -}}
 {{- if .Values.settings.integrations.knative.service -}}
-{{- if .Values.settings.integrations.knative.service.yamlOverride -}}
 {{- $yamlOverride = .Values.settings.integrations.knative.service.yamlOverride  -}}
 {{- end -}}
 {{- end -}}

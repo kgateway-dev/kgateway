@@ -80,12 +80,12 @@ spec:
         name: envoy-config
 
 {{- end }}
-{{- end }}
+{{- end }} {{/* if .Values.settings.integrations.knative.enabled */}}
 {{- end }} {{/* define knativeInternalProxy.deploymentSpec */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict )  -}}
-{{- if .Values.settings.integrations.knative.proxy.yamlOverride -}}
+{{- $yamlOverride := dict -}}
+{{- if .Values.settings.integrations.knative.proxy -}}
 {{- $yamlOverride = .Values.settings.integrations.knative.proxy.yamlOverride  -}}
 {{- end -}}
 {{- include "gloo.util.merge" (list . $yamlOverride "knativeInternalProxy.deploymentSpec") -}}
