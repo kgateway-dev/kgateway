@@ -1,4 +1,3 @@
-{{ define "gateway.certGenJobSpec"}}
 {{- if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.certGenJob.enabled }}
 
 {{- $image := .Values.gateway.certGenJob.image }}
@@ -116,13 +115,3 @@ rules:
 
 {{- end }} {{/* .Values.global.glooRbac.create */}}
 {{- end }}
-{{- end }} {{/* define "gateway.certGenJobSpec" */}}
-
-{{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict ) | toYaml -}}
-{{- if .Values.gateway.certGenJob -}}
-{{- if .Values.gateway.certGenJob.yamlOverride -}}
-{{- $yamlOverride = .Values.gateway.certGenJob.yamlOverride | toYaml -}}
-{{- end -}}
-{{- end -}}
-{{- template "gloo.util.merge" (list . $yamlOverride "gateway.certGenJobSpec") -}}

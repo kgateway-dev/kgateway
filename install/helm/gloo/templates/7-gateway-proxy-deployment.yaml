@@ -15,7 +15,6 @@
 {{- $image = merge $spec.podTemplate.image $global.image }}
 {{- end }}
 {{- $statsConfig := coalesce $spec.stats $global.glooStats }}
----
 {{- if not $spec.disabled }}
 apiVersion: apps/v1
 {{- if $spec.kind.deployment}}
@@ -416,8 +415,8 @@ spec:
           name: istio-certs
         - mountPath: /var/run/secrets/tokens
           name: istio-token
-{{- end}}
-{{- end}}
+{{- end }} {{/* if not $global.istioSDS.customSidecars */}}
+{{- end }} {{/* if $global.istioSDS.enabled */}}
       volumes:
       - configMap:
           name: {{ $name | kebabcase }}-envoy-config
@@ -448,7 +447,7 @@ spec:
         secret:
           defaultMode: 420
           secretName: gloo-mtls-certs
-{{- end }}
+{{- end }} {{/* if $global.glooMtls.enabled */}}
       {{- if $spec.extraContainersHelper }}
       - name: shared-data
         emptyDir: {}
@@ -465,10 +464,10 @@ spec:
 
 {{- if .Values.gateway.enabled }}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
-{{/* Render each gatewayProxy template with it's yaml overrides */}}
-{{- $var := (print ".Values.gatewayProxies." $name ".yamlOverride") }}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list $ $var) }}
+{{- /* Render each gatewayProxy template with it's yaml overrides */}}
+---
+{{- $yamlOverride := $gatewaySpec.yamlOverride  }}
 {{- $ctx := (list $ $name $gatewaySpec)}}
-{{- template "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.deploymentSpec") -}}
-{{- end }}
-{{- end }}
+{{- include "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.deploymentSpec") -}}
+{{- end }} {{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}
+{{- end }} {{/* if .Values.gateway.enabled */}}

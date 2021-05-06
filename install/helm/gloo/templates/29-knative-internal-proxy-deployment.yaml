@@ -84,8 +84,8 @@ spec:
 {{- end }} {{/* define knativeInternalProxy.deploymentSpec */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict ) | toYaml -}}
+{{- $yamlOverride := (dict )  -}}
 {{- if .Values.settings.integrations.knative.proxy.yamlOverride -}}
-{{- $yamlOverride = .Values.settings.integrations.knative.proxy.yamlOverride | toYaml -}}
+{{- $yamlOverride = .Values.settings.integrations.knative.proxy.yamlOverride  -}}
 {{- end -}}
-{{- template "gloo.util.merge" (list . $yamlOverride "clusterIngressProxy.deploymentSpec") -}}
+{{- include "gloo.util.merge" (list . $yamlOverride "knativeInternalProxy.deploymentSpec") -}}

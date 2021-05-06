@@ -41,33 +41,10 @@ This takes an array of three values:
 */ -}}
 {{- define "gloo.util.merge" -}}
 {{- $top := first . -}}
-{{- $overrides := fromYaml (index . 1) | default (dict ) -}}
+{{- $overrides := (index . 1) | default (dict ) -}}
 {{- $tpl := fromYaml (include (index . 2) $top) | default (dict ) -}}
 {{- $merged := merge $overrides $tpl -}}
 {{- if not (empty $merged) -}}
 {{- toYaml (merge $overrides $tpl) -}}
 {{- end -}}
-{{- end -}}
-
-{{- define "gloo.util.safeAccessVar" -}}
-{{- $top := first . -}}
-{{- $string := (index . 1) -}}
-{{- $matches := (splitList "." $string ) -}}
-{{- $stop := false -}}
-{{- range $index, $elem := $matches -}}
-{{- if not $stop -}}
-{{- if gt (len $elem) 0 }}
-{{- $output := slice $matches 0 (add1 $index) | join "." -}}
-{{- $test := (cat "{{ or (empty " $output ") (not (kindIs \"map\"" $output ")) }}") -}}
-{{- $testRes := tpl $test $top }}
-{{- if and (eq $testRes "true") (ne (add1 $index) (len $matches)) }}
-{{- $stop = true -}}
-{{ end -}}
-{{ end -}}
-{{ end -}}
-{{ end -}}
-{{- if $stop }}
-{{- else }}
-{{ tpl (cat "{{ toYaml " $string "}}") $top }}
-{{- end }}
 {{- end -}}

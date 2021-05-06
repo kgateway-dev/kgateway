@@ -6,12 +6,11 @@
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{- if $spec.kind.deployment}}
 {{- if $spec.podDisruptionBudget }}
----
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
   name: {{ $name | kebabcase }}-pdb
-  namespace: {{ $.Release.Namespace }}
+  namespace: {{ .Release.Namespace }}
 spec:
   {{- if $spec.podDisruptionBudget.minAvailable }}
   minAvailable: {{ $spec.podDisruptionBudget.minAvailable }}
@@ -30,9 +29,12 @@ spec:
 {{- if .Values.gateway.enabled }}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{/* Render each gatewayProxy template with it's yaml overrides */}}
-{{- $var := (print ".Values.gatewayProxies." $name ".podDisruptionBudget.yamlOverride") }}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list $ $var) }}
+---
+{{- $yamlOverride := dict -}}
+{{- if $gatewaySpec.podDisruptionBudget -}}
+{{- $yamlOverride = $gatewaySpec.podDisruptionBudget.yamlOverride }}
+{{- end -}} {{/*if $gatewaySpec.podDisruptionBudget*/}}
 {{- $ctx := (list $ $name $gatewaySpec)}}
-{{- template "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.disruptionBudgetSpec") -}}
-{{- end }}
-{{- end }}
+{{- include "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.disruptionBudgetSpec") -}}
+{{- end }}{{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}
+{{- end }}{{/* if .Values.gateway.enabled */}}

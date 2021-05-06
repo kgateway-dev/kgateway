@@ -10,7 +10,6 @@
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{- if not $spec.disabled }}
 {{- $statsConfig := coalesce $spec.stats $global.glooStats }}
----
 # config_map
 apiVersion: v1
 kind: ConfigMap
@@ -354,9 +353,12 @@ data:
 {{- if .Values.gateway.enabled }}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{/* Render each gatewayProxy template with it's yaml overrides */}}
-{{- $var := (print ".Values.gatewayProxies." $name ".configMap.yamlOverride") }}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list $ $var) }}
+---
+{{- $yamlOverride := dict -}}
+{{- if $gatewaySpec.configMap -}}
+{{- $yamlOverride = $gatewaySpec.configMap.yamlOverride -}}
+{{- end -}} {{/*if $gatewaySpec.configMap*/}}
 {{- $ctx := (list $ $name $gatewaySpec)}}
-{{- template "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.configMapSpec") -}}
-{{- end }}
-{{- end }}
+{{- include "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.configMapSpec") -}}
+{{- end }}{{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}
+{{- end }}{{/* if .Values.gateway.enabled */}}

@@ -95,7 +95,7 @@ var _ = Describe("Helm Test", func() {
 			// each entry in valuesArgs should look like `path.to.helm.field=value`
 			prepareMakefile := func(namespace string, values helmValues) {
 				tm, err := rendererTestCase.renderer.RenderManifest(namespace, values)
-				Expect(err).NotTo(HaveOccurred(), "Failed to render manifest")
+				ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
 				testManifest = tm
 			}
 

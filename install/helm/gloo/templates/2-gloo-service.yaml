@@ -29,11 +29,11 @@ spec:
 {{- end }} {{/* define "gloo.serviceSpec "*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict ) | toYaml -}}
+{{- $yamlOverride := (dict )  -}}
 {{- if .Values.gloo.service -}}
 {{- if .Values.gloo.service.yamlOverride -}}
-{{- $yamlOverride = .Values.gloo.service.yamlOverride | toYaml -}}
+{{- $yamlOverride = .Values.gloo.service.yamlOverride  -}}
 {{- end -}}
 {{- end -}}
 
-{{- template "gloo.util.merge" (list . $yamlOverride "gloo.serviceSpec") -}}
+{{- include "gloo.util.merge" (list . $yamlOverride "gloo.serviceSpec") -}}

@@ -86,11 +86,11 @@ spec:
 {{- end }}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict ) | toYaml -}}
+{{- $yamlOverride := (dict )  -}}
 {{- if .Values.ingress.deployment -}}
 {{- if .Values.ingress.deployment.yamlOverride -}}
-{{- $yamlOverride = .Values.ingress.deployment.yamlOverride | toYaml -}}
+{{- $yamlOverride = .Values.ingress.deployment.yamlOverride  -}}
 {{- end -}}
 {{- end -}}
-{{- template "gloo.util.merge" (list . $yamlOverride "ingress.deploymentSpec") -}}
+{{- include "gloo.util.merge" (list . $yamlOverride "ingress.deploymentSpec") -}}
 

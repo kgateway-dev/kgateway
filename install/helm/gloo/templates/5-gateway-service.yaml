@@ -22,10 +22,10 @@ spec:
 {{- end }}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := (dict ) | toYaml -}}
+{{- $yamlOverride := (dict )  -}}
 {{- if .Values.gateway.service -}}
 {{- if .Values.gateway.service.yamlOverride -}}
-{{- $yamlOverride = .Values.gateway.service.yamlOverride | toYaml -}}
+{{- $yamlOverride = .Values.gateway.service.yamlOverride  -}}
 {{- end -}}
 {{- end -}}
-{{- template "gloo.util.merge" (list . $yamlOverride "gateway.serviceSpec") -}}
+{{- include "gloo.util.merge" (list . $yamlOverride "gateway.serviceSpec") -}}

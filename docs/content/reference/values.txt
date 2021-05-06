@@ -40,11 +40,14 @@
 |settings.integrations.knative.proxy.resources.limits.cpu|string||amount of CPUs|
 |settings.integrations.knative.proxy.resources.requests.memory|string||amount of memory|
 |settings.integrations.knative.proxy.resources.requests.cpu|string||amount of CPUs|
+|settings.integrations.knative.proxy.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |settings.integrations.knative.proxy.service.type|string|LoadBalancer|K8s service type|
 |settings.integrations.knative.proxy.service.extraAnnotations.NAME|string||extra annotations to add to the service|
 |settings.integrations.knative.proxy.service.loadBalancerIP|string||IP address of the load balancer|
 |settings.integrations.knative.proxy.service.httpPort|int|80|HTTP port for the knative/ingress proxy service|
 |settings.integrations.knative.proxy.service.httpsPort|int|443|HTTPS port for the knative/ingress proxy service|
+|settings.integrations.knative.proxy.service.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
+|settings.integrations.knative.proxy.configMap.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |settings.integrations.knative.requireIngressClass|bool||only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'.|
 |settings.integrations.knative.extraKnativeInternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative internal deployment.|
 |settings.integrations.knative.extraKnativeExternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative external deployment.|
@@ -84,6 +87,7 @@
 |settings.aws.stsCredentialsRegion|string||Regional endpoint to use for AWS STS requests. If empty will default to global sts endpoint.|
 |settings.rateLimit|interface||Partial config for Gloo Edge Enterprise’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes.|
 |settings.enableRestEds|bool|true|Whether or not to use rest xds for all EDS by default. Set to true by default in versions > v1.6.0.|
+|settings.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gloo.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gloo.deployment.image.repository|string|gloo|image name (repository) for the container.|
 |gloo.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -124,8 +128,11 @@
 |gloo.deployment.resources.limits.cpu|string||amount of CPUs|
 |gloo.deployment.resources.requests.memory|string||amount of memory|
 |gloo.deployment.resources.requests.cpu|string||amount of CPUs|
+|gloo.deployment.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
+|gloo.service.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gloo.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gloo.serviceAccount.disableAutomount|bool||disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
+|gloo.serviceAccount.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |discovery.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |discovery.deployment.image.repository|string|discovery|image name (repository) for the container.|
 |discovery.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -162,10 +169,12 @@
 |discovery.deployment.resources.limits.cpu|string||amount of CPUs|
 |discovery.deployment.resources.requests.memory|string||amount of memory|
 |discovery.deployment.resources.requests.cpu|string||amount of CPUs|
+|discovery.deployment.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |discovery.fdsMode|string|WHITELIST|mode for function discovery (blacklist or whitelist). See more info in the settings docs|
 |discovery.enabled|bool|true|enable Discovery features|
 |discovery.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |discovery.serviceAccount.disableAutomount|bool||disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
+|discovery.serviceAccount.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gateway.enabled|bool|true|enable Gloo Edge API Gateway features|
 |gateway.validation.enabled|bool|true|enable Gloo Edge API Gateway validation hook (default true)|
 |gateway.validation.alwaysAcceptResources|bool|true|unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright.|
@@ -176,6 +185,7 @@
 |gateway.validation.webhook.enabled|bool|true|enable validation webhook (default true)|
 |gateway.validation.webhook.disableHelmHook|bool|false|do not create the webhook as helm hook (default false)|
 |gateway.validation.webhook.extraAnnotations.NAME|string||extra annotations to add to the webhook|
+|gateway.validation.webhook.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gateway.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gateway.deployment.image.repository|string|gateway|image name (repository) for the container.|
 |gateway.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -211,6 +221,7 @@
 |gateway.deployment.resources.limits.cpu|string||amount of CPUs|
 |gateway.deployment.resources.requests.memory|string||amount of memory|
 |gateway.deployment.resources.requests.cpu|string||amount of CPUs|
+|gateway.deployment.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gateway.certGenJob.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gateway.certGenJob.image.repository|string|certgen|image name (repository) for the container.|
 |gateway.certGenJob.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -218,6 +229,7 @@
 |gateway.certGenJob.image.pullSecret|string||image pull policy for the container |
 |gateway.certGenJob.image.extended|bool||if true, deploy an extended version of the container with additional debug tools|
 |gateway.certGenJob.restartPolicy|string|OnFailure|restart policy to use when the pod exits|
+|gateway.certGenJob.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gateway.certGenJob.enabled|bool|true|enable the job that generates the certificates for the validating webhook at install time (default true)|
 |gateway.certGenJob.setTtlAfterFinished|bool|true|Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true|
 |gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
@@ -226,9 +238,12 @@
 |gateway.updateValues|bool||if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions|
 |gateway.proxyServiceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gateway.proxyServiceAccount.disableAutomount|bool||disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
+|gateway.proxyServiceAccount.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gateway.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gateway.serviceAccount.disableAutomount|bool||disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
+|gateway.serviceAccount.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gateway.readGatewaysFromAllNamespaces|bool|false|if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller|
+|gateway.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.NAME.kind.deployment.replicas|int||number of instances to deploy|
 |gatewayProxies.NAME.kind.deployment.customEnv[].name|string|||
 |gatewayProxies.NAME.kind.deployment.customEnv[].value|string|||
@@ -249,6 +264,7 @@
 |gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
 |gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
 |gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
+|gatewayProxies.NAME.kind.deployment.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.NAME.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.NAME.podTemplate.image.tag|string||tag for the container|
 |gatewayProxies.NAME.podTemplate.image.repository|string||image name (repository) for the container.|
@@ -300,6 +316,7 @@
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.failureThreshold|int32|||
 |gatewayProxies.NAME.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
 |gatewayProxies.NAME.configMap.data.NAME|string|||
+|gatewayProxies.NAME.configMap.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.NAME.customStaticLayer|interface||static layer configuration (global overrides for envoy behavior) defined in envoy bootstrap yaml|
 |gatewayProxies.NAME.globalDownstreamMaxConnections|uint32||the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine|
 |gatewayProxies.NAME.healthyPanicThreshold|int8||the percentage of healthy hosts required to load balance based on health status of hosts|
@@ -317,6 +334,18 @@
 |gatewayProxies.NAME.service.loadBalancerSourceRanges[]|string||List of IP CIDR ranges that are allowed to access the load balancer|
 |gatewayProxies.NAME.service.customPorts[]|interface||List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)|
 |gatewayProxies.NAME.service.externalIPs[]|string||externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service|
+|gatewayProxies.NAME.service.configDumpService.type|string||K8s service type|
+|gatewayProxies.NAME.service.configDumpService.extraAnnotations.NAME|string||extra annotations to add to the service|
+|gatewayProxies.NAME.service.configDumpService.loadBalancerIP|string||IP address of the load balancer|
+|gatewayProxies.NAME.service.configDumpService.httpPort|int||HTTP port for the knative/ingress proxy service|
+|gatewayProxies.NAME.service.configDumpService.httpsPort|int||HTTPS port for the knative/ingress proxy service|
+|gatewayProxies.NAME.service.configDumpService.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
+|gatewayProxies.NAME.service.type|string||K8s service type|
+|gatewayProxies.NAME.service.extraAnnotations.NAME|string||extra annotations to add to the service|
+|gatewayProxies.NAME.service.loadBalancerIP|string||IP address of the load balancer|
+|gatewayProxies.NAME.service.httpPort|int||HTTP port for the knative/ingress proxy service|
+|gatewayProxies.NAME.service.httpsPort|int||HTTPS port for the knative/ingress proxy service|
+|gatewayProxies.NAME.service.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.NAME.antiAffinity|bool||configure anti affinity such that pods are preferably not co-located|
 |gatewayProxies.NAME.affinity[].NAME|interface|||
 |gatewayProxies.NAME.tracing.provider|string|||
@@ -342,6 +371,7 @@
 |gatewayProxies.NAME.gatewaySettings.options.always_sort_route_table_routes|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.compressed_proxy_spec|bool|||
 |gatewayProxies.NAME.gatewaySettings.accessLoggingService.access_log[]|interface|||
+|gatewayProxies.NAME.gatewaySettings.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.NAME.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.NAME.extraContainersHelper|string|||
 |gatewayProxies.NAME.extraInitContainersHelper|string|||
@@ -369,10 +399,13 @@
 |gatewayProxies.NAME.horizontalPodAutoscaler.targetCPUUtilizationPercentage|int32||target average CPU utilization (represented as a percentage of requested CPU) over all the pods. Used only with apiVersion autoscaling/v1|
 |gatewayProxies.NAME.horizontalPodAutoscaler.metrics[].NAME|interface||metrics contains the specifications for which to use to calculate the desired replica count (the maximum replica count across all metrics will be used). Used only with apiVersion autoscaling/v2beta2|
 |gatewayProxies.NAME.horizontalPodAutoscaler.behavior.NAME|interface||behavior configures the scaling behavior of the target in both Up and Down directions (scaleUp and scaleDown fields respectively). Used only with apiVersion autoscaling/v2beta2|
+|gatewayProxies.NAME.horizontalPodAutoscaler.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.NAME.podDisruptionBudget.minAvailable|int32||An eviction is allowed if at least "minAvailable" pods selected by "selector" will still be available after the eviction, i.e. even in the absence of the evicted pod. So for example you can prevent all voluntary evictions by specifying "100%".|
 |gatewayProxies.NAME.podDisruptionBudget.maxUnavailable|int32||An eviction is allowed if at most "maxUnavailable" pods selected by "selector" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with "minAvailable".|
+|gatewayProxies.NAME.podDisruptionBudget.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.NAME.istioMetaMeshId|string||ISTIO_META_MESH_ID Environment Variable. Defaults to "cluster.local"|
 |gatewayProxies.NAME.istioMetaClusterId|string||ISTIO_META_CLUSTER_ID Environment Variable. Defaults to "Kubernetes"|
+|gatewayProxies.NAME.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.gatewayProxy.kind.deployment.replicas|int|1|number of instances to deploy|
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].name|string|||
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].value|string|||
@@ -393,6 +426,7 @@
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
+|gatewayProxies.gatewayProxy.kind.deployment.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.gatewayProxy.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gatewayProxies.gatewayProxy.podTemplate.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
@@ -444,6 +478,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold|int32|0||
 |gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
+|gatewayProxies.gatewayProxy.configMap.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.gatewayProxy.customStaticLayer|interface||static layer configuration (global overrides for envoy behavior) defined in envoy bootstrap yaml|
 |gatewayProxies.gatewayProxy.globalDownstreamMaxConnections|uint32|250000|the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine|
 |gatewayProxies.gatewayProxy.healthyPanicThreshold|int8|50|the percentage of healthy hosts required to load balance based on health status of hosts|
@@ -461,6 +496,18 @@
 |gatewayProxies.gatewayProxy.service.loadBalancerSourceRanges[]|string||List of IP CIDR ranges that are allowed to access the load balancer|
 |gatewayProxies.gatewayProxy.service.customPorts[]|interface||List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)|
 |gatewayProxies.gatewayProxy.service.externalIPs[]|string||externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service|
+|gatewayProxies.gatewayProxy.service.configDumpService.type|string||K8s service type|
+|gatewayProxies.gatewayProxy.service.configDumpService.extraAnnotations.NAME|string||extra annotations to add to the service|
+|gatewayProxies.gatewayProxy.service.configDumpService.loadBalancerIP|string||IP address of the load balancer|
+|gatewayProxies.gatewayProxy.service.configDumpService.httpPort|int||HTTP port for the knative/ingress proxy service|
+|gatewayProxies.gatewayProxy.service.configDumpService.httpsPort|int||HTTPS port for the knative/ingress proxy service|
+|gatewayProxies.gatewayProxy.service.configDumpService.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
+|gatewayProxies.gatewayProxy.service.type|string||K8s service type|
+|gatewayProxies.gatewayProxy.service.extraAnnotations.NAME|string||extra annotations to add to the service|
+|gatewayProxies.gatewayProxy.service.loadBalancerIP|string||IP address of the load balancer|
+|gatewayProxies.gatewayProxy.service.httpPort|int||HTTP port for the knative/ingress proxy service|
+|gatewayProxies.gatewayProxy.service.httpsPort|int||HTTPS port for the knative/ingress proxy service|
+|gatewayProxies.gatewayProxy.service.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.gatewayProxy.antiAffinity|bool||configure anti affinity such that pods are preferably not co-located|
 |gatewayProxies.gatewayProxy.affinity[].NAME|interface|||
 |gatewayProxies.gatewayProxy.tracing.provider|string|||
@@ -486,6 +533,7 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.options.always_sort_route_table_routes|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.compressed_proxy_spec|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.accessLoggingService.access_log[]|interface|||
+|gatewayProxies.gatewayProxy.gatewaySettings.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.gatewayProxy.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.gatewayProxy.extraContainersHelper|string|||
 |gatewayProxies.gatewayProxy.extraInitContainersHelper|string|||
@@ -513,10 +561,13 @@
 |gatewayProxies.gatewayProxy.horizontalPodAutoscaler.targetCPUUtilizationPercentage|int32||target average CPU utilization (represented as a percentage of requested CPU) over all the pods. Used only with apiVersion autoscaling/v1|
 |gatewayProxies.gatewayProxy.horizontalPodAutoscaler.metrics[].NAME|interface||metrics contains the specifications for which to use to calculate the desired replica count (the maximum replica count across all metrics will be used). Used only with apiVersion autoscaling/v2beta2|
 |gatewayProxies.gatewayProxy.horizontalPodAutoscaler.behavior.NAME|interface||behavior configures the scaling behavior of the target in both Up and Down directions (scaleUp and scaleDown fields respectively). Used only with apiVersion autoscaling/v2beta2|
+|gatewayProxies.gatewayProxy.horizontalPodAutoscaler.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.gatewayProxy.podDisruptionBudget.minAvailable|int32||An eviction is allowed if at least "minAvailable" pods selected by "selector" will still be available after the eviction, i.e. even in the absence of the evicted pod. So for example you can prevent all voluntary evictions by specifying "100%".|
 |gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable|int32||An eviction is allowed if at most "maxUnavailable" pods selected by "selector" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with "minAvailable".|
+|gatewayProxies.gatewayProxy.podDisruptionBudget.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |gatewayProxies.gatewayProxy.istioMetaMeshId|string||ISTIO_META_MESH_ID Environment Variable. Defaults to "cluster.local"|
 |gatewayProxies.gatewayProxy.istioMetaClusterId|string||ISTIO_META_CLUSTER_ID Environment Variable. Defaults to "Kubernetes"|
+|gatewayProxies.gatewayProxy.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |ingress.enabled|bool|false||
 |ingress.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |ingress.deployment.image.repository|string|ingress|image name (repository) for the container.|
@@ -551,6 +602,7 @@
 |ingress.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingress.deployment.resources.requests.memory|string||amount of memory|
 |ingress.deployment.resources.requests.cpu|string||amount of CPUs|
+|ingress.deployment.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |ingress.requireIngressClass|bool||only serve traffic for Ingress objects with the Ingress Class annotation 'kubernetes.io/ingress.class'. By default the annotation value must be set to 'gloo', however this can be overriden via customIngressClass.|
 |ingress.customIngressClass|bool||Only relevant when requireIngressClass is set to true. Setting this value will cause the Gloo Edge Ingress Controller to process only those Ingress objects which have their ingress class set to this value (e.g. 'kubernetes.io/ingress.class=SOMEVALUE').|
 |ingressProxy.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
@@ -590,7 +642,9 @@
 |ingressProxy.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingressProxy.deployment.resources.requests.memory|string||amount of memory|
 |ingressProxy.deployment.resources.requests.cpu|string||amount of CPUs|
+|ingressProxy.deployment.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |ingressProxy.configMap.data.NAME|string|||
+|ingressProxy.configMap.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |ingressProxy.tracing|string|||
 |ingressProxy.loopBackAddress|string|127.0.0.1|Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
 |ingressProxy.label|string|ingress-proxy|Value for label gloo. Use a unique value to use several ingress proxy instances in the same cluster. Default is ingress-proxy|
@@ -599,6 +653,7 @@
 |ingressProxy.service.loadBalancerIP|string||IP address of the load balancer|
 |ingressProxy.service.httpPort|int|80|HTTP port for the knative/ingress proxy service|
 |ingressProxy.service.httpsPort|int|443|HTTPS port for the knative/ingress proxy service|
+|ingressProxy.service.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |k8s.clusterName|string|cluster.local|cluster name to use when referencing services.|
 |accessLogger.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |accessLogger.image.repository|string|access-logger|image name (repository) for the container.|
@@ -614,6 +669,7 @@
 |accessLogger.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |accessLogger.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
 |accessLogger.extraAccessLoggerLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the access logger deployment.|
+|accessLogger.service.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |accessLogger.replicas|int|1|number of instances to deploy|
 |accessLogger.customEnv[].name|string|||
 |accessLogger.customEnv[].value|string|||
@@ -638,6 +694,7 @@
 |accessLogger.resources.limits.cpu|string||amount of CPUs|
 |accessLogger.resources.requests.memory|string||amount of memory|
 |accessLogger.resources.requests.cpu|string||amount of CPUs|
+|accessLogger.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |global.image.tag|string||tag for the container|
 |global.image.repository|string||image name (repository) for the container.|
 |global.image.registry|string|quay.io/solo-io|image prefix/registry e.g. (quay.io/solo-io)|

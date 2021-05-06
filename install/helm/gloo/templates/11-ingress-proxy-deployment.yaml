@@ -90,10 +90,10 @@ spec:
 {{- end}} {{/* define "ingressProxy.deploymentSpec "*/}}
 
 {{/* Render template with yaml overrides */}}
-  {{- $yamlOverride := (dict ) | toYaml -}}
+  {{- $yamlOverride := (dict )  -}}
   {{- if .Values.ingressProxy.deployment -}}
   {{- if .Values.ingressProxy.deployment.yamlOverride -}}
-  {{- $yamlOverride = .Values.ingressProxy.deployment.yamlOverride | toYaml -}}
+  {{- $yamlOverride = .Values.ingressProxy.deployment.yamlOverride  -}}
   {{- end -}}
   {{- end -}}
-  {{- template "gloo.util.merge" (list . $yamlOverride "ingressProxy.deploymentSpec") -}}
+  {{- include "gloo.util.merge" (list . $yamlOverride "ingressProxy.deploymentSpec") -}}

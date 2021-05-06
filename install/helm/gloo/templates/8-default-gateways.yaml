@@ -1,8 +1,5 @@
-{{- define "gatewayProxy.defaultGatewaySpec"}}
-{{ $name := (index . 1) }}
-{{ $gatewaySpec := (index . 2)}}
-{{ with (first .) }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{- if and $spec.gatewaySettings (not $spec.disabled) }}
 {{$gatewaySettings := $spec.gatewaySettings}}
@@ -14,7 +11,7 @@ apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ $.Release.Namespace }}
   labels:
     app: gloo
 spec:
@@ -59,7 +56,7 @@ apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}-ssl
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ $.Release.Namespace }}
   labels:
     app: gloo
 spec:
@@ -106,7 +103,7 @@ apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}-failover
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ $.Release.Namespace }}
   labels:
     app: gloo
 spec:
@@ -122,21 +119,12 @@ spec:
       sslConfig:
         secretRef:
           name: {{ $spec.failover.secretName }}
-          namespace: {{ .Release.Namespace }}
+          namespace: {{ $.Release.Namespace }}
       destination:
         forwardSniClusterName: {}
   proxyNames:
   - {{ $name | kebabcase }}
 {{- end }} {{/* if failover.enabled */}}
 {{- end }} {{/* if failover */}}
-{{- end }} {{/* if $spec.gatewaySettings and (not $spec.disabled) */}}
-{{- end }} {{/* define gatewayProxy.defaultGatewaySpec*/}}
-{{- end }} {{/* with */}}
-
-{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
-{{/* Render a gateway object for each gatewayProxy using that gatewayProxies overrides */}}
-{{- $var := (print ".Values.gatewayProxies." $name ".gatewaySettings.yamlOverride") }}
-{{- $yamlOverride := include "gloo.util.safeAccessVar" (list $ $var) }}
-{{- $ctx := (list $ $name $gatewaySpec)}}
-{{- template "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.defaultGatewaySpec") -}}
+{{- end }} {{/* if  $spec.gatewaySettings and (not $spec.disabled) */}}
 {{- end }} {{/* range gateways */}}
