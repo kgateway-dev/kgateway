@@ -4264,7 +4264,7 @@ metadata:
 
 			})
 
-			FDescribeTable("overrides Yaml in generated resources", func(overrideProperty string, extraArgs ...string) {
+			DescribeTable("overrides Yaml in generated resources", func(overrideProperty string, extraArgs ...string) {
 				// Override property should be the path to `yamlOverride`, like gloo.deployment.yamlOverride
 				valueArg := fmt.Sprintf("%s.metadata.labels.overriddenLabel=label", overrideProperty)
 				prepareMakefile(namespace, helmValues{
@@ -4272,7 +4272,7 @@ metadata:
 				})
 				// We are overriding the generated yaml by adding our own label to the metadata
 				resources := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-					return resource.GetLabels()["overriddenLabel"] == "label"
+					return resource.GetLabels()["overriddenLabel"] == "label" && resource.GetKind() != ""
 				})
 				Expect(resources.NumResources()).To(Equal(1))
 			},
@@ -4288,13 +4288,7 @@ metadata:
 				//Entry("6.5-gateway-certgen-job", ""),
 				Entry("6-access-logger-deployment", "accessLogger.deployment.yamlOverride", "accessLogger.enabled=true"),
 				Entry("6-access-logger-service", "accessLogger.service.yamlOverride", "accessLogger.enabled=true"),
-				//Entry("7-gateway-proxy-deployment", ""),
-				//Entry("8-default-gateways", ""),
-				//Entry("8-gateway-proxy-horizontal-pod-autoscaler", ""),
-				//Entry("8-gateway-proxy-pod-disruption-budget", ""),
-				//Entry("8-gateway-proxy-service", ""),
-				//Entry("8-gateway-proxy-service-account", ""),
-				//Entry("9-gateway-proxy-configmap", ""),
+				Entry("8-gateway-proxy-service-account", "gateway.proxyServiceAccount.yamlOverride"),
 				Entry("10-ingress-deployment", "ingress.deployment.yamlOverride", "ingress.enabled=true"),
 				Entry("11-ingress-proxy-deployment", "ingressProxy.deployment.yamlOverride", "ingress.enabled=true"),
 				Entry("12-ingress-proxy-configmap", "ingressProxy.configMap.yamlOverride", "ingress.enabled=true"),
@@ -4304,6 +4298,7 @@ metadata:
 				Entry("16-clusteringress-proxy-service", "settings.integrations.knative.proxy.service.yamlOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
 				Entry("18-settings", "settings.yamlOverride"),
 				Entry("19-gloo-mtls-certgen-job", "gateway.certGenJob.yamlOverride", "global.glooMtls.enabled=true"),
+				// todo: implement overrides for these if needed
 				//Entry("19-gloo-mtls-configmap", ),
 				//Entry("20-namespace-clusterrole-gateway", ""),
 				//Entry("21-namespace-clusterrole-ingress", ""),
@@ -4317,6 +4312,38 @@ metadata:
 				Entry("29-knative-internal-proxy-deployment", "settings.integrations.knative.proxy.internal.deployment.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
 				Entry("30-knative-internal-proxy-configmap", "settings.integrations.knative.proxy.internal.configMap.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
 				Entry("31-knative-internal-proxy-service", "settings.integrations.knative.proxy.internal.service.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+			)
+
+			DescribeTable("overrides Yaml in resources for each gateway proxy", func(proxyOverrideProperty string, argsPerProxy []string, numResourcesPerProxy int) {
+				// Override property should be the path to `yamlOverride`, like gloo.deployment.yamlOverride
+				proxies := []string{"gatewayProxy", "anotherProxy", "proxyThree"}
+				var args []string
+				var extraArgs []string
+				for _, proxy := range proxies {
+					args = append(args, fmt.Sprintf("gatewayProxies.%s.%s.metadata.labels.overriddenLabel=label", proxy, proxyOverrideProperty))
+					for _, arg := range argsPerProxy {
+						args = append(args, fmt.Sprintf("gatewayProxies.%s.%s", proxy, arg))
+					}
+				}
+
+				prepareMakefile(namespace, helmValues{
+					valuesArgs: append(args, extraArgs...),
+				})
+				// We are overriding the generated yaml by adding our own label to the metadata
+				resources := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+					return resource.GetLabels()["overriddenLabel"] == "label" && resource.GetKind() != ""
+				})
+				Expect(resources.NumResources()).To(Equal(len(proxies) * numResourcesPerProxy))
+			},
+				Entry("7-gateway-proxy-deployment", "yamlOverride", nil, 1),
+				Entry("8-default-gateways httpGateway", "gatewaySettings.httpGatewayYamlOverride", []string{}, 1),
+				Entry("8-default-gateways httpsGateway", "gatewaySettings.httpsGatewayYamlOverride", []string{}, 1),
+				Entry("8-default-gateways failoverGateway", "failover.yamlOverride", []string{"failover.enabled=true"}, 1),
+				Entry("8-gateway-proxy-horizontal-pod-autoscaler", "horizontalPodAutoscaler.yamlOverride", []string{"kind.deployment.replicas=2", "horizontalPodAutoscaler.apiVersion=v2"}, 1),
+				Entry("8-gateway-proxy-pod-disruption-budget", "podDisruptionBudget.yamlOverride", []string{"kind.deployment.replicas=2"}, 1),
+				Entry("8-gateway-proxy-service service", "service.yamlOverride", nil, 1),
+				Entry("8-gateway-proxy-service config-dump-service", "service.configDumpService.yamlOverride", []string{"readConfig=true", "readConfigMulticluster=true"}, 1),
+				Entry("9-gateway-proxy-configmap", "configMap.yamlOverride", nil, 1),
 			)
 
 		})

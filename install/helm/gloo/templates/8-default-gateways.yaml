@@ -137,7 +137,6 @@ spec:
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{- $gatewaySettings := $spec.gatewaySettings }}
-{{- $failoverGatewayOverride := dict -}}
 {{- if and $spec.gatewaySettings (not $spec.disabled) }}
 {{- $ctx := (list $ $name $spec)}}
 {{- if not $gatewaySettings.disableGeneratedGateways }}
@@ -154,7 +153,7 @@ spec:
 {{- end }} {{/* if not $gatewaySettings.disableGeneratedGateways */}}
 {{- if $spec.failover }}
 {{- if $spec.failover.enabled }}
-  {{- $failoverGatewayOverride = $spec.failover.yamlOverride }}
+{{- $failoverGatewayOverride := $spec.failover.yamlOverride }}
 ---
 {{- include "gloo.util.merge" (list $ctx $failoverGatewayOverride "defaultGateway.failoverGateway") -}}
 {{- end }} {{/* if $spec.failover.enabled */}}
