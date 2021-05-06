@@ -35,7 +35,7 @@ spec:
         {{- end }}
         {{- end }}
     spec:
-      {{- include "gloo.pullSecret" $image | nindent 6 }}
+      {{- include "gloo.pullSecret" $image | nindent 6 -}}
       securityContext:
         runAsNonRoot: true
         {{- if not .Values.ingress.deployment.floatingUserId }}

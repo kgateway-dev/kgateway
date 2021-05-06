@@ -21,7 +21,7 @@ spec:
       labels:
         gloo: gloo-mtls-certs
     spec:
-      {{- include "gloo.pullSecret" $image | nindent 6 }}
+      {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: certgen
       containers:
         - image: {{template "gloo.image" $image}}

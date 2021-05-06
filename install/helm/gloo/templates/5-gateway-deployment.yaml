@@ -41,7 +41,7 @@ spec:
         {{- end }}
         {{- end }}
     spec:
-      {{- include "gloo.pullSecret" $image | nindent 6 }}
+      {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gateway
       containers:
       - image: {{template "gloo.image" $image}}
