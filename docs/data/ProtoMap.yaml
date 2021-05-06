@@ -1322,6 +1322,12 @@ apis:
   tracing.options.gloo.solo.io.TracePercentages:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/#TracePercentages
     package: tracing.options.gloo.solo.io
+  tracing.options.gloo.solo.io.TracingTagEnvironmentVariable:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/#TracingTagEnvironmentVariable
+    package: tracing.options.gloo.solo.io
+  tracing.options.gloo.solo.io.TracingTagLiteral:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/#TracingTagLiteral
+    package: tracing.options.gloo.solo.io
   transformation.options.gloo.solo.io.Parameters:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/parameters.proto.sk/#Parameters
     package: transformation.options.gloo.solo.io
