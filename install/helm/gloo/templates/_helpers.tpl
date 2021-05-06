@@ -42,9 +42,11 @@ This takes an array of three values:
 {{- define "gloo.util.merge" -}}
 {{- $top := first . -}}
 {{- $overrides := (index . 1) | default dict -}}
-{{- $tpl := fromYaml (include (index . 2) $top) | default dict -}}
+{{- $tpl := fromYaml (include (index . 2) $top) -}}
+{{- if not (empty $tpl) -}}
 {{- $merged := merge $overrides $tpl -}}
 {{- if not (empty $merged) -}}
 {{- toYaml (merge $overrides $tpl) -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}

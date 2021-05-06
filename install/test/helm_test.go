@@ -11,6 +11,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	values "github.com/solo-io/gloo/install/helm/gloo/generate"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -4263,9 +4264,61 @@ metadata:
 
 			})
 
-			Describe("Yaml Overrides Test", func() {
+			FDescribeTable("overrides Yaml in generated resources", func(overrideProperty string, extraArgs ...string) {
+				// Override property should be the path to `yamlOverride`, like gloo.deployment.yamlOverride
+				valueArg := fmt.Sprintf("%s.metadata.labels.overriddenLabel=label", overrideProperty)
+				prepareMakefile(namespace, helmValues{
+					valuesArgs: append(extraArgs, valueArg),
+				})
+				// We are overriding the generated yaml by adding our own label to the metadata
+				resources := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+					return resource.GetLabels()["overriddenLabel"] == "label"
+				})
+				Expect(resources.NumResources()).To(Equal(1))
+			},
+				Entry("1-gloo-deployment", "gloo.deployment.yamlOverride"),
+				Entry("2-gloo-service", "gloo.service.yamlOverride"),
+				Entry("2-gloo-service-account", "gloo.serviceAccount.yamlOverride"),
+				Entry("3-discovery-deployment", "discovery.deployment.yamlOverride"),
+				Entry("3-discovery-service-account", "discovery.serviceAccount.yamlOverride"),
+				Entry("5-gateway-deployment", "gateway.deployment.yamlOverride"),
+				Entry("5-gateway-service", "gateway.service.yamlOverride"),
+				Entry("5-gateway-service-account", "gateway.serviceAccount.yamlOverride"),
+				Entry("5-gateway-validation-webhook-configuration", "gateway.validation.webhook.yamlOverride"),
+				//Entry("6.5-gateway-certgen-job", ""),
+				Entry("6-access-logger-deployment", "accessLogger.deployment.yamlOverride", "accessLogger.enabled=true"),
+				Entry("6-access-logger-service", "accessLogger.service.yamlOverride", "accessLogger.enabled=true"),
+				//Entry("7-gateway-proxy-deployment", ""),
+				//Entry("8-default-gateways", ""),
+				//Entry("8-gateway-proxy-horizontal-pod-autoscaler", ""),
+				//Entry("8-gateway-proxy-pod-disruption-budget", ""),
+				//Entry("8-gateway-proxy-service", ""),
+				//Entry("8-gateway-proxy-service-account", ""),
+				//Entry("9-gateway-proxy-configmap", ""),
+				Entry("10-ingress-deployment", "ingress.deployment.yamlOverride", "ingress.enabled=true"),
+				Entry("11-ingress-proxy-deployment", "ingressProxy.deployment.yamlOverride", "ingress.enabled=true"),
+				Entry("12-ingress-proxy-configmap", "ingressProxy.configMap.yamlOverride", "ingress.enabled=true"),
+				Entry("13-ingress-proxy-service", "ingressProxy.service.yamlOverride", "ingress.enabled=true"),
+				Entry("14-clusteringress-proxy-deployment", "settings.integrations.knative.proxy.deployment.yamlOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
+				Entry("15-clusteringress-proxy-configmap", "settings.integrations.knative.proxy.configMap.yamlOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
+				Entry("16-clusteringress-proxy-service", "settings.integrations.knative.proxy.service.yamlOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
+				Entry("18-settings", "settings.yamlOverride"),
+				Entry("19-gloo-mtls-certgen-job", "gateway.certGenJob.yamlOverride", "global.glooMtls.enabled=true"),
+				//Entry("19-gloo-mtls-configmap", ),
+				//Entry("20-namespace-clusterrole-gateway", ""),
+				//Entry("21-namespace-clusterrole-ingress", ""),
+				//Entry("22-namespace-clusterrole-knative", ""),
+				//Entry("23-namespace-clusterrolebinding-gateway", ""),
+				//Entry("24-namespace-clusterrolebinding-ingress", ""),
+				//Entry("25-namespace-clusterrolebinding-knative", ""),
+				Entry("26-knative-external-proxy-deployment", "settings.integrations.knative.proxy.deployment.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("27-knative-external-proxy-configmap", "settings.integrations.knative.proxy.configMap.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("28-knative-external-proxy-service", "settings.integrations.knative.proxy.service.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("29-knative-internal-proxy-deployment", "settings.integrations.knative.proxy.internal.deployment.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("30-knative-internal-proxy-configmap", "settings.integrations.knative.proxy.internal.configMap.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("31-knative-internal-proxy-service", "settings.integrations.knative.proxy.internal.service.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+			)
 
-			})
 		})
 
 		Context("Reflection", func() {

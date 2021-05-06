@@ -144,15 +144,22 @@ type Knative struct {
 }
 
 type KnativeProxy struct {
-	Image                          *Image            `json:"image,omitempty"`
-	HttpPort                       *int              `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
-	HttpsPort                      *int              `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
-	Tracing                        *string           `json:"tracing,omitempty" desc:"tracing configuration"`
-	LoopBackAddress                *string           `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
-	ExtraClusterIngressProxyLabels map[string]string `json:"extraClusterIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the cluster ingress proxy deployment."`
+	Image                          *Image                `json:"image,omitempty"`
+	HttpPort                       *int                  `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
+	HttpsPort                      *int                  `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
+	Tracing                        *string               `json:"tracing,omitempty" desc:"tracing configuration"`
+	LoopBackAddress                *string               `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
+	ExtraClusterIngressProxyLabels map[string]string     `json:"extraClusterIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the cluster ingress proxy deployment."`
+	Internal                       *KnativeProxyInternal `json:"internal,omitempty" desc:"Yaml overrides for knative internal proxy resources"`
 	*DeploymentSpec
 	*ServiceSpec
-	ConfigMap *YamlOverride `json:"configMap,omitempty" desc:"Wrapper for overriding values in the cluster-ingress ConfigMap"`
+	ConfigMap *YamlOverride `json:"configMap,omitempty" desc:"Wrapper for overriding values in the ConfigMap"`
+}
+
+type KnativeProxyInternal struct {
+	*DeploymentSpec
+	*ServiceSpec
+	ConfigMap *YamlOverride `json:"configMap,omitempty" desc:"Wrapper for overriding values in the ConfigMap"`
 }
 
 type Settings struct {

@@ -86,6 +86,8 @@ spec:
 {{/* Render template with yaml overrides */}}
 {{- $yamlOverride := dict -}}
 {{- if .Values.settings.integrations.knative.proxy -}}
-{{- $yamlOverride = .Values.settings.integrations.knative.proxy.yamlOverride  -}}
+{{- if .Values.settings.integrations.knative.proxy.deployment -}}
+{{- $yamlOverride = .Values.settings.integrations.knative.proxy.deployment.yamlOverride  -}}
+{{- end -}}
 {{- end -}}
 {{- include "gloo.util.merge" (list . $yamlOverride "knativeExternalProxy.deploymentSpec") -}}

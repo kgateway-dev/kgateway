@@ -138,7 +138,9 @@ data:
 
 {{/* Render template with yaml overrides */}}
 {{- $yamlOverride := dict -}}
-{{- if .Values.settings.integrations.knative.configMap -}}
-{{- $yamlOverride = .Values.settings.integrations.knative.configMap.yamlOverride  -}}
+{{- if .Values.settings.integrations.knative.proxy -}}
+{{- if .Values.settings.integrations.knative.proxy.configMap -}}
+{{- $yamlOverride = .Values.settings.integrations.knative.proxy.configMap.yamlOverride  -}}
 {{- end }} {{/* if .Values.settings.integrations.knative.configMap */}}
+{{- end }}
 {{- include "gloo.util.merge" (list . $yamlOverride "knativeExternalProxy.configMapSpec") -}}

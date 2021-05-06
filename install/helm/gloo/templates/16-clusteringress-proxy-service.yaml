@@ -28,9 +28,9 @@ spec:
 
 {{/* Render template with yaml overrides */}}
 {{- $yamlOverride := dict -}}
-{{- if .Values.settings.integrations.knative -}}
-{{- if .Values.settings.integrations.knative.service -}}
-{{- $yamlOverride = .Values.settings.integrations.knative.service.yamlOverride  -}}
+{{- if .Values.settings.integrations.knative.proxy -}}
+{{- if .Values.settings.integrations.knative.proxy.service -}}
+{{- $yamlOverride = .Values.settings.integrations.knative.proxy.service.yamlOverride  -}}
 {{- end -}}
 {{- end -}}
 {{- include "gloo.util.merge" (list . $yamlOverride "clusterIngressProxy.serviceSpec") -}}

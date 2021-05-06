@@ -16,6 +16,38 @@
 |settings.integrations.knative.proxy.tracing|string||tracing configuration|
 |settings.integrations.knative.proxy.loopBackAddress|string|127.0.0.1|Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
 |settings.integrations.knative.proxy.extraClusterIngressProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the cluster ingress proxy deployment.|
+|settings.integrations.knative.proxy.internal.replicas|int||number of instances to deploy|
+|settings.integrations.knative.proxy.internal.customEnv[].name|string|||
+|settings.integrations.knative.proxy.internal.customEnv[].value|string|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.fieldRef.apiVersion|string|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.fieldRef.fieldPath|string|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.resourceFieldRef.containerName|string|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.resourceFieldRef.resource|string|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.resourceFieldRef.divisor|int64|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.resourceFieldRef.divisor|int32|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.resourceFieldRef.divisor|bool|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.resourceFieldRef.divisor[]|uint|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.resourceFieldRef.divisor[]|int32|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.configMapKeyRef.name|string|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.configMapKeyRef.key|string|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.configMapKeyRef.optional|bool|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.secretKeyRef.name|string|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.secretKeyRef.key|string|||
+|settings.integrations.knative.proxy.internal.customEnv[].valueFrom.secretKeyRef.optional|bool|||
+|settings.integrations.knative.proxy.internal.resources.limits.memory|string||amount of memory|
+|settings.integrations.knative.proxy.internal.resources.limits.cpu|string||amount of CPUs|
+|settings.integrations.knative.proxy.internal.resources.requests.memory|string||amount of memory|
+|settings.integrations.knative.proxy.internal.resources.requests.cpu|string||amount of CPUs|
+|settings.integrations.knative.proxy.internal.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
+|settings.integrations.knative.proxy.internal.service.type|string||K8s service type|
+|settings.integrations.knative.proxy.internal.service.extraAnnotations.NAME|string||extra annotations to add to the service|
+|settings.integrations.knative.proxy.internal.service.loadBalancerIP|string||IP address of the load balancer|
+|settings.integrations.knative.proxy.internal.service.httpPort|int||HTTP port for the knative/ingress proxy service|
+|settings.integrations.knative.proxy.internal.service.httpsPort|int||HTTPS port for the knative/ingress proxy service|
+|settings.integrations.knative.proxy.internal.service.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
+|settings.integrations.knative.proxy.internal.configMap.yamlOverride.NAME|interface||Override fields in the generated YAML file by specifying the yaml structure below.|
 |settings.integrations.knative.proxy.replicas|int|1|number of instances to deploy|
 |settings.integrations.knative.proxy.customEnv[].name|string|||
 |settings.integrations.knative.proxy.customEnv[].value|string|||
