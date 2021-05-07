@@ -4285,7 +4285,6 @@ metadata:
 				Entry("5-gateway-service", "gateway.service.yamlOverride"),
 				Entry("5-gateway-service-account", "gateway.serviceAccount.yamlOverride"),
 				Entry("5-gateway-validation-webhook-configuration", "gateway.validation.webhook.yamlOverride"),
-				//Entry("6.5-gateway-certgen-job", ""),
 				Entry("6-access-logger-deployment", "accessLogger.deployment.yamlOverride", "accessLogger.enabled=true"),
 				Entry("6-access-logger-service", "accessLogger.service.yamlOverride", "accessLogger.enabled=true"),
 				Entry("8-gateway-proxy-service-account", "gateway.proxyServiceAccount.yamlOverride"),
@@ -4298,7 +4297,16 @@ metadata:
 				Entry("16-clusteringress-proxy-service", "settings.integrations.knative.proxy.service.yamlOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
 				Entry("18-settings", "settings.yamlOverride"),
 				Entry("19-gloo-mtls-certgen-job", "gateway.certGenJob.yamlOverride", "global.glooMtls.enabled=true"),
-				// todo: implement overrides for these if needed
+				Entry("26-knative-external-proxy-deployment", "settings.integrations.knative.proxy.deployment.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("27-knative-external-proxy-configmap", "settings.integrations.knative.proxy.configMap.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("28-knative-external-proxy-service", "settings.integrations.knative.proxy.service.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("29-knative-internal-proxy-deployment", "settings.integrations.knative.proxy.internal.deployment.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("30-knative-internal-proxy-configmap", "settings.integrations.knative.proxy.internal.configMap.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("31-knative-internal-proxy-service", "settings.integrations.knative.proxy.internal.service.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				// todo: implement overrides for these if need arises
+				// A named helm template will have to be created for each of the resources
+				// generated in the following files.
+				//Entry("6.5-gateway-certgen-job", ""),
 				//Entry("19-gloo-mtls-configmap", ),
 				//Entry("20-namespace-clusterrole-gateway", ""),
 				//Entry("21-namespace-clusterrole-ingress", ""),
@@ -4306,15 +4314,9 @@ metadata:
 				//Entry("23-namespace-clusterrolebinding-gateway", ""),
 				//Entry("24-namespace-clusterrolebinding-ingress", ""),
 				//Entry("25-namespace-clusterrolebinding-knative", ""),
-				Entry("26-knative-external-proxy-deployment", "settings.integrations.knative.proxy.deployment.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
-				Entry("27-knative-external-proxy-configmap", "settings.integrations.knative.proxy.configMap.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
-				Entry("28-knative-external-proxy-service", "settings.integrations.knative.proxy.service.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
-				Entry("29-knative-internal-proxy-deployment", "settings.integrations.knative.proxy.internal.deployment.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
-				Entry("30-knative-internal-proxy-configmap", "settings.integrations.knative.proxy.internal.configMap.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
-				Entry("31-knative-internal-proxy-service", "settings.integrations.knative.proxy.internal.service.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
 			)
 
-			DescribeTable("overrides Yaml in resources for each gateway proxy", func(proxyOverrideProperty string, argsPerProxy []string, numResourcesPerProxy int) {
+			DescribeTable("overrides Yaml in resources for each gateway proxy", func(proxyOverrideProperty string, argsPerProxy []string) {
 				// Override property should be the path to `yamlOverride`, like gloo.deployment.yamlOverride
 				proxies := []string{"gatewayProxy", "anotherProxy", "proxyThree"}
 				var args []string
@@ -4333,17 +4335,17 @@ metadata:
 				resources := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 					return resource.GetLabels()["overriddenLabel"] == "label" && resource.GetKind() != ""
 				})
-				Expect(resources.NumResources()).To(Equal(len(proxies) * numResourcesPerProxy))
+				Expect(resources.NumResources()).To(Equal(len(proxies)))
 			},
-				Entry("7-gateway-proxy-deployment", "yamlOverride", nil, 1),
-				Entry("8-default-gateways httpGateway", "gatewaySettings.httpGatewayYamlOverride", []string{}, 1),
-				Entry("8-default-gateways httpsGateway", "gatewaySettings.httpsGatewayYamlOverride", []string{}, 1),
-				Entry("8-default-gateways failoverGateway", "failover.yamlOverride", []string{"failover.enabled=true"}, 1),
-				Entry("8-gateway-proxy-horizontal-pod-autoscaler", "horizontalPodAutoscaler.yamlOverride", []string{"kind.deployment.replicas=2", "horizontalPodAutoscaler.apiVersion=v2"}, 1),
-				Entry("8-gateway-proxy-pod-disruption-budget", "podDisruptionBudget.yamlOverride", []string{"kind.deployment.replicas=2"}, 1),
-				Entry("8-gateway-proxy-service service", "service.yamlOverride", nil, 1),
-				Entry("8-gateway-proxy-service config-dump-service", "service.configDumpService.yamlOverride", []string{"readConfig=true", "readConfigMulticluster=true"}, 1),
-				Entry("9-gateway-proxy-configmap", "configMap.yamlOverride", nil, 1),
+				Entry("7-gateway-proxy-deployment", "yamlOverride", nil),
+				Entry("8-default-gateways httpGateway", "gatewaySettings.httpGatewayYamlOverride", nil),
+				Entry("8-default-gateways httpsGateway", "gatewaySettings.httpsGatewayYamlOverride", nil),
+				Entry("8-default-gateways failoverGateway", "failover.yamlOverride", []string{"failover.enabled=true"}),
+				Entry("8-gateway-proxy-horizontal-pod-autoscaler", "horizontalPodAutoscaler.yamlOverride", []string{"kind.deployment.replicas=2", "horizontalPodAutoscaler.apiVersion=v2"}),
+				Entry("8-gateway-proxy-pod-disruption-budget", "podDisruptionBudget.yamlOverride", []string{"kind.deployment.replicas=2"}),
+				Entry("8-gateway-proxy-service service", "service.yamlOverride", nil),
+				Entry("8-gateway-proxy-service config-dump-service", "service.configDumpService.yamlOverride", []string{"readConfig=true", "readConfigMulticluster=true"}),
+				Entry("9-gateway-proxy-configmap", "configMap.yamlOverride", nil),
 			)
 
 		})

@@ -85,7 +85,7 @@ type DeploymentSpec struct {
 }
 
 type YamlOverride struct {
-	YamlOverride map[string]interface{} `json:"yamlOverride,omitempty" desc:"Override fields in the generated YAML file by specifying the yaml structure below."`
+	YamlOverride map[string]interface{} `json:"yamlOverride,omitempty" desc:"Override fields in the generated resource by specifying the yaml structure to override under the top-level key."`
 }
 
 type Integrations struct {
@@ -157,9 +157,9 @@ type KnativeProxy struct {
 }
 
 type KnativeProxyInternal struct {
-	*DeploymentSpec
-	*ServiceSpec
-	ConfigMap *YamlOverride `json:"configMap,omitempty" desc:"Wrapper for overriding values in the ConfigMap"`
+	Deployment *YamlOverride `json:"deployment,omitempty"`
+	Service    *YamlOverride `json:"service,omitempty"`
+	ConfigMap  *YamlOverride `json:"configMap,omitempty" desc:"Wrapper for overriding values in the ConfigMap"`
 }
 
 type Settings struct {
@@ -410,8 +410,8 @@ type GatewayProxyService struct {
 	LoadBalancerSourceRanges []string          `json:"loadBalancerSourceRanges,omitempty" desc:"List of IP CIDR ranges that are allowed to access the load balancer"`
 	CustomPorts              []interface{}     `json:"customPorts,omitempty" desc:"List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)"`
 	ExternalIPs              []string          `json:"externalIPs,omitempty" desc:"externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service"`
-	ConfigDumpService        *Service          `json:"configDumpService,omitempty" desc:"Yaml override for gateway proxy config dump service"`
-	*Service
+	ConfigDumpService        *YamlOverride     `json:"configDumpService,omitempty" desc:"Yaml override for gateway proxy config dump service"`
+	*YamlOverride
 }
 
 type Tracing struct {
