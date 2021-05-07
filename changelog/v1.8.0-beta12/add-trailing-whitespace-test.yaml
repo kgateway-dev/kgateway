@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Added test to ensure generated helm templates don't contain trailing whitespace.
+    issueLink: https://github.com/solo-io/gloo/issues/4645
