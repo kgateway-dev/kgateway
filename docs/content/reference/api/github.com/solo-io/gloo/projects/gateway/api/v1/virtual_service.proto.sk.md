@@ -230,8 +230,8 @@ DelegateActions are used to delegate routing decisions to Route Tables.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `name` | `string` | The name of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |
-| `namespace` | `string` | The namespace of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |
+| `name` | `string` | The name of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `ref` field. If `name` and/or `namespace` have been specified, Gloo will ignore `ref` and `selector`. |
+| `namespace` | `string` | The namespace of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `ref` field. If `name` and/or `namespace` have been specified, Gloo will ignore `ref` and `selector`. |
 | `ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Delegate to the Route Table resource with the given `name` and `namespace. Only one of `ref` or `selector` can be set. |
 | `selector` | [.gateway.solo.io.RouteTableSelector](../virtual_service.proto.sk/#routetableselector) | Delegate to the Route Tables that match the given selector. Only one of `selector` or `ref` can be set. |
 

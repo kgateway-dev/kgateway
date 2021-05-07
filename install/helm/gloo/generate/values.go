@@ -181,6 +181,7 @@ type InvalidConfigPolicy struct {
 type Gloo struct {
 	Deployment     *GlooDeployment `json:"deployment,omitempty"`
 	ServiceAccount `json:"serviceAccount,omitempty" `
+	LogLevel       *string `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
 }
 
 type GlooDeployment struct {
@@ -202,6 +203,7 @@ type Discovery struct {
 	FdsMode        *string              `json:"fdsMode,omitempty" desc:"mode for function discovery (blacklist or whitelist). See more info in the settings docs"`
 	Enabled        *bool                `json:"enabled,omitempty" desc:"enable Discovery features"`
 	ServiceAccount `json:"serviceAccount,omitempty" `
+	LogLevel       *string `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
 }
 
 type DiscoveryDeployment struct {
@@ -223,6 +225,7 @@ type Gateway struct {
 	ProxyServiceAccount           ServiceAccount     `json:"proxyServiceAccount,omitempty" `
 	ServiceAccount                ServiceAccount     `json:"serviceAccount,omitempty" `
 	ReadGatewaysFromAllNamespaces *bool              `json:"readGatewaysFromAllNamespaces,omitempty" desc:"if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller"`
+	LogLevel                      *string            `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
 }
 
 type ServiceAccount struct {
@@ -302,6 +305,7 @@ type GatewayProxy struct {
 	PodDisruptionBudget            *PodDisruptionBudget         `json:"podDisruptionBudget,omitempty" desc:"PodDisruptionBudget is an object to define the max disruption that can be caused to the gate-proxy pods"`
 	IstioMetaMeshId                *string                      `json:"istioMetaMeshId,omitempty" desc:"ISTIO_META_MESH_ID Environment Variable. Defaults to \"cluster.local\""`
 	IstioMetaClusterId             *string                      `json:"istioMetaClusterId,omitempty" desc:"ISTIO_META_CLUSTER_ID Environment Variable. Defaults to \"Kubernetes\""`
+	LogLevel                       *string                      `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
 }
 
 type GatewayProxyGatewaySettings struct {
