@@ -59,8 +59,6 @@ message TracePercentages {
     // This should be a value between 0.0 and 100.0, with up to 6 significant digits.
     google.protobuf.FloatValue overall_sample_percentage = 3;
 }
-<<<<<<< HEAD
-=======
 
 // Requests can produce traces with custom tags.
 // TracingTagEnvironmentVariable defines an environment variable which gets added as custom tag.
@@ -82,4 +80,3 @@ message TracingTagLiteral {
     // Static literal value to populate the tag value.
     string value = 2;
 }
->>>>>>> 1eb675672... Expose envoy custom tags via environment variable & literal (#4707)
