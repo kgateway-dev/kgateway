@@ -85,7 +85,7 @@ type DeploymentSpec struct {
 }
 
 type YamlOverride struct {
-	YamlOverride map[string]interface{} `json:"yamlOverride,omitempty" desc:"Override fields in the generated resource by specifying the yaml structure to override under the top-level key."`
+	YamlOverride map[string]interface{} `json:"yamlOverride,omitempty" desc:"override fields in the generated resource by specifying the yaml structure to override under the top-level key."`
 }
 
 type Integrations struct {
