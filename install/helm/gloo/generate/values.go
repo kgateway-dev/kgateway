@@ -84,6 +84,7 @@ type DeploymentSpec struct {
 	*YamlOverride
 }
 
+// Used to override any field in generated kubernetes resources.
 type YamlOverride struct {
 	YamlOverride map[string]interface{} `json:"yamlOverride,omitempty" desc:"override fields in the generated resource by specifying the yaml structure to override under the top-level key."`
 }
