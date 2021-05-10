@@ -138,10 +138,10 @@ data:
 {{- end }} {{/*define "clusterIngressProxy.configMapSpec"*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := dict -}}
+{{- $kubeResourceOverride := dict -}}
 {{- if .Values.settings.integrations.knative.proxy -}}
 {{- if .Values.settings.integrations.knative.proxy.configMap -}}
-{{- $yamlOverride = .Values.settings.integrations.knative.proxy.configMap.yamlOverride  -}}
+{{- $kubeResourceOverride = .Values.settings.integrations.knative.proxy.configMap.kubeResourceOverride  -}}
 {{- end -}}
 {{- end -}}
-{{- include "gloo.util.merge" (list . $yamlOverride "clusterIngressProxy.configMapSpec") -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "clusterIngressProxy.configMapSpec") -}}

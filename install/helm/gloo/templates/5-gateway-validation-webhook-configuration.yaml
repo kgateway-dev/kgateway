@@ -36,10 +36,10 @@ webhooks:
 {{- end }} {{/* define "gateway.validationWebhookSpec" */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := dict -}}
+{{- $kubeResourceOverride := dict -}}
 {{- if .Values.gateway.validation -}}
 {{- if .Values.gateway.validation.webhook -}}
-{{- $yamlOverride = .Values.gateway.validation.webhook.yamlOverride   -}}
+{{- $kubeResourceOverride = .Values.gateway.validation.webhook.kubeResourceOverride   -}}
 {{- end -}} {{/* if .Values.gateway.validation.webhook */}}
 {{- end -}} {{/* if .Values.gateway.validation */}}
-{{- include "gloo.util.merge" (list . $yamlOverride "gateway.validationWebhookSpec") -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "gateway.validationWebhookSpec") -}}

@@ -27,10 +27,10 @@ spec:
 {{- end }} {{/*define "clusterIngressProxy.serviceSpec"*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := dict -}}
+{{- $kubeResourceOverride := dict -}}
 {{- if .Values.settings.integrations.knative.proxy -}}
 {{- if .Values.settings.integrations.knative.proxy.service -}}
-{{- $yamlOverride = .Values.settings.integrations.knative.proxy.service.yamlOverride  -}}
+{{- $kubeResourceOverride = .Values.settings.integrations.knative.proxy.service.kubeResourceOverride  -}}
 {{- end -}}
 {{- end -}}
-{{- include "gloo.util.merge" (list . $yamlOverride "clusterIngressProxy.serviceSpec") -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "clusterIngressProxy.serviceSpec") -}}

@@ -133,9 +133,9 @@ spec:
 {{- end }} {{/* define "settings.settingsSpec" */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := dict -}}
+{{- $kubeResourceOverride := dict -}}
 {{- if .Values.settings -}}
-{{- $yamlOverride = .Values.settings.yamlOverride  -}}
+{{- $kubeResourceOverride = .Values.settings.kubeResourceOverride  -}}
 {{- end -}}
-{{- include "gloo.util.merge" (list . $yamlOverride "settings.settingsSpec") -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "settings.settingsSpec") -}}
 

@@ -29,12 +29,12 @@ spec:
 {{- if .Values.gateway.enabled }}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{/* Render each gatewayProxy template with it's yaml overrides */}}
-{{- $yamlOverride := dict -}}
+{{- $kubeResourceOverride := dict -}}
 {{- if $gatewaySpec.podDisruptionBudget -}}
-{{- $yamlOverride = $gatewaySpec.podDisruptionBudget.yamlOverride }}
+{{- $kubeResourceOverride = $gatewaySpec.podDisruptionBudget.kubeResourceOverride }}
 {{- end -}} {{/*if $gatewaySpec.podDisruptionBudget*/}}
 {{- $ctx := (list $ $name $gatewaySpec)}}
 ---
-{{- include "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.disruptionBudgetSpec") -}}
+{{- include "gloo.util.merge" (list $ctx $kubeResourceOverride "gatewayProxy.disruptionBudgetSpec") -}}
 {{- end }}{{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}
 {{- end }}{{/* if .Values.gateway.enabled */}}

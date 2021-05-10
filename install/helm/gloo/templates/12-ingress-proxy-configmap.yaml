@@ -136,11 +136,11 @@ data:
 {{- end}} {{/* define "ingressProxy.configMapSpec "*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := dict -}}
+{{- $kubeResourceOverride := dict -}}
 {{- if .Values.ingressProxy -}}
 {{- if .Values.ingressProxy.configMap -}}
-{{- $yamlOverride = .Values.ingressProxy.configMap.yamlOverride  -}}
+{{- $kubeResourceOverride = .Values.ingressProxy.configMap.kubeResourceOverride  -}}
 {{- end -}}
 {{- end -}}
-{{- include "gloo.util.merge" (list . $yamlOverride "ingressProxy.configMapSpec") -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "ingressProxy.configMapSpec") -}}
 

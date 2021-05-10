@@ -86,8 +86,8 @@ spec:
 {{- end }} {{/* define "accessLogger.deploymentSpec" */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := dict  -}}
+{{- $kubeResourceOverride := dict  -}}
 {{- if .Values.accessLogger.deployment -}}
-{{- $yamlOverride = .Values.accessLogger.deployment.yamlOverride  -}}
+{{- $kubeResourceOverride = .Values.accessLogger.deployment.kubeResourceOverride  -}}
 {{- end -}}
-{{- include "gloo.util.merge" (list . $yamlOverride "accessLogger.deploymentSpec") -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "accessLogger.deploymentSpec") -}}

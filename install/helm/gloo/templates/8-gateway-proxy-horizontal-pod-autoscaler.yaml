@@ -42,11 +42,11 @@ spec:
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{/* Render each gatewayProxy template with it's yaml overrides */}}
 ---
-{{- $yamlOverride := dict }}
+{{- $kubeResourceOverride := dict }}
 {{- if $gatewaySpec.horizontalPodAutoscaler -}}
-{{ $yamlOverride = $gatewaySpec.horizontalPodAutoscaler.yamlOverride}}
+{{ $kubeResourceOverride = $gatewaySpec.horizontalPodAutoscaler.kubeResourceOverride}}
 {{- end -}} {{/*if $gatewaySpec.horizontalPodAutoscaler*/}}
 {{- $ctx := (list $ $name $gatewaySpec)}}
-{{- include "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.autoscalerSpec") -}}
+{{- include "gloo.util.merge" (list $ctx $kubeResourceOverride "gatewayProxy.autoscalerSpec") -}}
 {{- end }} {{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}
 {{- end }} {{/* if .Values.gateway.enabled */}}

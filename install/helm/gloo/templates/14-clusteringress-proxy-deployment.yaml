@@ -84,10 +84,10 @@ spec:
 {{- end }} {{/* define clusterIngressProxy.deploymentSpec */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := dict -}}
+{{- $kubeResourceOverride := dict -}}
 {{- if .Values.settings.integrations.knative.proxy -}}
 {{- if .Values.settings.integrations.knative.proxy.deployment -}}
-{{- $yamlOverride = .Values.settings.integrations.knative.proxy.deployment.yamlOverride  -}}
+{{- $kubeResourceOverride = .Values.settings.integrations.knative.proxy.deployment.kubeResourceOverride  -}}
 {{- end -}}
 {{- end -}}
-{{- include "gloo.util.merge" (list . $yamlOverride "clusterIngressProxy.deploymentSpec") -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "clusterIngressProxy.deploymentSpec") -}}

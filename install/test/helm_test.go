@@ -4267,7 +4267,7 @@ metadata:
 			})
 
 			DescribeTable("overrides Yaml in generated resources", func(overrideProperty string, extraArgs ...string) {
-				// Override property should be the path to `yamlOverride`, like gloo.deployment.yamlOverride
+				// Override property should be the path to `kubeResourceOverride`, like gloo.deployment.kubeResourceOverride
 				valueArg := fmt.Sprintf("%s.metadata.labels.overriddenLabel=label", overrideProperty)
 				prepareMakefile(namespace, helmValues{
 					valuesArgs: append(extraArgs, valueArg),
@@ -4278,33 +4278,33 @@ metadata:
 				})
 				Expect(resources.NumResources()).To(Equal(1))
 			},
-				Entry("1-gloo-deployment", "gloo.deployment.yamlOverride"),
-				Entry("2-gloo-service", "gloo.service.yamlOverride"),
-				Entry("2-gloo-service-account", "gloo.serviceAccount.yamlOverride"),
-				Entry("3-discovery-deployment", "discovery.deployment.yamlOverride"),
-				Entry("3-discovery-service-account", "discovery.serviceAccount.yamlOverride"),
-				Entry("5-gateway-deployment", "gateway.deployment.yamlOverride"),
-				Entry("5-gateway-service", "gateway.service.yamlOverride"),
-				Entry("5-gateway-service-account", "gateway.serviceAccount.yamlOverride"),
-				Entry("5-gateway-validation-webhook-configuration", "gateway.validation.webhook.yamlOverride"),
-				Entry("6-access-logger-deployment", "accessLogger.deployment.yamlOverride", "accessLogger.enabled=true"),
-				Entry("6-access-logger-service", "accessLogger.service.yamlOverride", "accessLogger.enabled=true"),
-				Entry("8-gateway-proxy-service-account", "gateway.proxyServiceAccount.yamlOverride"),
-				Entry("10-ingress-deployment", "ingress.deployment.yamlOverride", "ingress.enabled=true"),
-				Entry("11-ingress-proxy-deployment", "ingressProxy.deployment.yamlOverride", "ingress.enabled=true"),
-				Entry("12-ingress-proxy-configmap", "ingressProxy.configMap.yamlOverride", "ingress.enabled=true"),
-				Entry("13-ingress-proxy-service", "ingressProxy.service.yamlOverride", "ingress.enabled=true"),
-				Entry("14-clusteringress-proxy-deployment", "settings.integrations.knative.proxy.deployment.yamlOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
-				Entry("15-clusteringress-proxy-configmap", "settings.integrations.knative.proxy.configMap.yamlOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
-				Entry("16-clusteringress-proxy-service", "settings.integrations.knative.proxy.service.yamlOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
-				Entry("18-settings", "settings.yamlOverride"),
-				Entry("19-gloo-mtls-certgen-job", "gateway.certGenJob.yamlOverride", "global.glooMtls.enabled=true"),
-				Entry("26-knative-external-proxy-deployment", "settings.integrations.knative.proxy.deployment.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
-				Entry("27-knative-external-proxy-configmap", "settings.integrations.knative.proxy.configMap.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
-				Entry("28-knative-external-proxy-service", "settings.integrations.knative.proxy.service.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
-				Entry("29-knative-internal-proxy-deployment", "settings.integrations.knative.proxy.internal.deployment.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
-				Entry("30-knative-internal-proxy-configmap", "settings.integrations.knative.proxy.internal.configMap.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
-				Entry("31-knative-internal-proxy-service", "settings.integrations.knative.proxy.internal.service.yamlOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("1-gloo-deployment", "gloo.deployment.kubeResourceOverride"),
+				Entry("2-gloo-service", "gloo.service.kubeResourceOverride"),
+				Entry("2-gloo-service-account", "gloo.serviceAccount.kubeResourceOverride"),
+				Entry("3-discovery-deployment", "discovery.deployment.kubeResourceOverride"),
+				Entry("3-discovery-service-account", "discovery.serviceAccount.kubeResourceOverride"),
+				Entry("5-gateway-deployment", "gateway.deployment.kubeResourceOverride"),
+				Entry("5-gateway-service", "gateway.service.kubeResourceOverride"),
+				Entry("5-gateway-service-account", "gateway.serviceAccount.kubeResourceOverride"),
+				Entry("5-gateway-validation-webhook-configuration", "gateway.validation.webhook.kubeResourceOverride"),
+				Entry("6-access-logger-deployment", "accessLogger.deployment.kubeResourceOverride", "accessLogger.enabled=true"),
+				Entry("6-access-logger-service", "accessLogger.service.kubeResourceOverride", "accessLogger.enabled=true"),
+				Entry("8-gateway-proxy-service-account", "gateway.proxyServiceAccount.kubeResourceOverride"),
+				Entry("10-ingress-deployment", "ingress.deployment.kubeResourceOverride", "ingress.enabled=true"),
+				Entry("11-ingress-proxy-deployment", "ingressProxy.deployment.kubeResourceOverride", "ingress.enabled=true"),
+				Entry("12-ingress-proxy-configmap", "ingressProxy.configMap.kubeResourceOverride", "ingress.enabled=true"),
+				Entry("13-ingress-proxy-service", "ingressProxy.service.kubeResourceOverride", "ingress.enabled=true"),
+				Entry("14-clusteringress-proxy-deployment", "settings.integrations.knative.proxy.deployment.kubeResourceOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
+				Entry("15-clusteringress-proxy-configmap", "settings.integrations.knative.proxy.configMap.kubeResourceOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
+				Entry("16-clusteringress-proxy-service", "settings.integrations.knative.proxy.service.kubeResourceOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
+				Entry("18-settings", "settings.kubeResourceOverride"),
+				Entry("19-gloo-mtls-certgen-job", "gateway.certGenJob.kubeResourceOverride", "global.glooMtls.enabled=true"),
+				Entry("26-knative-external-proxy-deployment", "settings.integrations.knative.proxy.deployment.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("27-knative-external-proxy-configmap", "settings.integrations.knative.proxy.configMap.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("28-knative-external-proxy-service", "settings.integrations.knative.proxy.service.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("29-knative-internal-proxy-deployment", "settings.integrations.knative.proxy.internal.deployment.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("30-knative-internal-proxy-configmap", "settings.integrations.knative.proxy.internal.configMap.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+				Entry("31-knative-internal-proxy-service", "settings.integrations.knative.proxy.internal.service.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
 				// todo: implement overrides for these if need arises
 				// A named helm template will have to be created for each of the resources
 				// generated in the following files.
@@ -4319,7 +4319,7 @@ metadata:
 			)
 
 			DescribeTable("overrides Yaml in resources for each gateway proxy", func(proxyOverrideProperty string, argsPerProxy []string) {
-				// Override property should be the path to `yamlOverride`, like gloo.deployment.yamlOverride
+				// Override property should be the path to `kubeResourceOverride`, like gloo.deployment.kubeResourceOverride
 				proxies := []string{"gatewayProxy", "anotherProxy", "proxyThree"}
 				var args []string
 				var extraArgs []string
@@ -4339,15 +4339,15 @@ metadata:
 				})
 				Expect(resources.NumResources()).To(Equal(len(proxies)))
 			},
-				Entry("7-gateway-proxy-deployment", "yamlOverride", nil),
-				Entry("8-default-gateways httpGateway", "gatewaySettings.httpGatewayYamlOverride", nil),
-				Entry("8-default-gateways httpsGateway", "gatewaySettings.httpsGatewayYamlOverride", nil),
-				Entry("8-default-gateways failoverGateway", "failover.yamlOverride", []string{"failover.enabled=true"}),
-				Entry("8-gateway-proxy-horizontal-pod-autoscaler", "horizontalPodAutoscaler.yamlOverride", []string{"kind.deployment.replicas=2", "horizontalPodAutoscaler.apiVersion=v2"}),
-				Entry("8-gateway-proxy-pod-disruption-budget", "podDisruptionBudget.yamlOverride", []string{"kind.deployment.replicas=2"}),
-				Entry("8-gateway-proxy-service service", "service.yamlOverride", nil),
-				Entry("8-gateway-proxy-service config-dump-service", "service.configDumpService.yamlOverride", []string{"readConfig=true", "readConfigMulticluster=true"}),
-				Entry("9-gateway-proxy-configmap", "configMap.yamlOverride", nil),
+				Entry("7-gateway-proxy-deployment", "kubeResourceOverride", nil),
+				Entry("8-default-gateways httpGateway", "gatewaySettings.httpGatewayKubeOverride", nil),
+				Entry("8-default-gateways httpsGateway", "gatewaySettings.httpsGatewayKubeOverride", nil),
+				Entry("8-default-gateways failoverGateway", "failover.kubeResourceOverride", []string{"failover.enabled=true"}),
+				Entry("8-gateway-proxy-horizontal-pod-autoscaler", "horizontalPodAutoscaler.kubeResourceOverride", []string{"kind.deployment.replicas=2", "horizontalPodAutoscaler.apiVersion=v2"}),
+				Entry("8-gateway-proxy-pod-disruption-budget", "podDisruptionBudget.kubeResourceOverride", []string{"kind.deployment.replicas=2"}),
+				Entry("8-gateway-proxy-service service", "service.kubeResourceOverride", nil),
+				Entry("8-gateway-proxy-service config-dump-service", "service.configDumpService.kubeResourceOverride", []string{"readConfig=true", "readConfigMulticluster=true"}),
+				Entry("9-gateway-proxy-configmap", "configMap.kubeResourceOverride", nil),
 			)
 
 		})

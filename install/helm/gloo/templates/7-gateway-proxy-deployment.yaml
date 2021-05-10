@@ -466,8 +466,8 @@ spec:
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{- /* Render each gatewayProxy template with it's yaml overrides */}}
 ---
-{{- $yamlOverride := $gatewaySpec.yamlOverride  }}
+{{- $kubeResourceOverride := $gatewaySpec.kubeResourceOverride  }}
 {{- $ctx := (list $ $name $gatewaySpec)}}
-{{- include "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.deploymentSpec") -}}
+{{- include "gloo.util.merge" (list $ctx $kubeResourceOverride "gatewayProxy.deploymentSpec") -}}
 {{- end }} {{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}
 {{- end }} {{/* if .Values.gateway.enabled */}}

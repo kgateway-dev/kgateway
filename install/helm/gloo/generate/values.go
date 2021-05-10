@@ -86,7 +86,7 @@ type DeploymentSpec struct {
 
 // Used to override any field in generated kubernetes resources.
 type KubeResourceOverride struct {
-	YamlOverride map[string]interface{} `json:"yamlOverride,omitempty" desc:"override fields in the generated resource by specifying the yaml structure to override under the top-level key."`
+	KubeResourceOverride map[string]interface{} `json:"kubeResourceOverride,omitempty" desc:"override fields in the generated resource by specifying the yaml structure to override under the top-level key."`
 }
 
 type Integrations struct {
@@ -339,8 +339,8 @@ type GatewayProxyGatewaySettings struct {
 	CustomHttpsGateway       *string                  `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
 	GatewayOptions           v1.GatewayOptions        `json:"options,omitempty" desc:"custom options for http(s) gateways"`
 	AccessLoggingService     als.AccessLoggingService `json:"accessLoggingService,omitempty"`
-	HttpGatewayOverride      *KubeResourceOverride    `json:"httpGatewayYamlOverride,omitempty"`
-	HttpsGatewayOverride     *KubeResourceOverride    `json:"httpsGatewayYamlOverride,omitempty"`
+	HttpGatewayOverride      *KubeResourceOverride    `json:"httpGatewayKubeOverride,omitempty"`
+	HttpsGatewayOverride     *KubeResourceOverride    `json:"httpsGatewayKubeOverride,omitempty"`
 	*KubeResourceOverride
 }
 

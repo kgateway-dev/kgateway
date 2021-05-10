@@ -90,9 +90,9 @@ spec:
 {{- end }} {{/* define "discovery.deploymentSpec"*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := dict -}}
+{{- $kubeResourceOverride := dict -}}
 {{- if .Values.discovery.deployment -}}
-{{- $yamlOverride = .Values.discovery.deployment.yamlOverride  -}}
+{{- $kubeResourceOverride = .Values.discovery.deployment.kubeResourceOverride  -}}
 {{- end -}}
-{{- include "gloo.util.merge" (list . $yamlOverride "discovery.deploymentSpec") -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "discovery.deploymentSpec") -}}
 

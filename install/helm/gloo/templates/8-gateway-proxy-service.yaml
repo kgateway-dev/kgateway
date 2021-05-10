@@ -128,9 +128,9 @@ spec:
 {{- $serviceYamlOverride := dict  -}}
 {{- $configDumpServiceYamlOverride := dict  -}}
 {{- if $gatewaySpec.service -}}
-{{- $serviceYamlOverride = $spec.service.yamlOverride  -}}
+{{- $serviceYamlOverride = $spec.service.kubeResourceOverride  -}}
 {{- if $gatewaySpec.service.configDumpService -}}
-{{- $configDumpServiceYamlOverride = $spec.service.configDumpService.yamlOverride  -}}
+{{- $configDumpServiceYamlOverride = $spec.service.configDumpService.kubeResourceOverride  -}}
 {{- end -}}{{/* if $gatewaySpec.service.configDumpService */}}
 {{- end -}}{{/* if $gatewaySpec.service */}}
 {{- $ctx := (list $ $name $spec)}}

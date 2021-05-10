@@ -111,8 +111,8 @@ spec:
 {{- end }} {{/* define "gateway.deploymentSpec" */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := dict -}}
+{{- $kubeResourceOverride := dict -}}
 {{- if .Values.gateway.deployment -}}
-{{- $yamlOverride = .Values.gateway.deployment.yamlOverride  -}}
+{{- $kubeResourceOverride = .Values.gateway.deployment.kubeResourceOverride  -}}
 {{- end -}}
-{{- include "gloo.util.merge" (list . $yamlOverride "gateway.deploymentSpec") -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "gateway.deploymentSpec") -}}

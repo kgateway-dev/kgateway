@@ -137,10 +137,10 @@ data:
 {{- end }} {{/*define "knativeExternalProxy.configMapSpec"*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := dict -}}
+{{- $kubeResourceOverride := dict -}}
 {{- if .Values.settings.integrations.knative.proxy -}}
 {{- if .Values.settings.integrations.knative.proxy.configMap -}}
-{{- $yamlOverride = .Values.settings.integrations.knative.proxy.configMap.yamlOverride  -}}
+{{- $kubeResourceOverride = .Values.settings.integrations.knative.proxy.configMap.kubeResourceOverride  -}}
 {{- end }} {{/* if .Values.settings.integrations.knative.configMap */}}
 {{- end }}
-{{- include "gloo.util.merge" (list . $yamlOverride "knativeExternalProxy.configMapSpec") -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "knativeExternalProxy.configMapSpec") -}}

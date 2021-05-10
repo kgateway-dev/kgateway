@@ -22,8 +22,8 @@ spec:
 {{- end }} {{/* define "accessLogger.serviceSpec" */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := dict -}}
+{{- $kubeResourceOverride := dict -}}
 {{- if .Values.accessLogger.service -}}
-{{- $yamlOverride = .Values.accessLogger.service.yamlOverride  -}}
+{{- $kubeResourceOverride = .Values.accessLogger.service.kubeResourceOverride  -}}
 {{- end -}}
-{{- include "gloo.util.merge" (list . $yamlOverride "accessLogger.serviceSpec") -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "accessLogger.serviceSpec") -}}

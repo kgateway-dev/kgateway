@@ -36,10 +36,10 @@ spec:
 {{- end }} {{/* define ingressProxy.serviceSpec */}}
 
 {{/* Render template with yaml overrides */}}
-{{- $yamlOverride := dict -}}
+{{- $kubeResourceOverride := dict -}}
 {{- if .Values.ingressProxy -}}
 {{- if .Values.ingressProxy.service -}}
-{{- $yamlOverride = .Values.ingressProxy.service.yamlOverride  -}}
+{{- $kubeResourceOverride = .Values.ingressProxy.service.kubeResourceOverride  -}}
 {{- end -}}
 {{- end -}}
-{{- include "gloo.util.merge" (list . $yamlOverride "ingressProxy.serviceSpec") -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "ingressProxy.serviceSpec") -}}

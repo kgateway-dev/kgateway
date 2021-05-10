@@ -354,11 +354,11 @@ data:
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{/* Render each gatewayProxy template with it's yaml overrides */}}
 ---
-{{- $yamlOverride := dict -}}
+{{- $kubeResourceOverride := dict -}}
 {{- if $gatewaySpec.configMap -}}
-{{- $yamlOverride = $gatewaySpec.configMap.yamlOverride -}}
+{{- $kubeResourceOverride = $gatewaySpec.configMap.kubeResourceOverride -}}
 {{- end -}} {{/* if $gatewaySpec.configMap */}}
 {{- $ctx := (list $ $name $gatewaySpec)}}
-{{- include "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.configMapSpec") -}}
+{{- include "gloo.util.merge" (list $ctx $kubeResourceOverride "gatewayProxy.configMapSpec") -}}
 {{- end }}{{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}
 {{- end }}{{/* if .Values.gateway.enabled */}}
