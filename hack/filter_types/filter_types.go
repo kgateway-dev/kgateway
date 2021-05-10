@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate sh -c "echo '// Licensed under the Apache License, Version 2.0 (the \"License\");' >> filter_types.gen.go"
+//go:generate sh -c "echo '// Licensed under the Apache License, Version 2.0 (the \"License\");' > filter_types.gen.go"
 //go:generate sh -c "echo '// you may not use this file except in compliance with the License.' >> filter_types.gen.go"
 //go:generate sh -c "echo '// You may obtain a copy of the License at' >> filter_types.gen.go"
 //go:generate sh -c "echo '//' >> filter_types.gen.go"
@@ -24,7 +24,7 @@
 //go:generate sh -c "echo '//  GENERATED FILE -- DO NOT EDIT\n' >> filter_types.gen.go"
 //go:generate sh -c "echo 'package filter_types\n\nimport (' >> filter_types.gen.go"
 //go:generate sh -c "go list github.com/envoyproxy/go-control-plane/... | grep 'v[2-9]' | xargs -n1 -I{} echo '\t_ \"{}\"' >> filter_types.gen.go"
-//go:generate sh -c "echo '\n// gloo filter types' >> filter_types.gen.go"
+//go:generate sh -c "echo '\n\t// gloo filter types' >> filter_types.gen.go"
 //go:generate sh -c "go list github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/... | xargs -n1 -I{} echo '\t_ \"{}\"' >> filter_types.gen.go"
 //go:generate sh -c "echo ')' >> filter_types.gen.go"
 
