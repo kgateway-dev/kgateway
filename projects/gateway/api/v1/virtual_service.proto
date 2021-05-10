@@ -224,13 +224,13 @@ message Route {
 message DelegateAction {
 
     // The name of the Route Table to delegate to.
-    // Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name`
-    // and/or `namespace` have been specified, Gloo will ignore `single` and `selector`.
+    // Deprecated: these fields have been added for backwards-compatibility. Please use the `ref` field. If `name`
+    // and/or `namespace` have been specified, Gloo will ignore `ref` and `selector`.
     string name = 1 [deprecated = true];
 
     // The namespace of the Route Table to delegate to.
-    // Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name`
-    // and/or `namespace` have been specified, Gloo will ignore `single` and `selector`.
+    // Deprecated: these fields have been added for backwards-compatibility. Please use the `ref` field. If `name`
+    // and/or `namespace` have been specified, Gloo will ignore `ref` and `selector`.
     string namespace = 2 [deprecated = true];
 
     oneof delegation_type {
