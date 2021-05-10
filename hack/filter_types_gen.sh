@@ -26,7 +26,7 @@ do
 
   if ${include_gloo[$idx]}
   then
-    echo "\n//Gloo filter types" >> ${filepaths[$idx]}
+    echo "\n// gloo filter types" >> ${filepaths[$idx]}
     go list github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/... | xargs -n1 -I{} sh -c 'echo "\t_ \"{}\""' >> ${filepaths[$idx]}
   fi
 
