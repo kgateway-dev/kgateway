@@ -358,7 +358,7 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/pkg/ttl/v2"
 	_ "github.com/envoyproxy/go-control-plane/pkg/ttl/v3"
 
-//Gloo filter types
+// gloo filter types
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/extauth"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
