@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os/exec"
 	"reflect"
 	"strings"
+	"unicode"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -4339,6 +4341,17 @@ metadata:
 				}
 				Expect(fmt.Sprintf("%v", missingVals)).To(Equal("[]")) // this makes the failure message simply be a list of what we're missing
 			})
+		})
+
+		// Lines ending with whitespace causes malformatted config map (https://github.com/solo-io/gloo/issues/4645)
+		It("Should not containing trailing whitespace", func() {
+			out, err := exec.Command("helm", "template", "../helm/gloo").CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+
+			lines := strings.Split(string(out), "\n")
+			for _, line := range lines {
+				Expect(strings.TrimRightFunc(line, unicode.IsSpace)).To(Equal(line))
+			}
 		})
 	}
 
