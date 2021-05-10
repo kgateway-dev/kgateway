@@ -1,5 +1,3 @@
-// Copyright Istio Authors
-//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -14,7 +12,7 @@
 
 //  GENERATED FILE -- DO NOT EDIT
 
-package utils
+package filter_types
 
 import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/admin/v2alpha"
@@ -357,4 +355,21 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/pkg/test/v3"
 	_ "github.com/envoyproxy/go-control-plane/pkg/ttl/v2"
 	_ "github.com/envoyproxy/go-control-plane/pkg/ttl/v3"
+
+// gloo filter types
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/extauth"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/jwt_authn/v3"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/wasm/v3"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/http_path"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/jwt"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/proxylatency"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation_ee"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformers/xslt"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/xff_offset"
 )
