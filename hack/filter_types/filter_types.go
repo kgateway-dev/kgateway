@@ -25,7 +25,7 @@
 //go:generate sh -c "echo 'package filter_types\n\nimport (' >> filter_types.gen.go"
 //go:generate sh -c "go list github.com/envoyproxy/go-control-plane/... | grep 'v[2-9]' | xargs -n1 -I{} echo '\t_ \"{}\"' >> filter_types.gen.go"
 //go:generate sh -c "echo '\n\t// gloo filter types' >> filter_types.gen.go"
-//go:generate sh -c "go list github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/... | xargs -n1 -I{} echo '\t_ \"{}\"' >> filter_types.gen.go"
+//go:generate sh -c "go list github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/... | xargs -n1 -I{} echo '\t_ \"{}\"' >> filter_types.gen.go"
 //go:generate sh -c "echo ')' >> filter_types.gen.go"
 
 package filter_types
