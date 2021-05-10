@@ -151,7 +151,7 @@ type KnativeProxy struct {
 	Tracing                        *string               `json:"tracing,omitempty" desc:"tracing configuration"`
 	LoopBackAddress                *string               `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 	ExtraClusterIngressProxyLabels map[string]string     `json:"extraClusterIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the cluster ingress proxy deployment."`
-	Internal                       *KnativeProxyInternal `json:"internal,omitempty" desc:"Yaml overrides for knative internal proxy resources"`
+	Internal                       *KnativeProxyInternal `json:"internal,omitempty" desc:"kube resource overrides for knative internal proxy resources"`
 	*DeploymentSpec
 	*ServiceSpec
 	ConfigMap *KubeResourceOverride `json:"configMap,omitempty"`
@@ -415,7 +415,7 @@ type GatewayProxyService struct {
 	LoadBalancerSourceRanges []string              `json:"loadBalancerSourceRanges,omitempty" desc:"List of IP CIDR ranges that are allowed to access the load balancer"`
 	CustomPorts              []interface{}         `json:"customPorts,omitempty" desc:"List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)"`
 	ExternalIPs              []string              `json:"externalIPs,omitempty" desc:"externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service"`
-	ConfigDumpService        *KubeResourceOverride `json:"configDumpService,omitempty" desc:"Yaml override for gateway proxy config dump service"`
+	ConfigDumpService        *KubeResourceOverride `json:"configDumpService,omitempty" desc:"kube resource override for gateway proxy config dump service"`
 	*KubeResourceOverride
 }
 

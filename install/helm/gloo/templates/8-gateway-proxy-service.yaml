@@ -125,8 +125,8 @@ spec:
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{/* Render each gatewayProxy template with it's yaml overrides */}}
-{{- $serviceYamlOverride := dict  -}}
-{{- $configDumpServiceYamlOverride := dict  -}}
+{{- $serviceYamlOverride := dict -}}
+{{- $configDumpServiceYamlOverride := dict -}}
 {{- if $gatewaySpec.service -}}
 {{- $serviceYamlOverride = $spec.service.kubeResourceOverride  -}}
 {{- if $gatewaySpec.service.configDumpService -}}

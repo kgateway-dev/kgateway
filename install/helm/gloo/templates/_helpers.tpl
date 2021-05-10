@@ -31,12 +31,12 @@ imagePullSecrets:
 {{- end -}}
 
 {{- /*
-    gloo.util.merge is a fork of a helm library chart function (https://github.com/helm/charts/blob/master/incubator/common/templates/_util.tpl)
-
 This takes an array of three values:
 - the top context
 - the yaml block that will be merged in (override)
-- the template name of the base (source)
+- the name of the base template (source)
+
+note: the source must be a named template (helm partial). This is necessary for the merging logic.
 
 The behaviour is as follows, to align with already existing helm behaviour:
 - If no source is found (template is empty), the merged output will be empty
@@ -47,11 +47,11 @@ Overrides can replace / add to deeply nested dictionaries, but will completely r
 Examples:
 
 ┌─────────────────────┬───────────────────────┬────────────────────────┐
-│       Source        │       Overrides       │        Result          │
+│ Source (template)   │       Overrides       │        Result          │
 ├─────────────────────┼───────────────────────┼────────────────────────┤
 │ metadata:           │ metadata:             │ metadata:              │
 │   labels:           │   labels:             │   labels:              │
-│     app: gloo       │    app:gloo1          │     app: gloo1         │
+│     app: gloo       │    app: gloo1         │     app: gloo1         │
 │     cluster: useast │    author: infra-team │     author: infra-team │
 │                     │                       │     cluster: useast    │
 ├─────────────────────┼───────────────────────┼────────────────────────┤
@@ -60,6 +60,8 @@ Examples:
 │   - apple           │   - grapes            │   - grapes             │
 │   - banana          │                       │                        │
 └─────────────────────┴───────────────────────┴────────────────────────┘
+
+gloo.util.merge is a fork of a helm library chart function (https://github.com/helm/charts/blob/master/incubator/common/templates/_util.tpl)
 
 */ -}}
 {{- define "gloo.util.merge" -}}
