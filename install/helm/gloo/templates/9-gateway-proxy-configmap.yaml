@@ -357,7 +357,7 @@ data:
 {{- $yamlOverride := dict -}}
 {{- if $gatewaySpec.configMap -}}
 {{- $yamlOverride = $gatewaySpec.configMap.yamlOverride -}}
-{{- end -}} {{/*if $gatewaySpec.configMap*/}}
+{{- end -}} {{/* if $gatewaySpec.configMap */}}
 {{- $ctx := (list $ $name $gatewaySpec)}}
 {{- include "gloo.util.merge" (list $ctx $yamlOverride "gatewayProxy.configMapSpec") -}}
 {{- end }}{{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}

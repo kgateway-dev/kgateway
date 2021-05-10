@@ -192,4 +192,4 @@ spec:
 {{- end }} {{/* define "gloo.deploymentSpec "*/}}
 
 {{/* Render template with yaml overrides */}}
-{{- include "gloo.util.merge" (list . (.Values.gloo.deployment.yamlOverride ) "gloo.deploymentSpec") -}}
+{{- include "gloo.util.merge" (list . .Values.gloo.deployment.yamlOverride "gloo.deploymentSpec") -}}

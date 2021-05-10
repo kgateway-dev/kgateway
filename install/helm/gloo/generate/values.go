@@ -154,13 +154,13 @@ type KnativeProxy struct {
 	Internal                       *KnativeProxyInternal `json:"internal,omitempty" desc:"Yaml overrides for knative internal proxy resources"`
 	*DeploymentSpec
 	*ServiceSpec
-	ConfigMap *YamlOverride `json:"configMap,omitempty" desc:"Wrapper for overriding values in the ConfigMap"`
+	ConfigMap *YamlOverride `json:"configMap,omitempty"`
 }
 
 type KnativeProxyInternal struct {
 	Deployment *YamlOverride `json:"deployment,omitempty"`
 	Service    *YamlOverride `json:"service,omitempty"`
-	ConfigMap  *YamlOverride `json:"configMap,omitempty" desc:"Wrapper for overriding values in the ConfigMap"`
+	ConfigMap  *YamlOverride `json:"configMap,omitempty"`
 }
 
 type Settings struct {
@@ -441,7 +441,7 @@ type AccessLogger struct {
 	RunAsUser               *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	FsGroup                 *float64          `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
 	ExtraAccessLoggerLabels map[string]string `json:"extraAccessLoggerLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the access logger deployment."`
-	Service                 *YamlOverride     `json:"service,omitempty" desc:"Wrapper for overriding values in the accesslogging service"`
+	Service                 *YamlOverride     `json:"service,omitempty"`
 	*DeploymentSpec
 }
 
