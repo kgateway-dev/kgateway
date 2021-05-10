@@ -416,7 +416,7 @@ spec:
         - mountPath: /var/run/secrets/tokens
           name: istio-token
 {{- end }} {{/* if not $global.istioSDS.customSidecars */}}
-{{- end }} {{/* if $global.istioSDS.enabled */}}
+{{- end }}{{/* if $global.istioSDS.enabled */}}
       volumes:
       - configMap:
           name: {{ $name | kebabcase }}-envoy-config

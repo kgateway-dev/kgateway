@@ -45,8 +45,8 @@ spec:
   ssl: false
   proxyNames:
   - {{ $name | kebabcase }}
-{{- end }} {{/* with */}}
-{{- end }} {{/* define "defaultGateway.gateway" */}}
+{{- end }}{{/* with */}}
+{{- end }}{{/* define "defaultGateway.gateway" */}}
 
 
 {{- define "defaultGateway.sslGateway" -}}
@@ -78,10 +78,10 @@ spec:
       httpConnectionManagerSettings:
         tracing:
 {{ toYaml $spec.tracing.provider | indent 10 }}
-{{- end }} {{/* if $spec.tracing.provider */}}
+{{- end }}{{/* if $spec.tracing.provider */}}
 {{- else }}
   httpGateway: {}
-{{- end }} {{/* if $gatewaySettings.customHttpsGateway */}}
+{{- end }}{{/* if $gatewaySettings.customHttpsGateway */}}
 {{ if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
   options:
 {{- end }}
@@ -96,9 +96,8 @@ spec:
   ssl: true
   proxyNames:
   - {{ $name | kebabcase }}
-
-{{- end }} {{/* with */}}
-{{- end }} {{/* define "defaultGatway.sslGateway" */}}
+{{- end }}{{/* with */}}
+{{- end }}{{/* define "defaultGatway.sslGateway" */}}
 
 {{- define "defaultGateway.failoverGateway" -}}
 {{- $name := (index . 1) }}
@@ -130,8 +129,8 @@ spec:
         forwardSniClusterName: {}
   proxyNames:
   - {{ $name | kebabcase }}
-{{- end }} {{/* with */}}
-{{- end }} {{/* define "defaultGateway.failoverGateway" */}}
+{{- end }}{{/* with */}}
+{{- end }}{{/* define "defaultGateway.failoverGateway" */}}
 
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy }}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
@@ -144,19 +143,19 @@ spec:
 {{- $defaultGatewayOverride := $spec.gatewaySettings.httpGatewayYamlOverride }}
 ---
 {{- include "gloo.util.merge" (list $ctx $defaultGatewayOverride "defaultGateway.gateway") -}}
-{{- end }} {{/* if not $gatewaySettings.disableHttpGateway */}}
+{{- end }}{{/* if not $gatewaySettings.disableHttpGateway */}}
 {{- if not $gatewaySettings.disableHttpsGateway }}
 {{- $sslGatewayOverride := $spec.gatewaySettings.httpsGatewayYamlOverride }}
 ---
 {{- include "gloo.util.merge" (list $ctx $sslGatewayOverride "defaultGateway.sslGateway") -}}
-{{- end }} {{/* if not $gatewaySettings.disableHttpsGateway  */}}
-{{- end }} {{/* if not $gatewaySettings.disableGeneratedGateways */}}
+{{- end }}{{/* if not $gatewaySettings.disableHttpsGateway  */}}
+{{- end }}{{/* if not $gatewaySettings.disableGeneratedGateways */}}
 {{- if $spec.failover }}
 {{- if $spec.failover.enabled }}
 {{- $failoverGatewayOverride := $spec.failover.yamlOverride }}
 ---
 {{- include "gloo.util.merge" (list $ctx $failoverGatewayOverride "defaultGateway.failoverGateway") -}}
-{{- end }} {{/* if $spec.failover.enabled */}}
-{{- end }} {{/* if $spec.failover */}}
-{{- end }} {{/* if $spec.gatewaySettings and (not $spec.disabled) */}}
-{{- end }} {{/* range gateways */}}
+{{- end }}{{/* if $spec.failover.enabled */}}
+{{- end }}{{/* if $spec.failover */}}
+{{- end }}{{/* if $spec.gatewaySettings and (not $spec.disabled) */}}
+{{- end }}{{/* range gateways */}}
