@@ -31,26 +31,45 @@ imagePullSecrets:
 {{- end -}}
 
 {{- /*
-gloo.util.merge will merge two YAML templates and output the result.
+    gloo.util.merge is a fork of a helm library chart function (https://github.com/helm/charts/blob/master/incubator/common/templates/_util.tpl)
 
 This takes an array of three values:
 - the top context
-- the template name of the overrides (destination)
+- the yaml block that will be merged in (override)
 - the template name of the base (source)
+
+The behaviour is as follows, to align with already existing helm behaviour:
+- If no source is found (template is empty), the merged output will be empty
+- If no overrides are specified, the source is rendered as is
+- If overrides are specified and source is not empty, overrides will be merged in to the source.
+
+Overrides can replace / add to deeply nested dictionaries, but will completely replace lists.
+Examples:
+
+┌─────────────────────┬───────────────────────┬────────────────────────┐
+│       Source        │       Overrides       │        Result          │
+├─────────────────────┼───────────────────────┼────────────────────────┤
+│ metadata:           │ metadata:             │ metadata:              │
+│   labels:           │   labels:             │   labels:              │
+│     app: gloo       │    app:gloo1          │     app: gloo1         │
+│     cluster: useast │    author: infra-team │     author: infra-team │
+│                     │                       │     cluster: useast    │
+├─────────────────────┼───────────────────────┼────────────────────────┤
+│ lists:              │ lists:                │ lists:                 │
+│   groceries:        │  groceries:           │   groceries:           │
+│   - apple           │   - grapes            │   - grapes             │
+│   - banana          │                       │                        │
+└─────────────────────┴───────────────────────┴────────────────────────┘
 
 */ -}}
 {{- define "gloo.util.merge" -}}
 {{- $top := first . -}}
 {{- $overrides := (index . 1) -}}
-{{- if empty $overrides -}}
-{{ include (index . 2) $top}}
-{{- else -}}
 {{- $tpl := fromYaml (include (index . 2) $top) -}}
-{{- if not (empty $tpl) -}}
+{{- if or (empty $overrides) (empty $tpl) -}}
+{{ include (index . 2) $top }} {{/* render source as is */}}
+{{- else -}}
 {{- $merged := merge $overrides $tpl -}}
-{{- if not (empty $merged) -}}
-{{- toYaml (merge $overrides $tpl) -}}
+{{- toYaml (merge $overrides $tpl) -}} {{/* render source with overrides as YAML */}}
 {{- end -}}
-{{- end -}}
-{{- end -}} {{/*if not (empty $overrides)*/}}
 {{- end -}}
