@@ -6,7 +6,7 @@ Name|Version|License
 [aws/aws-sdk-go](https://github.com/aws/aws-sdk-go)|v1.34.9|Apache License 2.0
 [udpa/go](https://github.com/cncf/udpa)|v0.0.0-20201120205902-5459f2c99403|Apache License 2.0
 [cratonica/2goarray](https://github.com/cratonica/2goarray)|v0.0.0-20190331194516-514510793eaa|MIT License
-[dgrijalva/jwt-go](https://github.com/dgrijalva/jwt-go)|v3.2.0+incompatible|MIT License
+[jwt-go/v4](https://github.com/dgrijalva/jwt-go)|v4.0.0-preview1|MIT License
 [envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.9.9-0.20210202030519-c4d725214657|Apache License 2.0
 [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)|v0.4.0|Apache License 2.0
 [fgrosse/zaptest](https://github.com/fgrosse/zaptest)|v1.1.0|MIT License
