@@ -1,5 +1,3 @@
-// Copyright Istio Authors
-//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,12 +10,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This file is copied from projects/envoyinit/cmd/utils/filter_types.gen.go as it contains
-// the envoy types needed to marshal the envoy config into JSON. Additionally, the Gloo specific
-// filter types are needed here as well, so those are manually added in. Ideally, this would be generated
-// and shared with the `envoyinit` project
+//  GENERATED FILE -- DO NOT EDIT
 
-package xdsinspection
+package filter_types
 
 import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/admin/v2alpha"
@@ -124,8 +119,10 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/resource_monitor/fixed_heap/v2alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/resource_monitor/injected_resource/v2alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/retry/omit_canary_hosts/v2"
+	_ "github.com/envoyproxy/go-control-plane/envoy/config/retry/omit_canary_hosts/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/retry/omit_host_metadata/v2"
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/retry/previous_hosts/v2"
+	_ "github.com/envoyproxy/go-control-plane/envoy/config/retry/previous_hosts/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/route/v4alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/tap/v3"
@@ -157,12 +154,16 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dynamic_forward_proxy/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/redis/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/common/dynamic_forward_proxy/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/common/matching/v4alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/common/ratelimit/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/common/tap/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/common/tap/v4alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/compressor/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/decompressor/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/dependency/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/fault/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/matcher/action/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/adaptive_concurrency/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/admission_control/v3alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/aws_lambda/v3"
@@ -172,6 +173,7 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cache/v4alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cdn_loop/v3alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v4alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/cors/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/csrf/v4alpha"
@@ -189,6 +191,7 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_stats/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_web/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/gzip/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/gzip/v4alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_to_metadata/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/header_to_metadata/v4alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/health_check/v3"
@@ -246,6 +249,7 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v4alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/thrift_proxy/filters/ratelimit/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/thrift_proxy/filters/ratelimit/v4alpha"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/thrift_proxy/router/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/thrift_proxy/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/thrift_proxy/v4alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/wasm/v3"
@@ -257,6 +261,7 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/internal_redirect/previous_routes/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/internal_redirect/safe_cross_scheme/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/network/socket_interface/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/rate_limit_descriptors/expr/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/retry/host/omit_host_metadata/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/retry/priority/previous_priorities/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/stat_sinks/wasm/v3"
@@ -272,6 +277,8 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/quic/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/quic/v4alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/raw_buffer/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/starttls/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/starttls/v4alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tap/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tap/v4alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -346,8 +353,18 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/pkg/test/resource/v3"
 	_ "github.com/envoyproxy/go-control-plane/pkg/test/v2"
 	_ "github.com/envoyproxy/go-control-plane/pkg/test/v3"
+	_ "github.com/envoyproxy/go-control-plane/pkg/ttl/v2"
+	_ "github.com/envoyproxy/go-control-plane/pkg/ttl/v3"
 
-	// gloo filter types, added manually for now
+	// gloo filter types
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/annotations"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/route"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/extauth"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
@@ -359,7 +376,13 @@ import (
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/proxylatency"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation_ee"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformers/xslt"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/xff_offset"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/metadata/v3"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/tracing/v3"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 )
