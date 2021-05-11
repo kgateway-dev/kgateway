@@ -32,7 +32,7 @@ const _ = proto.ProtoPackageIsVersion4
 type FilterConfig_EnableFor int32
 
 const (
-	// Only enable DLP masking of responses. Defaults to this value.
+	// Only enable DLP masking of response bodies. Defaults to this value.
 	FilterConfig_RESPONSE_BODY FilterConfig_EnableFor = 0
 	// Only enable DLP masking of access logs.
 	FilterConfig_ACCESS_LOGS FilterConfig_EnableFor = 1
@@ -84,7 +84,7 @@ func (FilterConfig_EnableFor) EnumDescriptor() ([]byte, []int) {
 type Config_EnableFor int32
 
 const (
-	// Only enable DLP masking of responses. Defaults to this value.
+	// Only enable DLP masking of response bodies. Defaults to this value.
 	Config_RESPONSE_BODY Config_EnableFor = 0
 	// Only enable DLP masking of access logs.
 	Config_ACCESS_LOGS Config_EnableFor = 1
@@ -374,7 +374,7 @@ type Config struct {
 	// These actions will be applied in order, one at a time.
 	Actions []*Action `protobuf:"bytes,1,rep,name=actions,proto3" json:"actions,omitempty"`
 	// Whether responses, access logs, or both should be masked by the applied actions.
-	// If not defined, masking will only be enabled for responses.
+	// If not defined, masking will only be enabled for responses bodies.
 	EnabledFor Config_EnableFor `protobuf:"varint,2,opt,name=enabled_for,json=enabledFor,proto3,enum=dlp.options.gloo.solo.io.Config_EnableFor" json:"enabled_for,omitempty"`
 }
 

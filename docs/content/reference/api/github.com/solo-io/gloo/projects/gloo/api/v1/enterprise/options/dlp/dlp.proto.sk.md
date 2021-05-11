@@ -56,7 +56,7 @@ Listener level config for dlp filter
 
 | Name | Description |
 | ----- | ----------- | 
-| `RESPONSE_BODY` | Only enable DLP masking of responses. Defaults to this value. |
+| `RESPONSE_BODY` | Only enable DLP masking of response bodies. Defaults to this value. |
 | `ACCESS_LOGS` | Only enable DLP masking of access logs. |
 | `ALL` | Enable DLP masking for both responses and access logs. |
 
@@ -102,7 +102,7 @@ listener level config.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `actions` | [[]dlp.options.gloo.solo.io.Action](../dlp.proto.sk/#action) | List of data loss prevention actions to be applied. These actions will be applied in order, one at a time. |
-| `enabledFor` | [.dlp.options.gloo.solo.io.Config.EnableFor](../dlp.proto.sk/#enablefor) | Whether responses, access logs, or both should be masked by the applied actions. If not defined, masking will only be enabled for responses. |
+| `enabledFor` | [.dlp.options.gloo.solo.io.Config.EnableFor](../dlp.proto.sk/#enablefor) | Whether responses, access logs, or both should be masked by the applied actions. If not defined, masking will only be enabled for responses bodies. |
 
 
 
@@ -114,7 +114,7 @@ listener level config.
 
 | Name | Description |
 | ----- | ----------- | 
-| `RESPONSE_BODY` | Only enable DLP masking of responses. Defaults to this value. |
+| `RESPONSE_BODY` | Only enable DLP masking of response bodies. Defaults to this value. |
 | `ACCESS_LOGS` | Only enable DLP masking of access logs. |
 | `ALL` | Enable DLP masking for both responses and access logs. |
 
