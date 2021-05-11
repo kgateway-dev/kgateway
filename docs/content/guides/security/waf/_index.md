@@ -265,6 +265,23 @@ spec:
 
 We are applying a WAF rule at the `virtualHost` level, meaning that the rule will be applied to all routes for this `VirtualService`. The rule we are applying will cause modsecurity to inspect the remote address for the request being processed and if the IP address does not fall in the `173.175.0.0/16` network range, the request will be denied with a 403 status code.
 
+## gRPC 
+
+If you have configured WAF, gRPC calls to a VirtualService fronting a gRPC services may timeout if the gRPC call is a stream
+as the WAF filter requires an end stream to be specified to finish evaluating intervention. To avoid this timeout, add `requestHeadersOnly: true` and `responseHeadersOnly: true` to the WAF config:
+
+```yaml
+waf:
+  requestHeadersOnly: true
+  responseHeadersOnly: true
+  customInterventionMessage: ModSecurity intervention! Custom message details here..
+  ruleSets:
+  - ruleStr: |
+      # Turn rule engine on
+      SecRuleEngine On
+      SecRule REQUEST_HEADERS:User-Agent "scammer" "deny,status:403,id:107,phase:1,msg:'blocked scammer'"
+```
+
 ## Audit Logging
 
 Audit Logging is supported starting Gloo Edge Enterprise v1.4.0-beta6, but it works differently than in other ModSecurity integrations.
