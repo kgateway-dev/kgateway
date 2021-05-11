@@ -10,6 +10,7 @@ jobs:
     name: Trivy Scan
     runs-on: "ubuntu-18.04"
     env:
+      SCAN_DIR: _output/scans
       IMAGE_REPO: quay.io/solo-io
       TAGGED_VERSION: ${{ github.ref }}
     strategy:
