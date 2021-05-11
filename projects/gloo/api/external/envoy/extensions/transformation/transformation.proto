@@ -47,6 +47,9 @@ message TransformationRule {
     bool clear_route_cache = 3;
     // Apply a transformation to responses.
     Transformation response_transformation = 2;
+    // Apply a transformation in the onStreamComplete callback 
+    // (for modifying headers and dynamic metadata for access logs)
+    Transformation on_stream_completion_transformation = 4;
   }
   // transformation to perform
   Transformations route_transformations = 2;
