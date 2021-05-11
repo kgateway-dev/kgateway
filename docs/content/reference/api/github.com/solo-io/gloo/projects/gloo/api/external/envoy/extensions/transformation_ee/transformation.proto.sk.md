@@ -72,6 +72,7 @@ weight: 5
 "requestTransformation": .envoy.config.filter.http.transformation_ee.v2.Transformation
 "clearRouteCache": bool
 "responseTransformation": .envoy.config.filter.http.transformation_ee.v2.Transformation
+"onStreamCompletionTransformation": .envoy.config.filter.http.transformation_ee.v2.Transformation
 
 ```
 
@@ -80,6 +81,7 @@ weight: 5
 | `requestTransformation` | [.envoy.config.filter.http.transformation_ee.v2.Transformation](../transformation.proto.sk/#transformation) |  |
 | `clearRouteCache` | `bool` | clear the route cache if the request transformation was applied. |
 | `responseTransformation` | [.envoy.config.filter.http.transformation_ee.v2.Transformation](../transformation.proto.sk/#transformation) |  |
+| `onStreamCompletionTransformation` | [.envoy.config.filter.http.transformation_ee.v2.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation in the onStreamComplete callback (for modifying headers and dynamic metadata for access logs). |
 
 
 
@@ -108,12 +110,16 @@ weight: 5
 
 ```yaml
 "actions": []envoy.config.filter.http.transformation_ee.v2.Action
+"enableHeaderTransformation": bool
+"enableDynamicMetadataTransformation": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `actions` | [[]envoy.config.filter.http.transformation_ee.v2.Action](../transformation.proto.sk/#action) | list of actions to apply. |
+| `enableHeaderTransformation` | `bool` | If true, headers will be transformed. Should only be true for the on_stream_complete_transformation route transformation type. |
+| `enableDynamicMetadataTransformation` | `bool` | If true, dynamic metadata will be transformed. Should only be used for the on_stream_complete_transformation route transformation type. |
 
 
 
