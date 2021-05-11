@@ -48,7 +48,7 @@ DLP is one of the first filters run by Envoy. Gloo Edge's current filter order f
 By default, DLP will only run regex replaces on the response body. If 
 [access logging]({{% versioned_link_path fromRoot="/guides/security/access_logging/" %}}) is configured, the DLP actions
 can also be applied to the headers and dynamic metadata that is logged by the configured access loggers. To do so, the `enabledFor`
-DLP configuration option must be set to `ONLY_ACCESS_LOGS` or `BOTH` (to mask access logs AND the response).
+DLP configuration option must be set to `ACCESS_LOGS` or `ALL` (to mask access logs AND the response bodies).
 
 ### Prerequisites
 
@@ -134,7 +134,7 @@ by using a configuration like:
 ```yaml
     options:
       dlp:
-        enabledFor: BOTH
+        enabledFor: ALL
         actions:
         - actionType: SSN
         - actionType: ALL_CREDIT_CARDS

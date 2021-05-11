@@ -19,9 +19,9 @@ option (extproto.hash_all) = true;
 message FilterConfig {
     enum EnableFor {
         // Only enable DLP masking of responses. Defaults to this value.
-        ONLY_RESPONSES = 0;
+        RESPONSE_BODY = 0;
         // Only enable DLP masking of access logs.
-        ONLY_ACCESS_LOGS = 1;
+        ACCESS_LOGS = 1;
         // Enable DLP masking for both responses and access logs.
         ALL = 2;
     }
@@ -31,7 +31,7 @@ message FilterConfig {
     repeated DlpRule dlp_rules = 1;
 
     // Whether responses, access logs, or both should be masked by the applied actions.
-    // If not defined, masking will only be enabled for responses.
+    // If not defined, masking will only be enabled for responses bodies.
     EnableFor enabled_for = 2;
 }
 
@@ -55,9 +55,9 @@ message DlpRule {
 message Config {
     enum EnableFor {
         // Only enable DLP masking of responses. Defaults to this value.
-        ONLY_RESPONSES = 0;
+        RESPONSE_BODY = 0;
         // Only enable DLP masking of access logs.
-        ONLY_ACCESS_LOGS = 1;
+        ACCESS_LOGS = 1;
         // Enable DLP masking for both responses and access logs.
         ALL = 2;
     }
