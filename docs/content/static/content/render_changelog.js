@@ -87,10 +87,14 @@ function getText(){
   .then(response => response.json()).then(resJson => resJson);
 }   
 
+let globalOpts = {};
+
 function generateChangelog(type){
   if (!changelogJsonData){
     getText().then(json => {
       changelogJsonData = json;
+      globalOpts = changelogJsonData.Opts
+      console.log(globalOpts);
       changelogDataSetter.data = generateMarkdown(type, changelogJsonData, showOpenSource);
     });
   }else{
@@ -164,10 +168,15 @@ function Collapsible(title, content){
 function Note(note){
   let out = "";
   if (note.FromDependentVersion){
-    out += `(From OSS ${note.FromDependentVersion}) `
+    out += `(From OSS ${getGithubReleaseLink(note.FromDependentVersion, true)}) `
   }
   out += `${note.Note}`
   return out
+}
+
+function getGithubReleaseLink(versionString, useOtherRepo){
+  let repo = useOtherRepo ? globalOpts.OtherRepo : globalOpts.Repo
+  return `[${versionString}](https://github.com/${globalOpts.RepoOwner}/${repo}/releases/tag/${versionString})`;
 }
 
 class ReleaseData{
@@ -268,7 +277,7 @@ class MinorReleaseRenderer extends MarkdownRenderer{
     var output = "";
     for (const [header, notes] of Object.entries(input.changelogNotes)){
 
-      output += H3(header + notes.headerSuffix);
+      output += H3(getGithubReleaseLink(header) + notes.headerSuffix);
       output += this.renderChangelogNotes(notes, showOSNotes);
     }
     return output
@@ -294,7 +303,7 @@ class ChronologicalRenderer extends MarkdownRenderer{
     input.sort((a, b) => {return b[1].createdAt - a[1].createdAt});
     let output = ""
     for (const [header, changelogNotes] of input){
-      output += H3(header + changelogNotes.headerSuffix)
+      output += H3(getGithubReleaseLink(header) + changelogNotes.headerSuffix)
       for (let [category,notes] of Object.entries(changelogNotes.categories)){
         notes = notes.filter(note => !note.FromDependentVersion || showOSNotes)
           if (notes.length > 0){
@@ -416,7 +425,7 @@ class VersionComparer{
       for (let [version, notes] of Object.entries(versionData)){
         notes = notes.filter(note => !note.FromDependentVersion || showOpenSource)
         if (notes.length > 0){
-          noteStr += H4("Added in " + version);
+          noteStr += H4("Added in " + getGithubReleaseLink(version));
           for (const note of notes){
             noteStr += UnorderedListItem(Note(note));
             count += 1
