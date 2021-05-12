@@ -1,0 +1,8 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoy-gloo
+    dependencyRepo: solo-io
+    dependencyTag: v1.16.4
+    description: >-
+      Upgrade envoy-gloo version to handle CVE-2021-29492 (https://github.com/envoyproxy/envoy/security/advisories/GHSA-4987-27fx-x6cf)
+      

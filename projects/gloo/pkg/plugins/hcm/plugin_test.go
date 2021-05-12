@@ -96,9 +96,10 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			},
-			MaxConnectionDuration:      prototime.DurationToProto(time.Hour),
-			MaxStreamDuration:          prototime.DurationToProto(time.Hour),
-			ServerHeaderTransformation: hcm.HttpConnectionManagerSettings_OVERWRITE,
+			MaxConnectionDuration:        prototime.DurationToProto(time.Hour),
+			MaxStreamDuration:            prototime.DurationToProto(time.Hour),
+			ServerHeaderTransformation:   hcm.HttpConnectionManagerSettings_OVERWRITE,
+			PathWithEscapedSlashesAction: hcm.HttpConnectionManagerSettings_REJECT_REQUEST,
 		}
 		hl := &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
@@ -161,6 +162,7 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxConnectionDuration()).To(MatchProto(hcms.MaxConnectionDuration))
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxStreamDuration()).To(MatchProto(hcms.MaxStreamDuration))
 		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_OVERWRITE))
+		Expect(cfg.GetPathWithEscapedSlashesAction()).To(Equal(envoyhttp.HttpConnectionManager_REJECT_REQUEST))
 
 		// Confirm that MockTracingPlugin return the proper value
 		Expect(cfg.Tracing).To(BeNil())
