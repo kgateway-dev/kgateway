@@ -21,7 +21,6 @@ ifeq ($(TAGGED_VERSION),)
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
-<<<<<<< HEAD
 # WASM version has '-wasm' added after major.minor.patch but before label. Eg 1.2.3-wasm or 1.2.3-wasm-rc1
 WASM_VERSION ?= $(shell echo $(VERSION) | sed 's/\([0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}\)/\1-wasm/g')
 
@@ -30,12 +29,8 @@ ifeq ($(VERSION), $(WASM_VERSION))
 	WASM_VERSION = wasm-$(VERSION)
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.16.3
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.16.4
 ENVOY_GLOO_WASM_IMAGE ?= quay.io/solo-io/envoy-gloo:1.16.0-wasm-rc1
-=======
-# Uses solo-io/envoy-fork with singleton fix for wasm plugin
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.17.3
->>>>>>> 47af9110d (Apply CVE changes 1.6 (#4731))
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
