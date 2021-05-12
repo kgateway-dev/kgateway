@@ -1,0 +1,11 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: dgrijalva
+    dependencyRepo: jwt-go
+    dependencyTag: v4.0.0-preview1
+    description: Fix for https://nvd.nist.gov/vuln/detail/CVE-2020-26160
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: linux
+    dependencyRepo: alpine
+    dependencyTag: 3.13.5
+    description: Fix for apk-tools CVE-2021-30139 https://gitlab.alpinelinux.org/alpine/aports/-/issues/12606
