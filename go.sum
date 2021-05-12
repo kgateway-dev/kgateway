@@ -187,8 +187,19 @@ github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDk
 github.com/clusterhq/flocker-go v0.0.0-20160920122132-2b8b7259d313/go.mod h1:P1wt9Z3DP8O6W3rvwCt0REIlshg1InHImaLW0t3ObY0=
 github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGXZJjfX53e64911xZQV5JYwmTeXPW+k8Sc=
 github.com/cncf/udpa/go v0.0.0-20200313221541-5f7e5dd04533/go.mod h1:WmhPx2Nbnhtbo57+VJT5O0JRkEi1Wbu0z5j0R8u5Hbk=
+<<<<<<< HEAD
 github.com/cncf/udpa/go v0.0.0-20200629203442-efcf912fb354 h1:9kRtNpqLHbZVO/NNxhHp2ymxFxsHOe3x2efJGn//Tas=
 github.com/cncf/udpa/go v0.0.0-20200629203442-efcf912fb354/go.mod h1:WmhPx2Nbnhtbo57+VJT5O0JRkEi1Wbu0z5j0R8u5Hbk=
+=======
+github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403 h1:cqQfy1jclcSy/FwLjemeg3SR1yaINm74aQyupQ0Bl8M=
+github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403/go.mod h1:WmhPx2Nbnhtbo57+VJT5O0JRkEi1Wbu0z5j0R8u5Hbk=
+github.com/cncf/xds/go v0.0.0-20210312221358-fbca930ec8ed h1:OZmjad4L3H8ncOIR8rnb5MREYqG8ixi5+WbeUsquF0c=
+github.com/cncf/xds/go v0.0.0-20210312221358-fbca930ec8ed/go.mod h1:eXthEFrGJvWHgFFCl3hGmgk+/aYT6PnTQLykKQRLhEs=
+github.com/cockroachdb/apd v1.1.0 h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I=
+github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
+github.com/cockroachdb/apd/v2 v2.0.1 h1:y1Rh3tEU89D+7Tgbw+lp52T6p/GJLpDmNvr10UWqLTE=
+github.com/cockroachdb/apd/v2 v2.0.1/go.mod h1:DDxRlzC2lo3/vSlmSoS7JkqbbrARPuFOGr0B9pvN3Gw=
+>>>>>>> 47af9110d (Apply CVE changes 1.6 (#4731))
 github.com/cockroachdb/datadriven v0.0.0-20190809214429-80d97fb3cbaa/go.mod h1:zn76sxSg3SzpJ0PPJaLDCu+Bu0Lg3sKTORVIj19EIF8=
 github.com/codegangsta/negroni v1.0.0/go.mod h1:v0y3T5G7Y1UlFfyxFn/QLRU4a2EuNau2iZY63YTKWo0=
 github.com/container-storage-interface/spec v1.2.0/go.mod h1:6URME8mwIBbpVyZV93Ce5St17xBiQJQY67NDsuohiy4=
@@ -296,8 +307,15 @@ github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymF
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1/go.mod h1:G1fbsNGAFpC1aaERrShZQVdUV2ZuZuv6FCl2v9JNSxQ=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
+<<<<<<< HEAD
 github.com/envoyproxy/go-control-plane v0.9.6-0.20200529035633-fc42e08917e9 h1:AM3AYZI9udpliFfjJTM4E2G9pR+HS5ilXrJGJTvWTJM=
 github.com/envoyproxy/go-control-plane v0.9.6-0.20200529035633-fc42e08917e9/go.mod h1:OXl5to++W0ctG+EHWTFUjiypVxC/Y4VLc/KFU+al13s=
+=======
+github.com/envoyproxy/go-control-plane v0.9.5/go.mod h1:OXl5to++W0ctG+EHWTFUjiypVxC/Y4VLc/KFU+al13s=
+github.com/envoyproxy/go-control-plane v0.9.9-0.20201210154907-fd9021fe5dad/go.mod h1:cXg6YxExXjJnVBQHBLXeUAgxn2UodCpnH306RInaBQk=
+github.com/envoyproxy/go-control-plane v0.9.9-0.20210511190911-87d352569d55 h1:JrfVk5s8JgPiHVnissaQqxXTLTBSQ2GXYdX7eXJCfL0=
+github.com/envoyproxy/go-control-plane v0.9.9-0.20210511190911-87d352569d55/go.mod h1:hliV/p42l8fGbc6Y9bQ70uLwIvmJyVE5k4iMKlh8wCQ=
+>>>>>>> 47af9110d (Apply CVE changes 1.6 (#4731))
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/envoyproxy/protoc-gen-validate v0.4.0 h1:0Hedkeb8AtERQoi/wLDxdMr6iOU4g6Mw0RfB2IEpEhk=
 github.com/envoyproxy/protoc-gen-validate v0.4.0/go.mod h1:amr46FC2KZvleZB2VXz+QeQDF+iIKKjQimiDrtp1rYA=
@@ -546,6 +564,12 @@ github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de
 github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgfV/d3M/q6VIi02HzZEHgUlZvzk=
 github.com/grpc-ecosystem/grpc-gateway v1.9.0/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
 github.com/grpc-ecosystem/grpc-gateway v1.9.5/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
+<<<<<<< HEAD
+=======
+github.com/grpc-ecosystem/grpc-gateway v1.14.6/go.mod h1:zdiPV4Yse/1gnckTHtghG4GkDEdKCRJduHpTxT3/jcw=
+github.com/grpc-ecosystem/grpc-gateway v1.14.8/go.mod h1:NZE8t6vs6TnwLL/ITkaK8W3ecMLGAbh2jXTclvpiwYo=
+github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFbcEtjT1g+wF4CSlocrBnw=
+>>>>>>> 47af9110d (Apply CVE changes 1.6 (#4731))
 github.com/hashicorp/consul/api v1.1.0/go.mod h1:VmuI/Lkw1nC05EYQWNKwWGbkg+FbDBtguAZLlVdkD9Q=
 github.com/hashicorp/consul/api v1.3.0 h1:HXNYlRkkM/t+Y/Yhxtwcy02dlYwIaoxzvxPnS+cqy78=
 github.com/hashicorp/consul/api v1.3.0/go.mod h1:MmDNSzIMUjNpY/mQ398R4bk2FnqQLoPndWW5VkKPlCE=
@@ -993,6 +1017,7 @@ github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f/go.mod h1
 github.com/solo-io/go-utils v0.13.0/go.mod h1:pA8kwWDNlJueffTcC1BYddTerO8zpUUGl5/7JGeC5iU=
 github.com/solo-io/go-utils v0.15.2/go.mod h1:pA8kwWDNlJueffTcC1BYddTerO8zpUUGl5/7JGeC5iU=
 github.com/solo-io/go-utils v0.16.4/go.mod h1:uIPAgEuwiEwpBaFv1uI7j4CUVaFYR5iHmTYuIUlLY2Q=
+<<<<<<< HEAD
 github.com/solo-io/go-utils v0.16.6 h1:24bg4lC7E/hQxfb0rjOr5jjD7DRNyNgjTfGzsjiplPQ=
 github.com/solo-io/go-utils v0.16.6/go.mod h1:uIPAgEuwiEwpBaFv1uI7j4CUVaFYR5iHmTYuIUlLY2Q=
 github.com/solo-io/protoc-gen-ext v0.0.7/go.mod h1:zZIFs9Ch3EU3uQgL2ZwCHlUGAtwiz4Cbw6tBcmaNsEk=
@@ -1010,6 +1035,32 @@ github.com/solo-io/solo-kit v0.13.14 h1:563vn7XCMpL6MsiAqJFGUG8VtaNKBCnX5b9mXUH8
 github.com/solo-io/solo-kit v0.13.14/go.mod h1:1cSoxO1Cgzn++03nnp5V1iGf0S45OLDTUmj70rD/+hY=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20200922223809-7fff932e9e9a h1:cGPy01C3GXZyuq8s6pkRCjBA+NkLv4FbcP0Toa/7ung=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20200922223809-7fff932e9e9a/go.mod h1:3lckq1wF8I6I2a1Jx5IsEG+PQArE57Jp3wBE2rQnKmw=
+=======
+github.com/solo-io/go-utils v0.19.0/go.mod h1:If8NiehXROCFU65PGeDTrrZCNA5gJXvbcVoXI8Fqjko=
+github.com/solo-io/go-utils v0.20.0/go.mod h1:wy4um9xnqPNlASld4eSuQQqjNCXRBtDjVRLJsoGqkdE=
+github.com/solo-io/go-utils v0.20.2 h1:lJFj9MsdosKU1Z/L9FDfiB2r3BFLvzFSLLAGR3p1e4U=
+github.com/solo-io/go-utils v0.20.2/go.mod h1:6e8K1spnMWwlnJRSNp/J84GEyJbrcK4Gm7i+ehzCi8c=
+github.com/solo-io/k8s-utils v0.0.1/go.mod h1:53N9+9Gl2MwqIZJ7/ocA9gKvWt+6z7MPD2qKQix7oFE=
+github.com/solo-io/k8s-utils v0.0.3 h1:gEDUIuhHQAmaLUfi8b7cteywhXaTD6iw+kahFmzlM40=
+github.com/solo-io/k8s-utils v0.0.3/go.mod h1:JiVV6v+Y9sN1TgVyTU/SL2lfKTnSj/12VMeBDtK/5jE=
+github.com/solo-io/protoc-gen-ext v0.0.12/go.mod h1:/U/jMDtVI7R6N323sfaUXK9Mmo54D7SY3pP7JtI/kMo=
+github.com/solo-io/protoc-gen-ext v0.0.13/go.mod h1:/U/jMDtVI7R6N323sfaUXK9Mmo54D7SY3pP7JtI/kMo=
+github.com/solo-io/protoc-gen-ext v0.0.15 h1:OVPo1essSt2hx5crEfnRxYlA5mwsGvrIWynNQDR/4xo=
+github.com/solo-io/protoc-gen-ext v0.0.15/go.mod h1:ch1ZUyVtN45zxAVwpuZUW+F1IR7aG0rCVAp2JrWKDCc=
+github.com/solo-io/reporting-client v0.2.0 h1:v4NheU8EQL9G7kC3qrsKvC/sJzydrJyVr/sW4QN/owk=
+github.com/solo-io/reporting-client v0.2.0/go.mod h1:FmBDzwc1zEwayCCrlP+1w7NcpM0FIuvU+NSePj4wJq8=
+github.com/solo-io/skv2 v0.14.1/go.mod h1:m1a3AUh8D+49AO6kwD0yUnOJGSzekiPq/6TUoXueeuk=
+github.com/solo-io/skv2 v0.15.2 h1:m6IfIcIRXLDv0xokRrP5o1BT7aSiz10CUYWtJKVDq2w=
+github.com/solo-io/skv2 v0.15.2/go.mod h1:VHaqcbvRTzPD/m5lCV+zBOQppbtEB5PTmkZkCmrJBL0=
+github.com/solo-io/solo-apis v0.0.0-20201208172621-1ef725df2bff h1:bZlxXxgFqBEFj0I+lKVBaoqv48+JgRLsTqlEeM+tecQ=
+github.com/solo-io/solo-apis v0.0.0-20201208172621-1ef725df2bff/go.mod h1:4y0+gYZPdlNDPQ09waJs25QjTjht03dkmGUi28AgIrU=
+github.com/solo-io/solo-kit v0.16.0/go.mod h1:zf+vof9HAavbFKRgL80jJ24SeE9PvoB8ooQ7DACtK8I=
+github.com/solo-io/solo-kit v0.17.5 h1:Eqk3Cgih/fbxpuWUGhNHZ4ZBZunwdkfTYJxP1Gj+EbI=
+github.com/solo-io/solo-kit v0.17.5/go.mod h1:kFh07+5I1yunz/S00gEUGJ4c7z3PP+e7i2SJL2Wk9es=
+github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3 h1:Am1RMaWH7jOug0ys4gUeBCgwR/94NSfZqu90j9u8eTA=
+github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3/go.mod h1:3lckq1wF8I6I2a1Jx5IsEG+PQArE57Jp3wBE2rQnKmw=
+github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
+>>>>>>> 47af9110d (Apply CVE changes 1.6 (#4731))
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spf13/afero v1.1.2/go.mod h1:j4pytiNVoe2o6bmDsKpLACNPDBIoEAkihy7loJ1B0CQ=
@@ -1110,6 +1161,13 @@ go.opencensus.io v0.22.1/go.mod h1:Ap50jQcDJrx6rB6VgeeFPtuPIf3wMRvRfrfYDO6+BmA=
 go.opencensus.io v0.22.2/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
 go.opencensus.io v0.22.4 h1:LYy1Hy3MJdrCdMwwzxA/dRok4ejH+RwNGbuoD9fCjto=
 go.opencensus.io v0.22.4/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
+<<<<<<< HEAD
+=======
+go.opencensus.io v0.22.5 h1:dntmOdLpSpHlVqbW5Eay97DelsZHe+55D+xC6i0dDS0=
+go.opencensus.io v0.22.5/go.mod h1:5pWMHQbX5EPX2/62yrJeAkowc+lfs/XD7Uxpq3pI6kk=
+go.opentelemetry.io/proto/otlp v0.7.0 h1:rwOQPCuKAKmwGKq2aVNnYIibI6wnV7EvzgfTCzcdGg8=
+go.opentelemetry.io/proto/otlp v0.7.0/go.mod h1:PqfVotwruBrMGOCsRd/89rSnXhoiJIqeYNgFYFoEGnI=
+>>>>>>> 47af9110d (Apply CVE changes 1.6 (#4731))
 go.uber.org/atomic v1.3.2/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.4.0/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.5.0/go.mod h1:sABNBOSYdrvTF6hTgEIbc7YasKWGhgEQZyfxyTvoXHQ=
