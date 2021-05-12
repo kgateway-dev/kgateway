@@ -1,7 +1,15 @@
 changelog:
   - type: DEPENDENCY_BUMP
-    dependencyOwner: envoy-gloo
-    dependencyRepo: solo-io
+    dependencyOwner: envoyproxy
+    dependencyRepo: go-control-plane
+    dependencyTag: v0.9.9-0.20210511190911-87d352569d55
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.18.5
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
     dependencyTag: v1.18.1
   - type: FIX
     description: >-
