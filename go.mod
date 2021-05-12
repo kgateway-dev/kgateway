@@ -8,10 +8,11 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.34.9
-	github.com/cncf/udpa/go v0.0.0-20200629203442-efcf912fb354
+	github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
-	github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
+	github.com/elazarl/goproxy/ext v0.0.0-20210110162100-a92cc753f88e // indirect
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210511190911-87d352569d55
 	github.com/envoyproxy/protoc-gen-validate v0.4.0
 	github.com/fgrosse/zaptest v1.1.0
@@ -24,7 +25,7 @@ require (
 	github.com/gogo/googleapis v1.3.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.4.4
-	github.com/golang/protobuf v1.4.2
+	github.com/golang/protobuf v1.4.3
 	github.com/google/go-containerregistry v0.1.3 // indirect
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v31 v31.0.0
@@ -58,13 +59,13 @@ require (
 	github.com/solo-io/envoy-operator v0.1.4
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.16.6
-	github.com/solo-io/protoc-gen-ext v0.0.9
+	github.com/solo-io/protoc-gen-ext v0.0.15
 	github.com/solo-io/reporting-client v0.1.2
 	github.com/solo-io/skv2 v0.8.1
 	github.com/solo-io/solo-apis v0.0.0-20200717214114-6a1daa5a5d05
-	github.com/solo-io/solo-kit v0.13.14
+	github.com/solo-io/solo-kit v0.13.15-0.20210512185927-3b892990bbb1
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20200922223809-7fff932e9e9a
-	github.com/spf13/afero v1.2.2
+	github.com/spf13/afero v1.3.3
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
@@ -75,10 +76,9 @@ require (
 	golang.org/x/mod v0.3.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
-	golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6 // indirect
 	golang.org/x/tools v0.0.0-20200916195026-c9a70fc28ce3
 	google.golang.org/genproto v0.0.0-20200626011028-ee7919e894b5
-	google.golang.org/grpc v1.29.1
+	google.golang.org/grpc v1.36.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/src-d/go-billy.v4 v4.3.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
@@ -108,6 +108,7 @@ replace (
 	github.com/golang/protobuf => github.com/golang/protobuf v1.3.5
 	github.com/spf13/cobra => github.com/spf13/cobra v0.0.5 // override wasme requirement
 	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // override wasme requirement
+	google.golang.org/grpc => google.golang.org/grpc v1.24.0
 
 	// kube 1.17
 	k8s.io/api => k8s.io/api v0.17.1

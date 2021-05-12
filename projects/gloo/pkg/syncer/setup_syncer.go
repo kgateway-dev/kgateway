@@ -10,7 +10,6 @@ import (
 	"time"
 
 	envoyv2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	"github.com/gogo/protobuf/types"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"

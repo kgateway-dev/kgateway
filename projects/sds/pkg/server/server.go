@@ -9,18 +9,18 @@ import (
 	"net"
 
 	"github.com/avast/retry-go"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_extensions_transport_sockets_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoy_service_secret_v3 "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	sds "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
-	server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 )
 
 var (
@@ -46,7 +46,7 @@ type Server struct {
 }
 
 // ID needed for snapshotCache
-func (s *Server) ID(_ *core.Node) string {
+func (s *Server) ID(_ *envoy_config_core_v3.Node) string {
 	return s.sdsClient
 }
 
@@ -65,7 +65,7 @@ func SetupEnvoySDS(secrets []Secret, sdsClient, serverAddress string) *Server {
 	svr := server.NewServer(context.Background(), snapshotCache, nil)
 
 	// register services
-	sds.RegisterSecretDiscoveryServiceServer(grpcServer, svr)
+	envoy_service_secret_v3.RegisterSecretDiscoveryServiceServer(grpcServer, svr)
 	return sdsServer
 }
 
@@ -182,17 +182,17 @@ func checkCert(certs []byte) bool {
 }
 
 func serverCertSecret(privateKey, certChain []byte, serverCert string) cache_types.Resource {
-	return &auth.Secret{
+	return &envoy_extensions_transport_sockets_tls_v3.Secret{
 		Name: serverCert,
-		Type: &auth.Secret_TlsCertificate{
-			TlsCertificate: &auth.TlsCertificate{
-				CertificateChain: &core.DataSource{
-					Specifier: &core.DataSource_InlineBytes{
+		Type: &envoy_extensions_transport_sockets_tls_v3.Secret_TlsCertificate{
+			TlsCertificate: &envoy_extensions_transport_sockets_tls_v3.TlsCertificate{
+				CertificateChain: &envoy_config_core_v3.DataSource{
+					Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
 						InlineBytes: certChain,
 					},
 				},
-				PrivateKey: &core.DataSource{
-					Specifier: &core.DataSource_InlineBytes{
+				PrivateKey: &envoy_config_core_v3.DataSource{
+					Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
 						InlineBytes: privateKey,
 					},
 				},
@@ -202,12 +202,12 @@ func serverCertSecret(privateKey, certChain []byte, serverCert string) cache_typ
 }
 
 func validationContextSecret(caCert []byte, validationContext string) cache_types.Resource {
-	return &auth.Secret{
+	return &envoy_extensions_transport_sockets_tls_v3.Secret{
 		Name: validationContext,
-		Type: &auth.Secret_ValidationContext{
-			ValidationContext: &auth.CertificateValidationContext{
-				TrustedCa: &core.DataSource{
-					Specifier: &core.DataSource_InlineBytes{
+		Type: &envoy_extensions_transport_sockets_tls_v3.Secret_ValidationContext{
+			ValidationContext: &envoy_extensions_transport_sockets_tls_v3.CertificateValidationContext{
+				TrustedCa: &envoy_config_core_v3.DataSource{
+					Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
 						InlineBytes: caCert,
 					},
 				},

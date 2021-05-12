@@ -4,16 +4,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/gloo/projects/sds/pkg/server"
-	"github.com/solo-io/gloo/projects/sds/pkg/testutils"
-
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
-	"github.com/spf13/afero"
-	"google.golang.org/grpc"
-
+	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	envoy_service_secret_v3 "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/sds/pkg/server"
+	"github.com/solo-io/gloo/projects/sds/pkg/testutils"
+	"github.com/spf13/afero"
+	"google.golang.org/grpc"
 )
 
 var _ = Describe("SDS Server", func() {
@@ -107,15 +105,15 @@ var _ = Describe("SDS Server", func() {
 			Expect(err).To(BeNil())
 			defer conn.Close()
 
-			client := envoy_service_discovery_v2.NewSecretDiscoveryServiceClient(conn)
+			client := envoy_service_secret_v3.NewSecretDiscoveryServiceClient(conn)
 
 			// Before any snapshot is set, expect an error when fetching secrets
-			resp, err := client.FetchSecrets(ctx, &envoy_api_v2.DiscoveryRequest{})
+			resp, err := client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 			Expect(err).NotTo(BeNil())
 
 			// After snapshot is set, expect to see the secrets
 			srv.UpdateSDSConfig(ctx)
-			resp, err = client.FetchSecrets(ctx, &envoy_api_v2.DiscoveryRequest{})
+			resp, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 			Expect(err).To(BeNil())
 			Expect(len(resp.GetResources())).To(Equal(2))
 			Expect(resp.Validate()).To(BeNil())
