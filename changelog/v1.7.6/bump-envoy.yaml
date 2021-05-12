@@ -3,7 +3,10 @@ changelog:
     dependencyOwner: envoy-gloo
     dependencyRepo: solo-io
     dependencyTag: v1.18.1
+  - type: FIX
     description: >-
-      Upgrade envoy-gloo version to handle CVE-2021-29492 (https://github.com/envoyproxy/envoy/security/advisories/GHSA-4987-27fx-x6cf).
+      Expose hcm options needed for CVE-2021-29492 (https://github.com/envoyproxy/envoy/security/advisories/GHSA-4987-27fx-x6cf).
       By default, Envoy's behavior does not change to address this vulnerability. The desired Http Connection Manager
       `PathWithEscapedSlashesAction` setting option must be defined on gateways.
+    issueLink: https://github.com/solo-io/gloo/issues/4727
+    resolvesIssue: false
