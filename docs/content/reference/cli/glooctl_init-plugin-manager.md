@@ -4,7 +4,7 @@ weight: 5
 ---
 ## glooctl init-plugin-manager
 
-Install the plugin manager
+Install the Gloo Edge Enterprise CLI plugin manager
 
 ```
 glooctl init-plugin-manager [flags]
@@ -13,6 +13,7 @@ glooctl init-plugin-manager [flags]
 ### Options
 
 ```
+  -f, --force              Delete any existing plugin data if found and reinitialize
       --gloo-home string   Gloo home directory (default: $HOME/.gloo)
   -h, --help               help for init-plugin-manager
 ```
