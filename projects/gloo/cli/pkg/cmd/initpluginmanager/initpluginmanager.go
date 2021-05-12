@@ -3,6 +3,7 @@ package initpluginmanager
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -10,18 +11,19 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/ghodss/yaml"
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/go-utils/versionutils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
-
-const tempBinaryVersion = "v1.7.0" // TODO(ryantking): Pin this to first released version of plugin manager
 
 func Command(ctx context.Context) *cobra.Command {
 	opts := &options{}
 	cmd := &cobra.Command{
 		Use:   "init-plugin-manager",
-		Short: "Install the plugin manager",
+		Short: "Install the Gloo Edge Enterprise CLI plugin manager",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			home, err := opts.getHome()
 			if err != nil {
@@ -101,6 +103,13 @@ func checkExisting(home string, force bool) error {
 	for _, dir := range pluginDirs {
 		os.RemoveAll(filepath.Join(home, dir))
 	}
+
+	if _, err := os.Stat(filepath.Join(home, "bin")); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
 	binFiles, err := ioutil.ReadDir(filepath.Join(home, "bin"))
 	if err != nil {
 		return err
@@ -110,6 +119,7 @@ func checkExisting(home string, force bool) error {
 			os.Remove(filepath.Join(home, "bin", file.Name()))
 		}
 	}
+
 	return nil
 }
 
@@ -130,10 +140,90 @@ func downloadTempBinary(ctx context.Context, home string) (*pluginBinary, error)
 	if runtime.GOOS != "darwin" && runtime.GOOS != "linux" {
 		return nil, eris.Errorf("unsupported operating system: %s", runtime.GOOS)
 	}
-	url := fmt.Sprintf(
-		"https://storage.googleapis.com/gloo-ee/glooctl-plugins/plugin/%s/glooctl-plugin-%s-%s",
-		tempBinaryVersion, runtime.GOOS, runtime.GOARCH,
-	)
+	binURL, err := getBinaryURL(ctx)
+	if err != nil {
+		return nil, err
+	}
+	binData, err := get(ctx, binURL)
+	if err != nil {
+		return nil, err
+	}
+	f, err := os.Create(binPath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	if _, err := io.Copy(f, binData); err != nil {
+		return nil, err
+	}
+	if err := f.Chmod(0755); err != nil {
+		return nil, err
+	}
+
+	return &pluginBinary{path: binPath, home: home}, nil
+}
+
+func (binary pluginBinary) run(args ...string) error {
+	cmd := exec.Command(binary.path, args...)
+	cmd.Env = append(os.Environ(), "GLOOCTL_HOME="+binary.home)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(string(out))
+	}
+	return err
+}
+
+type manifest struct {
+	Versions []struct {
+		Tag       string `json:"tag"`
+		Platforms []struct {
+			OS   string `json:"os"`
+			Arch string `json:"arch"`
+			URI  string `json:"uri"`
+		} `json:"platforms"`
+	} `json:"versions"`
+}
+
+func getBinaryURL(ctx context.Context) (string, error) {
+	const manifestURL = "https://raw.githubusercontent.com/solo-io/glooctl-plugin-index/main/plugins/plugin.yaml"
+	mfstBody, err := get(ctx, manifestURL)
+	if err != nil {
+		return "", err
+	}
+	defer mfstBody.Close()
+	mfstData, err := ioutil.ReadAll(mfstBody)
+	if err != nil {
+		return "", err
+	}
+	var mfst manifest
+	if err := yaml.Unmarshal(mfstData, &mfst); err != nil {
+		return "", err
+	}
+	cliVersion, err := versionutils.ParseVersion(version.Version)
+	if err != nil {
+		return "", err
+	}
+	for _, release := range mfst.Versions {
+		v, err := versionutils.ParseVersion(release.Tag)
+		if err != nil {
+			fmt.Printf("invalid semver: %s\n", release.Tag)
+			continue
+		}
+		if cliVersion.Major == v.Major && cliVersion.Minor == v.Minor {
+			for _, platform := range release.Platforms {
+				if platform.OS == runtime.GOOS && platform.Arch == runtime.GOARCH {
+					return platform.URI, nil
+				}
+			}
+
+			return "", eris.New("no compatible plugin manager binary found")
+		}
+	}
+
+	return "", eris.New("no compatible plugin manager version found")
+}
+
+func get(ctx context.Context, url string) (io.ReadCloser, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -141,24 +231,16 @@ func downloadTempBinary(ctx context.Context, home string) (*pluginBinary, error)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
-	}
-	defer res.Body.Close()
-	b, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-	if res.StatusCode != http.StatusOK {
-		fmt.Println(string(b))
-		return nil, eris.Errorf("could not download plugin manager binary: %d %s", res.StatusCode, res.Status)
-	}
-	if err := ioutil.WriteFile(binPath, b, 0755); err != nil {
-		return nil, err
-	}
-	return &pluginBinary{path: binPath, home: home}, nil
-}
+	} else if res.StatusCode != http.StatusOK {
+		defer res.Body.Close()
+		if b, err := ioutil.ReadAll(res.Body); err == nil {
+			fmt.Println(string(b))
+		} else {
+			fmt.Printf("unable to read response body: %s\n", err.Error())
+		}
 
-func (binary pluginBinary) run(args ...string) error {
-	cmd := exec.Command(binary.path, args...)
-	cmd.Env = append(cmd.Env, "GLOOCTL_HOME="+binary.home)
-	return cmd.Run()
+		return nil, eris.Errorf("unexpected HTTP response: %s", res.Status)
+	}
+
+	return res.Body, nil
 }
