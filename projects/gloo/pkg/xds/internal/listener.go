@@ -19,7 +19,7 @@ func DowngradeListener(listener *envoy_config_listener_v3.Listener) *envoy_api_v
 	downgradedListener := &envoy_api_v2.Listener{
 		Name:                          listener.GetName(),
 		Address:                       downgradeAddress(listener.GetAddress()),
-		UseOriginalDst:                listener.GetHiddenEnvoyDeprecatedUseOriginalDst(),
+		UseOriginalDst:                listener.GetUseOriginalDst(),
 		PerConnectionBufferLimitBytes: listener.GetPerConnectionBufferLimitBytes(),
 		Metadata:                      downgradeMetadata(listener.GetMetadata()),
 		DrainType: envoy_api_v2.Listener_DrainType(
