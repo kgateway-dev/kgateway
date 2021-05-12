@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4306
+    description: Updates the `init-plugin-manager` command to match `meshctl` (no external install script).
