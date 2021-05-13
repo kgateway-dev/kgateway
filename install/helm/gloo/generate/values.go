@@ -246,6 +246,7 @@ type GatewayProxy struct {
 	LoopBackAddress                string                       `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 	Failover                       Failover                     `json:"failover" desc:"(Enterprise Only): Failover configuration"`
 	Disabled                       bool                         `json:"disabled,omitempty" desc:"Skips creation of this gateway proxy. Used to turn off gateway proxies created by preceding configurations"`
+	PathWithEscapedSlashesAction   uint32                       `json:"pathWithEscapedSlashesAction,omitempty" desc:"Used to configure the Envoy Http Connection Manager's path_with_escaped_slashes_action runtime override setting. Defaults to 0 (IMPLEMENTATION_SPECIFIC_DEFAULT). See other value options here https://www.envoyproxy.io/docs/envoy/v1.16.4/configuration/http/http_conn_man/runtime.html"`
 }
 
 type GatewayProxyGatewaySettings struct {
