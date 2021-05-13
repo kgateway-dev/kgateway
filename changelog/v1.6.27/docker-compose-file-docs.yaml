@@ -1,4 +1,4 @@
 changelog:
-  - type: FIX
+  - type: NON_USER_FACING
     description: Update the Docker Compose docs.
     issueLink: https://github.com/solo-io/gloo/issues/4692
