@@ -14,7 +14,7 @@ Fortunately, Gloo Edge provides alternate mechanisms for configuration, credenti
 This tutorial provides a basic installation flow for running Gloo Edge with Docker Compose, using the local filesystem of the containers to store configuration and credentials data.
 (A similar tutorial using Consul and Vault instead of the local filesystem can be found [here]({{< versioned_link_path fromRoot="/installation/gateway/development/docker-compose-consul/" >}}).)
 
-First we will copy the necessary files from the [Solo.io GitHub](https://github.com/solo-io/gloo) repository. 
+First we will copy the necessary files from the [Gloo Edge GitHub repository](https://github.com/solo-io/gloo).
 
 Then we will use `docker-compose` to create the containers for Gloo Edge and the Pet Store application.
 
@@ -55,7 +55,7 @@ This tutorial uses files stored on the [Gloo Edge GitHub repository](https://git
 In order to install Gloo Edge using Docker-Compose, let's clone the repository:
 
 ```
-git clone --branch master https://github.com/solo-io/gloo
+git clone --branch v1.5.x https://github.com/solo-io/gloo
 cd gloo/install/docker-compose-file
 ```
 
@@ -104,6 +104,8 @@ The updated `data` directory structure should look like this:
 │   │       └── gateway-proxy.yaml
 │   ├── proxies
 │   │   └── gloo-system
+│   ├── ratelimitconfigs
+│   │   └── gloo-system
 │   ├── routetables
 │   │   └── gloo-system
 │   ├── upstreamgroups
