@@ -104,8 +104,6 @@ The updated `data` directory structure should look like this:
 │   │       └── gateway-proxy.yaml
 │   ├── proxies
 │   │   └── gloo-system
-│   ├── ratelimitconfigs
-│   │   └── gloo-system
 │   ├── routetables
 │   │   └── gloo-system
 │   ├── upstreamgroups
