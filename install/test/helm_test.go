@@ -2553,6 +2553,23 @@ metadata:
 					testManifest.Expect("ConfigMap", namespace, defaults.GatewayProxyName).To(BeNil())
 				})
 
+				It("sets the path_with_escaped_slashes_action", func() {
+
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"gatewayProxies.gatewayProxy.pathWithEscapedSlashesAction=2"},
+					})
+					proxySpec := make(map[string]string)
+					proxySpec["envoy.yaml"] = fmt.Sprintf(confWithEscapedSlashesActionFmt, "", "")
+					cmRb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      gatewayProxyConfigMapName,
+						Labels:    labels,
+						Data:      proxySpec,
+					}
+					proxy := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(proxy)
+				})
+
 				Describe("gateway proxy - AWS", func() {
 
 					It("has a global cluster", func() {

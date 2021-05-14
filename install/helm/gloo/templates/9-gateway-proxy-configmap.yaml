@@ -26,8 +26,10 @@ data:
         static_layer:
           overload:
             global_downstream_max_connections: {{ $spec.globalDownstreamMaxConnections }}
+          {{- if $spec.pathWithEscapedSlashesAction }}
           http_connection_manager:
             path_with_escaped_slashes_action: {{ $spec.pathWithEscapedSlashesAction }}
+          {{- end }}
       - name: admin_layer
         admin_layer: {}
     node:
