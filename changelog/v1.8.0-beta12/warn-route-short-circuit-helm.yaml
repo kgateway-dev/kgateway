@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4631
+    description: Expose warnRouteShortCircuiting validation option in helm chart.

@@ -2576,12 +2576,13 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
-					It("correctly sets the `validation.disableTransformationValidation` field in the validation settings", func() {
-						settings := makeUnstructureFromTemplateFile("fixtures/settings/disable_transformation_validation.yaml", namespace)
+					It("correctly sets the gateway validation fields in the settings", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/gateway_validation.yaml", namespace)
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gateway.validation.disableTransformationValidation=true",
+								"gateway.validation.warnRouteShortCircuiting=true",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
@@ -2690,6 +2691,7 @@ spec:
       alwaysAccept: true
       allowWarnings: true
       disableTransformationValidation: false
+      warnRouteShortCircuiting: false
   discovery:
     fdsMode: WHITELIST
   extauth:

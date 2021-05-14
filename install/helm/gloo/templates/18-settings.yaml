@@ -85,6 +85,7 @@ spec:
       alwaysAccept: {{ .Values.gateway.validation.alwaysAcceptResources }}
       allowWarnings: {{ .Values.gateway.validation.allowWarnings }}
       disableTransformationValidation: {{ .Values.gateway.validation.disableTransformationValidation }}
+      warnRouteShortCircuiting: {{ .Values.gateway.validation.warnRouteShortCircuiting }}
 {{- end }}
 
 {{- if ne .Values.discovery.fdsMode "" }}
