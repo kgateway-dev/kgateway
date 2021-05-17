@@ -9,16 +9,16 @@ import (
 	"os"
 	"time"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	v2 "github.com/solo-io/solo-kit/api/external/envoy/api/v2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	// add these imports to use Envoy's API
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoyapi "github.com/solo-io/solo-kit/api/external/envoy/api/v2"
+	envoycore "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core"
 
 	// add these imports to use Google Compute Engine's API
 	"golang.org/x/oauth2/google"
