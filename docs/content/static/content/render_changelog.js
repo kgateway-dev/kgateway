@@ -36,7 +36,14 @@ showdown.extension('auto-url', function() {
 
 const changelogTypeSelect = $("#select-type");
 
+const getLastItem = path => {
+  const cleanPath = path.replace(/\/$/, '');
+  return cleanPath.substring(cleanPath.lastIndexOf('/') + 1);
+}
+
 function evaluateHash() {
+  const page = getLastItem(window.location.pathname);
+  console.log(page);
   const hash = window.location.hash.substr(1);
   let changelogType = MINOR_RELEASE;
   if (hash.split(HASH_SEPARATOR).length > 0){
@@ -94,7 +101,6 @@ function generateChangelog(type){
     getText().then(json => {
       changelogJsonData = json;
       globalOpts = changelogJsonData.Opts
-      console.log(globalOpts);
       changelogDataSetter.data = generateMarkdown(type, changelogJsonData, showOpenSource);
     });
   }else{
