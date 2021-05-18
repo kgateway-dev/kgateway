@@ -4456,6 +4456,8 @@ func constructResourceID(resource *unstructured.Unstructured) string {
 	return fmt.Sprintf("%s,%s,%s", resource.GetNamespace(), resource.GetName(), resource.GroupVersionKind().String())
 }
 
+// gets value of field nested within an Unstructured struct.
+// fieldPath is the path to the value, so the value foo.bar.baz would be passed in as "foo", "bar, "baz"
 func getFieldFromUnstructured(uns *unstructured.Unstructured, fieldPath ...string) interface{} {
 	if len(fieldPath) < 1 {
 		return nil
