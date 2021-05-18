@@ -36,6 +36,25 @@ spec:
         {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
+{{- with .Values.gloo.deployment.nodeName }}
+      nodeName: {{ . }}
+{{- end }}
+{{- with .Values.gloo.deployment.nodeSelector }}
+      nodeSelector:
+      {{- toYaml . | nindent 8 }}
+{{- end }}
+{{- with .Values.gloo.deployment.tolerations }}
+      tolerations:
+      {{- toYaml . | nindent 8 }}
+{{- end }}
+{{- with .Values.gloo.deployment.hostAliases }}
+      hostAliases:
+      {{- toYaml . | nindent 8 }}
+{{- end }}
+{{- with .Values.gloo.deployment.affinity }}
+      affinity:
+      {{- toYaml . | nindent 8 }}
+{{- end }}
       securityContext:
         runAsNonRoot: true
         {{- if not .Values.ingress.deployment.floatingUserId }}
