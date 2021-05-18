@@ -37,6 +37,25 @@ spec:
         {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
+{{- with .Values.settings.integrations.knative.proxy.nodeName }}
+      nodeName: {{ . }}
+{{- end }}
+{{- with .Values.settings.integrations.knative.proxy.nodeSelector }}
+      nodeSelector:
+      {{- toYaml . | nindent 8 }}
+{{- end }}
+{{- with .Values.settings.integrations.knative.proxy.tolerations }}
+      tolerations:
+      {{- toYaml . | nindent 8 }}
+{{- end }}
+{{- with .Values.settings.integrations.knative.proxy.hostAliases }}
+      hostAliases:
+      {{- toYaml . | nindent 8 }}
+{{- end }}
+{{- with .Values.settings.integrations.knative.proxy.affinity }}
+      affinity:
+      {{- toYaml . | nindent 8 }}
+{{- end }}
       containers:
       - args: ["--disable-hot-restart"]
         env:

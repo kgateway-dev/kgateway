@@ -299,6 +299,7 @@
 |gatewayProxies.NAME.kind.deployment.affinity[].NAME|interface|||
 |gatewayProxies.NAME.kind.deployment.hostAliases[]|interface|||
 |gatewayProxies.NAME.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
+|gatewayProxies.NAME.kind.daemonSet.hostNetwork|bool|||
 |gatewayProxies.NAME.podTemplate.image.tag|string||tag for the container|
 |gatewayProxies.NAME.podTemplate.image.repository|string||image name (repository) for the container.|
 |gatewayProxies.NAME.podTemplate.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -453,6 +454,7 @@
 |gatewayProxies.gatewayProxy.kind.deployment.affinity[].NAME|interface|||
 |gatewayProxies.gatewayProxy.kind.deployment.hostAliases[]|interface|||
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
+|gatewayProxies.gatewayProxy.kind.daemonSet.hostNetwork|bool|||
 |gatewayProxies.gatewayProxy.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gatewayProxies.gatewayProxy.podTemplate.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
 |gatewayProxies.gatewayProxy.podTemplate.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|

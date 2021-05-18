@@ -349,7 +349,8 @@ type PodDisruptionBudget struct {
 }
 
 type DaemonSetSpec struct {
-	HostPort *bool `json:"hostPort,omitempty" desc:"whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet"`
+	HostPort    *bool `json:"hostPort,omitempty" desc:"whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet"`
+	HostNetwork *bool `json:"hostNetwork,omitempty"`
 }
 
 type GatewayProxyPodTemplate struct {

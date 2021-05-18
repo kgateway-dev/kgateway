@@ -36,22 +36,22 @@ spec:
         {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
-{{- with .Values.gloo.deployment.nodeName }}
+{{- with .Values.ingress.deployment.nodeName }}
       nodeName: {{ . }}
 {{- end }}
-{{- with .Values.gloo.deployment.nodeSelector }}
+{{- with .Values.ingress.deployment.nodeSelector }}
       nodeSelector:
       {{- toYaml . | nindent 8 }}
 {{- end }}
-{{- with .Values.gloo.deployment.tolerations }}
+{{- with .Values.ingress.deployment.tolerations }}
       tolerations:
       {{- toYaml . | nindent 8 }}
 {{- end }}
-{{- with .Values.gloo.deployment.hostAliases }}
+{{- with .Values.ingress.deployment.hostAliases }}
       hostAliases:
       {{- toYaml . | nindent 8 }}
 {{- end }}
-{{- with .Values.gloo.deployment.affinity }}
+{{- with .Values.ingress.deployment.affinity }}
       affinity:
       {{- toYaml . | nindent 8 }}
 {{- end }}
