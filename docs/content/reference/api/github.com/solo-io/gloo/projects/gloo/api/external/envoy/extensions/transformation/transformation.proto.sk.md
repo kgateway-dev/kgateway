@@ -87,6 +87,7 @@ weight: 5
 "requestTransformation": .envoy.api.v2.filter.http.Transformation
 "clearRouteCache": bool
 "responseTransformation": .envoy.api.v2.filter.http.Transformation
+"onStreamCompletionTransformation": .envoy.api.v2.filter.http.Transformation
 
 ```
 
@@ -95,6 +96,7 @@ weight: 5
 | `requestTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation to requests. |
 | `clearRouteCache` | `bool` | Clear the route cache if the request transformation was applied. |
 | `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation to responses. |
+| `onStreamCompletionTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation in the onStreamComplete callback (for modifying headers and dynamic metadata for access logs). |
 
 
 

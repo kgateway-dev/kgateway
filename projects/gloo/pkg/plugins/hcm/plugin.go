@@ -101,6 +101,7 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 	cfg.ServerName = hcmSettings.GetServerName()
 	cfg.PreserveExternalRequestId = hcmSettings.GetPreserveExternalRequestId()
 	cfg.ServerHeaderTransformation = envoyhttp.HttpConnectionManager_ServerHeaderTransformation(hcmSettings.GetServerHeaderTransformation())
+	cfg.PathWithEscapedSlashesAction = envoyhttp.HttpConnectionManager_PathWithEscapedSlashesAction(hcmSettings.GetPathWithEscapedSlashesAction())
 
 	if hcmSettings.GetAcceptHttp_10() {
 		cfg.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{

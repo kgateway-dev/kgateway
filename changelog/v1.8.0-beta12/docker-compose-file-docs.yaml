@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Update the Docker Compose docs to work with Gloo Edge 1.7+
+    issueLink: https://github.com/solo-io/gloo/issues/4692

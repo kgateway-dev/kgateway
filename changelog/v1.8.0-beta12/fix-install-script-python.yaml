@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: glooctl install sscript will now check for python3 and python2 executables
+    issueLink: https://github.com/solo-io/gloo/issues/4730
+    issueLink: https://github.com/solo-io/gloo/issues/2877

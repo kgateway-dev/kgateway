@@ -69,6 +69,7 @@ gateway:
     alwaysAcceptResources: true
     allowWarnings: true
     disableTransformationValidation: false
+    warnRouteShortCircuiting: false
     webhook:
       enabled: true
       disableHelmHook: false
