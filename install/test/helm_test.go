@@ -4280,8 +4280,8 @@ metadata:
 			})
 
 			Describe("Standard k8s values", func() {
-				DescribeTable("Deployment affinity, tolerations, nodeName, hostAliases, nodeSelector",
-					func(deploymentName string, value string, extraArgs ...string) {
+				DescribeTable("PodSpec affinity, tolerations, nodeName, hostAliases, nodeSelector, restartPolicy on Deployments and Jobs",
+					func(kind string, resourceName string, value string, extraArgs ...string) {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: append([]string{
 								value + ".nodeSelector.label=someLabel",
@@ -4289,10 +4289,11 @@ metadata:
 								value + ".tolerations=someToleration",
 								value + ".hostAliases=someHostAlias",
 								value + ".affinity=someNodeAffinity",
+								value + ".restartPolicy=someRestartPolicy",
 							}, extraArgs...),
 						})
 						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
-							if u.GetKind() == "Deployment" && u.GetName() == deploymentName {
+							if u.GetKind() == kind && u.GetName() == resourceName {
 								a := getFieldFromUnstructured(u, "spec", "template", "spec", "nodeSelector")
 								Expect(a).To(Equal(map[string]interface{}{"label": "someLabel"}))
 								a = getFieldFromUnstructured(u, "spec", "template", "spec", "nodeName")
@@ -4303,19 +4304,22 @@ metadata:
 								Expect(a).To(Equal("someHostAlias"))
 								a = getFieldFromUnstructured(u, "spec", "template", "spec", "affinity")
 								Expect(a).To(Equal("someNodeAffinity"))
+								a = getFieldFromUnstructured(u, "spec", "template", "spec", "restartPolicy")
+								Expect(a).To(Equal("someRestartPolicy"))
 								return true
 							}
 							return false
 						})
 						Expect(resources.NumResources()).To(Equal(1))
 					},
-					Entry("gloo deployment", "gloo", "gloo.deployment"),
-					Entry("discovery deployment", "discovery", "discovery.deployment"),
-					Entry("gateway deployment", "gateway", "gateway.deployment"),
-					Entry("ingress deployment", "ingress", "ingress.deployment", "ingress.enabled=true"),
-					Entry("cluster-ingress deployment", "clusteringress-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.7.0", "settings.integrations.knative.enabled=true"),
-					Entry("knative external proxy deployment", "knative-external-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.9.0", "settings.integrations.knative.enabled=true"),
-					Entry("knative internal proxy deployment", "knative-internal-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.9.0", "settings.integrations.knative.enabled=true"),
+					Entry("gloo deployment", "Deployment", "gloo", "gloo.deployment"),
+					Entry("discovery deployment", "Deployment", "discovery", "discovery.deployment"),
+					Entry("gateway deployment", "Deployment", "gateway", "gateway.deployment"),
+					Entry("ingress deployment", "Deployment", "ingress", "ingress.deployment", "ingress.enabled=true"),
+					Entry("cluster-ingress deployment", "Deployment", "clusteringress-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.7.0", "settings.integrations.knative.enabled=true"),
+					Entry("knative external proxy deployment", "Deployment", "knative-external-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.9.0", "settings.integrations.knative.enabled=true"),
+					Entry("knative internal proxy deployment", "Deployment", "knative-internal-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.9.0", "settings.integrations.knative.enabled=true"),
+					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
 				)
 			})
 		})
@@ -4403,7 +4407,10 @@ metadata:
 			Expect(err).NotTo(HaveOccurred())
 
 			lines := strings.Split(string(out), "\n")
-			for _, line := range lines {
+			for idx, line := range lines {
+				if strings.TrimRightFunc(line, unicode.IsSpace) != line {
+					Fail(strings.Join(lines[0:idx+1], "\n") + "\n last line has whitespace")
+				}
 				Expect(strings.TrimRightFunc(line, unicode.IsSpace)).To(Equal(line))
 			}
 		})
