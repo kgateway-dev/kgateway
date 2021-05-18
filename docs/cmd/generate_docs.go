@@ -162,8 +162,8 @@ func generateChangelogMd(args []string) error {
 	switch target {
 	case glooDocGen:
 		generator := changelogdocutils.NewMinorReleaseGroupedChangelogGenerator(changelogdocutils.Options{
-			Repo: "gloo", 
-			RepoOwner: "solo-io",
+			EnterpriseRepo: "gloo",
+			RepoOwner:      "solo-io",
 		}, client)
 		out, err := generator.GenerateJSON(context.Background())
 		if err != nil {
@@ -195,12 +195,12 @@ func generateGlooEChangelog() error {
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
 	opts := changelogdocutils.Options{
-		NumVersions: 200,
-		Repo: "solo-projects", 
-		OtherRepo: "gloo",
-		RepoOwner: "solo-io",
+		NumVersions:    200,
+		EnterpriseRepo: "solo-projects",
+		OpenSourceRepo: "gloo",
+		RepoOwner:      "solo-io",
 	}
-	generator := changelogdocutils.NewMergedReleaseGenerator(opts, client, FindDependentVersionFn)
+	generator := changelogdocutils.NewMergedReleaseGenerator(opts, client)
 	out, err := generator.GenerateJSON(context.Background())
 	if err != nil {
 		return err
