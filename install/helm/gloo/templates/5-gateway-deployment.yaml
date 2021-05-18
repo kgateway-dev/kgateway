@@ -43,25 +43,7 @@ spec:
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gateway
-{{- with .Values.gateway.deployment.nodeName }}
-      nodeName: {{ . }}
-{{- end }}
-{{- with .Values.gateway.deployment.nodeSelector }}
-      nodeSelector:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
-{{- with .Values.gateway.deployment.tolerations }}
-      tolerations:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
-{{- with .Values.gateway.deployment.hostAliases }}
-      hostAliases:
-      {{- toYaml . | nindent 8 }}
-      {{- end }}
-{{- with .Values.gateway.deployment.affinity }}
-      affinity:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
+      {{- include "gloo.podSpecStandardFields" .Values.gateway.deployment | nindent 6 -}}
       containers:
       - image: {{template "gloo.image" $image}}
         imagePullPolicy: {{ $image.pullPolicy }}

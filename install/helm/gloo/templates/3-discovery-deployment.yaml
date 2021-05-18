@@ -45,25 +45,7 @@ spec:
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: discovery
-{{- with .Values.discovery.deployment.nodeName }}
-      nodeName: {{ . }}
-{{- end }}
-{{- with .Values.discovery.deployment.nodeSelector }}
-      nodeSelector:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
-{{- with .Values.discovery.deployment.tolerations }}
-      tolerations:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
-{{- with .Values.discovery.deployment.hostAliases }}
-      hostAliases:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
-{{- with .Values.discovery.deployment.affinity }}
-      affinity:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
+      {{- include "gloo.podSpecStandardFields" .Values.discovery.deployment | nindent 6 -}}
       containers:
       - image: {{template "gloo.image" $image}}
         imagePullPolicy: {{ $image.pullPolicy }}

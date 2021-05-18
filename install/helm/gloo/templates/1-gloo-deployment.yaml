@@ -42,25 +42,7 @@ spec:
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo
-{{- with .Values.gloo.deployment.nodeName }}
-      nodeName: {{ . }}
-{{- end }}
-{{- with .Values.gloo.deployment.nodeSelector }}
-      nodeSelector:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
-{{- with .Values.gloo.deployment.tolerations }}
-      tolerations:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
-{{- with .Values.gloo.deployment.hostAliases }}
-      hostAliases:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
-{{- with .Values.gloo.deployment.affinity }}
-      affinity:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
+      {{- include "gloo.podSpecStandardFields" .Values.gloo.deployment | nindent 6 -}}
       volumes:
 {{- if .Values.global.glooMtls.enabled }}
       - name: gloo-mtls-certs

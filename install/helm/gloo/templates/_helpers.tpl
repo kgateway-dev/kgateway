@@ -29,3 +29,25 @@ imagePullSecrets:
 - name: {{ .pullSecret }}
 {{ end -}}
 {{- end -}}
+
+
+{{- define "gloo.podSpecStandardFields" -}}
+{{- with .nodeName -}}
+nodeName: {{ . }}
+{{ end -}}
+{{- with .nodeSelector -}}
+nodeSelector: {{ toYaml . | nindent 2 }}
+{{ end -}}
+{{- with .tolerations -}}
+tolerations: {{ toYaml . | nindent 2 }}
+{{ end -}}
+{{- with .hostAliases -}}
+hostAliases: {{ toYaml . | nindent 2 }}
+{{ end -}}
+{{- with .affinity -}}
+affinity: {{ toYaml . | nindent 2 }}
+{{ end -}}
+{{- with .restartPolicy -}}
+restartPolicy: {{ . }}
+{{ end -}}
+{{- end -}}

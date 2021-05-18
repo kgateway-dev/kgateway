@@ -46,25 +46,7 @@ spec:
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gateway-proxy
-{{- with .Values.accessLogger.nodeName }}
-      nodeName: {{ . }}
-{{- end }}
-{{- with .Values.accessLogger.nodeSelector }}
-      nodeSelector:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
-{{- with .Values.accessLogger.tolerations }}
-      tolerations:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
-{{- with .Values.accessLogger.hostAliases }}
-      hostAliases:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
-{{- with .Values.accessLogger.affinity }}
-      affinity:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
+      {{- include "gloo.podSpecStandardFields" .Values.accessLogger | nindent 6 -}}
       securityContext:
         runAsNonRoot: true
         {{- if not .Values.accessLogger.floatingUserId }}

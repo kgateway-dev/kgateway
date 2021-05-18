@@ -66,7 +66,12 @@ type ResourceRequirements struct {
 	Requests *ResourceAllocation `json:"requests,omitEmpty" desc:"resource requests of this container"`
 }
 type PodSpec struct {
-	RestartPolicy *string `json:"restartPolicy,omitempty" desc:"restart policy to use when the pod exits"`
+	RestartPolicy *string                  `json:"restartPolicy,omitempty" desc:"restart policy to use when the pod exits"`
+	NodeName      *string                  `json:"nodeName,omitempty" desc:"name of node to run on"`
+	NodeSelector  map[string]string        `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
+	Tolerations   []*appsv1.Toleration     `json:"tolerations,omitEmpty"`
+	Affinity      []map[string]interface{} `json:"affinity,omitempty"`
+	HostAliases   []interface{}            `json:"hostAliases,omitempty"`
 }
 
 type JobSpec struct {
@@ -74,13 +79,9 @@ type JobSpec struct {
 }
 
 type DeploymentSpecSansResources struct {
-	Replicas     *int                     `json:"replicas,omitempty" desc:"number of instances to deploy"`
-	CustomEnv    []*appsv1.EnvVar         `json:"customEnv,omitempty" desc:"custom extra environment variables for the container"`
-	NodeName     *string                  `json:"nodeName,omitempty" desc:"name of node to run on"`
-	NodeSelector map[string]string        `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
-	Tolerations  []*appsv1.Toleration     `json:"tolerations,omitEmpty"`
-	Affinity     []map[string]interface{} `json:"affinity,omitempty"`
-	HostAliases  []interface{}            `json:"hostAliases,omitempty"`
+	Replicas  *int             `json:"replicas,omitempty" desc:"number of instances to deploy"`
+	CustomEnv []*appsv1.EnvVar `json:"customEnv,omitempty" desc:"custom extra environment variables for the container"`
+	*PodSpec
 }
 
 type DeploymentSpec struct {
