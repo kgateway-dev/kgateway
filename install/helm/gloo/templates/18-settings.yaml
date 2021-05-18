@@ -18,6 +18,10 @@ spec:
     restXdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.restXdsPort }}"
     enableRestEds: {{ .Values.settings.enableRestEds }}
 {{- end }}
+{{- if .Values.settings.circuitBreakers }}
+    circuitBreakers:
+{{ toYaml .Values.settings.circuitBreakers | indent 6}}
+{{- end }}
 {{- /* .Values.settings.replaceInvalidRoutes for backwards compatibility */}}
 {{- if or (.Values.settings.invalidConfigPolicy) (.Values.settings.replaceInvalidRoutes) }}
     invalidConfigPolicy:
