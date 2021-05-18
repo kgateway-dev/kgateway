@@ -227,6 +227,10 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetPathWithEscapedSlashesAction() != target.GetPathWithEscapedSlashesAction() {
+		return false
+	}
+
 	return true
 }
 

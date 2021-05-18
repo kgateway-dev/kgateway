@@ -33,7 +33,7 @@ weight: 5
 ### SslConfig
 
  
-SslConfig contains the options necessary to configure a virtual host or listener to use TLS
+SslConfig contains the options necessary to configure a virtual host or listener to use TLS termination
 
 ```yaml
 "secretRef": .core.solo.io.ResourceRef
@@ -43,6 +43,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 "verifySubjectAltName": []string
 "parameters": .gloo.solo.io.SslParameters
 "alpnProtocols": []string
+"oneWayTls": bool
 
 ```
 
@@ -55,6 +56,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 | `verifySubjectAltName` | `[]string` | Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used. |
 | `parameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk/#sslparameters) |  |
 | `alpnProtocols` | `[]string` | Set Application Level Protocol Negotiation If empty, defaults to ["h2", "http/1.1"]. |
+| `oneWayTls` | `bool` | If the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default. Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA. Defaults to false. |
 
 
 
