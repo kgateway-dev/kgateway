@@ -2910,7 +2910,12 @@ spec:
 					})
 
 					It("creates the certgen job, rbac, and service account", func() {
-						prepareMakefile(namespace, helmValues{})
+						prepareMakefile(namespace, helmValues{valuesArgs: []string{
+							"gateway.certGenJob.resources.requests.memory=64Mi",
+							"gateway.certGenJob.resources.requests.cpu=250m",
+							"gateway.certGenJob.resources.limits.memory=128Mi",
+							"gateway.certGenJob.resources.limits.cpu=500m",
+						}})
 						job := makeUnstructured(`
 apiVersion: batch/v1
 kind: Job
@@ -2944,6 +2949,13 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+          resources:
+            requests: 
+              cpu: 250m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
           args:
             - "--secret-name=gateway-validation-certs"
             - "--svc-name=gateway"
