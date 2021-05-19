@@ -95,6 +95,6 @@ version, which merges two named templates.
 {{ include (index . 2) $top }} {{/* render source as is */}}
 {{- else -}}
 {{- $merged := merge $overrides $tpl -}}
-{{- toYaml (merge $overrides $tpl) -}} {{/* render source with overrides as YAML */}}
+{{- toYaml $merged -}} {{/* render source with overrides as YAML */}}
 {{- end -}}
 {{- end -}}
