@@ -1,3 +1,4 @@
+{{- define "clusterIngressProxy.deploymentSpec"}}
 {{- if .Values.settings.integrations.knative.enabled }}
 {{- if (semverCompare "< 0.8.0" .Values.settings.integrations.knative.version ) }}
 {{- $image := .Values.settings.integrations.knative.proxy.image }}
@@ -80,4 +81,14 @@ spec:
         name: envoy-config
 
 {{- end }}
-{{- end }}
+{{- end }} {{/* if .Values.settings.integrations.knative.enabled */}}
+{{- end }} {{/* define clusterIngressProxy.deploymentSpec */}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.settings.integrations.knative.proxy -}}
+{{- if .Values.settings.integrations.knative.proxy.deployment -}}
+{{- $kubeResourceOverride = .Values.settings.integrations.knative.proxy.deployment.kubeResourceOverride  -}}
+{{- end -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "clusterIngressProxy.deploymentSpec") -}}

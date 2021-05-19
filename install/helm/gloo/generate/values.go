@@ -87,6 +87,12 @@ type DeploymentSpecSansResources struct {
 type DeploymentSpec struct {
 	DeploymentSpecSansResources
 	Resources *ResourceRequirements `json:"resources,omitempty" desc:"resources for the main pod in the deployment"`
+	*KubeResourceOverride
+}
+
+// Used to override any field in generated kubernetes resources.
+type KubeResourceOverride struct {
+	KubeResourceOverride map[string]interface{} `json:"kubeResourceOverride,omitempty" desc:"override fields in the generated resource by specifying the yaml structure to override under the top-level key."`
 }
 
 type Integrations struct {
@@ -145,14 +151,22 @@ type Knative struct {
 }
 
 type KnativeProxy struct {
-	Image                          *Image            `json:"image,omitempty"`
-	HttpPort                       *int              `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
-	HttpsPort                      *int              `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
-	Tracing                        *string           `json:"tracing,omitempty" desc:"tracing configuration"`
-	LoopBackAddress                *string           `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
-	ExtraClusterIngressProxyLabels map[string]string `json:"extraClusterIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the cluster ingress proxy deployment."`
+	Image                          *Image                `json:"image,omitempty"`
+	HttpPort                       *int                  `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
+	HttpsPort                      *int                  `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
+	Tracing                        *string               `json:"tracing,omitempty" desc:"tracing configuration"`
+	LoopBackAddress                *string               `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
+	ExtraClusterIngressProxyLabels map[string]string     `json:"extraClusterIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the cluster ingress proxy deployment."`
+	Internal                       *KnativeProxyInternal `json:"internal,omitempty" desc:"kube resource overrides for knative internal proxy resources"`
 	*DeploymentSpec
 	*ServiceSpec
+	ConfigMap *KubeResourceOverride `json:"configMap,omitempty"`
+}
+
+type KnativeProxyInternal struct {
+	Deployment *KubeResourceOverride `json:"deployment,omitempty"`
+	Service    *KubeResourceOverride `json:"service,omitempty"`
+	ConfigMap  *KubeResourceOverride `json:"configMap,omitempty"`
 }
 
 type Settings struct {
@@ -170,6 +184,7 @@ type Settings struct {
 	Aws                           AwsSettings          `json:"aws,omitempty"`
 	RateLimit                     interface{}          `json:"rateLimit,omitempty" desc:"Partial config for Gloo Edge Enterprise’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes."`
 	EnableRestEds                 *bool                `json:"enableRestEds,omitempty" desc:"Whether or not to use rest xds for all EDS by default. Set to true by default in versions > v1.6.0."`
+	*KubeResourceOverride
 }
 
 type AwsSettings struct {
@@ -185,7 +200,8 @@ type InvalidConfigPolicy struct {
 }
 
 type Gloo struct {
-	Deployment     *GlooDeployment `json:"deployment,omitempty"`
+	Deployment     *GlooDeployment       `json:"deployment,omitempty"`
+	GlooService    *KubeResourceOverride `json:"service,omitempty"`
 	ServiceAccount `json:"serviceAccount,omitempty" `
 	LogLevel       *string `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
 }
@@ -232,11 +248,13 @@ type Gateway struct {
 	ServiceAccount                ServiceAccount     `json:"serviceAccount,omitempty" `
 	ReadGatewaysFromAllNamespaces *bool              `json:"readGatewaysFromAllNamespaces,omitempty" desc:"if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller"`
 	LogLevel                      *string            `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
+	GatewayService                *KubeResourceOverride
 }
 
 type ServiceAccount struct {
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the service account"`
 	DisableAutomount *bool             `json:"disableAutomount,omitempty" desc:"disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations"`
+	*KubeResourceOverride
 }
 
 type GatewayValidation struct {
@@ -254,6 +272,7 @@ type Webhook struct {
 	Enabled          *bool             `json:"enabled,omitempty" desc:"enable validation webhook (default true)"`
 	DisableHelmHook  *bool             `json:"disableHelmHook,omitempty" desc:"do not create the webhook as helm hook (default false)"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the webhook"`
+	*KubeResourceOverride
 }
 
 type GatewayDeployment struct {
@@ -268,6 +287,8 @@ type GatewayDeployment struct {
 type Job struct {
 	Image *Image `json:"image,omitempty"`
 	*JobSpec
+	KubeResourceOverride     map[string]interface{} `json:"kubeResourceOverride,omitempty" desc:"override fields in the gateway-certgen job."`
+	MtlsKubeResourceOverride map[string]interface{} `json:"mtlsKubeResourceOverride,omitempty" desc:"override fields in the gloo-mtls-certgen job."`
 }
 
 type CertGenJob struct {
@@ -283,7 +304,7 @@ type CertGenJob struct {
 type GatewayProxy struct {
 	Kind                           *GatewayProxyKind            `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
 	PodTemplate                    *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
-	ConfigMap                      *GatewayProxyConfigMap       `json:"configMap,omitempty"`
+	ConfigMap                      *ConfigMap                   `json:"configMap,omitempty"`
 	CustomStaticLayer              interface{}                  `json:"customStaticLayer,omitempty" desc:"static layer configuration (global overrides for envoy behavior) defined in envoy bootstrap yaml"`
 	GlobalDownstreamMaxConnections *uint32                      `json:"globalDownstreamMaxConnections,omitempty" desc:"the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine"`
 	HealthyPanicThreshold          *int8                        `json:"healthyPanicThreshold,omitempty" desc:"the percentage of healthy hosts required to load balance based on health status of hosts"`
@@ -314,6 +335,7 @@ type GatewayProxy struct {
 	IstioMetaMeshId                *string                      `json:"istioMetaMeshId,omitempty" desc:"ISTIO_META_MESH_ID Environment Variable. Defaults to \"cluster.local\""`
 	IstioMetaClusterId             *string                      `json:"istioMetaClusterId,omitempty" desc:"ISTIO_META_CLUSTER_ID Environment Variable. Defaults to \"Kubernetes\""`
 	LogLevel                       *string                      `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
+	*KubeResourceOverride
 }
 
 type GatewayProxyGatewaySettings struct {
@@ -326,6 +348,9 @@ type GatewayProxyGatewaySettings struct {
 	CustomHttpsGateway       *string                  `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
 	GatewayOptions           v1.GatewayOptions        `json:"options,omitempty" desc:"custom options for http(s) gateways"`
 	AccessLoggingService     als.AccessLoggingService `json:"accessLoggingService,omitempty"`
+	HttpGatewayOverride      *KubeResourceOverride    `json:"httpGatewayKubeOverride,omitempty"`
+	HttpsGatewayOverride     *KubeResourceOverride    `json:"httpsGatewayKubeOverride,omitempty"`
+	*KubeResourceOverride
 }
 
 type GatewayProxyKind struct {
@@ -334,6 +359,7 @@ type GatewayProxyKind struct {
 }
 type GatewayProxyDeployment struct {
 	*DeploymentSpecSansResources
+	*KubeResourceOverride
 }
 
 type HorizontalPodAutoscaler struct {
@@ -343,11 +369,13 @@ type HorizontalPodAutoscaler struct {
 	TargetCPUUtilizationPercentage *int32                   `json:"targetCPUUtilizationPercentage,omitempty" desc:"target average CPU utilization (represented as a percentage of requested CPU) over all the pods. Used only with apiVersion autoscaling/v1"`
 	Metrics                        []map[string]interface{} `json:"metrics,omitempty" desc:"metrics contains the specifications for which to use to calculate the desired replica count (the maximum replica count across all metrics will be used). Used only with apiVersion autoscaling/v2beta2"`
 	Behavior                       map[string]interface{}   `json:"behavior,omitempty" desc:"behavior configures the scaling behavior of the target in both Up and Down directions (scaleUp and scaleDown fields respectively). Used only with apiVersion autoscaling/v2beta2"`
+	*KubeResourceOverride
 }
 
 type PodDisruptionBudget struct {
 	minAvailable   *int32 `json:"minAvailable,omitempty" desc:"An eviction is allowed if at least \"minAvailable\" pods selected by \"selector\" will still be available after the eviction, i.e. even in the absence of the evicted pod. So for example you can prevent all voluntary evictions by specifying \"100%\"."`
 	maxUnavailable *int32 `json:"maxUnavailable,omitempty" desc:"An eviction is allowed if at most \"maxUnavailable\" pods selected by \"selector\" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with \"minAvailable\"."`
+	*KubeResourceOverride
 }
 
 type DaemonSetSpec struct {
@@ -383,20 +411,22 @@ type GracefulShutdownSpec struct {
 }
 
 type GatewayProxyService struct {
-	Type                     *string           "json:\"type,omitempty\" desc:\"gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`\""
-	HttpPort                 *int              `json:"httpPort,omitempty" desc:"HTTP port for the gateway service"`
-	HttpsPort                *int              `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service"`
-	HttpNodePort             *int              `json:"httpNodePort,omitempty" desc:"HTTP nodeport for the gateway service if using type NodePort"`
-	HttpsNodePort            *int              `json:"httpsNodePort,omitempty" desc:"HTTPS nodeport for the gateway service if using type NodePort"`
-	ClusterIP                *string           "json:\"clusterIP,omitempty\" desc:\"static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`\""
-	ExtraAnnotations         map[string]string `json:"extraAnnotations,omitempty"`
-	ExternalTrafficPolicy    *string           `json:"externalTrafficPolicy,omitempty"`
-	Name                     *string           `json:"name,omitempty" desc:"Custom name override for the service resource of the proxy"`
-	HttpsFirst               *bool             `json:"httpsFirst,omitempty" desc:"List HTTPS port before HTTP"`
-	LoadBalancerIP           *string           `json:"loadBalancerIP,omitempty" desc:"IP address of the load balancer"`
-	LoadBalancerSourceRanges []string          `json:"loadBalancerSourceRanges,omitempty" desc:"List of IP CIDR ranges that are allowed to access the load balancer"`
-	CustomPorts              []interface{}     `json:"customPorts,omitempty" desc:"List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)"`
-	ExternalIPs              []string          `json:"externalIPs,omitempty" desc:"externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service"`
+	Type                     *string               "json:\"type,omitempty\" desc:\"gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`\""
+	HttpPort                 *int                  `json:"httpPort,omitempty" desc:"HTTP port for the gateway service"`
+	HttpsPort                *int                  `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service"`
+	HttpNodePort             *int                  `json:"httpNodePort,omitempty" desc:"HTTP nodeport for the gateway service if using type NodePort"`
+	HttpsNodePort            *int                  `json:"httpsNodePort,omitempty" desc:"HTTPS nodeport for the gateway service if using type NodePort"`
+	ClusterIP                *string               "json:\"clusterIP,omitempty\" desc:\"static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`\""
+	ExtraAnnotations         map[string]string     `json:"extraAnnotations,omitempty"`
+	ExternalTrafficPolicy    *string               `json:"externalTrafficPolicy,omitempty"`
+	Name                     *string               `json:"name,omitempty" desc:"Custom name override for the service resource of the proxy"`
+	HttpsFirst               *bool                 `json:"httpsFirst,omitempty" desc:"List HTTPS port before HTTP"`
+	LoadBalancerIP           *string               `json:"loadBalancerIP,omitempty" desc:"IP address of the load balancer"`
+	LoadBalancerSourceRanges []string              `json:"loadBalancerSourceRanges,omitempty" desc:"List of IP CIDR ranges that are allowed to access the load balancer"`
+	CustomPorts              []interface{}         `json:"customPorts,omitempty" desc:"List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)"`
+	ExternalIPs              []string              `json:"externalIPs,omitempty" desc:"externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service"`
+	ConfigDumpService        *KubeResourceOverride `json:"configDumpService,omitempty" desc:"kube resource override for gateway proxy config dump service"`
+	*KubeResourceOverride
 }
 
 type Tracing struct {
@@ -409,17 +439,19 @@ type Failover struct {
 	Port       *uint   `json:"port,omitempty" desc:"(Enterprise Only): Port to use for failover Gateway Bind port, and service. Default is 15443"`
 	NodePort   *uint   `json:"nodePort,omitempty" desc:"(Enterprise Only): Optional NodePort for failover Service"`
 	SecretName *string `json:"secretName,omitempty" desc:"(Enterprise Only): Secret containing downstream Ssl Secrets Default is failover-downstream"`
+	*KubeResourceOverride
 }
 
 type AccessLogger struct {
-	Image                   *Image            `json:"image,omitempty"`
-	Port                    *uint             `json:"port,omitempty"`
-	ServiceName             *string           `json:"serviceName,omitempty"`
-	Enabled                 *bool             `json:"enabled,omitempty"`
-	Stats                   *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the access logging pod"`
-	RunAsUser               *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
-	FsGroup                 *float64          `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
-	ExtraAccessLoggerLabels map[string]string `json:"extraAccessLoggerLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the access logger deployment."`
+	Image                   *Image                `json:"image,omitempty"`
+	Port                    *uint                 `json:"port,omitempty"`
+	ServiceName             *string               `json:"serviceName,omitempty"`
+	Enabled                 *bool                 `json:"enabled,omitempty"`
+	Stats                   *Stats                `json:"stats,omitempty" desc:"overrides for prometheus stats published by the access logging pod"`
+	RunAsUser               *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	FsGroup                 *float64              `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
+	ExtraAccessLoggerLabels map[string]string     `json:"extraAccessLoggerLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the access logger deployment."`
+	Service                 *KubeResourceOverride `json:"service,omitempty"`
 	*DeploymentSpec
 }
 
@@ -444,7 +476,7 @@ type IngressDeployment struct {
 
 type IngressProxy struct {
 	Deployment      *IngressProxyDeployment `json:"deployment,omitempty"`
-	ConfigMap       *IngressProxyConfigMap  `json:"configMap,omitempty"`
+	ConfigMap       *ConfigMap              `json:"configMap,omitempty"`
 	Tracing         *string                 `json:"tracing,omitempty"`
 	LoopBackAddress *string                 `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 	Label           *string                 `json:"label,omitempty" desc:"Value for label gloo. Use a unique value to use several ingress proxy instances in the same cluster. Default is ingress-proxy"`
@@ -473,10 +505,12 @@ type Service struct {
 	LoadBalancerIP   *string           `json:"loadBalancerIP,omitempty" desc:"IP address of the load balancer"`
 	HttpPort         *int              `json:"httpPort,omitempty" desc:"HTTP port for the knative/ingress proxy service"`
 	HttpsPort        *int              `json:"httpsPort,omitempty" desc:"HTTPS port for the knative/ingress proxy service"`
+	*KubeResourceOverride
 }
 
-type IngressProxyConfigMap struct {
+type ConfigMap struct {
 	Data map[string]string `json:"data,omitempty"`
+	*KubeResourceOverride
 }
 
 type K8s struct {

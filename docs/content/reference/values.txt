@@ -16,6 +16,9 @@
 |settings.integrations.knative.proxy.tracing|string||tracing configuration|
 |settings.integrations.knative.proxy.loopBackAddress|string|127.0.0.1|Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
 |settings.integrations.knative.proxy.extraClusterIngressProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the cluster ingress proxy deployment.|
+|settings.integrations.knative.proxy.internal.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|settings.integrations.knative.proxy.internal.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|settings.integrations.knative.proxy.internal.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |settings.integrations.knative.proxy.replicas|int|1|number of instances to deploy|
 |settings.integrations.knative.proxy.customEnv[].name|string|||
 |settings.integrations.knative.proxy.customEnv[].value|string|||
@@ -50,11 +53,14 @@
 |settings.integrations.knative.proxy.resources.limits.cpu|string||amount of CPUs|
 |settings.integrations.knative.proxy.resources.requests.memory|string||amount of memory|
 |settings.integrations.knative.proxy.resources.requests.cpu|string||amount of CPUs|
+|settings.integrations.knative.proxy.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |settings.integrations.knative.proxy.service.type|string|LoadBalancer|K8s service type|
 |settings.integrations.knative.proxy.service.extraAnnotations.NAME|string||extra annotations to add to the service|
 |settings.integrations.knative.proxy.service.loadBalancerIP|string||IP address of the load balancer|
 |settings.integrations.knative.proxy.service.httpPort|int|80|HTTP port for the knative/ingress proxy service|
 |settings.integrations.knative.proxy.service.httpsPort|int|443|HTTPS port for the knative/ingress proxy service|
+|settings.integrations.knative.proxy.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|settings.integrations.knative.proxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |settings.integrations.knative.requireIngressClass|bool||only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'.|
 |settings.integrations.knative.extraKnativeInternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative internal deployment.|
 |settings.integrations.knative.extraKnativeExternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative external deployment.|
@@ -94,6 +100,7 @@
 |settings.aws.stsCredentialsRegion|string||Regional endpoint to use for AWS STS requests. If empty will default to global sts endpoint.|
 |settings.rateLimit|interface||Partial config for Gloo Edge Enterprise’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes.|
 |settings.enableRestEds|bool|true|Whether or not to use rest xds for all EDS by default. Set to true by default in versions > v1.6.0.|
+|settings.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gloo.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gloo.deployment.image.repository|string|gloo|image name (repository) for the container.|
 |gloo.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -144,8 +151,11 @@
 |gloo.deployment.resources.limits.cpu|string||amount of CPUs|
 |gloo.deployment.resources.requests.memory|string||amount of memory|
 |gloo.deployment.resources.requests.cpu|string||amount of CPUs|
+|gloo.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|gloo.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gloo.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gloo.serviceAccount.disableAutomount|bool||disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
+|gloo.serviceAccount.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gloo.logLevel|string||Level at which the pod should log. Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info|
 |discovery.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |discovery.deployment.image.repository|string|discovery|image name (repository) for the container.|
@@ -193,10 +203,12 @@
 |discovery.deployment.resources.limits.cpu|string||amount of CPUs|
 |discovery.deployment.resources.requests.memory|string||amount of memory|
 |discovery.deployment.resources.requests.cpu|string||amount of CPUs|
+|discovery.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |discovery.fdsMode|string|WHITELIST|mode for function discovery (blacklist or whitelist). See more info in the settings docs|
 |discovery.enabled|bool|true|enable Discovery features|
 |discovery.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |discovery.serviceAccount.disableAutomount|bool||disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
+|discovery.serviceAccount.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |discovery.logLevel|string||Level at which the pod should log. Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info|
 |gateway.enabled|bool|true|enable Gloo Edge API Gateway features|
 |gateway.validation.enabled|bool|true|enable Gloo Edge API Gateway validation hook (default true)|
@@ -209,6 +221,7 @@
 |gateway.validation.webhook.enabled|bool|true|enable validation webhook (default true)|
 |gateway.validation.webhook.disableHelmHook|bool|false|do not create the webhook as helm hook (default false)|
 |gateway.validation.webhook.extraAnnotations.NAME|string||extra annotations to add to the webhook|
+|gateway.validation.webhook.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gateway.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gateway.deployment.image.repository|string|gateway|image name (repository) for the container.|
 |gateway.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -254,6 +267,7 @@
 |gateway.deployment.resources.limits.cpu|string||amount of CPUs|
 |gateway.deployment.resources.requests.memory|string||amount of memory|
 |gateway.deployment.resources.requests.cpu|string||amount of CPUs|
+|gateway.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gateway.certGenJob.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gateway.certGenJob.image.repository|string|certgen|image name (repository) for the container.|
 |gateway.certGenJob.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -270,6 +284,8 @@
 |gateway.certGenJob.tolerations[].tolerationSeconds|int64|||
 |gateway.certGenJob.affinity[].NAME|interface|||
 |gateway.certGenJob.hostAliases[]|interface|||
+|gateway.certGenJob.kubeResourceOverride.NAME|interface||override fields in the gateway-certgen job.|
+|gateway.certGenJob.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen job.|
 |gateway.certGenJob.enabled|bool|true|enable the job that generates the certificates for the validating webhook at install time (default true)|
 |gateway.certGenJob.setTtlAfterFinished|bool|true|Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true|
 |gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
@@ -282,10 +298,13 @@
 |gateway.updateValues|bool||if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions|
 |gateway.proxyServiceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gateway.proxyServiceAccount.disableAutomount|bool||disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
+|gateway.proxyServiceAccount.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gateway.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gateway.serviceAccount.disableAutomount|bool||disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
+|gateway.serviceAccount.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gateway.readGatewaysFromAllNamespaces|bool|false|if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller|
 |gateway.logLevel|string||Level at which the pod should log. Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info|
+|gateway.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.kind.deployment.replicas|int||number of instances to deploy|
 |gatewayProxies.NAME.kind.deployment.customEnv[].name|string|||
 |gatewayProxies.NAME.kind.deployment.customEnv[].value|string|||
@@ -316,6 +335,7 @@
 |gatewayProxies.NAME.kind.deployment.tolerations[].tolerationSeconds|int64|||
 |gatewayProxies.NAME.kind.deployment.affinity[].NAME|interface|||
 |gatewayProxies.NAME.kind.deployment.hostAliases[]|interface|||
+|gatewayProxies.NAME.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.NAME.kind.daemonSet.hostNetwork|bool|||
 |gatewayProxies.NAME.podTemplate.image.tag|string||tag for the container|
@@ -368,6 +388,7 @@
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.failureThreshold|int32|||
 |gatewayProxies.NAME.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
 |gatewayProxies.NAME.configMap.data.NAME|string|||
+|gatewayProxies.NAME.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.customStaticLayer|interface||static layer configuration (global overrides for envoy behavior) defined in envoy bootstrap yaml|
 |gatewayProxies.NAME.globalDownstreamMaxConnections|uint32||the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine|
 |gatewayProxies.NAME.healthyPanicThreshold|int8||the percentage of healthy hosts required to load balance based on health status of hosts|
@@ -385,6 +406,8 @@
 |gatewayProxies.NAME.service.loadBalancerSourceRanges[]|string||List of IP CIDR ranges that are allowed to access the load balancer|
 |gatewayProxies.NAME.service.customPorts[]|interface||List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)|
 |gatewayProxies.NAME.service.externalIPs[]|string||externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service|
+|gatewayProxies.NAME.service.configDumpService.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|gatewayProxies.NAME.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.antiAffinity|bool||configure anti affinity such that pods are preferably not co-located|
 |gatewayProxies.NAME.affinity[].NAME|interface|||
 |gatewayProxies.NAME.tracing.provider|string|||
@@ -410,6 +433,9 @@
 |gatewayProxies.NAME.gatewaySettings.options.always_sort_route_table_routes|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.compressed_proxy_spec|bool|||
 |gatewayProxies.NAME.gatewaySettings.accessLoggingService.access_log[]|interface|||
+|gatewayProxies.NAME.gatewaySettings.httpGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|gatewayProxies.NAME.gatewaySettings.httpsGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|gatewayProxies.NAME.gatewaySettings.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.NAME.extraContainersHelper|string|||
 |gatewayProxies.NAME.extraInitContainersHelper|string|||
@@ -427,6 +453,7 @@
 |gatewayProxies.NAME.failover.port|uint||(Enterprise Only): Port to use for failover Gateway Bind port, and service. Default is 15443|
 |gatewayProxies.NAME.failover.nodePort|uint||(Enterprise Only): Optional NodePort for failover Service|
 |gatewayProxies.NAME.failover.secretName|string||(Enterprise Only): Secret containing downstream Ssl Secrets Default is failover-downstream|
+|gatewayProxies.NAME.failover.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.disabled|bool||Skips creation of this gateway proxy. Used to turn off gateway proxies created by preceding configurations|
 |gatewayProxies.NAME.envoyApiVersion|string||Version of the envoy API to use for the xDS transport and resources. Default is V3|
 |gatewayProxies.NAME.envoyBootstrapExtensions[].NAME|interface||List of bootstrap extensions to add to envoy bootstrap config. Examples include Wasm Service (https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-wasmservice).|
@@ -437,11 +464,14 @@
 |gatewayProxies.NAME.horizontalPodAutoscaler.targetCPUUtilizationPercentage|int32||target average CPU utilization (represented as a percentage of requested CPU) over all the pods. Used only with apiVersion autoscaling/v1|
 |gatewayProxies.NAME.horizontalPodAutoscaler.metrics[].NAME|interface||metrics contains the specifications for which to use to calculate the desired replica count (the maximum replica count across all metrics will be used). Used only with apiVersion autoscaling/v2beta2|
 |gatewayProxies.NAME.horizontalPodAutoscaler.behavior.NAME|interface||behavior configures the scaling behavior of the target in both Up and Down directions (scaleUp and scaleDown fields respectively). Used only with apiVersion autoscaling/v2beta2|
+|gatewayProxies.NAME.horizontalPodAutoscaler.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.podDisruptionBudget.minAvailable|int32||An eviction is allowed if at least "minAvailable" pods selected by "selector" will still be available after the eviction, i.e. even in the absence of the evicted pod. So for example you can prevent all voluntary evictions by specifying "100%".|
 |gatewayProxies.NAME.podDisruptionBudget.maxUnavailable|int32||An eviction is allowed if at most "maxUnavailable" pods selected by "selector" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with "minAvailable".|
+|gatewayProxies.NAME.podDisruptionBudget.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.istioMetaMeshId|string||ISTIO_META_MESH_ID Environment Variable. Defaults to "cluster.local"|
 |gatewayProxies.NAME.istioMetaClusterId|string||ISTIO_META_CLUSTER_ID Environment Variable. Defaults to "Kubernetes"|
 |gatewayProxies.NAME.logLevel|string||Level at which the pod should log. Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info|
+|gatewayProxies.NAME.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.kind.deployment.replicas|int|1|number of instances to deploy|
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].name|string|||
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].value|string|||
@@ -472,6 +502,7 @@
 |gatewayProxies.gatewayProxy.kind.deployment.tolerations[].tolerationSeconds|int64|||
 |gatewayProxies.gatewayProxy.kind.deployment.affinity[].NAME|interface|||
 |gatewayProxies.gatewayProxy.kind.deployment.hostAliases[]|interface|||
+|gatewayProxies.gatewayProxy.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostNetwork|bool|||
 |gatewayProxies.gatewayProxy.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
@@ -524,6 +555,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold|int32|0||
 |gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
+|gatewayProxies.gatewayProxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.customStaticLayer|interface||static layer configuration (global overrides for envoy behavior) defined in envoy bootstrap yaml|
 |gatewayProxies.gatewayProxy.globalDownstreamMaxConnections|uint32|250000|the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine|
 |gatewayProxies.gatewayProxy.healthyPanicThreshold|int8|50|the percentage of healthy hosts required to load balance based on health status of hosts|
@@ -541,6 +573,8 @@
 |gatewayProxies.gatewayProxy.service.loadBalancerSourceRanges[]|string||List of IP CIDR ranges that are allowed to access the load balancer|
 |gatewayProxies.gatewayProxy.service.customPorts[]|interface||List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)|
 |gatewayProxies.gatewayProxy.service.externalIPs[]|string||externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service|
+|gatewayProxies.gatewayProxy.service.configDumpService.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|gatewayProxies.gatewayProxy.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.antiAffinity|bool||configure anti affinity such that pods are preferably not co-located|
 |gatewayProxies.gatewayProxy.affinity[].NAME|interface|||
 |gatewayProxies.gatewayProxy.tracing.provider|string|||
@@ -566,6 +600,9 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.options.always_sort_route_table_routes|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.compressed_proxy_spec|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.accessLoggingService.access_log[]|interface|||
+|gatewayProxies.gatewayProxy.gatewaySettings.httpGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|gatewayProxies.gatewayProxy.gatewaySettings.httpsGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|gatewayProxies.gatewayProxy.gatewaySettings.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.gatewayProxy.extraContainersHelper|string|||
 |gatewayProxies.gatewayProxy.extraInitContainersHelper|string|||
@@ -583,6 +620,7 @@
 |gatewayProxies.gatewayProxy.failover.port|uint|15443|(Enterprise Only): Port to use for failover Gateway Bind port, and service. Default is 15443|
 |gatewayProxies.gatewayProxy.failover.nodePort|uint||(Enterprise Only): Optional NodePort for failover Service|
 |gatewayProxies.gatewayProxy.failover.secretName|string|failover-downstream|(Enterprise Only): Secret containing downstream Ssl Secrets Default is failover-downstream|
+|gatewayProxies.gatewayProxy.failover.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.disabled|bool||Skips creation of this gateway proxy. Used to turn off gateway proxies created by preceding configurations|
 |gatewayProxies.gatewayProxy.envoyApiVersion|string|V3|Version of the envoy API to use for the xDS transport and resources. Default is V3|
 |gatewayProxies.gatewayProxy.envoyBootstrapExtensions[].NAME|interface||List of bootstrap extensions to add to envoy bootstrap config. Examples include Wasm Service (https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-wasmservice).|
@@ -593,11 +631,14 @@
 |gatewayProxies.gatewayProxy.horizontalPodAutoscaler.targetCPUUtilizationPercentage|int32||target average CPU utilization (represented as a percentage of requested CPU) over all the pods. Used only with apiVersion autoscaling/v1|
 |gatewayProxies.gatewayProxy.horizontalPodAutoscaler.metrics[].NAME|interface||metrics contains the specifications for which to use to calculate the desired replica count (the maximum replica count across all metrics will be used). Used only with apiVersion autoscaling/v2beta2|
 |gatewayProxies.gatewayProxy.horizontalPodAutoscaler.behavior.NAME|interface||behavior configures the scaling behavior of the target in both Up and Down directions (scaleUp and scaleDown fields respectively). Used only with apiVersion autoscaling/v2beta2|
+|gatewayProxies.gatewayProxy.horizontalPodAutoscaler.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.podDisruptionBudget.minAvailable|int32||An eviction is allowed if at least "minAvailable" pods selected by "selector" will still be available after the eviction, i.e. even in the absence of the evicted pod. So for example you can prevent all voluntary evictions by specifying "100%".|
 |gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable|int32||An eviction is allowed if at most "maxUnavailable" pods selected by "selector" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with "minAvailable".|
+|gatewayProxies.gatewayProxy.podDisruptionBudget.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.istioMetaMeshId|string||ISTIO_META_MESH_ID Environment Variable. Defaults to "cluster.local"|
 |gatewayProxies.gatewayProxy.istioMetaClusterId|string||ISTIO_META_CLUSTER_ID Environment Variable. Defaults to "Kubernetes"|
 |gatewayProxies.gatewayProxy.logLevel|string||Level at which the pod should log. Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info|
+|gatewayProxies.gatewayProxy.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |ingress.enabled|bool|false||
 |ingress.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |ingress.deployment.image.repository|string|ingress|image name (repository) for the container.|
@@ -642,6 +683,7 @@
 |ingress.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingress.deployment.resources.requests.memory|string||amount of memory|
 |ingress.deployment.resources.requests.cpu|string||amount of CPUs|
+|ingress.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |ingress.requireIngressClass|bool||only serve traffic for Ingress objects with the Ingress Class annotation 'kubernetes.io/ingress.class'. By default the annotation value must be set to 'gloo', however this can be overriden via customIngressClass.|
 |ingress.customIngressClass|bool||Only relevant when requireIngressClass is set to true. Setting this value will cause the Gloo Edge Ingress Controller to process only those Ingress objects which have their ingress class set to this value (e.g. 'kubernetes.io/ingress.class=SOMEVALUE').|
 |ingressProxy.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
@@ -691,7 +733,9 @@
 |ingressProxy.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingressProxy.deployment.resources.requests.memory|string||amount of memory|
 |ingressProxy.deployment.resources.requests.cpu|string||amount of CPUs|
+|ingressProxy.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |ingressProxy.configMap.data.NAME|string|||
+|ingressProxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |ingressProxy.tracing|string|||
 |ingressProxy.loopBackAddress|string|127.0.0.1|Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
 |ingressProxy.label|string|ingress-proxy|Value for label gloo. Use a unique value to use several ingress proxy instances in the same cluster. Default is ingress-proxy|
@@ -700,6 +744,7 @@
 |ingressProxy.service.loadBalancerIP|string||IP address of the load balancer|
 |ingressProxy.service.httpPort|int|80|HTTP port for the knative/ingress proxy service|
 |ingressProxy.service.httpsPort|int|443|HTTPS port for the knative/ingress proxy service|
+|ingressProxy.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |k8s.clusterName|string|cluster.local|cluster name to use when referencing services.|
 |accessLogger.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |accessLogger.image.repository|string|access-logger|image name (repository) for the container.|
@@ -715,6 +760,7 @@
 |accessLogger.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |accessLogger.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
 |accessLogger.extraAccessLoggerLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the access logger deployment.|
+|accessLogger.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |accessLogger.replicas|int|1|number of instances to deploy|
 |accessLogger.customEnv[].name|string|||
 |accessLogger.customEnv[].value|string|||
@@ -749,6 +795,7 @@
 |accessLogger.resources.limits.cpu|string||amount of CPUs|
 |accessLogger.resources.requests.memory|string||amount of memory|
 |accessLogger.resources.requests.cpu|string||amount of CPUs|
+|accessLogger.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |global.image.tag|string||tag for the container|
 |global.image.repository|string||image name (repository) for the container.|
 |global.image.registry|string|quay.io/solo-io|image prefix/registry e.g. (quay.io/solo-io)|

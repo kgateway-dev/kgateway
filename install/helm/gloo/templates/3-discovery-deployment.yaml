@@ -1,3 +1,4 @@
+{{- define "discovery.deploymentSpec"}}
 {{- if .Values.discovery.enabled }}
 {{- $statsConfig := coalesce .Values.discovery.deployment.stats .Values.global.glooStats -}}
 {{- $image := .Values.discovery.deployment.image }}
@@ -87,3 +88,12 @@ spec:
         fsGroup: {{ printf "%.0f" (float64 .Values.discovery.deployment.fsGroup) }}
         {{- end}}
 {{- end }}
+{{- end }} {{/* define "discovery.deploymentSpec"*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.discovery.deployment -}}
+{{- $kubeResourceOverride = .Values.discovery.deployment.kubeResourceOverride  -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "discovery.deploymentSpec") -}}
+

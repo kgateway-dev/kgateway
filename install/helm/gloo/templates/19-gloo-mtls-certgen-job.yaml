@@ -1,3 +1,4 @@
+{{ define "glooMtls.certGenJobSpec" }}
 {{- $image := .Values.gateway.certGenJob.image }}
 {{- if .Values.global  }}
 {{- $image = merge .Values.gateway.certGenJob.image .Values.global.image }}
@@ -48,4 +49,12 @@ spec:
   {{- if semverCompare ">=1.12" .Capabilities.KubeVersion.GitVersion }}
   ttlSecondsAfterFinished: 60
   {{- end }}
-{{- end }}
+{{- end }} {{/* if .Values.global.glooMtls.enabled */}}
+{{- end }} {{/* define gateway.certGenJob.JobSpec*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.gateway.certGenJob -}}
+{{- $kubeResourceOverride = .Values.gateway.certGenJob.mtlsKubeResourceOverride -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "glooMtls.certGenJobSpec") -}}
