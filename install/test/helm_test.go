@@ -4359,6 +4359,7 @@ metadata:
 					Entry("5-gateway-validation-webhook-configuration", "gateway.validation.webhook.kubeResourceOverride"),
 					Entry("6-access-logger-deployment", "accessLogger.deployment.kubeResourceOverride", "accessLogger.enabled=true"),
 					Entry("6-access-logger-service", "accessLogger.service.kubeResourceOverride", "accessLogger.enabled=true"),
+					Entry("6.5-gateway-certgen-job", "gateway.certGenJob.kubeResourceOverride"),
 					Entry("8-gateway-proxy-service-account", "gateway.proxyServiceAccount.kubeResourceOverride"),
 					Entry("10-ingress-deployment", "ingress.deployment.kubeResourceOverride", "ingress.enabled=true"),
 					Entry("11-ingress-proxy-deployment", "ingressProxy.deployment.kubeResourceOverride", "ingress.enabled=true"),
@@ -4368,7 +4369,7 @@ metadata:
 					Entry("15-clusteringress-proxy-configmap", "settings.integrations.knative.proxy.configMap.kubeResourceOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
 					Entry("16-clusteringress-proxy-service", "settings.integrations.knative.proxy.service.kubeResourceOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
 					Entry("18-settings", "settings.kubeResourceOverride"),
-					Entry("19-gloo-mtls-certgen-job", "gateway.certGenJob.kubeResourceOverride", "global.glooMtls.enabled=true"),
+					Entry("19-gloo-mtls-certgen-job", "gateway.certGenJob.mtlsKubeResourceOverride", "global.glooMtls.enabled=true"),
 					Entry("26-knative-external-proxy-deployment", "settings.integrations.knative.proxy.deployment.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
 					Entry("27-knative-external-proxy-configmap", "settings.integrations.knative.proxy.configMap.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
 					Entry("28-knative-external-proxy-service", "settings.integrations.knative.proxy.service.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
@@ -4378,7 +4379,6 @@ metadata:
 					// todo: implement overrides for these if need arises
 					// A named helm template will have to be created for each of the resources
 					// generated in the following files.
-					//Entry("6.5-gateway-certgen-job", ""),
 					//Entry("19-gloo-mtls-configmap", ),
 					//Entry("20-namespace-clusterrole-gateway", ""),
 					//Entry("21-namespace-clusterrole-ingress", ""),

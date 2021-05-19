@@ -287,7 +287,8 @@ type GatewayDeployment struct {
 type Job struct {
 	Image *Image `json:"image,omitempty"`
 	*JobSpec
-	*KubeResourceOverride
+	KubeResourceOverride     map[string]interface{} `json:"kubeResourceOverride,omitempty" desc:"override fields in the gateway-certgen job."`
+	MtlsKubeResourceOverride map[string]interface{} `json:"mtlsKubeResourceOverride,omitempty" desc:"override fields in the gloo-mtls-certgen job."`
 }
 
 type CertGenJob struct {

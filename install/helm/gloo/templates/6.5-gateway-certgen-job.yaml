@@ -1,3 +1,4 @@
+{{- define "gloo.gatewayCertGenJobSpec" -}}
 {{- if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.certGenJob.enabled }}
 
 {{- $image := .Values.gateway.certGenJob.image }}
@@ -58,7 +59,8 @@ spec:
   {{- if and .Values.gateway.certGenJob.setTtlAfterFinished (semverCompare ">=1.12" .Capabilities.KubeVersion.GitVersion) }}
   ttlSecondsAfterFinished: {{ .Values.gateway.certGenJob.ttlSecondsAfterFinished }}
   {{- end }}
-{{- end }}
+{{- end }} {{/* if and gateway.enabled gateway.validation.enabled gateway.certGenJob.enabled */}}
+{{- end }} {{/* define "gloo.gatewayCertGenJobSpec" */}}
 
 {{- if or (and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.certGenJob.enabled) (.Values.global.glooMtls.enabled) }}
 ---
@@ -119,4 +121,11 @@ rules:
 ---
 
 {{- end }} {{/* .Values.global.glooRbac.create */}}
-{{- end }}
+{{- end }} {{/* {{- if or (and gateway.enabled validation.enabled certGenJob.enabled glooMtls.enabled */}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.gateway.certGenJob -}}
+{{- $kubeResourceOverride = .Values.gateway.certGenJob.kubeResourceOverride -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "gloo.gatewayCertGenJobSpec") -}}

@@ -284,7 +284,8 @@
 |gateway.certGenJob.tolerations[].tolerationSeconds|int64|||
 |gateway.certGenJob.affinity[].NAME|interface|||
 |gateway.certGenJob.hostAliases[]|interface|||
-|gateway.certGenJob.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|gateway.certGenJob.kubeResourceOverride.NAME|interface||override fields in the gateway-certgen job.|
+|gateway.certGenJob.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen job.|
 |gateway.certGenJob.enabled|bool|true|enable the job that generates the certificates for the validating webhook at install time (default true)|
 |gateway.certGenJob.setTtlAfterFinished|bool|true|Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true|
 |gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
