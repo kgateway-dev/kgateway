@@ -13,6 +13,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	values "github.com/solo-io/gloo/install/helm/gloo/generate"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -1783,7 +1784,6 @@ spec:
 							}
 							daemonSet.Spec.Template.Spec.DNSPolicy = v1.DNSClusterFirstWithHostNet
 							daemonSet.Spec.Template.Spec.HostNetwork = true
-
 						})
 
 						It("creates a daemonset", func() {
@@ -1791,6 +1791,18 @@ spec:
 								valuesArgs: []string{
 									"gatewayProxies.gatewayProxy.kind.deployment=null",
 									"gatewayProxies.gatewayProxy.kind.daemonSet.hostPort=true",
+								},
+							})
+							testManifest.Expect("DaemonSet", gatewayProxyDeployment.Namespace, gatewayProxyDeployment.Name).To(BeEquivalentTo(daemonSet))
+						})
+
+						It("can explicitly disable hostNetwork", func() {
+							daemonSet.Spec.Template.Spec.HostNetwork = false
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"gatewayProxies.gatewayProxy.kind.deployment=null",
+									"gatewayProxies.gatewayProxy.kind.daemonSet.hostPort=true",
+									"gatewayProxies.gatewayProxy.kind.daemonSet.hostNetwork=false",
 								},
 							})
 							testManifest.Expect("DaemonSet", gatewayProxyDeployment.Namespace, gatewayProxyDeployment.Name).To(BeEquivalentTo(daemonSet))
@@ -2898,7 +2910,12 @@ spec:
 					})
 
 					It("creates the certgen job, rbac, and service account", func() {
-						prepareMakefile(namespace, helmValues{})
+						prepareMakefile(namespace, helmValues{valuesArgs: []string{
+							"gateway.certGenJob.resources.requests.memory=64Mi",
+							"gateway.certGenJob.resources.requests.cpu=250m",
+							"gateway.certGenJob.resources.limits.memory=128Mi",
+							"gateway.certGenJob.resources.limits.cpu=500m",
+						}})
 						job := makeUnstructured(`
 apiVersion: batch/v1
 kind: Job
@@ -2932,6 +2949,13 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+          resources:
+            requests: 
+              cpu: 250m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
           args:
             - "--secret-name=gateway-validation-certs"
             - "--svc-name=gateway"
@@ -4266,6 +4290,50 @@ metadata:
 				})
 
 			})
+
+			Describe("Standard k8s values", func() {
+				DescribeTable("PodSpec affinity, tolerations, nodeName, hostAliases, nodeSelector, restartPolicy on Deployments and Jobs",
+					func(kind string, resourceName string, value string, extraArgs ...string) {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: append([]string{
+								value + ".nodeSelector.label=someLabel",
+								value + ".nodeName=someNodeName",
+								value + ".tolerations=someToleration",
+								value + ".hostAliases=someHostAlias",
+								value + ".affinity=someNodeAffinity",
+								value + ".restartPolicy=someRestartPolicy",
+							}, extraArgs...),
+						})
+						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+							if u.GetKind() == kind && u.GetName() == resourceName {
+								a := getFieldFromUnstructured(u, "spec", "template", "spec", "nodeSelector")
+								Expect(a).To(Equal(map[string]interface{}{"label": "someLabel"}))
+								a = getFieldFromUnstructured(u, "spec", "template", "spec", "nodeName")
+								Expect(a).To(Equal("someNodeName"))
+								a = getFieldFromUnstructured(u, "spec", "template", "spec", "tolerations")
+								Expect(a).To(Equal("someToleration"))
+								a = getFieldFromUnstructured(u, "spec", "template", "spec", "hostAliases")
+								Expect(a).To(Equal("someHostAlias"))
+								a = getFieldFromUnstructured(u, "spec", "template", "spec", "affinity")
+								Expect(a).To(Equal("someNodeAffinity"))
+								a = getFieldFromUnstructured(u, "spec", "template", "spec", "restartPolicy")
+								Expect(a).To(Equal("someRestartPolicy"))
+								return true
+							}
+							return false
+						})
+						Expect(resources.NumResources()).To(Equal(1))
+					},
+					Entry("gloo deployment", "Deployment", "gloo", "gloo.deployment"),
+					Entry("discovery deployment", "Deployment", "discovery", "discovery.deployment"),
+					Entry("gateway deployment", "Deployment", "gateway", "gateway.deployment"),
+					Entry("ingress deployment", "Deployment", "ingress", "ingress.deployment", "ingress.enabled=true"),
+					Entry("cluster-ingress deployment", "Deployment", "clusteringress-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.7.0", "settings.integrations.knative.enabled=true"),
+					Entry("knative external proxy deployment", "Deployment", "knative-external-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.9.0", "settings.integrations.knative.enabled=true"),
+					Entry("knative internal proxy deployment", "Deployment", "knative-internal-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.9.0", "settings.integrations.knative.enabled=true"),
+					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
+				)
+			})
 		})
 
 		Context("Reflection", func() {
@@ -4351,7 +4419,15 @@ metadata:
 			Expect(err).NotTo(HaveOccurred())
 
 			lines := strings.Split(string(out), "\n")
-			for _, line := range lines {
+			// more descriptive fail message that prints out the manifest that includes the trailing whitespace
+			manifestStartingLine := 0
+			for idx, line := range lines {
+				if strings.Contains(line, "---") {
+					manifestStartingLine = idx
+				}
+				if strings.TrimRightFunc(line, unicode.IsSpace) != line {
+					Fail(strings.Join(lines[manifestStartingLine:idx+1], "\n") + "\n last line has whitespace")
+				}
 				Expect(strings.TrimRightFunc(line, unicode.IsSpace)).To(Equal(line))
 			}
 		})
@@ -4383,4 +4459,17 @@ func cloneMap(input map[string]string) map[string]string {
 func constructResourceID(resource *unstructured.Unstructured) string {
 	// technically vulnerable to resources that have commas in their names, but that's not a big concern
 	return fmt.Sprintf("%s,%s,%s", resource.GetNamespace(), resource.GetName(), resource.GroupVersionKind().String())
+}
+
+// gets value of field nested within an Unstructured struct.
+// fieldPath is the path to the value, so the value foo.bar.baz would be passed in as "foo", "bar, "baz"
+func getFieldFromUnstructured(uns *unstructured.Unstructured, fieldPath ...string) interface{} {
+	if len(fieldPath) < 1 {
+		return nil
+	}
+	obj := uns.Object[fieldPath[0]]
+	for _, field := range fieldPath[1:] {
+		obj = obj.(map[string]interface{})[field]
+	}
+	return obj
 }

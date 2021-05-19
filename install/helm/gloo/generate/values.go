@@ -66,7 +66,12 @@ type ResourceRequirements struct {
 	Requests *ResourceAllocation `json:"requests,omitEmpty" desc:"resource requests of this container"`
 }
 type PodSpec struct {
-	RestartPolicy *string `json:"restartPolicy,omitempty" desc:"restart policy to use when the pod exits"`
+	RestartPolicy *string                  `json:"restartPolicy,omitempty" desc:"restart policy to use when the pod exits"`
+	NodeName      *string                  `json:"nodeName,omitempty" desc:"name of node to run on"`
+	NodeSelector  map[string]string        `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
+	Tolerations   []*appsv1.Toleration     `json:"tolerations,omitEmpty"`
+	Affinity      []map[string]interface{} `json:"affinity,omitempty"`
+	HostAliases   []interface{}            `json:"hostAliases,omitempty"`
 }
 
 type JobSpec struct {
@@ -76,6 +81,7 @@ type JobSpec struct {
 type DeploymentSpecSansResources struct {
 	Replicas  *int             `json:"replicas,omitempty" desc:"number of instances to deploy"`
 	CustomEnv []*appsv1.EnvVar `json:"customEnv,omitempty" desc:"custom extra environment variables for the container"`
+	*PodSpec
 }
 
 type DeploymentSpec struct {
@@ -266,11 +272,12 @@ type Job struct {
 
 type CertGenJob struct {
 	Job
-	Enabled                 *bool    `json:"enabled,omitempty" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
-	SetTtlAfterFinished     *bool    `json:"setTtlAfterFinished,omitempty" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
-	TtlSecondsAfterFinished *int     `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
-	FloatingUserId          *bool    `json:"floatingUserId,omitempty" desc:"set to true to allow the cluster to dynamically assign a user ID"`
-	RunAsUser               *float64 `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	Enabled                 *bool                 `json:"enabled,omitempty" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
+	SetTtlAfterFinished     *bool                 `json:"setTtlAfterFinished,omitempty" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
+	TtlSecondsAfterFinished *int                  `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
+	FloatingUserId          *bool                 `json:"floatingUserId,omitempty" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser               *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	Resources               *ResourceRequirements `json:"resources,omitempty"`
 }
 
 type GatewayProxy struct {
@@ -344,7 +351,8 @@ type PodDisruptionBudget struct {
 }
 
 type DaemonSetSpec struct {
-	HostPort *bool `json:"hostPort,omitempty" desc:"whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet"`
+	HostPort    *bool `json:"hostPort,omitempty" desc:"whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet"`
+	HostNetwork *bool `json:"hostNetwork,omitempty"`
 }
 
 type GatewayProxyPodTemplate struct {

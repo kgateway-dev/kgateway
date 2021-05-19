@@ -37,6 +37,7 @@ spec:
         {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
+      {{- include "gloo.podSpecStandardFields" .Values.settings.integrations.knative.proxy | nindent 6 -}}
       containers:
       - args: ["--disable-hot-restart"]
         env:

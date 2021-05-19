@@ -42,6 +42,7 @@ spec:
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo
+      {{- include "gloo.podSpecStandardFields" .Values.gloo.deployment | nindent 6 -}}
       volumes:
 {{- if .Values.global.glooMtls.enabled }}
       - name: gloo-mtls-certs

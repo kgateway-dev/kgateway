@@ -85,5 +85,5 @@ spec:
       - configMap:
           name: ingress-envoy-config
         name: envoy-config
-
-{{- end }}
+      {{- include "gloo.podSpecStandardFields" .Values.ingress.deployment | nindent 6 -}}
+{{- end }} {{/* if .Values.ingress.enabled */}}
