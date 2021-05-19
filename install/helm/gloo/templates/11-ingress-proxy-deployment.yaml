@@ -38,25 +38,6 @@ spec:
       {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
-{{- with .Values.ingress.deployment.nodeName }}
-      nodeName: {{ . }}
-{{- end }}
-{{- with .Values.ingress.deployment.nodeSelector }}
-      nodeSelector:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
-{{- with .Values.ingress.deployment.tolerations }}
-      tolerations:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
-{{- with .Values.ingress.deployment.hostAliases }}
-      hostAliases:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
-{{- with .Values.ingress.deployment.affinity }}
-      affinity:
-      {{- toYaml . | nindent 8 }}
-{{- end }}
       containers:
       - args: ["--disable-hot-restart"]
         env:
@@ -104,5 +85,5 @@ spec:
       - configMap:
           name: ingress-envoy-config
         name: envoy-config
-
-{{- end }}
+      {{- include "gloo.podSpecStandardFields" .Values.ingress.deployment | nindent 6 -}}
+{{- end }} {{/* if .Values.ingress.enabled */}}
