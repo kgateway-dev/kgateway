@@ -4419,9 +4419,14 @@ metadata:
 			Expect(err).NotTo(HaveOccurred())
 
 			lines := strings.Split(string(out), "\n")
+			// more descriptive fail message that prints out the manifest that includes the trailing whitespace
+			manifestStartingLine := 0
 			for idx, line := range lines {
+				if strings.Contains(line, "---") {
+					manifestStartingLine = idx
+				}
 				if strings.TrimRightFunc(line, unicode.IsSpace) != line {
-					Fail(strings.Join(lines[0:idx+1], "\n") + "\n last line has whitespace")
+					Fail(strings.Join(lines[manifestStartingLine:idx+1], "\n") + "\n last line has whitespace")
 				}
 				Expect(strings.TrimRightFunc(line, unicode.IsSpace)).To(Equal(line))
 			}

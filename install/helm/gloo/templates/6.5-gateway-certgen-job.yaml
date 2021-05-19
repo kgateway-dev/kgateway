@@ -44,6 +44,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
           args:
+
             - "--secret-name={{ .Values.gateway.validation.secretName }}"
             - "--svc-name=gateway"
             - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-{{ .Release.Namespace }}"
