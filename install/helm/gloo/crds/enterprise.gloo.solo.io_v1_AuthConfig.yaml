@@ -461,6 +461,7 @@ spec:
                   pass_through_auth:
                     properties:
                       config:
+                        description: Custom config to be passed per request to the passthrough auth service.
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
                       grpc:

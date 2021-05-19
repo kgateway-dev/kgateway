@@ -1000,6 +1000,7 @@ spec:
                             description: Output access logs to local file
                             properties:
                               json_format:
+                                description: the format object by which to envoy will emit the logs in a structured way. https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/observability/access_log#format-dictionaries
                                 type: object
                                 x-kubernetes-preserve-unknown-fields: true
                               path:
