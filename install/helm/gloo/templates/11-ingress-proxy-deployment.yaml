@@ -86,14 +86,15 @@ spec:
       - configMap:
           name: ingress-envoy-config
         name: envoy-config
-{{- end }}
-{{- end}} {{/* define "ingressProxy.deploymentSpec "*/}}
+      {{- include "gloo.podSpecStandardFields" .Values.ingress.deployment | nindent 6 -}}
+{{- end }} {{/* if .Values.ingress.enabled */}}
+{{- end }} {{/* define "ingressProxy.deploymentSpec "*/}}
 
 {{/* Render template with yaml overrides */}}
-  {{- $kubeResourceOverride := dict -}}
-  {{- if .Values.ingressProxy -}}
-  {{- if .Values.ingressProxy.deployment -}}
-  {{- $kubeResourceOverride = .Values.ingressProxy.deployment.kubeResourceOverride  -}}
-  {{- end -}}
-  {{- end -}}
-  {{- include "gloo.util.merge" (list . $kubeResourceOverride "ingressProxy.deploymentSpec") -}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.ingressProxy -}}
+{{- if .Values.ingressProxy.deployment -}}
+{{- $kubeResourceOverride = .Values.ingressProxy.deployment.kubeResourceOverride  -}}
+{{- end -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "ingressProxy.deploymentSpec") -}}

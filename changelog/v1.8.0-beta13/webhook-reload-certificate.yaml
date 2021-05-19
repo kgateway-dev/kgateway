@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: >-
+      Automatically reload webhook certificate and private key from mounted secrets files if they changed.
+    issueLink: https://github.com/solo-io/gloo/issues/4624
