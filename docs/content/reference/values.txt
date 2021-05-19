@@ -36,6 +36,16 @@
 |settings.integrations.knative.proxy.customEnv[].valueFrom.secretKeyRef.name|string|||
 |settings.integrations.knative.proxy.customEnv[].valueFrom.secretKeyRef.key|string|||
 |settings.integrations.knative.proxy.customEnv[].valueFrom.secretKeyRef.optional|bool|||
+|settings.integrations.knative.proxy.restartPolicy|string||restart policy to use when the pod exits|
+|settings.integrations.knative.proxy.nodeName|string||name of node to run on|
+|settings.integrations.knative.proxy.nodeSelector.NAME|string||label selector for nodes|
+|settings.integrations.knative.proxy.tolerations[].key|string|||
+|settings.integrations.knative.proxy.tolerations[].operator|string|||
+|settings.integrations.knative.proxy.tolerations[].value|string|||
+|settings.integrations.knative.proxy.tolerations[].effect|string|||
+|settings.integrations.knative.proxy.tolerations[].tolerationSeconds|int64|||
+|settings.integrations.knative.proxy.affinity[].NAME|interface|||
+|settings.integrations.knative.proxy.hostAliases[]|interface|||
 |settings.integrations.knative.proxy.resources.limits.memory|string||amount of memory|
 |settings.integrations.knative.proxy.resources.limits.cpu|string||amount of CPUs|
 |settings.integrations.knative.proxy.resources.requests.memory|string||amount of memory|
@@ -120,6 +130,16 @@
 |gloo.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
 |gloo.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
 |gloo.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
+|gloo.deployment.restartPolicy|string||restart policy to use when the pod exits|
+|gloo.deployment.nodeName|string||name of node to run on|
+|gloo.deployment.nodeSelector.NAME|string||label selector for nodes|
+|gloo.deployment.tolerations[].key|string|||
+|gloo.deployment.tolerations[].operator|string|||
+|gloo.deployment.tolerations[].value|string|||
+|gloo.deployment.tolerations[].effect|string|||
+|gloo.deployment.tolerations[].tolerationSeconds|int64|||
+|gloo.deployment.affinity[].NAME|interface|||
+|gloo.deployment.hostAliases[]|interface|||
 |gloo.deployment.resources.limits.memory|string||amount of memory|
 |gloo.deployment.resources.limits.cpu|string||amount of CPUs|
 |gloo.deployment.resources.requests.memory|string||amount of memory|
@@ -159,6 +179,16 @@
 |discovery.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
 |discovery.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
 |discovery.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
+|discovery.deployment.restartPolicy|string||restart policy to use when the pod exits|
+|discovery.deployment.nodeName|string||name of node to run on|
+|discovery.deployment.nodeSelector.NAME|string||label selector for nodes|
+|discovery.deployment.tolerations[].key|string|||
+|discovery.deployment.tolerations[].operator|string|||
+|discovery.deployment.tolerations[].value|string|||
+|discovery.deployment.tolerations[].effect|string|||
+|discovery.deployment.tolerations[].tolerationSeconds|int64|||
+|discovery.deployment.affinity[].NAME|interface|||
+|discovery.deployment.hostAliases[]|interface|||
 |discovery.deployment.resources.limits.memory|string||amount of memory|
 |discovery.deployment.resources.limits.cpu|string||amount of CPUs|
 |discovery.deployment.resources.requests.memory|string||amount of memory|
@@ -210,6 +240,16 @@
 |gateway.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
 |gateway.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
 |gateway.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
+|gateway.deployment.restartPolicy|string||restart policy to use when the pod exits|
+|gateway.deployment.nodeName|string||name of node to run on|
+|gateway.deployment.nodeSelector.NAME|string||label selector for nodes|
+|gateway.deployment.tolerations[].key|string|||
+|gateway.deployment.tolerations[].operator|string|||
+|gateway.deployment.tolerations[].value|string|||
+|gateway.deployment.tolerations[].effect|string|||
+|gateway.deployment.tolerations[].tolerationSeconds|int64|||
+|gateway.deployment.affinity[].NAME|interface|||
+|gateway.deployment.hostAliases[]|interface|||
 |gateway.deployment.resources.limits.memory|string||amount of memory|
 |gateway.deployment.resources.limits.cpu|string||amount of CPUs|
 |gateway.deployment.resources.requests.memory|string||amount of memory|
@@ -221,11 +261,24 @@
 |gateway.certGenJob.image.pullSecret|string||image pull policy for the container |
 |gateway.certGenJob.image.extended|bool||if true, deploy an extended version of the container with additional debug tools|
 |gateway.certGenJob.restartPolicy|string|OnFailure|restart policy to use when the pod exits|
+|gateway.certGenJob.nodeName|string||name of node to run on|
+|gateway.certGenJob.nodeSelector.NAME|string||label selector for nodes|
+|gateway.certGenJob.tolerations[].key|string|||
+|gateway.certGenJob.tolerations[].operator|string|||
+|gateway.certGenJob.tolerations[].value|string|||
+|gateway.certGenJob.tolerations[].effect|string|||
+|gateway.certGenJob.tolerations[].tolerationSeconds|int64|||
+|gateway.certGenJob.affinity[].NAME|interface|||
+|gateway.certGenJob.hostAliases[]|interface|||
 |gateway.certGenJob.enabled|bool|true|enable the job that generates the certificates for the validating webhook at install time (default true)|
 |gateway.certGenJob.setTtlAfterFinished|bool|true|Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true|
 |gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.certGenJob.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |gateway.certGenJob.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
+|gateway.certGenJob.resources.limits.memory|string||amount of memory|
+|gateway.certGenJob.resources.limits.cpu|string||amount of CPUs|
+|gateway.certGenJob.resources.requests.memory|string||amount of memory|
+|gateway.certGenJob.resources.requests.cpu|string||amount of CPUs|
 |gateway.updateValues|bool||if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions|
 |gateway.proxyServiceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gateway.proxyServiceAccount.disableAutomount|bool||disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
@@ -253,7 +306,18 @@
 |gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
 |gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
 |gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
+|gatewayProxies.NAME.kind.deployment.restartPolicy|string||restart policy to use when the pod exits|
+|gatewayProxies.NAME.kind.deployment.nodeName|string||name of node to run on|
+|gatewayProxies.NAME.kind.deployment.nodeSelector.NAME|string||label selector for nodes|
+|gatewayProxies.NAME.kind.deployment.tolerations[].key|string|||
+|gatewayProxies.NAME.kind.deployment.tolerations[].operator|string|||
+|gatewayProxies.NAME.kind.deployment.tolerations[].value|string|||
+|gatewayProxies.NAME.kind.deployment.tolerations[].effect|string|||
+|gatewayProxies.NAME.kind.deployment.tolerations[].tolerationSeconds|int64|||
+|gatewayProxies.NAME.kind.deployment.affinity[].NAME|interface|||
+|gatewayProxies.NAME.kind.deployment.hostAliases[]|interface|||
 |gatewayProxies.NAME.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
+|gatewayProxies.NAME.kind.daemonSet.hostNetwork|bool|||
 |gatewayProxies.NAME.podTemplate.image.tag|string||tag for the container|
 |gatewayProxies.NAME.podTemplate.image.repository|string||image name (repository) for the container.|
 |gatewayProxies.NAME.podTemplate.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -398,7 +462,18 @@
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
+|gatewayProxies.gatewayProxy.kind.deployment.restartPolicy|string||restart policy to use when the pod exits|
+|gatewayProxies.gatewayProxy.kind.deployment.nodeName|string||name of node to run on|
+|gatewayProxies.gatewayProxy.kind.deployment.nodeSelector.NAME|string||label selector for nodes|
+|gatewayProxies.gatewayProxy.kind.deployment.tolerations[].key|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.tolerations[].operator|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.tolerations[].value|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.tolerations[].effect|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.tolerations[].tolerationSeconds|int64|||
+|gatewayProxies.gatewayProxy.kind.deployment.affinity[].NAME|interface|||
+|gatewayProxies.gatewayProxy.kind.deployment.hostAliases[]|interface|||
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
+|gatewayProxies.gatewayProxy.kind.daemonSet.hostNetwork|bool|||
 |gatewayProxies.gatewayProxy.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gatewayProxies.gatewayProxy.podTemplate.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
 |gatewayProxies.gatewayProxy.podTemplate.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -553,6 +628,16 @@
 |ingress.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
 |ingress.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
 |ingress.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
+|ingress.deployment.restartPolicy|string||restart policy to use when the pod exits|
+|ingress.deployment.nodeName|string||name of node to run on|
+|ingress.deployment.nodeSelector.NAME|string||label selector for nodes|
+|ingress.deployment.tolerations[].key|string|||
+|ingress.deployment.tolerations[].operator|string|||
+|ingress.deployment.tolerations[].value|string|||
+|ingress.deployment.tolerations[].effect|string|||
+|ingress.deployment.tolerations[].tolerationSeconds|int64|||
+|ingress.deployment.affinity[].NAME|interface|||
+|ingress.deployment.hostAliases[]|interface|||
 |ingress.deployment.resources.limits.memory|string||amount of memory|
 |ingress.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingress.deployment.resources.requests.memory|string||amount of memory|
@@ -592,6 +677,16 @@
 |ingressProxy.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
 |ingressProxy.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
 |ingressProxy.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
+|ingressProxy.deployment.restartPolicy|string||restart policy to use when the pod exits|
+|ingressProxy.deployment.nodeName|string||name of node to run on|
+|ingressProxy.deployment.nodeSelector.NAME|string||label selector for nodes|
+|ingressProxy.deployment.tolerations[].key|string|||
+|ingressProxy.deployment.tolerations[].operator|string|||
+|ingressProxy.deployment.tolerations[].value|string|||
+|ingressProxy.deployment.tolerations[].effect|string|||
+|ingressProxy.deployment.tolerations[].tolerationSeconds|int64|||
+|ingressProxy.deployment.affinity[].NAME|interface|||
+|ingressProxy.deployment.hostAliases[]|interface|||
 |ingressProxy.deployment.resources.limits.memory|string||amount of memory|
 |ingressProxy.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingressProxy.deployment.resources.requests.memory|string||amount of memory|
@@ -640,6 +735,16 @@
 |accessLogger.customEnv[].valueFrom.secretKeyRef.name|string|||
 |accessLogger.customEnv[].valueFrom.secretKeyRef.key|string|||
 |accessLogger.customEnv[].valueFrom.secretKeyRef.optional|bool|||
+|accessLogger.restartPolicy|string||restart policy to use when the pod exits|
+|accessLogger.nodeName|string||name of node to run on|
+|accessLogger.nodeSelector.NAME|string||label selector for nodes|
+|accessLogger.tolerations[].key|string|||
+|accessLogger.tolerations[].operator|string|||
+|accessLogger.tolerations[].value|string|||
+|accessLogger.tolerations[].effect|string|||
+|accessLogger.tolerations[].tolerationSeconds|int64|||
+|accessLogger.affinity[].NAME|interface|||
+|accessLogger.hostAliases[]|interface|||
 |accessLogger.resources.limits.memory|string||amount of memory|
 |accessLogger.resources.limits.cpu|string||amount of CPUs|
 |accessLogger.resources.requests.memory|string||amount of memory|

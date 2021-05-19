@@ -288,8 +288,8 @@ spec:
           protocol: TCP
 {{- end }} {{- /* $global.glooMtls.enabled or $.Values.istioSDS.enabled */}}
       {{- if $spec.kind.daemonSet }}
-      {{- if $spec.kind.daemonSet.hostPort}}
-      hostNetwork: true
+      {{- if $spec.kind.daemonSet.hostPort }}
+      hostNetwork: {{ ne "false" ($spec.kind.daemonSet.hostNetwork | toString) }} {{/* defaults to true if undefined */}}
       dnsPolicy: ClusterFirstWithHostNet
       {{- end}}
       {{- end}}

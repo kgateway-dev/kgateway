@@ -43,6 +43,7 @@ spec:
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gateway
+      {{- include "gloo.podSpecStandardFields" .Values.gateway.deployment | nindent 6 -}}
       containers:
       - image: {{template "gloo.image" $image}}
         imagePullPolicy: {{ $image.pullPolicy }}

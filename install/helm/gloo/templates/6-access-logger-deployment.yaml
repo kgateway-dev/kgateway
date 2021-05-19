@@ -46,6 +46,7 @@ spec:
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gateway-proxy
+      {{- include "gloo.podSpecStandardFields" .Values.accessLogger | nindent 6 -}}
       securityContext:
         runAsNonRoot: true
         {{- if not .Values.accessLogger.floatingUserId }}
