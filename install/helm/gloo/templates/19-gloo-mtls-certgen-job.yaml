@@ -48,7 +48,7 @@ spec:
   {{- if semverCompare ">=1.12" .Capabilities.KubeVersion.GitVersion }}
   ttlSecondsAfterFinished: 60
   {{- end }}
-{{- end }} {{/* if .Values.global.glooMtls.enablede */}}
+{{- end }} {{/* if .Values.global.glooMtls.enabled */}}
 {{- end }} {{/* define gateway.certGenJob.JobSpec*/}}
 
 {{/* Render template with yaml overrides */}}
