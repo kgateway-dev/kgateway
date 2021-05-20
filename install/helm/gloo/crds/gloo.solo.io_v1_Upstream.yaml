@@ -26,15 +26,15 @@ spec:
           properties:
             aws:
               properties:
-                lambda_functions:
+                lambdaFunctions:
                   description: The list of Lambda Functions contained within this region. This list will be automatically populated by Gloo if discovery is enabled for AWS Lambda Functions
                   items:
                     description: 'Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda functions: - name of the function - qualifier for the function'
                     properties:
-                      lambda_function_name:
+                      lambdaFunctionName:
                         description: The Name of the Lambda Function as it appears in the AWS Lambda Portal
                         type: string
-                      logical_name:
+                      logicalName:
                         description: the logical name gloo should associate with this function. if left empty, it will default to lambda_function_name+qualifier
                         type: string
                       qualifier:
@@ -45,10 +45,10 @@ spec:
                 region:
                   description: The AWS Region where the desired Lambda Functions exist
                   type: string
-                role_arn:
+                roleArn:
                   description: '(Optional): role_arn to use when assuming a role for a given request via STS. If set this role_arn will override the value found in AWS_ROLE_ARN This option will only be respected if STS credentials are enabled. To enable STS credential fetching see Settings.Gloo.AwsOptions in settings.proto.'
                   type: string
-                secret_ref:
+                secretRef:
                   description: 'A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret AWS Secrets can be created with `glooctl secret create aws ...` If the secret is created manually, it must conform to the following structure: ``` access_key: <aws access key> secret_key: <aws secret key> session_token: <(optional) aws session token> ```'
                   properties:
                     name:
@@ -57,7 +57,7 @@ spec:
                       type: string
                   type: object
               type: object
-            aws_ec2:
+            awsEc2:
               properties:
                 filters:
                   description: List of tag filters for selecting instances An instance must match all the filters in order to be selected Filter keys are not case-sensitive
@@ -66,7 +66,7 @@ spec:
                       key:
                         description: if set, only instances that have a tag with this key will be matched keys are not case-sensitive, as with AWS Condition Keys
                         type: string
-                      kv_pair:
+                      kvPair:
                         description: if set, only instances that have a tag with this key and value
                         properties:
                           key:
@@ -82,16 +82,16 @@ spec:
                   description: If set, will use this port on EC2 instances. Defaults to port 80.
                   format: int32
                   type: integer
-                public_ip:
+                publicIp:
                   description: If set, will use the EC2 public IP address. Defaults to the private IP address.
                   type: boolean
                 region:
                   description: The AWS Region where the desired EC2 instances exist
                   type: string
-                role_arn:
+                roleArn:
                   description: Optional, Amazon Resource Number (ARN) referring to IAM Role that should be assumed when the Upstream queries for eligible EC2 instances. If provided, Gloo will create an EC2 API client with the provided role. If not provided, Gloo will not assume a role.
                   type: string
-                secret_ref:
+                secretRef:
                   description: 'Optional, if not set, Gloo will try to use the default AWS secret specified by environment variables. If a secret is not provided, the environment must specify both the AWS access key and secret. The environment variables used to indicate the AWS account can be: - for the access key: "AWS_ACCESS_KEY_ID" or "AWS_ACCESS_KEY" - for the secret: "AWS_SECRET_ACCESS_KEY" or "AWS_SECRET_KEY" If set, a [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret AWS Secrets can be created with `glooctl secret create aws ...` If the secret is created manually, it must conform to the following structure: ``` access_key: <aws access key> secret_key: <aws secret key> ``` Gloo will create an EC2 API client with this credential. You may choose to use a credential with limited access in conjunction with a list of Roles, specified by their Amazon Resource Number (ARN).'
                   properties:
                     name:
@@ -102,26 +102,26 @@ spec:
               type: object
             azure:
               properties:
-                function_app_name:
+                functionAppName:
                   description: The Name of the Azure Function App where the functions are grouped
                   type: string
                 functions:
                   items:
                     description: Function Spec for Functions on Azure Functions Upstreams The Function Spec contains data necessary for Gloo to invoke Azure functions
                     properties:
-                      auth_level:
+                      authLevel:
                         description: Auth Level can bve either "anonymous" "function" or "admin" See https://vincentlauzon.com/2017/12/04/azure-functions-http-authorization-levels/ for more details
                         enum:
                         - - Anonymous
                           - Function
                           - Admin
                         type: string
-                      function_name:
+                      functionName:
                         description: The Name of the Azure Function as it appears in the Azure Functions Portal
                         type: string
                     type: object
                   type: array
-                secret_ref:
+                secretRef:
                   description: A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an [Azure Publish Profile JSON file](https://azure.microsoft.com/en-us/downloads/publishing-profile-overview/). {{ hide_not_implemented "Azure Secrets can be created with `glooctl secret create azure ...`" }} Note that this secret is not required unless Function Discovery is enabled
                   properties:
                     name:
@@ -130,31 +130,31 @@ spec:
                       type: string
                   type: object
               type: object
-            circuit_breakers:
+            circuitBreakers:
               description: Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used. if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers) will be used.
               properties:
-                max_connections:
+                maxConnections:
                   properties:
                     value:
                       description: The uint32 value.
                       format: int32
                       type: integer
                   type: object
-                max_pending_requests:
+                maxPendingRequests:
                   properties:
                     value:
                       description: The uint32 value.
                       format: int32
                       type: integer
                   type: object
-                max_requests:
+                maxRequests:
                   properties:
                     value:
                       description: The uint32 value.
                       format: int32
                       type: integer
                   type: object
-                max_retries:
+                maxRetries:
                   properties:
                     value:
                       description: The uint32 value.
@@ -162,19 +162,19 @@ spec:
                       type: integer
                   type: object
               type: object
-            connection_config:
+            connectionConfig:
               properties:
-                common_http_protocol_options:
+                commonHttpProtocolOptions:
                   description: Additional options when handling HTTP requests upstream. These options will be applicable to both HTTP1 and HTTP2 requests.
                   properties:
-                    headers_with_underscores_action:
+                    headersWithUnderscoresAction:
                       description: 'Action to take when a client request with a header name containing underscore characters is received. If this setting is not specified, the value defaults to ALLOW. Note: upstream responses are not affected by this setting.'
                       enum:
                       - - ALLOW
                         - REJECT_REQUEST
                         - DROP_HEADER
                       type: string
-                    idle_timeout:
+                    idleTimeout:
                       description: The idle timeout for connections. The idle timeout is defined as the period in which there are no active requests. When the idle timeout is reached the connection will be closed. If the connection is an HTTP/2 downstream connection a drain sequence will occur prior to closing the connection, see :ref:`drain_timeout <envoy_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.drain_timeout>`. Note that request based timeouts mean that HTTP/2 PINGs will not keep the connection alive. If not specified, this defaults to 1 hour. To disable idle timeouts explicitly set this to 0.
                       properties:
                         nanos:
@@ -186,11 +186,11 @@ spec:
                           format: int64
                           type: integer
                       type: object
-                    max_headers_count:
+                    maxHeadersCount:
                       description: The maximum number of headers. If unconfigured, the default maximum number of request headers allowed is 100. Requests that exceed this limit will receive a 431 response for HTTP/1.x and cause a stream reset for HTTP/2.
                       format: int32
                       type: integer
-                    max_stream_duration:
+                    maxStreamDuration:
                       description: Total duration to keep alive an HTTP request/response stream. If the time limit is reached the stream will be reset independent of any other timeouts. If not specified, this value is not set.
                       properties:
                         nanos:
@@ -203,7 +203,7 @@ spec:
                           type: integer
                       type: object
                   type: object
-                connect_timeout:
+                connectTimeout:
                   description: The timeout for new network connections to hosts in the cluster
                   properties:
                     nanos:
@@ -215,11 +215,11 @@ spec:
                       format: int64
                       type: integer
                   type: object
-                max_requests_per_connection:
+                maxRequestsPerConnection:
                   description: Maximum requests for a single upstream connection (unspecified or zero = no limit)
                   format: int32
                   type: integer
-                per_connection_buffer_limit_bytes:
+                perConnectionBufferLimitBytes:
                   description: Soft limit on size of the cluster’s connections read and write buffers. If unspecified, an implementation defined default is applied (1MiB). For more info, see the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/cluster.proto#cluster)
                   properties:
                     value:
@@ -227,10 +227,10 @@ spec:
                       format: int32
                       type: integer
                   type: object
-                tcp_keepalive:
+                tcpKeepalive:
                   description: Configure OS-level tcp keepalive checks
                   properties:
-                    keepalive_interval:
+                    keepaliveInterval:
                       description: The number of seconds between keep-alive probes. This is rounded up to the second.
                       properties:
                         nanos:
@@ -242,11 +242,11 @@ spec:
                           format: int64
                           type: integer
                       type: object
-                    keepalive_probes:
+                    keepaliveProbes:
                       description: Maximum number of keepalive probes to send without response before deciding the connection is dead.
                       format: int32
                       type: integer
-                    keepalive_time:
+                    keepaliveTime:
                       description: The number of seconds a connection needs to be idle before keep-alive probes start being sent. This is rounded up to the second.
                       properties:
                         nanos:
@@ -262,28 +262,28 @@ spec:
               type: object
             consul:
               properties:
-                connect_enabled:
+                connectEnabled:
                   description: Is this consul service connect enabled.
                   type: boolean
-                data_centers:
+                dataCenters:
                   description: The data centers in which the service instance represented by this upstream is registered.
                   items:
                     type: string
                   type: array
-                instance_blacklist_tags:
+                instanceBlacklistTags:
                   description: The opposite of instanceTags, this is a list of service tags that gloo should ensure are not in a service instance before including it in an upstream.
                   items:
                     type: string
                   type: array
-                instance_tags:
+                instanceTags:
                   description: The list of service tags Gloo should search for on a service instance before deciding whether or not to include the instance as part of this upstream. Empty list means that all service instances with the same service name will be included. When not empty, only service instances that match all of the tags (subset match) will be selected for this upstream.
                   items:
                     type: string
                   type: array
-                service_name:
+                serviceName:
                   description: The name of the Consul Service
                   type: string
-                service_spec:
+                serviceSpec:
                   description: An optional Service Spec describing the service listening at this address
                   properties:
                     grpc:
@@ -292,20 +292,20 @@ spec:
                           description: Descriptors that contain information of the services listed below. this is a serialized google.protobuf.FileDescriptorSet
                           format: byte
                           type: string
-                        grpc_services:
+                        grpcServices:
                           description: List of services used by this upstream. For a grpc upstream where you don't need to use Gloo's function routing, this can be an empty list. These services must be present in the descriptors.
                           items:
                             description: Describes a grpc service
                             properties:
-                              function_names:
+                              functionNames:
                                 description: The functions available in this service.
                                 items:
                                   type: string
                                 type: array
-                              package_name:
+                              packageName:
                                 description: The package of this service.
                                 type: string
-                              service_name:
+                              serviceName:
                                 description: The service name of this service.
                                 type: string
                             type: object
@@ -313,7 +313,7 @@ spec:
                       type: object
                     rest:
                       properties:
-                        swagger_info:
+                        swaggerInfo:
                           properties:
                             inline:
                               type: string
@@ -323,7 +323,7 @@ spec:
                         transformations:
                           additionalProperties:
                             properties:
-                              advanced_templates:
+                              advancedTemplates:
                                 description: If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false.
                                 type: boolean
                               body:
@@ -332,7 +332,7 @@ spec:
                                   text:
                                     type: string
                                 type: object
-                              dynamic_metadata_values:
+                              dynamicMetadataValues:
                                 description: Use this field to set Dynamic Metadata.
                                 items:
                                   description: Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
@@ -340,7 +340,7 @@ spec:
                                     key:
                                       description: The metadata key.
                                       type: string
-                                    metadata_namespace:
+                                    metadataNamespace:
                                       description: The metadata namespace. Defaults to the filter namespace.
                                       type: string
                                     value:
@@ -378,7 +378,7 @@ spec:
                                   type: object
                                 description: 'Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. Any existing headers with the same header name will be replaced by the transformed header. If a header name is included in `headers` and `headers_to_append`, it will first be replaced the template in `headers`, then additional header values will be appended by the templates defined in `headers_to_append`. For example, the following header transformation configuration:'
                                 type: object
-                              headers_to_append:
+                              headersToAppend:
                                 description: Use this attribute to transform request/response headers. It consists of an array of string/template objects. Use this attribute to define multiple templates for a single header. Header template(s) defined here will be appended to any existing headers with the same header name, not replace existing ones. See `headers` documentation to see an example of usage.
                                 items:
                                   description: Defines a header-template pair to be used in `headers_to_append`
@@ -394,13 +394,13 @@ spec:
                                       type: object
                                   type: object
                                 type: array
-                              ignore_error_on_parse:
+                              ignoreErrorOnParse:
                                 description: If set to true, Envoy will not throw an exception in case the body parsing fails.
                                 type: boolean
-                              merge_extractors_to_body:
+                              mergeExtractorsToBody:
                                 description: Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name.
                                 type: object
-                              parse_body_behavior:
+                              parseBodyBehavior:
                                 enum:
                                 - - ParseAsJson
                                   - DontParse
@@ -412,18 +412,18 @@ spec:
                           type: object
                       type: object
                   type: object
-                service_tags:
+                serviceTags:
                   description: 'Deprecated: This field was renamed to subset_tags. If subset_tags is used, this field is ignored. Otherwise, the behavior is the same as subset_tags field below.'
                   items:
                     type: string
                   type: array
-                subset_tags:
+                subsetTags:
                   description: Gloo will segment instances based off of these tags. This allows you to set routes that route to a subset of the instances of the service
                   items:
                     type: string
                   type: array
               type: object
-            discovery_metadata:
+            discoveryMetadata:
               description: Upstreams and their configuration can be automatically by Gloo Discovery if this upstream is created or modified by Discovery, metadata about the operation will be placed here.
               properties:
                 labels:
@@ -435,15 +435,15 @@ spec:
             failover:
               description: Failover endpoints for this upstream. If omitted (the default) no failovers will be applied.
               properties:
-                prioritized_localities:
+                prioritizedLocalities:
                   description: PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each list of `LocalityLbEndpoints` is determined by its index in the list.
                   items:
                     properties:
-                      locality_endpoints:
+                      localityEndpoints:
                         items:
                           description: A group of endpoints belonging to a Locality. One can have multiple LocalityLbEndpoints for a locality, but this is generally only done if the different groups need to have different load balancing weights or different priorities.
                           properties:
-                            lb_endpoints:
+                            lbEndpoints:
                               description: 'The group of endpoints belonging to the locality specified. Note: If any address is DNS resolvable than `lb_endpoints[].load_balancing_weight` is not allowed on any of this locality''s endpoints.'
                               items:
                                 description: An Endpoint that Envoy can route traffic to.
@@ -451,18 +451,18 @@ spec:
                                   address:
                                     description: Address (hostname or IP)
                                     type: string
-                                  health_check_config:
+                                  healthCheckConfig:
                                     description: The optional health check configuration is used as configuration for the health checker to contact the health checked host. This takes into effect only for upstreams with active health checking enabled
                                     properties:
                                       hostname:
                                         description: By default, the host header for L7 health checks is controlled by cluster level configuration. Setting this to a non-empty value allows overriding the cluster level configuration for a specific endpoint.
                                         type: string
-                                      port_value:
+                                      portValue:
                                         description: Optional alternative health check port value.
                                         format: int32
                                         type: integer
                                     type: object
-                                  load_balancing_weight:
+                                  loadBalancingWeight:
                                     description: The optional load balancing weight of the upstream host; at least 1. Envoy uses the load balancing weight in some of the built in load balancers. The load balancing weight for an endpoint is divided by the sum of the weights of all endpoints in the endpoint's locality to produce a percentage of traffic for the endpoint. This percentage is then further weighted by the endpoint's locality's load balancing weight from LocalityLbEndpoints. If unspecified, each host is presumed to have equal weight in a locality.
                                     properties:
                                       value:
@@ -474,24 +474,24 @@ spec:
                                     description: Port the instance is listening on
                                     format: int32
                                     type: integer
-                                  upstream_ssl_config:
+                                  upstreamSslConfig:
                                     properties:
-                                      alpn_protocols:
+                                      alpnProtocols:
                                         description: Set Application Level Protocol Negotiation. If empty, it is not set.
                                         items:
                                           type: string
                                         type: array
                                       parameters:
                                         properties:
-                                          cipher_suites:
+                                          cipherSuites:
                                             items:
                                               type: string
                                             type: array
-                                          ecdh_curves:
+                                          ecdhCurves:
                                             items:
                                               type: string
                                             type: array
-                                          maximum_protocol_version:
+                                          maximumProtocolVersion:
                                             enum:
                                             - - TLS_AUTO
                                               - TLSv1_0
@@ -499,7 +499,7 @@ spec:
                                               - TLSv1_2
                                               - TLSv1_3
                                             type: string
-                                          minimum_protocol_version:
+                                          minimumProtocolVersion:
                                             enum:
                                             - - TLS_AUTO
                                               - TLSv1_0
@@ -511,34 +511,34 @@ spec:
                                       sds:
                                         description: Use secret discovery service.
                                         properties:
-                                          call_credentials:
+                                          callCredentials:
                                             description: Call credentials.
                                             properties:
-                                              file_credential_source:
+                                              fileCredentialSource:
                                                 description: Call credentials are coming from a file,
                                                 properties:
                                                   header:
                                                     description: Header to carry the token.
                                                     type: string
-                                                  token_file_name:
+                                                  tokenFileName:
                                                     description: File containing auth token.
                                                     type: string
                                                 type: object
                                             type: object
-                                          certificates_secret_name:
+                                          certificatesSecretName:
                                             description: The name of the secret containing the certificate
                                             type: string
-                                          cluster_name:
+                                          clusterName:
                                             description: The name of the sds cluster in envoy
                                             type: string
-                                          target_uri:
+                                          targetUri:
                                             description: Target uri for the sds channel. currently only a unix domain socket is supported.
                                             type: string
-                                          validation_context_name:
+                                          validationContextName:
                                             description: The name of secret containing the validation context (i.e. root ca)
                                             type: string
                                         type: object
-                                      secret_ref:
+                                      secretRef:
                                         description: SecretRef contains the secret ref to a gloo tls secret or a kubernetes tls secret. gloo tls secret can contain a root ca as well if verification is needed.
                                         properties:
                                           name:
@@ -549,18 +549,18 @@ spec:
                                       sni:
                                         description: optional. the SNI domains that should be considered for TLS connections
                                         type: string
-                                      ssl_files:
+                                      sslFiles:
                                         description: SSLFiles reference paths to certificates which are local to the proxy
                                         properties:
-                                          root_ca:
+                                          rootCa:
                                             description: for client cert validation. optional
                                             type: string
-                                          tls_cert:
+                                          tlsCert:
                                             type: string
-                                          tls_key:
+                                          tlsKey:
                                             type: string
                                         type: object
-                                      verify_subject_alt_name:
+                                      verifySubjectAltName:
                                         description: Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used.
                                         items:
                                           type: string
@@ -568,7 +568,7 @@ spec:
                                     type: object
                                 type: object
                               type: array
-                            load_balancing_weight:
+                            loadBalancingWeight:
                               description: 'Optional: Per priority/region/zone/sub_zone weight; at least 1. The load balancing weight for a locality is divided by the sum of the weights of all localities at the same priority level to produce the effective percentage of traffic for the locality. To enable locality weighted load balancing, load_balancer_config.locality_weighted_lb_config must be set as well'
                               properties:
                                 value:
@@ -582,7 +582,7 @@ spec:
                                 region:
                                   description: Region this zone belongs to.
                                   type: string
-                                sub_zone:
+                                subZone:
                                   description: When used for locality of upstream hosts, this field further splits zone into smaller chunks of sub-zones so they can be load balanced independently.
                                   type: string
                                 zone:
@@ -594,13 +594,13 @@ spec:
                     type: object
                   type: array
               type: object
-            health_checks:
+            healthChecks:
               items:
                 properties:
-                  always_log_health_check_failures:
+                  alwaysLogHealthCheckFailures:
                     description: If set to true, health check failure events will always be logged. If set to false, only the initial health check failure event will be logged. The default value is false.
                     type: boolean
-                  custom_health_check:
+                  customHealthCheck:
                     description: Custom health check.
                     properties:
                       config:
@@ -609,24 +609,24 @@ spec:
                       name:
                         description: The registered name of the custom health checker.
                         type: string
-                      typed_config:
+                      typedConfig:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
                     type: object
-                  event_log_path:
+                  eventLogPath:
                     description: Specifies the path to the `health check event log (arch_overview_health_check_logging)`. If empty, no event log will be written.
                     type: string
-                  grpc_health_check:
+                  grpcHealthCheck:
                     description: gRPC health check.
                     properties:
                       authority:
                         description: The value of the :authority header in the gRPC health check request. If left empty (default value), the name of the cluster this health check is associated with will be used.
                         type: string
-                      service_name:
+                      serviceName:
                         description: An optional service name parameter which will be sent to gRPC service in `grpc.health.v1.HealthCheckRequest <https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto#L20>`_. message. See `gRPC health-checking overview <https://github.com/grpc/grpc/blob/master/doc/health-checking.md>`_ for more information.
                         type: string
                     type: object
-                  healthy_edge_interval:
+                  healthyEdgeInterval:
                     description: The "healthy edge interval" is a special health check interval that is used for the first health check right after a host is marked as healthy. For subsequent health checks Envoy will shift back to using the standard health check interval that is defined.
                     properties:
                       nanos:
@@ -638,7 +638,7 @@ spec:
                         format: int64
                         type: integer
                     type: object
-                  healthy_threshold:
+                  healthyThreshold:
                     description: The number of healthy health checks required before a host is marked healthy. Note that during startup, only a single successful health check is required to mark a host healthy.
                     properties:
                       value:
@@ -646,10 +646,10 @@ spec:
                         format: int32
                         type: integer
                     type: object
-                  http_health_check:
+                  httpHealthCheck:
                     description: HTTP health check.
                     properties:
-                      expected_statuses:
+                      expectedStatuses:
                         description: Specifies a list of HTTP response statuses considered healthy. If provided, replaces default 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open semantics of `Int64Range (envoy_api_msg_type.Int64Range)`.
                         items:
                           description: Specifies the int64 start and end of the range using half-open interval semantics [start, end).
@@ -670,7 +670,7 @@ spec:
                       path:
                         description: Specifies the HTTP path that will be requested during health checking. For example */healthcheck*.
                         type: string
-                      request_headers_to_add:
+                      requestHeadersToAdd:
                         description: Specifies a list of HTTP headers that should be added to each request that is sent to the health checked cluster. For more information, including details on header value syntax, see the documentation on `custom request headers (config_http_conn_man_headers_custom_request_headers)`.
                         items:
                           description: Header name/value pair plus option to control append behavior.
@@ -692,7 +692,7 @@ spec:
                                   description: Header value.
                                   type: string
                               type: object
-                            header_secret_ref:
+                            headerSecretRef:
                               description: Reference to header contained in a secret
                               properties:
                                 name:
@@ -702,19 +702,19 @@ spec:
                               type: object
                           type: object
                         type: array
-                      request_headers_to_remove:
+                      requestHeadersToRemove:
                         description: Specifies a list of HTTP headers that should be removed from each request that is sent to the health checked cluster.
                         items:
                           type: string
                         type: array
-                      service_name:
+                      serviceName:
                         description: An optional service name parameter which is used to validate the identity of the health checked cluster. See the `architecture overview (arch_overview_health_checking_identity)` for more information.
                         type: string
-                      use_http2:
+                      useHttp2:
                         description: If set, health checks will be made using http/2.
                         type: boolean
                     type: object
-                  initial_jitter:
+                  initialJitter:
                     description: An optional jitter amount in milliseconds. If specified, Envoy will start health checking after for a random time in ms between 0 and initial_jitter. This only applies to the first health check.
                     properties:
                       nanos:
@@ -738,7 +738,7 @@ spec:
                         format: int64
                         type: integer
                     type: object
-                  interval_jitter:
+                  intervalJitter:
                     description: An optional jitter amount in milliseconds. If specified, during every interval Envoy will add interval_jitter to the wait time.
                     properties:
                       nanos:
@@ -750,11 +750,11 @@ spec:
                         format: int64
                         type: integer
                     type: object
-                  interval_jitter_percent:
+                  intervalJitterPercent:
                     description: An optional jitter amount as a percentage of interval_ms. If specified, during every interval Envoy will add interval_ms * interval_jitter_percent / 100 to the wait time.
                     format: int32
                     type: integer
-                  no_traffic_interval:
+                  noTrafficInterval:
                     description: The "no traffic interval" is a special health check interval that is used when a cluster has never had traffic routed to it. This lower interval allows cluster information to be kept up to date, without sending a potentially large amount of active health checking traffic for no reason. Once a cluster has been used for traffic routing, Envoy will shift back to using the standard health check interval that is defined. Note that this interval takes precedence over any other.
                     properties:
                       nanos:
@@ -766,14 +766,14 @@ spec:
                         format: int64
                         type: integer
                     type: object
-                  reuse_connection:
+                  reuseConnection:
                     description: Reuse health check connection between health checks. Default is true.
                     properties:
                       value:
                         description: The bool value.
                         type: boolean
                     type: object
-                  tcp_health_check:
+                  tcpHealthCheck:
                     description: TCP health check.
                     properties:
                       receive:
@@ -806,7 +806,7 @@ spec:
                         format: int64
                         type: integer
                     type: object
-                  unhealthy_edge_interval:
+                  unhealthyEdgeInterval:
                     description: The "unhealthy edge interval" is a special health check interval that is used for the first health check right after a host is marked as unhealthy. For subsequent health checks Envoy will shift back to using either "unhealthy interval" if present or the standard health check interval that is defined.
                     properties:
                       nanos:
@@ -818,7 +818,7 @@ spec:
                         format: int64
                         type: integer
                     type: object
-                  unhealthy_interval:
+                  unhealthyInterval:
                     description: The "unhealthy interval" is a health check interval that is used for hosts that are marked as unhealthy. As soon as the host is marked as healthy, Envoy will shift back to using the standard health check interval that is defined.
                     properties:
                       nanos:
@@ -830,7 +830,7 @@ spec:
                         format: int64
                         type: integer
                     type: object
-                  unhealthy_threshold:
+                  unhealthyThreshold:
                     description: The number of unhealthy health checks required before a host is marked unhealthy. Note that for *http* health checking if a host responds with 503 this threshold is ignored and the host is considered unhealthy immediately.
                     properties:
                       value:
@@ -840,14 +840,14 @@ spec:
                     type: object
                 type: object
               type: array
-            http_proxy_hostname:
+            httpProxyHostname:
               description: 'Tells envoy that the upstream is an HTTP proxy (e.g., another proxy in a DMZ) that supports HTTP Connect. This configuration sets the hostname used as part of the HTTP Connect request. For example, setting to: host.com:443 and making a request routed to the upstream such as `curl <envoy>:<port>/v1` would result in the following request:'
               properties:
                 value:
                   description: The string value.
                   type: string
               type: object
-            initial_connection_window_size:
+            initialConnectionWindowSize:
               description: (UInt32Value) Similar to initial_stream_window_size, but for connection-level flow-control window. Currently, this has the same minimum/maximum/default as initial_stream_window_size. Requires UseHttp2 to be true to be acknowledged.
               properties:
                 value:
@@ -855,7 +855,7 @@ spec:
                   format: int32
                   type: integer
               type: object
-            initial_stream_window_size:
+            initialStreamWindowSize:
               description: '(UInt32Value) Initial stream-level flow-control window size. Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum) and defaults to 268435456 (256 * 1024 * 1024). NOTE: 65535 is the initial window size from HTTP/2 spec. We only support increasing the default window size now, so it’s also the minimum. This field also acts as a soft limit on the number of bytes Envoy will buffer per-stream in the HTTP/2 codec buffers. Once the buffer reaches this pointer, watermark callbacks will fire to stop the flow of data to the codec buffers. Requires UseHttp2 to be true to be acknowledged.'
               properties:
                 value:
@@ -870,17 +870,17 @@ spec:
                     type: string
                   description: Allows finer-grained filtering of pods for the Upstream. Gloo will select pods based on their labels if any are provided here. (see [Kubernetes labels and selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
                   type: object
-                service_name:
+                serviceName:
                   description: The name of the Kubernetes Service
                   type: string
-                service_namespace:
+                serviceNamespace:
                   description: The namespace where the Service lives
                   type: string
-                service_port:
+                servicePort:
                   description: The access port of the kubernetes service is listening. This port is used by Gloo to look up the corresponding port on the pod for routing.
                   format: int32
                   type: integer
-                service_spec:
+                serviceSpec:
                   description: An optional Service Spec describing the service listening at this address
                   properties:
                     grpc:
@@ -889,20 +889,20 @@ spec:
                           description: Descriptors that contain information of the services listed below. this is a serialized google.protobuf.FileDescriptorSet
                           format: byte
                           type: string
-                        grpc_services:
+                        grpcServices:
                           description: List of services used by this upstream. For a grpc upstream where you don't need to use Gloo's function routing, this can be an empty list. These services must be present in the descriptors.
                           items:
                             description: Describes a grpc service
                             properties:
-                              function_names:
+                              functionNames:
                                 description: The functions available in this service.
                                 items:
                                   type: string
                                 type: array
-                              package_name:
+                              packageName:
                                 description: The package of this service.
                                 type: string
-                              service_name:
+                              serviceName:
                                 description: The service name of this service.
                                 type: string
                             type: object
@@ -910,7 +910,7 @@ spec:
                       type: object
                     rest:
                       properties:
-                        swagger_info:
+                        swaggerInfo:
                           properties:
                             inline:
                               type: string
@@ -920,7 +920,7 @@ spec:
                         transformations:
                           additionalProperties:
                             properties:
-                              advanced_templates:
+                              advancedTemplates:
                                 description: If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false.
                                 type: boolean
                               body:
@@ -929,7 +929,7 @@ spec:
                                   text:
                                     type: string
                                 type: object
-                              dynamic_metadata_values:
+                              dynamicMetadataValues:
                                 description: Use this field to set Dynamic Metadata.
                                 items:
                                   description: Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
@@ -937,7 +937,7 @@ spec:
                                     key:
                                       description: The metadata key.
                                       type: string
-                                    metadata_namespace:
+                                    metadataNamespace:
                                       description: The metadata namespace. Defaults to the filter namespace.
                                       type: string
                                     value:
@@ -975,7 +975,7 @@ spec:
                                   type: object
                                 description: 'Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. Any existing headers with the same header name will be replaced by the transformed header. If a header name is included in `headers` and `headers_to_append`, it will first be replaced the template in `headers`, then additional header values will be appended by the templates defined in `headers_to_append`. For example, the following header transformation configuration:'
                                 type: object
-                              headers_to_append:
+                              headersToAppend:
                                 description: Use this attribute to transform request/response headers. It consists of an array of string/template objects. Use this attribute to define multiple templates for a single header. Header template(s) defined here will be appended to any existing headers with the same header name, not replace existing ones. See `headers` documentation to see an example of usage.
                                 items:
                                   description: Defines a header-template pair to be used in `headers_to_append`
@@ -991,13 +991,13 @@ spec:
                                       type: object
                                   type: object
                                 type: array
-                              ignore_error_on_parse:
+                              ignoreErrorOnParse:
                                 description: If set to true, Envoy will not throw an exception in case the body parsing fails.
                                 type: boolean
-                              merge_extractors_to_body:
+                              mergeExtractorsToBody:
                                 description: Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name.
                                 type: object
-                              parse_body_behavior:
+                              parseBodyBehavior:
                                 enum:
                                 - - ParseAsJson
                                   - DontParse
@@ -1009,7 +1009,7 @@ spec:
                           type: object
                       type: object
                   type: object
-                subset_spec:
+                subsetSpec:
                   description: Subset configuration. For discovery sources that has labels (like kubernetes). this configuration allows you to partition the upstream to a set of subsets. for each unique set of keys and values, a subset will be created.
                   properties:
                     selectors:
@@ -1023,24 +1023,24 @@ spec:
                       type: array
                   type: object
               type: object
-            load_balancer_config:
+            loadBalancerConfig:
               properties:
-                healthy_panic_threshold:
+                healthyPanicThreshold:
                   description: Configures envoy's panic threshold Percent between 0-100. Once the number of non health hosts reaches this percentage, envoy disregards health information. see more info [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html).
                   properties:
                     value:
                       description: The double value.
                       type: number
                   type: object
-                least_request:
+                leastRequest:
                   description: Use least request for load balancing.
                   properties:
-                    choice_count:
+                    choiceCount:
                       description: How many choices to take into account. defaults to 2.
                       format: int32
                       type: integer
                   type: object
-                locality_weighted_lb_config:
+                localityWeightedLbConfig:
                   description: (Enterprise Only) https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/locality_weight#locality-weighted-load-balancing Locality weighted load balancing enables weighting assignments across different zones and geographical locations by using explicit weights. This field is required to enable locality weighted load balancing
                   type: object
                 maglev:
@@ -1049,26 +1049,26 @@ spec:
                 random:
                   description: Use random for load balancing.
                   type: object
-                ring_hash:
+                ringHash:
                   description: Use ring hash for load balancing.
                   properties:
-                    ring_hash_config:
+                    ringHashConfig:
                       description: Optional, customizes the parameters used in the hashing algorithm
                       properties:
-                        maximum_ring_size:
+                        maximumRingSize:
                           description: Maximum hash ring size. Defaults to 8M entries, and limited to 8M entries, but can be lowered to further constrain resource use.
                           format: int64
                           type: integer
-                        minimum_ring_size:
+                        minimumRingSize:
                           description: Minimum hash ring size. The larger the ring is (that is, the more hashes there are for each provided host) the better the request distribution will reflect the desired weights. Defaults to 1024 entries, and limited to 8M entries.
                           format: int64
                           type: integer
                       type: object
                   type: object
-                round_robin:
+                roundRobin:
                   description: Use round robin for load balancing.
                   type: object
-                update_merge_window:
+                updateMergeWindow:
                   description: This allows batch updates of endpoints health/weight/metadata that happen during a time window. this help lower cpu usage when endpoint change rate is high. defaults to 1 second. Set to 0 to disable and have changes applied immediately.
                   properties:
                     nanos:
@@ -1081,9 +1081,9 @@ spec:
                       type: integer
                   type: object
               type: object
-            outlier_detection:
+            outlierDetection:
               properties:
-                base_ejection_time:
+                baseEjectionTime:
                   description: The base time that a host is ejected for. The real time is equal to the base time multiplied by the number of times the host has been ejected. Defaults to 30000ms or 30s.
                   properties:
                     nanos:
@@ -1095,7 +1095,7 @@ spec:
                       format: int64
                       type: integer
                   type: object
-                consecutive_5xx:
+                consecutive5xx:
                   description: The number of consecutive 5xx responses or local origin errors that are mapped to 5xx error codes before a consecutive 5xx ejection occurs. Defaults to 5.
                   properties:
                     value:
@@ -1103,7 +1103,7 @@ spec:
                       format: int32
                       type: integer
                   type: object
-                consecutive_gateway_failure:
+                consecutiveGatewayFailure:
                   description: The number of consecutive gateway failures (502, 503, 504 status codes) before a consecutive gateway failure ejection occurs. Defaults to 5.
                   properties:
                     value:
@@ -1111,7 +1111,7 @@ spec:
                       format: int32
                       type: integer
                   type: object
-                consecutive_local_origin_failure:
+                consecutiveLocalOriginFailure:
                   description: The number of consecutive locally originated failures before ejection occurs. Defaults to 5. Parameter takes effect only when `split_external_local_origin_errors (envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors)` is set to true.
                   properties:
                     value:
@@ -1119,7 +1119,7 @@ spec:
                       format: int32
                       type: integer
                   type: object
-                enforcing_consecutive_5xx:
+                enforcingConsecutive5xx:
                   description: The % chance that a host will be actually ejected when an outlier status is detected through consecutive 5xx. This setting can be used to disable ejection or to ramp it up slowly. Defaults to 100.
                   properties:
                     value:
@@ -1127,7 +1127,7 @@ spec:
                       format: int32
                       type: integer
                   type: object
-                enforcing_consecutive_gateway_failure:
+                enforcingConsecutiveGatewayFailure:
                   description: The % chance that a host will be actually ejected when an outlier status is detected through consecutive gateway failures. This setting can be used to disable ejection or to ramp it up slowly. Defaults to 0.
                   properties:
                     value:
@@ -1135,7 +1135,7 @@ spec:
                       format: int32
                       type: integer
                   type: object
-                enforcing_consecutive_local_origin_failure:
+                enforcingConsecutiveLocalOriginFailure:
                   description: The % chance that a host will be actually ejected when an outlier status is detected through consecutive locally originated failures. This setting can be used to disable ejection or to ramp it up slowly. Defaults to 100. Parameter takes effect only when `split_external_local_origin_errors (envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors)` is set to true.
                   properties:
                     value:
@@ -1143,7 +1143,7 @@ spec:
                       format: int32
                       type: integer
                   type: object
-                enforcing_local_origin_success_rate:
+                enforcingLocalOriginSuccessRate:
                   description: The % chance that a host will be actually ejected when an outlier status is detected through success rate statistics for locally originated errors. This setting can be used to disable ejection or to ramp it up slowly. Defaults to 100. Parameter takes effect only when `split_external_local_origin_errors (envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors)` is set to true.
                   properties:
                     value:
@@ -1151,7 +1151,7 @@ spec:
                       format: int32
                       type: integer
                   type: object
-                enforcing_success_rate:
+                enforcingSuccessRate:
                   description: The % chance that a host will be actually ejected when an outlier status is detected through success rate statistics. This setting can be used to disable ejection or to ramp it up slowly. Defaults to 100.
                   properties:
                     value:
@@ -1171,7 +1171,7 @@ spec:
                       format: int64
                       type: integer
                   type: object
-                max_ejection_percent:
+                maxEjectionPercent:
                   description: The maximum % of an upstream cluster that can be ejected due to outlier detection. Defaults to 10% but will eject at least one host regardless of the value.
                   properties:
                     value:
@@ -1179,10 +1179,10 @@ spec:
                       format: int32
                       type: integer
                   type: object
-                split_external_local_origin_errors:
+                splitExternalLocalOriginErrors:
                   description: 'Determines whether to distinguish local origin failures from external errors. If set to true the following configuration parameters are taken into account: `consecutive_local_origin_failure (envoy_api_field_cluster.OutlierDetection.consecutive_local_origin_failure)`, `enforcing_consecutive_local_origin_failure (envoy_api_field_cluster.OutlierDetection.enforcing_consecutive_local_origin_failure)` and `enforcing_local_origin_success_rate (envoy_api_field_cluster.OutlierDetection.enforcing_local_origin_success_rate)`. Defaults to false.'
                   type: boolean
-                success_rate_minimum_hosts:
+                successRateMinimumHosts:
                   description: The number of hosts in a cluster that must have enough request volume to detect success rate outliers. If the number of hosts is less than this setting, outlier detection via success rate statistics is not performed for any host in the cluster. Defaults to 5.
                   properties:
                     value:
@@ -1190,7 +1190,7 @@ spec:
                       format: int32
                       type: integer
                   type: object
-                success_rate_request_volume:
+                successRateRequestVolume:
                   description: The minimum number of total requests that must be collected in one interval (as defined by the interval duration above) to include this host in success rate based outlier detection. If the volume is lower than this setting, outlier detection via success rate statistics is not performed for that host. Defaults to 100.
                   properties:
                     value:
@@ -1198,7 +1198,7 @@ spec:
                       format: int32
                       type: integer
                   type: object
-                success_rate_stdev_factor:
+                successRateStdevFactor:
                   description: 'This factor is used to determine the ejection threshold for success rate outlier ejection. The ejection threshold is the difference between the mean success rate, and the product of this factor and the standard deviation of the mean success rate: mean - (stdev * success_rate_stdev_factor). This factor is divided by a thousand to get a double. That is, if the desired factor is 1.9, the runtime value should be 1900. Defaults to 1900.'
                   properties:
                     value:
@@ -1212,7 +1212,7 @@ spec:
                 path:
                   description: The Unix Domain Socket path.
                   type: string
-                service_spec:
+                serviceSpec:
                   description: An optional Service Spec describing the service listening at this address
                   properties:
                     grpc:
@@ -1221,20 +1221,20 @@ spec:
                           description: Descriptors that contain information of the services listed below. this is a serialized google.protobuf.FileDescriptorSet
                           format: byte
                           type: string
-                        grpc_services:
+                        grpcServices:
                           description: List of services used by this upstream. For a grpc upstream where you don't need to use Gloo's function routing, this can be an empty list. These services must be present in the descriptors.
                           items:
                             description: Describes a grpc service
                             properties:
-                              function_names:
+                              functionNames:
                                 description: The functions available in this service.
                                 items:
                                   type: string
                                 type: array
-                              package_name:
+                              packageName:
                                 description: The package of this service.
                                 type: string
-                              service_name:
+                              serviceName:
                                 description: The service name of this service.
                                 type: string
                             type: object
@@ -1242,7 +1242,7 @@ spec:
                       type: object
                     rest:
                       properties:
-                        swagger_info:
+                        swaggerInfo:
                           properties:
                             inline:
                               type: string
@@ -1252,7 +1252,7 @@ spec:
                         transformations:
                           additionalProperties:
                             properties:
-                              advanced_templates:
+                              advancedTemplates:
                                 description: If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false.
                                 type: boolean
                               body:
@@ -1261,7 +1261,7 @@ spec:
                                   text:
                                     type: string
                                 type: object
-                              dynamic_metadata_values:
+                              dynamicMetadataValues:
                                 description: Use this field to set Dynamic Metadata.
                                 items:
                                   description: Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
@@ -1269,7 +1269,7 @@ spec:
                                     key:
                                       description: The metadata key.
                                       type: string
-                                    metadata_namespace:
+                                    metadataNamespace:
                                       description: The metadata namespace. Defaults to the filter namespace.
                                       type: string
                                     value:
@@ -1307,7 +1307,7 @@ spec:
                                   type: object
                                 description: 'Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. Any existing headers with the same header name will be replaced by the transformed header. If a header name is included in `headers` and `headers_to_append`, it will first be replaced the template in `headers`, then additional header values will be appended by the templates defined in `headers_to_append`. For example, the following header transformation configuration:'
                                 type: object
-                              headers_to_append:
+                              headersToAppend:
                                 description: Use this attribute to transform request/response headers. It consists of an array of string/template objects. Use this attribute to define multiple templates for a single header. Header template(s) defined here will be appended to any existing headers with the same header name, not replace existing ones. See `headers` documentation to see an example of usage.
                                 items:
                                   description: Defines a header-template pair to be used in `headers_to_append`
@@ -1323,13 +1323,13 @@ spec:
                                       type: object
                                   type: object
                                 type: array
-                              ignore_error_on_parse:
+                              ignoreErrorOnParse:
                                 description: If set to true, Envoy will not throw an exception in case the body parsing fails.
                                 type: boolean
-                              merge_extractors_to_body:
+                              mergeExtractorsToBody:
                                 description: Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name.
                                 type: object
-                              parse_body_behavior:
+                              parseBodyBehavior:
                                 enum:
                                 - - ParseAsJson
                                   - DontParse
@@ -1342,25 +1342,25 @@ spec:
                       type: object
                   type: object
               type: object
-            ssl_config:
+            sslConfig:
               description: SslConfig contains the options necessary to configure an upstream to use TLS origination
               properties:
-                alpn_protocols:
+                alpnProtocols:
                   description: Set Application Level Protocol Negotiation. If empty, it is not set.
                   items:
                     type: string
                   type: array
                 parameters:
                   properties:
-                    cipher_suites:
+                    cipherSuites:
                       items:
                         type: string
                       type: array
-                    ecdh_curves:
+                    ecdhCurves:
                       items:
                         type: string
                       type: array
-                    maximum_protocol_version:
+                    maximumProtocolVersion:
                       enum:
                       - - TLS_AUTO
                         - TLSv1_0
@@ -1368,7 +1368,7 @@ spec:
                         - TLSv1_2
                         - TLSv1_3
                       type: string
-                    minimum_protocol_version:
+                    minimumProtocolVersion:
                       enum:
                       - - TLS_AUTO
                         - TLSv1_0
@@ -1380,34 +1380,34 @@ spec:
                 sds:
                   description: Use secret discovery service.
                   properties:
-                    call_credentials:
+                    callCredentials:
                       description: Call credentials.
                       properties:
-                        file_credential_source:
+                        fileCredentialSource:
                           description: Call credentials are coming from a file,
                           properties:
                             header:
                               description: Header to carry the token.
                               type: string
-                            token_file_name:
+                            tokenFileName:
                               description: File containing auth token.
                               type: string
                           type: object
                       type: object
-                    certificates_secret_name:
+                    certificatesSecretName:
                       description: The name of the secret containing the certificate
                       type: string
-                    cluster_name:
+                    clusterName:
                       description: The name of the sds cluster in envoy
                       type: string
-                    target_uri:
+                    targetUri:
                       description: Target uri for the sds channel. currently only a unix domain socket is supported.
                       type: string
-                    validation_context_name:
+                    validationContextName:
                       description: The name of secret containing the validation context (i.e. root ca)
                       type: string
                   type: object
-                secret_ref:
+                secretRef:
                   description: SecretRef contains the secret ref to a gloo tls secret or a kubernetes tls secret. gloo tls secret can contain a root ca as well if verification is needed.
                   properties:
                     name:
@@ -1418,18 +1418,18 @@ spec:
                 sni:
                   description: optional. the SNI domains that should be considered for TLS connections
                   type: string
-                ssl_files:
+                sslFiles:
                   description: SSLFiles reference paths to certificates which are local to the proxy
                   properties:
-                    root_ca:
+                    rootCa:
                       description: for client cert validation. optional
                       type: string
-                    tls_cert:
+                    tlsCert:
                       type: string
-                    tls_key:
+                    tlsKey:
                       type: string
                   type: object
-                verify_subject_alt_name:
+                verifySubjectAltName:
                   description: Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used.
                   items:
                     type: string
@@ -1437,7 +1437,7 @@ spec:
               type: object
             static:
               properties:
-                auto_sni_rewrite:
+                autoSniRewrite:
                   description: When set, automatically set the sni address to use to the addr field. If both this and host.sni_addr are set, host.sni_addr has priority. defaults to "true".
                   properties:
                     value:
@@ -1452,7 +1452,7 @@ spec:
                       addr:
                         description: Address (hostname or IP)
                         type: string
-                      health_check_config:
+                      healthCheckConfig:
                         description: '(Enterprise Only): Host specific health checking configuration.'
                         properties:
                           path:
@@ -1463,12 +1463,12 @@ spec:
                         description: Port the instance is listening on
                         format: int32
                         type: integer
-                      sni_addr:
+                      sniAddr:
                         description: Address to use for SNI if using ssl.
                         type: string
                     type: object
                   type: array
-                service_spec:
+                serviceSpec:
                   description: An optional Service Spec describing the service listening at this address
                   properties:
                     grpc:
@@ -1477,20 +1477,20 @@ spec:
                           description: Descriptors that contain information of the services listed below. this is a serialized google.protobuf.FileDescriptorSet
                           format: byte
                           type: string
-                        grpc_services:
+                        grpcServices:
                           description: List of services used by this upstream. For a grpc upstream where you don't need to use Gloo's function routing, this can be an empty list. These services must be present in the descriptors.
                           items:
                             description: Describes a grpc service
                             properties:
-                              function_names:
+                              functionNames:
                                 description: The functions available in this service.
                                 items:
                                   type: string
                                 type: array
-                              package_name:
+                              packageName:
                                 description: The package of this service.
                                 type: string
-                              service_name:
+                              serviceName:
                                 description: The service name of this service.
                                 type: string
                             type: object
@@ -1498,7 +1498,7 @@ spec:
                       type: object
                     rest:
                       properties:
-                        swagger_info:
+                        swaggerInfo:
                           properties:
                             inline:
                               type: string
@@ -1508,7 +1508,7 @@ spec:
                         transformations:
                           additionalProperties:
                             properties:
-                              advanced_templates:
+                              advancedTemplates:
                                 description: If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false.
                                 type: boolean
                               body:
@@ -1517,7 +1517,7 @@ spec:
                                   text:
                                     type: string
                                 type: object
-                              dynamic_metadata_values:
+                              dynamicMetadataValues:
                                 description: Use this field to set Dynamic Metadata.
                                 items:
                                   description: Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
@@ -1525,7 +1525,7 @@ spec:
                                     key:
                                       description: The metadata key.
                                       type: string
-                                    metadata_namespace:
+                                    metadataNamespace:
                                       description: The metadata namespace. Defaults to the filter namespace.
                                       type: string
                                     value:
@@ -1563,7 +1563,7 @@ spec:
                                   type: object
                                 description: 'Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. Any existing headers with the same header name will be replaced by the transformed header. If a header name is included in `headers` and `headers_to_append`, it will first be replaced the template in `headers`, then additional header values will be appended by the templates defined in `headers_to_append`. For example, the following header transformation configuration:'
                                 type: object
-                              headers_to_append:
+                              headersToAppend:
                                 description: Use this attribute to transform request/response headers. It consists of an array of string/template objects. Use this attribute to define multiple templates for a single header. Header template(s) defined here will be appended to any existing headers with the same header name, not replace existing ones. See `headers` documentation to see an example of usage.
                                 items:
                                   description: Defines a header-template pair to be used in `headers_to_append`
@@ -1579,13 +1579,13 @@ spec:
                                       type: object
                                   type: object
                                 type: array
-                              ignore_error_on_parse:
+                              ignoreErrorOnParse:
                                 description: If set to true, Envoy will not throw an exception in case the body parsing fails.
                                 type: boolean
-                              merge_extractors_to_body:
+                              mergeExtractorsToBody:
                                 description: Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name.
                                 type: object
-                              parse_body_behavior:
+                              parseBodyBehavior:
                                 enum:
                                 - - ParseAsJson
                                   - DontParse
@@ -1597,7 +1597,7 @@ spec:
                           type: object
                       type: object
                   type: object
-                use_tls:
+                useTls:
                   description: Attempt to use outbound TLS Gloo will automatically set this to true for port 443
                   type: boolean
               type: object
@@ -1605,7 +1605,7 @@ spec:
               description: Status indicates the validation status of the resource. Status is read-only by clients, and set by gloo during validation
               type: object
               x-kubernetes-preserve-unknown-fields: true
-            use_http2:
+            useHttp2:
               description: Use http2 when communicating with this upstream this field is evaluated `true` for upstreams with a grpc service spec. otherwise defaults to `false`
               properties:
                 value:

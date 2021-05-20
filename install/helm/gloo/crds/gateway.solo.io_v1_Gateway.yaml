@@ -24,14 +24,14 @@ spec:
         spec:
           description: A Gateway describes a single Listener (bind address:port) and the routing configuration to upstreams that are reachable via a specific port on the Gateway Proxy itself.
           properties:
-            bind_address:
+            bindAddress:
               description: the bind address the gateway should serve traffic on
               type: string
-            bind_port:
+            bindPort:
               description: bind ports must not conflict across gateways for a single proxy
               format: int32
               type: integer
-            http_gateway:
+            httpGateway:
               properties:
                 options:
                   description: HTTP Gateway configuration
@@ -39,7 +39,7 @@ spec:
                     buffer:
                       description: Buffer can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response.
                       properties:
-                        max_request_bytes:
+                        maxRequestBytes:
                           description: The maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response.
                           properties:
                             value:
@@ -51,7 +51,7 @@ spec:
                     csrf:
                       description: Csrf can be used to set percent of requests for which the CSRF filter is enabled, enable shadow-only mode where policies will be evaluated and tracked, but not enforced and add additional source origins that will be allowed in addition to the destination origin. For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/csrf/v2/csrf.proto
                       properties:
-                        additional_origins:
+                        additionalOrigins:
                           description: Specifies additional source origins that will be allowed in addition to the destination origin.
                           items:
                             description: 'Specifies the way to match a string. [#next-free-field: 7]'
@@ -59,19 +59,19 @@ spec:
                               exact:
                                 description: The input string must match exactly the string specified here.
                                 type: string
-                              ignore_case:
+                              ignoreCase:
                                 description: If true, indicates the exact/prefix/suffix matching should be case insensitive. This has no effect for the safe_regex match. For example, the matcher *data* will match both input string *Data* and *data* if set to true.
                                 type: boolean
                               prefix:
                                 description: 'The input string must have the prefix specified here. Note: empty prefix is not allowed, please use regex instead.'
                                 type: string
-                              safe_regex:
+                              safeRegex:
                                 description: The input string must match the regular expression specified here.
                                 properties:
-                                  google_re2:
+                                  googleRe2:
                                     description: Google's RE2 regex engine.
                                     properties:
-                                      max_program_size:
+                                      maxProgramSize:
                                         description: This field controls the RE2 "program size" which is a rough estimate of how complex a compiled regex is to evaluate. A regex that has a program size greater than the configured value will fail to compile. In this case, the configured max program size can be increased or the regex can be simplified. If not specified, the default is 100.
                                         properties:
                                           value:
@@ -89,10 +89,10 @@ spec:
                                 type: string
                             type: object
                           type: array
-                        filter_enabled:
+                        filterEnabled:
                           description: Specifies the % of requests for which the CSRF filter is enabled.
                           properties:
-                            default_value:
+                            defaultValue:
                               description: Default value if the runtime value's for the numerator/denominator keys are not available.
                               properties:
                                 denominator:
@@ -107,14 +107,14 @@ spec:
                                   format: int32
                                   type: integer
                               type: object
-                            runtime_key:
+                            runtimeKey:
                               description: Runtime key for a YAML representation of a FractionalPercent.
                               type: string
                           type: object
-                        shadow_enabled:
+                        shadowEnabled:
                           description: Specifies that CSRF policies will be evaluated and tracked, but not enforced.
                           properties:
-                            default_value:
+                            defaultValue:
                               description: Default value if the runtime value's for the numerator/denominator keys are not available.
                               properties:
                                 denominator:
@@ -129,7 +129,7 @@ spec:
                                   format: int32
                                   type: integer
                               type: object
-                            runtime_key:
+                            runtimeKey:
                               description: Runtime key for a YAML representation of a FractionalPercent.
                               type: string
                           type: object
@@ -137,7 +137,7 @@ spec:
                     dlp:
                       description: 'Enterprise-only: Config for data loss prevention'
                       properties:
-                        dlp_rules:
+                        dlpRules:
                           description: The list of transformation, matcher pairs. The first rule which matches will be applied.
                           items:
                             description: Rule which applies a given set of actions to a matching route. The route matching functions exactly the same as the envoy routes in the virtual host.
@@ -147,7 +147,7 @@ spec:
                                 items:
                                   description: A single action meant to mask sensitive data. The action type represents a set of pre configured actions, as well as the ability to create custom actions. These actions can also be shadowed, a shadowed action will be recorded in the statistics, and debug logs, but not actually committed in the response body.
                                   properties:
-                                    action_type:
+                                    actionType:
                                       description: The action type to implement.
                                       enum:
                                       - - CUSTOM
@@ -161,10 +161,10 @@ spec:
                                         - CREDIT_CARD_TRACKERS
                                         - ALL_CREDIT_CARDS
                                       type: string
-                                    custom_action:
+                                    customAction:
                                       description: The custom user action to be applied. This field will only be used if the custom action type is specified above.
                                       properties:
-                                        mask_char:
+                                        maskChar:
                                           description: 'The masking character for the sensitive data. default value: X'
                                           type: string
                                         name:
@@ -190,7 +190,7 @@ spec:
                               matcher:
                                 description: Matcher by which to determine if the given transformation should be applied if omitted, will it match all (i.e., default to / prefix matcher)
                                 properties:
-                                  case_sensitive:
+                                  caseSensitive:
                                     description: Indicates that prefix/path matching should be case sensitive. The default is true.
                                     properties:
                                       value:
@@ -205,7 +205,7 @@ spec:
                                     items:
                                       description: Internally, Gloo always uses the HTTP/2 *:authority* header to represent the HTTP/1 *Host* header. Thus, if attempting to match on *Host*, match on *:authority* instead.
                                       properties:
-                                        invert_match:
+                                        invertMatch:
                                           description: If set to true, the result of the match will be inverted. Defaults to false.
                                           type: boolean
                                         name:
@@ -227,7 +227,7 @@ spec:
                                   prefix:
                                     description: If specified, the route is a prefix rule meaning that the prefix must match the beginning of the *:path* header.
                                     type: string
-                                  query_parameters:
+                                  queryParameters:
                                     description: Specifies a set of URL query parameters on which the route should match. The router will check the query string from the *path* header against all the specified query parameters. If the number of specified query parameters is nonzero, they all must match the *path* header's query string for a match to occur.
                                     items:
                                       description: Query parameter matching treats the query string of a request's :path header as an ampersand-separated list of keys and/or key=value elements.
@@ -249,7 +249,7 @@ spec:
                                 type: object
                             type: object
                           type: array
-                        enabled_for:
+                        enabledFor:
                           description: Whether responses, access logs, or both should be masked by the applied actions. If not defined, masking will only be enabled for responses bodies.
                           enum:
                           - - RESPONSE_BODY
@@ -260,10 +260,10 @@ spec:
                     extauth:
                       description: 'Enterprise-only: External auth related settings'
                       properties:
-                        clear_route_cache:
+                        clearRouteCache:
                           description: 'Clears route cache in order to allow the external authorization service to correctly affect routing decisions. Filter clears all cached routes when:'
                           type: boolean
-                        extauthz_server_ref:
+                        extauthzServerRef:
                           description: The upstream to ask about auth decisions
                           properties:
                             name:
@@ -271,23 +271,23 @@ spec:
                             namespace:
                               type: string
                           type: object
-                        failure_mode_allow:
+                        failureModeAllow:
                           description: In case of a failure or timeout querying the auth server, normally a request is denied. if this is set to true, the request will be allowed.
                           type: boolean
-                        http_service:
+                        httpService:
                           description: If this is set, communication to the upstream will be via HTTP and not GRPC.
                           properties:
-                            path_prefix:
+                            pathPrefix:
                               description: Sets a prefix to the value of authorization request header *Path*.
                               type: string
                             request:
                               properties:
-                                allowed_headers:
+                                allowedHeaders:
                                   description: 'These headers will be copied from the incoming request to the request going to the auth server. Note that in addition to the user''s supplied matchers:'
                                   items:
                                     type: string
                                   type: array
-                                headers_to_add:
+                                headersToAdd:
                                   additionalProperties:
                                     type: string
                                   description: These headers that will be included to the request to authorization service. Note that client request of the same key will be overridden.
@@ -295,33 +295,33 @@ spec:
                               type: object
                             response:
                               properties:
-                                allowed_client_headers:
+                                allowedClientHeaders:
                                   description: When this. is set, authorization response headers that will be added to the client's response when auth request is denied. Note that when this list is *not* set, all the authorization response headers, except *Authority (Host)* will be in the response to the client. When a header is included in this list, *Path*, *Status*, *Content-Length*, *WWW-Authenticate* and *Location* are automatically added.
                                   items:
                                     type: string
                                   type: array
-                                allowed_upstream_headers:
+                                allowedUpstreamHeaders:
                                   description: When this is set, authorization response headers that have a will be added to the original client request and sent to the upstream. Note that coexistent headers will be overridden.
                                   items:
                                     type: string
                                   type: array
                               type: object
                           type: object
-                        request_body:
+                        requestBody:
                           description: Set this if you also want to send the body of the request, and not just the headers.
                           properties:
-                            allow_partial_message:
+                            allowPartialMessage:
                               description: When this field is true, Envoy will buffer the message until *max_request_bytes* is reached. The authorization request will be dispatched and no 413 HTTP error will be returned by the filter.
                               type: boolean
-                            max_request_bytes:
+                            maxRequestBytes:
                               description: Sets the maximum size of a message body that the filter will hold in memory. Envoy will return *HTTP 413* and will *not* initiate the authorization process when buffer reaches the number set in this field. Note that this setting will have precedence over failure_mode_allow. Defaults to 4KB.
                               format: int32
                               type: integer
-                            pack_as_bytes:
+                            packAsBytes:
                               description: When this field is true, Envoy will send the body sent to the external authorization service with raw bytes.
                               type: boolean
                           type: object
-                        request_timeout:
+                        requestTimeout:
                           description: Timeout for the ext auth service to respond. Defaults to 200ms
                           properties:
                             nanos:
@@ -333,16 +333,16 @@ spec:
                               format: int64
                               type: integer
                           type: object
-                        status_on_error:
+                        statusOnError:
                           description: 'Sets the HTTP status that is returned to the client when there is a network error between the filter and the authorization server. The default status is HTTP 403 Forbidden. If set, this must be one of the following: - 100 - 200 201 202 203 204 205 206 207 208 226 - 300 301 302 303 304 305 307 308 - 400 401 402 403 404 405 406 407 408 409 410 411 412 413 414 415 416 417 421 422 423 424 426 428 429 431 - 500 501 502 503 504 505 506 507 508 510 511'
                           format: int32
                           type: integer
-                        transport_api_version:
+                        transportApiVersion:
                           description: Determines the API version for the `ext_authz` transport protocol that will be used by Envoy to communicate with the auth server. Defaults to `V2`. For more info, see the `transport_api_version` field [here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#extensions-filters-http-ext-authz-v3-extauthz).
                           enum:
                           - - V3
                           type: string
-                        user_id_header:
+                        userIdHeader:
                           description: If the auth server trusted id of the user, it will be set in this header. Specifically this means that this header will be sanitized form the incoming request.
                           type: string
                       type: object
@@ -355,46 +355,46 @@ spec:
                             x-kubernetes-preserve-unknown-fields: true
                           type: object
                       type: object
-                    grpc_json_transcoder:
+                    grpcJsonTranscoder:
                       description: Exposed envoy config for the gRPC to JSON transcoding filter, envoy.filters.http.grpc_json_transcoder. For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/grpc_json_transcoder/v3/transcoder.proto
                       properties:
-                        auto_mapping:
+                        autoMapping:
                           description: Whether to route methods without the ``google.api.http`` option.
                           type: boolean
-                        convert_grpc_status:
+                        convertGrpcStatus:
                           description: Whether to convert gRPC status headers to JSON. When trailer indicates a gRPC error and there was no HTTP body, take ``google.rpc.Status`` from the ``grpc-status-details-bin`` header and use it as JSON body. If there was no such header, make ``google.rpc.Status`` out of the ``grpc-status`` and ``grpc-message`` headers. The error details types must be present in the ``proto_descriptor``.
                           type: boolean
-                        ignore_unknown_query_parameters:
+                        ignoreUnknownQueryParameters:
                           description: Whether to ignore query parameters that cannot be mapped to a corresponding protobuf field. Use this if you cannot control the query parameters and do not know them beforehand. Otherwise use ``ignored_query_parameters``. Defaults to false.
                           type: boolean
-                        ignored_query_parameters:
+                        ignoredQueryParameters:
                           description: A list of query parameters to be ignored for transcoding method mapping. By default, the transcoder filter will not transcode a request if there are any unknown/invalid query parameters.
                           items:
                             type: string
                           type: array
-                        match_incoming_request_route:
+                        matchIncomingRequestRoute:
                           description: 'Whether to keep the incoming request route after the outgoing headers have been transformed to the match the upstream gRPC service. Note: This means that routes for gRPC services that are not transcoded cannot be used in combination with *match_incoming_request_route*.'
                           type: boolean
-                        print_options:
+                        printOptions:
                           description: Control options for response JSON. These options are passed directly to `JsonPrintOptions <https://developers.google.com/protocol-buffers/docs/reference/cpp/ google.protobuf.util.json_util#JsonPrintOptions>`_.
                           properties:
-                            add_whitespace:
+                            addWhitespace:
                               description: Whether to add spaces, line breaks and indentation to make the JSON output easy to read. Defaults to false.
                               type: boolean
-                            always_print_enums_as_ints:
+                            alwaysPrintEnumsAsInts:
                               description: Whether to always print enums as ints. By default they are rendered as strings. Defaults to false.
                               type: boolean
-                            always_print_primitive_fields:
+                            alwaysPrintPrimitiveFields:
                               description: Whether to always print primitive fields. By default primitive fields with default values will be omitted in JSON output. For example, an int32 field set to 0 will be omitted. Setting this flag to true will override the default behavior and print primitive fields regardless of their values. Defaults to false.
                               type: boolean
-                            preserve_proto_field_names:
+                            preserveProtoFieldNames:
                               description: Whether to preserve proto field names. By default protobuf will generate JSON field names using the ``json_name`` option, or lower camel case, in that order. Setting this flag will preserve the original field names. Defaults to false.
                               type: boolean
                           type: object
-                        proto_descriptor:
+                        protoDescriptor:
                           description: Supplies the filename of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services.
                           type: string
-                        proto_descriptor_bin:
+                        protoDescriptorBin:
                           description: 'Supplies the binary content of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Note: in yaml, this must be provided as a base64 standard encoded string; yaml can''t handle binary bytes'
                           format: byte
                           type: string
@@ -404,7 +404,7 @@ spec:
                             type: string
                           type: array
                       type: object
-                    grpc_web:
+                    grpcWeb:
                       properties:
                         disable:
                           description: Disable grpc web support.
@@ -413,14 +413,14 @@ spec:
                     gzip:
                       description: 'Gzip is an HTTP option which enables Gloo to compress data returned from an upstream service upon client request. Compression is useful in situations where large payloads need to be transmitted without compromising the response time. Example: ``` gzip: contentType: - "application/json" compressionLevel: BEST ```'
                       properties:
-                        compression_level:
+                        compressionLevel:
                           description: A value used for selecting the zlib compression level. This setting will affect speed and amount of compression applied to the content. "BEST" provides higher compression at the cost of higher latency, "SPEED" provides lower compression with minimum impact on response time. "DEFAULT" provides an optimal result between speed and compression. This field will be set to "DEFAULT" if not specified.
                           enum:
                           - - DEFAULT
                             - BEST
                             - SPEED
                           type: string
-                        compression_strategy:
+                        compressionStrategy:
                           description: A value used for selecting the zlib compression strategy which is directly related to the characteristics of the content. Most of the time "DEFAULT" will be the best choice, though there are situations which changing this parameter might produce better results. For example, run-length encoding (RLE) is typically used when the content is known for having sequences which same data occurs many consecutive times. For more information about each strategy, please refer to zlib manual.
                           enum:
                           - - DEFAULT
@@ -428,7 +428,7 @@ spec:
                             - HUFFMAN
                             - RLE
                           type: string
-                        content_length:
+                        contentLength:
                           description: Minimum response length, in bytes, which will trigger compression. The default value is 30.
                           properties:
                             value:
@@ -436,15 +436,15 @@ spec:
                               format: int32
                               type: integer
                           type: object
-                        content_type:
+                        contentType:
                           description: 'Set of strings that allows specifying which mime-types yield compression; e.g., application/json, text/html, etc. When this field is not defined, compression will be applied to the following mime-types: "application/javascript", "application/json", "application/xhtml+xml", "image/svg+xml", "text/css", "text/html", "text/plain", "text/xml".'
                           items:
                             type: string
                           type: array
-                        disable_on_etag_header:
+                        disableOnEtagHeader:
                           description: If true, disables compression when the response contains an etag header. When it is false, the filter will preserve weak etags and remove the ones that require strong validation.
                           type: boolean
-                        memory_level:
+                        memoryLevel:
                           description: Value from 1 to 9 that controls the amount of internal memory used by zlib. Higher values use more memory, but are faster and produce better compression results. The default value is 5.
                           properties:
                             value:
@@ -452,10 +452,10 @@ spec:
                               format: int32
                               type: integer
                           type: object
-                        remove_accept_encoding_header:
+                        removeAcceptEncodingHeader:
                           description: If true, removes accept-encoding from the request headers before dispatching it to the upstream so that responses do not get compressed before reaching the filter.
                           type: boolean
-                        window_bits:
+                        windowBits:
                           description: Value from 9 to 15 that represents the base two logarithmic of the compressor's window size. Larger window results in better compression at the expense of memory usage. The default is 12 which will produce a 4096 bytes window. For more details about this parameter, please refer to zlib manual > deflateInit2.
                           properties:
                             value:
@@ -464,21 +464,21 @@ spec:
                               type: integer
                           type: object
                       type: object
-                    health_check:
+                    healthCheck:
                       description: enable [Envoy health checks](https://www.envoyproxy.io/docs/envoy/v1.7.0/api-v2/config/filter/http/health_check/v2/health_check.proto) on this listener
                       properties:
                         path:
                           description: match health check requests using this exact path
                           type: string
                       type: object
-                    http_connection_manager_settings:
+                    httpConnectionManagerSettings:
                       properties:
-                        accept_http_10:
+                        acceptHttp10:
                           description: 'For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions'
                           type: boolean
-                        default_host_for_http_10:
+                        defaultHostForHttp10:
                           type: string
-                        delayed_close_timeout:
+                        delayedCloseTimeout:
                           properties:
                             nanos:
                               description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
@@ -489,7 +489,7 @@ spec:
                               format: int64
                               type: integer
                           type: object
-                        drain_timeout:
+                        drainTimeout:
                           properties:
                             nanos:
                               description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
@@ -500,7 +500,7 @@ spec:
                               format: int64
                               type: integer
                           type: object
-                        forward_client_cert_details:
+                        forwardClientCertDetails:
                           enum:
                           - - SANITIZE
                             - FORWARD_ONLY
@@ -508,13 +508,13 @@ spec:
                             - SANITIZE_SET
                             - ALWAYS_FORWARD_ONLY
                           type: string
-                        generate_request_id:
+                        generateRequestId:
                           properties:
                             value:
                               description: The bool value.
                               type: boolean
                           type: object
-                        idle_timeout:
+                        idleTimeout:
                           properties:
                             nanos:
                               description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
@@ -525,7 +525,7 @@ spec:
                               format: int64
                               type: integer
                           type: object
-                        max_connection_duration:
+                        maxConnectionDuration:
                           description: For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
                           properties:
                             nanos:
@@ -537,14 +537,14 @@ spec:
                               format: int64
                               type: integer
                           type: object
-                        max_request_headers_kb:
+                        maxRequestHeadersKb:
                           properties:
                             value:
                               description: The uint32 value.
                               format: int32
                               type: integer
                           type: object
-                        max_stream_duration:
+                        maxStreamDuration:
                           properties:
                             nanos:
                               description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
@@ -555,7 +555,7 @@ spec:
                               format: int64
                               type: integer
                           type: object
-                        path_with_escaped_slashes_action:
+                        pathWithEscapedSlashesAction:
                           description: Action to take when request URL path contains escaped slash sequences (%2F, %2f, %5C and %5c). The default value can be overridden by the :ref:`http_connection_manager.path_with_escaped_slashes_action<config_http_conn_man_runtime_path_with_escaped_slashes_action>` runtime variable. The :ref:`http_connection_manager.path_with_escaped_slashes_action_sampling<config_http_conn_man_runtime_path_with_escaped_slashes_action_enabled>` runtime variable can be used to apply the action to a portion of all requests.
                           enum:
                           - - IMPLEMENTATION_SPECIFIC_DEFAULT
@@ -564,13 +564,13 @@ spec:
                             - UNESCAPE_AND_REDIRECT
                             - UNESCAPE_AND_FORWARD
                           type: string
-                        preserve_external_request_id:
+                        preserveExternalRequestId:
                           type: boolean
-                        proper_case_header_key_format:
+                        properCaseHeaderKeyFormat:
                           type: boolean
-                        proxy_100_continue:
+                        proxy100Continue:
                           type: boolean
-                        request_timeout:
+                        requestTimeout:
                           properties:
                             nanos:
                               description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
@@ -581,16 +581,16 @@ spec:
                               format: int64
                               type: integer
                           type: object
-                        server_header_transformation:
+                        serverHeaderTransformation:
                           description: 'For an explanation of the settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto.html#envoy-v3-api-enum-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-serverheadertransformation'
                           enum:
                           - - OVERWRITE
                             - APPEND_IF_ABSENT
                             - PASS_THROUGH
                           type: string
-                        server_name:
+                        serverName:
                           type: string
-                        set_current_client_cert_details:
+                        setCurrentClientCertDetails:
                           properties:
                             cert:
                               type: boolean
@@ -607,9 +607,9 @@ spec:
                             uri:
                               type: boolean
                           type: object
-                        skip_xff_append:
+                        skipXffAppend:
                           type: boolean
-                        stream_idle_timeout:
+                        streamIdleTimeout:
                           properties:
                             nanos:
                               description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
@@ -622,12 +622,12 @@ spec:
                           type: object
                         tracing:
                           properties:
-                            datadog_config:
+                            datadogConfig:
                               properties:
-                                cluster_name:
+                                clusterName:
                                   description: The name of the cluster to use for submitting traces to the Datadog agent. Note that the cluster must be defined in the :ref:`Bootstrap static cluster resources <envoy_api_field_config.bootstrap.v3.Bootstrap.StaticResources.clusters>`.
                                   type: string
-                                collector_upstream_ref:
+                                collectorUpstreamRef:
                                   description: The upstream to use for submitting traces to the Datadog agent.
                                   properties:
                                     name:
@@ -635,16 +635,16 @@ spec:
                                     namespace:
                                       type: string
                                   type: object
-                                service_name:
+                                serviceName:
                                   description: The name used for the service when traces are generated by envoy.
                                   type: string
                               type: object
-                            environment_variables_for_tags:
+                            environmentVariablesForTags:
                               description: Optional. If specified, Envoy will include the environment variables with the given tag as tracing tags.
                               items:
                                 description: Requests can produce traces with custom tags. TracingTagEnvironmentVariable defines an environment variable which gets added as custom tag.
                                 properties:
-                                  default_value:
+                                  defaultValue:
                                     description: When the environment variable is not found, the tag value will be populated with this default value if specified, otherwise no tag will be populated.
                                     type: string
                                   name:
@@ -655,7 +655,7 @@ spec:
                                     type: string
                                 type: object
                               type: array
-                            literals_for_tags:
+                            literalsForTags:
                               description: Optional. If specified, Envoy will include the literals with the given tag as tracing tags.
                               items:
                                 description: Requests can produce traces with custom tags. TracingTagLiteral defines a literal which gets added as custom tag.
@@ -668,29 +668,29 @@ spec:
                                     type: string
                                 type: object
                               type: array
-                            request_headers_for_tags:
+                            requestHeadersForTags:
                               description: Optional. If specified, Envoy will include the headers and header values for any matching request headers.
                               items:
                                 type: string
                               type: array
-                            trace_percentages:
+                            tracePercentages:
                               description: Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided. TracePercentages defines the limits for random, forced, and overall tracing percentages.
                               properties:
-                                client_sample_percentage:
+                                clientSamplePercentage:
                                   description: Percentage of requests that should produce traces when the `x-client-trace-id` header is provided. optional, defaults to 100.0 This should be a value between 0.0 and 100.0, with up to 6 significant digits.
                                   properties:
                                     value:
                                       description: The float value.
                                       type: number
                                   type: object
-                                overall_sample_percentage:
+                                overallSamplePercentage:
                                   description: Overall percentage of requests that should produce traces. optional, defaults to 100.0 This should be a value between 0.0 and 100.0, with up to 6 significant digits.
                                   properties:
                                     value:
                                       description: The float value.
                                       type: number
                                   type: object
-                                random_sample_percentage:
+                                randomSamplePercentage:
                                   description: Percentage of requests that should produce traces by random sampling. optional, defaults to 100.0 This should be a value between 0.0 and 100.0, with up to 6 significant digits.
                                   properties:
                                     value:
@@ -701,22 +701,22 @@ spec:
                             verbose:
                               description: 'Optional. If true, Envoy will include logs for streaming events. Default: false.'
                               type: boolean
-                            zipkin_config:
+                            zipkinConfig:
                               properties:
-                                cluster_name:
+                                clusterName:
                                   description: The name of the cluster that hosts the Zipkin collectors. Note that the Zipkin cluster must be defined in the :ref:`Bootstrap static cluster resources <envoy_api_field_config.bootstrap.v3.Bootstrap.StaticResources.clusters>`.
                                   type: string
-                                collector_endpoint:
+                                collectorEndpoint:
                                   description: The API endpoint of the Zipkin service where the spans will be sent. When using a standard Zipkin installation, the API endpoint is typically /api/v1/spans, which is the default value.
                                   type: string
-                                collector_endpoint_version:
+                                collectorEndpointVersion:
                                   description: Determines the selected collector endpoint version. By default, the ``HTTP_JSON_V1`` will be used.
                                   enum:
                                   - - DEPRECATED_AND_UNAVAILABLE_DO_NOT_USE
                                     - HTTP_JSON
                                     - HTTP_PROTO
                                   type: string
-                                collector_upstream_ref:
+                                collectorUpstreamRef:
                                   description: The upstream that hosts the Zipkin collectors.
                                   properties:
                                     name:
@@ -724,14 +724,14 @@ spec:
                                     namespace:
                                       type: string
                                   type: object
-                                shared_span_context:
+                                sharedSpanContext:
                                   description: Determines whether client and server spans will share the same span context. The default value is true.
                                   properties:
                                     value:
                                       description: The bool value.
                                       type: boolean
                                   type: object
-                                trace_id_128bit:
+                                traceId128bit:
                                   description: Determines whether a 128bit trace id will be used when creating a new trace instance. The default value is false, which will result in a 64 bit trace id being used.
                                   type: boolean
                               type: object
@@ -753,7 +753,7 @@ spec:
                                 type: object
                             type: object
                           type: array
-                        use_remote_address:
+                        useRemoteAddress:
                           properties:
                             value:
                               description: The bool value.
@@ -761,42 +761,42 @@ spec:
                           type: object
                         via:
                           type: string
-                        xff_num_trusted_hops:
+                        xffNumTrustedHops:
                           format: int32
                           type: integer
                       type: object
-                    leftmost_xff_address:
+                    leftmostXffAddress:
                       description: 'Enterprise-only: Setting this value to true will grab the leftmost IP address from the x-forwarded-for header and set it as the downstream address. It is worth noting that the x-forwarded-for header can be tampered with by clients and should therefore be sanitized by any preceding proxies / load balancers if this option is to be used.'
                       properties:
                         value:
                           description: The bool value.
                           type: boolean
                       type: object
-                    proxy_latency:
+                    proxyLatency:
                       description: 'Enterprise-only: Proxy latency'
                       properties:
-                        charge_cluster_stat:
+                        chargeClusterStat:
                           description: Charge a stat per upstream cluster. If not specified, defaults to true.
                           properties:
                             value:
                               description: The bool value.
                               type: boolean
                           type: object
-                        charge_listener_stat:
+                        chargeListenerStat:
                           description: Charge a stat per listener. If not specified, defaults to true.
                           properties:
                             value:
                               description: The bool value.
                               type: boolean
                           type: object
-                        emit_dynamic_metadata:
+                        emitDynamicMetadata:
                           description: Should we emit request timing to dynamic metadata. defaults to true.
                           properties:
                             value:
                               description: The bool value.
                               type: boolean
                           type: object
-                        measure_request_internally:
+                        measureRequestInternally:
                           description: When FIRST_OUTGOING (i.e. LAST_INCOMING_FIRST_OUTGOING or FIRST_INCOMING_FIRST_OUTGOING) is instead of when the first byte is sent upstream. This has the advantage of not measuring the time selected for request measurment, finish measuring proxy latency when decodeHeader for this it takes a connection to form, which may skew the P99. filter is hit instead of when the first byte is sent upstream. This has the advantage of not for this to work the filter should be inserted last, just before the router filter. measuring the time it takes a connection to form, which may skew the P99. For this to work this filter should be inserted last, just before the router filter. This has no effect if other measurement type is selected, and has no effect on how response is measured.
                           type: boolean
                         request:
@@ -816,22 +816,22 @@ spec:
                             - FIRST_INCOMING_LAST_OUTGOING
                           type: string
                       type: object
-                    ratelimit_server:
+                    ratelimitServer:
                       description: 'Enterprise-only: Settings for the rate limiting server itself'
                       properties:
-                        deny_on_fail:
+                        denyOnFail:
                           type: boolean
-                        rate_limit_before_auth:
+                        rateLimitBeforeAuth:
                           description: 'Set this is set to true if you would like to rate limit traffic before applying external auth to it. *Note*: When this is true, you will lose some features like being able to rate limit a request based on its auth state'
                           type: boolean
-                        ratelimit_server_ref:
+                        ratelimitServerRef:
                           properties:
                             name:
                               type: string
                             namespace:
                               type: string
                           type: object
-                        request_timeout:
+                        requestTimeout:
                           properties:
                             nanos:
                               description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
@@ -843,7 +843,7 @@ spec:
                               type: integer
                           type: object
                       type: object
-                    sanitize_cluster_header:
+                    sanitizeClusterHeader:
                       description: 'Enterprise-only: If using the HTTP header specified by cluster_header to direct traffic to a cluster, this option will sanitize that header from downstream traffic. Defaults to false'
                       properties:
                         value:
@@ -853,7 +853,7 @@ spec:
                     waf:
                       description: 'Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset'
                       properties:
-                        audit_logging:
+                        auditLogging:
                           description: Audit Log settings
                           properties:
                             action:
@@ -868,29 +868,29 @@ spec:
                                 - DYNAMIC_METADATA
                               type: string
                           type: object
-                        core_rule_set:
+                        coreRuleSet:
                           description: Add OWASP core rule set if nil will not be added
                           properties:
-                            custom_settings_file:
+                            customSettingsFile:
                               description: String representing the core rule set custom config options
                               type: string
-                            custom_settings_string:
+                            customSettingsString:
                               description: String representing the core rule set custom config options
                               type: string
                           type: object
-                        custom_intervention_message:
+                        customInterventionMessage:
                           description: Custom massage to display if an intervention occurs.
                           type: string
                         disabled:
                           description: Disable waf on this resource (if omitted defaults to false). If a route/virtual host is configured with WAF, you must explicitly disable its WAF, i.e., it will not inherit the disabled status of its parent
                           type: boolean
-                        request_headers_only:
+                        requestHeadersOnly:
                           description: Only process request headers, not buffering the request body
                           type: boolean
-                        response_headers_only:
+                        responseHeadersOnly:
                           description: Only process response headers, not buffering the response body
                           type: boolean
-                        rule_sets:
+                        ruleSets:
                           description: Custom rule sets rules to add
                           items:
                             properties:
@@ -902,7 +902,7 @@ spec:
                                 items:
                                   type: string
                                 type: array
-                              rule_str:
+                              ruleStr:
                                 description: String of rules which are added directly
                                 type: string
                             type: object
@@ -920,10 +920,10 @@ spec:
                                 description: Filter/service configuration used to configure or reconfigure a plugin (proxy_on_configuration). `google.protobuf.Struct` is serialized as JSON before passing it to the plugin. `google.protobuf.BytesValue` and `google.protobuf.StringValue` are passed directly without the wrapper.
                                 type: object
                                 x-kubernetes-preserve-unknown-fields: true
-                              file_path:
+                              filePath:
                                 description: path from which to load wasm filter from disk
                                 type: string
-                              filter_stage:
+                              filterStage:
                                 description: the stage in the filter chain where this filter should be placed
                                 properties:
                                   predicate:
@@ -953,10 +953,10 @@ spec:
                               name:
                                 description: the name of the filter, used for logging
                                 type: string
-                              root_id:
+                              rootId:
                                 description: the root_id of the filter which should be run, if this value is incorrect, or empty the filter will crash
                                 type: string
-                              vm_type:
+                              vmType:
                                 description: selected VM type
                                 enum:
                                 - - V8
@@ -966,17 +966,17 @@ spec:
                           type: array
                       type: object
                   type: object
-                virtual_service_namespaces:
+                virtualServiceNamespaces:
                   description: Restrict the search by providing a list of valid search namespaces here. Setting '*' will search all namespaces, equivalent to omitting this value.
                   items:
                     type: string
                   type: array
-                virtual_service_selector:
+                virtualServiceSelector:
                   additionalProperties:
                     type: string
                   description: Select virtual services by their label. If `virtual_service_namespaces` is provided below, this will apply only to virtual services in the namespaces specified. Only one of `virtualServices` or `virtualServiceSelector` should be provided.
                   type: object
-                virtual_services:
+                virtualServices:
                   description: Names & namespace refs of the virtual services which contain the actual routes for the gateway. If the list is empty, all virtual services in all namespaces that Gloo watches will apply, with accordance to `ssl` flag on `Gateway` above. The default namespace matching behavior can be overridden via `virtual_service_namespaces` flag below. Only one of `virtualServices` or `virtualServiceSelector` should be provided.
                   items:
                     description: A way to reference resources across namespaces
@@ -991,44 +991,44 @@ spec:
             options:
               description: top level optional configuration for all routes on the gateway
               properties:
-                access_logging_service:
+                accessLoggingService:
                   properties:
-                    access_log:
+                    accessLog:
                       items:
                         properties:
-                          file_sink:
+                          fileSink:
                             description: Output access logs to local file
                             properties:
-                              json_format:
+                              jsonFormat:
                                 description: the format object by which to envoy will emit the logs in a structured way. https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/observability/access_log#format-dictionaries
                                 type: object
                                 x-kubernetes-preserve-unknown-fields: true
                               path:
                                 description: the file path to which the file access logging service will sink
                                 type: string
-                              string_format:
+                              stringFormat:
                                 description: the format string by which envoy will format the log lines https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/observability/access_log#config-access-log-format-strings
                                 type: string
                             type: object
-                          grpc_service:
+                          grpcService:
                             description: Send access logs to gRPC service
                             properties:
-                              additional_request_headers_to_log:
+                              additionalRequestHeadersToLog:
                                 items:
                                   type: string
                                 type: array
-                              additional_response_headers_to_log:
+                              additionalResponseHeadersToLog:
                                 items:
                                   type: string
                                 type: array
-                              additional_response_trailers_to_log:
+                              additionalResponseTrailersToLog:
                                 items:
                                   type: string
                                 type: array
-                              log_name:
+                              logName:
                                 description: name of log stream
                                 type: string
-                              static_cluster_name:
+                              staticClusterName:
                                 type: string
                             type: object
                         type: object
@@ -1043,7 +1043,7 @@ spec:
                         x-kubernetes-preserve-unknown-fields: true
                       type: object
                   type: object
-                per_connection_buffer_limit_bytes:
+                perConnectionBufferLimitBytes:
                   description: Soft limit on size of the listener's new connection read and write buffers. If unspecified, defaults to 1MiB For more info, check out the [Envoy docs](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/listener.proto)
                   properties:
                     value:
@@ -1051,19 +1051,19 @@ spec:
                       format: int32
                       type: integer
                   type: object
-                socket_options:
+                socketOptions:
                   description: Additional socket options that may not be present in Envoy source code or precompiled binaries.
                   items:
                     description: Generic socket option message. This would be used to set socket options that might not exist in upstream kernels or precompiled Envoy binaries.
                     properties:
-                      buf_value:
+                      bufValue:
                         description: Otherwise it's a byte buffer.
                         format: byte
                         type: string
                       description:
                         description: An optional name to give this socket option for debugging, etc. Uniqueness is not required and no special meaning is assumed.
                         type: string
-                      int_value:
+                      intValue:
                         description: Because many sockopts take an int value.
                         format: int64
                         type: integer
@@ -1085,15 +1085,15 @@ spec:
                     type: object
                   type: array
               type: object
-            proxy_names:
+            proxyNames:
               description: Names of the [`Proxy`](https://gloo.solo.io/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/) resources to generate from this gateway. If other gateways exist which point to the same proxy, Gloo will join them together.
               items:
                 type: string
               type: array
-            route_options:
+            routeOptions:
               description: Route configuration options that live under Envoy's [RouteConfigurationOptions](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#config-route-v3-routeconfiguration)
               properties:
-                max_direct_response_body_size_bytes:
+                maxDirectResponseBodySizeBytes:
                   description: The maximum bytes of the response direct response body size. If not specified the default is 4096. Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-v3-api-field-config-route-v3-routeconfiguration-max-direct-response-body-size-bytes) for more details about the `max_direct_response_body_size_bytes` attribute.
                   properties:
                     value:
@@ -1109,14 +1109,14 @@ spec:
               description: Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation
               type: object
               x-kubernetes-preserve-unknown-fields: true
-            tcp_gateway:
+            tcpGateway:
               properties:
                 options:
                   description: TCP Gateway configuration
                   properties:
-                    tcp_proxy_settings:
+                    tcpProxySettings:
                       properties:
-                        idle_timeout:
+                        idleTimeout:
                           properties:
                             nanos:
                               description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
@@ -1127,14 +1127,14 @@ spec:
                               format: int64
                               type: integer
                           type: object
-                        max_connect_attempts:
+                        maxConnectAttempts:
                           properties:
                             value:
                               description: The uint32 value.
                               format: int32
                               type: integer
                           type: object
-                        tunneling_config:
+                        tunnelingConfig:
                           description: If set, this configures tunneling, e.g. configuration options to tunnel multiple TCP payloads over a shared HTTP tunnel. If this message is absent, the payload will be proxied upstream as per usual.
                           properties:
                             hostname:
@@ -1143,13 +1143,13 @@ spec:
                           type: object
                       type: object
                   type: object
-                tcp_hosts:
+                tcpHosts:
                   description: TCP hosts that the gateway can route to
                   items:
                     properties:
                       destination:
                         properties:
-                          forward_sni_cluster_name:
+                          forwardSniClusterName:
                             description: 'Forwards the request to a cluster name matching the TLS SNI name https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/network/sni_cluster/empty/sni_cluster Note: This filter will only work properly with TLS connections in which the upstream SNI domain is specified'
                             type: object
                           multi:
@@ -1165,12 +1165,12 @@ spec:
                                         consul:
                                           description: Route requests to a consul service
                                           properties:
-                                            data_centers:
+                                            dataCenters:
                                               description: If provided, load balance traffic only between services running in the given [data centers](https://www.consul.io/docs/internals/architecture.html).
                                               items:
                                                 type: string
                                               type: array
-                                            service_name:
+                                            serviceName:
                                               description: The name of the target service. This field is required.
                                               type: string
                                             tags:
@@ -1179,27 +1179,27 @@ spec:
                                                 type: string
                                               type: array
                                           type: object
-                                        destination_spec:
+                                        destinationSpec:
                                           description: Some upstreams utilize options which require or permit additional configuration on routes targeting them. gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the destination config. If the destination config is required for the upstream and not provided by the user, Gloo will invalidate the destination and its parent resources.
                                           properties:
                                             aws:
                                               properties:
-                                                invocation_style:
+                                                invocationStyle:
                                                   description: Can be either Sync or Async.
                                                   enum:
                                                   - - SYNC
                                                     - ASYNC
                                                   type: string
-                                                logical_name:
+                                                logicalName:
                                                   description: The Logical Name of the LambdaFunctionSpec to be invoked.
                                                   type: string
-                                                response_transformation:
+                                                responseTransformation:
                                                   description: de-jsonify response bodies returned from aws lambda
                                                   type: boolean
                                               type: object
                                             azure:
                                               properties:
-                                                function_name:
+                                                functionName:
                                                   description: The Function Name of the FunctionSpec to be invoked.
                                                   type: string
                                               type: object
@@ -1233,7 +1233,7 @@ spec:
                                               type: object
                                             rest:
                                               properties:
-                                                function_name:
+                                                functionName:
                                                   type: string
                                                 parameters:
                                                   properties:
@@ -1250,9 +1250,9 @@ spec:
                                                           type: string
                                                       type: object
                                                   type: object
-                                                response_transformation:
+                                                responseTransformation:
                                                   properties:
-                                                    advanced_templates:
+                                                    advancedTemplates:
                                                       description: If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false.
                                                       type: boolean
                                                     body:
@@ -1261,7 +1261,7 @@ spec:
                                                         text:
                                                           type: string
                                                       type: object
-                                                    dynamic_metadata_values:
+                                                    dynamicMetadataValues:
                                                       description: Use this field to set Dynamic Metadata.
                                                       items:
                                                         description: Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
@@ -1269,7 +1269,7 @@ spec:
                                                           key:
                                                             description: The metadata key.
                                                             type: string
-                                                          metadata_namespace:
+                                                          metadataNamespace:
                                                             description: The metadata namespace. Defaults to the filter namespace.
                                                             type: string
                                                           value:
@@ -1307,7 +1307,7 @@ spec:
                                                         type: object
                                                       description: 'Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. Any existing headers with the same header name will be replaced by the transformed header. If a header name is included in `headers` and `headers_to_append`, it will first be replaced the template in `headers`, then additional header values will be appended by the templates defined in `headers_to_append`. For example, the following header transformation configuration:'
                                                       type: object
-                                                    headers_to_append:
+                                                    headersToAppend:
                                                       description: Use this attribute to transform request/response headers. It consists of an array of string/template objects. Use this attribute to define multiple templates for a single header. Header template(s) defined here will be appended to any existing headers with the same header name, not replace existing ones. See `headers` documentation to see an example of usage.
                                                       items:
                                                         description: Defines a header-template pair to be used in `headers_to_append`
@@ -1323,13 +1323,13 @@ spec:
                                                             type: object
                                                         type: object
                                                       type: array
-                                                    ignore_error_on_parse:
+                                                    ignoreErrorOnParse:
                                                       description: If set to true, Envoy will not throw an exception in case the body parsing fails.
                                                       type: boolean
-                                                    merge_extractors_to_body:
+                                                    mergeExtractorsToBody:
                                                       description: Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name.
                                                       type: object
-                                                    parse_body_behavior:
+                                                    parseBodyBehavior:
                                                       enum:
                                                       - - ParseAsJson
                                                         - DontParse
@@ -1376,13 +1376,13 @@ spec:
                                     options:
                                       description: Apply configuration to traffic that is sent to this weighted destination
                                       properties:
-                                        buffer_per_route:
+                                        bufferPerRoute:
                                           description: 'BufferPerRoute can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response. Note: If you have not set a global config (at the gateway level), this override will not do anything by itself.'
                                           properties:
                                             buffer:
                                               description: 'Override the global configuration of the buffer filter with this new config. Note: If you have not set a global config (at the gateway level), this override will not do anything by itself.'
                                               properties:
-                                                max_request_bytes:
+                                                maxRequestBytes:
                                                   description: The maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response.
                                                   properties:
                                                     value:
@@ -1398,7 +1398,7 @@ spec:
                                         csrf:
                                           description: Csrf can be used to set percent of requests for which the CSRF filter is enabled, enable shadow-only mode where policies will be evaluated and tracked, but not enforced and add additional source origins that will be allowed in addition to the destination origin. For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/csrf/v2/csrf.proto
                                           properties:
-                                            additional_origins:
+                                            additionalOrigins:
                                               description: Specifies additional source origins that will be allowed in addition to the destination origin.
                                               items:
                                                 description: 'Specifies the way to match a string. [#next-free-field: 7]'
@@ -1406,19 +1406,19 @@ spec:
                                                   exact:
                                                     description: The input string must match exactly the string specified here.
                                                     type: string
-                                                  ignore_case:
+                                                  ignoreCase:
                                                     description: If true, indicates the exact/prefix/suffix matching should be case insensitive. This has no effect for the safe_regex match. For example, the matcher *data* will match both input string *Data* and *data* if set to true.
                                                     type: boolean
                                                   prefix:
                                                     description: 'The input string must have the prefix specified here. Note: empty prefix is not allowed, please use regex instead.'
                                                     type: string
-                                                  safe_regex:
+                                                  safeRegex:
                                                     description: The input string must match the regular expression specified here.
                                                     properties:
-                                                      google_re2:
+                                                      googleRe2:
                                                         description: Google's RE2 regex engine.
                                                         properties:
-                                                          max_program_size:
+                                                          maxProgramSize:
                                                             description: This field controls the RE2 "program size" which is a rough estimate of how complex a compiled regex is to evaluate. A regex that has a program size greater than the configured value will fail to compile. In this case, the configured max program size can be increased or the regex can be simplified. If not specified, the default is 100.
                                                             properties:
                                                               value:
@@ -1436,10 +1436,10 @@ spec:
                                                     type: string
                                                 type: object
                                               type: array
-                                            filter_enabled:
+                                            filterEnabled:
                                               description: Specifies the % of requests for which the CSRF filter is enabled.
                                               properties:
-                                                default_value:
+                                                defaultValue:
                                                   description: Default value if the runtime value's for the numerator/denominator keys are not available.
                                                   properties:
                                                     denominator:
@@ -1454,14 +1454,14 @@ spec:
                                                       format: int32
                                                       type: integer
                                                   type: object
-                                                runtime_key:
+                                                runtimeKey:
                                                   description: Runtime key for a YAML representation of a FractionalPercent.
                                                   type: string
                                               type: object
-                                            shadow_enabled:
+                                            shadowEnabled:
                                               description: Specifies that CSRF policies will be evaluated and tracked, but not enforced.
                                               properties:
-                                                default_value:
+                                                defaultValue:
                                                   description: Default value if the runtime value's for the numerator/denominator keys are not available.
                                                   properties:
                                                     denominator:
@@ -1476,7 +1476,7 @@ spec:
                                                       format: int32
                                                       type: integer
                                                   type: object
-                                                runtime_key:
+                                                runtimeKey:
                                                   description: Runtime key for a YAML representation of a FractionalPercent.
                                                   type: string
                                               type: object
@@ -1484,7 +1484,7 @@ spec:
                                         extauth:
                                           description: 'Enterprise-only: Authentication configuration'
                                           properties:
-                                            config_ref:
+                                            configRef:
                                               description: A reference to an AuthConfig. This is used to configure the Gloo Edge Enterprise extauth server.
                                               properties:
                                                 name:
@@ -1492,10 +1492,10 @@ spec:
                                                 namespace:
                                                   type: string
                                               type: object
-                                            custom_auth:
+                                            customAuth:
                                               description: Use this field if you are running your own custom extauth server.
                                               properties:
-                                                context_extensions:
+                                                contextExtensions:
                                                   additionalProperties:
                                                     type: string
                                                   description: When a request matches the virtual host, route, or weighted destination on which this configuration is defined, Gloo will add the given context_extensions to the request that is sent to the external authorization server. This allows the server to base the auth decision on metadata that you define on the source of the request.
@@ -1514,10 +1514,10 @@ spec:
                                                 x-kubernetes-preserve-unknown-fields: true
                                               type: object
                                           type: object
-                                        header_manipulation:
+                                        headerManipulation:
                                           description: Append/Remove headers on Requests or Responses to/from this Weighted Destination
                                           properties:
-                                            request_headers_to_add:
+                                            requestHeadersToAdd:
                                               description: Specifies a list of HTTP headers that should be added to each request handled by this route or virtual host. For more information, including details on header value syntax, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/headers#config-http-conn-man-headers-custom-request-headers) .
                                               items:
                                                 description: Header name/value pair plus option to control append behavior.
@@ -1539,7 +1539,7 @@ spec:
                                                         description: Header value.
                                                         type: string
                                                     type: object
-                                                  header_secret_ref:
+                                                  headerSecretRef:
                                                     description: Reference to header contained in a secret
                                                     properties:
                                                       name:
@@ -1549,12 +1549,12 @@ spec:
                                                     type: object
                                                 type: object
                                               type: array
-                                            request_headers_to_remove:
+                                            requestHeadersToRemove:
                                               description: Specifies a list of HTTP headers that should be removed from each request handled by this route or virtual host.
                                               items:
                                                 type: string
                                               type: array
-                                            response_headers_to_add:
+                                            responseHeadersToAdd:
                                               description: Specifies a list of HTTP headers that should be added to each response handled by this route or host. For more information, including details on header value syntax, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/headers#config-http-conn-man-headers-custom-request-headers) .
                                               items:
                                                 description: Header name/value pair plus option to control append behavior.
@@ -1578,29 +1578,29 @@ spec:
                                                     type: object
                                                 type: object
                                               type: array
-                                            response_headers_to_remove:
+                                            responseHeadersToRemove:
                                               description: Specifies a list of HTTP headers that should be removed from each response handled by this route or virtual host.
                                               items:
                                                 type: string
                                               type: array
                                           type: object
-                                        staged_transformations:
+                                        stagedTransformations:
                                           description: Early transformations stage. These transformations run before most other options are processed. If the `regular` field is set in here, the `transformations` field is ignored.
                                           properties:
                                             early:
                                               description: Early transformations happen before most other options (Like Auth and Rate Limit).
                                               properties:
-                                                request_transforms:
+                                                requestTransforms:
                                                   description: Transformations to apply on the request. The first request that matches will apply.
                                                   items:
                                                     properties:
-                                                      clear_route_cache:
+                                                      clearRouteCache:
                                                         description: Should we clear the route cache if a transformation was matched.
                                                         type: boolean
                                                       matcher:
                                                         description: Matches on the request properties.
                                                         properties:
-                                                          case_sensitive:
+                                                          caseSensitive:
                                                             description: Indicates that prefix/path matching should be case sensitive. The default is true.
                                                             properties:
                                                               value:
@@ -1615,7 +1615,7 @@ spec:
                                                             items:
                                                               description: Internally, Gloo always uses the HTTP/2 *:authority* header to represent the HTTP/1 *Host* header. Thus, if attempting to match on *Host*, match on *:authority* instead.
                                                               properties:
-                                                                invert_match:
+                                                                invertMatch:
                                                                   description: If set to true, the result of the match will be inverted. Defaults to false.
                                                                   type: boolean
                                                                 name:
@@ -1637,7 +1637,7 @@ spec:
                                                           prefix:
                                                             description: If specified, the route is a prefix rule meaning that the prefix must match the beginning of the *:path* header.
                                                             type: string
-                                                          query_parameters:
+                                                          queryParameters:
                                                             description: Specifies a set of URL query parameters on which the route should match. The router will check the query string from the *path* header against all the specified query parameters. If the number of specified query parameters is nonzero, they all must match the *path* header's query string for a match to occur.
                                                             items:
                                                               description: Query parameter matching treats the query string of a request's :path header as an ampersand-separated list of keys and/or key=value elements.
@@ -1657,16 +1657,16 @@ spec:
                                                             description: If specified, the route is a regular expression rule meaning that the regex must match the *:path* header once the query string is removed. The entire path (without the query string) must match the regex. The rule will not match if only a sub-sequence of the *:path* header matches the regex. The regex grammar is defined `here <http://en.cppreference.com/w/cpp/regex/ecmascript>`_.
                                                             type: string
                                                         type: object
-                                                      request_transformation:
+                                                      requestTransformation:
                                                         description: Transformation to apply on the request.
                                                         properties:
-                                                          header_body_transform:
+                                                          headerBodyTransform:
                                                             description: 'This type of transformation will make all the headers available in the response body. The resulting JSON body will consist of two attributes: ''headers'', containing the headers, and ''body'', containing the original body.'
                                                             type: object
-                                                          transformation_template:
+                                                          transformationTemplate:
                                                             description: Apply transformation templates.
                                                             properties:
-                                                              advanced_templates:
+                                                              advancedTemplates:
                                                                 description: If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false.
                                                                 type: boolean
                                                               body:
@@ -1675,7 +1675,7 @@ spec:
                                                                   text:
                                                                     type: string
                                                                 type: object
-                                                              dynamic_metadata_values:
+                                                              dynamicMetadataValues:
                                                                 description: Use this field to set Dynamic Metadata.
                                                                 items:
                                                                   description: Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
@@ -1683,7 +1683,7 @@ spec:
                                                                     key:
                                                                       description: The metadata key.
                                                                       type: string
-                                                                    metadata_namespace:
+                                                                    metadataNamespace:
                                                                       description: The metadata namespace. Defaults to the filter namespace.
                                                                       type: string
                                                                     value:
@@ -1721,7 +1721,7 @@ spec:
                                                                   type: object
                                                                 description: 'Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. Any existing headers with the same header name will be replaced by the transformed header. If a header name is included in `headers` and `headers_to_append`, it will first be replaced the template in `headers`, then additional header values will be appended by the templates defined in `headers_to_append`. For example, the following header transformation configuration:'
                                                                 type: object
-                                                              headers_to_append:
+                                                              headersToAppend:
                                                                 description: Use this attribute to transform request/response headers. It consists of an array of string/template objects. Use this attribute to define multiple templates for a single header. Header template(s) defined here will be appended to any existing headers with the same header name, not replace existing ones. See `headers` documentation to see an example of usage.
                                                                 items:
                                                                   description: Defines a header-template pair to be used in `headers_to_append`
@@ -1737,13 +1737,13 @@ spec:
                                                                       type: object
                                                                   type: object
                                                                 type: array
-                                                              ignore_error_on_parse:
+                                                              ignoreErrorOnParse:
                                                                 description: If set to true, Envoy will not throw an exception in case the body parsing fails.
                                                                 type: boolean
-                                                              merge_extractors_to_body:
+                                                              mergeExtractorsToBody:
                                                                 description: Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name.
                                                                 type: object
-                                                              parse_body_behavior:
+                                                              parseBodyBehavior:
                                                                 enum:
                                                                 - - ParseAsJson
                                                                   - DontParse
@@ -1752,13 +1752,13 @@ spec:
                                                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
                                                                 type: object
                                                             type: object
-                                                          xslt_transformation:
+                                                          xsltTransformation:
                                                             description: '(Enterprise Only): Xslt Transformation'
                                                             properties:
-                                                              non_xml_transform:
+                                                              nonXmlTransform:
                                                                 description: This should be set to true if the content being transformed is not XML. For example, if the content being transformed is from JSON to XML, this should be set to true. XSLT transformations can only take valid XML as input to be transformed. If the body is not a valid XML (e.g. using JSON as input in a JSON-to-XML transformation), setting `non_xml_transform` to true will allow the XSLT to accept the non-XML input without throwing an error by passing the input as XML CDATA. defaults to false.
                                                                 type: boolean
-                                                              set_content_type:
+                                                              setContentType:
                                                                 description: Changes the content-type header of the HTTP request/response to what is set here. This is useful in situations where an XSLT transformation is used to transform XML to JSON and the content-type should be changed from `application/xml` to `application/json`. If left empty, the content-type header remains unmodified by default.
                                                                 type: string
                                                               xslt:
@@ -1766,16 +1766,16 @@ spec:
                                                                 type: string
                                                             type: object
                                                         type: object
-                                                      response_transformation:
+                                                      responseTransformation:
                                                         description: Transformation to apply on the response.
                                                         properties:
-                                                          header_body_transform:
+                                                          headerBodyTransform:
                                                             description: 'This type of transformation will make all the headers available in the response body. The resulting JSON body will consist of two attributes: ''headers'', containing the headers, and ''body'', containing the original body.'
                                                             type: object
-                                                          transformation_template:
+                                                          transformationTemplate:
                                                             description: Apply transformation templates.
                                                             properties:
-                                                              advanced_templates:
+                                                              advancedTemplates:
                                                                 description: If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false.
                                                                 type: boolean
                                                               body:
@@ -1784,7 +1784,7 @@ spec:
                                                                   text:
                                                                     type: string
                                                                 type: object
-                                                              dynamic_metadata_values:
+                                                              dynamicMetadataValues:
                                                                 description: Use this field to set Dynamic Metadata.
                                                                 items:
                                                                   description: Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
@@ -1792,7 +1792,7 @@ spec:
                                                                     key:
                                                                       description: The metadata key.
                                                                       type: string
-                                                                    metadata_namespace:
+                                                                    metadataNamespace:
                                                                       description: The metadata namespace. Defaults to the filter namespace.
                                                                       type: string
                                                                     value:
@@ -1830,7 +1830,7 @@ spec:
                                                                   type: object
                                                                 description: 'Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. Any existing headers with the same header name will be replaced by the transformed header. If a header name is included in `headers` and `headers_to_append`, it will first be replaced the template in `headers`, then additional header values will be appended by the templates defined in `headers_to_append`. For example, the following header transformation configuration:'
                                                                 type: object
-                                                              headers_to_append:
+                                                              headersToAppend:
                                                                 description: Use this attribute to transform request/response headers. It consists of an array of string/template objects. Use this attribute to define multiple templates for a single header. Header template(s) defined here will be appended to any existing headers with the same header name, not replace existing ones. See `headers` documentation to see an example of usage.
                                                                 items:
                                                                   description: Defines a header-template pair to be used in `headers_to_append`
@@ -1846,13 +1846,13 @@ spec:
                                                                       type: object
                                                                   type: object
                                                                 type: array
-                                                              ignore_error_on_parse:
+                                                              ignoreErrorOnParse:
                                                                 description: If set to true, Envoy will not throw an exception in case the body parsing fails.
                                                                 type: boolean
-                                                              merge_extractors_to_body:
+                                                              mergeExtractorsToBody:
                                                                 description: Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name.
                                                                 type: object
-                                                              parse_body_behavior:
+                                                              parseBodyBehavior:
                                                                 enum:
                                                                 - - ParseAsJson
                                                                   - DontParse
@@ -1861,13 +1861,13 @@ spec:
                                                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
                                                                 type: object
                                                             type: object
-                                                          xslt_transformation:
+                                                          xsltTransformation:
                                                             description: '(Enterprise Only): Xslt Transformation'
                                                             properties:
-                                                              non_xml_transform:
+                                                              nonXmlTransform:
                                                                 description: This should be set to true if the content being transformed is not XML. For example, if the content being transformed is from JSON to XML, this should be set to true. XSLT transformations can only take valid XML as input to be transformed. If the body is not a valid XML (e.g. using JSON as input in a JSON-to-XML transformation), setting `non_xml_transform` to true will allow the XSLT to accept the non-XML input without throwing an error by passing the input as XML CDATA. defaults to false.
                                                                 type: boolean
-                                                              set_content_type:
+                                                              setContentType:
                                                                 description: Changes the content-type header of the HTTP request/response to what is set here. This is useful in situations where an XSLT transformation is used to transform XML to JSON and the content-type should be changed from `application/xml` to `application/json`. If left empty, the content-type header remains unmodified by default.
                                                                 type: string
                                                               xslt:
@@ -1877,7 +1877,7 @@ spec:
                                                         type: object
                                                     type: object
                                                   type: array
-                                                response_transforms:
+                                                responseTransforms:
                                                   description: Transformations to apply on the response. This field is only consulted if there is no response transformation in the matched `request_transforms`. i.e. Only one response transformation will be executed. The first response transformation that matches will apply.
                                                   items:
                                                     properties:
@@ -1886,7 +1886,7 @@ spec:
                                                         items:
                                                           description: Internally, Gloo always uses the HTTP/2 *:authority* header to represent the HTTP/1 *Host* header. Thus, if attempting to match on *Host*, match on *:authority* instead.
                                                           properties:
-                                                            invert_match:
+                                                            invertMatch:
                                                               description: If set to true, the result of the match will be inverted. Defaults to false.
                                                               type: boolean
                                                             name:
@@ -1900,19 +1900,19 @@ spec:
                                                               type: string
                                                           type: object
                                                         type: array
-                                                      response_code_details:
+                                                      responseCodeDetails:
                                                         description: Response code detail to match on. To see the response code details for your usecase, you can use the envoy access log %RESPONSE_CODE_DETAILS% formatter to log it.
                                                         type: string
-                                                      response_transformation:
+                                                      responseTransformation:
                                                         description: Transformation to apply on the response.
                                                         properties:
-                                                          header_body_transform:
+                                                          headerBodyTransform:
                                                             description: 'This type of transformation will make all the headers available in the response body. The resulting JSON body will consist of two attributes: ''headers'', containing the headers, and ''body'', containing the original body.'
                                                             type: object
-                                                          transformation_template:
+                                                          transformationTemplate:
                                                             description: Apply transformation templates.
                                                             properties:
-                                                              advanced_templates:
+                                                              advancedTemplates:
                                                                 description: If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false.
                                                                 type: boolean
                                                               body:
@@ -1921,7 +1921,7 @@ spec:
                                                                   text:
                                                                     type: string
                                                                 type: object
-                                                              dynamic_metadata_values:
+                                                              dynamicMetadataValues:
                                                                 description: Use this field to set Dynamic Metadata.
                                                                 items:
                                                                   description: Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
@@ -1929,7 +1929,7 @@ spec:
                                                                     key:
                                                                       description: The metadata key.
                                                                       type: string
-                                                                    metadata_namespace:
+                                                                    metadataNamespace:
                                                                       description: The metadata namespace. Defaults to the filter namespace.
                                                                       type: string
                                                                     value:
@@ -1967,7 +1967,7 @@ spec:
                                                                   type: object
                                                                 description: 'Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. Any existing headers with the same header name will be replaced by the transformed header. If a header name is included in `headers` and `headers_to_append`, it will first be replaced the template in `headers`, then additional header values will be appended by the templates defined in `headers_to_append`. For example, the following header transformation configuration:'
                                                                 type: object
-                                                              headers_to_append:
+                                                              headersToAppend:
                                                                 description: Use this attribute to transform request/response headers. It consists of an array of string/template objects. Use this attribute to define multiple templates for a single header. Header template(s) defined here will be appended to any existing headers with the same header name, not replace existing ones. See `headers` documentation to see an example of usage.
                                                                 items:
                                                                   description: Defines a header-template pair to be used in `headers_to_append`
@@ -1983,13 +1983,13 @@ spec:
                                                                       type: object
                                                                   type: object
                                                                 type: array
-                                                              ignore_error_on_parse:
+                                                              ignoreErrorOnParse:
                                                                 description: If set to true, Envoy will not throw an exception in case the body parsing fails.
                                                                 type: boolean
-                                                              merge_extractors_to_body:
+                                                              mergeExtractorsToBody:
                                                                 description: Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name.
                                                                 type: object
-                                                              parse_body_behavior:
+                                                              parseBodyBehavior:
                                                                 enum:
                                                                 - - ParseAsJson
                                                                   - DontParse
@@ -1998,13 +1998,13 @@ spec:
                                                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
                                                                 type: object
                                                             type: object
-                                                          xslt_transformation:
+                                                          xsltTransformation:
                                                             description: '(Enterprise Only): Xslt Transformation'
                                                             properties:
-                                                              non_xml_transform:
+                                                              nonXmlTransform:
                                                                 description: This should be set to true if the content being transformed is not XML. For example, if the content being transformed is from JSON to XML, this should be set to true. XSLT transformations can only take valid XML as input to be transformed. If the body is not a valid XML (e.g. using JSON as input in a JSON-to-XML transformation), setting `non_xml_transform` to true will allow the XSLT to accept the non-XML input without throwing an error by passing the input as XML CDATA. defaults to false.
                                                                 type: boolean
-                                                              set_content_type:
+                                                              setContentType:
                                                                 description: Changes the content-type header of the HTTP request/response to what is set here. This is useful in situations where an XSLT transformation is used to transform XML to JSON and the content-type should be changed from `application/xml` to `application/json`. If left empty, the content-type header remains unmodified by default.
                                                                 type: string
                                                               xslt:
@@ -2015,23 +2015,23 @@ spec:
                                                     type: object
                                                   type: array
                                               type: object
-                                            inherit_transformation:
+                                            inheritTransformation:
                                               description: Inherit transformation config from parent. This has no affect on VirtualHost level transformations. If a RouteTable or Route wants to inherit transformations from it's parent RouteTable or VirtualHost, this should be set to true, else transformations from parents will not be inherited. Transformations are ordered so the child's transformation gets priority, so in the case where a child and parent's transformation matchers are the same, only the child's transformation will run because only one transformation will run per stage. Defaults to false.
                                               type: boolean
                                             regular:
                                               description: Regular transformations happen after Auth and Rate limit decisions has been made.
                                               properties:
-                                                request_transforms:
+                                                requestTransforms:
                                                   description: Transformations to apply on the request. The first request that matches will apply.
                                                   items:
                                                     properties:
-                                                      clear_route_cache:
+                                                      clearRouteCache:
                                                         description: Should we clear the route cache if a transformation was matched.
                                                         type: boolean
                                                       matcher:
                                                         description: Matches on the request properties.
                                                         properties:
-                                                          case_sensitive:
+                                                          caseSensitive:
                                                             description: Indicates that prefix/path matching should be case sensitive. The default is true.
                                                             properties:
                                                               value:
@@ -2046,7 +2046,7 @@ spec:
                                                             items:
                                                               description: Internally, Gloo always uses the HTTP/2 *:authority* header to represent the HTTP/1 *Host* header. Thus, if attempting to match on *Host*, match on *:authority* instead.
                                                               properties:
-                                                                invert_match:
+                                                                invertMatch:
                                                                   description: If set to true, the result of the match will be inverted. Defaults to false.
                                                                   type: boolean
                                                                 name:
@@ -2068,7 +2068,7 @@ spec:
                                                           prefix:
                                                             description: If specified, the route is a prefix rule meaning that the prefix must match the beginning of the *:path* header.
                                                             type: string
-                                                          query_parameters:
+                                                          queryParameters:
                                                             description: Specifies a set of URL query parameters on which the route should match. The router will check the query string from the *path* header against all the specified query parameters. If the number of specified query parameters is nonzero, they all must match the *path* header's query string for a match to occur.
                                                             items:
                                                               description: Query parameter matching treats the query string of a request's :path header as an ampersand-separated list of keys and/or key=value elements.
@@ -2088,16 +2088,16 @@ spec:
                                                             description: If specified, the route is a regular expression rule meaning that the regex must match the *:path* header once the query string is removed. The entire path (without the query string) must match the regex. The rule will not match if only a sub-sequence of the *:path* header matches the regex. The regex grammar is defined `here <http://en.cppreference.com/w/cpp/regex/ecmascript>`_.
                                                             type: string
                                                         type: object
-                                                      request_transformation:
+                                                      requestTransformation:
                                                         description: Transformation to apply on the request.
                                                         properties:
-                                                          header_body_transform:
+                                                          headerBodyTransform:
                                                             description: 'This type of transformation will make all the headers available in the response body. The resulting JSON body will consist of two attributes: ''headers'', containing the headers, and ''body'', containing the original body.'
                                                             type: object
-                                                          transformation_template:
+                                                          transformationTemplate:
                                                             description: Apply transformation templates.
                                                             properties:
-                                                              advanced_templates:
+                                                              advancedTemplates:
                                                                 description: If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false.
                                                                 type: boolean
                                                               body:
@@ -2106,7 +2106,7 @@ spec:
                                                                   text:
                                                                     type: string
                                                                 type: object
-                                                              dynamic_metadata_values:
+                                                              dynamicMetadataValues:
                                                                 description: Use this field to set Dynamic Metadata.
                                                                 items:
                                                                   description: Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
@@ -2114,7 +2114,7 @@ spec:
                                                                     key:
                                                                       description: The metadata key.
                                                                       type: string
-                                                                    metadata_namespace:
+                                                                    metadataNamespace:
                                                                       description: The metadata namespace. Defaults to the filter namespace.
                                                                       type: string
                                                                     value:
@@ -2152,7 +2152,7 @@ spec:
                                                                   type: object
                                                                 description: 'Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. Any existing headers with the same header name will be replaced by the transformed header. If a header name is included in `headers` and `headers_to_append`, it will first be replaced the template in `headers`, then additional header values will be appended by the templates defined in `headers_to_append`. For example, the following header transformation configuration:'
                                                                 type: object
-                                                              headers_to_append:
+                                                              headersToAppend:
                                                                 description: Use this attribute to transform request/response headers. It consists of an array of string/template objects. Use this attribute to define multiple templates for a single header. Header template(s) defined here will be appended to any existing headers with the same header name, not replace existing ones. See `headers` documentation to see an example of usage.
                                                                 items:
                                                                   description: Defines a header-template pair to be used in `headers_to_append`
@@ -2168,13 +2168,13 @@ spec:
                                                                       type: object
                                                                   type: object
                                                                 type: array
-                                                              ignore_error_on_parse:
+                                                              ignoreErrorOnParse:
                                                                 description: If set to true, Envoy will not throw an exception in case the body parsing fails.
                                                                 type: boolean
-                                                              merge_extractors_to_body:
+                                                              mergeExtractorsToBody:
                                                                 description: Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name.
                                                                 type: object
-                                                              parse_body_behavior:
+                                                              parseBodyBehavior:
                                                                 enum:
                                                                 - - ParseAsJson
                                                                   - DontParse
@@ -2183,13 +2183,13 @@ spec:
                                                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
                                                                 type: object
                                                             type: object
-                                                          xslt_transformation:
+                                                          xsltTransformation:
                                                             description: '(Enterprise Only): Xslt Transformation'
                                                             properties:
-                                                              non_xml_transform:
+                                                              nonXmlTransform:
                                                                 description: This should be set to true if the content being transformed is not XML. For example, if the content being transformed is from JSON to XML, this should be set to true. XSLT transformations can only take valid XML as input to be transformed. If the body is not a valid XML (e.g. using JSON as input in a JSON-to-XML transformation), setting `non_xml_transform` to true will allow the XSLT to accept the non-XML input without throwing an error by passing the input as XML CDATA. defaults to false.
                                                                 type: boolean
-                                                              set_content_type:
+                                                              setContentType:
                                                                 description: Changes the content-type header of the HTTP request/response to what is set here. This is useful in situations where an XSLT transformation is used to transform XML to JSON and the content-type should be changed from `application/xml` to `application/json`. If left empty, the content-type header remains unmodified by default.
                                                                 type: string
                                                               xslt:
@@ -2197,16 +2197,16 @@ spec:
                                                                 type: string
                                                             type: object
                                                         type: object
-                                                      response_transformation:
+                                                      responseTransformation:
                                                         description: Transformation to apply on the response.
                                                         properties:
-                                                          header_body_transform:
+                                                          headerBodyTransform:
                                                             description: 'This type of transformation will make all the headers available in the response body. The resulting JSON body will consist of two attributes: ''headers'', containing the headers, and ''body'', containing the original body.'
                                                             type: object
-                                                          transformation_template:
+                                                          transformationTemplate:
                                                             description: Apply transformation templates.
                                                             properties:
-                                                              advanced_templates:
+                                                              advancedTemplates:
                                                                 description: If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false.
                                                                 type: boolean
                                                               body:
@@ -2215,7 +2215,7 @@ spec:
                                                                   text:
                                                                     type: string
                                                                 type: object
-                                                              dynamic_metadata_values:
+                                                              dynamicMetadataValues:
                                                                 description: Use this field to set Dynamic Metadata.
                                                                 items:
                                                                   description: Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
@@ -2223,7 +2223,7 @@ spec:
                                                                     key:
                                                                       description: The metadata key.
                                                                       type: string
-                                                                    metadata_namespace:
+                                                                    metadataNamespace:
                                                                       description: The metadata namespace. Defaults to the filter namespace.
                                                                       type: string
                                                                     value:
@@ -2261,7 +2261,7 @@ spec:
                                                                   type: object
                                                                 description: 'Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. Any existing headers with the same header name will be replaced by the transformed header. If a header name is included in `headers` and `headers_to_append`, it will first be replaced the template in `headers`, then additional header values will be appended by the templates defined in `headers_to_append`. For example, the following header transformation configuration:'
                                                                 type: object
-                                                              headers_to_append:
+                                                              headersToAppend:
                                                                 description: Use this attribute to transform request/response headers. It consists of an array of string/template objects. Use this attribute to define multiple templates for a single header. Header template(s) defined here will be appended to any existing headers with the same header name, not replace existing ones. See `headers` documentation to see an example of usage.
                                                                 items:
                                                                   description: Defines a header-template pair to be used in `headers_to_append`
@@ -2277,13 +2277,13 @@ spec:
                                                                       type: object
                                                                   type: object
                                                                 type: array
-                                                              ignore_error_on_parse:
+                                                              ignoreErrorOnParse:
                                                                 description: If set to true, Envoy will not throw an exception in case the body parsing fails.
                                                                 type: boolean
-                                                              merge_extractors_to_body:
+                                                              mergeExtractorsToBody:
                                                                 description: Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name.
                                                                 type: object
-                                                              parse_body_behavior:
+                                                              parseBodyBehavior:
                                                                 enum:
                                                                 - - ParseAsJson
                                                                   - DontParse
@@ -2292,13 +2292,13 @@ spec:
                                                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
                                                                 type: object
                                                             type: object
-                                                          xslt_transformation:
+                                                          xsltTransformation:
                                                             description: '(Enterprise Only): Xslt Transformation'
                                                             properties:
-                                                              non_xml_transform:
+                                                              nonXmlTransform:
                                                                 description: This should be set to true if the content being transformed is not XML. For example, if the content being transformed is from JSON to XML, this should be set to true. XSLT transformations can only take valid XML as input to be transformed. If the body is not a valid XML (e.g. using JSON as input in a JSON-to-XML transformation), setting `non_xml_transform` to true will allow the XSLT to accept the non-XML input without throwing an error by passing the input as XML CDATA. defaults to false.
                                                                 type: boolean
-                                                              set_content_type:
+                                                              setContentType:
                                                                 description: Changes the content-type header of the HTTP request/response to what is set here. This is useful in situations where an XSLT transformation is used to transform XML to JSON and the content-type should be changed from `application/xml` to `application/json`. If left empty, the content-type header remains unmodified by default.
                                                                 type: string
                                                               xslt:
@@ -2308,7 +2308,7 @@ spec:
                                                         type: object
                                                     type: object
                                                   type: array
-                                                response_transforms:
+                                                responseTransforms:
                                                   description: Transformations to apply on the response. This field is only consulted if there is no response transformation in the matched `request_transforms`. i.e. Only one response transformation will be executed. The first response transformation that matches will apply.
                                                   items:
                                                     properties:
@@ -2317,7 +2317,7 @@ spec:
                                                         items:
                                                           description: Internally, Gloo always uses the HTTP/2 *:authority* header to represent the HTTP/1 *Host* header. Thus, if attempting to match on *Host*, match on *:authority* instead.
                                                           properties:
-                                                            invert_match:
+                                                            invertMatch:
                                                               description: If set to true, the result of the match will be inverted. Defaults to false.
                                                               type: boolean
                                                             name:
@@ -2331,19 +2331,19 @@ spec:
                                                               type: string
                                                           type: object
                                                         type: array
-                                                      response_code_details:
+                                                      responseCodeDetails:
                                                         description: Response code detail to match on. To see the response code details for your usecase, you can use the envoy access log %RESPONSE_CODE_DETAILS% formatter to log it.
                                                         type: string
-                                                      response_transformation:
+                                                      responseTransformation:
                                                         description: Transformation to apply on the response.
                                                         properties:
-                                                          header_body_transform:
+                                                          headerBodyTransform:
                                                             description: 'This type of transformation will make all the headers available in the response body. The resulting JSON body will consist of two attributes: ''headers'', containing the headers, and ''body'', containing the original body.'
                                                             type: object
-                                                          transformation_template:
+                                                          transformationTemplate:
                                                             description: Apply transformation templates.
                                                             properties:
-                                                              advanced_templates:
+                                                              advancedTemplates:
                                                                 description: If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false.
                                                                 type: boolean
                                                               body:
@@ -2352,7 +2352,7 @@ spec:
                                                                   text:
                                                                     type: string
                                                                 type: object
-                                                              dynamic_metadata_values:
+                                                              dynamicMetadataValues:
                                                                 description: Use this field to set Dynamic Metadata.
                                                                 items:
                                                                   description: Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
@@ -2360,7 +2360,7 @@ spec:
                                                                     key:
                                                                       description: The metadata key.
                                                                       type: string
-                                                                    metadata_namespace:
+                                                                    metadataNamespace:
                                                                       description: The metadata namespace. Defaults to the filter namespace.
                                                                       type: string
                                                                     value:
@@ -2398,7 +2398,7 @@ spec:
                                                                   type: object
                                                                 description: 'Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. Any existing headers with the same header name will be replaced by the transformed header. If a header name is included in `headers` and `headers_to_append`, it will first be replaced the template in `headers`, then additional header values will be appended by the templates defined in `headers_to_append`. For example, the following header transformation configuration:'
                                                                 type: object
-                                                              headers_to_append:
+                                                              headersToAppend:
                                                                 description: Use this attribute to transform request/response headers. It consists of an array of string/template objects. Use this attribute to define multiple templates for a single header. Header template(s) defined here will be appended to any existing headers with the same header name, not replace existing ones. See `headers` documentation to see an example of usage.
                                                                 items:
                                                                   description: Defines a header-template pair to be used in `headers_to_append`
@@ -2414,13 +2414,13 @@ spec:
                                                                       type: object
                                                                   type: object
                                                                 type: array
-                                                              ignore_error_on_parse:
+                                                              ignoreErrorOnParse:
                                                                 description: If set to true, Envoy will not throw an exception in case the body parsing fails.
                                                                 type: boolean
-                                                              merge_extractors_to_body:
+                                                              mergeExtractorsToBody:
                                                                 description: Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name.
                                                                 type: object
-                                                              parse_body_behavior:
+                                                              parseBodyBehavior:
                                                                 enum:
                                                                 - - ParseAsJson
                                                                   - DontParse
@@ -2429,13 +2429,13 @@ spec:
                                                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
                                                                 type: object
                                                             type: object
-                                                          xslt_transformation:
+                                                          xsltTransformation:
                                                             description: '(Enterprise Only): Xslt Transformation'
                                                             properties:
-                                                              non_xml_transform:
+                                                              nonXmlTransform:
                                                                 description: This should be set to true if the content being transformed is not XML. For example, if the content being transformed is from JSON to XML, this should be set to true. XSLT transformations can only take valid XML as input to be transformed. If the body is not a valid XML (e.g. using JSON as input in a JSON-to-XML transformation), setting `non_xml_transform` to true will allow the XSLT to accept the non-XML input without throwing an error by passing the input as XML CDATA. defaults to false.
                                                                 type: boolean
-                                                              set_content_type:
+                                                              setContentType:
                                                                 description: Changes the content-type header of the HTTP request/response to what is set here. This is useful in situations where an XSLT transformation is used to transform XML to JSON and the content-type should be changed from `application/xml` to `application/json`. If left empty, the content-type header remains unmodified by default.
                                                                 type: string
                                                               xslt:
@@ -2450,19 +2450,19 @@ spec:
                                         transformations:
                                           description: 'Transformations to apply. Note: this field is superseded by `staged_transformations`. If `staged_transformations.regular` is set, this field will be ignored.'
                                           properties:
-                                            clear_route_cache:
+                                            clearRouteCache:
                                               description: Clear the route cache if the request transformation was applied.
                                               type: boolean
-                                            request_transformation:
+                                            requestTransformation:
                                               description: Apply a transformation to requests.
                                               properties:
-                                                header_body_transform:
+                                                headerBodyTransform:
                                                   description: 'This type of transformation will make all the headers available in the response body. The resulting JSON body will consist of two attributes: ''headers'', containing the headers, and ''body'', containing the original body.'
                                                   type: object
-                                                transformation_template:
+                                                transformationTemplate:
                                                   description: Apply transformation templates.
                                                   properties:
-                                                    advanced_templates:
+                                                    advancedTemplates:
                                                       description: If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false.
                                                       type: boolean
                                                     body:
@@ -2471,7 +2471,7 @@ spec:
                                                         text:
                                                           type: string
                                                       type: object
-                                                    dynamic_metadata_values:
+                                                    dynamicMetadataValues:
                                                       description: Use this field to set Dynamic Metadata.
                                                       items:
                                                         description: Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
@@ -2479,7 +2479,7 @@ spec:
                                                           key:
                                                             description: The metadata key.
                                                             type: string
-                                                          metadata_namespace:
+                                                          metadataNamespace:
                                                             description: The metadata namespace. Defaults to the filter namespace.
                                                             type: string
                                                           value:
@@ -2517,7 +2517,7 @@ spec:
                                                         type: object
                                                       description: 'Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. Any existing headers with the same header name will be replaced by the transformed header. If a header name is included in `headers` and `headers_to_append`, it will first be replaced the template in `headers`, then additional header values will be appended by the templates defined in `headers_to_append`. For example, the following header transformation configuration:'
                                                       type: object
-                                                    headers_to_append:
+                                                    headersToAppend:
                                                       description: Use this attribute to transform request/response headers. It consists of an array of string/template objects. Use this attribute to define multiple templates for a single header. Header template(s) defined here will be appended to any existing headers with the same header name, not replace existing ones. See `headers` documentation to see an example of usage.
                                                       items:
                                                         description: Defines a header-template pair to be used in `headers_to_append`
@@ -2533,13 +2533,13 @@ spec:
                                                             type: object
                                                         type: object
                                                       type: array
-                                                    ignore_error_on_parse:
+                                                    ignoreErrorOnParse:
                                                       description: If set to true, Envoy will not throw an exception in case the body parsing fails.
                                                       type: boolean
-                                                    merge_extractors_to_body:
+                                                    mergeExtractorsToBody:
                                                       description: Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name.
                                                       type: object
-                                                    parse_body_behavior:
+                                                    parseBodyBehavior:
                                                       enum:
                                                       - - ParseAsJson
                                                         - DontParse
@@ -2548,13 +2548,13 @@ spec:
                                                       description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
                                                       type: object
                                                   type: object
-                                                xslt_transformation:
+                                                xsltTransformation:
                                                   description: '(Enterprise Only): Xslt Transformation'
                                                   properties:
-                                                    non_xml_transform:
+                                                    nonXmlTransform:
                                                       description: This should be set to true if the content being transformed is not XML. For example, if the content being transformed is from JSON to XML, this should be set to true. XSLT transformations can only take valid XML as input to be transformed. If the body is not a valid XML (e.g. using JSON as input in a JSON-to-XML transformation), setting `non_xml_transform` to true will allow the XSLT to accept the non-XML input without throwing an error by passing the input as XML CDATA. defaults to false.
                                                       type: boolean
-                                                    set_content_type:
+                                                    setContentType:
                                                       description: Changes the content-type header of the HTTP request/response to what is set here. This is useful in situations where an XSLT transformation is used to transform XML to JSON and the content-type should be changed from `application/xml` to `application/json`. If left empty, the content-type header remains unmodified by default.
                                                       type: string
                                                     xslt:
@@ -2562,16 +2562,16 @@ spec:
                                                       type: string
                                                   type: object
                                               type: object
-                                            response_transformation:
+                                            responseTransformation:
                                               description: Apply a transformation to responses.
                                               properties:
-                                                header_body_transform:
+                                                headerBodyTransform:
                                                   description: 'This type of transformation will make all the headers available in the response body. The resulting JSON body will consist of two attributes: ''headers'', containing the headers, and ''body'', containing the original body.'
                                                   type: object
-                                                transformation_template:
+                                                transformationTemplate:
                                                   description: Apply transformation templates.
                                                   properties:
-                                                    advanced_templates:
+                                                    advancedTemplates:
                                                       description: If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false.
                                                       type: boolean
                                                     body:
@@ -2580,7 +2580,7 @@ spec:
                                                         text:
                                                           type: string
                                                       type: object
-                                                    dynamic_metadata_values:
+                                                    dynamicMetadataValues:
                                                       description: Use this field to set Dynamic Metadata.
                                                       items:
                                                         description: Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
@@ -2588,7 +2588,7 @@ spec:
                                                           key:
                                                             description: The metadata key.
                                                             type: string
-                                                          metadata_namespace:
+                                                          metadataNamespace:
                                                             description: The metadata namespace. Defaults to the filter namespace.
                                                             type: string
                                                           value:
@@ -2626,7 +2626,7 @@ spec:
                                                         type: object
                                                       description: 'Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. Any existing headers with the same header name will be replaced by the transformed header. If a header name is included in `headers` and `headers_to_append`, it will first be replaced the template in `headers`, then additional header values will be appended by the templates defined in `headers_to_append`. For example, the following header transformation configuration:'
                                                       type: object
-                                                    headers_to_append:
+                                                    headersToAppend:
                                                       description: Use this attribute to transform request/response headers. It consists of an array of string/template objects. Use this attribute to define multiple templates for a single header. Header template(s) defined here will be appended to any existing headers with the same header name, not replace existing ones. See `headers` documentation to see an example of usage.
                                                       items:
                                                         description: Defines a header-template pair to be used in `headers_to_append`
@@ -2642,13 +2642,13 @@ spec:
                                                             type: object
                                                         type: object
                                                       type: array
-                                                    ignore_error_on_parse:
+                                                    ignoreErrorOnParse:
                                                       description: If set to true, Envoy will not throw an exception in case the body parsing fails.
                                                       type: boolean
-                                                    merge_extractors_to_body:
+                                                    mergeExtractorsToBody:
                                                       description: Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name.
                                                       type: object
-                                                    parse_body_behavior:
+                                                    parseBodyBehavior:
                                                       enum:
                                                       - - ParseAsJson
                                                         - DontParse
@@ -2657,13 +2657,13 @@ spec:
                                                       description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
                                                       type: object
                                                   type: object
-                                                xslt_transformation:
+                                                xsltTransformation:
                                                   description: '(Enterprise Only): Xslt Transformation'
                                                   properties:
-                                                    non_xml_transform:
+                                                    nonXmlTransform:
                                                       description: This should be set to true if the content being transformed is not XML. For example, if the content being transformed is from JSON to XML, this should be set to true. XSLT transformations can only take valid XML as input to be transformed. If the body is not a valid XML (e.g. using JSON as input in a JSON-to-XML transformation), setting `non_xml_transform` to true will allow the XSLT to accept the non-XML input without throwing an error by passing the input as XML CDATA. defaults to false.
                                                       type: boolean
-                                                    set_content_type:
+                                                    setContentType:
                                                       description: Changes the content-type header of the HTTP request/response to what is set here. This is useful in situations where an XSLT transformation is used to transform XML to JSON and the content-type should be changed from `application/xml` to `application/json`. If left empty, the content-type header remains unmodified by default.
                                                       type: string
                                                     xslt:
@@ -2686,12 +2686,12 @@ spec:
                               consul:
                                 description: Route requests to a consul service
                                 properties:
-                                  data_centers:
+                                  dataCenters:
                                     description: If provided, load balance traffic only between services running in the given [data centers](https://www.consul.io/docs/internals/architecture.html).
                                     items:
                                       type: string
                                     type: array
-                                  service_name:
+                                  serviceName:
                                     description: The name of the target service. This field is required.
                                     type: string
                                   tags:
@@ -2700,27 +2700,27 @@ spec:
                                       type: string
                                     type: array
                                 type: object
-                              destination_spec:
+                              destinationSpec:
                                 description: Some upstreams utilize options which require or permit additional configuration on routes targeting them. gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the destination config. If the destination config is required for the upstream and not provided by the user, Gloo will invalidate the destination and its parent resources.
                                 properties:
                                   aws:
                                     properties:
-                                      invocation_style:
+                                      invocationStyle:
                                         description: Can be either Sync or Async.
                                         enum:
                                         - - SYNC
                                           - ASYNC
                                         type: string
-                                      logical_name:
+                                      logicalName:
                                         description: The Logical Name of the LambdaFunctionSpec to be invoked.
                                         type: string
-                                      response_transformation:
+                                      responseTransformation:
                                         description: de-jsonify response bodies returned from aws lambda
                                         type: boolean
                                     type: object
                                   azure:
                                     properties:
-                                      function_name:
+                                      functionName:
                                         description: The Function Name of the FunctionSpec to be invoked.
                                         type: string
                                     type: object
@@ -2754,7 +2754,7 @@ spec:
                                     type: object
                                   rest:
                                     properties:
-                                      function_name:
+                                      functionName:
                                         type: string
                                       parameters:
                                         properties:
@@ -2771,9 +2771,9 @@ spec:
                                                 type: string
                                             type: object
                                         type: object
-                                      response_transformation:
+                                      responseTransformation:
                                         properties:
-                                          advanced_templates:
+                                          advancedTemplates:
                                             description: If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to access JSON elements. Defaults to false.
                                             type: boolean
                                           body:
@@ -2782,7 +2782,7 @@ spec:
                                               text:
                                                 type: string
                                             type: object
-                                          dynamic_metadata_values:
+                                          dynamicMetadataValues:
                                             description: Use this field to set Dynamic Metadata.
                                             items:
                                               description: Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
@@ -2790,7 +2790,7 @@ spec:
                                                 key:
                                                   description: The metadata key.
                                                   type: string
-                                                metadata_namespace:
+                                                metadataNamespace:
                                                   description: The metadata namespace. Defaults to the filter namespace.
                                                   type: string
                                                 value:
@@ -2828,7 +2828,7 @@ spec:
                                               type: object
                                             description: 'Use this attribute to transform request/response headers. It consists of a map of strings to templates. The string key determines the name of the resulting header, the rendered template will determine the value. Any existing headers with the same header name will be replaced by the transformed header. If a header name is included in `headers` and `headers_to_append`, it will first be replaced the template in `headers`, then additional header values will be appended by the templates defined in `headers_to_append`. For example, the following header transformation configuration:'
                                             type: object
-                                          headers_to_append:
+                                          headersToAppend:
                                             description: Use this attribute to transform request/response headers. It consists of an array of string/template objects. Use this attribute to define multiple templates for a single header. Header template(s) defined here will be appended to any existing headers with the same header name, not replace existing ones. See `headers` documentation to see an example of usage.
                                             items:
                                               description: Defines a header-template pair to be used in `headers_to_append`
@@ -2844,13 +2844,13 @@ spec:
                                                   type: object
                                               type: object
                                             type: array
-                                          ignore_error_on_parse:
+                                          ignoreErrorOnParse:
                                             description: If set to true, Envoy will not throw an exception in case the body parsing fails.
                                             type: boolean
-                                          merge_extractors_to_body:
+                                          mergeExtractorsToBody:
                                             description: Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name.
                                             type: object
-                                          parse_body_behavior:
+                                          parseBodyBehavior:
                                             enum:
                                             - - ParseAsJson
                                               - DontParse
@@ -2894,7 +2894,7 @@ spec:
                                     type: string
                                 type: object
                             type: object
-                          upstream_group:
+                          upstreamGroup:
                             description: Use a reference to an upstream group for routing.
                             properties:
                               name:
@@ -2906,28 +2906,28 @@ spec:
                       name:
                         description: the logical name of the tcp host. names must be unique for each tcp host within a listener
                         type: string
-                      ssl_config:
+                      sslConfig:
                         description: If provided, the Gateway will serve TLS/SSL traffic for this set of routes
                         properties:
-                          alpn_protocols:
+                          alpnProtocols:
                             description: Set Application Level Protocol Negotiation If empty, defaults to ["h2", "http/1.1"].
                             items:
                               type: string
                             type: array
-                          one_way_tls:
+                          oneWayTls:
                             description: If the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default. Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA. Defaults to false.
                             type: boolean
                           parameters:
                             properties:
-                              cipher_suites:
+                              cipherSuites:
                                 items:
                                   type: string
                                 type: array
-                              ecdh_curves:
+                              ecdhCurves:
                                 items:
                                   type: string
                                 type: array
-                              maximum_protocol_version:
+                              maximumProtocolVersion:
                                 enum:
                                 - - TLS_AUTO
                                   - TLSv1_0
@@ -2935,7 +2935,7 @@ spec:
                                   - TLSv1_2
                                   - TLSv1_3
                                 type: string
-                              minimum_protocol_version:
+                              minimumProtocolVersion:
                                 enum:
                                 - - TLS_AUTO
                                   - TLSv1_0
@@ -2947,34 +2947,34 @@ spec:
                           sds:
                             description: Use secret discovery service.
                             properties:
-                              call_credentials:
+                              callCredentials:
                                 description: Call credentials.
                                 properties:
-                                  file_credential_source:
+                                  fileCredentialSource:
                                     description: Call credentials are coming from a file,
                                     properties:
                                       header:
                                         description: Header to carry the token.
                                         type: string
-                                      token_file_name:
+                                      tokenFileName:
                                         description: File containing auth token.
                                         type: string
                                     type: object
                                 type: object
-                              certificates_secret_name:
+                              certificatesSecretName:
                                 description: The name of the secret containing the certificate
                                 type: string
-                              cluster_name:
+                              clusterName:
                                 description: The name of the sds cluster in envoy
                                 type: string
-                              target_uri:
+                              targetUri:
                                 description: Target uri for the sds channel. currently only a unix domain socket is supported.
                                 type: string
-                              validation_context_name:
+                              validationContextName:
                                 description: The name of secret containing the validation context (i.e. root ca)
                                 type: string
                             type: object
-                          secret_ref:
+                          secretRef:
                             description: SecretRef contains the secret ref to a gloo tls secret or a kubernetes tls secret. gloo tls secret can contain a root ca as well if verification is needed.
                             properties:
                               name:
@@ -2982,23 +2982,23 @@ spec:
                               namespace:
                                 type: string
                             type: object
-                          sni_domains:
+                          sniDomains:
                             description: optional. the SNI domains that should be considered for TLS connections
                             items:
                               type: string
                             type: array
-                          ssl_files:
+                          sslFiles:
                             description: SSLFiles reference paths to certificates which are local to the proxy
                             properties:
-                              root_ca:
+                              rootCa:
                                 description: for client cert validation. optional
                                 type: string
-                              tls_cert:
+                              tlsCert:
                                 type: string
-                              tls_key:
+                              tlsKey:
                                 type: string
                             type: object
-                          verify_subject_alt_name:
+                          verifySubjectAltName:
                             description: Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used.
                             items:
                               type: string
@@ -3007,7 +3007,7 @@ spec:
                     type: object
                   type: array
               type: object
-            use_proxy_proto:
+            useProxyProto:
               description: Enable ProxyProtocol support for this listener
               properties:
                 value:
