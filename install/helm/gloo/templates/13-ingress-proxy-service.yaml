@@ -1,3 +1,4 @@
+{{- define "ingressProxy.serviceSpec" }}
 {{- if .Values.ingress.enabled }}
 apiVersion: v1
 kind: Service
@@ -31,4 +32,14 @@ spec:
   {{- if and (eq .Values.ingressProxy.service.type "LoadBalancer") .Values.ingressProxy.service.loadBalancerIP }}
   loadBalancerIP: {{ .Values.ingressProxy.service.loadBalancerIP }}
   {{- end }}
-{{- end }}
+{{- end }} {{/* if .Values.ingress.enabled */}}
+{{- end }} {{/* define ingressProxy.serviceSpec */}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.ingressProxy -}}
+{{- if .Values.ingressProxy.service -}}
+{{- $kubeResourceOverride = .Values.ingressProxy.service.kubeResourceOverride  -}}
+{{- end -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "ingressProxy.serviceSpec") -}}

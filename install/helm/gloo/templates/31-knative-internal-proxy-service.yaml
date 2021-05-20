@@ -1,3 +1,4 @@
+{{- define "knativeInternalProxy.serviceSpec"}}
 {{- if .Values.settings.integrations.knative.enabled }}
 {{- if (semverCompare ">= 0.8.0" .Values.settings.integrations.knative.version ) }}
 apiVersion: v1
@@ -22,4 +23,16 @@ spec:
     gloo: knative-internal-proxy
   type: ClusterIP
 {{- end }}
-{{- end }}
+{{- end }} {{/* if .Values.settings.integrations.knative.enabled */}}
+{{- end }} {{/*define "knativeInternalProxy.serviceSpec"*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.settings.integrations.knative.proxy -}}
+{{- if .Values.settings.integrations.knative.proxy.internal -}}
+{{- if .Values.settings.integrations.knative.proxy.internal.service -}}
+{{- $kubeResourceOverride = .Values.settings.integrations.knative.proxy.internal.service.kubeResourceOverride  -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "knativeInternalProxy.serviceSpec") -}}

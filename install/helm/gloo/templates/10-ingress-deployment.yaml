@@ -1,3 +1,4 @@
+{{- define "ingress.deploymentSpec"}}
 {{- if or (.Values.ingress.enabled) (.Values.settings.integrations.knative.enabled) }}
 {{- $image := .Values.ingress.deployment.image }}
 {{- if .Values.global  }}
@@ -82,6 +83,15 @@ spec:
           value: "{{ .Values.ingress.customIngressClass }}"
   {{- end }}
 {{- end }}
+{{- end }} {{/* if or (.Values.ingress.enabled) (.Values.settings.integrations.knative.enabled) */}}
+{{- end }} {{/* define "ingress.deploymentSpec" */}}
 
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.ingress.deployment -}}
+{{- if .Values.ingress.deployment.kubeResourceOverride -}}
+{{- $kubeResourceOverride = .Values.ingress.deployment.kubeResourceOverride  -}}
+{{- end -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "ingress.deploymentSpec") -}}
 
-{{- end }}

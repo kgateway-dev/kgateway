@@ -1,3 +1,4 @@
+{{- define "accessLogger.deploymentSpec"}}
 {{- if and .Values.gateway.enabled .Values.accessLogger.enabled }}
 {{- $image := .Values.accessLogger.image }}
 {{- $statsConfig := coalesce .Values.accessLogger.stats .Values.global.glooStats -}}
@@ -82,4 +83,12 @@ spec:
           - containerPort: {{ .Values.accessLogger.port }}
             name: http
             protocol: TCP
-{{- end }}
+{{- end }} {{/* if and .Values.gateway.enabled .Values.accessLogger.enabled */}}
+{{- end }} {{/* define "accessLogger.deploymentSpec" */}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict  -}}
+{{- if .Values.accessLogger.deployment -}}
+{{- $kubeResourceOverride = .Values.accessLogger.deployment.kubeResourceOverride  -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "accessLogger.deploymentSpec") -}}

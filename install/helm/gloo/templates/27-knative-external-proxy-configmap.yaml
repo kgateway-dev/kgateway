@@ -1,3 +1,4 @@
+{{- define "knativeExternalProxy.configMapSpec"}}
 {{- if .Values.settings.integrations.knative.enabled }}
 {{- if (semverCompare ">= 0.8.0" .Values.settings.integrations.knative.version ) }}
 
@@ -131,5 +132,15 @@ data:
         socket_address:
           address: {{ .Values.settings.integrations.knative.proxy.loopBackAddress }}
           port_value: 19000
+{{- end }} {{/* if (semverCompare ">= 0.8.0" .Values.settings.integrations.knative.version ) */}}
+{{- end }} {{/* .Values.settings.integrations.knative.enabled */}}
+{{- end }} {{/*define "knativeExternalProxy.configMapSpec"*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.settings.integrations.knative.proxy -}}
+{{- if .Values.settings.integrations.knative.proxy.configMap -}}
+{{- $kubeResourceOverride = .Values.settings.integrations.knative.proxy.configMap.kubeResourceOverride  -}}
+{{- end }} {{/* if .Values.settings.integrations.knative.configMap */}}
 {{- end }}
-{{- end }}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "knativeExternalProxy.configMapSpec") -}}

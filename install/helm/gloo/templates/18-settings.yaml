@@ -1,3 +1,4 @@
+{{- define "settings.settingsSpec"}}
 {{ if .Values.settings.create }}
 
 apiVersion: gloo.solo.io/v1
@@ -80,7 +81,7 @@ spec:
     readGatewaysFromAllNamespaces: {{ .Values.gateway.readGatewaysFromAllNamespaces }}
 {{- if .Values.gateway.validation.enabled }}
     validation:
-      proxyValidationServerAddr: gloo:{{ .Values.gloo.deployment.validationPort }}
+      proxyValidationServerAddr: "gloo:{{ .Values.gloo.deployment.validationPort }}"
 {{- /* need to do this weird if/else because Helm cannot differentiate between 'false' and 'unset' */}}
       alwaysAccept: {{ .Values.gateway.validation.alwaysAcceptResources }}
       allowWarnings: {{ .Values.gateway.validation.allowWarnings }}
@@ -129,4 +130,13 @@ spec:
 {{- end }}
 {{- end }}
 
-{{- end }}
+{{- end }} {{/* if .Values.settings.create  */}}
+{{- end }} {{/* define "settings.settingsSpec" */}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.settings -}}
+{{- $kubeResourceOverride = .Values.settings.kubeResourceOverride  -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "settings.settingsSpec") -}}
+

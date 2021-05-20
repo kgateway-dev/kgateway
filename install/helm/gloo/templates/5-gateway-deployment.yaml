@@ -1,3 +1,4 @@
+{{- define "gateway.deploymentSpec"}}
 {{- $image := .Values.gateway.deployment.image }}
 {{- $statsConfig := coalesce .Values.gateway.deployment.stats .Values.global.glooStats -}}
 {{- if .Values.global  }}
@@ -106,5 +107,13 @@ spec:
           secret:
             defaultMode: 420
             secretName: {{ .Values.gateway.validation.secretName }}
-{{- end}}
-{{- end }}
+{{- end}} {{/* if .Values.gateway.validation.enabled */}}
+{{- end }} {{/* if .Values.gateway.enabled */}}
+{{- end }} {{/* define "gateway.deploymentSpec" */}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.gateway.deployment -}}
+{{- $kubeResourceOverride = .Values.gateway.deployment.kubeResourceOverride  -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "gateway.deploymentSpec") -}}

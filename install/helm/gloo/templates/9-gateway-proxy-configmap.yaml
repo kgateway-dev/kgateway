@@ -1,20 +1,21 @@
 {{- if .Values.gateway.updateValues -}}
 {{- include "gloo.updatevalues" . -}}
 {{- end -}}
-{{- if .Values.gateway.enabled }}
+{{- define "gatewayProxy.configMapSpec" }}
+{{- $name := (index . 1) }}
+{{- $gatewaySpec := (index . 2) }}
+{{- with (first .) }}
 {{- $global := .Values.global }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
-{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{- if not $spec.disabled }}
 {{- $statsConfig := coalesce $spec.stats $global.glooStats }}
----
 # config_map
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ $name | kebabcase }}-envoy-config
-  namespace: {{ $.Release.Namespace }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: gloo
     gloo: gateway-proxy
@@ -132,18 +133,18 @@ data:
                       - name: envoy.filters.http.router
 {{- end}} {{- /* if $spec.readConfig */}}
       clusters:
-      - name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:{{ $.Values.gloo.deployment.xdsPort }}
+      - name: gloo.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}:{{ .Values.gloo.deployment.xdsPort }}
         alt_stat_name: xds_cluster
         connect_timeout: 5.000s
         load_assignment:
-          cluster_name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:{{ $.Values.gloo.deployment.xdsPort }}
+          cluster_name: gloo.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}:{{ .Values.gloo.deployment.xdsPort }}
           endpoints:
           - lb_endpoints:
             - endpoint:
                 address:
                   socket_address:
-                    address: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}
-                    port_value: {{ $.Values.gloo.deployment.xdsPort }}
+                    address: gloo.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}
+                    port_value: {{ .Values.gloo.deployment.xdsPort }}
         http2_protocol_options: {}
         upstream_connection_options:
           tcp_keepalive: {}
@@ -190,7 +191,7 @@ data:
                     address: 127.0.0.1
                     port_value: 8234
 {{- end }}
-{{- if $.Values.settings.enableRestEds }}
+{{- if .Values.settings.enableRestEds }}
       - name: rest_xds_cluster
         alt_stat_name: rest_xds_cluster
         connect_timeout: 5.000s
@@ -201,8 +202,8 @@ data:
             - endpoint:
                 address:
                   socket_address:
-                    address: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}
-                    port_value: {{ $.Values.gloo.deployment.restXdsPort }}
+                    address: gloo.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}
+                    port_value: {{ .Values.gloo.deployment.restXdsPort }}
         upstream_connection_options:
           tcp_keepalive: {}
         type: STRICT_DNS
@@ -244,13 +245,13 @@ data:
             - endpoint:
                 address:
                   socket_address:
-                    address: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}
+                    address: gloo.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}
                     port_value: 9979
         upstream_connection_options:
           tcp_keepalive: {}
         type: STRICT_DNS
         respect_dns_ttl: true
-{{- if $.Values.accessLogger.enabled }}
+{{- if .Values.accessLogger.enabled }}
       - name: access_log_cluster
         connect_timeout: 5.000s
         load_assignment:
@@ -260,8 +261,8 @@ data:
               - endpoint:
                     address:
                         socket_address:
-                            address: gateway-proxy-access-logger.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}
-                            port_value: {{$.Values.accessLogger.port}}
+                            address: gateway-proxy-access-logger.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}
+                            port_value: {{.Values.accessLogger.port}}
         http2_protocol_options: {}
         type: STRICT_DNS
 {{- end}} {{- /* if .Values.accessLogger.enabled */}}
@@ -271,7 +272,7 @@ data:
 {{- end}} {{- /* if $spec.tracing.cluster */}}
 {{- end}} {{- /* if $spec.tracing */}}
 
-{{- if $.Values.settings.aws.enableServiceAccountCredentials }}
+{{- if .Values.settings.aws.enableServiceAccountCredentials }}
       - name: aws_sts_cluster
         connect_timeout: 5.000s
         type: LOGICAL_DNS
@@ -280,10 +281,10 @@ data:
           name: envoy.transport_sockets.tls
           typed_config:
             "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-{{- if not $.Values.settings.aws.stsCredentialsRegion }}
+{{- if not .Values.settings.aws.stsCredentialsRegion }}
             sni: sts.amazonaws.com
 {{- else }}
-            sni: sts.{{ $.Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
+            sni: sts.{{ .Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
 {{- end }}
         load_assignment:
           cluster_name: aws_sts_cluster
@@ -293,10 +294,10 @@ data:
                 address:
                   socket_address:
                     port_value: 443
-{{- if not $.Values.settings.aws.stsCredentialsRegion }}
+{{- if not .Values.settings.aws.stsCredentialsRegion }}
                     address: sts.amazonaws.com
 {{- else }}
-                    address: sts.{{ $.Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
+                    address: sts.{{ .Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
 {{- end }}
 {{- end}} {{- /* if $.Values.settings.aws.enableServiceAccountCredentials */}}
 
@@ -325,7 +326,7 @@ data:
         api_type: GRPC
         rate_limit_settings: {}
         grpc_services:
-        - envoy_grpc: {cluster_name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:{{ $.Values.gloo.deployment.xdsPort }}}
+        - envoy_grpc: {cluster_name: gloo.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}:{{ .Values.gloo.deployment.xdsPort }}}
       cds_config:
         resource_api_version: {{ $spec.envoyApiVersion }}
         ads: {}
@@ -342,7 +343,22 @@ data:
         socket_address:
           address: {{ $spec.loopBackAddress }}
           port_value: 19000
-{{- else}}{{ toYaml $spec.configMap.data | indent 2}}{{- end}} {{/* if (empty $spec.configMap.data) ## allows full custom */}}
-{{- end }} {{/* - if not $spec.disabled */}}
-{{- end }} {{/* range $name, $spec := .Values.gatewayProxies */}}
-{{- end -}} {{/* if .Values.gateway.enabled */}}
+{{- else}}{{ toYaml $spec.configMap.data | indent 2}}
+{{- end }} {{/* if (empty $spec.configMap.data) ## allows full custom */}}
+{{- end }} {{/* if not $spec.disabled */}}
+{{- end }} {{/* with */}}
+
+{{- end }} {{/* define gatewayProxy.configMapSpec*/}}
+
+{{- if .Values.gateway.enabled }}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{/* Render each gatewayProxy template with it's yaml overrides */}}
+---
+{{- $kubeResourceOverride := dict -}}
+{{- if $gatewaySpec.configMap -}}
+{{- $kubeResourceOverride = $gatewaySpec.configMap.kubeResourceOverride -}}
+{{- end -}} {{/* if $gatewaySpec.configMap */}}
+{{- $ctx := (list $ $name $gatewaySpec)}}
+{{- include "gloo.util.merge" (list $ctx $kubeResourceOverride "gatewayProxy.configMapSpec") -}}
+{{- end }}{{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}
+{{- end }}{{/* if .Values.gateway.enabled */}}
