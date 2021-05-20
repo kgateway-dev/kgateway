@@ -26,11 +26,8 @@ spec:
           properties:
             booleanExpr:
               description: 'How to handle processing of named configs within an auth config chain. An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )` The boolean expression is evaluated left to right but honors parenthesis and short-circuiting.'
-              properties:
-                value:
-                  description: The string value.
-                  type: string
-              type: object
+              nullable: true
+              type: string
             configs:
               description: List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below.
               items:
@@ -88,6 +85,7 @@ spec:
                     type: object
                   jwt:
                     description: This is a "dummy" extauth service which can be used to support multiple auth mechanisms with JWT authentication. If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config. In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
+                    maxProperties: 0
                     type: object
                   ldap:
                     properties:
@@ -107,20 +105,16 @@ spec:
                         properties:
                           initialSize:
                             description: Number of connections that the pool will be pre-populated with upon initialization. The default value is 2.
-                            properties:
-                              value:
-                                description: The uint32 value.
-                                format: int32
-                                type: integer
-                            type: object
+                            maximum: 4294967295
+                            minimum: 0
+                            nullable: true
+                            type: integer
                           maxSize:
                             description: Maximum number connections that are pooled at any give time. The default value is 5.
-                            properties:
-                              value:
-                                description: The uint32 value.
-                                format: int32
-                                type: integer
-                            type: object
+                            maximum: 4294967295
+                            minimum: 0
+                            nullable: true
+                            type: integer
                         type: object
                       userDnTemplate:
                         description: Template to build user entry distinguished names (DN). This must contains a single occurrence of the "%s" placeholder. When processing a request, Gloo will substitute the name of the user (extracted from the auth header) for the placeholder and issue a search request with the resulting DN as baseDN (and 'base' search scope). E.g. "uid=%s,ou=people,dc=solo,dc=io"
@@ -128,11 +122,8 @@ spec:
                     type: object
                   name:
                     description: 'optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used in logging. If omitted, an automatically generated name will be used (e.g. config_0, of the pattern ''config_$INDEX_IN_CHAIN''). In the case of plugin auth, this field is ignored in favor of the name assigned on the plugin config itself.'
-                    properties:
-                      value:
-                        description: The string value.
-                        type: string
-                    type: object
+                    nullable: true
+                    type: string
                   oauth:
                     properties:
                       appUrl:
@@ -173,16 +164,7 @@ spec:
                         properties:
                           cacheTimeout:
                             description: How long the token introspection and userinfo endpoint response for a specific access token should be kept in the in-memory cache. The result will be invalidated at this timeout, or at "exp" time from the introspection result, whichever comes sooner. If omitted, defaults to 10 minutes. If zero, then no caching will be done.
-                            properties:
-                              nanos:
-                                description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                                format: int32
-                                type: integer
-                              seconds:
-                                description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                                format: int64
-                                type: integer
-                            type: object
+                            type: string
                           introspection:
                             description: Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) specification.
                             properties:
@@ -225,16 +207,7 @@ spec:
                                 properties:
                                   refreshInterval:
                                     description: The frequency at which the JWKS should be refreshed. If not specified, the default value is 5 minutes.
-                                    properties:
-                                      nanos:
-                                        description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                                        format: int32
-                                        type: integer
-                                      seconds:
-                                        description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                                        format: int64
-                                        type: integer
-                                    type: object
+                                    type: string
                                   url:
                                     description: The HTTP URI to fetch the JWKS.
                                     type: string
@@ -322,16 +295,7 @@ spec:
                             type: object
                           discoveryPollInterval:
                             description: The interval at which OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration If not specified, the default value is 30 minutes.
-                            properties:
-                              nanos:
-                                description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                                format: int32
-                                type: integer
-                              seconds:
-                                description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                                format: int64
-                                type: integer
-                            type: object
+                            type: string
                           headers:
                             description: Configures headers added to requests.
                             properties:
@@ -350,6 +314,7 @@ spec:
                             properties:
                               always:
                                 description: 'If a key is not in the cache, fetch the most recent keys from the IdP and update the cache. NOTE: This should only be done in trusted environments, since missing keys will each trigger a request to the IdP. Using this in an environment exposed to the internet will allow malicious agents to execute a DDoS attack by spamming protected endpoints with tokens signed by invalid keys.'
+                                maxProperties: 0
                                 type: object
                               maxIdpReqPerPollingInterval:
                                 description: If a key is not in the cache, fetch the most recent keys from the IdP and update the cache. This value sets the number of requests to the IdP per polling interval. If that limit is exceeded, we will stop fetching from the IdP for the remainder of the polling interval.
@@ -357,6 +322,7 @@ spec:
                                 type: integer
                               never:
                                 description: Never refresh the local JWKS cache on demand. If a key is not in the cache, it is assumed to be malicious. This is the default policy since we assume that IdPs publish keys before they rotate them, and frequent polling finds the newest keys.
+                                maxProperties: 0
                                 type: object
                             type: object
                           logoutPath:
@@ -381,22 +347,17 @@ spec:
                                     type: string
                                   maxAge:
                                     description: Max age for the cookie. Leave unset for a default of 30 days (2592000 seconds). To disable cookie expiry, set explicitly to 0.
-                                    properties:
-                                      value:
-                                        description: The uint32 value.
-                                        format: int32
-                                        type: integer
-                                    type: object
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    nullable: true
+                                    type: integer
                                   notSecure:
                                     description: Use a non-secure cookie. Note - this should only be used for testing and in trusted environments.
                                     type: boolean
                                   path:
                                     description: Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a path.
-                                    properties:
-                                      value:
-                                        description: The string value.
-                                        type: string
-                                    type: object
+                                    nullable: true
+                                    type: string
                                 type: object
                               failOnFetchFailure:
                                 description: should we fail auth flow when failing to get a session from redis, or allow it to continue, potentially starting a new auth flow and setting a new session.
@@ -406,11 +367,8 @@ spec:
                                 properties:
                                   allowRefreshing:
                                     description: When set, refresh expired id-tokens using the refresh-token. Defaults to true. Explicitly set to false to disable refreshing.
-                                    properties:
-                                      value:
-                                        description: The bool value.
-                                        type: boolean
-                                    type: object
+                                    nullable: true
+                                    type: boolean
                                   cookieName:
                                     description: Cookie name to set and store the session id. If empty the default "__session" is used.
                                     type: string
@@ -471,16 +429,7 @@ spec:
                             type: string
                           connectionTimeout:
                             description: Timeout for the auth server to respond. Defaults to 5s
-                            properties:
-                              nanos:
-                                description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                                format: int32
-                                type: integer
-                              seconds:
-                                description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                                format: int64
-                                type: integer
-                            type: object
+                            type: string
                         type: object
                     type: object
                   pluginAuth:

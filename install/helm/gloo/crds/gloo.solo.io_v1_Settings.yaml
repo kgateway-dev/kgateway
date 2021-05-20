@@ -48,26 +48,14 @@ spec:
                   type: string
                 dnsPollingInterval:
                   description: The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s.
-                  properties:
-                    nanos:
-                      description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                      format: int32
-                      type: integer
-                    seconds:
-                      description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                      format: int64
-                      type: integer
-                  type: object
+                  type: string
                 httpAddress:
                   description: The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
                   type: string
                 insecureSkipVerify:
                   description: InsecureSkipVerify if set to true will disable TLS host verification.
-                  properties:
-                    value:
-                      description: The bool value.
-                      type: boolean
-                  type: object
+                  nullable: true
+                  type: boolean
                 keyFile:
                   description: KeyFile is the optional path to the private key for Consul communication. If this is set then you need to also set CertFile.
                   type: string
@@ -91,16 +79,7 @@ spec:
                   type: string
                 waitTime:
                   description: WaitTime limits how long a watches for Consul resources will block. If not provided, the agent default values will be used.
-                  properties:
-                    nanos:
-                      description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                      format: int32
-                      type: integer
-                    seconds:
-                      description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                      format: int64
-                      type: integer
-                  type: object
+                  type: string
               type: object
             consulDiscovery:
               properties:
@@ -231,16 +210,7 @@ spec:
                   type: object
                 requestTimeout:
                   description: Timeout for the ext auth service to respond. Defaults to 200ms
-                  properties:
-                    nanos:
-                      description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                      format: int32
-                      type: integer
-                    seconds:
-                      description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                      format: int64
-                      type: integer
-                  type: object
+                  type: string
                 statusOnError:
                   description: 'Sets the HTTP status that is returned to the client when there is a network error between the filter and the authorization server. The default status is HTTP 403 Forbidden. If set, this must be one of the following: - 100 - 200 201 202 203 204 205 206 207 208 226 - 300 301 302 303 304 305 307 308 - 400 401 402 403 404 405 406 407 408 409 410 411 412 413 414 415 416 417 421 422 423 424 426 428 429 431 - 500 501 502 503 504 505 506 507 508 510 511'
                   format: int32
@@ -280,25 +250,16 @@ spec:
                   properties:
                     allowWarnings:
                       description: Accept resources if validation produced a warning (defaults to true). By setting to false, this means that validation will start rejecting resources that would result in warnings, rather than just those that would result in errors.
-                      properties:
-                        value:
-                          description: The bool value.
-                          type: boolean
-                      type: object
+                      nullable: true
+                      type: boolean
                     alwaysAccept:
                       description: Always accept resources even if validation produced an error. Validation will still log the error and increment the validation.gateway.solo.io/resources_rejected stat. Currently defaults to true - must be set to `false` to prevent writing invalid resources to storage.
-                      properties:
-                        value:
-                          description: The bool value.
-                          type: boolean
-                      type: object
+                      nullable: true
+                      type: boolean
                     disableTransformationValidation:
                       description: By default gloo will attempt to validate transformations by calling out to a local envoy binary in `validate` mode. Calling this local envoy binary can become slow when done many times during a single validation. Setting this to true will stop gloo from calling out to envoy to validate the transformations, which may speed up the validation time considerably, but may also cause the transformation config to fail after being sent to envoy. When disabling this, ensure that your transformations are valid prior to applying them.
-                      properties:
-                        value:
-                          description: The bool value.
-                          type: boolean
-                      type: object
+                      nullable: true
+                      type: boolean
                     ignoreGlooValidationFailure:
                       description: When Gateway cannot communicate with Gloo (e.g. Gloo is offline) resources will be rejected by default. Enable the `ignoreGlooValidationFailure` to prevent the Validation server from rejecting resources due to network errors.
                       type: boolean
@@ -321,11 +282,8 @@ spec:
                       type: string
                     warnRouteShortCircuiting:
                       description: 'Write a warning to route resources if validation produced a route ordering warning (defaults to false). By setting to true, this means that Gloo will start assigning warnings to resources that would result in route short-circuiting within a virtual host, for example: - prefix routes that make later routes unreachable - regex routes that make later routes unreachable - duplicate matchers'
-                      properties:
-                        value:
-                          description: The bool value.
-                          type: boolean
-                      type: object
+                      nullable: true
+                      type: boolean
                   type: object
                 validationServerAddr:
                   description: Address of the `gloo` config validation server. Defaults to `gloo:9988`.
@@ -347,16 +305,7 @@ spec:
                           type: string
                         timeout:
                           description: timeout for the request
-                          properties:
-                            nanos:
-                              description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                              format: int32
-                              type: integer
-                            seconds:
-                              description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                              format: int64
-                              type: integer
-                          type: object
+                          type: string
                         uri:
                           description: The full uri of the aws sts endpoint
                           type: string
@@ -366,82 +315,47 @@ spec:
                   description: Default circuit breaker configuration to use for upstream requests, when not provided by specific upstream.
                   properties:
                     maxConnections:
-                      properties:
-                        value:
-                          description: The uint32 value.
-                          format: int32
-                          type: integer
-                      type: object
+                      maximum: 4294967295
+                      minimum: 0
+                      nullable: true
+                      type: integer
                     maxPendingRequests:
-                      properties:
-                        value:
-                          description: The uint32 value.
-                          format: int32
-                          type: integer
-                      type: object
+                      maximum: 4294967295
+                      minimum: 0
+                      nullable: true
+                      type: integer
                     maxRequests:
-                      properties:
-                        value:
-                          description: The uint32 value.
-                          format: int32
-                          type: integer
-                      type: object
+                      maximum: 4294967295
+                      minimum: 0
+                      nullable: true
+                      type: integer
                     maxRetries:
-                      properties:
-                        value:
-                          description: The uint32 value.
-                          format: int32
-                          type: integer
-                      type: object
+                      maximum: 4294967295
+                      minimum: 0
+                      nullable: true
+                      type: integer
                   type: object
                 disableGrpcWeb:
                   description: Default policy for grpc-web. set to true if you do not wish grpc-web to be automatically enabled. set to false if you wish grpc-web enabled unless disabled on the listener level. If not specified, defaults to `false`.
-                  properties:
-                    value:
-                      description: The bool value.
-                      type: boolean
-                  type: object
+                  nullable: true
+                  type: boolean
                 disableKubernetesDestinations:
                   description: Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result in significant overhead. If you do not plan on using this feature, you can use this flag to turn it off.
                   type: boolean
                 disableProxyGarbageCollection:
                   description: Set this option to determine the state of the envoy configuration when a virtual service is deleted, resulting in a proxy with no configured routes. set to true if you wish to keep envoy serving the routes from the latest valid configuration. set to false if you wish to reset the envoy configuration to a clean slate with no routes. If not specified, defaults to `false`.
-                  properties:
-                    value:
-                      description: The bool value.
-                      type: boolean
-                  type: object
+                  nullable: true
+                  type: boolean
                 enableRestEds:
                   description: 'Whether or not to use rest xds for all EDS by default. Set to true by default in versions > `v1.6.0`. This setting is meant to solve the bug which causes updated upstreams to dissapear, or have 0 endpoints. Some examples are: 1. https://github.com/solo-io/gloo/issues/3673 2. https://github.com/solo-io/gloo/issues/3710 3. https://github.com/solo-io/gloo/issues/3219 Rest XDS, as opposed to grpc, uses http polling rather than streaming'
-                  properties:
-                    value:
-                      description: The bool value.
-                      type: boolean
-                  type: object
+                  nullable: true
+                  type: boolean
                 endpointsWarmingTimeout:
                   description: Timeout to get initial snapshot of resources. If set to zero, Gloo will not wait for initial snapshot - if nonzero and gloo could not fetch it's initial snapshot before the timeout reached, gloo will panic. If unset, Gloo defaults to 5 minutes.
-                  properties:
-                    nanos:
-                      description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                      format: int32
-                      type: integer
-                    seconds:
-                      description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                      format: int64
-                      type: integer
-                  type: object
+                  type: string
                 failoverUpstreamDnsPollingInterval:
                   description: The polling interval for the DNS server if upstream failover is configured. If there is a failover upstream address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 10s.
-                  properties:
-                    nanos:
-                      description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                      format: int32
-                      type: integer
-                    seconds:
-                      description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                      format: int64
-                      type: integer
-                  type: object
+                  type: string
                 invalidConfigPolicy:
                   description: set these options to fine-tune the way Gloo handles invalid user configuration
                   properties:
@@ -458,12 +372,10 @@ spec:
                   type: object
                 regexMaxProgramSize:
                   description: Set this option to specify the default max program size for regexes. If not specified, defaults to 100.
-                  properties:
-                    value:
-                      description: The uint32 value.
-                      format: int32
-                      type: integer
-                  type: object
+                  maximum: 4294967295
+                  minimum: 0
+                  nullable: true
+                  type: integer
                 restXdsBindAddr:
                   description: Where the `gloo` REST xDS server should bind. Defaults to `0.0.0.0:9976`
                   type: string
@@ -519,12 +431,10 @@ spec:
                   properties:
                     defaultDashboardFolderId:
                       description: '(UInt32Value) Grafana allows dashboards to be added to specific folders by specifying that folder''s ID If unset, automatic upstream dashboards are generated in the general folder (folderId: 0). If set, the observability deployment will try to create/move all upstreams without their own folderId to the folder specified here, after verifying that a folder with such an ID exists. Be aware that grafana requires a folders ID, which should not be confused with the similarly-named and more easily accessible folder UID value. If individual upstream dashboards need to be placed specific granafa folders, they can be given their own folder IDs by annotating the upstreams. The annotation key must be ''observability.solo.io/dashboard_folder_id'' and the value must be the folder ID. Folder IDs can be retrieved from grafana with a pair of terminal commands: 1. Port forward the grafana deployment to surface its API: kubectl -n gloo-system port-forward deployment/glooe-grafana 3000 2. Request all folder data (after admin:admin is replaced with the correct credentials): curl http://admin:admin@localhost:3000/api/folders'
-                      properties:
-                        value:
-                          description: The uint32 value.
-                          format: int32
-                          type: integer
-                      type: object
+                      maximum: 4294967295
+                      minimum: 0
+                      nullable: true
+                      type: integer
                   type: object
               type: object
             ratelimit:
@@ -590,16 +500,7 @@ spec:
                       type: string
                   type: object
                 requestTimeout:
-                  properties:
-                    nanos:
-                      description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                      format: int32
-                      type: integer
-                    seconds:
-                      description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                      format: int64
-                      type: integer
-                  type: object
+                  type: string
               type: object
             rbac:
               description: 'Enterprise-only: Settings for RBAC across all Gloo resources (VirtualServices, Routes, etc.)'
@@ -610,16 +511,7 @@ spec:
               type: object
             refreshRate:
               description: How frequently to resync watches, etc
-              properties:
-                nanos:
-                  description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                  format: int32
-                  type: integer
-                seconds:
-                  description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                  format: int64
-                  type: integer
-              type: object
+              type: string
             status:
               description: Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation
               type: object
@@ -675,11 +567,8 @@ spec:
                   type: string
                 insecure:
                   description: Insecure enables or disables SSL verification
-                  properties:
-                    value:
-                      description: The bool value.
-                      type: boolean
-                  type: object
+                  nullable: true
+                  type: boolean
                 rootKey:
                   description: all keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Consul cluster defaults to `gloo`
                   type: string

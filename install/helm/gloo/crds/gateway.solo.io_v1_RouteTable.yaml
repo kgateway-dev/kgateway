@@ -100,18 +100,12 @@ spec:
                     type: object
                   inheritableMatchers:
                     description: Whether this route as a child should inherit headers, methods, and query parameter matchers from the parent. Defaults to value of parent; for virtual services (no parent) defaults to false.
-                    properties:
-                      value:
-                        description: The bool value.
-                        type: boolean
-                    type: object
+                    nullable: true
+                    type: boolean
                   inheritablePathMatchers:
                     description: Whether this route as a child should inherit path matchers (i.e., path itself, case-sensitive setting) from the parent. Defaults to value of parent; for virtual services (no parent) defaults to false.
-                    properties:
-                      value:
-                        description: The bool value.
-                        type: boolean
-                    type: object
+                    nullable: true
+                    type: boolean
                   matchers:
                     description: Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.). If empty, the route will match all requests (i.e, a single "/" path prefix matcher). For delegated routes, any parent matcher must have a `prefix` path matcher.
                     items:
@@ -119,11 +113,8 @@ spec:
                       properties:
                         caseSensitive:
                           description: Indicates that prefix/path matching should be case sensitive. The default is true.
-                          properties:
-                            value:
-                              description: The bool value.
-                              type: boolean
-                          type: object
+                          nullable: true
+                          type: boolean
                         exact:
                           description: If specified, the route is an exact path rule meaning that the path must exactly match the *:path* header once the query string is removed.
                           type: string
@@ -183,11 +174,8 @@ spec:
                     properties:
                       autoHostRewrite:
                         description: Enable/Disable auto host re-write. Indicates that the host header will be swapped with the hostname of the upstream host. This setting is only honored for upstreams that use DNS resolution (i.e., their generated Envoy cluster is of type STRICT_DNS or LOGICAL_DNS -- think aws, azure, or static upstreams with hostnames)
-                        properties:
-                          value:
-                            description: The bool value.
-                            type: boolean
-                        type: object
+                        nullable: true
+                        type: boolean
                       bufferPerRoute:
                         description: 'BufferPerRoute can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response. Note: If you have not set a global config (at the gateway level), this override will not do anything by itself.'
                         properties:
@@ -196,12 +184,10 @@ spec:
                             properties:
                               maxRequestBytes:
                                 description: The maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response.
-                                properties:
-                                  value:
-                                    description: The uint32 value.
-                                    format: int32
-                                    type: integer
-                                type: object
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
                             type: object
                           disabled:
                             description: Disable the buffer filter for this particular vhost or route.
@@ -270,12 +256,10 @@ spec:
                                       properties:
                                         maxProgramSize:
                                           description: This field controls the RE2 "program size" which is a rough estimate of how complex a compiled regex is to evaluate. A regex that has a program size greater than the configured value will fail to compile. In this case, the configured max program size can be increased or the regex can be simplified. If not specified, the default is 100.
-                                          properties:
-                                            value:
-                                              description: The uint32 value.
-                                              format: int32
-                                              type: integer
-                                          type: object
+                                          maximum: 4294967295
+                                          minimum: 0
+                                          nullable: true
+                                          type: integer
                                       type: object
                                     regex:
                                       description: The regex match string. The string must be supported by the configured engine.
@@ -442,16 +426,7 @@ spec:
                             properties:
                               fixedDelay:
                                 description: Fixed delay, defaulting to 0.
-                                properties:
-                                  nanos:
-                                    description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                                    format: int32
-                                    type: integer
-                                  seconds:
-                                    description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                                    format: int64
-                                    type: integer
-                                type: object
+                                type: string
                               percentage:
                                 description: Percentage of requests that should be delayed, defaulting to 0. This should be a value between 0.0 and 100.0, with up to 6 significant digits.
                                 type: number
@@ -467,11 +442,8 @@ spec:
                               properties:
                                 append:
                                   description: Should the value be appended? If true (default), the value is appended to existing values.
-                                  properties:
-                                    value:
-                                      description: The bool value.
-                                      type: boolean
-                                  type: object
+                                  nullable: true
+                                  type: boolean
                                 header:
                                   description: Explicitly specified header
                                   properties:
@@ -504,11 +476,8 @@ spec:
                               properties:
                                 append:
                                   description: Should the value be appended? If true (default), the value is appended to existing values.
-                                  properties:
-                                    value:
-                                      description: The bool value.
-                                      type: boolean
-                                  type: object
+                                  nullable: true
+                                  type: boolean
                                 header:
                                   description: Header name/value pair that this option applies to.
                                   properties:
@@ -574,16 +543,7 @@ spec:
                                       type: string
                                     ttl:
                                       description: If specified, a cookie with the TTL will be generated if the cookie is not present. If the TTL is present and zero, the generated cookie will be a session cookie.
-                                      properties:
-                                        nanos:
-                                          description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                                          format: int32
-                                          type: integer
-                                        seconds:
-                                          description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                                          format: int64
-                                          type: integer
-                                      type: object
+                                      type: string
                                   type: object
                                 header:
                                   description: Use a given header's value as a component of the hashing load balancer's hash key
@@ -599,11 +559,8 @@ spec:
                         type: object
                       prefixRewrite:
                         description: For requests matched on this route, rewrite the HTTP request path to the provided value before forwarding upstream
-                        properties:
-                          value:
-                            description: The string value.
-                            type: string
-                        type: object
+                        nullable: true
+                        type: string
                       rateLimitConfigs:
                         description: References to RateLimitConfig resources. This is used to configure the GlooE rate limit server. Only one of `ratelimit` or `rate_limit_configs` can be set.
                         properties:
@@ -651,11 +608,8 @@ spec:
                                             type: string
                                           expectMatch:
                                             description: If set to true, the action will append a descriptor entry when the request matches the headers. If set to false, the action will append a descriptor entry when the request does not match the headers. The default value is true.
-                                            properties:
-                                              value:
-                                                description: The bool value.
-                                                type: boolean
-                                            type: object
+                                            nullable: true
+                                            type: boolean
                                           headers:
                                             description: Specifies a set of headers that the rate limit action should match on. The action will check the request’s headers against all the specified headers in the config. A match will happen if all the headers in the config are present in the request with the same values (or based on presence if the value field is not in the config).
                                             items:
@@ -769,11 +723,8 @@ spec:
                                             type: string
                                           expectMatch:
                                             description: If set to true, the action will append a descriptor entry when the request matches the headers. If set to false, the action will append a descriptor entry when the request does not match the headers. The default value is true.
-                                            properties:
-                                              value:
-                                                description: The bool value.
-                                                type: boolean
-                                            type: object
+                                            nullable: true
+                                            type: boolean
                                           headers:
                                             description: Specifies a set of headers that the rate limit action should match on. The action will check the request’s headers against all the specified headers in the config. A match will happen if all the headers in the config are present in the request with the same values (or based on presence if the value field is not in the config).
                                             items:
@@ -954,12 +905,10 @@ spec:
                                 properties:
                                   maxProgramSize:
                                     description: This field controls the RE2 "program size" which is a rough estimate of how complex a compiled regex is to evaluate. A regex that has a program size greater than the configured value will fail to compile. In this case, the configured max program size can be increased or the regex can be simplified. If not specified, the default is 100.
-                                    properties:
-                                      value:
-                                        description: The uint32 value.
-                                        format: int32
-                                        type: integer
-                                    type: object
+                                    maximum: 4294967295
+                                    minimum: 0
+                                    nullable: true
+                                    type: integer
                                 type: object
                               regex:
                                 description: The regex match string. The string must be supported by the configured engine.
@@ -977,16 +926,7 @@ spec:
                             type: integer
                           perTryTimeout:
                             description: Specifies a non-zero upstream timeout per retry attempt. This parameter is optional.
-                            properties:
-                              nanos:
-                                description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                                format: int32
-                                type: integer
-                              seconds:
-                                description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                                format: int64
-                                type: integer
-                            type: object
+                            type: string
                           retryOn:
                             description: Specifies the conditions under which retry takes place. These are the same conditions [documented for Envoy](https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/http/http_filters/router_filter#config-http-filters-router-x-envoy-retry-on)
                             type: string
@@ -1024,11 +964,8 @@ spec:
                                       properties:
                                         caseSensitive:
                                           description: Indicates that prefix/path matching should be case sensitive. The default is true.
-                                          properties:
-                                            value:
-                                              description: The bool value.
-                                              type: boolean
-                                          type: object
+                                          nullable: true
+                                          type: boolean
                                         exact:
                                           description: If specified, the route is an exact path rule meaning that the path must exactly match the *:path* header once the query string is removed.
                                           type: string
@@ -1121,6 +1058,7 @@ spec:
                                                 properties:
                                                   body:
                                                     description: Extract information from the request/response body
+                                                    maxProperties: 0
                                                     type: object
                                                   header:
                                                     description: Extract information from headers
@@ -1230,6 +1168,7 @@ spec:
                                                 properties:
                                                   body:
                                                     description: Extract information from the request/response body
+                                                    maxProperties: 0
                                                     type: object
                                                   header:
                                                     description: Extract information from headers
@@ -1367,6 +1306,7 @@ spec:
                                                 properties:
                                                   body:
                                                     description: Extract information from the request/response body
+                                                    maxProperties: 0
                                                     type: object
                                                   header:
                                                     description: Extract information from headers
@@ -1455,11 +1395,8 @@ spec:
                                       properties:
                                         caseSensitive:
                                           description: Indicates that prefix/path matching should be case sensitive. The default is true.
-                                          properties:
-                                            value:
-                                              description: The bool value.
-                                              type: boolean
-                                          type: object
+                                          nullable: true
+                                          type: boolean
                                         exact:
                                           description: If specified, the route is an exact path rule meaning that the path must exactly match the *:path* header once the query string is removed.
                                           type: string
@@ -1552,6 +1489,7 @@ spec:
                                                 properties:
                                                   body:
                                                     description: Extract information from the request/response body
+                                                    maxProperties: 0
                                                     type: object
                                                   header:
                                                     description: Extract information from headers
@@ -1661,6 +1599,7 @@ spec:
                                                 properties:
                                                   body:
                                                     description: Extract information from the request/response body
+                                                    maxProperties: 0
                                                     type: object
                                                   header:
                                                     description: Extract information from headers
@@ -1798,6 +1737,7 @@ spec:
                                                 properties:
                                                   body:
                                                     description: Extract information from the request/response body
+                                                    maxProperties: 0
                                                     type: object
                                                   header:
                                                     description: Extract information from headers
@@ -1871,26 +1811,14 @@ spec:
                         type: object
                       timeout:
                         description: Specifies the upstream timeout for the route. If not specified, the default is 15s. This spans between the point at which the entire downstream request (i.e. end-of-stream) has been processed and when the upstream response has been completely processed. A value of 0 will disable the route’s timeout.
-                        properties:
-                          nanos:
-                            description: Signed fractions of a second at nanosecond resolution of the span of time. Durations less than one second are represented with a 0 `seconds` field and a positive or negative `nanos` field. For durations of one second or more, a non-zero value for the `nanos` field must be of the same sign as the `seconds` field. Must be from -999,999,999 to +999,999,999 inclusive.
-                            format: int32
-                            type: integer
-                          seconds:
-                            description: 'Signed seconds of the span of time. Must be from -315,576,000,000 to +315,576,000,000 inclusive. Note: these bounds are computed from: 60 sec/min * 60 min/hr * 24 hr/day * 365.25 days/year * 10000 years'
-                            format: int64
-                            type: integer
-                        type: object
+                        type: string
                       tracing:
                         description: 'Defines route-specific tracing configuration. See here for additional information on Envoy''s tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/observability/tracing/'
                         properties:
                           propagate:
                             description: Optional. Default is true, If set to false, the tracing headers will not propagate to the upstream.
-                            properties:
-                              value:
-                                description: The bool value.
-                                type: boolean
-                            type: object
+                            nullable: true
+                            type: boolean
                           routeDescriptor:
                             description: Optional. If set, will be used to identify the route that produced the trace. Note that this value will be overridden if the "x-envoy-decorator-operation" header is passed.
                             type: string
@@ -1899,25 +1827,16 @@ spec:
                             properties:
                               clientSamplePercentage:
                                 description: Percentage of requests that should produce traces when the `x-client-trace-id` header is provided. optional, defaults to 100.0 This should be a value between 0.0 and 100.0, with up to 6 significant digits.
-                                properties:
-                                  value:
-                                    description: The float value.
-                                    type: number
-                                type: object
+                                nullable: true
+                                type: number
                               overallSamplePercentage:
                                 description: Overall percentage of requests that should produce traces. optional, defaults to 100.0 This should be a value between 0.0 and 100.0, with up to 6 significant digits.
-                                properties:
-                                  value:
-                                    description: The float value.
-                                    type: number
-                                type: object
+                                nullable: true
+                                type: number
                               randomSamplePercentage:
                                 description: Percentage of requests that should produce traces by random sampling. optional, defaults to 100.0 This should be a value between 0.0 and 100.0, with up to 6 significant digits.
-                                properties:
-                                  value:
-                                    description: The float value.
-                                    type: number
-                                type: object
+                                nullable: true
+                                type: number
                             type: object
                         type: object
                       transformations:
@@ -1968,6 +1887,7 @@ spec:
                                       properties:
                                         body:
                                           description: Extract information from the request/response body
+                                          maxProperties: 0
                                           type: object
                                         header:
                                           description: Extract information from headers
@@ -2077,6 +1997,7 @@ spec:
                                       properties:
                                         body:
                                           description: Extract information from the request/response body
+                                          maxProperties: 0
                                           type: object
                                         header:
                                           description: Extract information from headers
@@ -2154,11 +2075,8 @@ spec:
                               properties:
                                 enabled:
                                   description: Whether the upgrade should be enabled. If left unset, Envoy will enable the protocol upgrade.
-                                  properties:
-                                    value:
-                                      description: The bool value.
-                                      type: boolean
-                                  type: object
+                                  nullable: true
+                                  type: boolean
                               type: object
                           type: object
                         type: array
@@ -2324,11 +2242,8 @@ spec:
                                                   type: object
                                                 path:
                                                   description: 'part of the (or the entire) path that will be used extract data for processing output templates Gloo will search for parameters by their name in header value strings, enclosed in single curly braces Example: extensions: parameters: path: /users/{ userId }'
-                                                  properties:
-                                                    value:
-                                                      description: The string value.
-                                                      type: string
-                                                  type: object
+                                                  nullable: true
+                                                  type: string
                                               type: object
                                             service:
                                               description: The name of the service of the function.
@@ -2347,11 +2262,8 @@ spec:
                                                   type: object
                                                 path:
                                                   description: 'part of the (or the entire) path that will be used extract data for processing output templates Gloo will search for parameters by their name in header value strings, enclosed in single curly braces Example: extensions: parameters: path: /users/{ userId }'
-                                                  properties:
-                                                    value:
-                                                      description: The string value.
-                                                      type: string
-                                                  type: object
+                                                  nullable: true
+                                                  type: string
                                               type: object
                                             responseTransformation:
                                               properties:
@@ -2388,6 +2300,7 @@ spec:
                                                     properties:
                                                       body:
                                                         description: Extract information from the request/response body
+                                                        maxProperties: 0
                                                         type: object
                                                       header:
                                                         description: Extract information from headers
@@ -2487,12 +2400,10 @@ spec:
                                           properties:
                                             maxRequestBytes:
                                               description: The maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response.
-                                              properties:
-                                                value:
-                                                  description: The uint32 value.
-                                                  format: int32
-                                                  type: integer
-                                              type: object
+                                              maximum: 4294967295
+                                              minimum: 0
+                                              nullable: true
+                                              type: integer
                                           type: object
                                         disabled:
                                           description: Disable the buffer filter for this particular vhost or route.
@@ -2523,12 +2434,10 @@ spec:
                                                     properties:
                                                       maxProgramSize:
                                                         description: This field controls the RE2 "program size" which is a rough estimate of how complex a compiled regex is to evaluate. A regex that has a program size greater than the configured value will fail to compile. In this case, the configured max program size can be increased or the regex can be simplified. If not specified, the default is 100.
-                                                        properties:
-                                                          value:
-                                                            description: The uint32 value.
-                                                            format: int32
-                                                            type: integer
-                                                        type: object
+                                                        maximum: 4294967295
+                                                        minimum: 0
+                                                        nullable: true
+                                                        type: integer
                                                     type: object
                                                   regex:
                                                     description: The regex match string. The string must be supported by the configured engine.
@@ -2627,11 +2536,8 @@ spec:
                                             properties:
                                               append:
                                                 description: Should the value be appended? If true (default), the value is appended to existing values.
-                                                properties:
-                                                  value:
-                                                    description: The bool value.
-                                                    type: boolean
-                                                type: object
+                                                nullable: true
+                                                type: boolean
                                               header:
                                                 description: Explicitly specified header
                                                 properties:
@@ -2664,11 +2570,8 @@ spec:
                                             properties:
                                               append:
                                                 description: Should the value be appended? If true (default), the value is appended to existing values.
-                                                properties:
-                                                  value:
-                                                    description: The bool value.
-                                                    type: boolean
-                                                type: object
+                                                nullable: true
+                                                type: boolean
                                               header:
                                                 description: Header name/value pair that this option applies to.
                                                 properties:
@@ -2705,11 +2608,8 @@ spec:
                                                     properties:
                                                       caseSensitive:
                                                         description: Indicates that prefix/path matching should be case sensitive. The default is true.
-                                                        properties:
-                                                          value:
-                                                            description: The bool value.
-                                                            type: boolean
-                                                        type: object
+                                                        nullable: true
+                                                        type: boolean
                                                       exact:
                                                         description: If specified, the route is an exact path rule meaning that the path must exactly match the *:path* header once the query string is removed.
                                                         type: string
@@ -2802,6 +2702,7 @@ spec:
                                                               properties:
                                                                 body:
                                                                   description: Extract information from the request/response body
+                                                                  maxProperties: 0
                                                                   type: object
                                                                 header:
                                                                   description: Extract information from headers
@@ -2911,6 +2812,7 @@ spec:
                                                               properties:
                                                                 body:
                                                                   description: Extract information from the request/response body
+                                                                  maxProperties: 0
                                                                   type: object
                                                                 header:
                                                                   description: Extract information from headers
@@ -3048,6 +2950,7 @@ spec:
                                                               properties:
                                                                 body:
                                                                   description: Extract information from the request/response body
+                                                                  maxProperties: 0
                                                                   type: object
                                                                 header:
                                                                   description: Extract information from headers
@@ -3136,11 +3039,8 @@ spec:
                                                     properties:
                                                       caseSensitive:
                                                         description: Indicates that prefix/path matching should be case sensitive. The default is true.
-                                                        properties:
-                                                          value:
-                                                            description: The bool value.
-                                                            type: boolean
-                                                        type: object
+                                                        nullable: true
+                                                        type: boolean
                                                       exact:
                                                         description: If specified, the route is an exact path rule meaning that the path must exactly match the *:path* header once the query string is removed.
                                                         type: string
@@ -3233,6 +3133,7 @@ spec:
                                                               properties:
                                                                 body:
                                                                   description: Extract information from the request/response body
+                                                                  maxProperties: 0
                                                                   type: object
                                                                 header:
                                                                   description: Extract information from headers
@@ -3342,6 +3243,7 @@ spec:
                                                               properties:
                                                                 body:
                                                                   description: Extract information from the request/response body
+                                                                  maxProperties: 0
                                                                   type: object
                                                                 header:
                                                                   description: Extract information from headers
@@ -3479,6 +3381,7 @@ spec:
                                                               properties:
                                                                 body:
                                                                   description: Extract information from the request/response body
+                                                                  maxProperties: 0
                                                                   type: object
                                                                 header:
                                                                   description: Extract information from headers
@@ -3598,6 +3501,7 @@ spec:
                                                     properties:
                                                       body:
                                                         description: Extract information from the request/response body
+                                                        maxProperties: 0
                                                         type: object
                                                       header:
                                                         description: Extract information from headers
@@ -3707,6 +3611,7 @@ spec:
                                                     properties:
                                                       body:
                                                         description: Extract information from the request/response body
+                                                        maxProperties: 0
                                                         type: object
                                                       header:
                                                         description: Extract information from headers
@@ -3845,11 +3750,8 @@ spec:
                                         type: object
                                       path:
                                         description: 'part of the (or the entire) path that will be used extract data for processing output templates Gloo will search for parameters by their name in header value strings, enclosed in single curly braces Example: extensions: parameters: path: /users/{ userId }'
-                                        properties:
-                                          value:
-                                            description: The string value.
-                                            type: string
-                                        type: object
+                                        nullable: true
+                                        type: string
                                     type: object
                                   service:
                                     description: The name of the service of the function.
@@ -3868,11 +3770,8 @@ spec:
                                         type: object
                                       path:
                                         description: 'part of the (or the entire) path that will be used extract data for processing output templates Gloo will search for parameters by their name in header value strings, enclosed in single curly braces Example: extensions: parameters: path: /users/{ userId }'
-                                        properties:
-                                          value:
-                                            description: The string value.
-                                            type: string
-                                        type: object
+                                        nullable: true
+                                        type: string
                                     type: object
                                   responseTransformation:
                                     properties:
@@ -3909,6 +3808,7 @@ spec:
                                           properties:
                                             body:
                                               description: Extract information from the request/response body
+                                              maxProperties: 0
                                               type: object
                                             header:
                                               description: Extract information from headers
@@ -4014,12 +3914,10 @@ spec:
               x-kubernetes-preserve-unknown-fields: true
             weight:
               description: When a delegated route defines a `RouteTableSelector` that matches multiple route tables, Gloo will inspect this field to determine the order in which the route tables are to be evaluated. This determines the order in which the routes will appear on the final `Proxy` resource. The field is optional; if no value is specified, the weight defaults to 0 (zero).
-              properties:
-                value:
-                  description: The int32 value.
-                  format: int32
-                  type: integer
-              type: object
+              maximum: 2147483647
+              minimum: -2147483648
+              nullable: true
+              type: integer
           type: object
       type: object
   version: v1

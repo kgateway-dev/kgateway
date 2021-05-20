@@ -89,11 +89,8 @@ spec:
                                     type: object
                                   path:
                                     description: 'part of the (or the entire) path that will be used extract data for processing output templates Gloo will search for parameters by their name in header value strings, enclosed in single curly braces Example: extensions: parameters: path: /users/{ userId }'
-                                    properties:
-                                      value:
-                                        description: The string value.
-                                        type: string
-                                    type: object
+                                    nullable: true
+                                    type: string
                                 type: object
                               service:
                                 description: The name of the service of the function.
@@ -112,11 +109,8 @@ spec:
                                     type: object
                                   path:
                                     description: 'part of the (or the entire) path that will be used extract data for processing output templates Gloo will search for parameters by their name in header value strings, enclosed in single curly braces Example: extensions: parameters: path: /users/{ userId }'
-                                    properties:
-                                      value:
-                                        description: The string value.
-                                        type: string
-                                    type: object
+                                    nullable: true
+                                    type: string
                                 type: object
                               responseTransformation:
                                 properties:
@@ -153,6 +147,7 @@ spec:
                                       properties:
                                         body:
                                           description: Extract information from the request/response body
+                                          maxProperties: 0
                                           type: object
                                         header:
                                           description: Extract information from headers
@@ -252,12 +247,10 @@ spec:
                             properties:
                               maxRequestBytes:
                                 description: The maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response.
-                                properties:
-                                  value:
-                                    description: The uint32 value.
-                                    format: int32
-                                    type: integer
-                                type: object
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
                             type: object
                           disabled:
                             description: Disable the buffer filter for this particular vhost or route.
@@ -288,12 +281,10 @@ spec:
                                       properties:
                                         maxProgramSize:
                                           description: This field controls the RE2 "program size" which is a rough estimate of how complex a compiled regex is to evaluate. A regex that has a program size greater than the configured value will fail to compile. In this case, the configured max program size can be increased or the regex can be simplified. If not specified, the default is 100.
-                                          properties:
-                                            value:
-                                              description: The uint32 value.
-                                              format: int32
-                                              type: integer
-                                          type: object
+                                          maximum: 4294967295
+                                          minimum: 0
+                                          nullable: true
+                                          type: integer
                                       type: object
                                     regex:
                                       description: The regex match string. The string must be supported by the configured engine.
@@ -392,11 +383,8 @@ spec:
                               properties:
                                 append:
                                   description: Should the value be appended? If true (default), the value is appended to existing values.
-                                  properties:
-                                    value:
-                                      description: The bool value.
-                                      type: boolean
-                                  type: object
+                                  nullable: true
+                                  type: boolean
                                 header:
                                   description: Explicitly specified header
                                   properties:
@@ -429,11 +417,8 @@ spec:
                               properties:
                                 append:
                                   description: Should the value be appended? If true (default), the value is appended to existing values.
-                                  properties:
-                                    value:
-                                      description: The bool value.
-                                      type: boolean
-                                  type: object
+                                  nullable: true
+                                  type: boolean
                                 header:
                                   description: Header name/value pair that this option applies to.
                                   properties:
@@ -470,11 +455,8 @@ spec:
                                       properties:
                                         caseSensitive:
                                           description: Indicates that prefix/path matching should be case sensitive. The default is true.
-                                          properties:
-                                            value:
-                                              description: The bool value.
-                                              type: boolean
-                                          type: object
+                                          nullable: true
+                                          type: boolean
                                         exact:
                                           description: If specified, the route is an exact path rule meaning that the path must exactly match the *:path* header once the query string is removed.
                                           type: string
@@ -567,6 +549,7 @@ spec:
                                                 properties:
                                                   body:
                                                     description: Extract information from the request/response body
+                                                    maxProperties: 0
                                                     type: object
                                                   header:
                                                     description: Extract information from headers
@@ -676,6 +659,7 @@ spec:
                                                 properties:
                                                   body:
                                                     description: Extract information from the request/response body
+                                                    maxProperties: 0
                                                     type: object
                                                   header:
                                                     description: Extract information from headers
@@ -813,6 +797,7 @@ spec:
                                                 properties:
                                                   body:
                                                     description: Extract information from the request/response body
+                                                    maxProperties: 0
                                                     type: object
                                                   header:
                                                     description: Extract information from headers
@@ -901,11 +886,8 @@ spec:
                                       properties:
                                         caseSensitive:
                                           description: Indicates that prefix/path matching should be case sensitive. The default is true.
-                                          properties:
-                                            value:
-                                              description: The bool value.
-                                              type: boolean
-                                          type: object
+                                          nullable: true
+                                          type: boolean
                                         exact:
                                           description: If specified, the route is an exact path rule meaning that the path must exactly match the *:path* header once the query string is removed.
                                           type: string
@@ -998,6 +980,7 @@ spec:
                                                 properties:
                                                   body:
                                                     description: Extract information from the request/response body
+                                                    maxProperties: 0
                                                     type: object
                                                   header:
                                                     description: Extract information from headers
@@ -1107,6 +1090,7 @@ spec:
                                                 properties:
                                                   body:
                                                     description: Extract information from the request/response body
+                                                    maxProperties: 0
                                                     type: object
                                                   header:
                                                     description: Extract information from headers
@@ -1244,6 +1228,7 @@ spec:
                                                 properties:
                                                   body:
                                                     description: Extract information from the request/response body
+                                                    maxProperties: 0
                                                     type: object
                                                   header:
                                                     description: Extract information from headers
@@ -1363,6 +1348,7 @@ spec:
                                       properties:
                                         body:
                                           description: Extract information from the request/response body
+                                          maxProperties: 0
                                           type: object
                                         header:
                                           description: Extract information from headers
@@ -1472,6 +1458,7 @@ spec:
                                       properties:
                                         body:
                                           description: Extract information from the request/response body
+                                          maxProperties: 0
                                           type: object
                                         header:
                                           description: Extract information from headers
