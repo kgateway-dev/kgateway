@@ -115,7 +115,7 @@ spec:
       serviceAccountName: gateway-proxy
       {{- if $spec.extraInitContainersHelper }}
       initContainers:
-      {{- include $spec.extraInitContainersHelper $ | nindent 6 }}
+      {{- include $spec.extraInitContainersHelper . | nindent 6 }}
       {{- end }}
       containers:
       - args:
@@ -233,7 +233,7 @@ spec:
 {{ toYaml $spec.extraProxyVolumeMounts | indent 8 }}
 {{- end }}
 {{- if $spec.extraProxyVolumeMountHelper }}
-{{- include $spec.extraProxyVolumeMountHelper $ | nindent 8 }}
+{{- include $spec.extraProxyVolumeMountHelper . | nindent 8 }}
 {{- end }}
 {{- if $global.glooMtls.enabled }}
         - mountPath: /etc/envoy/ssl
@@ -243,7 +243,7 @@ spec:
 {{- if $spec.extraContainersHelper }}
         - mountPath: /usr/share/shared-data
           name: shared-data
-{{- include $spec.extraContainersHelper $ | nindent 6 }}
+{{- include $spec.extraContainersHelper . | nindent 6 }}
 {{- end }} {{- /* $spec.extraContainersHelper */}}
 {{- if or $global.glooMtls.enabled $global.istioSDS.enabled }}
       {{- $sdsImage := merge $global.glooMtls.sds.image $global.image }}
@@ -456,7 +456,7 @@ spec:
       {{ toYaml $spec.extraVolumes | nindent 6 }}
       {{- end }}
       {{- if $spec.extraVolumeHelper }}
-      {{- include $spec.extraVolumeHelper $ | nindent 6 }}
+      {{- include $spec.extraVolumeHelper . | nindent 6 }}
       {{- end }}
 {{- end }}
 {{- end }} {{/* with */}}
