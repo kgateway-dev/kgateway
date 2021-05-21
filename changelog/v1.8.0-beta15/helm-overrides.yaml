@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4767
+    description: Fixes bug introduced in gloo v1.8.0-beta14 which didn't allow gloo enterprise helm charts to render.

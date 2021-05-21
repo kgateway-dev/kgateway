@@ -48,7 +48,7 @@ data:
       listeners:
 {{- end }} {{- /* if or $statsConfig.enabled (or $spec.readConfig $spec.extraListenersHelper) */}}
 {{- if $spec.extraListenersHelper }}
-{{- include $spec.extraListenersHelper $ | nindent 8 }}
+{{- include $spec.extraListenersHelper . | nindent 8 }}
 {{- end }} {{- /* $spec.extraListenersHelper */}}
 {{- if $statsConfig.enabled }}
         - name: prometheus_listener
