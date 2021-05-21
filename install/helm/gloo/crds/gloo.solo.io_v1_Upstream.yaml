@@ -112,9 +112,9 @@ spec:
                       authLevel:
                         description: Auth Level can bve either "anonymous" "function" or "admin" See https://vincentlauzon.com/2017/12/04/azure-functions-http-authorization-levels/ for more details
                         enum:
-                        - - Anonymous
-                          - Function
-                          - Admin
+                        - Anonymous
+                        - Function
+                        - Admin
                         type: string
                       functionName:
                         description: The Name of the Azure Function as it appears in the Azure Functions Portal
@@ -162,9 +162,9 @@ spec:
                     headersWithUnderscoresAction:
                       description: 'Action to take when a client request with a header name containing underscore characters is received. If this setting is not specified, the value defaults to ALLOW. Note: upstream responses are not affected by this setting.'
                       enum:
-                      - - ALLOW
-                        - REJECT_REQUEST
-                        - DROP_HEADER
+                      - ALLOW
+                      - REJECT_REQUEST
+                      - DROP_HEADER
                       type: string
                     idleTimeout:
                       description: The idle timeout for connections. The idle timeout is defined as the period in which there are no active requests. When the idle timeout is reached the connection will be closed. If the connection is an HTTP/2 downstream connection a drain sequence will occur prior to closing the connection, see :ref:`drain_timeout <envoy_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.drain_timeout>`. Note that request based timeouts mean that HTTP/2 PINGs will not keep the connection alive. If not specified, this defaults to 1 hour. To disable idle timeouts explicitly set this to 0.
@@ -348,8 +348,8 @@ spec:
                                 type: object
                               parseBodyBehavior:
                                 enum:
-                                - - ParseAsJson
-                                  - DontParse
+                                - ParseAsJson
+                                - DontParse
                                 type: string
                               passthrough:
                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
@@ -437,19 +437,19 @@ spec:
                                             type: array
                                           maximumProtocolVersion:
                                             enum:
-                                            - - TLS_AUTO
-                                              - TLSv1_0
-                                              - TLSv1_1
-                                              - TLSv1_2
-                                              - TLSv1_3
+                                            - TLS_AUTO
+                                            - TLSv1_0
+                                            - TLSv1_1
+                                            - TLSv1_2
+                                            - TLSv1_3
                                             type: string
                                           minimumProtocolVersion:
                                             enum:
-                                            - - TLS_AUTO
-                                              - TLSv1_0
-                                              - TLSv1_1
-                                              - TLSv1_2
-                                              - TLSv1_3
+                                            - TLS_AUTO
+                                            - TLSv1_0
+                                            - TLSv1_1
+                                            - TLSv1_2
+                                            - TLSv1_3
                                             type: string
                                         type: object
                                       sds:
@@ -853,8 +853,8 @@ spec:
                                 type: object
                               parseBodyBehavior:
                                 enum:
-                                - - ParseAsJson
-                                  - DontParse
+                                - ParseAsJson
+                                - DontParse
                                 type: string
                               passthrough:
                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
@@ -1133,8 +1133,8 @@ spec:
                                 type: object
                               parseBodyBehavior:
                                 enum:
-                                - - ParseAsJson
-                                  - DontParse
+                                - ParseAsJson
+                                - DontParse
                                 type: string
                               passthrough:
                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
@@ -1164,19 +1164,19 @@ spec:
                       type: array
                     maximumProtocolVersion:
                       enum:
-                      - - TLS_AUTO
-                        - TLSv1_0
-                        - TLSv1_1
-                        - TLSv1_2
-                        - TLSv1_3
+                      - TLS_AUTO
+                      - TLSv1_0
+                      - TLSv1_1
+                      - TLSv1_2
+                      - TLSv1_3
                       type: string
                     minimumProtocolVersion:
                       enum:
-                      - - TLS_AUTO
-                        - TLSv1_0
-                        - TLSv1_1
-                        - TLSv1_2
-                        - TLSv1_3
+                      - TLS_AUTO
+                      - TLSv1_0
+                      - TLSv1_1
+                      - TLSv1_2
+                      - TLSv1_3
                       type: string
                   type: object
                 sds:
@@ -1387,8 +1387,8 @@ spec:
                                 type: object
                               parseBodyBehavior:
                                 enum:
-                                - - ParseAsJson
-                                  - DontParse
+                                - ParseAsJson
+                                - DontParse
                                 type: string
                               passthrough:
                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.

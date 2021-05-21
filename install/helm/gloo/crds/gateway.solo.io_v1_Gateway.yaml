@@ -94,9 +94,9 @@ spec:
                                 denominator:
                                   description: Specifies the denominator. If the denominator specified is less than the numerator, the final fractional percentage is capped at 1 (100%).
                                   enum:
-                                  - - HUNDRED
-                                    - TEN_THOUSAND
-                                    - MILLION
+                                  - HUNDRED
+                                  - TEN_THOUSAND
+                                  - MILLION
                                   type: string
                                 numerator:
                                   description: Specifies the numerator. Defaults to 0.
@@ -116,9 +116,9 @@ spec:
                                 denominator:
                                   description: Specifies the denominator. If the denominator specified is less than the numerator, the final fractional percentage is capped at 1 (100%).
                                   enum:
-                                  - - HUNDRED
-                                    - TEN_THOUSAND
-                                    - MILLION
+                                  - HUNDRED
+                                  - TEN_THOUSAND
+                                  - MILLION
                                   type: string
                                 numerator:
                                   description: Specifies the numerator. Defaults to 0.
@@ -146,16 +146,16 @@ spec:
                                     actionType:
                                       description: The action type to implement.
                                       enum:
-                                      - - CUSTOM
-                                        - SSN
-                                        - MASTERCARD
-                                        - VISA
-                                        - AMEX
-                                        - DISCOVER
-                                        - JCB
-                                        - DINERS_CLUB
-                                        - CREDIT_CARD_TRACKERS
-                                        - ALL_CREDIT_CARDS
+                                      - CUSTOM
+                                      - SSN
+                                      - MASTERCARD
+                                      - VISA
+                                      - AMEX
+                                      - DISCOVER
+                                      - JCB
+                                      - DINERS_CLUB
+                                      - CREDIT_CARD_TRACKERS
+                                      - ALL_CREDIT_CARDS
                                       type: string
                                     customAction:
                                       description: The custom user action to be applied. This field will only be used if the custom action type is specified above.
@@ -245,9 +245,9 @@ spec:
                         enabledFor:
                           description: Whether responses, access logs, or both should be masked by the applied actions. If not defined, masking will only be enabled for responses bodies.
                           enum:
-                          - - RESPONSE_BODY
-                            - ACCESS_LOGS
-                            - ALL
+                          - RESPONSE_BODY
+                          - ACCESS_LOGS
+                          - ALL
                           type: string
                       type: object
                     extauth:
@@ -324,7 +324,7 @@ spec:
                         transportApiVersion:
                           description: Determines the API version for the `ext_authz` transport protocol that will be used by Envoy to communicate with the auth server. Defaults to `V2`. For more info, see the `transport_api_version` field [here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#extensions-filters-http-ext-authz-v3-extauthz).
                           enum:
-                          - - V3
+                          - V3
                           type: string
                         userIdHeader:
                           description: If the auth server trusted id of the user, it will be set in this header. Specifically this means that this header will be sanitized form the incoming request.
@@ -400,17 +400,17 @@ spec:
                         compressionLevel:
                           description: A value used for selecting the zlib compression level. This setting will affect speed and amount of compression applied to the content. "BEST" provides higher compression at the cost of higher latency, "SPEED" provides lower compression with minimum impact on response time. "DEFAULT" provides an optimal result between speed and compression. This field will be set to "DEFAULT" if not specified.
                           enum:
-                          - - DEFAULT
-                            - BEST
-                            - SPEED
+                          - DEFAULT
+                          - BEST
+                          - SPEED
                           type: string
                         compressionStrategy:
                           description: A value used for selecting the zlib compression strategy which is directly related to the characteristics of the content. Most of the time "DEFAULT" will be the best choice, though there are situations which changing this parameter might produce better results. For example, run-length encoding (RLE) is typically used when the content is known for having sequences which same data occurs many consecutive times. For more information about each strategy, please refer to zlib manual.
                           enum:
-                          - - DEFAULT
-                            - FILTERED
-                            - HUFFMAN
-                            - RLE
+                          - DEFAULT
+                          - FILTERED
+                          - HUFFMAN
+                          - RLE
                           type: string
                         contentLength:
                           description: Minimum response length, in bytes, which will trigger compression. The default value is 30.
@@ -462,11 +462,11 @@ spec:
                           type: string
                         forwardClientCertDetails:
                           enum:
-                          - - SANITIZE
-                            - FORWARD_ONLY
-                            - APPEND_FORWARD
-                            - SANITIZE_SET
-                            - ALWAYS_FORWARD_ONLY
+                          - SANITIZE
+                          - FORWARD_ONLY
+                          - APPEND_FORWARD
+                          - SANITIZE_SET
+                          - ALWAYS_FORWARD_ONLY
                           type: string
                         generateRequestId:
                           nullable: true
@@ -486,11 +486,11 @@ spec:
                         pathWithEscapedSlashesAction:
                           description: Action to take when request URL path contains escaped slash sequences (%2F, %2f, %5C and %5c). The default value can be overridden by the :ref:`http_connection_manager.path_with_escaped_slashes_action<config_http_conn_man_runtime_path_with_escaped_slashes_action>` runtime variable. The :ref:`http_connection_manager.path_with_escaped_slashes_action_sampling<config_http_conn_man_runtime_path_with_escaped_slashes_action_enabled>` runtime variable can be used to apply the action to a portion of all requests.
                           enum:
-                          - - IMPLEMENTATION_SPECIFIC_DEFAULT
-                            - KEEP_UNCHANGED
-                            - REJECT_REQUEST
-                            - UNESCAPE_AND_REDIRECT
-                            - UNESCAPE_AND_FORWARD
+                          - IMPLEMENTATION_SPECIFIC_DEFAULT
+                          - KEEP_UNCHANGED
+                          - REJECT_REQUEST
+                          - UNESCAPE_AND_REDIRECT
+                          - UNESCAPE_AND_FORWARD
                           type: string
                         preserveExternalRequestId:
                           type: boolean
@@ -503,9 +503,9 @@ spec:
                         serverHeaderTransformation:
                           description: 'For an explanation of the settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto.html#envoy-v3-api-enum-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-serverheadertransformation'
                           enum:
-                          - - OVERWRITE
-                            - APPEND_IF_ABSENT
-                            - PASS_THROUGH
+                          - OVERWRITE
+                          - APPEND_IF_ABSENT
+                          - PASS_THROUGH
                           type: string
                         serverName:
                           type: string
@@ -610,9 +610,9 @@ spec:
                                 collectorEndpointVersion:
                                   description: Determines the selected collector endpoint version. By default, the ``HTTP_JSON_V1`` will be used.
                                   enum:
-                                  - - DEPRECATED_AND_UNAVAILABLE_DO_NOT_USE
-                                    - HTTP_JSON
-                                    - HTTP_PROTO
+                                  - DEPRECATED_AND_UNAVAILABLE_DO_NOT_USE
+                                  - HTTP_JSON
+                                  - HTTP_PROTO
                                   type: string
                                 collectorUpstreamRef:
                                   description: The upstream that hosts the Zipkin collectors.
@@ -679,18 +679,18 @@ spec:
                         request:
                           description: How to measure the request.
                           enum:
-                          - - LAST_INCOMING_FIRST_OUTGOING
-                            - FIRST_INCOMING_FIRST_OUTGOING
-                            - LAST_INCOMING_LAST_OUTGOING
-                            - FIRST_INCOMING_LAST_OUTGOING
+                          - LAST_INCOMING_FIRST_OUTGOING
+                          - FIRST_INCOMING_FIRST_OUTGOING
+                          - LAST_INCOMING_LAST_OUTGOING
+                          - FIRST_INCOMING_LAST_OUTGOING
                           type: string
                         response:
                           description: How measure the response.
                           enum:
-                          - - LAST_INCOMING_FIRST_OUTGOING
-                            - FIRST_INCOMING_FIRST_OUTGOING
-                            - LAST_INCOMING_LAST_OUTGOING
-                            - FIRST_INCOMING_LAST_OUTGOING
+                          - LAST_INCOMING_FIRST_OUTGOING
+                          - FIRST_INCOMING_FIRST_OUTGOING
+                          - LAST_INCOMING_LAST_OUTGOING
+                          - FIRST_INCOMING_LAST_OUTGOING
                           type: string
                       type: object
                     ratelimitServer:
@@ -723,14 +723,14 @@ spec:
                           properties:
                             action:
                               enum:
-                              - - NEVER
-                                - RELEVANT_ONLY
-                                - ALWAYS
+                              - NEVER
+                              - RELEVANT_ONLY
+                              - ALWAYS
                               type: string
                             location:
                               enum:
-                              - - FILTER_STATE
-                                - DYNAMIC_METADATA
+                              - FILTER_STATE
+                              - DYNAMIC_METADATA
                               type: string
                           type: object
                         coreRuleSet:
@@ -794,22 +794,22 @@ spec:
                                   predicate:
                                     description: How this filter should be placed relative to the stage
                                     enum:
-                                    - - During
-                                      - Before
-                                      - After
+                                    - During
+                                    - Before
+                                    - After
                                     type: string
                                   stage:
                                     description: stage of the filter chain in which the selected filter should be added
                                     enum:
-                                    - - FaultStage
-                                      - CorsStage
-                                      - WafStage
-                                      - AuthNStage
-                                      - AuthZStage
-                                      - RateLimitStage
-                                      - AcceptedStage
-                                      - OutAuthStage
-                                      - RouteStage
+                                    - FaultStage
+                                    - CorsStage
+                                    - WafStage
+                                    - AuthNStage
+                                    - AuthZStage
+                                    - RateLimitStage
+                                    - AcceptedStage
+                                    - OutAuthStage
+                                    - RouteStage
                                     type: string
                                 type: object
                               image:
@@ -824,8 +824,8 @@ spec:
                               vmType:
                                 description: selected VM type
                                 enum:
-                                - - V8
-                                  - WAVM
+                                - V8
+                                - WAVM
                                 type: string
                             type: object
                           type: array
@@ -941,9 +941,9 @@ spec:
                       state:
                         description: The state in which the option will be applied. When used in BindConfig STATE_PREBIND is currently the only valid value.
                         enum:
-                        - - STATE_PREBIND
-                          - STATE_BOUND
-                          - STATE_LISTENING
+                        - STATE_PREBIND
+                        - STATE_BOUND
+                        - STATE_LISTENING
                         type: string
                     type: object
                   type: array
@@ -1038,8 +1038,8 @@ spec:
                                                 invocationStyle:
                                                   description: Can be either Sync or Async.
                                                   enum:
-                                                  - - SYNC
-                                                    - ASYNC
+                                                  - SYNC
+                                                  - ASYNC
                                                   type: string
                                                 logicalName:
                                                   description: The Logical Name of the LambdaFunctionSpec to be invoked.
@@ -1177,8 +1177,8 @@ spec:
                                                       type: object
                                                     parseBodyBehavior:
                                                       enum:
-                                                      - - ParseAsJson
-                                                        - DontParse
+                                                      - ParseAsJson
+                                                      - DontParse
                                                       type: string
                                                     passthrough:
                                                       description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
@@ -1287,9 +1287,9 @@ spec:
                                                     denominator:
                                                       description: Specifies the denominator. If the denominator specified is less than the numerator, the final fractional percentage is capped at 1 (100%).
                                                       enum:
-                                                      - - HUNDRED
-                                                        - TEN_THOUSAND
-                                                        - MILLION
+                                                      - HUNDRED
+                                                      - TEN_THOUSAND
+                                                      - MILLION
                                                       type: string
                                                     numerator:
                                                       description: Specifies the numerator. Defaults to 0.
@@ -1309,9 +1309,9 @@ spec:
                                                     denominator:
                                                       description: Specifies the denominator. If the denominator specified is less than the numerator, the final fractional percentage is capped at 1 (100%).
                                                       enum:
-                                                      - - HUNDRED
-                                                        - TEN_THOUSAND
-                                                        - MILLION
+                                                      - HUNDRED
+                                                      - TEN_THOUSAND
+                                                      - MILLION
                                                       type: string
                                                     numerator:
                                                       description: Specifies the numerator. Defaults to 0.
@@ -1579,8 +1579,8 @@ spec:
                                                                 type: object
                                                               parseBodyBehavior:
                                                                 enum:
-                                                                - - ParseAsJson
-                                                                  - DontParse
+                                                                - ParseAsJson
+                                                                - DontParse
                                                                 type: string
                                                               passthrough:
                                                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
@@ -1689,8 +1689,8 @@ spec:
                                                                 type: object
                                                               parseBodyBehavior:
                                                                 enum:
-                                                                - - ParseAsJson
-                                                                  - DontParse
+                                                                - ParseAsJson
+                                                                - DontParse
                                                                 type: string
                                                               passthrough:
                                                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
@@ -1827,8 +1827,8 @@ spec:
                                                                 type: object
                                                               parseBodyBehavior:
                                                                 enum:
-                                                                - - ParseAsJson
-                                                                  - DontParse
+                                                                - ParseAsJson
+                                                                - DontParse
                                                                 type: string
                                                               passthrough:
                                                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
@@ -2010,8 +2010,8 @@ spec:
                                                                 type: object
                                                               parseBodyBehavior:
                                                                 enum:
-                                                                - - ParseAsJson
-                                                                  - DontParse
+                                                                - ParseAsJson
+                                                                - DontParse
                                                                 type: string
                                                               passthrough:
                                                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
@@ -2120,8 +2120,8 @@ spec:
                                                                 type: object
                                                               parseBodyBehavior:
                                                                 enum:
-                                                                - - ParseAsJson
-                                                                  - DontParse
+                                                                - ParseAsJson
+                                                                - DontParse
                                                                 type: string
                                                               passthrough:
                                                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
@@ -2258,8 +2258,8 @@ spec:
                                                                 type: object
                                                               parseBodyBehavior:
                                                                 enum:
-                                                                - - ParseAsJson
-                                                                  - DontParse
+                                                                - ParseAsJson
+                                                                - DontParse
                                                                 type: string
                                                               passthrough:
                                                                 description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
@@ -2378,8 +2378,8 @@ spec:
                                                       type: object
                                                     parseBodyBehavior:
                                                       enum:
-                                                      - - ParseAsJson
-                                                        - DontParse
+                                                      - ParseAsJson
+                                                      - DontParse
                                                       type: string
                                                     passthrough:
                                                       description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
@@ -2488,8 +2488,8 @@ spec:
                                                       type: object
                                                     parseBodyBehavior:
                                                       enum:
-                                                      - - ParseAsJson
-                                                        - DontParse
+                                                      - ParseAsJson
+                                                      - DontParse
                                                       type: string
                                                     passthrough:
                                                       description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
@@ -2546,8 +2546,8 @@ spec:
                                       invocationStyle:
                                         description: Can be either Sync or Async.
                                         enum:
-                                        - - SYNC
-                                          - ASYNC
+                                        - SYNC
+                                        - ASYNC
                                         type: string
                                       logicalName:
                                         description: The Logical Name of the LambdaFunctionSpec to be invoked.
@@ -2685,8 +2685,8 @@ spec:
                                             type: object
                                           parseBodyBehavior:
                                             enum:
-                                            - - ParseAsJson
-                                              - DontParse
+                                            - ParseAsJson
+                                            - DontParse
                                             type: string
                                           passthrough:
                                             description: This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it.
@@ -2762,19 +2762,19 @@ spec:
                                 type: array
                               maximumProtocolVersion:
                                 enum:
-                                - - TLS_AUTO
-                                  - TLSv1_0
-                                  - TLSv1_1
-                                  - TLSv1_2
-                                  - TLSv1_3
+                                - TLS_AUTO
+                                - TLSv1_0
+                                - TLSv1_1
+                                - TLSv1_2
+                                - TLSv1_3
                                 type: string
                               minimumProtocolVersion:
                                 enum:
-                                - - TLS_AUTO
-                                  - TLSv1_0
-                                  - TLSv1_1
-                                  - TLSv1_2
-                                  - TLSv1_3
+                                - TLS_AUTO
+                                - TLSv1_0
+                                - TLSv1_1
+                                - TLSv1_2
+                                - TLSv1_3
                                 type: string
                             type: object
                           sds:

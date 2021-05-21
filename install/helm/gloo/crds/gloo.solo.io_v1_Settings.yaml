@@ -136,9 +136,9 @@ spec:
               properties:
                 fdsMode:
                   enum:
-                  - - BLACKLIST
-                    - WHITELIST
-                    - DISABLED
+                  - BLACKLIST
+                  - WHITELIST
+                  - DISABLED
                   type: string
               type: object
             discoveryNamespace:
@@ -218,7 +218,7 @@ spec:
                 transportApiVersion:
                   description: Determines the API version for the `ext_authz` transport protocol that will be used by Envoy to communicate with the auth server. Defaults to `V2`. For more info, see the `transport_api_version` field [here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#extensions-filters-http-ext-authz-v3-extauthz).
                   enum:
-                  - - V3
+                  - V3
                   type: string
                 userIdHeader:
                   description: If the auth server trusted id of the user, it will be set in this header. Specifically this means that this header will be sanitized form the incoming request.
@@ -461,11 +461,11 @@ spec:
                             type: integer
                           unit:
                             enum:
-                            - - UNKNOWN
-                              - SECOND
-                              - MINUTE
-                              - HOUR
-                              - DAY
+                            - UNKNOWN
+                            - SECOND
+                            - MINUTE
+                            - HOUR
+                            - DAY
                             type: string
                         type: object
                       simpleDescriptors:
@@ -532,19 +532,19 @@ spec:
                       type: array
                     maximumProtocolVersion:
                       enum:
-                      - - TLS_AUTO
-                        - TLSv1_0
-                        - TLSv1_1
-                        - TLSv1_2
-                        - TLSv1_3
+                      - TLS_AUTO
+                      - TLSv1_0
+                      - TLSv1_1
+                      - TLSv1_2
+                      - TLSv1_3
                       type: string
                     minimumProtocolVersion:
                       enum:
-                      - - TLS_AUTO
-                        - TLSv1_0
-                        - TLSv1_1
-                        - TLSv1_2
-                        - TLSv1_3
+                      - TLS_AUTO
+                      - TLSv1_0
+                      - TLSv1_1
+                      - TLSv1_2
+                      - TLSv1_3
                       type: string
                   type: object
               type: object
