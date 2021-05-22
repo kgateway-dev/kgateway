@@ -34,7 +34,7 @@ var _ = Describe("ClusterExtensions", func() {
 		})
 
 		It("should add per filter config to route", func() {
-			err := SetExtenstionProtocolOptions(out, name, msg)
+			err := SetExtensionProtocolOptions(out, name, msg)
 			Expect(err).NotTo(HaveOccurred())
 			anyMsg, err := utils.MessageToAny(msg)
 			Expect(err).NotTo(HaveOccurred())
