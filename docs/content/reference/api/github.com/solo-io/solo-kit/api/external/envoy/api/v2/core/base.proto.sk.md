@@ -250,7 +250,7 @@ Header name/value pair.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `key` | `string` | Header name. |
-| `value` | `string` | Header value. The same `format specifier (config_access_log_format)` as used for `HTTP access logging (config_access_log)` applies here, however unknown header values are replaced with the empty string instead of `-`. |
+| `value` | `string` | Header value. The same :ref:`format specifier <config_access_log_format>` as used for :ref:`HTTP access logging <config_access_log>` applies here, however unknown header values are replaced with the empty string instead of `-`. |
 
 
 
@@ -263,15 +263,13 @@ Header name/value pair plus option to control append behavior.
 
 ```yaml
 "header": .solo.io.envoy.api.v2.core.HeaderValue
-"headerSecretRef": .core.solo.io.ResourceRef
 "append": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `header` | [.solo.io.envoy.api.v2.core.HeaderValue](../base.proto.sk/#headervalue) | Explicitly specified header. Only one of `header` or `headerSecretRef` can be set. |
-| `headerSecretRef` | [.core.solo.io.ResourceRef](../../../../../../v1/ref.proto.sk/#resourceref) | Reference to header contained in a secret. Only one of `headerSecretRef` or `header` can be set. |
+| `header` | [.solo.io.envoy.api.v2.core.HeaderValue](../base.proto.sk/#headervalue) | Header name/value pair that this option applies to. |
 | `append` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Should the value be appended? If true (default), the value is appended to existing values. |
 
 

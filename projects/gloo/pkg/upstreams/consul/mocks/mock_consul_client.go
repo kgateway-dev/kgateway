@@ -5,9 +5,10 @@
 package mock_consul
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	api "github.com/hashicorp/consul/api"
-	reflect "reflect"
 )
 
 // MockConsulClient is a mock of ConsulClient interface

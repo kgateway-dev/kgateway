@@ -19,7 +19,7 @@ import (
 	"context"
 	"errors"
 
-	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	envoy_service_discovery_v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/service/discovery/v2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
