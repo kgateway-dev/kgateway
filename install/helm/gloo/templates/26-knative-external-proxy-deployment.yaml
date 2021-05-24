@@ -1,3 +1,4 @@
+{{- define "knativeExternalProxy.deploymentSpec"}}
 {{- if .Values.settings.integrations.knative.enabled }}
 {{- if (semverCompare ">= 0.8.0" .Values.settings.integrations.knative.version ) }}
 {{- $image := .Values.settings.integrations.knative.proxy.image }}
@@ -37,6 +38,7 @@ spec:
         {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
+      {{- include "gloo.podSpecStandardFields" .Values.settings.integrations.knative.proxy | nindent 6 -}}
       containers:
       - args: ["--disable-hot-restart"]
         env:
@@ -80,3 +82,13 @@ spec:
 
 {{- end }}
 {{- end }}
+{{- end }} {{/* define knativeExternalProxy.deploymentSpec */}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.settings.integrations.knative.proxy -}}
+{{- if .Values.settings.integrations.knative.proxy.deployment -}}
+{{- $kubeResourceOverride = .Values.settings.integrations.knative.proxy.deployment.kubeResourceOverride  -}}
+{{- end -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "knativeExternalProxy.deploymentSpec") -}}

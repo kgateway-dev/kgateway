@@ -1,3 +1,4 @@
+{{- define "accessLogger.serviceSpec"}}
 {{- if and .Values.gateway.enabled .Values.accessLogger.enabled }}
 
 apiVersion: v1
@@ -17,4 +18,12 @@ spec:
   selector:
     app: gloo
     gloo: gateway-proxy-access-logger
-{{- end }}
+{{- end }} {{/* if and .Values.gateway.enabled .Values.accessLogger.enabled */}}
+{{- end }} {{/* define "accessLogger.serviceSpec" */}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.accessLogger.service -}}
+{{- $kubeResourceOverride = .Values.accessLogger.service.kubeResourceOverride  -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "accessLogger.serviceSpec") -}}

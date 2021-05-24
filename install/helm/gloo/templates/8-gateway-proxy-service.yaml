@@ -1,11 +1,9 @@
-{{- if .Values.gateway.enabled }}
-{{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
-{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
-{{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
-{{$gatewaySettings := $spec.gatewaySettings}}
-{{- if not $spec.disabled }}
+{{- define "gatewayProxy.serviceSpec" }}
+{{- $name := (index . 1) }}
+{{- $spec := (index . 2) }}
+{{- with (first .) }}
+{{ $gatewaySettings := $spec.gatewaySettings }}
 {{- $svcName := default $name $spec.service.name }}
----
 apiVersion: v1
 kind: Service
 metadata:
@@ -14,7 +12,7 @@ metadata:
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
   name: {{ $svcName | kebabcase }}
-  namespace: {{ $.Release.Namespace }}
+  namespace: {{ .Release.Namespace }}
 {{- if $spec.service.extraAnnotations }}
   annotations:
   {{- range $key, $value := $spec.service.extraAnnotations }}
@@ -98,13 +96,16 @@ spec:
   {{- end }} {{/* with spec.service.loadBalancerSourceRanges */}}
   {{- end }} {{/* $spec.service.loadBalancerSourceRanges */}}
   {{- end }} {{/* $spec.service.type "LoadBalancer" */}}
----
-{{- if and $spec.readConfig $spec.readConfigMulticluster }}
+  {{- end }} {{/* with */}}
+  {{- end }} {{/* define gatewayProxy.serviceSpec */}}
+{{- define "gatewayProxy.configDumpServiceSpec" }}
+{{- $name := (index . 1) }}
+{{- with (first .) }}
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ $name | kebabcase }}-config-dump-service
-  namespace: {{ $.Release.Namespace }}
+  namespace: {{ .Release.Namespace }}
   labels:
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
@@ -116,8 +117,31 @@ spec:
   ports:
     - protocol: TCP
       port: 8082
+{{- end }} {{/* with (first .) */}}
+{{- end }} {{/* define gatewayProxy.configDumpServiceSpec */}}
+
+{{- if .Values.gateway.enabled }}
+{{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
+{{/* Render each gatewayProxy template with it's yaml overrides */}}
+{{- $serviceYamlOverride := dict -}}
+{{- $configDumpServiceYamlOverride := dict -}}
+{{- if $gatewaySpec.service -}}
+{{- $serviceYamlOverride = $spec.service.kubeResourceOverride  -}}
+{{- if $gatewaySpec.service.configDumpService -}}
+{{- $configDumpServiceYamlOverride = $spec.service.configDumpService.kubeResourceOverride  -}}
+{{- end -}}{{/* if $gatewaySpec.service.configDumpService */}}
+{{- end -}}{{/* if $gatewaySpec.service */}}
+{{- $ctx := (list $ $name $spec)}}
+{{- if not $spec.disabled }}
+---
+{{- include "gloo.util.merge" (list $ctx $serviceYamlOverride "gatewayProxy.serviceSpec") -}}
+{{- if and $spec.readConfig $spec.readConfigMulticluster }}
+---
+{{- include "gloo.util.merge" (list $ctx $configDumpServiceYamlOverride "gatewayProxy.configDumpServiceSpec") -}}
 {{- end }} {{/* if and ($spec.readConfig $spec.readConfigMulticluster) */}}
+{{- end }}{{/* if not $spec.disabled */}}
 {{- end }} {{/* range $name, $spec := .Values.gatewayProxies */}}
-{{- end }} {{/* if not $spec.disabled */}}
-{{ end }} {{/* if .Values.gateway.enabled */}}
+{{- end }} {{/* if .Values.gateway.enabled */}}
 

@@ -1,3 +1,4 @@
+{{- define "knativeExternalProxy.serviceSpec"}}
 {{- if .Values.settings.integrations.knative.enabled }}
 {{- if (semverCompare ">= 0.8.0" .Values.settings.integrations.knative.version ) }}
 apiVersion: v1
@@ -32,5 +33,15 @@ spec:
   {{- if and (eq .Values.settings.integrations.knative.proxy.service.type "LoadBalancer") .Values.settings.integrations.knative.proxy.service.loadBalancerIP }}
   loadBalancerIP: {{ .Values.settings.integrations.knative.proxy.service.loadBalancerIP }}
   {{- end }}
-{{- end }}
-{{- end }}
+{{- end }} {{/* if (semverCompare ">= 0.8.0" .Values.settings.integrations.knative.version ) */}}
+{{- end }} {{/* if .Values.settings.integrations.knative.enabled */}}
+{{- end }} {{/*define "knativeExternalProxy.serviceSpec"*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.settings.integrations.knative.proxy -}}
+{{- if .Values.settings.integrations.knative.proxy.service -}}
+{{- $kubeResourceOverride = .Values.settings.integrations.knative.proxy.service.kubeResourceOverride  -}}
+{{- end -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "knativeExternalProxy.serviceSpec") -}}
