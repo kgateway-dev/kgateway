@@ -559,14 +559,14 @@ type DelegateAction struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the Route Table to delegate to.
-	// Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name`
-	// and/or `namespace` have been specified, Gloo will ignore `single` and `selector`.
+	// Deprecated: these fields have been added for backwards-compatibility. Please use the `ref` field. If `name`
+	// and/or `namespace` have been specified, Gloo will ignore `ref` and `selector`.
 	//
 	// Deprecated: Do not use.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The namespace of the Route Table to delegate to.
-	// Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name`
-	// and/or `namespace` have been specified, Gloo will ignore `single` and `selector`.
+	// Deprecated: these fields have been added for backwards-compatibility. Please use the `ref` field. If `name`
+	// and/or `namespace` have been specified, Gloo will ignore `ref` and `selector`.
 	//
 	// Deprecated: Do not use.
 	Namespace string `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`

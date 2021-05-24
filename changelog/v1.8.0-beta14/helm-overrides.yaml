@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4711
+    resolvesIssue: false
+    description: |
+      Added override fields to the helm values, which can be used to override arbitrary fields
+      in the generated k8s resources without requiring new helm logic to be implemented.

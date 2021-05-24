@@ -1,3 +1,4 @@
+{{ define "gloo.serviceSpec" }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -25,3 +26,14 @@ spec:
     protocol: TCP
   selector:
     gloo: gloo
+{{- end }} {{/* define "gloo.serviceSpec "*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.gloo.service -}}
+{{- if .Values.gloo.service.kubeResourceOverride -}}
+{{- $kubeResourceOverride = .Values.gloo.service.kubeResourceOverride  -}}
+{{- end -}}
+{{- end -}}
+
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "gloo.serviceSpec") -}}

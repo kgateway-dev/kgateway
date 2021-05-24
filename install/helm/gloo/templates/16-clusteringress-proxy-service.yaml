@@ -1,3 +1,4 @@
+{{- define "clusterIngressProxy.serviceSpec"}}
 {{- if .Values.settings.integrations.knative.enabled }}
 {{- if (semverCompare "< 0.8.0" .Values.settings.integrations.knative.version ) }}
 apiVersion: v1
@@ -22,4 +23,14 @@ spec:
     gloo: clusteringress-proxy
   type: {{ .Values.settings.integrations.knative.proxy.service.type }}
 {{- end }}
-{{- end }}
+{{- end }} {{/* if .Values.settings.integrations.knative.enabled */}}
+{{- end }} {{/*define "clusterIngressProxy.serviceSpec"*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.settings.integrations.knative.proxy -}}
+{{- if .Values.settings.integrations.knative.proxy.service -}}
+{{- $kubeResourceOverride = .Values.settings.integrations.knative.proxy.service.kubeResourceOverride  -}}
+{{- end -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "clusterIngressProxy.serviceSpec") -}}

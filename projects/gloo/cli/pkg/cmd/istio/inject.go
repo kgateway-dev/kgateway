@@ -151,6 +151,7 @@ func istioInject(args []string, opts *options.Options) error {
 				return err
 			}
 
+			fmt.Println("Istio injection was successful!")
 		}
 	}
 

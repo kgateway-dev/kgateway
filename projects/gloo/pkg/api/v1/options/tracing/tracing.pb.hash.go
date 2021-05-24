@@ -71,6 +71,54 @@ func (m *ListenerTracingSettings) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	for _, v := range m.GetEnvironmentVariablesForTags() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	for _, v := range m.GetLiteralsForTags() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
 	switch m.ProviderConfig.(type) {
 
 	case *ListenerTracingSettings_ZipkinConfig:
@@ -253,6 +301,58 @@ func (m *TracePercentages) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			}
 		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *TracingTagEnvironmentVariable) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("tracing.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing.TracingTagEnvironmentVariable")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetTag())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetDefaultValue())); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *TracingTagLiteral) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("tracing.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing.TracingTagLiteral")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetTag())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetValue())); err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil

@@ -87,6 +87,7 @@ weight: 5
 "requestTransformation": .envoy.api.v2.filter.http.Transformation
 "clearRouteCache": bool
 "responseTransformation": .envoy.api.v2.filter.http.Transformation
+"onStreamCompletionTransformation": .envoy.api.v2.filter.http.Transformation
 
 ```
 
@@ -95,6 +96,7 @@ weight: 5
 | `requestTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation to requests. |
 | `clearRouteCache` | `bool` | Clear the route cache if the request transformation was applied. |
 | `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation to responses. |
+| `onStreamCompletionTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation in the onStreamComplete callback (for modifying headers and dynamic metadata for access logs). |
 
 
 
@@ -228,17 +230,20 @@ weight: 5
 
  
 This message defines a transformation.
+This proto is for envoy filter config, not user-facing API.
 
 ```yaml
 "transformationTemplate": .envoy.api.v2.filter.http.TransformationTemplate
 "headerBodyTransform": .envoy.api.v2.filter.http.HeaderBodyTransform
+"transformerConfig": .solo.io.envoy.config.core.v3.TypedExtensionConfig
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `transformationTemplate` | [.envoy.api.v2.filter.http.TransformationTemplate](../transformation.proto.sk/#transformationtemplate) | Apply transformation templates. Only one of `transformationTemplate` or `headerBodyTransform` can be set. |
-| `headerBodyTransform` | [.envoy.api.v2.filter.http.HeaderBodyTransform](../transformation.proto.sk/#headerbodytransform) | This type of transformation will make all the headers available in the response body. The resulting JSON body will consist of two attributes: 'headers', containing the headers, and 'body', containing the original body. Only one of `headerBodyTransform` or `transformationTemplate` can be set. |
+| `transformationTemplate` | [.envoy.api.v2.filter.http.TransformationTemplate](../transformation.proto.sk/#transformationtemplate) | Apply transformation templates. Only one of `transformationTemplate`, or `transformerConfig` can be set. |
+| `headerBodyTransform` | [.envoy.api.v2.filter.http.HeaderBodyTransform](../transformation.proto.sk/#headerbodytransform) | This type of transformation will make all the headers available in the response body. The resulting JSON body will consist of two attributes: 'headers', containing the headers, and 'body', containing the original body. Only one of `headerBodyTransform`, or `transformerConfig` can be set. |
+| `transformerConfig` | [.solo.io.envoy.config.core.v3.TypedExtensionConfig](../../../config/core/v3/extension.proto.sk/#typedextensionconfig) | Configuration for an externally implemented transformer, used by envoy transformation filter. Only one of `transformerConfig`, or `headerBodyTransform` can be set. |
 
 
 

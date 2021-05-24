@@ -13,6 +13,7 @@ import "validate/validate.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/route/v3/route_components.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/extension.proto";
 
 message FilterTransformations {
   // Specifies transformations based on the route matches. The first matched
@@ -46,6 +47,9 @@ message TransformationRule {
     bool clear_route_cache = 3;
     // Apply a transformation to responses.
     Transformation response_transformation = 2;
+    // Apply a transformation in the onStreamComplete callback 
+    // (for modifying headers and dynamic metadata for access logs)
+    Transformation on_stream_completion_transformation = 4;
   }
   // transformation to perform
   Transformations route_transformations = 2;
@@ -112,6 +116,7 @@ message ResponseTransformationRule {
 }
 
 // This message defines a transformation.
+// This proto is for envoy filter config, not user-facing API.
 message Transformation {
   // The type of transformation to apply.
   oneof transformation_type {
@@ -122,6 +127,9 @@ message Transformation {
     // 'headers', containing the headers, and 'body', containing the original
     // body.
     HeaderBodyTransform header_body_transform = 2;
+    // Configuration for an externally implemented transformer, used by
+    // envoy transformation filter.
+    solo.io.envoy.config.core.v3.TypedExtensionConfig transformer_config = 3;
   }
 }
 

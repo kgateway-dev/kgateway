@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformers/xslt"
 	matcherv3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
@@ -24,12 +25,86 @@ var _ = Describe("Plugin", func() {
 		outputTransform *envoytransformation.RouteTransformations
 	)
 
+	Context("translate transformations", func() {
+		BeforeEach(func() {
+			p = NewPlugin()
+			err := p.Init(plugins.InitParams{})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("translates header body transform", func() {
+			headerBodyTransform := &envoytransformation.HeaderBodyTransform{}
+
+			input := &transformation.Transformation{
+				TransformationType: &transformation.Transformation_HeaderBodyTransform{
+					HeaderBodyTransform: headerBodyTransform,
+				},
+			}
+
+			expectedOutput := &envoytransformation.Transformation{
+				TransformationType: &envoytransformation.Transformation_HeaderBodyTransform{
+					HeaderBodyTransform: headerBodyTransform,
+				},
+			}
+			output, err := p.TranslateTransformation(input)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(output).To(Equal(expectedOutput))
+		})
+
+		It("translates transformation template", func() {
+			transformationTemplate := &envoytransformation.TransformationTemplate{
+				HeadersToAppend: []*envoytransformation.TransformationTemplate_HeaderToAppend{
+					{
+						Key: "some-header",
+						Value: &envoytransformation.InjaTemplate{
+							Text: "some text",
+						},
+					},
+				},
+			}
+
+			input := &transformation.Transformation{
+				TransformationType: &transformation.Transformation_TransformationTemplate{
+					TransformationTemplate: transformationTemplate,
+				},
+			}
+
+			expectedOutput := &envoytransformation.Transformation{
+				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+					TransformationTemplate: transformationTemplate,
+				},
+			}
+			output, err := p.TranslateTransformation(input)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(output).To(Equal(expectedOutput))
+		})
+
+		It("throws error on unsupported transformation type", func() {
+			// Xslt Transformation is enterprise-only
+			input := &transformation.Transformation{
+				TransformationType: &transformation.Transformation_XsltTransformation{
+					XsltTransformation: &xslt.XsltTransformation{
+						Xslt: "<xsl:stylesheet>some transform</xsl:stylesheet>",
+					},
+				},
+			}
+
+			output, err := p.TranslateTransformation(input)
+			Expect(output).To(BeNil())
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(UnknownTransformationType(&transformation.Transformation_XsltTransformation{})))
+
+		})
+	})
+
 	Context("deprecated transformations", func() {
 		var (
 			inputTransform *transformation.Transformations
 		)
 		BeforeEach(func() {
 			p = NewPlugin()
+			err := p.Init(plugins.InitParams{})
+			Expect(err).NotTo(HaveOccurred())
 			inputTransform = &transformation.Transformations{
 				ClearRouteCache: true,
 			}
@@ -96,50 +171,75 @@ var _ = Describe("Plugin", func() {
 		)
 		BeforeEach(func() {
 			p = NewPlugin()
-			var err error
+			err := p.Init(plugins.InitParams{})
+			Expect(err).NotTo(HaveOccurred())
 			earlyStageFilterConfig, err = utils.MessageToAny(&envoytransformation.FilterTransformations{
 				Stage: EarlyStageNumber,
 			})
 			Expect(err).NotTo(HaveOccurred())
+			earlyRequestTransformationTemplate := &envoytransformation.TransformationTemplate{
+				AdvancedTemplates: true,
+				BodyTransformation: &envoytransformation.TransformationTemplate_Body{
+					Body: &envoytransformation.InjaTemplate{Text: "1"},
+				},
+			}
 			// construct transformation with all the options, to make sure translation is correct
-			earlyRequestTransform := &envoytransformation.Transformation{
-				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
-					TransformationTemplate: &envoytransformation.TransformationTemplate{
-						AdvancedTemplates: true,
-						BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-							Body: &envoytransformation.InjaTemplate{Text: "1"},
-						},
-					},
+			earlyRequestTransform := &transformation.Transformation{
+				TransformationType: &transformation.Transformation_TransformationTemplate{
+					TransformationTemplate: earlyRequestTransformationTemplate,
 				},
 			}
-			earlyResponseTransform := &envoytransformation.Transformation{
+			envoyEarlyRequestTransform := &envoytransformation.Transformation{
 				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
-					TransformationTemplate: &envoytransformation.TransformationTemplate{
-						AdvancedTemplates: true,
-						BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-							Body: &envoytransformation.InjaTemplate{Text: "2"},
-						},
-					},
+					TransformationTemplate: earlyRequestTransformationTemplate,
 				},
 			}
-			requestTransform := &envoytransformation.Transformation{
-				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
-					TransformationTemplate: &envoytransformation.TransformationTemplate{
-						AdvancedTemplates: true,
-						BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-							Body: &envoytransformation.InjaTemplate{Text: "11"},
-						},
-					},
+			earlyResponseTransformationTemplate := &envoytransformation.TransformationTemplate{
+				AdvancedTemplates: true,
+				BodyTransformation: &envoytransformation.TransformationTemplate_Body{
+					Body: &envoytransformation.InjaTemplate{Text: "2"},
 				},
 			}
-			responseTransform := &envoytransformation.Transformation{
+			earlyResponseTransform := &transformation.Transformation{
+				TransformationType: &transformation.Transformation_TransformationTemplate{
+					TransformationTemplate: earlyResponseTransformationTemplate,
+				},
+			}
+			envoyEarlyResponseTransform := &envoytransformation.Transformation{
 				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
-					TransformationTemplate: &envoytransformation.TransformationTemplate{
-						AdvancedTemplates: true,
-						BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-							Body: &envoytransformation.InjaTemplate{Text: "12"},
-						},
-					},
+					TransformationTemplate: earlyResponseTransformationTemplate,
+				},
+			}
+			requestTransformation := &envoytransformation.TransformationTemplate{
+				AdvancedTemplates: true,
+				BodyTransformation: &envoytransformation.TransformationTemplate_Body{
+					Body: &envoytransformation.InjaTemplate{Text: "11"},
+				},
+			}
+			requestTransform := &transformation.Transformation{
+				TransformationType: &transformation.Transformation_TransformationTemplate{
+					TransformationTemplate: requestTransformation,
+				},
+			}
+			envoyRequestTransform := &envoytransformation.Transformation{
+				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+					TransformationTemplate: requestTransformation,
+				},
+			}
+			responseTransformation := &envoytransformation.TransformationTemplate{
+				AdvancedTemplates: true,
+				BodyTransformation: &envoytransformation.TransformationTemplate_Body{
+					Body: &envoytransformation.InjaTemplate{Text: "12"},
+				},
+			}
+			responseTransform := &transformation.Transformation{
+				TransformationType: &transformation.Transformation_TransformationTemplate{
+					TransformationTemplate: responseTransformation,
+				},
+			}
+			envoyResponseTransform := &envoytransformation.Transformation{
+				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+					TransformationTemplate: responseTransformation,
 				},
 			}
 			inputTransform = &transformation.TransformationStages{
@@ -206,7 +306,7 @@ var _ = Describe("Plugin", func() {
 										MatchPattern: &matcherv3.StringMatcher_Exact{Exact: "abcd"},
 									},
 								},
-								ResponseTransformation: earlyResponseTransform,
+								ResponseTransformation: envoyEarlyResponseTransform,
 							},
 						},
 					},
@@ -216,8 +316,8 @@ var _ = Describe("Plugin", func() {
 							RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
 								Match:                  &v3.RouteMatch{PathSpecifier: &v3.RouteMatch_Prefix{Prefix: "/foo"}},
 								ClearRouteCache:        true,
-								RequestTransformation:  earlyRequestTransform,
-								ResponseTransformation: earlyResponseTransform,
+								RequestTransformation:  envoyEarlyRequestTransform,
+								ResponseTransformation: envoyEarlyResponseTransform,
 							},
 						},
 					},
@@ -235,7 +335,7 @@ var _ = Describe("Plugin", func() {
 										MatchPattern: &matcherv3.StringMatcher_Exact{Exact: "abcd"},
 									},
 								},
-								ResponseTransformation: earlyResponseTransform,
+								ResponseTransformation: envoyEarlyResponseTransform,
 							},
 						},
 					},
@@ -244,8 +344,8 @@ var _ = Describe("Plugin", func() {
 							RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
 								Match:                  &v3.RouteMatch{PathSpecifier: &v3.RouteMatch_Prefix{Prefix: "/foo2"}},
 								ClearRouteCache:        true,
-								RequestTransformation:  requestTransform,
-								ResponseTransformation: responseTransform,
+								RequestTransformation:  envoyRequestTransform,
+								ResponseTransformation: envoyResponseTransform,
 							},
 						},
 					},

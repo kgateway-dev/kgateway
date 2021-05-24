@@ -46,8 +46,6 @@ this during an installation, you can disable the creation of these resources by 
 global:
   glooRbac:
     create: false
-crds:
-  create: false
 ```
 
 You may also try performing an installation of Gloo Edge that is scoped to a single namespace:

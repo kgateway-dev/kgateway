@@ -166,6 +166,16 @@ func (m *Listener) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetRouteOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRouteOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRouteOptions(), target.GetRouteOptions()) {
+			return false
+		}
+	}
+
 	switch m.ListenerType.(type) {
 
 	case *Listener_HttpListener:

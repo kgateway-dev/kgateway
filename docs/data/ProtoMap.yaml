@@ -272,6 +272,9 @@ apis:
   envoy.config.health_checker.http_path.v2.HttpPath:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/http_path/http_path.proto.sk/#HttpPath
     package: envoy.config.health_checker.http_path.v2
+  envoy.config.transformer.xslt.v2.XsltTransformation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformers/xslt/xslt_transformer.proto.sk/#XsltTransformation
+    package: envoy.config.transformer.xslt.v2
   fault.options.gloo.solo.io.RouteAbort:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/faultinjection/fault.proto.sk/#RouteAbort
     package: fault.options.gloo.solo.io
@@ -445,6 +448,9 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.RouteAction:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#RouteAction
+    package: gloo.solo.io
+  gloo.solo.io.RouteConfigurationOptions:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#RouteConfigurationOptions
     package: gloo.solo.io
   gloo.solo.io.RouteOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#RouteOptions
@@ -1316,6 +1322,12 @@ apis:
   tracing.options.gloo.solo.io.TracePercentages:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/#TracePercentages
     package: tracing.options.gloo.solo.io
+  tracing.options.gloo.solo.io.TracingTagEnvironmentVariable:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/#TracingTagEnvironmentVariable
+    package: tracing.options.gloo.solo.io
+  tracing.options.gloo.solo.io.TracingTagLiteral:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/#TracingTagLiteral
+    package: tracing.options.gloo.solo.io
   transformation.options.gloo.solo.io.Parameters:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/parameters.proto.sk/#Parameters
     package: transformation.options.gloo.solo.io
@@ -1327,6 +1339,9 @@ apis:
     package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.ResponseMatch:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#ResponseMatch
+    package: transformation.options.gloo.solo.io
+  transformation.options.gloo.solo.io.Transformation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#Transformation
     package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.TransformationStages:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#TransformationStages

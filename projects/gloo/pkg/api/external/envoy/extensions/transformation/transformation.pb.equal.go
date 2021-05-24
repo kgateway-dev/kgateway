@@ -327,6 +327,21 @@ func (m *Transformation) Equal(that interface{}) bool {
 			}
 		}
 
+	case *Transformation_TransformerConfig:
+		if _, ok := target.TransformationType.(*Transformation_TransformerConfig); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetTransformerConfig()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetTransformerConfig()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetTransformerConfig(), target.GetTransformerConfig()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.TransformationType != target.TransformationType {
@@ -701,6 +716,16 @@ func (m *TransformationRule_Transformations) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetResponseTransformation(), target.GetResponseTransformation()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetOnStreamCompletionTransformation()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetOnStreamCompletionTransformation()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetOnStreamCompletionTransformation(), target.GetOnStreamCompletionTransformation()) {
 			return false
 		}
 	}

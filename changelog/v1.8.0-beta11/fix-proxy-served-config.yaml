@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3947
+    description: >
+      Fixes the `glooctl proxy served-config` command, which will now correctly dump the config that Gloo is serving to Envoy

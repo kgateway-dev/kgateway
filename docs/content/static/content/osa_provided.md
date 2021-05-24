@@ -6,8 +6,8 @@ Name|Version|License
 [aws/aws-sdk-go](https://github.com/aws/aws-sdk-go)|v1.34.9|Apache License 2.0
 [udpa/go](https://github.com/cncf/udpa)|v0.0.0-20201120205902-5459f2c99403|Apache License 2.0
 [cratonica/2goarray](https://github.com/cratonica/2goarray)|v0.0.0-20190331194516-514510793eaa|MIT License
-[dgrijalva/jwt-go](https://github.com/dgrijalva/jwt-go)|v3.2.0+incompatible|MIT License
-[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.9.9-0.20201210154907-fd9021fe5dad|Apache License 2.0
+[jwt-go/v4](https://github.com/dgrijalva/jwt-go)|v4.0.0-preview1|MIT License
+[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.9.9-0.20210511190911-87d352569d55|Apache License 2.0
 [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)|v0.4.0|Apache License 2.0
 [fgrosse/zaptest](https://github.com/fgrosse/zaptest)|v1.1.0|MIT License
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.4.9|BSD 3-clause "New" or "Revised" License
@@ -60,7 +60,6 @@ Name|Version|License
 [k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.19.6|Apache License 2.0
 [k8s.io/client-go](https://k8s.io/client-go)|v0.19.6|Apache License 2.0
 [k8s.io/code-generator](https://k8s.io/code-generator)|v0.19.6|Apache License 2.0
-[k8s.io/helm](https://k8s.io/helm)|v2.17.0+incompatible|Apache License 2.0
 [k8s.io/kubectl](https://k8s.io/kubectl)|v0.19.6|Apache License 2.0
 [k8s.io/kubernetes](https://k8s.io/kubernetes)|v1.19.6|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20200729134348-d5654de09c73|Apache License 2.0
