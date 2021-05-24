@@ -705,16 +705,6 @@ func (m *TransformationRule_Transformations) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetOnStreamCompletionTransformation()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetOnStreamCompletionTransformation()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetOnStreamCompletionTransformation(), target.GetOnStreamCompletionTransformation()) {
-			return false
-		}
-	}
-
 	return true
 }
 
