@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4760
+    description: Removed obsolete kubectl commands in favor of app deployments

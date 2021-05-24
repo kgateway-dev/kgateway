@@ -1,3 +1,4 @@
+{{- define "clusterIngressProxy.configMapSpec"}}
 {{- if .Values.settings.integrations.knative.enabled }}
 {{- if (semverCompare "< 0.8.0" .Values.settings.integrations.knative.version ) }}
 
@@ -133,4 +134,14 @@ data:
           address: {{ .Values.settings.integrations.knative.proxy.loopBackAddress }}
           port_value: 19000
 {{- end }}
-{{- end }}
+{{- end }} {{/* if .Values.settings.integrations.knative.enabled */}}
+{{- end }} {{/*define "clusterIngressProxy.configMapSpec"*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.settings.integrations.knative.proxy -}}
+{{- if .Values.settings.integrations.knative.proxy.configMap -}}
+{{- $kubeResourceOverride = .Values.settings.integrations.knative.proxy.configMap.kubeResourceOverride  -}}
+{{- end -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "clusterIngressProxy.configMapSpec") -}}

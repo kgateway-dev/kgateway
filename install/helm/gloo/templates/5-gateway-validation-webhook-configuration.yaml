@@ -1,3 +1,4 @@
+{{- define "gateway.validationWebhookSpec" }}
 {{- if and (and .Values.gateway.enabled .Values.gateway.validation.enabled) .Values.gateway.validation.webhook.enabled }}
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
@@ -30,5 +31,15 @@ webhooks:
   sideEffects: None
 {{- if .Values.gateway.validation.failurePolicy }}
   failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
-{{- end }}
-{{- end }}
+{{- end }} {{/* if .Values.gateway.validation.failurePolicy */}}
+{{- end }} {{/* if and (and .Values.gateway.enabled .Values.gateway.validation.enabled) .Values.gateway.validation.webhook.enabled */}}
+{{- end }} {{/* define "gateway.validationWebhookSpec" */}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.gateway.validation -}}
+{{- if .Values.gateway.validation.webhook -}}
+{{- $kubeResourceOverride = .Values.gateway.validation.webhook.kubeResourceOverride   -}}
+{{- end -}} {{/* if .Values.gateway.validation.webhook */}}
+{{- end -}} {{/* if .Values.gateway.validation */}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "gateway.validationWebhookSpec") -}}
