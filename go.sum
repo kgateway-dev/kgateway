@@ -1291,8 +1291,8 @@ github.com/solo-io/skv2 v0.17.2/go.mod h1:8Mo/EqmRGTu3UWb6ldnbN/9QyzI788MyG3SSpP
 github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10 h1:Qbq966MqBQ2hlvrg0RuoB2rWXJOwSJq+kT5z4P3Nk50=
 github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10/go.mod h1:pAKKsh7pWK1nkzSfSV67RlmiynYzZlu+IWAylvEqkUI=
 github.com/solo-io/solo-kit v0.16.0/go.mod h1:zf+vof9HAavbFKRgL80jJ24SeE9PvoB8ooQ7DACtK8I=
-github.com/solo-io/solo-kit v0.18.6-0.20210524174239-073a2ac2d524 h1:cPq9brn2trnAeoPzn0Jt6jtrA3u/qLar5xUIc3FdL5I=
-github.com/solo-io/solo-kit v0.18.6-0.20210524174239-073a2ac2d524/go.mod h1:lvhBycupV1hjk5RaHCqg7xYKYb9lBCxZ36zDj7Edy3k=
+github.com/solo-io/solo-kit v0.18.6-0.20210524202626-1fb3316d3ed9 h1:QOJs4SZErP7sblKjQBwj5zwHwktzLffDPXENx8ovH1Q=
+github.com/solo-io/solo-kit v0.18.6-0.20210524202626-1fb3316d3ed9/go.mod h1:lvhBycupV1hjk5RaHCqg7xYKYb9lBCxZ36zDj7Edy3k=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3 h1:Am1RMaWH7jOug0ys4gUeBCgwR/94NSfZqu90j9u8eTA=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3/go.mod h1:3lckq1wF8I6I2a1Jx5IsEG+PQArE57Jp3wBE2rQnKmw=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
