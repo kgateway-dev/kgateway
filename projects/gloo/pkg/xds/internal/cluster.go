@@ -403,7 +403,9 @@ func downgradeHeaderValueOption(opt *envoy_config_core_v3.HeaderValueOption) *en
 	}
 
 	return &envoy_api_v2_core.HeaderValueOption{
-		Header: downgradeHeaderValue(opt.GetHeader()),
+		HeaderOption: &envoy_api_v2_core.HeaderValueOption_Header{
+			Header: downgradeHeaderValue(opt.GetHeader()),
+		},
 		Append: opt.GetAppend(),
 	}
 }

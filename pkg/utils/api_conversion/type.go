@@ -6,6 +6,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	envoytype_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
+	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 // Converts between Envoy and Gloo/solokit versions of envoy protos
@@ -60,15 +61,42 @@ func ToEnvoyHeaderValueOptionList(option []*envoycore_sk.HeaderValueOption, secr
 }
 
 func ToEnvoyHeaderValueOptions(option *envoycore_sk.HeaderValueOption, secrets *v1.SecretList) ([]*envoy_config_core_v3.HeaderValueOption, error) {
-	return []*envoy_config_core_v3.HeaderValueOption{
-		{
-			Header: &envoy_config_core_v3.HeaderValue{
-				Key:   option.Header.GetKey(),
-				Value: option.Header.GetValue(),
+	switch typedOption := option.HeaderOption.(type) {
+	case *envoycore_sk.HeaderValueOption_Header:
+		return []*envoy_config_core_v3.HeaderValueOption{
+			{
+				Header: &envoy_config_core_v3.HeaderValue{
+					Key:   typedOption.Header.GetKey(),
+					Value: typedOption.Header.GetValue(),
+				},
+				Append: option.GetAppend(),
 			},
-			Append: option.GetAppend(),
-		},
-	}, nil
+		}, nil
+	case *envoycore_sk.HeaderValueOption_HeaderSecretRef:
+		secret, err := secrets.Find(typedOption.HeaderSecretRef.GetNamespace(), typedOption.HeaderSecretRef.GetName())
+		if err != nil {
+			return nil, err
+		}
+
+		headerSecrets, ok := secret.Kind.(*v1.Secret_Header)
+		if !ok {
+			return nil, errors.Errorf("Secret %v.%v was not a Header secret", typedOption.HeaderSecretRef.GetNamespace(), typedOption.HeaderSecretRef.GetName())
+		}
+
+		result := make([]*envoy_config_core_v3.HeaderValueOption, 0)
+		for key, value := range headerSecrets.Header.GetHeaders() {
+			result = append(result, &envoy_config_core_v3.HeaderValueOption{
+				Header: &envoy_config_core_v3.HeaderValue{
+					Key:   key,
+					Value: value,
+				},
+				Append: option.GetAppend(),
+			})
+		}
+		return result, nil
+	default:
+		return nil, errors.Errorf("Unexpected header option type %v", typedOption)
+	}
 }
 
 func ToGlooHeaderValueOptionList(option []*envoy_config_core_v3.HeaderValueOption) []*envoycore_sk.HeaderValueOption {
@@ -81,9 +109,11 @@ func ToGlooHeaderValueOptionList(option []*envoy_config_core_v3.HeaderValueOptio
 
 func ToGlooHeaderValueOption(option *envoy_config_core_v3.HeaderValueOption) *envoycore_sk.HeaderValueOption {
 	return &envoycore_sk.HeaderValueOption{
-		Header: &envoycore_sk.HeaderValue{
-			Key:   option.GetHeader().GetKey(),
-			Value: option.GetHeader().GetValue(),
+		HeaderOption: &envoycore_sk.HeaderValueOption_Header{
+			Header: &envoycore_sk.HeaderValue{
+				Key:   option.GetHeader().GetKey(),
+				Value: option.GetHeader().GetValue(),
+			},
 		},
 		Append: option.GetAppend(),
 	}
