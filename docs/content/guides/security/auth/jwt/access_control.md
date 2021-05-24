@@ -84,7 +84,32 @@ Let's create a test pod, with a different service account. We will use this pod 
 
 ```shell
 kubectl create serviceaccount svc-a
-kubectl run --generator=run-pod/v1 test-pod --image=fedora:30 --serviceaccount=svc-a --command sleep 10h
+```
+
+We can use a simple `test-pod` deployment that invokes a `sleep` command.
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-pod
+  labels:
+    app: test-pod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-pod
+  template:
+    metadata:
+      labels:
+        app: test-pod
+    spec:
+      containers:
+      - name: sleep
+        image: fedora:30
+        command: ['sleep','10h']
+      serviceAccountName: svc-a
 ```
 
 #### Anatomy of Kubernetes service account
