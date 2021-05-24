@@ -15,3 +15,7 @@ changelog:
   - type: NON_USER_FACING
     description: |
       Generated xds files (ie ext_auth_discovery_service_xds) no longer have a duplicate `.sk` suffix.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4055
+    resolvesIssue: true
+    description: Prevent invalid AuthConfig from blocking subsequent AuthConfigs from being processed
