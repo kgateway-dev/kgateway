@@ -3,12 +3,12 @@ package internal
 import (
 	envoy_config_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_filter_accesslog_v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
-	envoy_config_listener_v2 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v2"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_api_v2 "github.com/solo-io/solo-kit/api/external/envoy/api/v2"
-	envoy_api_v2_core "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core"
-	envoy_api_v2_listener "github.com/solo-io/solo-kit/api/external/envoy/api/v2/listener"
+	envoy_api_v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
+	envoy_api_v2_core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+	envoy_api_v2_listener "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/listener"
+	envoy_config_filter_accesslog_v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/config/filter/accesslog/v2"
+	envoy_config_listener_v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/config/listener/v2"
 )
 
 func DowngradeListener(listener *envoy_config_listener_v3.Listener) *envoy_api_v2.Listener {

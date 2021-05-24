@@ -369,9 +369,6 @@ import (
 
 	// gloo filter types
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/annotations"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/route"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"

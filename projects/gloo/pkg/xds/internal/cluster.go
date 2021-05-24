@@ -3,13 +3,13 @@ package internal
 import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
-	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	envoy_type_matcher "github.com/solo-io/solo-kit/pkg/api/external/envoy/type/matcher"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	envoyapi "github.com/solo-io/solo-kit/api/external/envoy/api/v2"
-	envoy_api_v2_cluster "github.com/solo-io/solo-kit/api/external/envoy/api/v2/cluster"
-	envoy_api_v2_core "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core"
+	envoyapi "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
+	envoy_api_v2_cluster "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/cluster"
+	envoy_api_v2_core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+	envoy_type "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
 )
 
 func DowngradeCluster(cluster *envoy_config_cluster_v3.Cluster) *envoyapi.Cluster {

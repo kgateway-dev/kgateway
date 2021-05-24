@@ -27,14 +27,14 @@ message RateLimitConfig {
 @solo-kit:resource.xds-enabled
 */
 service RateLimitDiscoveryService {
-    rpc StreamRateLimitConfig(stream envoy.api.v2.DiscoveryRequest) returns (stream envoy.api.v2.DiscoveryResponse) {
+    rpc StreamRateLimitConfig(stream .solo.io.envoy.api.v2.DiscoveryRequest) returns (stream .solo.io.envoy.api.v2.DiscoveryResponse) {
     }
 
-    rpc DeltaRateLimitConfig(stream envoy.api.v2.DeltaDiscoveryRequest)
-        returns (stream envoy.api.v2.DeltaDiscoveryResponse) {
+    rpc DeltaRateLimitConfig(stream .solo.io.envoy.api.v2.DeltaDiscoveryRequest)
+        returns (stream .solo.io.envoy.api.v2.DeltaDiscoveryResponse) {
     }
 
-    rpc FetchRateLimitConfig(envoy.api.v2.DiscoveryRequest) returns (envoy.api.v2.DiscoveryResponse) {
+    rpc FetchRateLimitConfig(.solo.io.envoy.api.v2.DiscoveryRequest) returns (.solo.io.envoy.api.v2.DiscoveryResponse) {
         option (google.api.http) = {
         post: "/v2/discovery:ratelimitconfig"
         body: "*"

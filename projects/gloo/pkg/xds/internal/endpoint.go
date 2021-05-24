@@ -3,11 +3,11 @@ package internal
 import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	envoy_api_v2 "github.com/solo-io/solo-kit/api/external/envoy/api/v2"
-	envoy_api_v2_core "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core"
-	envoy_api_v2_endpoint "github.com/solo-io/solo-kit/api/external/envoy/api/v2/endpoint"
+	envoy_api_v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
+	envoy_api_v2_core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+	envoy_api_v2_endpoint "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/endpoint"
+	envoy_type "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
 )
 
 func DowngradeEndpoint(cla *envoy_config_endpoint_v3.ClusterLoadAssignment) *envoy_api_v2.ClusterLoadAssignment {

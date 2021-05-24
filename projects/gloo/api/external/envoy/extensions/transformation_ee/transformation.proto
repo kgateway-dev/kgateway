@@ -9,7 +9,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envo
 
 import "validate/validate.proto";
 
-import "envoy/api/v2/route/route.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/type/percent.proto";
 
 

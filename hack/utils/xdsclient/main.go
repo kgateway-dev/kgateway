@@ -16,9 +16,9 @@ import (
 	"github.com/k0kubun/pp"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	v2 "github.com/solo-io/solo-kit/api/external/envoy/api/v2"
-	envoy_api_v2_core1 "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core"
-	envoylistener "github.com/solo-io/solo-kit/api/external/envoy/api/v2/listener"
+	v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
+	envoy_api_v2_core1 "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+	envoylistener "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/listener"
 	"google.golang.org/grpc"
 )
 

@@ -24,7 +24,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	v2 "github.com/solo-io/solo-kit/api/external/envoy/api/v2"
+	v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
