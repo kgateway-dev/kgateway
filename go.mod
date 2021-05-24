@@ -74,7 +74,7 @@ require (
 	github.com/solo-io/skv2 v0.17.2
 	// Pinned to the `rate-limiter-v0.1.8` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10
-	github.com/solo-io/solo-kit v0.18.5
+	github.com/solo-io/solo-kit v0.19.0
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
 	github.com/spf13/cobra v1.1.1
@@ -85,7 +85,7 @@ require (
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897 // indirect
-	golang.org/x/mod v0.3.0
+	golang.org/x/mod v0.3.1-0.20200828183125-ce943fd02449
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9

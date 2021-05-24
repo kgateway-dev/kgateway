@@ -1370,7 +1370,8 @@ metadata:
 spec:
   virtualHoost: {}
 `,
-					expectedErr: `could not unmarshal raw object: parsing resource from crd spec default in namespace ` + testHelper.InstallNamespace + ` into *v1.VirtualService: unknown field "virtualHoost" in gateway.solo.io.VirtualService`,
+					// This is handled by validation schemas now
+					expectedErr: `ValidationError(VirtualService.spec): unknown field "virtualHoost" in io.solo.gateway.v1.VirtualService.spec`,
 				},
 				{
 					resourceYaml: `
