@@ -63,6 +63,10 @@ func (m *FilterConfig) Equal(that interface{}) bool {
 
 	}
 
+	if m.GetEnabledFor() != target.GetEnabledFor() {
+		return false
+	}
+
 	return true
 }
 
@@ -153,6 +157,10 @@ func (m *Config) Equal(that interface{}) bool {
 			}
 		}
 
+	}
+
+	if m.GetEnabledFor() != target.GetEnabledFor() {
+		return false
 	}
 
 	return true

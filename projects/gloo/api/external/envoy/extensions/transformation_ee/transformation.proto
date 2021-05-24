@@ -41,6 +41,9 @@ message RouteTransformations {
     // clear the route cache if the request transformation was applied
     bool clear_route_cache = 3;
     Transformation response_transformation = 2;
+    // Apply a transformation in the onStreamComplete callback 
+    // (for modifying headers and dynamic metadata for access logs)
+    Transformation on_stream_completion_transformation = 4;
 }
 
 message Transformation {
@@ -53,6 +56,12 @@ message Transformation {
 message DlpTransformation {
     // list of actions to apply
     repeated Action actions = 1;
+    // If true, headers will be transformed. Should only be true for the
+    // on_stream_complete_transformation route transformation type.
+    bool enable_header_transformation = 2;
+    // If true, dynamic metadata will be transformed. Should only be used for the
+    // on_stream_complete_transformation route transformation type.
+    bool enable_dynamic_metadata_transformation = 3;
 }
 
 message Action {
