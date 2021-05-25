@@ -1,0 +1,7 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/4778
+    resolvesIssue: false
+    description: >
+      Allow pod security context to be disabled for discovery and gateway-proxy deployments.
+      This is necessary for kubernetes distributions without security context constraints (ie OCP).
