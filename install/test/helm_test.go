@@ -1892,11 +1892,11 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
-					It("allows removing fsGroup", func() {
+					It("allows removing pod security context", func() {
 						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"gatewayProxies.gatewayProxy.podTemplate.includeFsGroup=false"},
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext=false"},
 						})
-						gatewayProxyDeployment.Spec.Template.Spec.SecurityContext.FSGroup = nil
+						gatewayProxyDeployment.Spec.Template.Spec.SecurityContext = nil
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
@@ -3681,9 +3681,9 @@ metadata:
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 					})
 
-					It("allows removing fsGroup", func() {
+					It("allows removing pod security context", func() {
 						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"discovery.deployment.includeFsGroup=false"},
+							valuesArgs: []string{"discovery.deployment.enablePodSecurityContext=false"},
 						})
 						discoveryDeployment.Spec.Template.Spec.SecurityContext = nil
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
