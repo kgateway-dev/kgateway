@@ -12,7 +12,7 @@ import (
 	"github.com/google/go-github/v32/github"
 	"github.com/rotisserie/eris"
 	. "github.com/solo-io/gloo/docs/cmd/securityscanutils"
-	"github.com/solo-io/go-utils/changelogutils/changelogdocutils"
+	"github.com/solo-io/go-utils/changeloggenutils"
 	"github.com/solo-io/go-utils/githubutils"
 	. "github.com/solo-io/go-utils/versionutils"
 	"github.com/spf13/cobra"
@@ -186,11 +186,12 @@ func generateChangelogMd(args []string) error {
 func generateGlooEChangelog() error {
 	// Initialize Auth
 	ctx := context.Background()
-	if os.Getenv("GITHUB_TOKEN") == "" {
+	ghToken := os.Getenv("GITHUB_TOKEN")
+	if ghToken == "" {
 		return MissingGithubTokenError(skipChangelogGeneration)
 	}
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
+		&oauth2.Token{AccessToken: ghToken},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
@@ -200,7 +201,11 @@ func generateGlooEChangelog() error {
 		DependentRepo: "gloo",
 		RepoOwner:      "solo-io",
 	}
-	generator := changelogdocutils.NewMergedReleaseGenerator(opts, client)
+	depFn, err := changelogdocutils.GetOSDependencyFunc("solo-io", "solo-projects", "gloo", ghToken)
+	if err != nil {
+		return err
+	}
+	generator := changelogdocutils.NewMergedReleaseGeneratorWithDepFn(opts, client, depFn)
 	out, err := generator.GenerateJSON(context.Background())
 	if err != nil {
 		return err
