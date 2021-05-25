@@ -116,9 +116,15 @@ replace (
 	// modules than it does for releases on the repository, so we need to manually
 	// Note the correct  version when updating.
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
+	github.com/apache/thrift => github.com/apache/thrift v0.14.0
 	github.com/census-instrumentation/opencensus-proto => github.com/census-instrumentation/opencensus-proto v0.2.0 // indirect
 	// required for ci
 	github.com/containerd/containerd => github.com/containerd/containerd v1.4.3
+
+	// pin to the jwt-go fork to fix CVE.
+	// using the pseudo version of github.com/form3tech-oss/jwt-go@v3.2.3 instead of the version directly,
+	// to avoid error about it being used for two different module paths
+	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v0.0.0-20210511163231-5b2d2b5f6c34
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 	github.com/opencontainers/go-digest => github.com/opencontainers/go-digest v1.0.0-rc1
 	// Required for proper serialization of CRDs
