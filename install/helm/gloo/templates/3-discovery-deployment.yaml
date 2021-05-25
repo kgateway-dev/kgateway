@@ -84,7 +84,7 @@ spec:
         {{- end}}
       # Pod security context
       securityContext:
-        {{- if .Values.discovery.deployment.fsGroup }}
+        {{- if .Values.discovery.deployment.includeFsGroup }}
         fsGroup: {{ printf "%.0f" (float64 .Values.discovery.deployment.fsGroup) }}
         {{- end}}
 {{- end }}

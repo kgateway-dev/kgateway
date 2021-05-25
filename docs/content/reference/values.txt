@@ -84,7 +84,7 @@
 |settings.integrations.consulUpstreamDiscovery.tlsTagName|string||The tag Gloo Edge should use to identify consul services that ought to use TLS. If splitTlsServices is true, then this tag is also used to sort serviceInstances into the tls upstream. Defaults to 'glooUseTls'.|
 |settings.integrations.consulUpstreamDiscovery.splitTlsServices|bool||If true, then create two upstreams to be created when a consul service contains the tls tag; one with TLS and one without.|
 |settings.integrations.consulUpstreamDiscovery.discoveryRootCa.namespace|string||The namespace of this resource.|
-|settings.integrations.consulUpstreamDiscovery.discoveryRootCa.namespace|string||The name of this resource.|
+|settings.integrations.consulUpstreamDiscovery.discoveryRootCa.name|string||The name of this resource.|
 |settings.create|bool|true|create a Settings CRD which provides bootstrap configuration to Gloo Edge controllers|
 |settings.extensions|interface|||
 |settings.singleNamespace|bool||Enable to use install namespace as WatchNamespace and WriteNamespace|
@@ -167,6 +167,7 @@
 |discovery.deployment.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
 |discovery.deployment.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |discovery.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
+|discovery.deployment.includeFsGroup|bool|true|Whether or not to include the group ID for volume ownership. Default is true|
 |discovery.deployment.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
 |discovery.deployment.extraDiscoveryLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge discovery deployment.|
 |discovery.deployment.replicas|int|1|number of instances to deploy|
@@ -364,6 +365,7 @@
 |gatewayProxies.NAME.podTemplate.runUnprivileged|bool||run envoy as an unprivileged user|
 |gatewayProxies.NAME.podTemplate.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |gatewayProxies.NAME.podTemplate.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
+|gatewayProxies.NAME.podTemplate.includeFsGroup|bool||Whether or not to include the group ID for volume ownership. Default is true|
 |gatewayProxies.NAME.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
 |gatewayProxies.NAME.podTemplate.gracefulShutdown.enabled|bool||Enable grace period before shutdown to finish current requests while envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
 |gatewayProxies.NAME.podTemplate.gracefulShutdown.sleepTimeSeconds|int||Time (in seconds) for the preStop hook to wait before allowing envoy to terminate|
@@ -531,6 +533,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.runUnprivileged|bool|true|run envoy as an unprivileged user|
 |gatewayProxies.gatewayProxy.podTemplate.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |gatewayProxies.gatewayProxy.podTemplate.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
+|gatewayProxies.gatewayProxy.podTemplate.includeFsGroup|bool|true|Whether or not to include the group ID for volume ownership. Default is true|
 |gatewayProxies.gatewayProxy.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
 |gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.enabled|bool|false|Enable grace period before shutdown to finish current requests while envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
 |gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.sleepTimeSeconds|int|25|Time (in seconds) for the preStop hook to wait before allowing envoy to terminate|
