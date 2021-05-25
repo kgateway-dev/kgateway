@@ -132,7 +132,7 @@ type ConsulUpstreamDiscovery struct {
 // equivalent of core.solo.io.ResourceRef
 type ResourceRef struct {
 	Namespace *string `json:"namespace,omitEmpty" desc:"The namespace of this resource."`
-	Name      *string `json:"namespace,omitEmpty" desc:"The name of this resource."`
+	Name      *string `json:"name,omitEmpty" desc:"The name of this resource."`
 }
 
 // google.protobuf.Duration
@@ -229,12 +229,13 @@ type Discovery struct {
 }
 
 type DiscoveryDeployment struct {
-	Image                Image             `json:"image,omitempty"`
-	Stats                Stats             `json:"stats,omitempty" desc:"overrides for prometheus stats published by the discovery pod"`
-	FloatingUserId       *bool             `json:"floatingUserId,omitempty" desc:"set to true to allow the cluster to dynamically assign a user ID"`
-	RunAsUser            *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
-	FsGroup              *float64          `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
-	ExtraDiscoveryLabels map[string]string `json:"extraDiscoveryLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge discovery deployment."`
+	Image                    Image             `json:"image,omitempty"`
+	Stats                    Stats             `json:"stats,omitempty" desc:"overrides for prometheus stats published by the discovery pod"`
+	FloatingUserId           *bool             `json:"floatingUserId,omitempty" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser                *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	FsGroup                  *float64          `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
+	ExtraDiscoveryLabels     map[string]string `json:"extraDiscoveryLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge discovery deployment."`
+	EnablePodSecurityContext *bool             `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
 	*DeploymentSpec
 }
 
@@ -373,8 +374,8 @@ type HorizontalPodAutoscaler struct {
 }
 
 type PodDisruptionBudget struct {
-	minAvailable   *int32 `json:"minAvailable,omitempty" desc:"An eviction is allowed if at least \"minAvailable\" pods selected by \"selector\" will still be available after the eviction, i.e. even in the absence of the evicted pod. So for example you can prevent all voluntary evictions by specifying \"100%\"."`
-	maxUnavailable *int32 `json:"maxUnavailable,omitempty" desc:"An eviction is allowed if at most \"maxUnavailable\" pods selected by \"selector\" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with \"minAvailable\"."`
+	MinAvailable   *int32 `json:"minAvailable,omitempty" desc:"An eviction is allowed if at least \"minAvailable\" pods selected by \"selector\" will still be available after the eviction, i.e. even in the absence of the evicted pod. So for example you can prevent all voluntary evictions by specifying \"100%\"."`
+	MaxUnavailable *int32 `json:"maxUnavailable,omitempty" desc:"An eviction is allowed if at most \"maxUnavailable\" pods selected by \"selector\" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with \"minAvailable\"."`
 	*KubeResourceOverride
 }
 
@@ -403,6 +404,7 @@ type GatewayProxyPodTemplate struct {
 	TerminationGracePeriodSeconds *int                  `json:"terminationGracePeriodSeconds,omitempty" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info"`
 	CustomReadinessProbe          *appsv1.Probe         `json:"customReadinessProbe,omitEmpty"`
 	ExtraGatewayProxyLabels       map[string]string     `json:"extraGatewayProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment."`
+	EnablePodSecurityContext      *bool                 `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
 }
 
 type GracefulShutdownSpec struct {
