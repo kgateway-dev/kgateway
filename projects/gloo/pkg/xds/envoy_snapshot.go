@@ -65,6 +65,7 @@ func NewSnapshotFromResources(
 	routes cache.Resources,
 	listeners cache.Resources,
 ) cache.Snapshot {
+	// TODO: Copy resources and downgrade, maybe maintain hash to not do it too many times (https://github.com/solo-io/gloo/issues/4421)
 	return &EnvoySnapshot{
 		Endpoints: endpoints,
 		Clusters:  clusters,
