@@ -67,7 +67,7 @@ require (
 	github.com/sergi/go-diff v1.1.0
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/solo-io/go-list-licenses v0.1.0
-	github.com/solo-io/go-utils v0.21.5
+	github.com/solo-io/go-utils v0.21.7
 	github.com/solo-io/k8s-utils v0.0.7
 	github.com/solo-io/protoc-gen-ext v0.0.15
 	github.com/solo-io/reporting-client v0.2.0
@@ -77,14 +77,14 @@ require (
 	github.com/solo-io/solo-kit v0.18.5
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
-	github.com/spf13/cobra v1.1.1
+	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
 	go.opencensus.io v0.22.5
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.3.0
-	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
+	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/tools v0.0.0-20201027213030-631220838841
 	google.golang.org/genproto v0.0.0-20201019141844-1ed22bb0c154
@@ -122,8 +122,6 @@ replace (
 	github.com/opencontainers/go-digest => github.com/opencontainers/go-digest v1.0.0-rc1
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
-
-	github.com/solo-io/go-utils => /Users/sai/go/src/github.com/solo-io/go-utils
 
 	//the following block of replacements are needed to have locked these packages to before versions they switched to using proto4
 	//golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
