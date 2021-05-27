@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/4000
-    description: >
-      Buffer envoy filter is now added to the filter chain correctly so it can be used other than on the Gateway level.
-      Added end-to-end tests for buffer filter.
