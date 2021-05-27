@@ -67,8 +67,8 @@ require (
 	github.com/sergi/go-diff v1.1.0
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/solo-io/go-list-licenses v0.1.0
-	github.com/solo-io/go-utils v0.21.6-0.20210525213056-a63ad8750c56
-	github.com/solo-io/k8s-utils v0.0.8-0.20210525213538-c36d2ee1d56f
+	github.com/solo-io/go-utils v0.21.7
+	github.com/solo-io/k8s-utils v0.0.8
 	github.com/solo-io/protoc-gen-ext v0.0.15
 	github.com/solo-io/reporting-client v0.2.0
 	github.com/solo-io/skv2 v0.17.2
@@ -80,7 +80,7 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
-	github.com/yuin/goldmark v1.2.1
+	github.com/yuin/goldmark v1.3.3
 	go.opencensus.io v0.22.5
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
