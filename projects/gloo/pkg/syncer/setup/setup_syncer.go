@@ -678,7 +678,6 @@ func startRestXdsServer(opts bootstrap.Opts) {
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx),
 		opts.ControlPlane.XDSServer,
 		map[string]string{
-			resource.FetchEndpointsV2: resource.EndpointTypeV2,
 			resource.FetchEndpointsV3: resource.EndpointTypeV3,
 		},
 	)
