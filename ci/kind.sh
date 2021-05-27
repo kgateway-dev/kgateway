@@ -1,7 +1,7 @@
 #!/bin/bash -ex
 
 kindClusterName=kind
-kindClusterImage=kindest/node:v1.18.19
+kindClusterImage=kindest/node:v1.19.11
 
 # This config is roughly based on: https://kind.sigs.k8s.io/docs/user/ingress/
 cat <<EOF | kind create cluster --name $kindClusterName --image $kindClusterImage --config=-
