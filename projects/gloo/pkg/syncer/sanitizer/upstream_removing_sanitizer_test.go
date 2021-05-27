@@ -3,13 +3,13 @@ package sanitizer_test
 import (
 	"context"
 
+	envoyclusterapi "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-	envoyapi "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -27,7 +27,7 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 			},
 		}
 		goodClusterName = translator.UpstreamToClusterName(us.Metadata.Ref())
-		goodCluster     = &envoyapi.Cluster{
+		goodCluster     = &envoyclusterapi.Cluster{
 			Name: goodClusterName,
 		}
 
@@ -38,7 +38,7 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 			},
 		}
 		badClusterName = translator.UpstreamToClusterName(badUs.Metadata.Ref())
-		badCluster     = &envoyapi.Cluster{
+		badCluster     = &envoyclusterapi.Cluster{
 			Name: badClusterName,
 		}
 	)
