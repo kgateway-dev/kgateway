@@ -149,7 +149,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		RoleArn:      upstreamSpec.Aws.GetRoleArn(),
 	}
 
-	if err := pluginutils.SetExtenstionProtocolOptions(out, FilterName, lpe); err != nil {
+	if err := pluginutils.SetExtensionProtocolOptions(out, FilterName, lpe); err != nil {
 		return errors.Wrapf(err, "converting aws protocol options to struct")
 	}
 	return nil
