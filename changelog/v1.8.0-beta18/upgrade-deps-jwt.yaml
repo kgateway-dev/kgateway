@@ -1,0 +1,17 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: go-utils
+    dependencyTag: v0.21.7
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: k8s-utils
+    dependencyTag: v0.0.8
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.19.1
+  - type: FIX
+    description: Use the form3tech-oss fork of jwt-go to fix CVE.
+    issueLink: https://github.com/solo-io/gloo/issues/4722
+    resolvesIssue: false
