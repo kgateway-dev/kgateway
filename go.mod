@@ -10,13 +10,13 @@ require (
 	github.com/aws/aws-sdk-go v1.34.9
 	github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
-	github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 	github.com/docker/cli v0.0.0-20200210162036-a4bedce16568 // indirect
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e // indirect
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210511190911-87d352569d55
 	github.com/envoyproxy/protoc-gen-validate v0.4.0
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/fgrosse/zaptest v1.1.0
+	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
 	github.com/frankban/quicktest v1.8.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
