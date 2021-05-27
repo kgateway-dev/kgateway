@@ -9,7 +9,6 @@ import (
 	envoy_service_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/service/endpoint/v3"
 	envoy_service_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/service/listener/v3"
 	envoy_service_route_v3 "github.com/envoyproxy/go-control-plane/envoy/service/route/v3"
-	envoy_api_v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
 	envoy_service_discovery_v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/service/discovery/v2"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -87,10 +86,6 @@ func SetupEnvoyXds(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyC
 	//	Envoy is not directly involved in this connection, we can continue to rely on the v2 api which has
 	// been copied to solo-kit for internal use.
 	serverV2 := NewEnvoyServerV2(xdsServer)
-	envoy_api_v2.RegisterEndpointDiscoveryServiceServer(grpcServer, serverV2)
-	envoy_api_v2.RegisterClusterDiscoveryServiceServer(grpcServer, serverV2)
-	envoy_api_v2.RegisterRouteDiscoveryServiceServer(grpcServer, serverV2)
-	envoy_api_v2.RegisterListenerDiscoveryServiceServer(grpcServer, serverV2)
 	envoy_service_discovery_v2.RegisterAggregatedDiscoveryServiceServer(grpcServer, serverV2)
 
 	serverV3 := NewEnvoyServerV3(xdsServer)

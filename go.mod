@@ -43,7 +43,6 @@ require (
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
 	github.com/jhump/protoreflect v1.5.0
 	github.com/jmoiron/sqlx v1.2.1-0.20190826204134-d7d95172beb5 // indirect
-	github.com/k0kubun/pp v2.3.0+incompatible
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
 	github.com/mattn/go-colorable v0.1.8 // indirect
@@ -74,7 +73,7 @@ require (
 	github.com/solo-io/skv2 v0.17.2
 	// Pinned to the `rate-limiter-v0.1.8` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10
-	github.com/solo-io/solo-kit v0.19.1-0.20210525181600-5bce024e17fb
+	github.com/solo-io/solo-kit v0.19.1-0.20210526192549-b1445900cd3b
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.3.4
 	github.com/spf13/cobra v1.1.1

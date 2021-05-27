@@ -908,12 +908,6 @@ apis:
   solo.io.envoy.api.v2.CdsDummy:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/cds.proto.sk/#CdsDummy
     package: solo.io.envoy.api.v2
-  solo.io.envoy.api.v2.Cluster:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/cluster.proto.sk/#Cluster
-    package: solo.io.envoy.api.v2
-  solo.io.envoy.api.v2.ClusterLoadAssignment:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/endpoint.proto.sk/#ClusterLoadAssignment
-    package: solo.io.envoy.api.v2
   solo.io.envoy.api.v2.DeltaDiscoveryRequest:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#DeltaDiscoveryRequest
     package: solo.io.envoy.api.v2
@@ -932,83 +926,17 @@ apis:
   solo.io.envoy.api.v2.LdsDummy:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/lds.proto.sk/#LdsDummy
     package: solo.io.envoy.api.v2
-  solo.io.envoy.api.v2.Listener:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/listener.proto.sk/#Listener
-    package: solo.io.envoy.api.v2
-  solo.io.envoy.api.v2.LoadBalancingPolicy:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/cluster.proto.sk/#LoadBalancingPolicy
-    package: solo.io.envoy.api.v2
   solo.io.envoy.api.v2.RdsDummy:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/rds.proto.sk/#RdsDummy
     package: solo.io.envoy.api.v2
   solo.io.envoy.api.v2.Resource:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#Resource
     package: solo.io.envoy.api.v2
-  solo.io.envoy.api.v2.RouteConfiguration:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route.proto.sk/#RouteConfiguration
-    package: solo.io.envoy.api.v2
-  solo.io.envoy.api.v2.ScopedRouteConfiguration:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/scoped_route.proto.sk/#ScopedRouteConfiguration
-    package: solo.io.envoy.api.v2
-  solo.io.envoy.api.v2.UpstreamBindConfig:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/cluster.proto.sk/#UpstreamBindConfig
-    package: solo.io.envoy.api.v2
-  solo.io.envoy.api.v2.UpstreamConnectionOptions:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/cluster.proto.sk/#UpstreamConnectionOptions
-    package: solo.io.envoy.api.v2
-  solo.io.envoy.api.v2.Vhds:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route.proto.sk/#Vhds
-    package: solo.io.envoy.api.v2
-  solo.io.envoy.api.v2.auth.CertificateValidationContext:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/auth/common.proto.sk/#CertificateValidationContext
-    package: solo.io.envoy.api.v2.auth
-  solo.io.envoy.api.v2.auth.CommonTlsContext:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/auth/tls.proto.sk/#CommonTlsContext
-    package: solo.io.envoy.api.v2.auth
-  solo.io.envoy.api.v2.auth.DownstreamTlsContext:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/auth/tls.proto.sk/#DownstreamTlsContext
-    package: solo.io.envoy.api.v2.auth
-  solo.io.envoy.api.v2.auth.GenericSecret:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/auth/secret.proto.sk/#GenericSecret
-    package: solo.io.envoy.api.v2.auth
-  solo.io.envoy.api.v2.auth.PrivateKeyProvider:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/auth/common.proto.sk/#PrivateKeyProvider
-    package: solo.io.envoy.api.v2.auth
-  solo.io.envoy.api.v2.auth.SdsSecretConfig:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/auth/secret.proto.sk/#SdsSecretConfig
-    package: solo.io.envoy.api.v2.auth
-  solo.io.envoy.api.v2.auth.Secret:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/auth/secret.proto.sk/#Secret
-    package: solo.io.envoy.api.v2.auth
-  solo.io.envoy.api.v2.auth.TlsCertificate:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/auth/common.proto.sk/#TlsCertificate
-    package: solo.io.envoy.api.v2.auth
-  solo.io.envoy.api.v2.auth.TlsParameters:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/auth/common.proto.sk/#TlsParameters
-    package: solo.io.envoy.api.v2.auth
-  solo.io.envoy.api.v2.auth.TlsSessionTicketKeys:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/auth/common.proto.sk/#TlsSessionTicketKeys
-    package: solo.io.envoy.api.v2.auth
-  solo.io.envoy.api.v2.auth.UpstreamTlsContext:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/auth/tls.proto.sk/#UpstreamTlsContext
-    package: solo.io.envoy.api.v2.auth
-  solo.io.envoy.api.v2.cluster.CircuitBreakers:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/cluster/circuit_breaker.proto.sk/#CircuitBreakers
-    package: solo.io.envoy.api.v2.cluster
-  solo.io.envoy.api.v2.cluster.Filter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/cluster/filter.proto.sk/#Filter
-    package: solo.io.envoy.api.v2.cluster
   solo.io.envoy.api.v2.cluster.OutlierDetection:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/cluster/outlier_detection.proto.sk/#OutlierDetection
     package: solo.io.envoy.api.v2.cluster
   solo.io.envoy.api.v2.core.Address:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/address.proto.sk/#Address
-    package: solo.io.envoy.api.v2.core
-  solo.io.envoy.api.v2.core.AggregatedConfigSource:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/config_source.proto.sk/#AggregatedConfigSource
-    package: solo.io.envoy.api.v2.core
-  solo.io.envoy.api.v2.core.ApiConfigSource:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/config_source.proto.sk/#ApiConfigSource
     package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.AsyncDataSource:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#AsyncDataSource
@@ -1022,26 +950,14 @@ apis:
   solo.io.envoy.api.v2.core.CidrRange:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/address.proto.sk/#CidrRange
     package: solo.io.envoy.api.v2.core
-  solo.io.envoy.api.v2.core.ConfigSource:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/config_source.proto.sk/#ConfigSource
-    package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.ControlPlane:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#ControlPlane
     package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.DataSource:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#DataSource
     package: solo.io.envoy.api.v2.core
-  solo.io.envoy.api.v2.core.EventServiceConfig:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/event_service_config.proto.sk/#EventServiceConfig
-    package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.Extension:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#Extension
-    package: solo.io.envoy.api.v2.core
-  solo.io.envoy.api.v2.core.GrpcProtocolOptions:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/protocol.proto.sk/#GrpcProtocolOptions
-    package: solo.io.envoy.api.v2.core
-  solo.io.envoy.api.v2.core.GrpcService:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/grpc_service.proto.sk/#GrpcService
     package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.HeaderMap:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#HeaderMap
@@ -1054,15 +970,6 @@ apis:
     package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.HealthCheck:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/health_check.proto.sk/#HealthCheck
-    package: solo.io.envoy.api.v2.core
-  solo.io.envoy.api.v2.core.Http1ProtocolOptions:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/protocol.proto.sk/#Http1ProtocolOptions
-    package: solo.io.envoy.api.v2.core
-  solo.io.envoy.api.v2.core.Http2ProtocolOptions:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/protocol.proto.sk/#Http2ProtocolOptions
-    package: solo.io.envoy.api.v2.core
-  solo.io.envoy.api.v2.core.HttpProtocolOptions:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/protocol.proto.sk/#HttpProtocolOptions
     package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.HttpUri:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/http_uri.proto.sk/#HttpUri
@@ -1079,9 +986,6 @@ apis:
   solo.io.envoy.api.v2.core.Pipe:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/address.proto.sk/#Pipe
     package: solo.io.envoy.api.v2.core
-  solo.io.envoy.api.v2.core.RateLimitSettings:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/config_source.proto.sk/#RateLimitSettings
-    package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.RemoteDataSource:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#RemoteDataSource
     package: solo.io.envoy.api.v2.core
@@ -1094,9 +998,6 @@ apis:
   solo.io.envoy.api.v2.core.RuntimeUInt32:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#RuntimeUInt32
     package: solo.io.envoy.api.v2.core
-  solo.io.envoy.api.v2.core.SelfConfigSource:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/config_source.proto.sk/#SelfConfigSource
-    package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.SocketAddress:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/address.proto.sk/#SocketAddress
     package: solo.io.envoy.api.v2.core
@@ -1106,45 +1007,9 @@ apis:
   solo.io.envoy.api.v2.core.TcpKeepalive:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/address.proto.sk/#TcpKeepalive
     package: solo.io.envoy.api.v2.core
-  solo.io.envoy.api.v2.core.TcpProtocolOptions:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/protocol.proto.sk/#TcpProtocolOptions
-    package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.TransportSocket:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#TransportSocket
     package: solo.io.envoy.api.v2.core
-  solo.io.envoy.api.v2.core.UpstreamHttpProtocolOptions:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/protocol.proto.sk/#UpstreamHttpProtocolOptions
-    package: solo.io.envoy.api.v2.core
-  solo.io.envoy.api.v2.endpoint.Endpoint:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/endpoint/endpoint_components.proto.sk/#Endpoint
-    package: solo.io.envoy.api.v2.endpoint
-  solo.io.envoy.api.v2.endpoint.LbEndpoint:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/endpoint/endpoint_components.proto.sk/#LbEndpoint
-    package: solo.io.envoy.api.v2.endpoint
-  solo.io.envoy.api.v2.endpoint.LocalityLbEndpoints:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/endpoint/endpoint_components.proto.sk/#LocalityLbEndpoints
-    package: solo.io.envoy.api.v2.endpoint
-  solo.io.envoy.api.v2.listener.ActiveRawUdpListenerConfig:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/listener/udp_listener_config.proto.sk/#ActiveRawUdpListenerConfig
-    package: solo.io.envoy.api.v2.listener
-  solo.io.envoy.api.v2.listener.Filter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/listener/listener_components.proto.sk/#Filter
-    package: solo.io.envoy.api.v2.listener
-  solo.io.envoy.api.v2.listener.FilterChain:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/listener/listener_components.proto.sk/#FilterChain
-    package: solo.io.envoy.api.v2.listener
-  solo.io.envoy.api.v2.listener.FilterChainMatch:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/listener/listener_components.proto.sk/#FilterChainMatch
-    package: solo.io.envoy.api.v2.listener
-  solo.io.envoy.api.v2.listener.ListenerFilter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/listener/listener_components.proto.sk/#ListenerFilter
-    package: solo.io.envoy.api.v2.listener
-  solo.io.envoy.api.v2.listener.ListenerFilterChainMatchPredicate:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/listener/listener_components.proto.sk/#ListenerFilterChainMatchPredicate
-    package: solo.io.envoy.api.v2.listener
-  solo.io.envoy.api.v2.listener.UdpListenerConfig:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/listener/udp_listener_config.proto.sk/#UdpListenerConfig
-    package: solo.io.envoy.api.v2.listener
   solo.io.envoy.api.v2.route.CorsPolicy:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#CorsPolicy
     package: solo.io.envoy.api.v2.route
@@ -1292,75 +1157,9 @@ apis:
   solo.io.envoy.config.core.v3.TypedExtensionConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/extension.proto.sk/#TypedExtensionConfig
     package: solo.io.envoy.config.core.v3
-  solo.io.envoy.config.filter.accesslog.v2.AccessLog:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/accesslog/v2/accesslog.proto.sk/#AccessLog
-    package: solo.io.envoy.config.filter.accesslog.v2
-  solo.io.envoy.config.filter.accesslog.v2.AccessLogFilter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/accesslog/v2/accesslog.proto.sk/#AccessLogFilter
-    package: solo.io.envoy.config.filter.accesslog.v2
-  solo.io.envoy.config.filter.accesslog.v2.AndFilter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/accesslog/v2/accesslog.proto.sk/#AndFilter
-    package: solo.io.envoy.config.filter.accesslog.v2
-  solo.io.envoy.config.filter.accesslog.v2.ComparisonFilter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/accesslog/v2/accesslog.proto.sk/#ComparisonFilter
-    package: solo.io.envoy.config.filter.accesslog.v2
-  solo.io.envoy.config.filter.accesslog.v2.DurationFilter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/accesslog/v2/accesslog.proto.sk/#DurationFilter
-    package: solo.io.envoy.config.filter.accesslog.v2
-  solo.io.envoy.config.filter.accesslog.v2.ExtensionFilter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/accesslog/v2/accesslog.proto.sk/#ExtensionFilter
-    package: solo.io.envoy.config.filter.accesslog.v2
-  solo.io.envoy.config.filter.accesslog.v2.GrpcStatusFilter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/accesslog/v2/accesslog.proto.sk/#GrpcStatusFilter
-    package: solo.io.envoy.config.filter.accesslog.v2
-  solo.io.envoy.config.filter.accesslog.v2.HeaderFilter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/accesslog/v2/accesslog.proto.sk/#HeaderFilter
-    package: solo.io.envoy.config.filter.accesslog.v2
-  solo.io.envoy.config.filter.accesslog.v2.NotHealthCheckFilter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/accesslog/v2/accesslog.proto.sk/#NotHealthCheckFilter
-    package: solo.io.envoy.config.filter.accesslog.v2
-  solo.io.envoy.config.filter.accesslog.v2.OrFilter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/accesslog/v2/accesslog.proto.sk/#OrFilter
-    package: solo.io.envoy.config.filter.accesslog.v2
-  solo.io.envoy.config.filter.accesslog.v2.ResponseFlagFilter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/accesslog/v2/accesslog.proto.sk/#ResponseFlagFilter
-    package: solo.io.envoy.config.filter.accesslog.v2
-  solo.io.envoy.config.filter.accesslog.v2.RuntimeFilter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/accesslog/v2/accesslog.proto.sk/#RuntimeFilter
-    package: solo.io.envoy.config.filter.accesslog.v2
-  solo.io.envoy.config.filter.accesslog.v2.StatusCodeFilter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/accesslog/v2/accesslog.proto.sk/#StatusCodeFilter
-    package: solo.io.envoy.config.filter.accesslog.v2
-  solo.io.envoy.config.filter.accesslog.v2.TraceableFilter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/accesslog/v2/accesslog.proto.sk/#TraceableFilter
-    package: solo.io.envoy.config.filter.accesslog.v2
   solo.io.envoy.config.filter.http.gzip.v2.Gzip:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto.sk/#Gzip
     package: solo.io.envoy.config.filter.http.gzip.v2
-  solo.io.envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto.sk/#HttpConnectionManager
-    package: solo.io.envoy.config.filter.network.http_connection_manager.v2
-  solo.io.envoy.config.filter.network.http_connection_manager.v2.HttpFilter:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto.sk/#HttpFilter
-    package: solo.io.envoy.config.filter.network.http_connection_manager.v2
-  solo.io.envoy.config.filter.network.http_connection_manager.v2.Rds:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto.sk/#Rds
-    package: solo.io.envoy.config.filter.network.http_connection_manager.v2
-  solo.io.envoy.config.filter.network.http_connection_manager.v2.RequestIDExtension:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto.sk/#RequestIDExtension
-    package: solo.io.envoy.config.filter.network.http_connection_manager.v2
-  solo.io.envoy.config.filter.network.http_connection_manager.v2.ScopedRds:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto.sk/#ScopedRds
-    package: solo.io.envoy.config.filter.network.http_connection_manager.v2
-  solo.io.envoy.config.filter.network.http_connection_manager.v2.ScopedRouteConfigurationsList:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto.sk/#ScopedRouteConfigurationsList
-    package: solo.io.envoy.config.filter.network.http_connection_manager.v2
-  solo.io.envoy.config.filter.network.http_connection_manager.v2.ScopedRoutes:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto.sk/#ScopedRoutes
-    package: solo.io.envoy.config.filter.network.http_connection_manager.v2
-  solo.io.envoy.config.listener.v2.ApiListener:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/listener/v2/api_listener.proto.sk/#ApiListener
-    package: solo.io.envoy.config.listener.v2
   solo.io.envoy.config.route.v3.CorsPolicy:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/route/v3/route_components.proto.sk/#CorsPolicy
     package: solo.io.envoy.config.route.v3
@@ -1415,9 +1214,6 @@ apis:
   solo.io.envoy.config.route.v3.WeightedCluster:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/route/v3/route_components.proto.sk/#WeightedCluster
     package: solo.io.envoy.config.route.v3
-  solo.io.envoy.config.trace.v2.Tracing:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/config/trace/v2/http_tracer.proto.sk/#Tracing
-    package: solo.io.envoy.config.trace.v2
   solo.io.envoy.config.trace.v3.DatadogConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/datadog.proto.sk/#DatadogConfig
     package: solo.io.envoy.config.trace.v3

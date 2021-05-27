@@ -61,7 +61,6 @@ weight: 5
 "unhealthyEdgeInterval": .google.protobuf.Duration
 "healthyEdgeInterval": .google.protobuf.Duration
 "eventLogPath": string
-"eventService": .solo.io.envoy.api.v2.core.EventServiceConfig
 "alwaysLogHealthCheckFailures": bool
 "tlsOptions": .solo.io.envoy.api.v2.core.HealthCheck.TlsOptions
 
@@ -87,7 +86,6 @@ weight: 5
 | `unhealthyEdgeInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The "unhealthy edge interval" is a special health check interval that is used for the first health check right after a host is marked as unhealthy. For subsequent health checks Envoy will shift back to using either "unhealthy interval" if present or the standard health check interval that is defined. The default value for "unhealthy edge interval" is the same as "unhealthy interval". |
 | `healthyEdgeInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The "healthy edge interval" is a special health check interval that is used for the first health check right after a host is marked as healthy. For subsequent health checks Envoy will shift back to using the standard health check interval that is defined. The default value for "healthy edge interval" is the same as the default interval. |
 | `eventLogPath` | `string` | Specifies the path to the :ref:`health check event log <arch_overview_health_check_logging>`. If empty, no event log will be written. |
-| `eventService` | [.solo.io.envoy.api.v2.core.EventServiceConfig](../event_service_config.proto.sk/#eventserviceconfig) | [#not-implemented-hide:] The gRPC service for the health check event service. If empty, health check events won't be sent to a remote endpoint. |
 | `alwaysLogHealthCheckFailures` | `bool` | If set to true, health check failure events will always be logged. If set to false, only the initial health check failure event will be logged. The default value is false. |
 | `tlsOptions` | [.solo.io.envoy.api.v2.core.HealthCheck.TlsOptions](../health_check.proto.sk/#tlsoptions) | This allows overriding the cluster TLS settings, just for health check connections. |
 

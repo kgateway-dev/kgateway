@@ -26,7 +26,6 @@ Name|Version|License
 [hinshun/vt10x](https://github.com/hinshun/vt10x)|v0.0.0-20180809195222-d55458df857c|MIT License
 [inconshreveable/go-update](https://github.com/inconshreveable/go-update)|v0.0.0-20160112193335-8152e7eb6ccf|UNKNOWN
 [jhump/protoreflect](https://github.com/jhump/protoreflect)|v1.5.0|Apache License 2.0
-[k0kubun/pp](https://github.com/k0kubun/pp)|latest|MIT License
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.0.0|MIT License
 [olekukonko/tablewriter](https://github.com/olekukonko/tablewriter)|v0.0.4|MIT License
