@@ -22,20 +22,31 @@ spec:
     openAPIV3Schema:
       properties:
         spec:
-          description: This is the user-facing auth configuration. When processed by Gloo, certain configuration types (i.a. oauth, opa) will be translated, e.g. to resolve resource references. See the `ExtAuthConfig.AuthConfig` for the final config format that will be included in the extauth snapshot.
+          description: This is the user-facing auth configuration. When processed
+            by Gloo, certain configuration types (i.a. oauth, opa) will be translated,
+            e.g. to resolve resource references. See the `ExtAuthConfig.AuthConfig`
+            for the final config format that will be included in the extauth snapshot.
           properties:
             booleanExpr:
-              description: 'How to handle processing of named configs within an auth config chain. An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )` The boolean expression is evaluated left to right but honors parenthesis and short-circuiting.'
+              description: 'How to handle processing of named configs within an auth
+                config chain. An example config might be: `( basic1 || basic2 || (oidc1
+                && !oidc2) )` The boolean expression is evaluated left to right but
+                honors parenthesis and short-circuiting.'
               nullable: true
               type: string
             configs:
-              description: List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below.
+              description: List of auth configs to be checked for requests on a route
+                referencing this auth config, By default, every config must be authorized
+                for the entire request to be authorized. This behavior can be changed
+                by defining names for each config and defining `boolean_expr` below.
               items:
                 properties:
                   apiKeyAuth:
                     properties:
                       apiKeySecretRefs:
-                        description: A way to directly reference API key secrets. This configuration can be useful for testing, but in general the more flexible label selector should be preferred.
+                        description: A way to directly reference API key secrets.
+                          This configuration can be useful for testing, but in general
+                          the more flexible label selector should be preferred.
                         items:
                           description: A way to reference resources across namespaces
                           properties:
@@ -46,24 +57,41 @@ spec:
                           type: object
                         type: array
                       headerName:
-                        description: When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`.
+                        description: When receiving a request, the Gloo Edge Enterprise
+                          external auth server will look for an API key in a header
+                          with this name. This field is optional; if not provided
+                          it defaults to `api-key`.
                         type: string
                       headersFromMetadata:
                         additionalProperties:
                           properties:
                             name:
-                              description: (Required) The key of the secret data entry to inspect.
+                              description: (Required) The key of the secret data entry
+                                to inspect.
                               type: string
                             required:
-                              description: If this field is set to `true`, Gloo will reject an API key secret that does not contain the given key. Defaults to `false`. In this case, if a secret does not contain the requested data, no header will be added to the request.
+                              description: If this field is set to `true`, Gloo will
+                                reject an API key secret that does not contain the
+                                given key. Defaults to `false`. In this case, if a
+                                secret does not contain the requested data, no header
+                                will be added to the request.
                               type: boolean
                           type: object
-                        description: API key secrets might contain additional data (e.g. the ID of the user that the API key belongs to) in the form of extra keys included in the secret's `data` field. This configuration can be used to add this data to the headers of successfully authenticated requests. Each key in the map represents the name of header to be added; the corresponding value determines the key in the secret data that will be inspected to determine the value for the header.
+                        description: API key secrets might contain additional data
+                          (e.g. the ID of the user that the API key belongs to) in
+                          the form of extra keys included in the secret's `data` field.
+                          This configuration can be used to add this data to the headers
+                          of successfully authenticated requests. Each key in the
+                          map represents the name of header to be added; the corresponding
+                          value determines the key in the secret data that will be
+                          inspected to determine the value for the header.
                         type: object
                       labelSelector:
                         additionalProperties:
                           type: string
-                        description: Identify all valid API key secrets that match the provided label selector.<br/> API key secrets must be in one of the watch namespaces for gloo to locate them.
+                        description: Identify all valid API key secrets that match
+                          the provided label selector.<br/> API key secrets must be
+                          in one of the watch namespaces for gloo to locate them.
                         type: object
                     type: object
                   basicAuth:
@@ -84,58 +112,92 @@ spec:
                         type: string
                     type: object
                   jwt:
-                    description: This is a "dummy" extauth service which can be used to support multiple auth mechanisms with JWT authentication. If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config. In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
+                    description: This is a "dummy" extauth service which can be used
+                      to support multiple auth mechanisms with JWT authentication.
+                      If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig)
+                      in an AuthConfig, you can use this auth config type to include
+                      Jwt as an Auth config. In addition, `allow_missing_or_failed_jwt`
+                      must be set on the Virtual Host or Route that uses JWT auth
+                      or else the JWT filter will short circuit this behaviour.
                     maxProperties: 0
                     type: object
                   ldap:
                     properties:
                       address:
-                        description: Address of the LDAP server to query. Should be in the form ADDRESS:PORT, e.g. `ldap.default.svc.cluster.local:389`.
+                        description: Address of the LDAP server to query. Should be
+                          in the form ADDRESS:PORT, e.g. `ldap.default.svc.cluster.local:389`.
                         type: string
                       allowedGroups:
-                        description: In order for the request to be authenticated, the membership attribute (e.g. *memberOf*) on the user entry must contain at least of one of the group DNs specified via this option. E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }
+                        description: In order for the request to be authenticated,
+                          the membership attribute (e.g. *memberOf*) on the user entry
+                          must contain at least of one of the group DNs specified
+                          via this option. E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io",
+                          "cn=developers,ou=groups,dc=solo,dc=io" }
                         items:
                           type: string
                         type: array
                       membershipAttributeName:
-                        description: Case-insensitive name of the attribute that contains the names of the groups an entry is member of. Gloo will look for attributes with the given name to determine which groups the user entry belongs to. Defaults to 'memberOf' if not provided.
+                        description: Case-insensitive name of the attribute that contains
+                          the names of the groups an entry is member of. Gloo will
+                          look for attributes with the given name to determine which
+                          groups the user entry belongs to. Defaults to 'memberOf'
+                          if not provided.
                         type: string
                       pool:
-                        description: Use this property to tune the pool of connections to the LDAP server that Gloo maintains.
+                        description: Use this property to tune the pool of connections
+                          to the LDAP server that Gloo maintains.
                         properties:
                           initialSize:
-                            description: Number of connections that the pool will be pre-populated with upon initialization. The default value is 2.
+                            description: Number of connections that the pool will
+                              be pre-populated with upon initialization. The default
+                              value is 2.
                             maximum: 4294967295
                             minimum: 0
                             nullable: true
                             type: integer
                           maxSize:
-                            description: Maximum number connections that are pooled at any give time. The default value is 5.
+                            description: Maximum number connections that are pooled
+                              at any give time. The default value is 5.
                             maximum: 4294967295
                             minimum: 0
                             nullable: true
                             type: integer
                         type: object
                       userDnTemplate:
-                        description: Template to build user entry distinguished names (DN). This must contains a single occurrence of the "%s" placeholder. When processing a request, Gloo will substitute the name of the user (extracted from the auth header) for the placeholder and issue a search request with the resulting DN as baseDN (and 'base' search scope). E.g. "uid=%s,ou=people,dc=solo,dc=io"
+                        description: Template to build user entry distinguished names
+                          (DN). This must contains a single occurrence of the "%s"
+                          placeholder. When processing a request, Gloo will substitute
+                          the name of the user (extracted from the auth header) for
+                          the placeholder and issue a search request with the resulting
+                          DN as baseDN (and 'base' search scope). E.g. "uid=%s,ou=people,dc=solo,dc=io"
                         type: string
                     type: object
                   name:
-                    description: 'optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used in logging. If omitted, an automatically generated name will be used (e.g. config_0, of the pattern ''config_$INDEX_IN_CHAIN''). In the case of plugin auth, this field is ignored in favor of the name assigned on the plugin config itself.'
+                    description: 'optional: used when defining complex boolean logic,
+                      if `boolean_expr` is defined below. Also used in logging. If
+                      omitted, an automatically generated name will be used (e.g.
+                      config_0, of the pattern ''config_$INDEX_IN_CHAIN''). In the
+                      case of plugin auth, this field is ignored in favor of the name
+                      assigned on the plugin config itself.'
                     nullable: true
                     type: string
                   oauth:
                     properties:
                       appUrl:
-                        description: we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url.
+                        description: we to redirect after successful auth, if we can't
+                          determine the original url this should be your publicly
+                          available app url.
                         type: string
                       authEndpointQueryParams:
                         additionalProperties:
                           type: string
-                        description: extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider.
+                        description: extra query parameters to apply to the Ext-Auth
+                          service's authorization request to the identity provider.
                         type: object
                       callbackPath:
-                        description: a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application
+                        description: a callback path relative to app url that will
+                          be used for OIDC callbacks. needs to not be used by the
+                          application
                         type: string
                       clientId:
                         description: your client id as registered with the issuer
@@ -149,7 +211,8 @@ spec:
                             type: string
                         type: object
                       issuerUrl:
-                        description: The url of the issuer. We will look for OIDC information in issuerUrl+ ".well-known/openid-configuration"
+                        description: The url of the issuer. We will look for OIDC
+                          information in issuerUrl+ ".well-known/openid-configuration"
                         type: string
                       scopes:
                         description: Scopes to request in addition to openid scope.
@@ -160,19 +223,32 @@ spec:
                   oauth2:
                     properties:
                       accessTokenValidation:
-                        description: provide the access token on the request and let gloo handle authorization.
+                        description: provide the access token on the request and let
+                          gloo handle authorization.
                         properties:
                           cacheTimeout:
-                            description: How long the token introspection and userinfo endpoint response for a specific access token should be kept in the in-memory cache. The result will be invalidated at this timeout, or at "exp" time from the introspection result, whichever comes sooner. If omitted, defaults to 10 minutes. If zero, then no caching will be done.
+                            description: How long the token introspection and userinfo
+                              endpoint response for a specific access token should
+                              be kept in the in-memory cache. The result will be invalidated
+                              at this timeout, or at "exp" time from the introspection
+                              result, whichever comes sooner. If omitted, defaults
+                              to 10 minutes. If zero, then no caching will be done.
                             type: string
                           introspection:
-                            description: Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) specification.
+                            description: Defines how (opaque) access tokens, received
+                              from the oauth authorization endpoint, are validated
+                              [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
+                              specification.
                             properties:
                               clientId:
-                                description: 'Your client id as registered with the issuer. Optional: Use if the token introspection url requires client authentication.'
+                                description: 'Your client id as registered with the
+                                  issuer. Optional: Use if the token introspection
+                                  url requires client authentication.'
                                 type: string
                               clientSecretRef:
-                                description: 'Your client secret as registered with the issuer. Optional: Use if the token introspection url requires client authentication.'
+                                description: 'Your client secret as registered with
+                                  the issuer. Optional: Use if the token introspection
+                                  url requires client authentication.'
                                 properties:
                                   name:
                                     type: string
@@ -180,20 +256,44 @@ spec:
                                     type: string
                                 type: object
                               introspectionUrl:
-                                description: The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint. If provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token.
+                                description: The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
+                                  endpoint. If provided, the (opaque) access token
+                                  provided or received from the oauth authorization
+                                  endpoint will be validated against this endpoint,
+                                  or locally cached responses for this access token.
                                 type: string
                               userIdAttributeName:
-                                description: The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2) attribute that contains the ID of the resource owner (e.g. `sub`, `username`). If specified, the external auth server will use the value of the attribute as the identifier of the authenticated user and add it to the request headers and/or dynamic metadata (depending on how the server is configured); if the field is set and the attribute cannot be found, the request will be denied. This field is optional and by default the server will not try to derive the user ID.
+                                description: The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2)
+                                  attribute that contains the ID of the resource owner
+                                  (e.g. `sub`, `username`). If specified, the external
+                                  auth server will use the value of the attribute
+                                  as the identifier of the authenticated user and
+                                  add it to the request headers and/or dynamic metadata
+                                  (depending on how the server is configured); if
+                                  the field is set and the attribute cannot be found,
+                                  the request will be denied. This field is optional
+                                  and by default the server will not try to derive
+                                  the user ID.
                                 type: string
                             type: object
                           introspectionUrl:
-                            description: The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint. If provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. This field is deprecated as it does not support authenticated introspection requests
+                            description: The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
+                              endpoint. If provided, the (opaque) access token provided
+                              or received from the oauth authorization endpoint will
+                              be validated against this endpoint, or locally cached
+                              responses for this access token. This field is deprecated
+                              as it does not support authenticated introspection requests
                             type: string
                           jwt:
-                            description: Validate access tokens that conform to the [JSON Web Token (JWT)](https://tools.ietf.org/html/rfc7519) specification.
+                            description: Validate access tokens that conform to the
+                              [JSON Web Token (JWT)](https://tools.ietf.org/html/rfc7519)
+                              specification.
                             properties:
                               issuer:
-                                description: Allow only tokens that have been issued by this principal (i.e. whose "iss" claim matches this value). If empty, issuer validation will be skipped.
+                                description: Allow only tokens that have been issued
+                                  by this principal (i.e. whose "iss" claim matches
+                                  this value). If empty, issuer validation will be
+                                  skipped.
                                 type: string
                               localJwks:
                                 description: Loads the JWKS from a local data source.
@@ -206,7 +306,9 @@ spec:
                                 description: Fetches the JWKS from a remote location.
                                 properties:
                                   refreshInterval:
-                                    description: The frequency at which the JWKS should be refreshed. If not specified, the default value is 5 minutes.
+                                    description: The frequency at which the JWKS should
+                                      be refreshed. If not specified, the default
+                                      value is 5 minutes.
                                     type: string
                                   url:
                                     description: The HTTP URI to fetch the JWKS.
@@ -214,7 +316,16 @@ spec:
                                 type: object
                             type: object
                           requiredScopes:
-                            description: Require access token to have all of the scopes in the given list. This configuration applies to both opaque and JWT tokens. In the case of opaque tokens, this will check the scopes returned in the "scope" member of introspection response (as described in [Section 2.2 of RFC7662](https://tools.ietf.org/html/rfc7662#section-2.2). In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the token in the form of a space-separated string. Omitting this field means that scope validation will be skipped.
+                            description: Require access token to have all of the scopes
+                              in the given list. This configuration applies to both
+                              opaque and JWT tokens. In the case of opaque tokens,
+                              this will check the scopes returned in the "scope" member
+                              of introspection response (as described in [Section
+                              2.2 of RFC7662](https://tools.ietf.org/html/rfc7662#section-2.2).
+                              In case of JWTs the scopes to be validated are expected
+                              to be contained in the "scope" claim of the token in
+                              the form of a space-separated string. Omitting this
+                              field means that scope validation will be skipped.
                             properties:
                               scope:
                                 items:
@@ -222,28 +333,44 @@ spec:
                                 type: array
                             type: object
                           userinfoUrl:
-                            description: The URL for the OIDC userinfo endpoint. If provided, the (opaque) access token provided or received from the oauth endpoint will be queried and the userinfo response (or cached response) will be added to the `AuthorizationRequest` state under the "introspection" key. This can be useful to leverage the userinfo response in, for example, an external auth server plugin.
+                            description: The URL for the OIDC userinfo endpoint. If
+                              provided, the (opaque) access token provided or received
+                              from the oauth endpoint will be queried and the userinfo
+                              response (or cached response) will be added to the `AuthorizationRequest`
+                              state under the "introspection" key. This can be useful
+                              to leverage the userinfo response in, for example, an
+                              external auth server plugin.
                             type: string
                         type: object
                       oidcAuthorizationCode:
-                        description: provide issuer location and let gloo handle OIDC flow for you. requests authorized by validating the contents of ID token. can also authorize the access token if configured.
+                        description: provide issuer location and let gloo handle OIDC
+                          flow for you. requests authorized by validating the contents
+                          of ID token. can also authorize the access token if configured.
                         properties:
                           appUrl:
-                            description: where to redirect after successful auth, if we can't determine the original url. this should be your publicly available app url.
+                            description: where to redirect after successful auth,
+                              if we can't determine the original url. this should
+                              be your publicly available app url.
                             type: string
                           authEndpointQueryParams:
                             additionalProperties:
                               type: string
-                            description: extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`.
+                            description: extra query parameters to apply to the Ext-Auth
+                              service's authorization request to the identity provider.
+                              this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/)
+                              to set the `code_challenge` and `code_challenge_method`.
                             type: object
                           callbackPath:
-                            description: a callback path relative to app url that will be used for OIDC callbacks. should not be used by the application.
+                            description: a callback path relative to app url that
+                              will be used for OIDC callbacks. should not be used
+                              by the application.
                             type: string
                           clientId:
                             description: your client id as registered with the issuer
                             type: string
                           clientSecretRef:
-                            description: your client secret as registered with the issuer
+                            description: your client secret as registered with the
+                              issuer
                             properties:
                               name:
                                 type: string
@@ -251,23 +378,37 @@ spec:
                                 type: string
                             type: object
                           discoveryOverride:
-                            description: 'OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration The discovery override defines any properties that should override this discovery configuration For example, the following AuthConfig CRD could be defined as: ```yaml apiVersion: enterprise.gloo.solo.io/v1 kind: AuthConfig metadata: name: google-oidc namespace: gloo-system spec: configs: - oauth: app_url: http://localhost:8080 callback_path: /callback client_id: $CLIENT_ID client_secret_ref: name: google namespace: gloo-system issuer_url: https://accounts.google.com discovery_override: token_endpoint: "https://token.url/gettoken" ```'
+                            description: 'OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration
+                              The discovery override defines any properties that should
+                              override this discovery configuration For example, the
+                              following AuthConfig CRD could be defined as: ```yaml
+                              apiVersion: enterprise.gloo.solo.io/v1 kind: AuthConfig
+                              metadata: name: google-oidc namespace: gloo-system spec:
+                              configs: - oauth: app_url: http://localhost:8080 callback_path:
+                              /callback client_id: $CLIENT_ID client_secret_ref: name:
+                              google namespace: gloo-system issuer_url: https://accounts.google.com
+                              discovery_override: token_endpoint: "https://token.url/gettoken"
+                              ```'
                             properties:
                               authEndpoint:
                                 description: url of the provider authorization endpoint
                                 type: string
                               authMethods:
-                                description: list of client authentication methods supported by the provider token endpoint
+                                description: list of client authentication methods
+                                  supported by the provider token endpoint
                                 items:
                                   type: string
                                 type: array
                               claims:
-                                description: list of claim types that the provider supports
+                                description: list of claim types that the provider
+                                  supports
                                 items:
                                   type: string
                                 type: array
                               idTokenAlgs:
-                                description: list of json web signature signing algorithms that the provider supports for encoding claims in a jwt
+                                description: list of json web signature signing algorithms
+                                  that the provider supports for encoding claims in
+                                  a jwt
                                 items:
                                   type: string
                                 type: array
@@ -275,17 +416,20 @@ spec:
                                 description: url of the provider json web key set
                                 type: string
                               responseTypes:
-                                description: list of response types that the provider supports
+                                description: list of response types that the provider
+                                  supports
                                 items:
                                   type: string
                                 type: array
                               scopes:
-                                description: list of scope values that the provider supports
+                                description: list of scope values that the provider
+                                  supports
                                 items:
                                   type: string
                                 type: array
                               subjects:
-                                description: list of subject identifier types that the provider supports
+                                description: list of subject identifier types that
+                                  the provider supports
                                 items:
                                   type: string
                                 type: array
@@ -294,39 +438,68 @@ spec:
                                 type: string
                             type: object
                           discoveryPollInterval:
-                            description: The interval at which OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration If not specified, the default value is 30 minutes.
+                            description: The interval at which OIDC configuration
+                              is discovered at <issuerUrl>/.well-known/openid-configuration
+                              If not specified, the default value is 30 minutes.
                             type: string
                           headers:
                             description: Configures headers added to requests.
                             properties:
                               accessTokenHeader:
-                                description: If set, the access token will be forward upstream using this header name.
+                                description: If set, the access token will be forward
+                                  upstream using this header name.
                                 type: string
                               idTokenHeader:
-                                description: If set, the id token will be forward upstream using this header name.
+                                description: If set, the id token will be forward
+                                  upstream using this header name.
                                 type: string
                             type: object
                           issuerUrl:
-                            description: The url of the issuer. We will look for OIDC information in issuerUrl+ ".well-known/openid-configuration"
+                            description: The url of the issuer. We will look for OIDC
+                              information in issuerUrl+ ".well-known/openid-configuration"
                             type: string
                           jwksCacheRefreshPolicy:
-                            description: If a user executes a request with a key that is not found in the JWKS, it could be that the keys have rotated on the remote source, and not yet in the local cache. This policy lets you define the behavior for how to refresh the local cache during a request where an invalid key is provided
+                            description: If a user executes a request with a key that
+                              is not found in the JWKS, it could be that the keys
+                              have rotated on the remote source, and not yet in the
+                              local cache. This policy lets you define the behavior
+                              for how to refresh the local cache during a request
+                              where an invalid key is provided
                             properties:
                               always:
-                                description: 'If a key is not in the cache, fetch the most recent keys from the IdP and update the cache. NOTE: This should only be done in trusted environments, since missing keys will each trigger a request to the IdP. Using this in an environment exposed to the internet will allow malicious agents to execute a DDoS attack by spamming protected endpoints with tokens signed by invalid keys.'
+                                description: 'If a key is not in the cache, fetch
+                                  the most recent keys from the IdP and update the
+                                  cache. NOTE: This should only be done in trusted
+                                  environments, since missing keys will each trigger
+                                  a request to the IdP. Using this in an environment
+                                  exposed to the internet will allow malicious agents
+                                  to execute a DDoS attack by spamming protected endpoints
+                                  with tokens signed by invalid keys.'
                                 maxProperties: 0
                                 type: object
                               maxIdpReqPerPollingInterval:
-                                description: If a key is not in the cache, fetch the most recent keys from the IdP and update the cache. This value sets the number of requests to the IdP per polling interval. If that limit is exceeded, we will stop fetching from the IdP for the remainder of the polling interval.
+                                description: If a key is not in the cache, fetch the
+                                  most recent keys from the IdP and update the cache.
+                                  This value sets the number of requests to the IdP
+                                  per polling interval. If that limit is exceeded,
+                                  we will stop fetching from the IdP for the remainder
+                                  of the polling interval.
                                 format: int32
                                 type: integer
                               never:
-                                description: Never refresh the local JWKS cache on demand. If a key is not in the cache, it is assumed to be malicious. This is the default policy since we assume that IdPs publish keys before they rotate them, and frequent polling finds the newest keys.
+                                description: Never refresh the local JWKS cache on
+                                  demand. If a key is not in the cache, it is assumed
+                                  to be malicious. This is the default policy since
+                                  we assume that IdPs publish keys before they rotate
+                                  them, and frequent polling finds the newest keys.
                                 maxProperties: 0
                                 type: object
                             type: object
                           logoutPath:
-                            description: a path relative to app url that will be used for logging out from an OIDC session. should not be used by the application. If not provided, logout functionality will be disabled.
+                            description: a path relative to app url that will be used
+                              for logging out from an OIDC session. should not be
+                              used by the application. If not provided, logout functionality
+                              will be disabled.
                             type: string
                           scopes:
                             description: Scopes to request in addition to openid scope.
@@ -337,7 +510,8 @@ spec:
                             description: Configuration related to the user session.
                             properties:
                               cookie:
-                                description: Set the tokens in the cookie itself. No need for server side state.
+                                description: Set the tokens in the cookie itself.
+                                  No need for server side state.
                                 type: object
                               cookieOptions:
                                 description: Set-Cookie options
@@ -346,31 +520,46 @@ spec:
                                     description: Cookie domain
                                     type: string
                                   maxAge:
-                                    description: Max age for the cookie. Leave unset for a default of 30 days (2592000 seconds). To disable cookie expiry, set explicitly to 0.
+                                    description: Max age for the cookie. Leave unset
+                                      for a default of 30 days (2592000 seconds).
+                                      To disable cookie expiry, set explicitly to
+                                      0.
                                     maximum: 4294967295
                                     minimum: 0
                                     nullable: true
                                     type: integer
                                   notSecure:
-                                    description: Use a non-secure cookie. Note - this should only be used for testing and in trusted environments.
+                                    description: Use a non-secure cookie. Note - this
+                                      should only be used for testing and in trusted
+                                      environments.
                                     type: boolean
                                   path:
-                                    description: Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a path.
+                                    description: Path of the cookie. If unset, defaults
+                                      to "/". Set it explicitly to "" to avoid setting
+                                      a path.
                                     nullable: true
                                     type: string
                                 type: object
                               failOnFetchFailure:
-                                description: should we fail auth flow when failing to get a session from redis, or allow it to continue, potentially starting a new auth flow and setting a new session.
+                                description: should we fail auth flow when failing
+                                  to get a session from redis, or allow it to continue,
+                                  potentially starting a new auth flow and setting
+                                  a new session.
                                 type: boolean
                               redis:
-                                description: Use redis to store the tokens and just store a random id in the cookie.
+                                description: Use redis to store the tokens and just
+                                  store a random id in the cookie.
                                 properties:
                                   allowRefreshing:
-                                    description: When set, refresh expired id-tokens using the refresh-token. Defaults to true. Explicitly set to false to disable refreshing.
+                                    description: When set, refresh expired id-tokens
+                                      using the refresh-token. Defaults to true. Explicitly
+                                      set to false to disable refreshing.
                                     nullable: true
                                     type: boolean
                                   cookieName:
-                                    description: Cookie name to set and store the session id. If empty the default "__session" is used.
+                                    description: Cookie name to set and store the
+                                      session id. If empty the default "__session"
+                                      is used.
                                     type: string
                                   keyPrefix:
                                     description: Key prefix inside redis
@@ -379,14 +568,18 @@ spec:
                                     description: Options to connect to redis
                                     properties:
                                       db:
-                                        description: db to use. can leave unset for db 0.
+                                        description: db to use. can leave unset for
+                                          db 0.
                                         format: int32
                                         type: integer
                                       host:
-                                        description: address of the redis. can be address:port or unix://path/to/unix.sock
+                                        description: address of the redis. can be
+                                          address:port or unix://path/to/unix.sock
                                         type: string
                                       poolSize:
-                                        description: size of the connection pool. can leave unset for default. defaults to 10 connections per every CPU
+                                        description: size of the connection pool.
+                                          can leave unset for default. defaults to
+                                          10 connections per every CPU
                                         format: int32
                                         type: integer
                                     type: object
@@ -395,14 +588,18 @@ spec:
                           tokenEndpointQueryParams:
                             additionalProperties:
                               type: string
-                            description: extra query parameters to apply to the Ext-Auth service's token request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`.
+                            description: extra query parameters to apply to the Ext-Auth
+                              service's token request to the identity provider. this
+                              can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/)
+                              to set the `code_verifier`.
                             type: object
                         type: object
                     type: object
                   opaAuth:
                     properties:
                       modules:
-                        description: An optional resource reference to config maps containing modules to assist in the resolution of `query`.
+                        description: An optional resource reference to config maps
+                          containing modules to assist in the resolution of `query`.
                         items:
                           description: A way to reference resources across namespaces
                           properties:
@@ -413,22 +610,29 @@ spec:
                           type: object
                         type: array
                       query:
-                        description: The query that determines the auth decision. The result of this query must be either a boolean or an array with boolean as the first element. A boolean `true` value means that the request will be authorized. Any other value, or error, means that the request will be denied.
+                        description: The query that determines the auth decision.
+                          The result of this query must be either a boolean or an
+                          array with boolean as the first element. A boolean `true`
+                          value means that the request will be authorized. Any other
+                          value, or error, means that the request will be denied.
                         type: string
                     type: object
                   passThroughAuth:
                     properties:
                       config:
-                        description: Custom config to be passed per request to the passthrough auth service.
+                        description: Custom config to be passed per request to the
+                          passthrough auth service.
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
                       grpc:
                         properties:
                           address:
-                            description: Address of the auth server to query. Should be in the form ADDRESS:PORT, e.g. `default.svc.cluster.local:389`.
+                            description: Address of the auth server to query. Should
+                              be in the form ADDRESS:PORT, e.g. `default.svc.cluster.local:389`.
                             type: string
                           connectionTimeout:
-                            description: Timeout for the auth server to respond. Defaults to 5s
+                            description: Timeout for the auth server to respond. Defaults
+                              to 5s
                             type: string
                         type: object
                     type: object
@@ -438,24 +642,30 @@ spec:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
                       exportedSymbolName:
-                        description: Name of the exported symbol that implements the plugin interface in the plugin. If not specified, defaults to the name of the plugin
+                        description: Name of the exported symbol that implements the
+                          plugin interface in the plugin. If not specified, defaults
+                          to the name of the plugin
                         type: string
                       name:
                         description: Name of the plugin
                         type: string
                       pluginFileName:
-                        description: Name of the compiled plugin file. If not specified, Gloo Edge will look for an ".so" file with same name as the plugin.
+                        description: Name of the compiled plugin file. If not specified,
+                          Gloo Edge will look for an ".so" file with same name as
+                          the plugin.
                         type: string
                     type: object
                 type: object
               type: array
             status:
-              description: Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation
+              description: Status indicates the validation status of this resource.
+                Status is read-only by clients, and set by gloo during validation
               type: object
               x-kubernetes-preserve-unknown-fields: true
           type: object
         status:
-          description: Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation
+          description: Status indicates the validation status of this resource. Status
+            is read-only by clients, and set by gloo during validation
           type: object
           x-kubernetes-preserve-unknown-fields: true
       type: object
