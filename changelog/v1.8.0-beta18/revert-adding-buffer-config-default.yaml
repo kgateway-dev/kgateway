@@ -1,0 +1,3 @@
+changelog:
+  - type: FIX
+    description: Reverts adding the buffer filter to the filter chain by default when route and vh buffer config is added.
