@@ -6,7 +6,11 @@ description: Configure Gloo Edge for tracing
 
 ## Tracing
 
-Gloo Edge makes it easy to implement tracing on your system through [Envoy's tracing capabilities](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html).
+Gloo Edge makes it easy to implement tracing on your system through [Envoy's tracing capabilities](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html).   
+Following list of tracing systems are currently supported in Gloo Edge:
+* Zipkin
+* Jaeger
+* Datadog
 
 #### Usage
 
