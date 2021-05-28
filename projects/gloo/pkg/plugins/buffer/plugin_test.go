@@ -177,47 +177,4 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.GetBuffer().GetMaxRequestBytes().GetValue()).To(Equal(uint32(4098)))
 	})
 
-	It("allows route specific buffer config", func() {
-		p := NewPlugin()
-		out := &envoy_config_route_v3.Route{}
-		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			Options: &v1.RouteOptions{
-				BufferPerRoute: &v3.BufferPerRoute{
-					Override: &v3.BufferPerRoute_Buffer{
-						Buffer: &v3.Buffer{
-							MaxRequestBytes: &wrappers.UInt32Value{
-								Value: 4098,
-							},
-						},
-					},
-				},
-			},
-		}, out)
-
-		var cfg envoybuffer.BufferPerRoute
-		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[wellknown.Buffer], &cfg)
-
-		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg.GetBuffer().GetMaxRequestBytes().GetValue()).To(Equal(uint32(4098)))
-
-		filters, err := p.HttpFilters(plugins.Params{}, &v1.HttpListener{})
-		Expect(err).NotTo(HaveOccurred())
-
-		expectedStageFilter := plugins.StagedHttpFilter{
-			HttpFilter: &envoyhcm.HttpFilter{
-				Name: wellknown.Buffer,
-				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-					TypedConfig: utils.MustMessageToAny(&envoybuffer.Buffer{
-						MaxRequestBytes: &wrappers.UInt32Value{Value: 1},
-					}),
-				},
-			},
-
-			Stage: plugins.DuringStage(plugins.RouteStage),
-		}
-
-		Expect(filters[0].HttpFilter).To(matchers.MatchProto(expectedStageFilter.HttpFilter))
-		Expect(filters[0].Stage).To(Equal(expectedStageFilter.Stage))
-	})
-
 })
