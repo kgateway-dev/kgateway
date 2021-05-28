@@ -73,7 +73,7 @@ func NewExtAuthDiscoveryServiceServer(genericServer server.Server) ExtAuthDiscov
 }
 
 func (s *extAuthDiscoveryServiceServer) StreamExtAuthConfig(stream ExtAuthDiscoveryService_StreamExtAuthConfigServer) error {
-	return s.Server.StreamV2(stream, ExtAuthConfigType)
+	return s.Server.StreamSolo(stream, ExtAuthConfigType)
 }
 
 func (s *extAuthDiscoveryServiceServer) FetchExtAuthConfig(ctx context.Context, req *discovery.DiscoveryRequest) (*discovery.DiscoveryResponse, error) {
@@ -81,7 +81,7 @@ func (s *extAuthDiscoveryServiceServer) FetchExtAuthConfig(ctx context.Context, 
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
 	req.TypeUrl = ExtAuthConfigType
-	return s.Server.FetchV2(ctx, req)
+	return s.Server.FetchSolo(ctx, req)
 }
 
 func (s *extAuthDiscoveryServiceServer) DeltaExtAuthConfig(_ ExtAuthDiscoveryService_DeltaExtAuthConfigServer) error {

@@ -14,7 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	envoyserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
-	gloo_ads "github.com/solo-io/solo-kit/pkg/api/xds"
+	solo_xds "github.com/solo-io/solo-kit/pkg/api/xds"
 	"google.golang.org/grpc"
 )
 
@@ -75,7 +75,7 @@ func GetValidKeys(proxies v1.ProxyList, extensionKeys map[string]struct{}) []str
 func SetupEnvoyXds(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyCache envoycache.SnapshotCache) {
 
 	// check if we need to register
-	if _, ok := grpcServer.GetServiceInfo()["xds.solo.io.GlooDiscoveryService"]; ok {
+	if _, ok := grpcServer.GetServiceInfo()["solo.io.xds.SoloDiscoveryService"]; ok {
 		return
 	}
 
@@ -83,7 +83,7 @@ func SetupEnvoyXds(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyC
 	// deprecated but the ADS api has been preserved internally to support discovery of
 	// ext-auth and rate-limit configurations.
 	glooServer := NewGlooXdsServer(xdsServer)
-	gloo_ads.RegisterGlooDiscoveryServiceServer(grpcServer, glooServer)
+	solo_xds.RegisterSoloDiscoveryServiceServer(grpcServer, glooServer)
 
 	envoyServer := NewEnvoyServerV3(xdsServer)
 	envoy_service_endpoint_v3.RegisterEndpointDiscoveryServiceServer(grpcServer, envoyServer)

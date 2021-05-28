@@ -19,14 +19,14 @@ import (
 	"errors"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
-	gloo_discovery_service "github.com/solo-io/solo-kit/pkg/api/xds"
+	discovery_service "github.com/solo-io/solo-kit/pkg/api/xds"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
 // Server is a collection of handlers for streaming discovery requests.
 type GlooXdsServer interface {
-	gloo_discovery_service.GlooDiscoveryServiceServer
+	discovery_service.SoloDiscoveryServiceServer
 }
 
 type glooXdsServer struct {
@@ -39,13 +39,13 @@ func NewGlooXdsServer(genericServer server.Server) GlooXdsServer {
 }
 
 func (s *glooXdsServer) StreamAggregatedResources(
-	stream gloo_discovery_service.GlooDiscoveryService_StreamAggregatedResourcesServer,
+	stream discovery_service.SoloDiscoveryService_StreamAggregatedResourcesServer,
 ) error {
-	return s.Server.StreamV2(stream, resource.AnyType)
+	return s.Server.StreamSolo(stream, resource.AnyType)
 }
 
 func (s *glooXdsServer) DeltaAggregatedResources(
-	gloo_discovery_service.GlooDiscoveryService_DeltaAggregatedResourcesServer,
+	discovery_service.SoloDiscoveryService_DeltaAggregatedResourcesServer,
 ) error {
 	return errors.New("not implemented")
 }
