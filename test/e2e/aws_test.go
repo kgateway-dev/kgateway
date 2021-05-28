@@ -512,6 +512,11 @@ var _ = Describe("AWS Lambda", func() {
 			os.Unsetenv(awsRoleArn)
 		})
 
+		/*
+		 * these tests can start failing if certs get rotated underneath us.
+		 * the fix is to update the rotated thumbprint on our fake AWS OIDC per
+		 * https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html
+		 */
 		It("should be able to call lambda", testProxy)
 
 		It("should be able lambda with response transform", testProxyWithResponseTransform)
