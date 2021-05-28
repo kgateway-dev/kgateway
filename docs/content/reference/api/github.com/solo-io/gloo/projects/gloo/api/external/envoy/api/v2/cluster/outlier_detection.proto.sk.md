@@ -16,7 +16,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/solo-kit/api/external/envoy/api/v2/cluster/outlier_detection.proto](https://github.com/solo-io/solo-kit/blob/master/api/external/envoy/api/v2/cluster/outlier_detection.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/cluster/outlier_detection.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/envoy/api/v2/cluster/outlier_detection.proto)
 
 
 
@@ -26,9 +26,8 @@ weight: 5
 ### OutlierDetection
 
  
-See the :ref:`architecture overview <arch_overview_outlier_detection>` for
+See the `architecture overview (arch_overview_outlier_detection)` for
 more information on outlier detection.
-[#next-free-field: 21]
 
 ```yaml
 "consecutive5xx": .google.protobuf.UInt32Value
@@ -46,11 +45,6 @@ more information on outlier detection.
 "consecutiveLocalOriginFailure": .google.protobuf.UInt32Value
 "enforcingConsecutiveLocalOriginFailure": .google.protobuf.UInt32Value
 "enforcingLocalOriginSuccessRate": .google.protobuf.UInt32Value
-"failurePercentageThreshold": .google.protobuf.UInt32Value
-"enforcingFailurePercentage": .google.protobuf.UInt32Value
-"enforcingFailurePercentageLocalOrigin": .google.protobuf.UInt32Value
-"failurePercentageMinimumHosts": .google.protobuf.UInt32Value
-"failurePercentageRequestVolume": .google.protobuf.UInt32Value
 
 ```
 
@@ -67,15 +61,10 @@ more information on outlier detection.
 | `successRateStdevFactor` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | This factor is used to determine the ejection threshold for success rate outlier ejection. The ejection threshold is the difference between the mean success rate, and the product of this factor and the standard deviation of the mean success rate: mean - (stdev * success_rate_stdev_factor). This factor is divided by a thousand to get a double. That is, if the desired factor is 1.9, the runtime value should be 1900. Defaults to 1900. |
 | `consecutiveGatewayFailure` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The number of consecutive gateway failures (502, 503, 504 status codes) before a consecutive gateway failure ejection occurs. Defaults to 5. |
 | `enforcingConsecutiveGatewayFailure` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The % chance that a host will be actually ejected when an outlier status is detected through consecutive gateway failures. This setting can be used to disable ejection or to ramp it up slowly. Defaults to 0. |
-| `splitExternalLocalOriginErrors` | `bool` | Determines whether to distinguish local origin failures from external errors. If set to true the following configuration parameters are taken into account: :ref:`consecutive_local_origin_failure<envoy_api_field_cluster.OutlierDetection.consecutive_local_origin_failure>`, :ref:`enforcing_consecutive_local_origin_failure<envoy_api_field_cluster.OutlierDetection.enforcing_consecutive_local_origin_failure>` and :ref:`enforcing_local_origin_success_rate<envoy_api_field_cluster.OutlierDetection.enforcing_local_origin_success_rate>`. Defaults to false. |
-| `consecutiveLocalOriginFailure` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The number of consecutive locally originated failures before ejection occurs. Defaults to 5. Parameter takes effect only when :ref:`split_external_local_origin_errors<envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors>` is set to true. |
-| `enforcingConsecutiveLocalOriginFailure` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The % chance that a host will be actually ejected when an outlier status is detected through consecutive locally originated failures. This setting can be used to disable ejection or to ramp it up slowly. Defaults to 100. Parameter takes effect only when :ref:`split_external_local_origin_errors<envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors>` is set to true. |
-| `enforcingLocalOriginSuccessRate` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The % chance that a host will be actually ejected when an outlier status is detected through success rate statistics for locally originated errors. This setting can be used to disable ejection or to ramp it up slowly. Defaults to 100. Parameter takes effect only when :ref:`split_external_local_origin_errors<envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors>` is set to true. |
-| `failurePercentageThreshold` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The failure percentage to use when determining failure percentage-based outlier detection. If the failure percentage of a given host is greater than or equal to this value, it will be ejected. Defaults to 85. |
-| `enforcingFailurePercentage` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The % chance that a host will be actually ejected when an outlier status is detected through failure percentage statistics. This setting can be used to disable ejection or to ramp it up slowly. Defaults to 0. [#next-major-version: setting this without setting failure_percentage_threshold should be invalid in v4.]. |
-| `enforcingFailurePercentageLocalOrigin` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The % chance that a host will be actually ejected when an outlier status is detected through local-origin failure percentage statistics. This setting can be used to disable ejection or to ramp it up slowly. Defaults to 0. |
-| `failurePercentageMinimumHosts` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The minimum number of hosts in a cluster in order to perform failure percentage-based ejection. If the total number of hosts in the cluster is less than this value, failure percentage-based ejection will not be performed. Defaults to 5. |
-| `failurePercentageRequestVolume` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The minimum number of total requests that must be collected in one interval (as defined by the interval duration above) to perform failure percentage-based ejection for this host. If the volume is lower than this setting, failure percentage-based ejection will not be performed for this host. Defaults to 50. |
+| `splitExternalLocalOriginErrors` | `bool` | Determines whether to distinguish local origin failures from external errors. If set to true the following configuration parameters are taken into account: `consecutive_local_origin_failure (envoy_api_field_cluster.OutlierDetection.consecutive_local_origin_failure)`, `enforcing_consecutive_local_origin_failure (envoy_api_field_cluster.OutlierDetection.enforcing_consecutive_local_origin_failure)` and `enforcing_local_origin_success_rate (envoy_api_field_cluster.OutlierDetection.enforcing_local_origin_success_rate)`. Defaults to false. |
+| `consecutiveLocalOriginFailure` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The number of consecutive locally originated failures before ejection occurs. Defaults to 5. Parameter takes effect only when `split_external_local_origin_errors (envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors)` is set to true. |
+| `enforcingConsecutiveLocalOriginFailure` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The % chance that a host will be actually ejected when an outlier status is detected through consecutive locally originated failures. This setting can be used to disable ejection or to ramp it up slowly. Defaults to 100. Parameter takes effect only when `split_external_local_origin_errors (envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors)` is set to true. |
+| `enforcingLocalOriginSuccessRate` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The % chance that a host will be actually ejected when an outlier status is detected through success rate statistics for locally originated errors. This setting can be used to disable ejection or to ramp it up slowly. Defaults to 100. Parameter takes effect only when `split_external_local_origin_errors (envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors)` is set to true. |
 
 
 

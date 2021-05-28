@@ -368,6 +368,10 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/pkg/ttl/v3"
 
 	// gloo filter types
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/annotations"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/route"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
@@ -387,6 +391,7 @@ import (
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/xff_offset"
+	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/metadata/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/tracing/v3"

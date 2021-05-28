@@ -12,13 +12,12 @@ weight: 5
 
 
 - [Int64Range](#int64range)
-- [Int32Range](#int32range)
 - [DoubleRange](#doublerange)
   
 
 
 
-##### Source File: [github.com/solo-io/solo-kit/api/external/envoy/type/range.proto](https://github.com/solo-io/solo-kit/blob/master/api/external/envoy/type/range.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/range.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/envoy/type/range.proto)
 
 
 
@@ -29,27 +28,6 @@ weight: 5
 
  
 Specifies the int64 start and end of the range using half-open interval semantics [start,
-end).
-
-```yaml
-"start": int
-"end": int
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `start` | `int` | start of the range (inclusive). |
-| `end` | `int` | end of the range (exclusive). |
-
-
-
-
----
-### Int32Range
-
- 
-Specifies the int32 start and end of the range using half-open interval semantics [start,
 end).
 
 ```yaml

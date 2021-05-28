@@ -3,9 +3,9 @@ package api_conversion
 import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	envoytype_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
-	envoytype_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
@@ -16,22 +16,22 @@ import (
 // we should work to remove that assumption from solokit and delete this code:
 // https://github.com/solo-io/gloo/issues/1793
 
-func ToGlooInt64RangeList(int64Range []*envoy_type_v3.Int64Range) []*envoytype_sk.Int64Range {
-	result := make([]*envoytype_sk.Int64Range, len(int64Range))
+func ToGlooInt64RangeList(int64Range []*envoy_type_v3.Int64Range) []*envoytype_gloo.Int64Range {
+	result := make([]*envoytype_gloo.Int64Range, len(int64Range))
 	for i, v := range int64Range {
 		result[i] = ToGlooInt64Range(v)
 	}
 	return result
 }
 
-func ToGlooInt64Range(int64Range *envoy_type_v3.Int64Range) *envoytype_sk.Int64Range {
-	return &envoytype_sk.Int64Range{
+func ToGlooInt64Range(int64Range *envoy_type_v3.Int64Range) *envoytype_gloo.Int64Range {
+	return &envoytype_gloo.Int64Range{
 		Start: int64Range.Start,
 		End:   int64Range.End,
 	}
 }
 
-func ToEnvoyInt64RangeList(int64Range []*envoytype_sk.Int64Range) []*envoy_type_v3.Int64Range {
+func ToEnvoyInt64RangeList(int64Range []*envoytype_gloo.Int64Range) []*envoy_type_v3.Int64Range {
 	result := make([]*envoy_type_v3.Int64Range, len(int64Range))
 	for i, v := range int64Range {
 		result[i] = ToEnvoyInt64Range(v)
@@ -39,7 +39,7 @@ func ToEnvoyInt64RangeList(int64Range []*envoytype_sk.Int64Range) []*envoy_type_
 	return result
 }
 
-func ToEnvoyInt64Range(int64Range *envoytype_sk.Int64Range) *envoy_type_v3.Int64Range {
+func ToEnvoyInt64Range(int64Range *envoytype_gloo.Int64Range) *envoy_type_v3.Int64Range {
 	return &envoy_type_v3.Int64Range{
 		Start: int64Range.Start,
 		End:   int64Range.End,

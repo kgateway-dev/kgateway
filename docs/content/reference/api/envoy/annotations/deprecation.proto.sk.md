@@ -9,7 +9,7 @@ weight: 5
 
 ### Package: `solo.io.envoy.annotations`
 
-##### Source File: [github.com/solo-io/solo-kit/api/external/envoy/annotations/deprecation.proto](https://github.com/solo-io/solo-kit/blob/master/api/external/envoy/annotations/deprecation.proto)
+##### Source File: `envoy/annotations/deprecation.proto`
 
 
 

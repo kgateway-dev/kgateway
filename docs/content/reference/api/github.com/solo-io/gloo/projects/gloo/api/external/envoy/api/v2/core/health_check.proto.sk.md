@@ -18,7 +18,6 @@ weight: 5
 - [RedisHealthCheck](#redishealthcheck)
 - [GrpcHealthCheck](#grpchealthcheck)
 - [CustomHealthCheck](#customhealthcheck)
-- [TlsOptions](#tlsoptions)
   
 
  
@@ -30,7 +29,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/health_check.proto](https://github.com/solo-io/solo-kit/blob/master/api/external/envoy/api/v2/core/health_check.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/core/health_check.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/envoy/api/v2/core/health_check.proto)
 
 
 
@@ -39,8 +38,7 @@ weight: 5
 ---
 ### HealthCheck
 
- 
-[#next-free-field: 23]
+
 
 ```yaml
 "timeout": .google.protobuf.Duration
@@ -50,7 +48,6 @@ weight: 5
 "intervalJitterPercent": int
 "unhealthyThreshold": .google.protobuf.UInt32Value
 "healthyThreshold": .google.protobuf.UInt32Value
-"altPort": .google.protobuf.UInt32Value
 "reuseConnection": .google.protobuf.BoolValue
 "httpHealthCheck": .solo.io.envoy.api.v2.core.HealthCheck.HttpHealthCheck
 "tcpHealthCheck": .solo.io.envoy.api.v2.core.HealthCheck.TcpHealthCheck
@@ -62,7 +59,6 @@ weight: 5
 "healthyEdgeInterval": .google.protobuf.Duration
 "eventLogPath": string
 "alwaysLogHealthCheckFailures": bool
-"tlsOptions": .solo.io.envoy.api.v2.core.HealthCheck.TlsOptions
 
 ```
 
@@ -75,7 +71,6 @@ weight: 5
 | `intervalJitterPercent` | `int` | An optional jitter amount as a percentage of interval_ms. If specified, during every interval Envoy will add interval_ms * interval_jitter_percent / 100 to the wait time. If interval_jitter_ms and interval_jitter_percent are both set, both of them will be used to increase the wait time. |
 | `unhealthyThreshold` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The number of unhealthy health checks required before a host is marked unhealthy. Note that for *http* health checking if a host responds with 503 this threshold is ignored and the host is considered unhealthy immediately. |
 | `healthyThreshold` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The number of healthy health checks required before a host is marked healthy. Note that during startup, only a single successful health check is required to mark a host healthy. |
-| `altPort` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | [#not-implemented-hide:] Non-serving port for health checking. |
 | `reuseConnection` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Reuse health check connection between health checks. Default is true. |
 | `httpHealthCheck` | [.solo.io.envoy.api.v2.core.HealthCheck.HttpHealthCheck](../health_check.proto.sk/#httphealthcheck) | HTTP health check. Only one of `httpHealthCheck`, `tcpHealthCheck`, or `customHealthCheck` can be set. |
 | `tcpHealthCheck` | [.solo.io.envoy.api.v2.core.HealthCheck.TcpHealthCheck](../health_check.proto.sk/#tcphealthcheck) | TCP health check. Only one of `tcpHealthCheck`, `httpHealthCheck`, or `customHealthCheck` can be set. |
@@ -85,9 +80,8 @@ weight: 5
 | `unhealthyInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The "unhealthy interval" is a health check interval that is used for hosts that are marked as unhealthy. As soon as the host is marked as healthy, Envoy will shift back to using the standard health check interval that is defined. The default value for "unhealthy interval" is the same as "interval". |
 | `unhealthyEdgeInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The "unhealthy edge interval" is a special health check interval that is used for the first health check right after a host is marked as unhealthy. For subsequent health checks Envoy will shift back to using either "unhealthy interval" if present or the standard health check interval that is defined. The default value for "unhealthy edge interval" is the same as "unhealthy interval". |
 | `healthyEdgeInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The "healthy edge interval" is a special health check interval that is used for the first health check right after a host is marked as healthy. For subsequent health checks Envoy will shift back to using the standard health check interval that is defined. The default value for "healthy edge interval" is the same as the default interval. |
-| `eventLogPath` | `string` | Specifies the path to the :ref:`health check event log <arch_overview_health_check_logging>`. If empty, no event log will be written. |
+| `eventLogPath` | `string` | Specifies the path to the `health check event log (arch_overview_health_check_logging)`. If empty, no event log will be written. |
 | `alwaysLogHealthCheckFailures` | `bool` | If set to true, health check failure events will always be logged. If set to false, only the initial health check failure event will be logged. The default value is false. |
-| `tlsOptions` | [.solo.io.envoy.api.v2.core.HealthCheck.TlsOptions](../health_check.proto.sk/#tlsoptions) | This allows overriding the cluster TLS settings, just for health check connections. |
 
 
 
@@ -100,14 +94,12 @@ Describes the encoding of the payload bytes in the payload.
 
 ```yaml
 "text": string
-"binary": bytes
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `text` | `string` | Hex encoded payload. E.g., "000000FF". Only one of `text` or `binary` can be set. |
-| `binary` | `bytes` | [#not-implemented-hide:] Binary payload. Only one of `binary` or `text` can be set. |
+| `text` | `string` | Hex encoded payload. E.g., "000000FF". |
 
 
 
@@ -116,36 +108,28 @@ Describes the encoding of the payload bytes in the payload.
 ### HttpHealthCheck
 
  
-[#next-free-field: 12]
+[#comment:next free field: 10]
 
 ```yaml
 "host": string
 "path": string
-"send": .solo.io.envoy.api.v2.core.HealthCheck.Payload
-"receive": .solo.io.envoy.api.v2.core.HealthCheck.Payload
 "serviceName": string
 "requestHeadersToAdd": []solo.io.envoy.api.v2.core.HeaderValueOption
 "requestHeadersToRemove": []string
 "useHttp2": bool
 "expectedStatuses": []solo.io.envoy.type.Int64Range
-"codecClientType": .solo.io.envoy.type.CodecClientType
-"serviceNameMatcher": .solo.io.envoy.type.matcher.StringMatcher
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `host` | `string` | The value of the host header in the HTTP health check request. If left empty (default value), the name of the cluster this health check is associated with will be used. The host header can be customized for a specific endpoint by setting the :ref:`hostname <envoy_api_field_endpoint.Endpoint.HealthCheckConfig.hostname>` field. |
+| `host` | `string` | The value of the host header in the HTTP health check request. If left empty (default value), the name of the cluster this health check is associated with will be used. |
 | `path` | `string` | Specifies the HTTP path that will be requested during health checking. For example */healthcheck*. |
-| `send` | [.solo.io.envoy.api.v2.core.HealthCheck.Payload](../health_check.proto.sk/#payload) | [#not-implemented-hide:] HTTP specific payload. |
-| `receive` | [.solo.io.envoy.api.v2.core.HealthCheck.Payload](../health_check.proto.sk/#payload) | [#not-implemented-hide:] HTTP specific response. |
-| `serviceName` | `string` | An optional service name parameter which is used to validate the identity of the health checked cluster. See the :ref:`architecture overview <arch_overview_health_checking_identity>` for more information. .. attention:: This field has been deprecated in favor of `service_name_matcher` for better flexibility over matching with service-cluster name. |
-| `requestHeadersToAdd` | [[]solo.io.envoy.api.v2.core.HeaderValueOption](../base.proto.sk/#headervalueoption) | Specifies a list of HTTP headers that should be added to each request that is sent to the health checked cluster. For more information, including details on header value syntax, see the documentation on :ref:`custom request headers <config_http_conn_man_headers_custom_request_headers>`. |
+| `serviceName` | `string` | An optional service name parameter which is used to validate the identity of the health checked cluster. See the `architecture overview (arch_overview_health_checking_identity)` for more information. |
+| `requestHeadersToAdd` | [[]solo.io.envoy.api.v2.core.HeaderValueOption](../../../../../../../../../../solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#headervalueoption) | Specifies a list of HTTP headers that should be added to each request that is sent to the health checked cluster. For more information, including details on header value syntax, see the documentation on `custom request headers (config_http_conn_man_headers_custom_request_headers)`. |
 | `requestHeadersToRemove` | `[]string` | Specifies a list of HTTP headers that should be removed from each request that is sent to the health checked cluster. |
-| `useHttp2` | `bool` | If set, health checks will be made using http/2. Deprecated, use :ref:`codec_client_type <envoy_api_field_core.HealthCheck.HttpHealthCheck.codec_client_type>` instead. |
-| `expectedStatuses` | [[]solo.io.envoy.type.Int64Range](../../../../type/range.proto.sk/#int64range) | Specifies a list of HTTP response statuses considered healthy. If provided, replaces default 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open semantics of :ref:`Int64Range <envoy_api_msg_type.Int64Range>`. The start and end of each range are required. Only statuses in the range [100, 600) are allowed. |
-| `codecClientType` | [.solo.io.envoy.type.CodecClientType](../../../../type/http.proto.sk/#codecclienttype) | Use specified application protocol for health checks. |
-| `serviceNameMatcher` | [.solo.io.envoy.type.matcher.StringMatcher](../../../../type/matcher/string.proto.sk/#stringmatcher) | An optional service name parameter which is used to validate the identity of the health checked cluster using a :ref:`StringMatcher <envoy_api_msg_type.matcher.StringMatcher>`. See the :ref:`architecture overview <arch_overview_health_checking_identity>` for more information. |
+| `useHttp2` | `bool` | If set, health checks will be made using http/2. |
+| `expectedStatuses` | [[]solo.io.envoy.type.Int64Range](../../../../type/range.proto.sk/#int64range) | Specifies a list of HTTP response statuses considered healthy. If provided, replaces default 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open semantics of `Int64Range (envoy_api_msg_type.Int64Range)`. |
 
 
 
@@ -204,7 +188,7 @@ for details.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `serviceName` | `string` | An optional service name parameter which will be sent to gRPC service in `grpc.health.v1.HealthCheckRequest <https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto#L20>`_. message. See `gRPC health-checking overview <https://github.com/grpc/grpc/blob/master/doc/health-checking.md>`_ for more information. |
-| `authority` | `string` | The value of the :authority header in the gRPC health check request. If left empty (default value), the name of the cluster this health check is associated with will be used. The authority header can be customized for a specific endpoint by setting the :ref:`hostname <envoy_api_field_endpoint.Endpoint.HealthCheckConfig.hostname>` field. |
+| `authority` | `string` | The value of the :authority header in the gRPC health check request. If left empty (default value), the name of the cluster this health check is associated with will be used. |
 
 
 
@@ -227,27 +211,6 @@ Custom health check.
 | `name` | `string` | The registered name of the custom health checker. |
 | `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) |  Only one of `config` or `typedConfig` can be set. |
 | `typedConfig` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) |  Only one of `typedConfig` or `config` can be set. |
-
-
-
-
----
-### TlsOptions
-
- 
-Health checks occur over the transport socket specified for the cluster. This implies that if a
-cluster is using a TLS-enabled transport socket, the health check will also occur over TLS.
-
-This allows overriding the cluster TLS settings, just for health check connections.
-
-```yaml
-"alpnProtocols": []string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `alpnProtocols` | `[]string` | Specifies the ALPN protocols for health check connections. This is useful if the corresponding upstream is using ALPN-based :ref:`FilterChainMatch <envoy_api_msg_listener.FilterChainMatch>` along with different protocols for health checks versus data connections. If empty, no ALPN protocols will be set on health check connections. |
 
 
 

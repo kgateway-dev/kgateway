@@ -902,9 +902,6 @@ apis:
   shadowing.options.gloo.solo.io.RouteShadowing:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/shadowing/shadowing.proto.sk/#RouteShadowing
     package: shadowing.options.gloo.solo.io
-  solo.io.envoy.annotations.ResourceAnnotation:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/annotations/resource.proto.sk/#ResourceAnnotation
-    package: solo.io.envoy.annotations
   solo.io.envoy.api.v2.DeltaDiscoveryRequest:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#DeltaDiscoveryRequest
     package: solo.io.envoy.api.v2
@@ -921,7 +918,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#Resource
     package: solo.io.envoy.api.v2
   solo.io.envoy.api.v2.cluster.OutlierDetection:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/cluster/outlier_detection.proto.sk/#OutlierDetection
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/cluster/outlier_detection.proto.sk/#OutlierDetection
     package: solo.io.envoy.api.v2.cluster
   solo.io.envoy.api.v2.core.Address:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/address.proto.sk/#Address
@@ -957,7 +954,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#HeaderValueOption
     package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.HealthCheck:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/health_check.proto.sk/#HealthCheck
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/core/health_check.proto.sk/#HealthCheck
     package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.HttpUri:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/http_uri.proto.sk/#HttpUri
@@ -999,55 +996,52 @@ apis:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#TransportSocket
     package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.route.CorsPolicy:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#CorsPolicy
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#CorsPolicy
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.api.v2.route.Decorator:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#Decorator
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#Decorator
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.api.v2.route.DirectResponseAction:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#DirectResponseAction
-    package: solo.io.envoy.api.v2.route
-  solo.io.envoy.api.v2.route.FilterAction:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#FilterAction
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#DirectResponseAction
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.api.v2.route.HeaderMatcher:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#HeaderMatcher
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#HeaderMatcher
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.api.v2.route.HedgePolicy:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#HedgePolicy
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#HedgePolicy
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.api.v2.route.QueryParameterMatcher:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#QueryParameterMatcher
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#QueryParameterMatcher
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.api.v2.route.RateLimit:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#RateLimit
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#RateLimit
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.api.v2.route.RedirectAction:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#RedirectAction
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#RedirectAction
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.api.v2.route.RetryPolicy:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#RetryPolicy
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#RetryPolicy
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.api.v2.route.Route:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#Route
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#Route
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.api.v2.route.RouteAction:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#RouteAction
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#RouteAction
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.api.v2.route.RouteMatch:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#RouteMatch
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#RouteMatch
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.api.v2.route.Tracing:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#Tracing
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#Tracing
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.api.v2.route.VirtualCluster:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#VirtualCluster
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#VirtualCluster
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.api.v2.route.VirtualHost:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#VirtualHost
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#VirtualHost
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.api.v2.route.WeightedCluster:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/route/route_components.proto.sk/#WeightedCluster
+    relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#WeightedCluster
     package: solo.io.envoy.api.v2.route
   solo.io.envoy.config.core.v3.Address:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto.sk/#Address
@@ -1263,16 +1257,13 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/wasm/v3/wasm.proto.sk/#WasmService
     package: solo.io.envoy.extensions.wasm.v3
   solo.io.envoy.type.DoubleRange:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/range.proto.sk/#DoubleRange
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/range.proto.sk/#DoubleRange
     package: solo.io.envoy.type
   solo.io.envoy.type.FractionalPercent:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/percent.proto.sk/#FractionalPercent
     package: solo.io.envoy.type
-  solo.io.envoy.type.Int32Range:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/range.proto.sk/#Int32Range
-    package: solo.io.envoy.type
   solo.io.envoy.type.Int64Range:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/range.proto.sk/#Int64Range
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/range.proto.sk/#Int64Range
     package: solo.io.envoy.type
   solo.io.envoy.type.Percent:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/percent.proto.sk/#Percent
@@ -1280,18 +1271,6 @@ apis:
   solo.io.envoy.type.SemanticVersion:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/semantic_version.proto.sk/#SemanticVersion
     package: solo.io.envoy.type
-  solo.io.envoy.type.matcher.ListStringMatcher:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/matcher/string.proto.sk/#ListStringMatcher
-    package: solo.io.envoy.type.matcher
-  solo.io.envoy.type.matcher.RegexMatchAndSubstitute:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/matcher/regex.proto.sk/#RegexMatchAndSubstitute
-    package: solo.io.envoy.type.matcher
-  solo.io.envoy.type.matcher.RegexMatcher:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/matcher/regex.proto.sk/#RegexMatcher
-    package: solo.io.envoy.type.matcher
-  solo.io.envoy.type.matcher.StringMatcher:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/matcher/string.proto.sk/#StringMatcher
-    package: solo.io.envoy.type.matcher
   solo.io.envoy.type.matcher.v3.ListStringMatcher:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto.sk/#ListStringMatcher
     package: solo.io.envoy.type.matcher.v3
@@ -1304,21 +1283,12 @@ apis:
   solo.io.envoy.type.matcher.v3.StringMatcher:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto.sk/#StringMatcher
     package: solo.io.envoy.type.matcher.v3
-  solo.io.envoy.type.metadata.v2.MetadataKey:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/metadata/v2/metadata.proto.sk/#MetadataKey
-    package: solo.io.envoy.type.metadata.v2
-  solo.io.envoy.type.metadata.v2.MetadataKind:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/metadata/v2/metadata.proto.sk/#MetadataKind
-    package: solo.io.envoy.type.metadata.v2
   solo.io.envoy.type.metadata.v3.MetadataKey:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/metadata/v3/metadata.proto.sk/#MetadataKey
     package: solo.io.envoy.type.metadata.v3
   solo.io.envoy.type.metadata.v3.MetadataKind:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/metadata/v3/metadata.proto.sk/#MetadataKind
     package: solo.io.envoy.type.metadata.v3
-  solo.io.envoy.type.tracing.v2.CustomTag:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/tracing/v2/custom_tag.proto.sk/#CustomTag
-    package: solo.io.envoy.type.tracing.v2
   solo.io.envoy.type.tracing.v3.CustomTag:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/tracing/v3/custom_tag.proto.sk/#CustomTag
     package: solo.io.envoy.type.tracing.v3
