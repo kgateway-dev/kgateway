@@ -1,0 +1,10 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4369
+    resolvesIssue: false
+    description: Use solo-kit as source for Envoy v2 API instead of go-control-plane 
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.19.1
+    description: Pull in the Envoy v2 api protos
