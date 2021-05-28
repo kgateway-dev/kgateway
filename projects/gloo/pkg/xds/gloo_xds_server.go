@@ -18,34 +18,34 @@ package xds
 import (
 	"errors"
 
-	envoy_service_discovery_v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/service/discovery/v2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
+	gloo_discovery_service "github.com/solo-io/solo-kit/pkg/api/xds"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
 // Server is a collection of handlers for streaming discovery requests.
-type EnvoyServerV2 interface {
-	envoy_service_discovery_v2.AggregatedDiscoveryServiceServer
+type GlooXdsServer interface {
+	gloo_discovery_service.GlooDiscoveryServiceServer
 }
 
-type envoyServerV2 struct {
+type glooXdsServer struct {
 	server.Server
 }
 
 // NewServer creates handlers from a config watcher and an optional logger.
-func NewEnvoyServerV2(genericServer server.Server) EnvoyServerV2 {
-	return &envoyServerV2{Server: genericServer}
+func NewGlooXdsServer(genericServer server.Server) GlooXdsServer {
+	return &glooXdsServer{Server: genericServer}
 }
 
-func (s *envoyServerV2) StreamAggregatedResources(
-	stream envoy_service_discovery_v2.AggregatedDiscoveryService_StreamAggregatedResourcesServer,
+func (s *glooXdsServer) StreamAggregatedResources(
+	stream gloo_discovery_service.GlooDiscoveryService_StreamAggregatedResourcesServer,
 ) error {
 	return s.Server.StreamV2(stream, resource.AnyType)
 }
 
-func (s *envoyServerV2) DeltaAggregatedResources(
-	envoy_service_discovery_v2.AggregatedDiscoveryService_DeltaAggregatedResourcesServer,
+func (s *glooXdsServer) DeltaAggregatedResources(
+	gloo_discovery_service.GlooDiscoveryService_DeltaAggregatedResourcesServer,
 ) error {
 	return errors.New("not implemented")
 }

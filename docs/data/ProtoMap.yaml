@@ -905,9 +905,6 @@ apis:
   solo.io.envoy.annotations.ResourceAnnotation:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/annotations/resource.proto.sk/#ResourceAnnotation
     package: solo.io.envoy.annotations
-  solo.io.envoy.api.v2.CdsDummy:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/cds.proto.sk/#CdsDummy
-    package: solo.io.envoy.api.v2
   solo.io.envoy.api.v2.DeltaDiscoveryRequest:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#DeltaDiscoveryRequest
     package: solo.io.envoy.api.v2
@@ -919,15 +916,6 @@ apis:
     package: solo.io.envoy.api.v2
   solo.io.envoy.api.v2.DiscoveryResponse:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#DiscoveryResponse
-    package: solo.io.envoy.api.v2
-  solo.io.envoy.api.v2.EdsDummy:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/eds.proto.sk/#EdsDummy
-    package: solo.io.envoy.api.v2
-  solo.io.envoy.api.v2.LdsDummy:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/lds.proto.sk/#LdsDummy
-    package: solo.io.envoy.api.v2
-  solo.io.envoy.api.v2.RdsDummy:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/rds.proto.sk/#RdsDummy
     package: solo.io.envoy.api.v2
   solo.io.envoy.api.v2.Resource:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto.sk/#Resource
@@ -1274,9 +1262,6 @@ apis:
   solo.io.envoy.extensions.wasm.v3.WasmService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/wasm/v3/wasm.proto.sk/#WasmService
     package: solo.io.envoy.extensions.wasm.v3
-  solo.io.envoy.service.discovery.v2.AdsDummy:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/service/discovery/v2/ads.proto.sk/#AdsDummy
-    package: solo.io.envoy.service.discovery.v2
   solo.io.envoy.type.DoubleRange:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/range.proto.sk/#DoubleRange
     package: solo.io.envoy.type
