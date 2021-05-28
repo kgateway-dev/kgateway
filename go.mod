@@ -86,25 +86,25 @@ require (
 	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.3.1-0.20200828183125-ce943fd02449
 	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
-	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
-	golang.org/x/tools v0.0.0-20201027213030-631220838841
-	google.golang.org/genproto v0.0.0-20201019141844-1ed22bb0c154
+	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
+	golang.org/x/tools v0.0.0-20201211185031-d93e913c1a58
+	google.golang.org/genproto v0.0.0-20201211151036-40ec1c210f7a
 	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/ini.v1 v1.56.0 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
 	helm.sh/helm/v3 v3.4.2
-	k8s.io/api v0.19.6
-	k8s.io/apiextensions-apiserver v0.19.6
-	k8s.io/apimachinery v0.19.6
+	k8s.io/api v0.19.7
+	k8s.io/apiextensions-apiserver v0.19.7
+	k8s.io/apimachinery v0.19.7
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	k8s.io/code-generator v0.19.6
+	k8s.io/code-generator v0.19.7
 	k8s.io/kubectl v0.19.6
 	k8s.io/kubernetes v1.19.6
 	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
 	knative.dev/networking v0.0.0-20201103163404-b9f80f4537af
-	knative.dev/pkg v0.0.0-20201104085304-8224d1a794f2
+	knative.dev/pkg v0.0.0-20210122211754-250a1834dbef
 	rsc.io/letsencrypt v0.0.3 // indirect
 	sigs.k8s.io/controller-runtime v0.7.0
 	sigs.k8s.io/yaml v1.2.0
