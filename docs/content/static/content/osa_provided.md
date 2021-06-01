@@ -48,9 +48,9 @@ Name|Version|License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.16.0|MIT License
 [x/mod](https://golang.org/x/mod)|v0.3.1-0.20200828183125-ce943fd02449|BSD 3-clause "New" or "Revised" License
 [x/oauth2](https://golang.org/x/oauth2)|v0.0.0-20210113205817-d3ed898aa8a3|BSD 3-clause "New" or "Revised" License
-[x/sync](https://golang.org/x/sync)|v0.0.0-20201207232520-09787c993a3a|BSD 3-clause "New" or "Revised" License
-[x/tools](https://golang.org/x/tools)|v0.0.0-20201211185031-d93e913c1a58|BSD 3-clause "New" or "Revised" License
-[google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20201211151036-40ec1c210f7a|Apache License 2.0
+[x/sync](https://golang.org/x/sync)|v0.0.0-20201020160332-67f06af15bc9|BSD 3-clause "New" or "Revised" License
+[x/tools](https://golang.org/x/tools)|v0.0.0-20201027213030-631220838841|BSD 3-clause "New" or "Revised" License
+[google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20201019141844-1ed22bb0c154|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.36.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.25.0|BSD 3-clause "New" or "Revised" License
 [AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
@@ -64,7 +64,7 @@ Name|Version|License
 [k8s.io/kubernetes](https://k8s.io/kubernetes)|v1.19.6|Apache License 2.0
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20200729134348-d5654de09c73|Apache License 2.0
 [knative.dev/networking](https://knative.dev/networking)|v0.0.0-20201103163404-b9f80f4537af|Apache License 2.0
-[knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20210122211754-250a1834dbef|Apache License 2.0
+[knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20201104085304-8224d1a794f2|Apache License 2.0
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.7.0|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.2.0|MIT License
 [cmd/goimports](https://golang.org/x/tools/cmd/goimports)|latest|MIT License
