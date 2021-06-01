@@ -163,10 +163,11 @@ function getContentForVersion() {
   cp -a $repoDir/docs/content/. $tempContentDir/$version/
 }
 
-tagToBuild=$GITHUB_SHA
-if [[ "$GITHUB_EVENT_NAME" == "push" ]]
+tagToBuild="master"
+if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]
 then
-  tagToBuild="master"
+  tagToBuild=$GITHUB_SHA
+  echo using $GITHUB_SHA, as this will be the next commit to master
 fi
 
 # Obtain /docs/content dir from all versions
