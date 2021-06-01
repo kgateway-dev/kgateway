@@ -1892,6 +1892,14 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
+					It("allows removing pod security context", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext=false"},
+						})
+						gatewayProxyDeployment.Spec.Template.Spec.SecurityContext = nil
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
 					It("enables anti affinity ", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.antiAffinity=true"},
@@ -3670,6 +3678,14 @@ metadata:
 						})
 						uid := int64(10102)
 						discoveryDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
+						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+					})
+
+					It("allows removing pod security context", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"discovery.deployment.enablePodSecurityContext=false"},
+						})
+						discoveryDeployment.Spec.Template.Spec.SecurityContext = nil
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 					})
 

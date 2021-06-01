@@ -86,7 +86,7 @@ spec:
 {{- end}}
     spec:
 
-{{- if $spec.podTemplate.runUnprivileged }}
+{{- if $spec.podTemplate.enablePodSecurityContext }}
       securityContext:
         fsGroup: {{ printf "%.0f" (float64 $spec.podTemplate.fsGroup) }}
         {{- if not $spec.podTemplate.floatingUserId }}

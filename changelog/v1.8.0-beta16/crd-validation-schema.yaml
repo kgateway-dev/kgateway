@@ -1,0 +1,21 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/2108
+    resolvesIssue: false
+    description: |
+      Add structual schemas to Gloo Edge CRDs
+      (https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#specifying-a-structural-schema)
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.19.0
+    description: |
+      Support schemagen, a solo-kit used to generated validation schemas for Gloo Edge CRDs.
+      Include code generation optimizations to speed up Gloo Edge generated-code.
+  - type: NON_USER_FACING
+    description: |
+      Generated xds files (ie ext_auth_discovery_service_xds) no longer have a duplicate `.sk` suffix.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4055
+    resolvesIssue: true
+    description: Prevent invalid AuthConfig from blocking subsequent AuthConfigs from being processed

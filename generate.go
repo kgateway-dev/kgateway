@@ -4,6 +4,7 @@ import (
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
+	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
 	"github.com/solo-io/solo-kit/pkg/code-generator/sk_anyvendor"
 )
 
@@ -46,6 +47,10 @@ func main() {
 			},
 		},
 		ExternalImports: protoImports,
+		ValidationSchemaOptions: &schemagen.ValidationSchemaOptions{
+			CrdDirectory:   "install/helm/gloo/crds",
+			JsonSchemaTool: "protoc",
+		},
 	}
 	if err := cmd.Generate(generateOptions); err != nil {
 		log.Fatalf("generate failed!: %v", err)
