@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Trivy scan on release replaced with scheduled Trivy scan. Remove old workflow code to cleanup Github Actions.
