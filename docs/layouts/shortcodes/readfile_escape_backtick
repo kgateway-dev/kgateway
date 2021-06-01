@@ -1,2 +1,0 @@
-{{$file := .Get "file"}}
-{{- $file  | readFile | replaceRE "`" "\\`" | safeHTML -}}
