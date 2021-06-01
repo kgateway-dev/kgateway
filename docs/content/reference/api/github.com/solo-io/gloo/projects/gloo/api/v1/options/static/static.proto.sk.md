@@ -82,12 +82,14 @@ Represents a single instance of an upstream
 
 ```yaml
 "path": string
+"method": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `path` | `string` | (Enterprise Only): Path to use when health checking this specific host. |
+| `method` | `string` | (Enterprise Only): Method to use when health checking this specific host. |
 
 
 

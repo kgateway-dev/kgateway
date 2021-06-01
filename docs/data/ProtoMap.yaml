@@ -1,4 +1,16 @@
 apis:
+  advancedhttp.options.gloo.solo.io.JsonKey:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/advanced_http/advanced_http.proto.sk/#JsonKey
+    package: advancedhttp.options.gloo.solo.io
+  advancedhttp.options.gloo.solo.io.ResponseAssertions:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/advanced_http/advanced_http.proto.sk/#ResponseAssertions
+    package: advancedhttp.options.gloo.solo.io
+  advancedhttp.options.gloo.solo.io.ResponseMatch:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/advanced_http/advanced_http.proto.sk/#ResponseMatch
+    package: advancedhttp.options.gloo.solo.io
+  advancedhttp.options.gloo.solo.io.ResponseMatcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/advanced_http/advanced_http.proto.sk/#ResponseMatcher
+    package: advancedhttp.options.gloo.solo.io
   als.options.gloo.solo.io.AccessLog:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#AccessLog
     package: als.options.gloo.solo.io
@@ -1062,7 +1074,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#HeaderValueOption
     package: solo.io.envoy.config.core.v3
   solo.io.envoy.config.core.v3.HealthCheck:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/health_check.proto.sk/#HealthCheck
+    relativepath: reference/api/envoy/config/core/v3/health_check.proto.sk/#HealthCheck
     package: solo.io.envoy.config.core.v3
   solo.io.envoy.config.core.v3.HttpUri:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/http_uri.proto.sk/#HttpUri
