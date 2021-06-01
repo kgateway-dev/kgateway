@@ -3,15 +3,16 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v32/github"
 	"github.com/rotisserie/eris"
 	. "github.com/solo-io/gloo/docs/cmd/securityscanutils"
-	"github.com/solo-io/go-utils/changeloggenutils"
+	changelogdocutils "github.com/solo-io/go-utils/changeloggenutils"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
-	"os"
 )
 
 func main() {
