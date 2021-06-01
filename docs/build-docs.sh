@@ -111,7 +111,7 @@ function generateSiteForVersion() {
   then
     version="latest"
   fi
-  git checkout master
+  git checkout $tagToBuild
 
   cd docs
   # Generate data/Solo.yaml file with version info populated.
@@ -150,7 +150,7 @@ function getContentForVersion() {
   cd $repoDir
   if [[ "$version" == "master" ]]
   then
-    git checkout master
+    git checkout $tagToBuild
   else
     git checkout tags/v"$version"
   fi
@@ -163,6 +163,14 @@ function getContentForVersion() {
   cp -a $repoDir/docs/content/. $tempContentDir/$version/
 }
 
+# Only on pull requests to master, we want to checkout the pull request head SHA
+# rather than master
+tagToBuild="master"
+if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]
+then
+  tagToBuild=$PULL_REQUEST_SHA
+  echo using $PULL_REQUEST_SHA, as this will be the next commit to master
+fi
 
 # Obtain /docs/content dir from all versions
 for version in "${versions[@]}"
