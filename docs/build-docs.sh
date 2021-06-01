@@ -163,6 +163,8 @@ function getContentForVersion() {
   cp -a $repoDir/docs/content/. $tempContentDir/$version/
 }
 
+# Only on pull requests to master, we want to checkout the pull request head SHA
+# rather than master
 tagToBuild="master"
 if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]
 then
