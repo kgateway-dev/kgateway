@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4000
+    description: Reverts adding the buffer filter to the filter chain by default when route and vh buffer config is added.
