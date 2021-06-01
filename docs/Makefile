@@ -20,8 +20,8 @@ SOLO_HUGO_THEME_REVISION := cfeb6176705f27da8e370fb3b20dc1514dcc4d9b
 site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
 	git -C themes/hugo-theme-soloio checkout $(SOLO_HUGO_THEME_REVISION)
-	 GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
-	 GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
+	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
+	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 	GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md gloo > content/static/content/gloo-security-scan.docgen
 	GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md glooe > content/static/content/glooe-security-scan.docgen
 
@@ -52,7 +52,7 @@ serve-site: site-test
 
 .PHONY: clean
 clean:
-	 rm -fr ./site ./resources ./site-latest ./site-versioned ./public ./ci ./gloo-temp ./themes
+	rm -fr ./site ./resources ./site-latest ./site-versioned ./public ./ci ./gloo-temp ./themes
 
 # Uses https://github.com/gjtorikian/html-proofer
 # Does not require running site; just make sure you generate the site and then run it

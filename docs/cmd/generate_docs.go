@@ -3,20 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"regexp"
-
 	"github.com/Masterminds/semver/v3"
 	"github.com/google/go-github/v32/github"
 	"github.com/rotisserie/eris"
 	. "github.com/solo-io/gloo/docs/cmd/securityscanutils"
 	"github.com/solo-io/go-utils/changeloggenutils"
 	"github.com/solo-io/go-utils/githubutils"
-	. "github.com/solo-io/go-utils/versionutils"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
+	"os"
 )
 
 func main() {
@@ -119,38 +114,6 @@ var (
 	}
 )
 
-// Default FindDependentVersionFn (used for Gloo Edge)
-func FindDependentVersionFn(enterpriseVersion *Version) (*Version, error) {
-	versionTag := enterpriseVersion.String()
-	dependencyUrl := fmt.Sprintf("https://storage.googleapis.com/gloo-ee-dependencies/%s/dependencies", versionTag[1:])
-	request, err := http.NewRequest("GET", dependencyUrl, nil)
-	if err != nil {
-		return nil, err
-	}
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return nil, err
-	}
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-	re, err := regexp.Compile(`.*gloo.*(v.*)`)
-	if err != nil {
-		return nil, err
-	}
-	matches := re.FindStringSubmatch(string(body))
-	if len(matches) != 2 {
-		return nil, eris.Errorf("unable to get gloo dependency for gloo enterprise version %s\n response from google storage API: %s", versionTag, string(body))
-	}
-	glooVersionTag := matches[1]
-	version, err := ParseVersion(glooVersionTag)
-	if err != nil {
-		return nil, err
-	}
-	return version, nil
-}
-
 // Generates changelog for releases as fetched from Github
 // Github defaults to a chronological order
 func generateChangelogMd(args []string) error {
@@ -162,8 +125,8 @@ func generateChangelogMd(args []string) error {
 	switch target {
 	case glooDocGen:
 		generator := changelogdocutils.NewMinorReleaseGroupedChangelogGenerator(changelogdocutils.Options{
-			MainRepo: "gloo",
-			RepoOwner:      "solo-io",
+			MainRepo:  "gloo",
+			RepoOwner: "solo-io",
 		}, client)
 		out, err := generator.GenerateJSON(context.Background())
 		if err != nil {
@@ -196,10 +159,10 @@ func generateGlooEChangelog() error {
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
 	opts := changelogdocutils.Options{
-		NumVersions:    200,
-		MainRepo: "solo-projects",
+		NumVersions:   200,
+		MainRepo:      "solo-projects",
 		DependentRepo: "gloo",
-		RepoOwner:      "solo-io",
+		RepoOwner:     "solo-io",
 	}
 	depFn, err := changelogdocutils.GetOSDependencyFunc("solo-io", "solo-projects", "gloo", ghToken)
 	if err != nil {
