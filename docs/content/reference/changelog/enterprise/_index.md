@@ -4,7 +4,4 @@ weight: 8
 description: Changelogs for Gloo Edge Enterprise
 ---
 
-<br>
-
-## Gloo Edge Enterprise
-{{< readfile file="static/content/glooe-changelog.docgen" markdown="true" >}}
+{{< render_changelog enterprise="true" changelogJsonPath="/static/content/glooe-changelog.docgen" >}}
