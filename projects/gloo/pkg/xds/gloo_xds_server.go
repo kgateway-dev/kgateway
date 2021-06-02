@@ -24,7 +24,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
-// Server is a collection of handlers for streaming discovery requests.
+// Server includes handlers for streaming aggregate discovery requests via the SoloDiscoveryService.
 type GlooXdsServer interface {
 	discovery_service.SoloDiscoveryServiceServer
 }
@@ -33,7 +33,6 @@ type glooXdsServer struct {
 	server.Server
 }
 
-// NewServer creates handlers from a config watcher and an optional logger.
 func NewGlooXdsServer(genericServer server.Server) GlooXdsServer {
 	return &glooXdsServer{Server: genericServer}
 }
