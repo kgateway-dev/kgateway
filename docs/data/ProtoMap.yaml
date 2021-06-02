@@ -1074,7 +1074,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#HeaderValueOption
     package: solo.io.envoy.config.core.v3
   solo.io.envoy.config.core.v3.HealthCheck:
-    relativepath: reference/api/envoy/config/core/v3/health_check.proto.sk/#HealthCheck
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/health_check.proto.sk/#HealthCheck
     package: solo.io.envoy.config.core.v3
   solo.io.envoy.config.core.v3.HttpUri:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/http_uri.proto.sk/#HttpUri

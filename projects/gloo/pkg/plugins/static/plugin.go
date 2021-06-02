@@ -24,7 +24,7 @@ const (
 
 	HttpPathCheckerName = "io.solo.health_checkers.advanced_http" //TODO(kdorosh): add test to ensure we are covered on upgrades
 	PathFieldName       = "path"
-	MethodFieldName       = "method"
+	MethodFieldName     = "method"
 )
 
 var _ plugins.Plugin = new(plugin)
