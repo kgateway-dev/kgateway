@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package envoy.config.health_checker.advanced_http.v2;
+
+import "udpa/annotations/status.proto";
+import "envoy/config/core/v3/health_check.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/advanced_http/advanced_http.proto";
+
+import "google/protobuf/empty.proto";
+import "validate/validate.proto";
+
+option java_package = "io.envoyproxy.envoy.config.health_checker.advanced_http.v2";
+option java_outer_classname = "AdvancedHttp";
+option java_multiple_files = true;
+
+// Same as envoy's default HTTP health checker, but with some additions:
+// - allows a custom path and method on the health check request per endpoint.
+//   The http path to use can be overridden using endpoint metadata. The endpoint-specific
+//   path should be in the "io.solo.health_checkers.advanced_http" namespace, under a string
+//   value named "path". The same can be done for the method by setting a string value
+//   named "method".
+// - allows for health check responses to leverage the response body rather than just
+//   the http status code returned. The response body can be parsed as json and complex
+//   assertions can be made on fields parsed from the json or plaintext response body.
+message AdvancedHttp {
+    // Http health check.
+    .solo.io.envoy.config.core.v3.HealthCheck.HttpHealthCheck http_health_check = 1;
+
+    // If defined, the response health check rules take precedence over the http status
+    // settings defined in `http_health_check`
+    advancedhttp.options.gloo.solo.io.ResponseAssertions response_assertions = 2;
+}
