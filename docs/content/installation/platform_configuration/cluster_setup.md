@@ -109,7 +109,7 @@ Kind is ideal for getting started with Gloo Edge on your personal workstation.  
 We advise customizing kind cluster creation slightly to make it easier to access your services from your host workstation.  Since services deployed in kind are inside a Docker container, you cannot easily access them.  It is more convenient if you expose ports from inside the container to your host machine.
 
 ```bash
-cat <<EOF | kind create cluster --name kind --config=-
+cat <<EOF | kind create cluster --name kind --image kindest/node:v1.17.0 --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
