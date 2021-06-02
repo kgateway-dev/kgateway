@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/solo-io/go-utils/contextutils"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/golang/protobuf/proto"
@@ -142,6 +144,9 @@ func runTestServer(ctx context.Context, reply string, serveTls bool) (uint32, <-
 		rr.Host = r.Host
 		rr.URL = r.URL
 
+		contextutils.LoggerFrom(ctx).Errorf("SENDING RESULT TO BODY CHAN")
+		fmt.Println("SENDING RESULT TO BODY CHAN")
+
 		bodyChan <- &rr
 	}
 
@@ -161,11 +166,17 @@ func runTestServer(ctx context.Context, reply string, serveTls bool) (uint32, <-
 		panic(err)
 	}
 
+	l := contextutils.LoggerFrom(ctx)
+
 	mux := http.NewServeMux()
 	mux.Handle("/", http.HandlerFunc(handlerFunc))
 	mux.Handle("/health", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		l.Errorf("WE ARE OK")
+		fmt.Println("WE ARE OK")
 		rw.Write([]byte("OK"))
 	}))
+
+	l.Errorf("BEGIN LISTEN 2")
 
 	go func() {
 		defer GinkgoRecover()
