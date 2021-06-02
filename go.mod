@@ -11,13 +11,13 @@ require (
 	github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403
 	github.com/containerd/containerd v1.3.3 // indirect
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
-	github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 	github.com/docker/cli v0.0.0-20200210162036-a4bedce16568 // indirect
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e // indirect
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210511190911-87d352569d55
 	github.com/envoyproxy/protoc-gen-validate v0.4.0
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/fgrosse/zaptest v1.1.0
+	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
 	github.com/frankban/quicktest v1.8.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -85,7 +85,7 @@ require (
 	go.opencensus.io v0.22.5
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897 // indirect
+	golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f // indirect
 	golang.org/x/mod v0.3.0
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
@@ -121,13 +121,18 @@ replace (
 	// modules than it does for releases on the repository, so we need to manually
 	// Note the correct  version when updating.
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
+	github.com/apache/thrift => github.com/apache/thrift v0.14.0
 	github.com/census-instrumentation/opencensus-proto => github.com/census-instrumentation/opencensus-proto v0.2.0 // indirect
+
+	github.com/crewjam/saml => github.com/crewjam/saml v0.4.5
+
+	// pin to the jwt-go fork to fix CVE.
+	// using the pseudo version of github.com/form3tech-oss/jwt-go@v3.2.3 instead of the version directly,
+	// to avoid error about it being used for two different module paths
+	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v0.0.0-20210511163231-5b2d2b5f6c34
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
-
-	//the following block of replacements are needed to have locked these packages to before versions they switched to using proto4
-	golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
 
 	// kube 0.18: redirects needed for most k8s.io dependencies because
 	// k8s.io/kubernetes tries to import v0.0.0 of everything.
