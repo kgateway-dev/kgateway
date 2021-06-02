@@ -1,7 +1,10 @@
 #!/bin/bash -ex
 
+kindClusterName=kind
+kindClusterImage=kindest/node:v1.17.0
+
 # This config is roughly based on: https://kind.sigs.k8s.io/docs/user/ingress/
-cat <<EOF | kind create cluster --name kind --config=-
+cat <<EOF | kind create cluster --name $kindClusterName --image $kindClusterImage --config=-
 kind: Cluster
 apiVersion: kind.sigs.k8s.io/v1alpha3
 kubeadmConfigPatches:

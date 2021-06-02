@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: removes old changelog code that was moved to go-utils. Adds changelog diff tool to docs.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: go-utils
+    dependencyTag: v0.21.7
