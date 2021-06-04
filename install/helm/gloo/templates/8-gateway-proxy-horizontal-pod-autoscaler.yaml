@@ -1,10 +1,11 @@
-{{- if .Values.gateway.enabled }}
+{{- define "gatewayProxy.autoscalerSpec"}}
+{{- $name := (index . 1) }}
+{{- $gatewaySpec := (index . 2) }}
+{{- with (first .) }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
-{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
-{{- if $spec.kind.deployment}}
+{{- if $spec.kind.deployment }}
 {{- if $spec.horizontalPodAutoscaler }}
----
 apiVersion: {{ $spec.horizontalPodAutoscaler.apiVersion }}
 kind: HorizontalPodAutoscaler
 metadata:
@@ -13,7 +14,7 @@ metadata:
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
   name: {{ $name | kebabcase }}-hpa
-  namespace: {{ $.Release.Namespace }}
+  namespace: {{ .Release.Namespace }}
 spec:
   minReplicas: {{ $spec.horizontalPodAutoscaler.minReplicas }}
   maxReplicas: {{ $spec.horizontalPodAutoscaler.maxReplicas }}
@@ -32,7 +33,20 @@ spec:
   behavior:
   {{ toYaml $spec.horizontalPodAutoscaler.behavior | nindent 4 }}
   {{- end }}
-{{- end }}
-{{- end }}
-{{- end }}
-{{- end }}
+{{- end }} {{/* if $spec.kind.deployment */}}
+{{- end }} {{/* if $spec.horizontalPodAutoscaler */}}
+{{- end }} {{/* with */}}
+{{- end }} {{/* define gatewayProxy.autoscalerSpec*/}}
+
+{{- if .Values.gateway.enabled }}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{/* Render each gatewayProxy template with it's yaml overrides */}}
+---
+{{- $kubeResourceOverride := dict }}
+{{- if $gatewaySpec.horizontalPodAutoscaler -}}
+{{ $kubeResourceOverride = $gatewaySpec.horizontalPodAutoscaler.kubeResourceOverride}}
+{{- end -}} {{/*if $gatewaySpec.horizontalPodAutoscaler*/}}
+{{- $ctx := (list $ $name $gatewaySpec)}}
+{{- include "gloo.util.merge" (list $ctx $kubeResourceOverride "gatewayProxy.autoscalerSpec") -}}
+{{- end }} {{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}
+{{- end }} {{/* if .Values.gateway.enabled */}}

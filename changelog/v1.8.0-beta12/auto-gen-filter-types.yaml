@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Autogenerate filter types that `glooctl proxy served-config` depends on to prevent breaking
+  issueLink: https://github.com/solo-io/gloo/issues/4665

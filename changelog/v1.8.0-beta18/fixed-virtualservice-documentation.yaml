@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Doc generator drops '*' character in VirtualService documentation.
+    issueLink: https://github.com/solo-io/gloo/issues/4772

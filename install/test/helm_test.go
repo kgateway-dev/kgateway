@@ -1,18 +1,19 @@
 package test
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io/ioutil"
+	"os/exec"
 	"reflect"
 	"strings"
+	"unicode"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	values "github.com/solo-io/gloo/install/helm/gloo/generate"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -27,7 +28,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	test_matchers "github.com/solo-io/solo-kit/test/matchers"
-	"helm.sh/helm/v3/pkg/releaseutil"
 	appsv1 "k8s.io/api/apps/v1"
 	jobsv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -80,39 +80,6 @@ func ConvertKubeResource(unst *unstructured.Unstructured, res resources.Resource
 }
 
 var _ = Describe("Helm Test", func() {
-	Context("CRD creation", func() {
-		It("has not diverged between Helm 2 and 3", func() {
-			release, err := BuildHelm3Release(chartDir, namespace, helmValues{})
-			Expect(err).NotTo(HaveOccurred())
-
-			foundCrdFile := false
-			for _, f := range release.Chart.Raw {
-				if f.Name == "templates/100-crds.yaml" {
-					foundCrdFile = true
-					legacyCrdTemplateData := string(f.Data)
-
-					for _, helm3Crd := range release.Chart.CRDs() {
-						Expect(legacyCrdTemplateData).To(ContainSubstring(string(helm3Crd.Data)), "CRD "+helm3Crd.Name+" does not match legacy duplicate")
-					}
-
-					legacyCrdTemplate, err := template.New("").Parse(legacyCrdTemplateData)
-					Expect(err).NotTo(HaveOccurred())
-
-					renderedLegacyCrds := new(bytes.Buffer)
-					err = legacyCrdTemplate.Execute(renderedLegacyCrds, map[string]interface{}{
-						"Values": map[string]interface{}{
-							"crds": map[string]interface{}{
-								"create": true,
-							},
-						},
-					})
-					Expect(err).NotTo(HaveOccurred(), "Should be able to render the legacy CRDs")
-					Expect(len(releaseutil.SplitManifests(renderedLegacyCrds.String()))).To(Equal(len(release.Chart.CRDs())), "Should have the same number of CRDs")
-				}
-			}
-			Expect(foundCrdFile).To(BeTrue(), "Should have found the legacy CRD file")
-		})
-	})
 
 	var allTests = func(rendererTestCase renderTestCase) {
 		var (
@@ -131,7 +98,7 @@ var _ = Describe("Helm Test", func() {
 			// each entry in valuesArgs should look like `path.to.helm.field=value`
 			prepareMakefile := func(namespace string, values helmValues) {
 				tm, err := rendererTestCase.renderer.RenderManifest(namespace, values)
-				Expect(err).NotTo(HaveOccurred(), "Failed to render manifest")
+				ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
 				testManifest = tm
 			}
 
@@ -639,7 +606,7 @@ var _ = Describe("Helm Test", func() {
 						if structuredDeployment.GetName() == "gateway-proxy" {
 							Expect(len(structuredDeployment.Spec.Template.Spec.Containers)).To(Equal(3), "should have exactly 3 containers")
 							Ω(haveSdsSidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue(), "gateway-proxy should have an sds sidecar")
-							Ω(istioSidecarVersion(structuredDeployment.Spec.Template.Spec.Containers)).To(Equal("docker.io/istio/proxyv2:1.8.1"), "istio proxy sidecar should be the default")
+							Ω(istioSidecarVersion(structuredDeployment.Spec.Template.Spec.Containers)).To(Equal("docker.io/istio/proxyv2:1.9.4"), "istio proxy sidecar should be the default")
 							Ω(haveIstioSidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue(), "gateway-proxy should have an istio-proxy sidecar")
 							Ω(sdsIsIstioMode(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue(), "sds sidecar should have istio mode enabled")
 							Expect(structuredDeployment.Spec.Template.Spec.Volumes).To(ContainElement(istioCertsVolume), "should have istio-certs volume mounted")
@@ -1817,7 +1784,6 @@ spec:
 							}
 							daemonSet.Spec.Template.Spec.DNSPolicy = v1.DNSClusterFirstWithHostNet
 							daemonSet.Spec.Template.Spec.HostNetwork = true
-
 						})
 
 						It("creates a daemonset", func() {
@@ -1825,6 +1791,18 @@ spec:
 								valuesArgs: []string{
 									"gatewayProxies.gatewayProxy.kind.deployment=null",
 									"gatewayProxies.gatewayProxy.kind.daemonSet.hostPort=true",
+								},
+							})
+							testManifest.Expect("DaemonSet", gatewayProxyDeployment.Namespace, gatewayProxyDeployment.Name).To(BeEquivalentTo(daemonSet))
+						})
+
+						It("can explicitly disable hostNetwork", func() {
+							daemonSet.Spec.Template.Spec.HostNetwork = false
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"gatewayProxies.gatewayProxy.kind.deployment=null",
+									"gatewayProxies.gatewayProxy.kind.daemonSet.hostPort=true",
+									"gatewayProxies.gatewayProxy.kind.daemonSet.hostNetwork=false",
 								},
 							})
 							testManifest.Expect("DaemonSet", gatewayProxyDeployment.Namespace, gatewayProxyDeployment.Name).To(BeEquivalentTo(daemonSet))
@@ -1911,6 +1889,14 @@ spec:
 						gatewayProxyDeployment.Spec.Template.Spec.SecurityContext.RunAsUser = &uid
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsNonRoot = &truez
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("allows removing pod security context", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext=false"},
+						})
+						gatewayProxyDeployment.Spec.Template.Spec.SecurityContext = nil
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
@@ -2610,12 +2596,13 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
-					It("correctly sets the `validation.disableTransformationValidation` field in the validation settings", func() {
-						settings := makeUnstructureFromTemplateFile("fixtures/settings/disable_transformation_validation.yaml", namespace)
+					It("correctly sets the gateway validation fields in the settings", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/gateway_validation.yaml", namespace)
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gateway.validation.disableTransformationValidation=true",
+								"gateway.validation.warnRouteShortCircuiting=true",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
@@ -2724,6 +2711,7 @@ spec:
       alwaysAccept: true
       allowWarnings: true
       disableTransformationValidation: false
+      warnRouteShortCircuiting: false
   discovery:
     fdsMode: WHITELIST
   extauth:
@@ -2930,7 +2918,12 @@ spec:
 					})
 
 					It("creates the certgen job, rbac, and service account", func() {
-						prepareMakefile(namespace, helmValues{})
+						prepareMakefile(namespace, helmValues{valuesArgs: []string{
+							"gateway.certGenJob.resources.requests.memory=64Mi",
+							"gateway.certGenJob.resources.requests.cpu=250m",
+							"gateway.certGenJob.resources.limits.memory=128Mi",
+							"gateway.certGenJob.resources.limits.cpu=500m",
+						}})
 						job := makeUnstructured(`
 apiVersion: batch/v1
 kind: Job
@@ -2964,6 +2957,13 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+          resources:
+            requests: 
+              cpu: 250m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
           args:
             - "--secret-name=gateway-validation-certs"
             - "--svc-name=gateway"
@@ -3681,6 +3681,14 @@ metadata:
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 					})
 
+					It("allows removing pod security context", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"discovery.deployment.enablePodSecurityContext=false"},
+						})
+						discoveryDeployment.Spec.Template.Spec.SecurityContext = nil
+						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+					})
+
 					Context("pass image pull secrets", func() {
 						pullSecretName := "test-pull-secret"
 						pullSecret := []v1.LocalObjectReference{
@@ -4298,6 +4306,137 @@ metadata:
 				})
 
 			})
+
+			Describe("Standard k8s values", func() {
+				DescribeTable("PodSpec affinity, tolerations, nodeName, hostAliases, nodeSelector, restartPolicy on Deployments and Jobs",
+					func(kind string, resourceName string, value string, extraArgs ...string) {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: append([]string{
+								value + ".nodeSelector.label=someLabel",
+								value + ".nodeName=someNodeName",
+								value + ".tolerations=someToleration",
+								value + ".hostAliases=someHostAlias",
+								value + ".affinity=someNodeAffinity",
+								value + ".restartPolicy=someRestartPolicy",
+							}, extraArgs...),
+						})
+						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+							if u.GetKind() == kind && u.GetName() == resourceName {
+								a := getFieldFromUnstructured(u, "spec", "template", "spec", "nodeSelector")
+								Expect(a).To(Equal(map[string]interface{}{"label": "someLabel"}))
+								a = getFieldFromUnstructured(u, "spec", "template", "spec", "nodeName")
+								Expect(a).To(Equal("someNodeName"))
+								a = getFieldFromUnstructured(u, "spec", "template", "spec", "tolerations")
+								Expect(a).To(Equal("someToleration"))
+								a = getFieldFromUnstructured(u, "spec", "template", "spec", "hostAliases")
+								Expect(a).To(Equal("someHostAlias"))
+								a = getFieldFromUnstructured(u, "spec", "template", "spec", "affinity")
+								Expect(a).To(Equal("someNodeAffinity"))
+								a = getFieldFromUnstructured(u, "spec", "template", "spec", "restartPolicy")
+								Expect(a).To(Equal("someRestartPolicy"))
+								return true
+							}
+							return false
+						})
+						Expect(resources.NumResources()).To(Equal(1))
+					},
+					Entry("gloo deployment", "Deployment", "gloo", "gloo.deployment"),
+					Entry("discovery deployment", "Deployment", "discovery", "discovery.deployment"),
+					Entry("gateway deployment", "Deployment", "gateway", "gateway.deployment"),
+					Entry("ingress deployment", "Deployment", "ingress", "ingress.deployment", "ingress.enabled=true"),
+					Entry("cluster-ingress deployment", "Deployment", "clusteringress-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.7.0", "settings.integrations.knative.enabled=true"),
+					Entry("knative external proxy deployment", "Deployment", "knative-external-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.9.0", "settings.integrations.knative.enabled=true"),
+					Entry("knative internal proxy deployment", "Deployment", "knative-internal-proxy", "settings.integrations.knative.proxy", "settings.integrations.knative.version=0.9.0", "settings.integrations.knative.enabled=true"),
+					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
+				)
+			})
+
+			Context("Kube resource overrides", func() {
+				DescribeTable("overrides Yaml in generated resources", func(overrideProperty string, extraArgs ...string) {
+					// Override property should be the path to `kubeResourceOverride`, like gloo.deployment.kubeResourceOverride
+					valueArg := fmt.Sprintf("%s.metadata.labels.overriddenLabel=label", overrideProperty)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append(extraArgs, valueArg),
+					})
+					// We are overriding the generated yaml by adding our own label to the metadata
+					resources := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetLabels()["overriddenLabel"] == "label" && resource.GetKind() != ""
+					})
+					Expect(resources.NumResources()).To(Equal(1))
+				},
+					Entry("1-gloo-deployment", "gloo.deployment.kubeResourceOverride"),
+					Entry("2-gloo-service", "gloo.service.kubeResourceOverride"),
+					Entry("2-gloo-service-account", "gloo.serviceAccount.kubeResourceOverride"),
+					Entry("3-discovery-deployment", "discovery.deployment.kubeResourceOverride"),
+					Entry("3-discovery-service-account", "discovery.serviceAccount.kubeResourceOverride"),
+					Entry("5-gateway-deployment", "gateway.deployment.kubeResourceOverride"),
+					Entry("5-gateway-service", "gateway.service.kubeResourceOverride"),
+					Entry("5-gateway-service-account", "gateway.serviceAccount.kubeResourceOverride"),
+					Entry("5-gateway-validation-webhook-configuration", "gateway.validation.webhook.kubeResourceOverride"),
+					Entry("6-access-logger-deployment", "accessLogger.deployment.kubeResourceOverride", "accessLogger.enabled=true"),
+					Entry("6-access-logger-service", "accessLogger.service.kubeResourceOverride", "accessLogger.enabled=true"),
+					Entry("6.5-gateway-certgen-job", "gateway.certGenJob.kubeResourceOverride"),
+					Entry("8-gateway-proxy-service-account", "gateway.proxyServiceAccount.kubeResourceOverride"),
+					Entry("10-ingress-deployment", "ingress.deployment.kubeResourceOverride", "ingress.enabled=true"),
+					Entry("11-ingress-proxy-deployment", "ingressProxy.deployment.kubeResourceOverride", "ingress.enabled=true"),
+					Entry("12-ingress-proxy-configmap", "ingressProxy.configMap.kubeResourceOverride", "ingress.enabled=true"),
+					Entry("13-ingress-proxy-service", "ingressProxy.service.kubeResourceOverride", "ingress.enabled=true"),
+					Entry("14-clusteringress-proxy-deployment", "settings.integrations.knative.proxy.deployment.kubeResourceOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
+					Entry("15-clusteringress-proxy-configmap", "settings.integrations.knative.proxy.configMap.kubeResourceOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
+					Entry("16-clusteringress-proxy-service", "settings.integrations.knative.proxy.service.kubeResourceOverride", "settings.integrations.knative.version=0.1.0", "settings.integrations.knative.enabled=true"),
+					Entry("18-settings", "settings.kubeResourceOverride"),
+					Entry("19-gloo-mtls-certgen-job", "gateway.certGenJob.mtlsKubeResourceOverride", "global.glooMtls.enabled=true"),
+					Entry("26-knative-external-proxy-deployment", "settings.integrations.knative.proxy.deployment.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+					Entry("27-knative-external-proxy-configmap", "settings.integrations.knative.proxy.configMap.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+					Entry("28-knative-external-proxy-service", "settings.integrations.knative.proxy.service.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+					Entry("29-knative-internal-proxy-deployment", "settings.integrations.knative.proxy.internal.deployment.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+					Entry("30-knative-internal-proxy-configmap", "settings.integrations.knative.proxy.internal.configMap.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+					Entry("31-knative-internal-proxy-service", "settings.integrations.knative.proxy.internal.service.kubeResourceOverride", "settings.integrations.knative.version=0.8.0", "settings.integrations.knative.enabled=true"),
+					// todo: implement overrides for these if need arises
+					// A named helm template will have to be created for each of the resources
+					// generated in the following files.
+					//Entry("19-gloo-mtls-configmap", ),
+					//Entry("20-namespace-clusterrole-gateway", ""),
+					//Entry("21-namespace-clusterrole-ingress", ""),
+					//Entry("22-namespace-clusterrole-knative", ""),
+					//Entry("23-namespace-clusterrolebinding-gateway", ""),
+					//Entry("24-namespace-clusterrolebinding-ingress", ""),
+					//Entry("25-namespace-clusterrolebinding-knative", ""),
+				)
+
+				DescribeTable("overrides Yaml in resources for each gateway proxy", func(proxyOverrideProperty string, argsPerProxy []string) {
+					// Override property should be the path to `kubeResourceOverride`, like gloo.deployment.kubeResourceOverride
+					proxies := []string{"gatewayProxy", "anotherProxy", "proxyThree"}
+					var args []string
+					var extraArgs []string
+					for _, proxy := range proxies {
+						args = append(args, fmt.Sprintf("gatewayProxies.%s.%s.metadata.labels.overriddenLabel=label", proxy, proxyOverrideProperty))
+						for _, arg := range argsPerProxy {
+							args = append(args, fmt.Sprintf("gatewayProxies.%s.%s", proxy, arg))
+						}
+					}
+
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append(args, extraArgs...),
+					})
+					// We are overriding the generated yaml by adding our own label to the metadata
+					resources := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetLabels()["overriddenLabel"] == "label" && resource.GetKind() != ""
+					})
+					Expect(resources.NumResources()).To(Equal(len(proxies)))
+				},
+					Entry("7-gateway-proxy-deployment", "kubeResourceOverride", nil),
+					Entry("8-default-gateways httpGateway", "gatewaySettings.httpGatewayKubeOverride", nil),
+					Entry("8-default-gateways httpsGateway", "gatewaySettings.httpsGatewayKubeOverride", nil),
+					Entry("8-default-gateways failoverGateway", "failover.kubeResourceOverride", []string{"failover.enabled=true"}),
+					Entry("8-gateway-proxy-horizontal-pod-autoscaler", "horizontalPodAutoscaler.kubeResourceOverride", []string{"kind.deployment.replicas=2", "horizontalPodAutoscaler.apiVersion=v2"}),
+					Entry("8-gateway-proxy-pod-disruption-budget", "podDisruptionBudget.kubeResourceOverride", []string{"kind.deployment.replicas=2"}),
+					Entry("8-gateway-proxy-service service", "service.kubeResourceOverride", nil),
+					Entry("8-gateway-proxy-service config-dump-service", "service.configDumpService.kubeResourceOverride", []string{"readConfig=true", "readConfigMulticluster=true"}),
+					Entry("9-gateway-proxy-configmap", "configMap.kubeResourceOverride", nil),
+				)
+			})
+
 		})
 
 		Context("Reflection", func() {
@@ -4376,6 +4515,25 @@ metadata:
 				Expect(fmt.Sprintf("%v", missingVals)).To(Equal("[]")) // this makes the failure message simply be a list of what we're missing
 			})
 		})
+
+		// Lines ending with whitespace causes malformatted config map (https://github.com/solo-io/gloo/issues/4645)
+		It("Should not containing trailing whitespace", func() {
+			out, err := exec.Command("helm", "template", "../helm/gloo").CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+
+			lines := strings.Split(string(out), "\n")
+			// more descriptive fail message that prints out the manifest that includes the trailing whitespace
+			manifestStartingLine := 0
+			for idx, line := range lines {
+				if strings.Contains(line, "---") {
+					manifestStartingLine = idx
+				}
+				if strings.TrimRightFunc(line, unicode.IsSpace) != line {
+					Fail(strings.Join(lines[manifestStartingLine:idx+1], "\n") + "\n last line has whitespace")
+				}
+				Expect(strings.TrimRightFunc(line, unicode.IsSpace)).To(Equal(line))
+			}
+		})
 	}
 
 	runTests(allTests)
@@ -4404,4 +4562,17 @@ func cloneMap(input map[string]string) map[string]string {
 func constructResourceID(resource *unstructured.Unstructured) string {
 	// technically vulnerable to resources that have commas in their names, but that's not a big concern
 	return fmt.Sprintf("%s,%s,%s", resource.GetNamespace(), resource.GetName(), resource.GroupVersionKind().String())
+}
+
+// gets value of field nested within an Unstructured struct.
+// fieldPath is the path to the value, so the value foo.bar.baz would be passed in as "foo", "bar, "baz"
+func getFieldFromUnstructured(uns *unstructured.Unstructured, fieldPath ...string) interface{} {
+	if len(fieldPath) < 1 {
+		return nil
+	}
+	obj := uns.Object[fieldPath[0]]
+	for _, field := range fieldPath[1:] {
+		obj = obj.(map[string]interface{})[field]
+	}
+	return obj
 }

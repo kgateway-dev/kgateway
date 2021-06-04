@@ -2,9 +2,6 @@ namespace:
   create: false
 k8s:
   clusterName: cluster.local
-# We need this for backwards-compatibility with Helm 2
-crds:
-  create: false
 settings:
   # if this is set to false, default settings will be created by pods upon boot
   create: true
@@ -61,6 +58,7 @@ discovery:
       repository: discovery
     replicas: 1
     runAsUser: 10101
+    enablePodSecurityContext: true
     fsGroup: 10101
 gateway:
   enabled: true
@@ -72,8 +70,11 @@ gateway:
     alwaysAcceptResources: true
     allowWarnings: true
     disableTransformationValidation: false
+    warnRouteShortCircuiting: false
     webhook:
       enabled: true
+      disableHelmHook: false
+      extraAnnotations: {}
   deployment:
     image:
       repository: gateway
@@ -108,6 +109,7 @@ gatewayProxies:
       httpPort: 8080
       httpsPort: 8443
       runAsUser: 10101
+      enablePodSecurityContext: true
       fsGroup: 10101
       runUnprivileged: true
       disableNetBind: true

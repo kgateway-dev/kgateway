@@ -3,11 +3,13 @@ on:
   schedule:
     # Monday 9am EST
     - cron: "0 13 * * 1"
+  workflow_dispatch: # on button click
 jobs:
   scan-images:
     name: Trivy Scan
     runs-on: "ubuntu-18.04"
     env:
+      SCAN_DIR: _output/scans
       IMAGE_REPO: quay.io/solo-io
       TAGGED_VERSION: ${{ github.ref }}
     strategy:
@@ -24,21 +26,54 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ matrix.gloo-version }}
-      - name: Pull latest tagged image
+      - name: Setup - gcloud / gsutil
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          service_account_key: ${{ secrets.GLOO_VULN_REPORTER }}
+          project_id: solo-public
+          export_default_credentials: true
+      - name: Check if scan exists
+        id: check-scan-exists
+        run: |
+          VERSION=$(git describe --tags --abbrev=0 | cut -c 2-)
+          echo "::set-output name=VERSION::$(echo $VERSION)"
+          EXISTS=$(gsutil -q stat gs://solo-gloo-security-scans/gloo/$(echo $VERSION)/${{ matrix.image-type }}_cve_report.docgen; echo $?)
+          echo "::set-output name=EXISTS::$(echo $EXISTS)"
+      - name: Build an image from Dockerfile
+        if: ${{ steps.check-scan-exists.outputs.EXISTS == 1 }}
         id: build-docker-image
         run: |
-          VERSION=$( git describe --tags --abbrev=0 |  cut -c 2- )
-          docker pull ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:$(echo $VERSION)
-          docker image tag ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:$(echo $VERSION) ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:${{ matrix.gloo-version }}
-      - name: Run Trivy vulnerability scanner
+          go env -w GOPRIVATE=github.com/solo-io
+          go mod tidy
+          TAGGED_VERSION=v${{ steps.check-scan-exists.outputs.VERSION }} LOCAL_BUILD=true make ${{ matrix.image-type }}-docker
+      - name: Setup Gloo Docs Output
+        if: ${{ steps.check-scan-exists.outputs.EXISTS == 1 }}
+        run: |
+          mkdir -p ${{ env.SCAN_DIR }}/${{ steps.check-scan-exists.outputs.VERSION }}
+      - name: Gloo Docs
+        if: ${{ steps.check-scan-exists.outputs.EXISTS == 1 }}
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:${{ matrix.gloo-version }}
+          image-ref: ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:${{ steps.check-scan-exists.outputs.VERSION }}
+          format: 'template'
+          template: '@hack/utils/security_scan_report/markdown.tpl'
+          output: ${{ env.SCAN_DIR }}/${{ steps.build-docker-image.outputs.VERSION }}/${{ matrix.image-type }}_cve_report.docgen
+          severity: 'CRITICAL,HIGH'
+      - name: Publish Docs
+        if: ${{ steps.check-scan-exists.outputs.EXISTS == 1 }}
+        run: |
+          VERSION=${{ steps.check-scan-exists.outputs.VERSION }} SCAN_FILE=${{ matrix.image-type }}_cve_report.docgen make publish-security-scan
+      - name: Run Trivy vulnerability scanner
+        if: ${{ steps.check-scan-exists.outputs.EXISTS == 1 }}
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:${{ steps.check-scan-exists.outputs.VERSION }}
           format: 'template'
           template: '@/contrib/sarif.tpl'
           output: trivy-results-${{ matrix.image-type }}.sarif
           severity: 'CRITICAL,HIGH'
       - name: Upload Trivy scan results to GitHub Security tab
+        if: ${{ steps.check-scan-exists.outputs.EXISTS == 1 }}
         uses: github/codeql-action/upload-sarif@v1
         with:
           sarif_file: trivy-results-${{ matrix.image-type }}.sarif

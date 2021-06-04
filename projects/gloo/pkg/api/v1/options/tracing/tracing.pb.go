@@ -53,6 +53,10 @@ type ListenerTracingSettings struct {
 	//	*ListenerTracingSettings_ZipkinConfig
 	//	*ListenerTracingSettings_DatadogConfig
 	ProviderConfig isListenerTracingSettings_ProviderConfig `protobuf_oneof:"provider_config"`
+	// Optional. If specified, Envoy will include the environment variables with the given tag as tracing tags.
+	EnvironmentVariablesForTags []*TracingTagEnvironmentVariable `protobuf:"bytes,6,rep,name=environment_variables_for_tags,json=environmentVariablesForTags,proto3" json:"environment_variables_for_tags,omitempty"`
+	// Optional. If specified, Envoy will include the literals with the given tag as tracing tags.
+	LiteralsForTags []*TracingTagLiteral `protobuf:"bytes,7,rep,name=literals_for_tags,json=literalsForTags,proto3" json:"literals_for_tags,omitempty"`
 }
 
 func (x *ListenerTracingSettings) Reset() {
@@ -125,6 +129,20 @@ func (x *ListenerTracingSettings) GetZipkinConfig() *v3.ZipkinConfig {
 func (x *ListenerTracingSettings) GetDatadogConfig() *v3.DatadogConfig {
 	if x, ok := x.GetProviderConfig().(*ListenerTracingSettings_DatadogConfig); ok {
 		return x.DatadogConfig
+	}
+	return nil
+}
+
+func (x *ListenerTracingSettings) GetEnvironmentVariablesForTags() []*TracingTagEnvironmentVariable {
+	if x != nil {
+		return x.EnvironmentVariablesForTags
+	}
+	return nil
+}
+
+func (x *ListenerTracingSettings) GetLiteralsForTags() []*TracingTagLiteral {
+	if x != nil {
+		return x.LiteralsForTags
 	}
 	return nil
 }
@@ -291,6 +309,134 @@ func (x *TracePercentages) GetOverallSamplePercentage() *wrappers.FloatValue {
 	return nil
 }
 
+// Requests can produce traces with custom tags.
+// TracingTagEnvironmentVariable defines an environment variable which gets added as custom tag.
+type TracingTagEnvironmentVariable struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Used to populate the tag name.
+	Tag string `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
+	// Environment variable name to obtain the value to populate the tag value.
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// When the environment variable is not found, the tag value will be populated with this default value if specified,
+	// otherwise no tag will be populated.
+	DefaultValue string `protobuf:"bytes,3,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
+}
+
+func (x *TracingTagEnvironmentVariable) Reset() {
+	*x = TracingTagEnvironmentVariable{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TracingTagEnvironmentVariable) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TracingTagEnvironmentVariable) ProtoMessage() {}
+
+func (x *TracingTagEnvironmentVariable) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TracingTagEnvironmentVariable.ProtoReflect.Descriptor instead.
+func (*TracingTagEnvironmentVariable) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *TracingTagEnvironmentVariable) GetTag() string {
+	if x != nil {
+		return x.Tag
+	}
+	return ""
+}
+
+func (x *TracingTagEnvironmentVariable) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *TracingTagEnvironmentVariable) GetDefaultValue() string {
+	if x != nil {
+		return x.DefaultValue
+	}
+	return ""
+}
+
+// Requests can produce traces with custom tags.
+// TracingTagLiteral defines a literal which gets added as custom tag.
+type TracingTagLiteral struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Used to populate the tag name.
+	Tag string `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
+	// Static literal value to populate the tag value.
+	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (x *TracingTagLiteral) Reset() {
+	*x = TracingTagLiteral{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TracingTagLiteral) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TracingTagLiteral) ProtoMessage() {}
+
+func (x *TracingTagLiteral) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TracingTagLiteral.ProtoReflect.Descriptor instead.
+func (*TracingTagLiteral) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *TracingTagLiteral) GetTag() string {
+	if x != nil {
+		return x.Tag
+	}
+	return ""
+}
+
+func (x *TracingTagLiteral) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
 var File_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto protoreflect.FileDescriptor
 
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_rawDesc = []byte{
@@ -319,7 +465,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_pr
 	0x78, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x2c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
 	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x73, 0x6f, 0x6c,
 	0x6f, 0x2d, 0x6b, 0x69, 0x74, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x72, 0x65, 0x66,
-	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x87, 0x03, 0x0a, 0x17, 0x4c, 0x69, 0x73, 0x74, 0x65,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xe7, 0x04, 0x0a, 0x17, 0x4c, 0x69, 0x73, 0x74, 0x65,
 	0x6e, 0x65, 0x72, 0x54, 0x72, 0x61, 0x63, 0x69, 0x6e, 0x67, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e,
 	0x67, 0x73, 0x12, 0x37, 0x0a, 0x18, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x5f, 0x68, 0x65,
 	0x61, 0x64, 0x65, 0x72, 0x73, 0x5f, 0x66, 0x6f, 0x72, 0x5f, 0x74, 0x61, 0x67, 0x73, 0x18, 0x01,
@@ -342,7 +488,21 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_pr
 	0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e, 0x63,
 	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x74, 0x72, 0x61, 0x63, 0x65, 0x2e, 0x76, 0x33, 0x2e, 0x44,
 	0x61, 0x74, 0x61, 0x64, 0x6f, 0x67, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x48, 0x00, 0x52, 0x0d,
-	0x64, 0x61, 0x74, 0x61, 0x64, 0x6f, 0x67, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x42, 0x11, 0x0a,
+	0x64, 0x61, 0x74, 0x61, 0x64, 0x6f, 0x67, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x80, 0x01,
+	0x0a, 0x1e, 0x65, 0x6e, 0x76, 0x69, 0x72, 0x6f, 0x6e, 0x6d, 0x65, 0x6e, 0x74, 0x5f, 0x76, 0x61,
+	0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x5f, 0x66, 0x6f, 0x72, 0x5f, 0x74, 0x61, 0x67, 0x73,
+	0x18, 0x06, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x3b, 0x2e, 0x74, 0x72, 0x61, 0x63, 0x69, 0x6e, 0x67,
+	0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
+	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x54, 0x72, 0x61, 0x63, 0x69, 0x6e, 0x67, 0x54, 0x61, 0x67,
+	0x45, 0x6e, 0x76, 0x69, 0x72, 0x6f, 0x6e, 0x6d, 0x65, 0x6e, 0x74, 0x56, 0x61, 0x72, 0x69, 0x61,
+	0x62, 0x6c, 0x65, 0x52, 0x1b, 0x65, 0x6e, 0x76, 0x69, 0x72, 0x6f, 0x6e, 0x6d, 0x65, 0x6e, 0x74,
+	0x56, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x46, 0x6f, 0x72, 0x54, 0x61, 0x67, 0x73,
+	0x12, 0x5b, 0x0a, 0x11, 0x6c, 0x69, 0x74, 0x65, 0x72, 0x61, 0x6c, 0x73, 0x5f, 0x66, 0x6f, 0x72,
+	0x5f, 0x74, 0x61, 0x67, 0x73, 0x18, 0x07, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x2f, 0x2e, 0x74, 0x72,
+	0x61, 0x63, 0x69, 0x6e, 0x67, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c,
+	0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x54, 0x72, 0x61, 0x63, 0x69,
+	0x6e, 0x67, 0x54, 0x61, 0x67, 0x4c, 0x69, 0x74, 0x65, 0x72, 0x61, 0x6c, 0x52, 0x0f, 0x6c, 0x69,
+	0x74, 0x65, 0x72, 0x61, 0x6c, 0x73, 0x46, 0x6f, 0x72, 0x54, 0x61, 0x67, 0x73, 0x42, 0x11, 0x0a,
 	0x0f, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67,
 	0x22, 0xd8, 0x01, 0x0a, 0x14, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x54, 0x72, 0x61, 0x63, 0x69, 0x6e,
 	0x67, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x73, 0x12, 0x29, 0x0a, 0x10, 0x72, 0x6f, 0x75,
@@ -375,12 +535,23 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_pr
 	0x0b, 0x32, 0x1b, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x62, 0x75, 0x66, 0x2e, 0x46, 0x6c, 0x6f, 0x61, 0x74, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x17,
 	0x6f, 0x76, 0x65, 0x72, 0x61, 0x6c, 0x6c, 0x53, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x50, 0x65, 0x72,
-	0x63, 0x65, 0x6e, 0x74, 0x61, 0x67, 0x65, 0x42, 0x4a, 0x5a, 0x40, 0x67, 0x69, 0x74, 0x68, 0x75,
-	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c,
-	0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f,
-	0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x6f, 0x70, 0x74, 0x69,
-	0x6f, 0x6e, 0x73, 0x2f, 0x74, 0x72, 0x61, 0x63, 0x69, 0x6e, 0x67, 0xb8, 0xf5, 0x04, 0x01, 0xc0,
-	0xf5, 0x04, 0x01, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x63, 0x65, 0x6e, 0x74, 0x61, 0x67, 0x65, 0x22, 0x6a, 0x0a, 0x1d, 0x54, 0x72, 0x61, 0x63, 0x69,
+	0x6e, 0x67, 0x54, 0x61, 0x67, 0x45, 0x6e, 0x76, 0x69, 0x72, 0x6f, 0x6e, 0x6d, 0x65, 0x6e, 0x74,
+	0x56, 0x61, 0x72, 0x69, 0x61, 0x62, 0x6c, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x74, 0x61, 0x67, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x74, 0x61, 0x67, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61,
+	0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x23,
+	0x0a, 0x0d, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x5f, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18,
+	0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x56, 0x61,
+	0x6c, 0x75, 0x65, 0x22, 0x3b, 0x0a, 0x11, 0x54, 0x72, 0x61, 0x63, 0x69, 0x6e, 0x67, 0x54, 0x61,
+	0x67, 0x4c, 0x69, 0x74, 0x65, 0x72, 0x61, 0x6c, 0x12, 0x10, 0x0a, 0x03, 0x74, 0x61, 0x67, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x74, 0x61, 0x67, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61,
+	0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65,
+	0x42, 0x4a, 0x5a, 0x40, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73,
+	0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a,
+	0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70,
+	0x69, 0x2f, 0x76, 0x31, 0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2f, 0x74, 0x72, 0x61,
+	0x63, 0x69, 0x6e, 0x67, 0xb8, 0xf5, 0x04, 0x01, 0xc0, 0xf5, 0x04, 0x01, 0x62, 0x06, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -395,30 +566,34 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_p
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_rawDescData
 }
 
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_goTypes = []interface{}{
-	(*ListenerTracingSettings)(nil), // 0: tracing.options.gloo.solo.io.ListenerTracingSettings
-	(*RouteTracingSettings)(nil),    // 1: tracing.options.gloo.solo.io.RouteTracingSettings
-	(*TracePercentages)(nil),        // 2: tracing.options.gloo.solo.io.TracePercentages
-	(*v3.ZipkinConfig)(nil),         // 3: solo.io.envoy.config.trace.v3.ZipkinConfig
-	(*v3.DatadogConfig)(nil),        // 4: solo.io.envoy.config.trace.v3.DatadogConfig
-	(*wrappers.BoolValue)(nil),      // 5: google.protobuf.BoolValue
-	(*wrappers.FloatValue)(nil),     // 6: google.protobuf.FloatValue
+	(*ListenerTracingSettings)(nil),       // 0: tracing.options.gloo.solo.io.ListenerTracingSettings
+	(*RouteTracingSettings)(nil),          // 1: tracing.options.gloo.solo.io.RouteTracingSettings
+	(*TracePercentages)(nil),              // 2: tracing.options.gloo.solo.io.TracePercentages
+	(*TracingTagEnvironmentVariable)(nil), // 3: tracing.options.gloo.solo.io.TracingTagEnvironmentVariable
+	(*TracingTagLiteral)(nil),             // 4: tracing.options.gloo.solo.io.TracingTagLiteral
+	(*v3.ZipkinConfig)(nil),               // 5: solo.io.envoy.config.trace.v3.ZipkinConfig
+	(*v3.DatadogConfig)(nil),              // 6: solo.io.envoy.config.trace.v3.DatadogConfig
+	(*wrappers.BoolValue)(nil),            // 7: google.protobuf.BoolValue
+	(*wrappers.FloatValue)(nil),           // 8: google.protobuf.FloatValue
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_depIdxs = []int32{
-	2, // 0: tracing.options.gloo.solo.io.ListenerTracingSettings.trace_percentages:type_name -> tracing.options.gloo.solo.io.TracePercentages
-	3, // 1: tracing.options.gloo.solo.io.ListenerTracingSettings.zipkin_config:type_name -> solo.io.envoy.config.trace.v3.ZipkinConfig
-	4, // 2: tracing.options.gloo.solo.io.ListenerTracingSettings.datadog_config:type_name -> solo.io.envoy.config.trace.v3.DatadogConfig
-	2, // 3: tracing.options.gloo.solo.io.RouteTracingSettings.trace_percentages:type_name -> tracing.options.gloo.solo.io.TracePercentages
-	5, // 4: tracing.options.gloo.solo.io.RouteTracingSettings.propagate:type_name -> google.protobuf.BoolValue
-	6, // 5: tracing.options.gloo.solo.io.TracePercentages.client_sample_percentage:type_name -> google.protobuf.FloatValue
-	6, // 6: tracing.options.gloo.solo.io.TracePercentages.random_sample_percentage:type_name -> google.protobuf.FloatValue
-	6, // 7: tracing.options.gloo.solo.io.TracePercentages.overall_sample_percentage:type_name -> google.protobuf.FloatValue
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	2,  // 0: tracing.options.gloo.solo.io.ListenerTracingSettings.trace_percentages:type_name -> tracing.options.gloo.solo.io.TracePercentages
+	5,  // 1: tracing.options.gloo.solo.io.ListenerTracingSettings.zipkin_config:type_name -> solo.io.envoy.config.trace.v3.ZipkinConfig
+	6,  // 2: tracing.options.gloo.solo.io.ListenerTracingSettings.datadog_config:type_name -> solo.io.envoy.config.trace.v3.DatadogConfig
+	3,  // 3: tracing.options.gloo.solo.io.ListenerTracingSettings.environment_variables_for_tags:type_name -> tracing.options.gloo.solo.io.TracingTagEnvironmentVariable
+	4,  // 4: tracing.options.gloo.solo.io.ListenerTracingSettings.literals_for_tags:type_name -> tracing.options.gloo.solo.io.TracingTagLiteral
+	2,  // 5: tracing.options.gloo.solo.io.RouteTracingSettings.trace_percentages:type_name -> tracing.options.gloo.solo.io.TracePercentages
+	7,  // 6: tracing.options.gloo.solo.io.RouteTracingSettings.propagate:type_name -> google.protobuf.BoolValue
+	8,  // 7: tracing.options.gloo.solo.io.TracePercentages.client_sample_percentage:type_name -> google.protobuf.FloatValue
+	8,  // 8: tracing.options.gloo.solo.io.TracePercentages.random_sample_percentage:type_name -> google.protobuf.FloatValue
+	8,  // 9: tracing.options.gloo.solo.io.TracePercentages.overall_sample_percentage:type_name -> google.protobuf.FloatValue
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_init() }
@@ -463,6 +638,30 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_p
 				return nil
 			}
 		}
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TracingTagEnvironmentVariable); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TracingTagLiteral); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_msgTypes[0].OneofWrappers = []interface{}{
 		(*ListenerTracingSettings_ZipkinConfig)(nil),
@@ -474,7 +673,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_p
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_github_com_solo_io_gloo_projects_gloo_api_v1_options_tracing_tracing_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

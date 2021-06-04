@@ -1,3 +1,4 @@
+{{ define "gloo.deploymentSpec" }}
 {{- $image := .Values.gloo.deployment.image }}
 {{- $statsConfig := coalesce .Values.gloo.deployment.stats .Values.global.glooStats -}}
 {{- if .Values.global  }}
@@ -40,8 +41,9 @@ spec:
         {{- end }}
         {{- end }}
     spec:
-      {{- include "gloo.pullSecret" $image | nindent 6 }}
+      {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo
+      {{- include "gloo.podSpecStandardFields" .Values.gloo.deployment | nindent 6 -}}
       volumes:
 {{- if .Values.global.glooMtls.enabled }}
       - name: gloo-mtls-certs
@@ -188,3 +190,7 @@ spec:
           periodSeconds: 2
           failureThreshold: 10
 {{- end }}
+{{- end }} {{/* define "gloo.deploymentSpec "*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- include "gloo.util.merge" (list . .Values.gloo.deployment.kubeResourceOverride "gloo.deploymentSpec") -}}

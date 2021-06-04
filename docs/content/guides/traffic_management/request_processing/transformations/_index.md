@@ -19,12 +19,14 @@ The configuration format is the same in all three cases and must be specified un
 # This snippet has been abridged for brevity
 virtualHost:
   options:
-    transformations:
-      requestTransformation: 
-        transformationTemplate:
-          headers:
-            foo:
-              text: 'bar'
+    stagedTransformations:
+      regular:
+        requestTransforms:
+        - requestTransformation:
+            transformationTemplate:
+              headers:
+                foo:
+                  text: 'bar'
 {{< /highlight >}}
 
 #### Inheritance rules
@@ -34,22 +36,104 @@ By default, a transformation defined on a Virtual Service attribute is **inherit
 - transformations defined on `VirtualHosts` are inherited by `Route`s and `WeightedDestination`s.
 - transformations defined on `Route`s are inherited by `WeightedDestination`s.
 
-If however a child attribute defines its own transformation, it will override the configuration on its parent.
+If a child attribute defines its own transformation, it will override the configuration on its parent.
+However, if `inheritTransformation` is set to true on the `stagedTransformations` for a Route, it can inherit transformations
+from its parent as illustrated below.
+
+Let's define the `virtualHost` and it's child route is defined as follows:
+{{< highlight yaml "hl_lines=7-13 20-27" >}}
+# This snippet has been abridged for brevity, and only includes transformation-relevant config
+virtualHost:
+  options:
+    stagedTransformations:
+      regular:
+        requestTransforms:
+        - matchers:
+            - prefix: '/parent'
+          requestTransformation:
+            transformationTemplate:
+              headers:
+                foo:
+                  text: 'bar'
+  routes:
+    - options:
+        stagedTransformations:
+          inheritTransformation: true
+          regular:
+            requestTransforms:
+            - matchers:
+              - prefix: '/child'
+              requestTransformation:
+                transformationTemplate:
+                  headers:
+                    foo:
+                      text: 'baz'
+{{< /highlight >}}
+
+Because `inheritTransformation` is set to `true` on the child route, the parent `virtualHost` transformation config will
+be merged into the child. The child route's transformations will look like:
+
+{{< highlight yaml "hl_lines=8-22" >}}
+# This snippet has been abridged for brevity, and only includes transformation-relevant config
+routes:
+- options:
+  stagedTransformations:
+    inheritTransformation: true
+    regular:
+      requestTransforms:
+      - matchers:
+        - prefix: '/child'
+        requestTransformation:
+          transformationTemplate:
+            headers:
+              foo:
+                text: 'baz'
+      - matchers:
+        - prefix: '/parent'
+        requestTransformation:
+          transformationTemplate:
+            headers:
+              foo:
+                text: 'bar'
+{{< /highlight >}}
+
+As stated above, the route's configuration will override its parent's, but now it also inherits the parent's transformations. So in this case,
+routes matching `/parent` will also be transformed. If `inheritTransformation` was set to `false`, this would not be the case. 
+Note that only the first matched transformation will run, so if both the child and the parent had the same matchers, the child's transformation
+would run.
 
 ### Configuration format
-In this section we will detail all the properties of the `transformations` {{< protobuf display="object" name="envoy.api.v2.filter.http.RouteTransformations" >}},
+In this section we will detail all the properties of the `stagedTransformations` {{< protobuf display="object" name="transformation.options.gloo.solo.io.TransformationStages" >}},
 which has the following structure:
 
 ```yaml
-transformations:
-  clearRouteCache: bool
-  requestTransformation: {}
-  responseTransformation: {}
+stagedTransformations:
+  early:
+    # early transformations
+  regular: 
+    requestTransforms:
+      - matcher:
+          prefix : '/'
+        clearRouteCache: bool
+        requestTransformation: {}
+        responseTransformation: {}
+    responseTransforms: {}
+  inheritTransformations: bool
 ```
+
+The `early` and `regular` attributes are used to specify when in the envoy filter chain the transformations run. The following diagram illustrates the stages at which each of the transformation filters run in relation to other envoy filters. 
+
+![Transformation Filter Stages]({{% versioned_link_path fromRoot="/img/transformation_stages.png" %}})
+
+The `inheritTransformation` attribute allows child routes to inherit transformations from their parent RouteTables and/or VirtualHosts. This is detailed in the Inheritance rules section.
+
+The `requestTransforms` attribute specifies a list of transformations which will be evaluated based on the request attributes. The first transformation which has a `matcher` that matches the request attributes will run.
+
+The `responseTransforms` attribute specifies a list of transformations which will be evaluated based on the response attributes. A transformation will only be chosen from this list if no transformation in `requestTransform` matched the request.
 
 The `clearRouteCache` attribute is a boolean value that determines whether the route cache should be cleared if the request transformation was applied. If the transformation modifies the headers in a way that affects routing, this attribute must be set to `true`. The default value is `false`.
 
-The `requestTransformation` and `responseTransformation` attributes have the {{< protobuf display="same format" name="envoy.api.v2.filter.http.Transformation" >}} and specify transformations that will be applied to requests and responses respectively. The format can take one of two forms:
+The `requestTransformation` and `responseTransformation` attributes have the {{< protobuf display="same format" name="transformation.options.gloo.solo.io.Transformation" >}} and specify transformations that will be applied to requests and responses respectively. The format can take one of two forms:
 
 - `headerBodyTransform`: this type of transformation will make all the headers available in the body. The result will be a JSON body that consists of two attributes: `headers`, containing the headers, and `body`, containing the original body.
 - `transformationTemplate`: this type of transformation allows you to define transformation templates. This is the more powerful and flexible type of transformation. We will spend the rest of this guide to describe its properties.
@@ -269,6 +353,31 @@ In addition to the standard functions available in the core _Inja_ library, you 
 - `context()`: returns the base JSON context (allowing for example to range on a JSON body that is an array).
 
 You can use templates to mutate [headers](#headers), the [body](#body), and [dynamic metadata](#dynamicmetadatavalues).
+
+#### XSLT Transformation
+{{% notice note %}}
+The XSLT transformation has been introduced with **Gloo Edge Enterprise**, release v1.8.0-beta3. If you are using an earlier version, it will not work.
+{{% /notice %}}
+{{< protobuf display="XSLT transformations" name="envoy.config.transformer.xslt.v2.XsltTransformation" >}} allow transformations on HTTP requests using the XSLT transformation language.
+The following snippet illustrates the structure of the `xsltTransformation` object.
+```yaml
+xsltTransformation:
+  xslt: string
+  setContentType: string
+  nonXmlTransform: bool
+```
+
+##### xslt
+The XSLT transformation is specified in this field as a string. Like other transformations, an invalid XSLT transformation will not be accepted and envoy 
+validation will reject the transformation configuration.
+
+##### setContentType
+XSLT transformations can be used to transform HTTP body between content type. For example, from [XML to JSON](https://www.w3.org/TR/xslt-30/#func-xml-to-json), or [JSON to XML](https://www.w3.org/TR/xslt-30/#func-json-to-xml).
+In the case of these transformations, the `content-type` HTTP header is set to the value of `setContentType`. If left empty, the `content-type` header is unchanged.
+
+##### nonXmlTransform
+XSLT transformations typically accept only XML as input. If the input to the transformation is not XML, this should be set to true. For example, if 
+the XSLT transformation is transforming a JSON input to XML, this would be set to `true`. By default, this is false and the XSLT transformation will only accept XML input.
 
 ### Common use cases
 On this page we have seen all the properties of the Gloo Edge Transformation API as well as some simple example snippets. If are looking for complete examples, please check out the following tutorials, which will guide you through some of the most common transformation use cases.

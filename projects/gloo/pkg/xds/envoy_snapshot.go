@@ -18,12 +18,7 @@ import (
 	"errors"
 	"fmt"
 
-	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/proto"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds/internal"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 )
@@ -35,22 +30,14 @@ type EnvoySnapshot struct {
 	// Endpoints are items in the EDS V3 response payload.
 	Endpoints cache.Resources
 
-	// hiddenDeprecatedClusters are items in the EDS V2 response payload.
-	hiddenDeprecatedEndpoints cache.Resources
-
 	// Clusters are items in the CDS response payload.
 	Clusters cache.Resources
-
-	// hiddenDeprecatedClusters are items in the EDS V2 response payload.
-	hiddenDeprecatedClusters cache.Resources
 
 	// Routes are items in the RDS response payload.
 	Routes cache.Resources
 
 	// Listeners are items in the LDS response payload.
 	Listeners cache.Resources
-	// hiddenDeprecatedListeners are items in the EDS V2 response payload.
-	hiddenDeprecatedListeners cache.Resources
 }
 
 var _ cache.Snapshot = &EnvoySnapshot{}
@@ -65,13 +52,10 @@ func NewSnapshot(
 ) *EnvoySnapshot {
 	// TODO: Copy resources
 	return &EnvoySnapshot{
-		Endpoints:                 cache.NewResources(version, endpoints),
-		hiddenDeprecatedEndpoints: downgradeCacheResourceList(version, endpoints),
-		Clusters:                  cache.NewResources(version, clusters),
-		hiddenDeprecatedClusters:  downgradeCacheResourceList(version, clusters),
-		Routes:                    cache.NewResources(version, routes),
-		Listeners:                 cache.NewResources(version, listeners),
-		hiddenDeprecatedListeners: downgradeCacheResourceList(version, listeners),
+		Endpoints: cache.NewResources(version, endpoints),
+		Clusters:  cache.NewResources(version, clusters),
+		Routes:    cache.NewResources(version, routes),
+		Listeners: cache.NewResources(version, listeners),
 	}
 }
 
@@ -83,13 +67,10 @@ func NewSnapshotFromResources(
 ) cache.Snapshot {
 	// TODO: Copy resources and downgrade, maybe maintain hash to not do it too many times (https://github.com/solo-io/gloo/issues/4421)
 	return &EnvoySnapshot{
-		Endpoints:                 endpoints,
-		hiddenDeprecatedEndpoints: downgradeCacheResources(endpoints),
-		Clusters:                  clusters,
-		hiddenDeprecatedClusters:  downgradeCacheResources(clusters),
-		Routes:                    routes,
-		Listeners:                 listeners,
-		hiddenDeprecatedListeners: downgradeCacheResources(listeners),
+		Endpoints: endpoints,
+		Clusters:  clusters,
+		Routes:    routes,
+		Listeners: listeners,
 	}
 }
 
@@ -98,51 +79,9 @@ func NewEndpointsSnapshotFromResources(
 	clusters cache.Resources,
 ) cache.Snapshot {
 	return &EnvoySnapshot{
-		Endpoints:                 endpoints,
-		hiddenDeprecatedEndpoints: downgradeCacheResources(endpoints),
-		Clusters:                  clusters,
-		hiddenDeprecatedClusters:  downgradeCacheResources(clusters),
+		Endpoints: endpoints,
+		Clusters:  clusters,
 	}
-}
-
-func downgradeResource(e cache.Resource) *resource.EnvoyResource {
-	res := e.ResourceProto()
-	if res == nil {
-		return nil
-	}
-	switch v := res.(type) {
-	case *envoy_config_endpoint_v3.ClusterLoadAssignment:
-		return &resource.EnvoyResource{ProtoMessage: internal.DowngradeEndpoint(v)}
-	case *envoy_config_cluster_v3.Cluster:
-		return &resource.EnvoyResource{ProtoMessage: internal.DowngradeCluster(v)}
-	case *envoy_config_route_v3.RouteConfiguration:
-		// No downgrade necessary
-	case *envoy_config_listener_v3.Listener:
-		return &resource.EnvoyResource{ProtoMessage: internal.DowngradeListener(v)}
-	}
-	return nil
-}
-
-func downgradeCacheResources(resources cache.Resources) cache.Resources {
-	newResources := make([]cache.Resource, 0, len(resources.Items))
-	for _, v := range resources.Items {
-		downgradedResource := downgradeResource(v)
-		if downgradedResource != nil {
-			newResources = append(newResources, downgradedResource)
-		}
-	}
-	return cache.NewResources(resources.Version, newResources)
-}
-
-func downgradeCacheResourceList(version string, resources []cache.Resource) cache.Resources {
-	newResources := make([]cache.Resource, 0, len(resources))
-	for _, v := range resources {
-		downgradedResource := downgradeResource(v)
-		if downgradedResource != nil {
-			newResources = append(newResources, downgradedResource)
-		}
-	}
-	return cache.NewResources(version, newResources)
 }
 
 // Consistent check verifies that the dependent resources are exactly listed in the
@@ -186,12 +125,6 @@ func (s *EnvoySnapshot) GetResources(typ string) cache.Resources {
 		return s.Routes
 	case resource.ListenerTypeV3:
 		return s.Listeners
-	case resource.EndpointTypeV2:
-		return s.hiddenDeprecatedEndpoints
-	case resource.ClusterTypeV2:
-		return s.hiddenDeprecatedClusters
-	case resource.ListenerTypeV2:
-		return s.hiddenDeprecatedListeners
 	}
 	return cache.Resources{}
 }
@@ -217,21 +150,6 @@ func (s *EnvoySnapshot) Clone() cache.Snapshot {
 	snapshotClone.Listeners = cache.Resources{
 		Version: s.Listeners.Version,
 		Items:   cloneItems(s.Listeners.Items),
-	}
-
-	snapshotClone.hiddenDeprecatedClusters = cache.Resources{
-		Version: s.hiddenDeprecatedClusters.Version,
-		Items:   cloneItems(s.hiddenDeprecatedClusters.Items),
-	}
-
-	snapshotClone.hiddenDeprecatedEndpoints = cache.Resources{
-		Version: s.hiddenDeprecatedEndpoints.Version,
-		Items:   cloneItems(s.hiddenDeprecatedEndpoints.Items),
-	}
-
-	snapshotClone.hiddenDeprecatedListeners = cache.Resources{
-		Version: s.hiddenDeprecatedListeners.Version,
-		Items:   cloneItems(s.hiddenDeprecatedListeners.Items),
 	}
 
 	return snapshotClone
@@ -290,42 +208,6 @@ func (this *EnvoySnapshot) Equal(that *EnvoySnapshot) bool {
 	}
 	for key, thisVal := range this.Endpoints.Items {
 		thatVal, ok := that.Endpoints.Items[key]
-		if !ok {
-			return false
-		}
-		if !proto.Equal(thisVal.ResourceProto(), thatVal.ResourceProto()) {
-			return false
-		}
-	}
-	if len(this.hiddenDeprecatedClusters.Items) != len(that.hiddenDeprecatedClusters.Items) || this.hiddenDeprecatedClusters.Version != that.hiddenDeprecatedClusters.Version {
-		return false
-	}
-	for key, thisVal := range this.hiddenDeprecatedClusters.Items {
-		thatVal, ok := that.hiddenDeprecatedClusters.Items[key]
-		if !ok {
-			return false
-		}
-		if !proto.Equal(thisVal.ResourceProto(), thatVal.ResourceProto()) {
-			return false
-		}
-	}
-	if len(this.hiddenDeprecatedEndpoints.Items) != len(that.hiddenDeprecatedEndpoints.Items) || this.hiddenDeprecatedEndpoints.Version != that.hiddenDeprecatedEndpoints.Version {
-		return false
-	}
-	for key, thisVal := range this.hiddenDeprecatedEndpoints.Items {
-		thatVal, ok := that.hiddenDeprecatedEndpoints.Items[key]
-		if !ok {
-			return false
-		}
-		if !proto.Equal(thisVal.ResourceProto(), thatVal.ResourceProto()) {
-			return false
-		}
-	}
-	if len(this.hiddenDeprecatedListeners.Items) != len(that.hiddenDeprecatedListeners.Items) || this.hiddenDeprecatedListeners.Version != that.hiddenDeprecatedListeners.Version {
-		return false
-	}
-	for key, thisVal := range this.hiddenDeprecatedListeners.Items {
-		thatVal, ok := that.hiddenDeprecatedListeners.Items[key]
 		if !ok {
 			return false
 		}

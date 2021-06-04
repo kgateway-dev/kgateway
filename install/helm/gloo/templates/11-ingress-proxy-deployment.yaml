@@ -1,3 +1,4 @@
+{{- define "ingressProxy.deploymentSpec"}}
 {{- if .Values.ingress.enabled }}
 {{- $image := .Values.gateway.deployment.image }}
 {{- if .Values.global  }}
@@ -37,7 +38,7 @@ spec:
         {{- end }}
       {{- end }}
     spec:
-      {{- include "gloo.pullSecret" $image | nindent 6 }}
+      {{- include "gloo.pullSecret" $image | nindent 6 -}}
       containers:
       - args: ["--disable-hot-restart"]
         env:
@@ -85,5 +86,15 @@ spec:
       - configMap:
           name: ingress-envoy-config
         name: envoy-config
+      {{- include "gloo.podSpecStandardFields" .Values.ingress.deployment | nindent 6 -}}
+{{- end }} {{/* if .Values.ingress.enabled */}}
+{{- end }} {{/* define "ingressProxy.deploymentSpec "*/}}
 
-{{- end }}
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.ingressProxy -}}
+{{- if .Values.ingressProxy.deployment -}}
+{{- $kubeResourceOverride = .Values.ingressProxy.deployment.kubeResourceOverride  -}}
+{{- end -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "ingressProxy.deploymentSpec") -}}

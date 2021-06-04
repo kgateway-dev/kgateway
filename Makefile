@@ -47,7 +47,7 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.18.0
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.19.0-rc3
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
@@ -127,6 +127,7 @@ install-go-tools: mod-download
 	mkdir -p $(DEPSGOBIN)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
+	GOBIN=$(DEPSGOBIN) go install github.com/sam-heilbron/protoc-gen-openapi
 	GOBIN=$(DEPSGOBIN) go install github.com/envoyproxy/protoc-gen-validate
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/protobuf/protoc-gen-go
 	GOBIN=$(DEPSGOBIN) go install golang.org/x/tools/cmd/goimports
@@ -521,8 +522,6 @@ endif
 
 define HELM_VALUES
 namespace:
-  create: true
-crds:
   create: true
 endef
 

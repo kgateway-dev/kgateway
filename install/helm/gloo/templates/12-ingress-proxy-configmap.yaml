@@ -1,3 +1,4 @@
+{{- define "ingressProxy.configMapSpec"}}
 {{- if .Values.ingress.enabled }}
 # configmap
 apiVersion: v1
@@ -131,5 +132,15 @@ data:
           address: {{ .Values.ingressProxy.loopBackAddress }}
           port_value: 19000
 {{- else}}{{ toYaml .Values.ingressProxy.configMap.data | indent 2}}{{- end}}
-
 {{- end }}
+{{- end}} {{/* define "ingressProxy.configMapSpec "*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.ingressProxy -}}
+{{- if .Values.ingressProxy.configMap -}}
+{{- $kubeResourceOverride = .Values.ingressProxy.configMap.kubeResourceOverride  -}}
+{{- end -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "ingressProxy.configMapSpec") -}}
+

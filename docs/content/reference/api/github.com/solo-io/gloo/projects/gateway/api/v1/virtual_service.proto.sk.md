@@ -165,7 +165,7 @@ Gateway* Virtual Hosts can **delegate** their routes to `RouteTables`.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `domains` | `[]string` | The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host. Note that the wildcard will not match the empty string. e.g. “*-bar.foo.com” will match “baz-bar.foo.com” but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header. Only a single virtual host on a gateway can match on “*”. A domain must be unique across all virtual hosts on a gateway or the config will be invalidated by Gloo Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto). |
+| `domains` | `[]string` | The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host. Note that the wildcard will not match the empty string. e.g. “\*-bar.foo.com” will match “baz-bar.foo.com” but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header. Only a single virtual host on a gateway can match on “*”. A domain must be unique across all virtual hosts on a gateway or the config will be invalidated by Gloo Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto). |
 | `routes` | [[]gateway.solo.io.Route](../virtual_service.proto.sk/#route) | The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |
 | `options` | [.gloo.solo.io.VirtualHostOptions](../../../../gloo/api/v1/options.proto.sk/#virtualhostoptions) | Virtual host options contain additional configuration to be applied to all traffic served by the Virtual Host. Some configuration here can be overridden by Route Options. |
 
@@ -230,8 +230,8 @@ DelegateActions are used to delegate routing decisions to Route Tables.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `name` | `string` | The name of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |
-| `namespace` | `string` | The namespace of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |
+| `name` | `string` | The name of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `ref` field. If `name` and/or `namespace` have been specified, Gloo will ignore `ref` and `selector`. |
+| `namespace` | `string` | The namespace of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `ref` field. If `name` and/or `namespace` have been specified, Gloo will ignore `ref` and `selector`. |
 | `ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Delegate to the Route Table resource with the given `name` and `namespace. Only one of `ref` or `selector` can be set. |
 | `selector` | [.gateway.solo.io.RouteTableSelector](../virtual_service.proto.sk/#routetableselector) | Delegate to the Route Tables that match the given selector. Only one of `selector` or `ref` can be set. |
 

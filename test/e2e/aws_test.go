@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/form3tech-oss/jwt-go"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	aws2 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	"github.com/solo-io/gloo/test/helpers"
@@ -512,6 +512,11 @@ var _ = Describe("AWS Lambda", func() {
 			os.Unsetenv(awsRoleArn)
 		})
 
+		/*
+		 * these tests can start failing if certs get rotated underneath us.
+		 * the fix is to update the rotated thumbprint on our fake AWS OIDC per
+		 * https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html
+		 */
 		It("should be able to call lambda", testProxy)
 
 		It("should be able lambda with response transform", testProxyWithResponseTransform)

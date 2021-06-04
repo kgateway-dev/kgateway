@@ -75,7 +75,7 @@ func MarkPerFilterConfig(
 		return nil
 	}
 
-	err = errors.Errorf("unexpected destination type %v", reflect.TypeOf(inAction.Destination).Name())
+	err = errors.Errorf("unexpected destination type %v", reflect.TypeOf(inAction.GetDestination()).Name())
 	logger := contextutils.LoggerFrom(ctx)
 	logger.DPanic("error: %v", err)
 	return err

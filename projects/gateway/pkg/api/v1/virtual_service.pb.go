@@ -308,7 +308,7 @@ type VirtualHost struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host.
-	// Note that the wildcard will not match the empty string. e.g. “*-bar.foo.com” will match “baz-bar.foo.com”
+	// Note that the wildcard will not match the empty string. e.g. “\*-bar.foo.com” will match “baz-bar.foo.com”
 	// but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header.
 	// Only a single virtual host on a gateway can match on “*”. A domain must be unique across all
 	// virtual hosts on a gateway or the config will be invalidated by Gloo
@@ -559,14 +559,14 @@ type DelegateAction struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the Route Table to delegate to.
-	// Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name`
-	// and/or `namespace` have been specified, Gloo will ignore `single` and `selector`.
+	// Deprecated: these fields have been added for backwards-compatibility. Please use the `ref` field. If `name`
+	// and/or `namespace` have been specified, Gloo will ignore `ref` and `selector`.
 	//
 	// Deprecated: Do not use.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The namespace of the Route Table to delegate to.
-	// Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name`
-	// and/or `namespace` have been specified, Gloo will ignore `single` and `selector`.
+	// Deprecated: these fields have been added for backwards-compatibility. Please use the `ref` field. If `name`
+	// and/or `namespace` have been specified, Gloo will ignore `ref` and `selector`.
 	//
 	// Deprecated: Do not use.
 	Namespace string `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`

@@ -39,7 +39,7 @@ glooctl install gateway enterprise --license-key YOUR_LICENSE_KEY
 
 <details>
 <summary>Special Instructions to Install Gloo Edge Enterprise on Kind</summary>
-If you followed the cluster setup instructions for Kind [here]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#kind" >}}), then you should have exposed custom ports 31500 (for http) and 32500 (https) from your cluster's Docker container to its host machine. The purpose of this is to make it easier to access your service endpoints from your host workstation.  Use the following custom installation for Gloo Edge to publish those same ports from the proxy as well.
+If you followed the cluster setup instructions for Kind <a href="{{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#kind" >}}">here</a>, then you should have exposed custom ports 31500 (for http) and 32500 (https) from your cluster's Docker container to its host machine. The purpose of this is to make it easier to access your service endpoints from your host workstation.  Use the following custom installation for Gloo Edge to publish those same ports from the proxy as well.
 
 ```bash
 cat <<EOF | glooctl install gateway enterprise --license-key YOUR_LICENSE_KEY --values -
@@ -99,16 +99,14 @@ helm repo add glooe http://storage.googleapis.com/gloo-ee-helm
 
 Finally, install Gloo Edge using the following command:
 
-{{< tabs >}}
-{{< tab name="Helm 2" codelang="shell">}}
-helm install glooe/gloo-ee --name gloo --namespace gloo-system \
-  --set gloo.crds.create=true --set-string license_key=YOUR_LICENSE_KEY
-{{< /tab >}}
-{{< tab name="Helm 3" codelang="shell">}}
+```shell
 helm install gloo glooe/gloo-ee --namespace gloo-system \
   --create-namespace --set-string license_key=YOUR_LICENSE_KEY
-{{< /tab >}}
-{{< /tabs >}}
+```
+
+{{% notice warning %}}
+Using Helm 2 is not supported in Gloo Edge v1.8.0.
+{{% /notice %}}
 
 Once you've installed Gloo Edge, please be sure [to verify your installation](#verify-your-installation).
 
@@ -128,18 +126,16 @@ settings:
   writeNamespace: my-custom-namespace
 ```
 
-and use it to override default values in the Gloo Edge Helm chart:
+and use it to override default values in the Gloo Edge Helm chart with Helm 3:
 
-{{< tabs >}}
-{{< tab name="Helm 2" codelang="shell">}}
-helm install glooe/gloo-ee --name gloo --namespace gloo-system \
-  -f value-overrides.yaml --set gloo.crds.create=true --set-string license_key=YOUR_LICENSE_KEY
-{{< /tab >}}
-{{< tab name="Helm 3" codelang="shell">}}
+```shell
 helm install gloo glooe/gloo-ee --namespace gloo-system \
   -f value-overrides.yaml --create-namespace --set-string license_key=YOUR_LICENSE_KEY
-{{< /tab >}}
-{{< /tabs >}}
+```
+
+{{% notice warning %}}
+Using Helm 2 is not supported in Gloo Edge v1.8.0.
+{{% /notice %}}
 
 #### List of Gloo Edge Helm chart values
 

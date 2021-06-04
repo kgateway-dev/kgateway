@@ -1,19 +1,20 @@
 {{- if .Values.gateway.updateValues -}}
 {{- include "gloo.updatevalues" . -}}
 {{- end -}}
-{{- if .Values.gateway.enabled }}
+{{- define "gatewayProxy.deploymentSpec" }}
+{{- $name := (index . 1) }}
+{{- $gatewaySpec := (index . 2) }}
+{{- with (first .) }}
 {{- $global := .Values.global }}
 {{- $settings := .Values.settings }}
 {{- $isUpgrade := .Values.gateway.upgrade }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
-{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{- $image := $spec.podTemplate.image }}
 {{- if $global }}
 {{- $image = merge $spec.podTemplate.image $global.image }}
 {{- end }}
 {{- $statsConfig := coalesce $spec.stats $global.glooStats }}
----
 {{- if not $spec.disabled }}
 apiVersion: apps/v1
 {{- if $spec.kind.deployment}}
@@ -27,7 +28,7 @@ metadata:
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
   name: {{ $name | kebabcase }}
-  namespace: {{ $.Release.Namespace }}
+  namespace: {{ .Release.Namespace }}
 spec:
   {{- if $spec.kind.deployment}}
   {{- if $spec.kind.deployment.replicas}}
@@ -85,7 +86,7 @@ spec:
 {{- end}}
     spec:
 
-{{- if $spec.podTemplate.runUnprivileged }}
+{{- if $spec.podTemplate.enablePodSecurityContext }}
       securityContext:
         fsGroup: {{ printf "%.0f" (float64 $spec.podTemplate.fsGroup) }}
         {{- if not $spec.podTemplate.floatingUserId }}
@@ -110,11 +111,11 @@ spec:
       {{ toYaml $spec.affinity | nindent 8 }}
 {{- end }}
 {{- end}}
-      {{- include "gloo.pullSecret" $image | nindent 6 }}
+      {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gateway-proxy
       {{- if $spec.extraInitContainersHelper }}
       initContainers:
-      {{- include $spec.extraInitContainersHelper $ | nindent 6 }}
+      {{- include $spec.extraInitContainersHelper . | nindent 6 }}
       {{- end }}
       containers:
       - args:
@@ -232,18 +233,18 @@ spec:
 {{ toYaml $spec.extraProxyVolumeMounts | indent 8 }}
 {{- end }}
 {{- if $spec.extraProxyVolumeMountHelper }}
-{{- include $spec.extraProxyVolumeMountHelper $ | nindent 8 }}
+{{- include $spec.extraProxyVolumeMountHelper . | nindent 8 }}
 {{- end }}
 {{- if $global.glooMtls.enabled }}
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
           readOnly: true
-{{- end}} {{/* $global.glooMtls.enabled */}}
+{{- end}} {{- /* $global.glooMtls.enabled */}}
 {{- if $spec.extraContainersHelper }}
         - mountPath: /usr/share/shared-data
           name: shared-data
-{{- include $spec.extraContainersHelper $ | nindent 6 }}
-{{- end }} {{/* $spec.extraContainersHelper */}}
+{{- include $spec.extraContainersHelper . | nindent 6 }}
+{{- end }} {{- /* $spec.extraContainersHelper */}}
 {{- if or $global.glooMtls.enabled $global.istioSDS.enabled }}
       {{- $sdsImage := merge $global.glooMtls.sds.image $global.image }}
       - name: sds
@@ -286,10 +287,10 @@ spec:
         - containerPort: 8234
           name: sds
           protocol: TCP
-{{- end }} {{/* $global.glooMtls.enabled or $.Values.istioSDS.enabled */}}
+{{- end }} {{- /* $global.glooMtls.enabled or $.Values.istioSDS.enabled */}}
       {{- if $spec.kind.daemonSet }}
-      {{- if $spec.kind.daemonSet.hostPort}}
-      hostNetwork: true
+      {{- if $spec.kind.daemonSet.hostPort }}
+      hostNetwork: {{ ne "false" ($spec.kind.daemonSet.hostNetwork | toString) }} {{/* defaults to true if undefined */}}
       dnsPolicy: ClusterFirstWithHostNet
       {{- end}}
       {{- end}}
@@ -315,7 +316,7 @@ spec:
 {{- end }}
 {{- if not $global.istioSDS.customSidecars }}
       - name: istio-proxy
-        image: docker.io/istio/proxyv2:1.8.1
+        image: docker.io/istio/proxyv2:1.9.4
         {{- if $global.glooMtls.sdsResources }}
         resources:
 {{ toYaml $global.glooMtls.sdsResources | indent 10}}
@@ -414,8 +415,8 @@ spec:
           name: istio-certs
         - mountPath: /var/run/secrets/tokens
           name: istio-token
-{{- end}}
-{{- end}}
+{{- end }} {{/* if not $global.istioSDS.customSidecars */}}
+{{- end }}{{/* if $global.istioSDS.enabled */}}
       volumes:
       - configMap:
           name: {{ $name | kebabcase }}-envoy-config
@@ -446,7 +447,7 @@ spec:
         secret:
           defaultMode: 420
           secretName: gloo-mtls-certs
-{{- end }}
+{{- end }} {{/* if $global.glooMtls.enabled */}}
       {{- if $spec.extraContainersHelper }}
       - name: shared-data
         emptyDir: {}
@@ -455,8 +456,18 @@ spec:
       {{ toYaml $spec.extraVolumes | nindent 6 }}
       {{- end }}
       {{- if $spec.extraVolumeHelper }}
-      {{- include $spec.extraVolumeHelper $ | nindent 6 }}
+      {{- include $spec.extraVolumeHelper . | nindent 6 }}
       {{- end }}
 {{- end }}
-{{- end }}
-{{- end }}
+{{- end }} {{/* with */}}
+{{- end }} {{/* define gatewayProxy.deploymentSpec*/}}
+
+{{- if .Values.gateway.enabled }}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{- /* Render each gatewayProxy template with it's yaml overrides */}}
+---
+{{- $kubeResourceOverride := $gatewaySpec.kubeResourceOverride  }}
+{{- $ctx := (list $ $name $gatewaySpec)}}
+{{- include "gloo.util.merge" (list $ctx $kubeResourceOverride "gatewayProxy.deploymentSpec") -}}
+{{- end }} {{/* range $name, $gatewaySpec := .Values.gatewayProxies */}}
+{{- end }} {{/* if .Values.gateway.enabled */}}

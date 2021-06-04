@@ -76,6 +76,11 @@ message Gateway {
     * Defaults to `["gateway-proxy"]`
     */
     repeated string proxy_names = 12;
+
+    /*
+    * Route configuration options that live under Envoy's [RouteConfigurationOptions](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#config-route-v3-routeconfiguration)
+    */
+    gloo.solo.io.RouteConfigurationOptions route_options = 13;
 }
 
 message HttpGateway {

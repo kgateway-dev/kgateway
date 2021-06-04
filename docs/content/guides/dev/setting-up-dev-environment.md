@@ -12,7 +12,7 @@ Developing on Gloo Edge requires the following to be installed on your system:
 
 - [`make`](https://www.gnu.org/software/make/)
 - [`git`](https://git-scm.com/)
-- [`go`](https://golang.org/)
+- [`go`](https://golang.org/) (`solo-io` projects are built using version `1.16.3`)
 - `protoc` (`solo-io` projects are built using version `3.6.1`)
 - the `github.com/gogo/protobuf` go package
 - standard development tools like `gcc`

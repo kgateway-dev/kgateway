@@ -1370,7 +1370,8 @@ metadata:
 spec:
   virtualHoost: {}
 `,
-					expectedErr: `could not unmarshal raw object: parsing resource from crd spec default in namespace ` + testHelper.InstallNamespace + ` into *v1.VirtualService: unknown field "virtualHoost" in gateway.solo.io.VirtualService`,
+					// This is handled by validation schemas now
+					expectedErr: `ValidationError(VirtualService.spec): unknown field "virtualHoost" in io.solo.gateway.v1.VirtualService.spec`,
 				},
 				{
 					resourceYaml: `
@@ -1425,8 +1426,8 @@ spec:
 			injaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %}`
 			t := &glootransformation.Transformations{
 				ClearRouteCache: true,
-				ResponseTransformation: &transformation.Transformation{
-					TransformationType: &transformation.Transformation_TransformationTemplate{
+				ResponseTransformation: &glootransformation.Transformation{
+					TransformationType: &glootransformation.Transformation_TransformationTemplate{
 						TransformationTemplate: &transformation.TransformationTemplate{
 							Headers: map[string]*transformation.InjaTemplate{
 								":status": {Text: injaTransform},
@@ -1506,8 +1507,8 @@ spec:
 				injaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %`
 				t := &glootransformation.Transformations{
 					ClearRouteCache: true,
-					ResponseTransformation: &transformation.Transformation{
-						TransformationType: &transformation.Transformation_TransformationTemplate{
+					ResponseTransformation: &glootransformation.Transformation{
+						TransformationType: &glootransformation.Transformation_TransformationTemplate{
 							TransformationTemplate: &transformation.TransformationTemplate{
 								Headers: map[string]*transformation.InjaTemplate{
 									":status": {Text: injaTransform},

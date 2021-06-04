@@ -1,3 +1,4 @@
+{{- define "discovery.deploymentSpec"}}
 {{- if .Values.discovery.enabled }}
 {{- $statsConfig := coalesce .Values.discovery.deployment.stats .Values.global.glooStats -}}
 {{- $image := .Values.discovery.deployment.image }}
@@ -43,8 +44,9 @@ spec:
         {{- end }}
         {{- end }}
     spec:
-      {{- include "gloo.pullSecret" $image | nindent 6 }}
+      {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: discovery
+      {{- include "gloo.podSpecStandardFields" .Values.discovery.deployment | nindent 6 -}}
       containers:
       - image: {{template "gloo.image" $image}}
         imagePullPolicy: {{ $image.pullPolicy }}
@@ -81,8 +83,19 @@ spec:
             value: {{ .Values.discovery.logLevel }}
         {{- end}}
       # Pod security context
+      {{- if .Values.discovery.deployment.enablePodSecurityContext }}
       securityContext:
         {{- if .Values.discovery.deployment.fsGroup }}
         fsGroup: {{ printf "%.0f" (float64 .Values.discovery.deployment.fsGroup) }}
         {{- end}}
+      {{- end}}
 {{- end }}
+{{- end }} {{/* define "discovery.deploymentSpec"*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.discovery.deployment -}}
+{{- $kubeResourceOverride = .Values.discovery.deployment.kubeResourceOverride  -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "discovery.deploymentSpec") -}}
+

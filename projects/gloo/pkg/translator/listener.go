@@ -298,7 +298,7 @@ func CheckForDuplicateFilterChainMatches(filterChains []*envoy_config_listener_v
 			if reflect.DeepEqual(filterChain.FilterChainMatch, otherFilterChain.FilterChainMatch) {
 				validation.AppendListenerError(listenerReport,
 					validationapi.ListenerReport_Error_SSLConfigError, fmt.Sprintf("Tried to apply multiple filter chains "+
-						"with the same FilterChainMatch. This is usually caused by overlapping sniDomains in virtual services: {%v}", filterChain.FilterChainMatch))
+						"with the same FilterChainMatch {%v}. This is usually caused by overlapping sniDomains or multiple empty sniDomains in virtual services", filterChain.FilterChainMatch))
 			}
 		}
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"os"
 
+	_ "github.com/solo-io/gloo/hack/filter_types"
 	"github.com/solo-io/gloo/projects/envoyinit/pkg/downward"
 )
 

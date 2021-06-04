@@ -25,6 +25,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/rotisserie/eris"
+	_ "github.com/solo-io/gloo/hack/filter_types"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"

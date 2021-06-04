@@ -6,6 +6,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tr
 import "google/protobuf/wrappers.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformers/xslt/xslt_transformer.proto";
 
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
@@ -18,7 +19,7 @@ message ResponseMatch {
     // you can use the envoy access log %RESPONSE_CODE_DETAILS% formatter to log it.
     string response_code_details = 2;
     // Transformation to apply on the response.
-    envoy.api.v2.filter.http.Transformation response_transformation = 3;
+    Transformation response_transformation = 3;
 }
 
 message RequestMatch {
@@ -27,18 +28,18 @@ message RequestMatch {
     // Should we clear the route cache if a transformation was matched.
     bool clear_route_cache = 2;
     // Transformation to apply on the request.
-    envoy.api.v2.filter.http.Transformation request_transformation = 3;
+    Transformation request_transformation = 3;
     // Transformation to apply on the response.
-    envoy.api.v2.filter.http.Transformation response_transformation = 4;
+    Transformation response_transformation = 4;
 }
 
 message Transformations {
     // Apply a transformation to requests.
-    envoy.api.v2.filter.http.Transformation request_transformation = 1;
+    Transformation request_transformation = 1;
     // Clear the route cache if the request transformation was applied.
     bool clear_route_cache = 3;
     // Apply a transformation to responses.
-    envoy.api.v2.filter.http.Transformation response_transformation = 2;
+    Transformation response_transformation = 2;
 }
 
 message RequestResponseTransformations {
@@ -64,4 +65,21 @@ message TransformationStages {
     // only one transformation will run per stage.
     // Defaults to false.
     bool inherit_transformation = 3;
+}
+
+// User-facing API for transformation.
+message Transformation {
+    // The type of transformation to apply.
+    oneof transformation_type {
+        // Apply transformation templates.
+        envoy.api.v2.filter.http.TransformationTemplate transformation_template = 1;
+        // This type of transformation will make all the headers available in the
+        // response body. The resulting JSON body will consist of two attributes:
+        // 'headers', containing the headers, and 'body', containing the original
+        // body.
+        envoy.api.v2.filter.http.HeaderBodyTransform header_body_transform = 2;
+        // (Enterprise Only): Xslt Transformation
+        envoy.config.transformer.xslt.v2.XsltTransformation xslt_transformation = 3;
+
+    }
 }

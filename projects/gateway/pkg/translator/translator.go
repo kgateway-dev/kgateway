@@ -87,6 +87,7 @@ func makeListener(gateway *v1.Gateway) *gloov1.Listener {
 		BindPort:      gateway.BindPort,
 		Options:       gateway.Options,
 		UseProxyProto: gateway.UseProxyProto,
+		RouteOptions:  gateway.RouteOptions,
 	}
 }
 
