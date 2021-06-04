@@ -171,7 +171,7 @@ function getContentForVersion() {
 # This will allow us to verify if the change we are introducing is valid.
 # Therefore, we use the head SHA on pull requests by Solo developers
 latestMasterTag="master"
-if [[ "$GITHUB_EVENT_NAME" == "pull_request" && "$IS_COMMUNITY_PR" == "false" ]]
+if [[ "$USE_PR_SHA_AS_MASTER" == "true" ]]
 then
   latestMasterTag=$PULL_REQUEST_SHA
   echo using $PULL_REQUEST_SHA, as this will be the next commit to master
