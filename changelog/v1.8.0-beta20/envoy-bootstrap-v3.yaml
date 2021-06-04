@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4369
+    resolvesIssue: false
+    description: Specify that envoy boostrap version is v3
