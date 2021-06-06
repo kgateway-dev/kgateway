@@ -238,11 +238,43 @@ func TestUpstreamReachableWithOffset(offset int, envoyPort uint32, tu *TestUpstr
 
 }
 
+func TestUpstreamReachableWithStatusAndOffset(offset int, envoyPort uint32, tu *TestUpstream, rootca *string) {
+	body := []byte("solo.io test")
+
+	ExpectHttpOK(body, rootca, envoyPort, "")
+
+	timeout := time.After(15 * time.Second)
+	var receivedRequest *ReceivedRequest
+	for {
+		select {
+		case <-timeout:
+			if receivedRequest != nil {
+				fmt.Fprintf(GinkgoWriter, "last received request: %v", *receivedRequest)
+			}
+			Fail("timeout testing upstream reachability")
+		case receivedRequest = <-tu.C:
+			if receivedRequest.Method == "POST" &&
+				bytes.Equal(receivedRequest.Body, body) {
+				return
+			}
+		}
+	}
+
+}
+
 func ExpectHttpOK(body []byte, rootca *string, envoyPort uint32, response string) {
 	ExpectHttpOKWithOffset(1, body, rootca, envoyPort, response)
 }
 
 func ExpectHttpOKWithOffset(offset int, body []byte, rootca *string, envoyPort uint32, response string) {
+	ExpectHttpStatusWithOffset(offset+1, body, rootca, envoyPort, response, http.StatusOK)
+}
+
+func ExpectHttpUnavailableWithOffset(offset int, body []byte, rootca *string, envoyPort uint32, response string) {
+	ExpectHttpStatusWithOffset(offset+1, body, rootca, envoyPort, response, http.StatusServiceUnavailable)
+}
+
+func ExpectHttpStatusWithOffset(offset int, body []byte, rootca *string, envoyPort uint32, response string, status int) {
 
 	var res *http.Response
 	EventuallyWithOffset(2, func() error {
@@ -274,8 +306,8 @@ func ExpectHttpOKWithOffset(offset int, body []byte, rootca *string, envoyPort u
 		if err != nil {
 			return err
 		}
-		if res.StatusCode != http.StatusOK {
-			return fmt.Errorf("%v is not OK", res.StatusCode)
+		if res.StatusCode != status {
+			return fmt.Errorf("%v is not %v", res.StatusCode, status)
 		}
 
 		return nil
@@ -283,9 +315,9 @@ func ExpectHttpOKWithOffset(offset int, body []byte, rootca *string, envoyPort u
 
 	if response != "" {
 		body, err := ioutil.ReadAll(res.Body)
-		ExpectWithOffset(2, err).NotTo(HaveOccurred())
+		ExpectWithOffset(offset, err).NotTo(HaveOccurred())
 		defer res.Body.Close()
-		ExpectWithOffset(2, string(body)).To(Equal(response))
+		ExpectWithOffset(offset, string(body)).To(Equal(response))
 	}
 }
 
