@@ -40,6 +40,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         SKIP_CHANGELOG_GENERATION: ${{ steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
         SKIP_SECURITY_SCAN: ${{ steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
+        USE_PR_SHA_AS_MASTER: ${{ github.event_name == 'pull_request' && !steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
         PULL_REQUEST_SHA: ${{ github.event.pull_request.head.sha }}
     - name: Deploy to Firebase
       # Do not publish docs if this workflow was triggered by a pull request
