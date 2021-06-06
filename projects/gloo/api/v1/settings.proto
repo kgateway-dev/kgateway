@@ -334,6 +334,12 @@ message Settings {
     // Enterprise-only: External auth related settings
     enterprise.gloo.solo.io.Settings extauth = 29;
 
+    // Enterprise-only: External auth related settings for additional auth servers
+    // This should only be used in the case where separate servers are needed to authorize separate routes.
+    // Even with multiple auth servers configured in Settings, only 1 will ever be configured and executed on a route.
+    // The name of the auth server (ie the key in the map) will be used to apply the configuration on the route.
+    map<string, enterprise.gloo.solo.io.Settings> named_extauth = 33;
+
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 14;
 

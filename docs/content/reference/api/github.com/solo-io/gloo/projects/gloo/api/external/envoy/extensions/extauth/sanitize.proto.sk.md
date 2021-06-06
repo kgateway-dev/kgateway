@@ -29,12 +29,14 @@ weight: 5
 
 ```yaml
 "headersToRemove": []string
+"customAuthServerName": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `headersToRemove` | `[]string` |  |
+| `customAuthServerName` | `string` | The name of the custom ext auth server This is only set in the case where multiple auth servers exist and a non-default server configuration is applied. If using the default ext auth server, do not set this value. |
 
 
 
