@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -17,8 +17,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	// add these imports to use Envoy's API
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
 	// add these imports to use Google Compute Engine's API
 	"golang.org/x/oauth2/google"
@@ -32,18 +31,18 @@ func NewPlugin() *plugin {
 	return &plugin{}
 }
 
-func (*plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *v2.Cluster) error {
+func (*plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *cluster_v3.Cluster) error {
 	// check that the upstream is our type (GCE)
 	if _, ok := in.UpstreamType.(*v1.UpstreamSpec_Gce); !ok {
 		// not gce, return early
 		return nil
 	}
 	// tell Envoy to use EDS to get endpoints for this cluster
-	out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
-		Type: envoyapi.Cluster_EDS,
+	out.ClusterDiscoveryType = &cluster_v3.Cluster_Type{
+		Type: cluster_v3.Cluster_EDS,
 	}
 	// tell envoy to use ADS to resolve Endpoints
-	out.EdsClusterConfig = &envoyapi.Cluster_EdsClusterConfig{
+	out.EdsClusterConfig = &cluster_v3.Cluster_EdsClusterConfig{
 		EdsConfig: &envoycore.ConfigSource{
 			ConfigSourceSpecifier: &envoycore.ConfigSource_Ads{
 				Ads: &envoycore.AggregatedConfigSource{},

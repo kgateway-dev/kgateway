@@ -6,11 +6,11 @@ import (
 	"os"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/google/go-github/v31/github"
+	"github.com/google/go-github/v32/github"
 	"github.com/rotisserie/eris"
-	. "github.com/solo-io/gloo/docs/cmd/changelogutils"
 	. "github.com/solo-io/gloo/docs/cmd/securityscanutils"
-	. "github.com/solo-io/go-utils/versionutils"
+	changelogdocutils "github.com/solo-io/go-utils/changeloggenutils"
+	"github.com/solo-io/go-utils/githubutils"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -49,7 +49,6 @@ func rootApp(ctx context.Context) *cobra.Command {
 		},
 	}
 	app.AddCommand(changelogMdFromGithubCmd(opts))
-	app.AddCommand(minorReleaseChangelogMdFromGithubCmd(opts))
 	app.AddCommand(securityScanMdFromCmd(opts))
 
 	app.PersistentFlags().StringVar(&opts.HugoDataSoloOpts.version, "version", "", "version of docs and code")
@@ -83,20 +82,6 @@ func changelogMdFromGithubCmd(opts *options) *cobra.Command {
 				return nil
 			}
 			return generateChangelogMd(args)
-		},
-	}
-	return app
-}
-
-func minorReleaseChangelogMdFromGithubCmd(opts *options) *cobra.Command {
-	app := &cobra.Command{
-		Use:   "gen-minor-releases-changelog-md",
-		Short: "generate an aggregated changelog markdown file for each minor release version",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if os.Getenv(skipChangelogGeneration) != "" {
-				return nil
-			}
-			return generateMinorReleaseChangelog(args)
 		},
 	}
 	return app
@@ -138,21 +123,19 @@ func generateChangelogMd(args []string) error {
 	}
 	client := github.NewClient(nil)
 	target := args[0]
-	var repo string
 	switch target {
 	case glooDocGen:
-		repo = glooOpenSourceRepo
-		allReleases, err := GetAllReleases(client, repo)
+		generator := changelogdocutils.NewMinorReleaseGroupedChangelogGenerator(changelogdocutils.Options{
+			MainRepo:  "gloo",
+			RepoOwner: "solo-io",
+		}, client)
+		out, err := generator.GenerateJSON(context.Background())
 		if err != nil {
 			return err
 		}
-
-		for _, release := range allReleases {
-			fmt.Printf("### %s\n\n", GetReleaseMdLink(release.GetTagName(), glooOpenSourceRepo))
-			fmt.Printf("%v", release.GetBody())
-		}
+		fmt.Println(out)
 	case glooEDocGen:
-		err := generateGlooEChangelog(false)
+		err := generateGlooEChangelog()
 		if err != nil {
 			return err
 		}
@@ -160,97 +143,39 @@ func generateChangelogMd(args []string) error {
 		return InvalidInputError(target)
 	}
 
-	return nil
-}
-
-// Performs additional processing to generate changelog grouped and ordered by release version
-func generateMinorReleaseChangelog(args []string) error {
-	if len(args) != 1 {
-		return InvalidInputError(fmt.Sprintf("%v", len(args)-1))
-	}
-	target := args[0]
-	var (
-		err error
-	)
-	switch target {
-	case glooDocGen:
-		err = generateGlooChangelog()
-	case glooEDocGen:
-		err = generateGlooEChangelog(true)
-	default:
-		return InvalidInputError(target)
-	}
-
-	return err
-}
-
-// Fetches Gloo Open Source releases and orders them by version
-func generateGlooChangelog() error {
-	client := github.NewClient(nil)
-	allReleases, err := GetAllReleases(client, glooOpenSourceRepo)
-	allReleases = SortReleases(allReleases)
-	if err != nil {
-		return err
-	}
-
-	minorReleaseMap, err := ParseReleases(allReleases, true)
-	if err != nil {
-		return err
-	}
-	printVersionOrderReleases(minorReleaseMap, nil)
 	return nil
 }
 
 // Fetches Gloo Enterprise releases, merges in open source release notes, and orders them by version
-func generateGlooEChangelog(sortedByVersion bool) error {
+func generateGlooEChangelog() error {
 	// Initialize Auth
 	ctx := context.Background()
-	if os.Getenv("GITHUB_TOKEN") == "" {
+	ghToken := os.Getenv("GITHUB_TOKEN")
+	if ghToken == "" {
 		return MissingGithubTokenError(skipChangelogGeneration)
 	}
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
+		&oauth2.Token{AccessToken: ghToken},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
-
-	// Get all Gloo OSS release changelogs
-	enterpriseReleases, err := GetAllReleases(client, glooEnterpriseRepo)
+	opts := changelogdocutils.Options{
+		NumVersions:   200,
+		MainRepo:      "solo-projects",
+		DependentRepo: "gloo",
+		RepoOwner:     "solo-io",
+	}
+	depFn, err := changelogdocutils.GetOSDependencyFunc("solo-io", "solo-projects", "gloo", ghToken)
 	if err != nil {
 		return err
 	}
-	openSourceReleases, err := GetAllReleases(client, glooOpenSourceRepo)
+	generator := changelogdocutils.NewMergedReleaseGeneratorWithDepFn(opts, client, depFn)
+	out, err := generator.GenerateJSON(context.Background())
 	if err != nil {
 		return err
 	}
-	openSourceReleasesSorted := SortReleases(openSourceReleases)
-	minorReleaseMap, versionOrder, err := MergeEnterpriseOSSReleases(enterpriseReleases, openSourceReleasesSorted, sortedByVersion)
-	if err != nil {
-		return err
-	}
-	printVersionOrderReleases(minorReleaseMap, versionOrder)
-
+	fmt.Println(out)
 	return nil
-}
-
-// Outputs changelogs in markdown format
-func printVersionOrderReleases(minorReleaseMap map[Version]string, versionOrder []Version) {
-	// if no version order is given, sort the versions by minor release
-	versions := versionOrder
-	// if versions (versionOrder) is nil, we want to sort the minorReleaseMap versions
-	if versions == nil {
-		for minorVersion, _ := range minorReleaseMap {
-			versions = append(versions, minorVersion)
-		}
-		versions = SortReleaseVersions(versions)
-	}
-	for _, version := range versions {
-		body := minorReleaseMap[version]
-		if versionOrder == nil {
-			fmt.Printf("\n\n### v%d.%d\n\n", version.Major, version.Minor)
-		}
-		fmt.Printf("%v", body)
-	}
 }
 
 // Generates security scan log for releases
@@ -264,9 +189,9 @@ func generateSecurityScanMd(args []string) error {
 	)
 	switch target {
 	case glooDocGen:
-		err = generateSecurityScanGloo()
+		err = generateSecurityScanGloo(context.Background())
 	case glooEDocGen:
-		err = generateSecurityScanGlooE()
+		err = generateSecurityScanGlooE(context.Background())
 	default:
 		return InvalidInputError(target)
 	}
@@ -274,13 +199,13 @@ func generateSecurityScanMd(args []string) error {
 	return err
 }
 
-func generateSecurityScanGloo() error {
+func generateSecurityScanGloo(ctx context.Context) error {
 	client := github.NewClient(nil)
-	allReleases, err := GetAllReleases(client, glooOpenSourceRepo)
+	allReleases, err := githubutils.GetAllRepoReleases(ctx, client, "solo-io", glooOpenSourceRepo)
 	if err != nil {
 		return err
 	}
-	allReleases = SortReleases(allReleases)
+	githubutils.SortReleasesBySemver(allReleases)
 	if err != nil {
 		return err
 	}
@@ -298,9 +223,8 @@ func generateSecurityScanGloo() error {
 	return BuildSecurityScanReportGloo(tagNames)
 }
 
-func generateSecurityScanGlooE() error {
+func generateSecurityScanGlooE(ctx context.Context) error {
 	// Initialize Auth
-	ctx := context.Background()
 	if os.Getenv("GITHUB_TOKEN") == "" {
 		return MissingGithubTokenError(skipSecurityScan)
 	}
@@ -309,11 +233,11 @@ func generateSecurityScanGlooE() error {
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
-	allReleases, err := GetAllReleases(client, glooEnterpriseRepo)
+	allReleases, err := githubutils.GetAllRepoReleases(ctx, client, "solo-io", glooEnterpriseRepo)
 	if err != nil {
 		return err
 	}
-	allReleases = SortReleases(allReleases)
+	githubutils.SortReleasesBySemver(allReleases)
 	if err != nil {
 		return err
 	}

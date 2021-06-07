@@ -1309,9 +1309,9 @@ spec:
                   description: Additional socket options that may not be present in
                     Envoy source code or precompiled binaries.
                   items:
-                    description: Generic socket option message. This would be used
+                    description: 'Generic socket option message. This would be used
                       to set socket options that might not exist in upstream kernels
-                      or precompiled Envoy binaries.
+                      or precompiled Envoy binaries. [#next-free-field: 7]'
                     properties:
                       bufValue:
                         description: Otherwise it's a byte buffer.

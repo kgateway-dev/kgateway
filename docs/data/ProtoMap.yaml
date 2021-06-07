@@ -947,14 +947,29 @@ apis:
   solo.io.envoy.api.v2.cluster.OutlierDetection:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/cluster/outlier_detection.proto.sk/#OutlierDetection
     package: solo.io.envoy.api.v2.cluster
+  solo.io.envoy.api.v2.core.Address:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/address.proto.sk/#Address
+    package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.AsyncDataSource:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#AsyncDataSource
+    package: solo.io.envoy.api.v2.core
+  solo.io.envoy.api.v2.core.BindConfig:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/address.proto.sk/#BindConfig
+    package: solo.io.envoy.api.v2.core
+  solo.io.envoy.api.v2.core.BuildVersion:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#BuildVersion
+    package: solo.io.envoy.api.v2.core
+  solo.io.envoy.api.v2.core.CidrRange:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/address.proto.sk/#CidrRange
     package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.ControlPlane:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#ControlPlane
     package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.DataSource:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#DataSource
+    package: solo.io.envoy.api.v2.core
+  solo.io.envoy.api.v2.core.Extension:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#Extension
     package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.HeaderMap:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#HeaderMap
@@ -980,6 +995,9 @@ apis:
   solo.io.envoy.api.v2.core.Node:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#Node
     package: solo.io.envoy.api.v2.core
+  solo.io.envoy.api.v2.core.Pipe:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/address.proto.sk/#Pipe
+    package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.RemoteDataSource:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#RemoteDataSource
     package: solo.io.envoy.api.v2.core
@@ -992,8 +1010,14 @@ apis:
   solo.io.envoy.api.v2.core.RuntimeUInt32:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#RuntimeUInt32
     package: solo.io.envoy.api.v2.core
+  solo.io.envoy.api.v2.core.SocketAddress:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/address.proto.sk/#SocketAddress
+    package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.SocketOption:
-    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#SocketOption
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/socket_option.proto.sk/#SocketOption
+    package: solo.io.envoy.api.v2.core
+  solo.io.envoy.api.v2.core.TcpKeepalive:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/address.proto.sk/#TcpKeepalive
     package: solo.io.envoy.api.v2.core
   solo.io.envoy.api.v2.core.TransportSocket:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#TransportSocket
@@ -1270,6 +1294,9 @@ apis:
     package: solo.io.envoy.type
   solo.io.envoy.type.Percent:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/percent.proto.sk/#Percent
+    package: solo.io.envoy.type
+  solo.io.envoy.type.SemanticVersion:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/envoy/type/semantic_version.proto.sk/#SemanticVersion
     package: solo.io.envoy.type
   solo.io.envoy.type.matcher.v3.ListStringMatcher:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto.sk/#ListStringMatcher

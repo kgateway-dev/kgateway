@@ -52,31 +52,31 @@ func NewEnvoyServerV3(genericServer server.Server) EnvoyServerV3 {
 func (s *envoyServerV3) StreamAggregatedResources(
 	stream envoy_service_discovery_v3.AggregatedDiscoveryService_StreamAggregatedResourcesServer,
 ) error {
-	return s.Server.StreamV3(stream, resource.AnyType)
+	return s.Server.StreamEnvoyV3(stream, resource.AnyType)
 }
 
 func (s *envoyServerV3) StreamEndpoints(
 	stream envoy_service_endpoint_v3.EndpointDiscoveryService_StreamEndpointsServer,
 ) error {
-	return s.Server.StreamV3(stream, resource.EndpointTypeV3)
+	return s.Server.StreamEnvoyV3(stream, resource.EndpointTypeV3)
 }
 
 func (s *envoyServerV3) StreamClusters(
 	stream envoy_service_cluster_v3.ClusterDiscoveryService_StreamClustersServer,
 ) error {
-	return s.Server.StreamV3(stream, resource.ClusterTypeV3)
+	return s.Server.StreamEnvoyV3(stream, resource.ClusterTypeV3)
 }
 
 func (s *envoyServerV3) StreamRoutes(
 	stream envoy_service_route_v3.RouteDiscoveryService_StreamRoutesServer,
 ) error {
-	return s.Server.StreamV3(stream, resource.RouteTypeV3)
+	return s.Server.StreamEnvoyV3(stream, resource.RouteTypeV3)
 }
 
 func (s *envoyServerV3) StreamListeners(
 	stream envoy_service_listener_v3.ListenerDiscoveryService_StreamListenersServer,
 ) error {
-	return s.Server.StreamV3(stream, resource.ListenerTypeV3)
+	return s.Server.StreamEnvoyV3(stream, resource.ListenerTypeV3)
 }
 
 func (s *envoyServerV3) FetchEndpoints(
@@ -87,7 +87,7 @@ func (s *envoyServerV3) FetchEndpoints(
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
 	req.TypeUrl = resource.EndpointTypeV3
-	return s.Server.FetchV3(ctx, req)
+	return s.Server.FetchEnvoyV3(ctx, req)
 }
 
 func (s *envoyServerV3) FetchClusters(
@@ -98,7 +98,7 @@ func (s *envoyServerV3) FetchClusters(
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
 	req.TypeUrl = resource.ClusterTypeV3
-	return s.Server.FetchV3(ctx, req)
+	return s.Server.FetchEnvoyV3(ctx, req)
 }
 
 func (s *envoyServerV3) FetchRoutes(
@@ -109,7 +109,7 @@ func (s *envoyServerV3) FetchRoutes(
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
 	req.TypeUrl = resource.RouteTypeV3
-	return s.Server.FetchV3(ctx, req)
+	return s.Server.FetchEnvoyV3(ctx, req)
 }
 
 func (s *envoyServerV3) FetchListeners(
@@ -120,7 +120,7 @@ func (s *envoyServerV3) FetchListeners(
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
 	req.TypeUrl = resource.ListenerTypeV3
-	return s.Server.FetchV3(ctx, req)
+	return s.Server.FetchEnvoyV3(ctx, req)
 }
 
 func (s *envoyServerV3) DeltaEndpoints(envoy_service_endpoint_v3.EndpointDiscoveryService_DeltaEndpointsServer) error {

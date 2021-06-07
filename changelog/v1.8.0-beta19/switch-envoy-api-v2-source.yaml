@@ -1,0 +1,13 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4369
+    resolvesIssue: false
+    description: > 
+      Replace Envoy v2 server and API with Solo maintained ADS server and v2 api copy. This
+      reduces the risk of problems when the Envoy v2 API is removed from go-control-plane (since 
+      it is deprecated)
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.20.1
+    description: Pull in Solo-kit changes that removes Envoy v2 API code

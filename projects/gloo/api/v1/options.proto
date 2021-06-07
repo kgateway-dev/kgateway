@@ -45,6 +45,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto";
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto";
+import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/socket_option.proto";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";

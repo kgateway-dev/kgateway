@@ -12,6 +12,8 @@ weight: 5
 
 
 - [Locality](#locality)
+- [BuildVersion](#buildversion)
+- [Extension](#extension)
 - [Node](#node)
 - [Metadata](#metadata)
 - [RuntimeUInt32](#runtimeuint32)
@@ -23,8 +25,6 @@ weight: 5
 - [RemoteDataSource](#remotedatasource)
 - [AsyncDataSource](#asyncdatasource)
 - [TransportSocket](#transportsocket)
-- [SocketOption](#socketoption)
-- [SocketState](#socketstate)
 - [RuntimeFractionalPercent](#runtimefractionalpercent)
 - [ControlPlane](#controlplane)
   
@@ -69,12 +69,61 @@ Identifies location of where either Envoy runs or where upstream hosts run.
 
 
 ---
+### BuildVersion
+
+ 
+BuildVersion combines SemVer version of extension with free-form build information
+(i.e. 'alpha', 'private-build') as a set of strings.
+
+```yaml
+"version": .solo.io.envoy.type.SemanticVersion
+"metadata": .google.protobuf.Struct
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `version` | [.solo.io.envoy.type.SemanticVersion](../../../../type/semantic_version.proto.sk/#semanticversion) | SemVer version of extension. |
+| `metadata` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Free-form build information. Envoy defines several well known keys in the source/common/version/version.h file. |
+
+
+
+
+---
+### Extension
+
+ 
+Version and identification for an Envoy extension.
+[#next-free-field: 6]
+
+```yaml
+"name": string
+"category": string
+"typeDescriptor": string
+"version": .solo.io.envoy.api.v2.core.BuildVersion
+"disabled": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | This is the name of the Envoy filter as specified in the Envoy configuration, e.g. envoy.filters.http.router, com.acme.widget. |
+| `category` | `string` | Category of the extension. Extension category names use reverse DNS notation. For instance "envoy.filters.listener" for Envoy's built-in listener filters or "com.acme.filters.http" for HTTP filters from acme.com vendor. [#comment:TODO(yanavlasov): Link to the doc with existing envoy category names.]. |
+| `typeDescriptor` | `string` | [#not-implemented-hide:] Type descriptor of extension configuration proto. [#comment:TODO(yanavlasov): Link to the doc with existing configuration protos.] [#comment:TODO(yanavlasov): Add tests when PR #9391 lands.]. |
+| `version` | [.solo.io.envoy.api.v2.core.BuildVersion](../base.proto.sk/#buildversion) | The version is a property of the extension and maintained independently of other extensions and the Envoy API. This field is not set when extension did not provide version information. |
+| `disabled` | `bool` | Indicates that the extension is present but was disabled via dynamic configuration. |
+
+
+
+
+---
 ### Node
 
  
 Identifies a specific Envoy instance. The node identifier is presented to the
 management server, which may use this identifier to distinguish per Envoy
 configuration for serving.
+[#next-free-field: 12]
 
 ```yaml
 "id": string
@@ -82,16 +131,28 @@ configuration for serving.
 "metadata": .google.protobuf.Struct
 "locality": .solo.io.envoy.api.v2.core.Locality
 "buildVersion": string
+"userAgentName": string
+"userAgentVersion": string
+"userAgentBuildVersion": .solo.io.envoy.api.v2.core.BuildVersion
+"extensions": []solo.io.envoy.api.v2.core.Extension
+"clientFeatures": []string
+"listeningAddresses": []solo.io.envoy.api.v2.core.Address
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `id` | `string` | An opaque node identifier for the Envoy node. This also provides the local service node name. It should be set if any of the following features are used: `statsd (arch_overview_statistics)`, `CDS (config_cluster_manager_cds)`, and `HTTP tracing (arch_overview_tracing)`, either in this message or via :option:`--service-node`. |
-| `cluster` | `string` | Defines the local service cluster name where Envoy is running. Though optional, it should be set if any of the following features are used: `statsd (arch_overview_statistics)`, `health check cluster verification (envoy_api_field_core.HealthCheck.HttpHealthCheck.service_name)`, `runtime override directory (envoy_api_msg_config.bootstrap.v2.Runtime)`, `user agent addition (envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.add_user_agent)`, `HTTP global rate limiting (config_http_filters_rate_limit)`, `CDS (config_cluster_manager_cds)`, and `HTTP tracing (arch_overview_tracing)`, either in this message or via :option:`--service-cluster`. |
+| `id` | `string` | An opaque node identifier for the Envoy node. This also provides the local service node name. It should be set if any of the following features are used: :ref:`statsd <arch_overview_statistics>`, :ref:`CDS <config_cluster_manager_cds>`, and :ref:`HTTP tracing <arch_overview_tracing>`, either in this message or via :option:`--service-node`. |
+| `cluster` | `string` | Defines the local service cluster name where Envoy is running. Though optional, it should be set if any of the following features are used: :ref:`statsd <arch_overview_statistics>`, :ref:`health check cluster verification <envoy_api_field_core.HealthCheck.HttpHealthCheck.service_name_matcher>`, :ref:`runtime override directory <envoy_api_msg_config.bootstrap.v2.Runtime>`, :ref:`user agent addition <envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.add_user_agent>`, :ref:`HTTP global rate limiting <config_http_filters_rate_limit>`, :ref:`CDS <config_cluster_manager_cds>`, and :ref:`HTTP tracing <arch_overview_tracing>`, either in this message or via :option:`--service-cluster`. |
 | `metadata` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Opaque metadata extending the node identifier. Envoy will pass this directly to the management server. |
 | `locality` | [.solo.io.envoy.api.v2.core.Locality](../base.proto.sk/#locality) | Locality specifying where the Envoy instance is running. |
-| `buildVersion` | `string` | This is motivated by informing a management server during canary which version of Envoy is being tested in a heterogeneous fleet. This will be set by Envoy in management server RPCs. |
+| `buildVersion` | `string` | This is motivated by informing a management server during canary which version of Envoy is being tested in a heterogeneous fleet. This will be set by Envoy in management server RPCs. This field is deprecated in favor of the user_agent_name and user_agent_version values. |
+| `userAgentName` | `string` | Free-form string that identifies the entity requesting config. E.g. "envoy" or "grpc". |
+| `userAgentVersion` | `string` | Free-form string that identifies the version of the entity requesting config. E.g. "1.12.2" or "abcd1234", or "SpecialEnvoyBuild". Only one of `userAgentVersion` or `userAgentBuildVersion` can be set. |
+| `userAgentBuildVersion` | [.solo.io.envoy.api.v2.core.BuildVersion](../base.proto.sk/#buildversion) | Structured version of the entity requesting config. Only one of `userAgentBuildVersion` or `userAgentVersion` can be set. |
+| `extensions` | [[]solo.io.envoy.api.v2.core.Extension](../base.proto.sk/#extension) | List of extensions and their versions supported by the node. |
+| `clientFeatures` | `[]string` | Client feature support list. These are well known features described in the Envoy API repository for a given major version of an API. Client features use reverse DNS naming scheme, for example `com.acme.feature`. See :ref:`the list of features <client_features>` that xDS client may support. |
+| `listeningAddresses` | [[]solo.io.envoy.api.v2.core.Address](../address.proto.sk/#address) | Known listening ports on the node as a generic hint to the management server for filtering :ref:`listeners <config_listeners>` to be returned. For example, if there is a listener bound to port 80, the list can optionally contain the SocketAddress `(0.0.0.0,80)`. The field is optional and just a hint. |
 
 
 
@@ -317,49 +378,6 @@ chosen based on the platform and existence of tls_context.
 | `name` | `string` | The name of the transport socket to instantiate. The name must match a supported transport socket implementation. |
 | `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) |  Only one of `config` or `typedConfig` can be set. |
 | `typedConfig` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) |  Only one of `typedConfig` or `config` can be set. |
-
-
-
-
----
-### SocketOption
-
- 
-Generic socket option message. This would be used to set socket options that
-might not exist in upstream kernels or precompiled Envoy binaries.
-
-```yaml
-"description": string
-"level": int
-"name": int
-"intValue": int
-"bufValue": bytes
-"state": .solo.io.envoy.api.v2.core.SocketOption.SocketState
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `description` | `string` | An optional name to give this socket option for debugging, etc. Uniqueness is not required and no special meaning is assumed. |
-| `level` | `int` | Corresponding to the level value passed to setsockopt, such as IPPROTO_TCP. |
-| `name` | `int` | The numeric name as passed to setsockopt. |
-| `intValue` | `int` | Because many sockopts take an int value. Only one of `intValue` or `bufValue` can be set. |
-| `bufValue` | `bytes` | Otherwise it's a byte buffer. Only one of `bufValue` or `intValue` can be set. |
-| `state` | [.solo.io.envoy.api.v2.core.SocketOption.SocketState](../base.proto.sk/#socketstate) | The state in which the option will be applied. When used in BindConfig STATE_PREBIND is currently the only valid value. |
-
-
-
-
----
-### SocketState
-
-
-
-| Name | Description |
-| ----- | ----------- | 
-| `STATE_PREBIND` | Socket options are applied after socket creation but before binding the socket to a port |
-| `STATE_BOUND` | Socket options are applied after binding the socket to a port but before calling listen() |
-| `STATE_LISTENING` | Socket options are applied after calling listen() |
 
 
 
