@@ -12,6 +12,7 @@ import "validate/validate.proto";
 option java_package = "io.envoyproxy.envoy.config.health_checker.advanced_http.v2";
 option java_outer_classname = "AdvancedHttp";
 option java_multiple_files = true;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/advanced_http";
 
 // Same as envoy's default HTTP health checker, but with some additions:
 // - allows a custom path and method on the health check request per endpoint.
