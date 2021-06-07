@@ -47,6 +47,11 @@ func NewTestHttpUpstreamWithReply(ctx context.Context, addr, reply string) *Test
 	return newTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
+func NewTestHttpUpstreamWithReplyAndHealthReply(ctx context.Context, addr, reply, healthReply string) *TestUpstream {
+	backendPort, responses := runTestServerWithHealthReply(ctx, reply, healthReply, false)
+	return newTestUpstream(addr, []uint32{backendPort}, responses)
+}
+
 func NewTestHttpsUpstreamWithReply(ctx context.Context, addr, reply string) *TestUpstream {
 	backendPort, responses := runTestServer(ctx, reply, true)
 	return newTestUpstream(addr, []uint32{backendPort}, responses)
@@ -124,6 +129,10 @@ func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequ
 }
 
 func runTestServer(ctx context.Context, reply string, serveTls bool) (uint32, <-chan *ReceivedRequest) {
+	return runTestServerWithHealthReply(ctx, reply, "OK", serveTls)
+}
+
+func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string, serveTls bool) (uint32, <-chan *ReceivedRequest) {
 	bodyChan := make(chan *ReceivedRequest, 100)
 	handlerFunc := func(rw http.ResponseWriter, r *http.Request) {
 		var rr ReceivedRequest
@@ -164,7 +173,7 @@ func runTestServer(ctx context.Context, reply string, serveTls bool) (uint32, <-
 	mux := http.NewServeMux()
 	mux.Handle("/", http.HandlerFunc(handlerFunc))
 	mux.Handle("/health", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		rw.Write([]byte("OK"))
+		rw.Write([]byte(healthReply))
 	}))
 
 	go func() {
