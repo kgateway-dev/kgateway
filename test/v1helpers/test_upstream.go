@@ -272,7 +272,7 @@ func ExpectHttpStatusWithOffset(offset int, body []byte, rootca *string, envoyPo
 			return err
 		}
 		if res.StatusCode != status {
-			return fmt.Errorf("%v is not %v", res.StatusCode, status)
+			return fmt.Errorf("received status code (%v) is not expected status code (%v)", res.StatusCode, status)
 		}
 
 		return nil

@@ -22,7 +22,7 @@ const (
 	// TODO: make solo-projects use this constant
 	TransportSocketMatchKey = "envoy.transport_socket_match"
 
-	HttpPathCheckerName = "io.solo.health_checkers.advanced_http" //TODO(kdorosh): add test to ensure we are covered on upgrades
+	HttpPathCheckerName = "io.solo.health_checkers.advanced_http"
 	PathFieldName       = "path"
 	MethodFieldName     = "method"
 )
