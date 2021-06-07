@@ -19,6 +19,8 @@ glooctl istio inject [flags]
 ```
   -h, --help                     help for inject
       --istio-namespace string   namespace in which istio is installed (default "istio-system")
+      --istio-meta-mesh-id       sets ISTIO_META_MESH_ID env var
+      --istio-meta-cluster-id    sets ISTIO_META_CLUSTER_ID env var
 ```
 
 ### Options inherited from parent commands
