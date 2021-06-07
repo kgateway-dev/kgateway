@@ -48,7 +48,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	for _, hc := range in.GetHealthChecks() {
-		if len(hc.GetHttpHealthCheck().GetResponseAssertions().GetResponseMatchers()) != 0 {
+		if hc.GetHttpHealthCheck().GetResponseAssertions() != nil {
 			return eris.New(ErrEnterpriseOnly)
 		}
 	}

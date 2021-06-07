@@ -316,7 +316,7 @@ var _ = Describe("Plugin", func() {
 			match = utils.MustAnyToMessage(out.TransportSocketMatches[1].TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
 			Expect(match.Sni).To(Equal("1.2.3.5"))
 
-			// make sure sni match the transport sockers
+			// make sure sni match the transport sockets
 			ExpectSniMatchesToMatch()
 		})
 
