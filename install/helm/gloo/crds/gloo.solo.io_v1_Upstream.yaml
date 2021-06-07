@@ -888,15 +888,11 @@ spec:
                           health check rules take precedence over the http `expected_statuses`.'
                         properties:
                           noMatchHealth:
-                            description: 'The default health response if none of the
+                            description: The default health response if none of the
                               response health checks were matches. If omitted, defaults
-                              to healthy. Note for devs: we''d probably prefer this
-                              default to unhealthy, but since the version of protoc
-                              we''re on doesn''t support optional scalars without
-                              an experimental flag, we cannot have the `no_match_health`
-                              field default to unhealthy while the `match_health`
-                              field defaults to healthy.'
+                              to unhealthy.
                             enum:
+                            - default
                             - healthy
                             - degraded
                             - unhealthy
@@ -911,6 +907,7 @@ spec:
                                   description: The health response if this response_match
                                     is a match. If omitted, defaults to healthy
                                   enum:
+                                  - default
                                   - healthy
                                   - degraded
                                   - unhealthy

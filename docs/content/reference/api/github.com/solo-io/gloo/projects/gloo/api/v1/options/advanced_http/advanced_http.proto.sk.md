@@ -47,7 +47,7 @@ weight: 5
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `responseMatchers` | [[]advancedhttp.options.gloo.solo.io.ResponseMatcher](../advanced_http.proto.sk/#responsematcher) | A bunch of match rules, the first match wins out and short-circuits. |
-| `noMatchHealth` | [.advancedhttp.options.gloo.solo.io.HealthCheckResult](../advanced_http.proto.sk/#healthcheckresult) | The default health response if none of the response health checks were matches. If omitted, defaults to healthy. Note for devs: we'd probably prefer this default to unhealthy, but since the version of protoc we're on doesn't support optional scalars without an experimental flag, we cannot have the `no_match_health` field default to unhealthy while the `match_health` field defaults to healthy. As such, we offload this defaulting behavior to the control plane. For more reading, see https://github.com/protocolbuffers/protobuf/issues/1606#issuecomment-618687169. |
+| `noMatchHealth` | [.advancedhttp.options.gloo.solo.io.HealthCheckResult](../advanced_http.proto.sk/#healthcheckresult) | The default health response if none of the response health checks were matches. If omitted, defaults to unhealthy. |
 
 
 
@@ -139,6 +139,7 @@ Description:
 
 | Name | Description |
 | ----- | ----------- | 
+| default |  |
 | healthy |  |
 | degraded |  |
 | unhealthy |  |

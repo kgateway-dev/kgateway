@@ -13,9 +13,10 @@ option java_multiple_files = true;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/advanced_http";
 
 enum HealthCheckResult {
-    healthy = 0;
-    degraded = 1;
-    unhealthy = 2;
+    default = 0; // context-specific, defaults to one of the following values
+    healthy = 1;
+    degraded = 2;
+    unhealthy = 3;
 }
 
 message ResponseAssertions {
@@ -24,14 +25,7 @@ message ResponseAssertions {
     repeated ResponseMatcher response_matchers = 1;
 
     // The default health response if none of the response health checks were matches.
-    // If omitted, defaults to healthy.
-    // Note for devs: we'd probably prefer this default to unhealthy, but since the
-    // version of protoc we're on doesn't support optional scalars without an
-    // experimental flag, we cannot have the `no_match_health` field default to
-    // unhealthy while the `match_health` field defaults to healthy.
-    //
-    // As such, we offload this defaulting behavior to the control plane.
-    // For more reading, see https://github.com/protocolbuffers/protobuf/issues/1606#issuecomment-618687169
+    // If omitted, defaults to unhealthy.
     HealthCheckResult no_match_health = 2;
 }
 
