@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Docgen was not working for community users, because it was attempting to checkout a commit
+      that existed in a forked repository. This reverts the old behavior for community users,
+      of using master as the latest commit, instead of the head SHA of the pull request.

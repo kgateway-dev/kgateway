@@ -104,6 +104,7 @@ function generateHugoVersionsYaml() {
 
 function generateSiteForVersion() {
   version=$1
+  latestMasterTag=$2
   echo "Generating site for version $version"
   cd $repoDir
   # Replace version with "latest" if it's the latest version. This enables URLs with "/latest/..."
@@ -111,7 +112,7 @@ function generateSiteForVersion() {
   then
     version="latest"
   fi
-  git checkout $tagToBuild
+  git checkout "$latestMasterTag"
 
   cd docs
   # Generate data/Solo.yaml file with version info populated.
@@ -146,11 +147,12 @@ function generateSiteForVersion() {
 # Copies the /docs/content directory from the specified version ($1) and stores it in a temp location
 function getContentForVersion() {
   version=$1
+  latestMasterTag=$2
   echo "Getting site content for version $version"
   cd $repoDir
   if [[ "$version" == "master" ]]
   then
-    git checkout $tagToBuild
+    git checkout "$latestMasterTag"
   else
     git checkout tags/v"$version"
   fi
@@ -163,37 +165,40 @@ function getContentForVersion() {
   cp -a $repoDir/docs/content/. $tempContentDir/$version/
 }
 
-# Only on pull requests to master, we want to checkout the pull request head SHA
-# rather than master
-tagToBuild="master"
-if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]
+# We build docs for all active and old version of Gloo, on pull requests (and merges) to master.
+# On pull requests to master by Solo developers, we want to run doc generation
+# against the commit that will become the latest master commit.
+# This will allow us to verify if the change we are introducing is valid.
+# Therefore, we use the head SHA on pull requests by Solo developers
+latestMasterTag="master"
+if [[ "$USE_PR_SHA_AS_MASTER" == "true" ]]
 then
-  tagToBuild=$PULL_REQUEST_SHA
+  latestMasterTag=$PULL_REQUEST_SHA
   echo using $PULL_REQUEST_SHA, as this will be the next commit to master
 fi
 
 # Obtain /docs/content dir from all versions
 for version in "${versions[@]}"
 do
-  getContentForVersion $version
+  getContentForVersion $version $latestMasterTag
 done
 
 
 # Obtain /docs/content dir from all previous versions
 for version in "${oldVersions[@]}"
 do
-  getContentForVersion $version
+  getContentForVersion $version $latestMasterTag
 done
 
 
 # Generate docs for all versions
 for version in "${versions[@]}"
 do
-  generateSiteForVersion $version
+  generateSiteForVersion $version $latestMasterTag
 done
 
 # Generate docs for all previous versions
 for version in "${oldVersions[@]}"
 do
-  generateSiteForVersion $version
+  generateSiteForVersion $version $latestMasterTag
 done
