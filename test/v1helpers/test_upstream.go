@@ -13,8 +13,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/golang/protobuf/proto"
@@ -144,9 +142,6 @@ func runTestServer(ctx context.Context, reply string, serveTls bool) (uint32, <-
 		rr.Host = r.Host
 		rr.URL = r.URL
 
-		contextutils.LoggerFrom(ctx).Errorf("SENDING RESULT TO BODY CHAN")
-		fmt.Println("SENDING RESULT TO BODY CHAN")
-
 		bodyChan <- &rr
 	}
 
@@ -166,17 +161,11 @@ func runTestServer(ctx context.Context, reply string, serveTls bool) (uint32, <-
 		panic(err)
 	}
 
-	l := contextutils.LoggerFrom(ctx)
-
 	mux := http.NewServeMux()
 	mux.Handle("/", http.HandlerFunc(handlerFunc))
 	mux.Handle("/health", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		l.Errorf("WE ARE OK")
-		fmt.Println("WE ARE OK")
 		rw.Write([]byte("OK"))
 	}))
-
-	l.Errorf("BEGIN LISTEN 2")
 
 	go func() {
 		defer GinkgoRecover()
@@ -215,30 +204,6 @@ func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 }
 
 func TestUpstreamReachableWithOffset(offset int, envoyPort uint32, tu *TestUpstream, rootca *string) {
-	body := []byte("solo.io test")
-
-	ExpectHttpOK(body, rootca, envoyPort, "")
-
-	timeout := time.After(15 * time.Second)
-	var receivedRequest *ReceivedRequest
-	for {
-		select {
-		case <-timeout:
-			if receivedRequest != nil {
-				fmt.Fprintf(GinkgoWriter, "last received request: %v", *receivedRequest)
-			}
-			Fail("timeout testing upstream reachability")
-		case receivedRequest = <-tu.C:
-			if receivedRequest.Method == "POST" &&
-				bytes.Equal(receivedRequest.Body, body) {
-				return
-			}
-		}
-	}
-
-}
-
-func TestUpstreamReachableWithStatusAndOffset(offset int, envoyPort uint32, tu *TestUpstream, rootca *string) {
 	body := []byte("solo.io test")
 
 	ExpectHttpOK(body, rootca, envoyPort, "")
