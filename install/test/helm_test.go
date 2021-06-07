@@ -1701,7 +1701,7 @@ spec:
 						}
 						container := GetQuayContainerSpec("gloo-envoy-wrapper", version, GetPodNamespaceEnvVar(), podname)
 						container.Name = "gateway-proxy"
-						container.Args = []string{"--disable-hot-restart"}
+						container.Args = []string{"--disable-hot-restart", "--bootstrap-version", "3"}
 
 						rb := ResourceBuilder{
 							Namespace:  namespace,
