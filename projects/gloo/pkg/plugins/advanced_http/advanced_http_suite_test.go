@@ -1,4 +1,4 @@
-package http_path_test
+package advanced_http_test
 
 import (
 	"testing"
@@ -11,5 +11,5 @@ import (
 func TestHttpPath(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "HttpPath Suite", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "AdvancedHttp Suite", []Reporter{junitReporter})
 }

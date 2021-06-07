@@ -1,4 +1,4 @@
-package http_path_test
+package advanced_http_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -6,23 +6,23 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/http_path"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/advanced_http"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("http_path plugin", func() {
+var _ = Describe("advanced_http plugin", func() {
 	var (
 		upstream     *v1.Upstream
 		upstreamSpec *v1static.UpstreamSpec
 	)
 
-	It("should not process upstream if http_path config is nil", func() {
+	It("should not process upstream if advanced_http config is nil", func() {
 		p := NewPlugin()
 		err := p.ProcessUpstream(plugins.Params{}, &v1.Upstream{}, nil)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("will err if http_path is configured on process upstream", func() {
+	It("will err on ProcessUpstream() if advanced_http is configured", func() {
 		p := NewPlugin()
 		upstreamSpec = &v1static.UpstreamSpec{
 			Hosts: []*v1static.Host{{
