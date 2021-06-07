@@ -345,4 +345,3 @@ func addIstioMetaMeshIdFlag(set *pflag.FlagSet, strptr *string) {
 func addIstioMetaClusterIdFlag(set *pflag.FlagSet, strptr *string) {
 	set.StringVar(strptr, "istio-meta-cluster-id", "", "sets ISTIO_META_CLUSTER_ID env var")
 }
-
