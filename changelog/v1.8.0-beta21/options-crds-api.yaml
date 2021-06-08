@@ -1,0 +1,9 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/2484
+    resolvesIssue: false
+    description: >
+      Introduced new `VirtualHostOption` and `RouteOption` CRDs, which allow users to externalize
+      `options` configuration from VirtualHosts and Routes. Routes and VirtualHosts can now delegate
+      options configuration to multiple of these custom resources, allowing config reuasability and
+      less noisy Virtualhosts and Routes.
