@@ -3,7 +3,6 @@ syntax = "proto3";
 package envoy.config.health_checker.advanced_http.v2;
 
 import "udpa/annotations/status.proto";
-// import "envoy/config/core/v3/health_check.proto"; TODO(kdorosh) remove from envoy-gloo-ee proto
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/health_check.proto";
 
 import "google/protobuf/empty.proto";
