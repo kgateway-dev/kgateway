@@ -28,7 +28,7 @@ func GetServiceAccountPermissions(namespace string) *manifesttestutils.ServiceAc
 		"gloo-system.gateway",
 		namespace,
 		[]string{"gateway.solo.io"},
-		[]string{"virtualservices", "routetables"},
+		[]string{"virtualservices", "routetables", "virtualhostoptions", "routeoptions"},
 		[]string{"get", "list", "watch", "update"})
 
 	// Gloo

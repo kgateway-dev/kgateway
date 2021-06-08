@@ -18,6 +18,16 @@
         "name": "Gateway",
         "package": "gateway.solo.io",
         "version": "v1"
+      },
+      {
+        "name": "VirtualHostOption",
+        "package": "gateway.solo.io",
+        "version": "v1"
+      },
+      {
+        "name": "RouteOption",
+        "package": "gateway.solo.io",
+        "version": "v1"
       }
     ]
   },
