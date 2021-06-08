@@ -4,31 +4,36 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: virtualhostoption.gateway.solo.io
+  name: routeoption.gateway.solo.io
 spec:
-  group: gloo.solo.io
+  group: gateway.solo.io
   names:
-    kind: VirtualHostOption
-    listKind: VirtualHostOptionList
-    plural: virtualhostoptions
+    kind: RouteOption
+    listKind: RouteOptionList
+    plural: routeoptions
     shortNames:
-    - vso
-    - vsopt
+    - rto
+    - rtopt
   preserveUnknownFields: false
   scope: Namespaced
   validation:
     openAPIV3Schema:
       properties:
         spec:
+          description: RouteOption CRD, used to externalize Route options configuration,
+            and can be reused across multiple Routes
           properties:
-            displayName:
-              description: Display only, optional descriptive name. Unlike metadata.name,
-                DisplayName can be any string and can be changed after creating the
-                resource.
-              type: string
             options:
-              description: Virtual host options
+              description: Route options. See Route for delegation behavior.
               properties:
+                autoHostRewrite:
+                  description: Enable/Disable auto host re-write. Indicates that the
+                    host header will be swapped with the hostname of the upstream
+                    host. This setting is only honored for upstreams that use DNS
+                    resolution (i.e., their generated Envoy cluster is of type STRICT_DNS
+                    or LOGICAL_DNS -- think aws, azure, or static upstreams with hostnames)
+                  nullable: true
+                  type: boolean
                 bufferPerRoute:
                   description: 'BufferPerRoute can be used to set the maximum request
                     size that the filter will buffer before the connection manager
@@ -57,9 +62,9 @@ spec:
                       type: boolean
                   type: object
                 cors:
-                  description: Defines a CORS policy for the virtual host If a CORS
-                    policy is also defined on the route matched by the request, the
-                    policies are merged.
+                  description: Defines a CORS policy for the route If a CORS policy
+                    is also defined on the route's virtual host, the policies are
+                    merged.
                   properties:
                     allowCredentials:
                       description: Specifies whether the resource allows credentials.
@@ -294,6 +299,15 @@ spec:
                       - ALL
                       type: string
                   type: object
+                envoyMetadata:
+                  additionalProperties:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  description: This field can be used to provide additional information
+                    about the route. This metadata can be consumed by the Envoy filters
+                    that process requests that match the route. For more info about
+                    metadata, see [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/data_sharing_between_filters#metadata).
+                  type: object
                 extauth:
                   description: 'Enterprise-only: Authentication configuration'
                   properties:
@@ -337,9 +351,36 @@ spec:
                         x-kubernetes-preserve-unknown-fields: true
                       type: object
                   type: object
+                faults:
+                  properties:
+                    abort:
+                      properties:
+                        httpStatus:
+                          description: This should be a standard HTTP status, i.e.
+                            503. Defaults to 0.
+                          format: int32
+                          type: integer
+                        percentage:
+                          description: Percentage of requests that should be aborted,
+                            defaulting to 0. This should be a value between 0.0 and
+                            100.0, with up to 6 significant digits.
+                          type: number
+                      type: object
+                    delay:
+                      properties:
+                        fixedDelay:
+                          description: Fixed delay, defaulting to 0.
+                          type: string
+                        percentage:
+                          description: Percentage of requests that should be delayed,
+                            defaulting to 0. This should be a value between 0.0 and
+                            100.0, with up to 6 significant digits.
+                          type: number
+                      type: object
+                  type: object
                 headerManipulation:
-                  description: Append/Remove headers on Requests or Responses on all
-                    routes contained in this Virtual Host
+                  description: Append/Remove headers on Requests or Responses on this
+                    Route
                   properties:
                     requestHeadersToAdd:
                       description: Specifies a list of HTTP headers that should be
@@ -419,24 +460,10 @@ spec:
                         type: string
                       type: array
                   type: object
-                includeAttemptCountInResponse:
-                  description: IncludeAttemptCountInResponse decides whether the x-envoy-attempt-count
-                    header should be included in the downstream response. Setting
-                    this option will cause the router to override any existing header
-                    value, so in the case of two Envoys on the request path with this
-                    option enabled, the downstream will see the attempt count as perceived
-                    by the Envoy closest upstream from itself. Defaults to false.
-                  nullable: true
-                  type: boolean
-                includeRequestAttemptCount:
-                  description: IncludeRequestAttemptCount decides whether the x-envoy-attempt-count
-                    header should be included in the upstream request. Setting this
-                    option will cause it to override any existing header value, so
-                    in the case of two Envoys on the request path with this option
-                    enabled, the upstream will see the attempt count as perceived
-                    by the second Envoy. Defaults to false.
-                  nullable: true
-                  type: boolean
+                hostRewrite:
+                  description: Indicates that during forwarding, the host header will
+                    be swapped with this value.
+                  type: string
                 jwt:
                   description: 'Enterprise-only: Config for reading and verifying
                     JWTs. Copy verifiable information from JWTs into other headers
@@ -445,118 +472,9 @@ spec:
                     The same configuration can be achieved through staged jwt using
                     AfterExtAuth.'
                   properties:
-                    allowMissingOrFailedJwt:
-                      description: Allow pass through of JWT requests for this virtual
-                        host, even if JWT token is missing or JWT auth failed. If
-                        this is false (default false), requests that fail JWT authentication
-                        will fail authorization immediately. For example, if a request
-                        requires either JWT auth OR another auth method, this can
-                        be enabled to allow a failed JWT auth request to pass through
-                        to the other auth method.
+                    disable:
+                      description: Disable JWT checks on this route.
                       type: boolean
-                    providers:
-                      additionalProperties:
-                        properties:
-                          audiences:
-                            description: An incoming JWT must have an 'aud' claim
-                              and it must be in this list.
-                            items:
-                              type: string
-                            type: array
-                          claimsToHeaders:
-                            description: What claims should be copied to upstream
-                              headers.
-                            items:
-                              description: Allows copying verified claims to headers
-                                sent upstream
-                              properties:
-                                append:
-                                  description: If the header exists, append to it
-                                    (true), or overwrite it (false).
-                                  type: boolean
-                                claim:
-                                  description: Claim name. for example, "sub"
-                                  type: string
-                                header:
-                                  description: The header the claim will be copied
-                                    to. for example, "x-sub".
-                                  type: string
-                              type: object
-                            type: array
-                          issuer:
-                            description: Issuer of the JWT. the 'iss' claim of the
-                              JWT must match this.
-                            type: string
-                          jwks:
-                            description: The source for the keys to validate JWTs.
-                            properties:
-                              local:
-                                description: Use an inline JWKS
-                                properties:
-                                  key:
-                                    description: Inline key. this can be json web
-                                      key, key-set or PEM format.
-                                    type: string
-                                type: object
-                              remote:
-                                description: Use a remote JWKS server
-                                properties:
-                                  cacheDuration:
-                                    description: Duration after which the cached JWKS
-                                      should be expired. If not specified, default
-                                      cache duration is 5 minutes.
-                                    type: string
-                                  upstreamRef:
-                                    description: The Upstream representing the Json
-                                      Web Key Set server
-                                    properties:
-                                      name:
-                                        type: string
-                                      namespace:
-                                        type: string
-                                    type: object
-                                  url:
-                                    description: The url used when accessing the upstream
-                                      for Json Web Key Set. This is used to set the
-                                      host and path in the request
-                                    type: string
-                                type: object
-                            type: object
-                          keepToken:
-                            description: Should the token forwarded upstream. if false,
-                              the header containing the token will be removed.
-                            type: boolean
-                          tokenSource:
-                            description: Where to find the JWT of the current provider.
-                            properties:
-                              headers:
-                                description: Try to retrieve token from these headers
-                                items:
-                                  description: Describes how to retrieve a JWT from
-                                    a header
-                                  properties:
-                                    header:
-                                      description: The name of the header. for example,
-                                        "authorization"
-                                      type: string
-                                    prefix:
-                                      description: Prefix before the token. for example,
-                                        "Bearer "
-                                      type: string
-                                  type: object
-                                type: array
-                              queryParams:
-                                description: Try to retrieve token from these query
-                                  params
-                                items:
-                                  type: string
-                                type: array
-                            type: object
-                        type: object
-                      description: Map of JWT provider name to Provider. If specified,
-                        multiple providers will be `OR`-ed together and will allow
-                        validation to any of the providers.
-                      type: object
                   type: object
                 jwtStaged:
                   description: 'Enterprise-only: Config for reading and verifying
@@ -572,260 +490,78 @@ spec:
                     oauth/oidc)'
                   properties:
                     afterExtAuth:
-                      description: JWT Virtual host config for the JWT filter that
-                        runs after the extauth filter.
+                      description: JWT route config for the JWT filter that runs after
+                        the extauth filter.
                       properties:
-                        allowMissingOrFailedJwt:
-                          description: Allow pass through of JWT requests for this
-                            virtual host, even if JWT token is missing or JWT auth
-                            failed. If this is false (default false), requests that
-                            fail JWT authentication will fail authorization immediately.
-                            For example, if a request requires either JWT auth OR
-                            another auth method, this can be enabled to allow a failed
-                            JWT auth request to pass through to the other auth method.
+                        disable:
+                          description: Disable JWT checks on this route.
                           type: boolean
-                        providers:
-                          additionalProperties:
-                            properties:
-                              audiences:
-                                description: An incoming JWT must have an 'aud' claim
-                                  and it must be in this list.
-                                items:
-                                  type: string
-                                type: array
-                              claimsToHeaders:
-                                description: What claims should be copied to upstream
-                                  headers.
-                                items:
-                                  description: Allows copying verified claims to headers
-                                    sent upstream
-                                  properties:
-                                    append:
-                                      description: If the header exists, append to
-                                        it (true), or overwrite it (false).
-                                      type: boolean
-                                    claim:
-                                      description: Claim name. for example, "sub"
-                                      type: string
-                                    header:
-                                      description: The header the claim will be copied
-                                        to. for example, "x-sub".
-                                      type: string
-                                  type: object
-                                type: array
-                              issuer:
-                                description: Issuer of the JWT. the 'iss' claim of
-                                  the JWT must match this.
-                                type: string
-                              jwks:
-                                description: The source for the keys to validate JWTs.
-                                properties:
-                                  local:
-                                    description: Use an inline JWKS
-                                    properties:
-                                      key:
-                                        description: Inline key. this can be json
-                                          web key, key-set or PEM format.
-                                        type: string
-                                    type: object
-                                  remote:
-                                    description: Use a remote JWKS server
-                                    properties:
-                                      cacheDuration:
-                                        description: Duration after which the cached
-                                          JWKS should be expired. If not specified,
-                                          default cache duration is 5 minutes.
-                                        type: string
-                                      upstreamRef:
-                                        description: The Upstream representing the
-                                          Json Web Key Set server
-                                        properties:
-                                          name:
-                                            type: string
-                                          namespace:
-                                            type: string
-                                        type: object
-                                      url:
-                                        description: The url used when accessing the
-                                          upstream for Json Web Key Set. This is used
-                                          to set the host and path in the request
-                                        type: string
-                                    type: object
-                                type: object
-                              keepToken:
-                                description: Should the token forwarded upstream.
-                                  if false, the header containing the token will be
-                                  removed.
-                                type: boolean
-                              tokenSource:
-                                description: Where to find the JWT of the current
-                                  provider.
-                                properties:
-                                  headers:
-                                    description: Try to retrieve token from these
-                                      headers
-                                    items:
-                                      description: Describes how to retrieve a JWT
-                                        from a header
-                                      properties:
-                                        header:
-                                          description: The name of the header. for
-                                            example, "authorization"
-                                          type: string
-                                        prefix:
-                                          description: Prefix before the token. for
-                                            example, "Bearer "
-                                          type: string
-                                      type: object
-                                    type: array
-                                  queryParams:
-                                    description: Try to retrieve token from these
-                                      query params
-                                    items:
-                                      type: string
-                                    type: array
-                                type: object
-                            type: object
-                          description: Map of JWT provider name to Provider. If specified,
-                            multiple providers will be `OR`-ed together and will allow
-                            validation to any of the providers.
-                          type: object
                       type: object
                     beforeExtAuth:
-                      description: JWT Virtual host config for the JWT filter that
-                        runs before the extauth filter.
+                      description: JWT route config for the JWT filter that runs after
+                        the extauth filter.
                       properties:
-                        allowMissingOrFailedJwt:
-                          description: Allow pass through of JWT requests for this
-                            virtual host, even if JWT token is missing or JWT auth
-                            failed. If this is false (default false), requests that
-                            fail JWT authentication will fail authorization immediately.
-                            For example, if a request requires either JWT auth OR
-                            another auth method, this can be enabled to allow a failed
-                            JWT auth request to pass through to the other auth method.
+                        disable:
+                          description: Disable JWT checks on this route.
                           type: boolean
-                        providers:
-                          additionalProperties:
-                            properties:
-                              audiences:
-                                description: An incoming JWT must have an 'aud' claim
-                                  and it must be in this list.
-                                items:
-                                  type: string
-                                type: array
-                              claimsToHeaders:
-                                description: What claims should be copied to upstream
-                                  headers.
-                                items:
-                                  description: Allows copying verified claims to headers
-                                    sent upstream
-                                  properties:
-                                    append:
-                                      description: If the header exists, append to
-                                        it (true), or overwrite it (false).
-                                      type: boolean
-                                    claim:
-                                      description: Claim name. for example, "sub"
-                                      type: string
-                                    header:
-                                      description: The header the claim will be copied
-                                        to. for example, "x-sub".
-                                      type: string
-                                  type: object
-                                type: array
-                              issuer:
-                                description: Issuer of the JWT. the 'iss' claim of
-                                  the JWT must match this.
-                                type: string
-                              jwks:
-                                description: The source for the keys to validate JWTs.
-                                properties:
-                                  local:
-                                    description: Use an inline JWKS
-                                    properties:
-                                      key:
-                                        description: Inline key. this can be json
-                                          web key, key-set or PEM format.
-                                        type: string
-                                    type: object
-                                  remote:
-                                    description: Use a remote JWKS server
-                                    properties:
-                                      cacheDuration:
-                                        description: Duration after which the cached
-                                          JWKS should be expired. If not specified,
-                                          default cache duration is 5 minutes.
-                                        type: string
-                                      upstreamRef:
-                                        description: The Upstream representing the
-                                          Json Web Key Set server
-                                        properties:
-                                          name:
-                                            type: string
-                                          namespace:
-                                            type: string
-                                        type: object
-                                      url:
-                                        description: The url used when accessing the
-                                          upstream for Json Web Key Set. This is used
-                                          to set the host and path in the request
-                                        type: string
-                                    type: object
-                                type: object
-                              keepToken:
-                                description: Should the token forwarded upstream.
-                                  if false, the header containing the token will be
-                                  removed.
-                                type: boolean
-                              tokenSource:
-                                description: Where to find the JWT of the current
-                                  provider.
-                                properties:
-                                  headers:
-                                    description: Try to retrieve token from these
-                                      headers
-                                    items:
-                                      description: Describes how to retrieve a JWT
-                                        from a header
-                                      properties:
-                                        header:
-                                          description: The name of the header. for
-                                            example, "authorization"
-                                          type: string
-                                        prefix:
-                                          description: Prefix before the token. for
-                                            example, "Bearer "
-                                          type: string
-                                      type: object
-                                    type: array
-                                  queryParams:
-                                    description: Try to retrieve token from these
-                                      query params
-                                    items:
-                                      type: string
-                                    type: array
-                                type: object
-                            type: object
-                          description: Map of JWT provider name to Provider. If specified,
-                            multiple providers will be `OR`-ed together and will allow
-                            validation to any of the providers.
-                          type: object
                       type: object
                   type: object
-                optionsRefs:
-                  description: Delegate options to external VirtualHostOptions CRD
+                lbHash:
+                  description: 'For routes served by a hashing load balancer, this
+                    defines the input to the hash key Gloo configures Envoy with the
+                    first available RouteActionHashConfig among the following ordered
+                    list of providers: - route, upstream, virtual service'
                   properties:
-                    refs:
+                    hashPolicies:
+                      description: The list of policies Envoy will use when generating
+                        a hash key for a hashing load balancer
                       items:
-                        description: A way to reference resources across namespaces
+                        description: Specifies an element of Envoy's hashing policy
+                          for hashing load balancers
                         properties:
-                          name:
+                          cookie:
+                            description: Use a given cookie as a component of the
+                              hashing load balancer's hash key
+                            properties:
+                              name:
+                                description: required, the name of the cookie to be
+                                  used to obtain the hash key
+                                type: string
+                              path:
+                                description: The name of the path for the cookie.
+                                  If no path is specified here, no path will be set
+                                  for the cookie.
+                                type: string
+                              ttl:
+                                description: If specified, a cookie with the TTL will
+                                  be generated if the cookie is not present. If the
+                                  TTL is present and zero, the generated cookie will
+                                  be a session cookie.
+                                type: string
+                            type: object
+                          header:
+                            description: Use a given header's value as a component
+                              of the hashing load balancer's hash key
                             type: string
-                          namespace:
-                            type: string
+                          sourceIp:
+                            description: Use the request's source IP address as a
+                              component of the hashing load balancer's hash key
+                            type: boolean
+                          terminal:
+                            description: If set, and a hash key is available after
+                              evaluating this policy, Envoy will skip the subsequent
+                              policies and use the key as it is. This is useful for
+                              defining "fallback" policies and limiting the time Envoy
+                              spends generating hash keys.
+                            type: boolean
                         type: object
                       type: array
                   type: object
+                prefixRewrite:
+                  description: For requests matched on this route, rewrite the HTTP
+                    request path to the provided value before forwarding upstream
+                  nullable: true
+                  type: string
                 rateLimitConfigs:
                   description: References to RateLimitConfig resources. This is used
                     to configure the GlooE rate limit server. Only one of `ratelimit`
@@ -852,6 +588,10 @@ spec:
                     and their associated limits on the Gloo settings. Only one of
                     `ratelimit` or `rate_limit_configs` can be set.'
                   properties:
+                    includeVhRateLimits:
+                      description: Whether or not to include rate limits as defined
+                        on the VirtualHost in addition to rate limits on the Route.
+                      type: boolean
                     rateLimits:
                       description: Define individual rate limits here. Each rate limit
                         will be evaluated, if any rate limit would be throttled, the
@@ -1336,6 +1076,59 @@ spec:
                       description: Named policies to apply.
                       type: object
                   type: object
+                regexRewrite:
+                  description: For requests matched on this route, rewrite the HTTP
+                    request path according to the provided regex pattern before forwarding
+                    upstream Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-regex-rewrite)
+                    for more details about the `regex_rewrite` attribute
+                  properties:
+                    pattern:
+                      description: The regular expression used to find portions of
+                        a string (hereafter called the "subject string") that should
+                        be replaced. When a new string is produced during the substitution
+                        operation, the new string is initially the same as the subject
+                        string, but then all matches in the subject string are replaced
+                        by the substitution string. If replacing all matches isn't
+                        desired, regular expression anchors can be used to ensure
+                        a single match, so as to replace just one occurrence of a
+                        pattern. Capture groups can be used in the pattern to extract
+                        portions of the subject string, and then referenced in the
+                        substitution string.
+                      properties:
+                        googleRe2:
+                          description: Google's RE2 regex engine.
+                          properties:
+                            maxProgramSize:
+                              description: This field controls the RE2 "program size"
+                                which is a rough estimate of how complex a compiled
+                                regex is to evaluate. A regex that has a program size
+                                greater than the configured value will fail to compile.
+                                In this case, the configured max program size can
+                                be increased or the regex can be simplified. If not
+                                specified, the default is 100.
+                              maximum: 4294967295
+                              minimum: 0
+                              nullable: true
+                              type: integer
+                          type: object
+                        regex:
+                          description: The regex match string. The string must be
+                            supported by the configured engine.
+                          type: string
+                      type: object
+                    substitution:
+                      description: The string that should be substituted into matching
+                        portions of the subject string during a substitution operation
+                        to produce a new string. Capture groups in the pattern can
+                        be referenced in the substitution string. Note, however, that
+                        the syntax for referring to capture groups is defined by the
+                        chosen regular expression engine. Google's `RE2 <https://github.com/google/re2>`_
+                        regular expression engine uses a backslash followed by the
+                        capture group number to denote a numbered capture group. E.g.,
+                        ``\1`` refers to capture group 1, and ``\2`` refers to capture
+                        group 2.
+                      type: string
+                  type: object
                 retries:
                   properties:
                     numRetries:
@@ -1352,6 +1145,25 @@ spec:
                       description: Specifies the conditions under which retry takes
                         place. These are the same conditions [documented for Envoy](https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/http/http_filters/router_filter#config-http-filters-router-x-envoy-retry-on)
                       type: string
+                  type: object
+                shadowing:
+                  description: 'Specifies traffic shadowing configuration for the
+                    route. See here for additional information on Envoy''s shadowing
+                    capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy'
+                  properties:
+                    percentage:
+                      description: This should be a value between 0.0 and 100.0, with
+                        up to 6 significant digits.
+                      type: number
+                    upstream:
+                      description: The upstream to which the shadowed traffic should
+                        be sent.
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                      type: object
                   type: object
                 stagedTransformations:
                   description: Early transformations stage. These transformations
@@ -2884,46 +2696,59 @@ spec:
                           type: array
                       type: object
                   type: object
-                stats:
+                timeout:
+                  description: Specifies the upstream timeout for the route. If not
+                    specified, the default is 15s. This spans between the point at
+                    which the entire downstream request (i.e. end-of-stream) has been
+                    processed and when the upstream response has been completely processed.
+                    A value of 0 will disable the route’s timeout.
+                  type: string
+                tracing:
+                  description: 'Defines route-specific tracing configuration. See
+                    here for additional information on Envoy''s tracing capabilities:
+                    https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
+                    See here for additional information about configuring tracing
+                    with Gloo: https://gloo.solo.io/observability/tracing/'
                   properties:
-                    virtualClusters:
-                      description: Virtual clusters allow exposing additional statistics
-                        for traffic served by a Virtual Host.
-                      items:
-                        description: Virtual clusters allow you to expose statistics
-                          for virtual host traffic that matches certain criteria.
-                          This is useful because what the application considers to
-                          be an endpoint does often not map directly to the routing
-                          configuration, so Envoy does not emit per endpoint statistics.
-                          Using virtual clusters you can define logical endpoints
-                          and have Envoy emit dedicated statistics for any matching
-                          request. Virtual cluster statistics are emitted on the downstream
-                          side and thus include network level failures.
-                        properties:
-                          method:
-                            description: If specified, statistics will be exposed
-                              only for requests matching the given HTTP method.
-                            type: string
-                          name:
-                            description: 'The name of the virtual cluster. This value
-                              will be used together with the virtual host name to
-                              compute the name of the statistics emitted by this virtual
-                              cluster. Statistics names will be in the form: vhost.<virtual
-                              host name>.vcluster.<virtual cluster name>.<stat name>.
-                              See [the official Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.5.0/configuration/http_filters/router_filter#config-http-filters-router-stats)
-                              for more information about the statistics emitted when
-                              virtual cluster configurations are specified.'
-                            type: string
-                          pattern:
-                            description: The regex pattern used by Envoy to decide
-                              whether to expose statistics for a particular request.
-                              Please note that **the entire path** of the request
-                              must match the regex (e.g. the regex `/rides/d+` matches
-                              the path `/rides/0`, but not `/rides/123/456`). The
-                              regex grammar used is defined [here](https://en.cppreference.com/w/cpp/regex/ecmascript).
-                            type: string
-                        type: object
-                      type: array
+                    propagate:
+                      description: Optional. Default is true, If set to false, the
+                        tracing headers will not propagate to the upstream.
+                      nullable: true
+                      type: boolean
+                    routeDescriptor:
+                      description: Optional. If set, will be used to identify the
+                        route that produced the trace. Note that this value will be
+                        overridden if the "x-envoy-decorator-operation" header is
+                        passed.
+                      type: string
+                    tracePercentages:
+                      description: Requests can produce traces by random sampling
+                        or when the `x-client-trace-id` header is provided. TracePercentages
+                        defines the limits for random, forced, and overall tracing
+                        percentages.
+                      properties:
+                        clientSamplePercentage:
+                          description: Percentage of requests that should produce
+                            traces when the `x-client-trace-id` header is provided.
+                            optional, defaults to 100.0 This should be a value between
+                            0.0 and 100.0, with up to 6 significant digits.
+                          nullable: true
+                          type: number
+                        overallSamplePercentage:
+                          description: Overall percentage of requests that should
+                            produce traces. optional, defaults to 100.0 This should
+                            be a value between 0.0 and 100.0, with up to 6 significant
+                            digits.
+                          nullable: true
+                          type: number
+                        randomSamplePercentage:
+                          description: Percentage of requests that should produce
+                            traces by random sampling. optional, defaults to 100.0
+                            This should be a value between 0.0 and 100.0, with up
+                            to 6 significant digits.
+                          nullable: true
+                          type: number
+                      type: object
                   type: object
                 transformations:
                   description: 'Transformations to apply. Note: this field is superseded
@@ -3287,6 +3112,21 @@ spec:
                           type: object
                       type: object
                   type: object
+                upgrades:
+                  description: Route configuration for protocol upgrade requests.
+                  items:
+                    properties:
+                      websocket:
+                        description: Specification for websocket upgrade requests.
+                        properties:
+                          enabled:
+                            description: Whether the upgrade should be enabled. If
+                              left unset, Envoy will enable the protocol upgrade.
+                            nullable: true
+                            type: boolean
+                        type: object
+                    type: object
+                  type: array
                 waf:
                   description: 'Enterprise-only: Config for Web Application Firewall
                     (WAF), supporting the popular ModSecurity 3.0 ruleset'
