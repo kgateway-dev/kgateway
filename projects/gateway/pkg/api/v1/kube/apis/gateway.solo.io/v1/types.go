@@ -81,6 +81,69 @@ type GatewayList struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +resourceName=routeoptions
+// +genclient
+type RouteOption struct {
+	v1.TypeMeta `json:",inline"`
+	// +optional
+	v1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	// Spec defines the implementation of this definition.
+	// +optional
+	Spec   api.RouteOption `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Status core.Status     `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+}
+
+func (o *RouteOption) MarshalJSON() ([]byte, error) {
+	spec, err := protoutils.MarshalMap(&o.Spec)
+	if err != nil {
+		return nil, err
+	}
+	delete(spec, "metadata")
+	delete(spec, "status")
+	asMap := map[string]interface{}{
+		"metadata":   o.ObjectMeta,
+		"apiVersion": o.TypeMeta.APIVersion,
+		"kind":       o.TypeMeta.Kind,
+		"status":     o.Status,
+		"spec":       spec,
+	}
+	return json.Marshal(asMap)
+}
+
+func (o *RouteOption) UnmarshalJSON(data []byte) error {
+	var metaOnly metaOnly
+	if err := json.Unmarshal(data, &metaOnly); err != nil {
+		return err
+	}
+	var spec api.RouteOption
+	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
+		return err
+	}
+	spec.Metadata = nil
+	*o = RouteOption{
+		ObjectMeta: metaOnly.ObjectMeta,
+		TypeMeta:   metaOnly.TypeMeta,
+		Spec:       spec,
+	}
+	if spec.Status != nil {
+		o.Status = *spec.Status
+		o.Spec.Status = nil
+	}
+
+	return nil
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// RouteOptionList is a collection of RouteOptions.
+type RouteOptionList struct {
+	v1.TypeMeta `json:",inline"`
+	// +optional
+	v1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	Items       []RouteOption `json:"items" protobuf:"bytes,2,rep,name=items"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resourceName=routetables
 // +genclient
 type RouteTable struct {
@@ -141,6 +204,69 @@ type RouteTableList struct {
 	// +optional
 	v1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 	Items       []RouteTable `json:"items" protobuf:"bytes,2,rep,name=items"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +resourceName=virtualhostoptions
+// +genclient
+type VirtualHostOption struct {
+	v1.TypeMeta `json:",inline"`
+	// +optional
+	v1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	// Spec defines the implementation of this definition.
+	// +optional
+	Spec   api.VirtualHostOption `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Status core.Status           `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+}
+
+func (o *VirtualHostOption) MarshalJSON() ([]byte, error) {
+	spec, err := protoutils.MarshalMap(&o.Spec)
+	if err != nil {
+		return nil, err
+	}
+	delete(spec, "metadata")
+	delete(spec, "status")
+	asMap := map[string]interface{}{
+		"metadata":   o.ObjectMeta,
+		"apiVersion": o.TypeMeta.APIVersion,
+		"kind":       o.TypeMeta.Kind,
+		"status":     o.Status,
+		"spec":       spec,
+	}
+	return json.Marshal(asMap)
+}
+
+func (o *VirtualHostOption) UnmarshalJSON(data []byte) error {
+	var metaOnly metaOnly
+	if err := json.Unmarshal(data, &metaOnly); err != nil {
+		return err
+	}
+	var spec api.VirtualHostOption
+	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
+		return err
+	}
+	spec.Metadata = nil
+	*o = VirtualHostOption{
+		ObjectMeta: metaOnly.ObjectMeta,
+		TypeMeta:   metaOnly.TypeMeta,
+		Spec:       spec,
+	}
+	if spec.Status != nil {
+		o.Status = *spec.Status
+		o.Spec.Status = nil
+	}
+
+	return nil
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// VirtualHostOptionList is a collection of VirtualHostOptions.
+type VirtualHostOptionList struct {
+	v1.TypeMeta `json:",inline"`
+	// +optional
+	v1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	Items       []VirtualHostOption `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -108,6 +108,31 @@ spec:
                             type: array
                         type: object
                     type: object
+                  delegateOption:
+                    description: Delegate the Route options to an external RouteOption
+                      Resource. Any options configured in the Route's `options` field
+                      will override all delegated options. If multiple RouteOption
+                      CRs are delegated to, configuration will be taken from prior
+                      RouteOption CRs over later ones. For example if `headerManipulation`
+                      is specified on the route options, a delegated `RouteOption`
+                      route-opt-1, and a second delegated `RouteOption` route-opt-2,
+                      the `headerManipulation` config from only the Route-level `options`
+                      will be applied. If the config is removed from the Route-level
+                      `options` field, then the config from the first delegated `RouteOption`,
+                      route-opt-1, is applied.
+                    properties:
+                      refs:
+                        description: reference to a `RouteOption` resource
+                        items:
+                          description: A way to reference resources across namespaces
+                          properties:
+                            name:
+                              type: string
+                            namespace:
+                              type: string
+                          type: object
+                        type: array
+                    type: object
                   directResponseAction:
                     description: Return an arbitrary HTTP response directly, without
                       proxying.
