@@ -1,4 +1,16 @@
 apis:
+  advancedhttp.options.gloo.solo.io.JsonKey:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/advanced_http/advanced_http.proto.sk/#JsonKey
+    package: advancedhttp.options.gloo.solo.io
+  advancedhttp.options.gloo.solo.io.ResponseAssertions:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/advanced_http/advanced_http.proto.sk/#ResponseAssertions
+    package: advancedhttp.options.gloo.solo.io
+  advancedhttp.options.gloo.solo.io.ResponseMatch:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/advanced_http/advanced_http.proto.sk/#ResponseMatch
+    package: advancedhttp.options.gloo.solo.io
+  advancedhttp.options.gloo.solo.io.ResponseMatcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/advanced_http/advanced_http.proto.sk/#ResponseMatcher
+    package: advancedhttp.options.gloo.solo.io
   als.options.gloo.solo.io.AccessLog:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#AccessLog
     package: als.options.gloo.solo.io
@@ -269,6 +281,21 @@ apis:
   envoy.config.filter.http.transformation_ee.v2.TransformationRule:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#TransformationRule
     package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.health_checker.advanced_http.v2.AdvancedHttp:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/advanced_http/advanced_http.proto.sk/#AdvancedHttp
+    package: envoy.config.health_checker.advanced_http.v2
+  envoy.config.health_checker.advanced_http.v2.JsonKey:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/advanced_http/advanced_http.proto.sk/#JsonKey
+    package: envoy.config.health_checker.advanced_http.v2
+  envoy.config.health_checker.advanced_http.v2.ResponseAssertions:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/advanced_http/advanced_http.proto.sk/#ResponseAssertions
+    package: envoy.config.health_checker.advanced_http.v2
+  envoy.config.health_checker.advanced_http.v2.ResponseMatch:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/advanced_http/advanced_http.proto.sk/#ResponseMatch
+    package: envoy.config.health_checker.advanced_http.v2
+  envoy.config.health_checker.advanced_http.v2.ResponseMatcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/advanced_http/advanced_http.proto.sk/#ResponseMatcher
+    package: envoy.config.health_checker.advanced_http.v2
   envoy.config.health_checker.http_path.v2.HttpPath:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/http_path/http_path.proto.sk/#HttpPath
     package: envoy.config.health_checker.http_path.v2

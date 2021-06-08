@@ -364,6 +364,16 @@ func (m *HealthCheck_HttpHealthCheck) Equal(that interface{}) bool {
 
 	}
 
+	if h, ok := interface{}(m.GetResponseAssertions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetResponseAssertions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetResponseAssertions(), target.GetResponseAssertions()) {
+			return false
+		}
+	}
+
 	return true
 }
 
