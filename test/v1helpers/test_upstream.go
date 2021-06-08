@@ -47,6 +47,11 @@ func NewTestHttpUpstreamWithReply(ctx context.Context, addr, reply string) *Test
 	return newTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
+func NewTestHttpUpstreamWithReplyAndHealthReply(ctx context.Context, addr, reply, healthReply string) *TestUpstream {
+	backendPort, responses := runTestServerWithHealthReply(ctx, reply, healthReply, false)
+	return newTestUpstream(addr, []uint32{backendPort}, responses)
+}
+
 func NewTestHttpsUpstreamWithReply(ctx context.Context, addr, reply string) *TestUpstream {
 	backendPort, responses := runTestServer(ctx, reply, true)
 	return newTestUpstream(addr, []uint32{backendPort}, responses)
@@ -124,6 +129,10 @@ func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequ
 }
 
 func runTestServer(ctx context.Context, reply string, serveTls bool) (uint32, <-chan *ReceivedRequest) {
+	return runTestServerWithHealthReply(ctx, reply, "OK", serveTls)
+}
+
+func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string, serveTls bool) (uint32, <-chan *ReceivedRequest) {
 	bodyChan := make(chan *ReceivedRequest, 100)
 	handlerFunc := func(rw http.ResponseWriter, r *http.Request) {
 		var rr ReceivedRequest
@@ -164,7 +173,7 @@ func runTestServer(ctx context.Context, reply string, serveTls bool) (uint32, <-
 	mux := http.NewServeMux()
 	mux.Handle("/", http.HandlerFunc(handlerFunc))
 	mux.Handle("/health", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		rw.Write([]byte("OK"))
+		rw.Write([]byte(healthReply))
 	}))
 
 	go func() {
@@ -232,6 +241,14 @@ func ExpectHttpOK(body []byte, rootca *string, envoyPort uint32, response string
 }
 
 func ExpectHttpOKWithOffset(offset int, body []byte, rootca *string, envoyPort uint32, response string) {
+	ExpectHttpStatusWithOffset(offset+1, body, rootca, envoyPort, response, http.StatusOK)
+}
+
+func ExpectHttpUnavailableWithOffset(offset int, body []byte, rootca *string, envoyPort uint32, response string) {
+	ExpectHttpStatusWithOffset(offset+1, body, rootca, envoyPort, response, http.StatusServiceUnavailable)
+}
+
+func ExpectHttpStatusWithOffset(offset int, body []byte, rootca *string, envoyPort uint32, response string, status int) {
 
 	var res *http.Response
 	EventuallyWithOffset(2, func() error {
@@ -263,8 +280,8 @@ func ExpectHttpOKWithOffset(offset int, body []byte, rootca *string, envoyPort u
 		if err != nil {
 			return err
 		}
-		if res.StatusCode != http.StatusOK {
-			return fmt.Errorf("%v is not OK", res.StatusCode)
+		if res.StatusCode != status {
+			return fmt.Errorf("received status code (%v) is not expected status code (%v)", res.StatusCode, status)
 		}
 
 		return nil
@@ -272,9 +289,9 @@ func ExpectHttpOKWithOffset(offset int, body []byte, rootca *string, envoyPort u
 
 	if response != "" {
 		body, err := ioutil.ReadAll(res.Body)
-		ExpectWithOffset(2, err).NotTo(HaveOccurred())
+		ExpectWithOffset(offset, err).NotTo(HaveOccurred())
 		defer res.Body.Close()
-		ExpectWithOffset(2, string(body)).To(Equal(response))
+		ExpectWithOffset(offset, string(body)).To(Equal(response))
 	}
 }
 

@@ -22,8 +22,9 @@ const (
 	// TODO: make solo-projects use this constant
 	TransportSocketMatchKey = "envoy.transport_socket_match"
 
-	HttpPathCheckerName = "io.solo.health_checkers.http_path"
-	PathFieldName       = "path"
+	AdvancedHttpCheckerName = "io.solo.health_checkers.advanced_http"
+	PathFieldName           = "path"
+	MethodFieldName         = "method"
 )
 
 var _ plugins.Plugin = new(plugin)
@@ -214,22 +215,31 @@ func getMetadata(spec *v1static.UpstreamSpec, in *v1static.Host) *envoy_config_c
 		meta.FilterMetadata[TransportSocketMatchKey] = metadataMatch(spec, in)
 	}
 
-	if in.GetHealthCheckConfig().GetPath() != "" {
-		if meta == nil {
-			meta = &envoy_config_core_v3.Metadata{FilterMetadata: map[string]*pbgostruct.Struct{}}
-		}
-		meta.FilterMetadata[HttpPathCheckerName] = &pbgostruct.Struct{
-			Fields: map[string]*pbgostruct.Value{
-				PathFieldName: {
-					Kind: &pbgostruct.Value_StringValue{
-						StringValue: in.GetHealthCheckConfig().GetPath(),
-					},
-				},
-			},
-		}
-
+	if path := in.GetHealthCheckConfig().GetPath(); path != "" {
+		setMetadataField(meta, PathFieldName, path)
+	}
+	if method := in.GetHealthCheckConfig().GetMethod(); method != "" {
+		setMetadataField(meta, MethodFieldName, method)
 	}
 	return meta
+}
+
+func setMetadataField(meta *envoy_config_core_v3.Metadata, fieldKey, value string) {
+	if meta == nil {
+		meta = &envoy_config_core_v3.Metadata{FilterMetadata: map[string]*pbgostruct.Struct{}}
+	}
+	if meta.FilterMetadata[AdvancedHttpCheckerName] == nil {
+		meta.FilterMetadata[AdvancedHttpCheckerName] = &pbgostruct.Struct{}
+	}
+	if meta.FilterMetadata[AdvancedHttpCheckerName].Fields == nil {
+		meta.FilterMetadata[AdvancedHttpCheckerName].Fields = map[string]*pbgostruct.Value{}
+	}
+
+	meta.FilterMetadata[AdvancedHttpCheckerName].Fields[fieldKey] = &pbgostruct.Value{
+		Kind: &pbgostruct.Value_StringValue{
+			StringValue: value,
+		},
+	}
 }
 
 func name(spec *v1static.UpstreamSpec, in *v1static.Host) string {
