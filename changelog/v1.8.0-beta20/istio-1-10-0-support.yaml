@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add istio 1.10.0 support for glooctl istio inject
+    issueLink: https://github.com/solo-io/gloo/issues/4847
