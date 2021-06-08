@@ -35,3 +35,13 @@ func NewStagedFilterWithConfig(name string, config proto.Message, stage FilterSt
 
 	return s, nil
 }
+
+func StagedFilterListContainsName(filters StagedHttpFilterList, filterName string) bool {
+	for _, filter := range filters {
+		if filter.HttpFilter.GetName() == filterName {
+			return true
+		}
+	}
+
+	return false
+}

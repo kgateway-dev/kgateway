@@ -166,13 +166,7 @@ func (p *Plugin) isExtAuthzFilterConfigured(listener *v1.HttpListener, upstreams
 	}
 
 	// Check for a filter called "envoy.filters.http.ext_authz"
-	for _, filter := range filters {
-		if filter.HttpFilter.GetName() == wellknown.HTTPExternalAuthorization {
-			return true
-		}
-	}
-
-	return false
+	return plugins.StagedFilterListContainsName(filters, wellknown.HTTPExternalAuthorization)
 }
 
 func markVirtualHostNoAuth(out *envoy_config_route_v3.VirtualHost) error {
