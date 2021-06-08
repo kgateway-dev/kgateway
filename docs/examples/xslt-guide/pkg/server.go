@@ -20,17 +20,25 @@ type Query struct {
 	CityQuery string
 }
 
-// FoundResponse a simple response
-type FoundResponse struct {
+type Match struct {
 	City       string
 	Country    string
 	SubCountry string
 	GeoNameId  string
 }
 
+// FoundResponse a simple response
+type FoundResponse struct {
+	Matches []Match
+}
+
 func GetCities() ([]string, []string, []string, []string) {
 	var cities, countries, subcountry, geonameids []string
-	csvfile, err := os.Open("/Users/sai/go/src/github.com/solo-io/gloo/docs/examples/xslt-guide/pkg/world_cities.csv")
+	csvPath := "/usr/local/bin/world_cities.csv"
+	if envPath := os.Getenv("CITY_CSV_PATH"); envPath != "" {
+		csvPath = envPath
+	}
+	csvfile, err := os.Open(csvPath)
 	if err != nil {
 		log.Fatalln("Couldn't open the csv file", err)
 	}
@@ -52,13 +60,17 @@ func GetCities() ([]string, []string, []string, []string) {
 }
 
 // Fuzzy finds city in list of city names
-func FindCity(cities []string, query string) (bool, int) {
+func FindCity(cities []string, query string) (bool, []int) {
 	ranks := fuzzy.RankFind(query, cities)
 	if len(ranks) < 1 {
-		return false, -1
+		return false, nil
 	}
 	sort.Sort(ranks)
-	return true, ranks[0].OriginalIndex
+	var indicies []int
+	for _, rank := range ranks {
+		indicies = append(indicies, rank.OriginalIndex)
+	}
+	return true, indicies
 }
 
 // RunServer run a little demo server
@@ -78,13 +90,19 @@ func RunServer() {
 		// OperationHandlerFunc - do something
 		func(request interface{}, w http.ResponseWriter, httpRequest *http.Request) (response interface{}, err error) {
 			req := request.(*Query)
-			found, idx := FindCity(cities, strings.ToLower(req.CityQuery))
+			found, idxs := FindCity(cities, strings.ToLower(req.CityQuery))
 			if found {
+				var matches []Match
+				for _, idx := range idxs {
+					matches = append(matches, Match{
+						City:       cities[idx],
+						Country:    countries[idx],
+						SubCountry: subcountry[idx],
+						GeoNameId:  geonameids[idx],
+					})
+				}
 				response = &FoundResponse{
-					City:       cities[idx],
-					Country:    countries[idx],
-					SubCountry: subcountry[idx],
-					GeoNameId:  geonameids[idx],
+					Matches: matches,
 				}
 			} else {
 				err = fmt.Errorf("unable to find query %s in cities", req.CityQuery)
@@ -99,6 +117,6 @@ func RunServer() {
 
 func main() {
 	// see what is going on
-	soap.Verbose = true
+	soap.Verbose = false
 	RunServer()
 }
