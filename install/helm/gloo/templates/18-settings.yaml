@@ -17,8 +17,8 @@ spec:
 {{- else }}
     xdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}"
     restXdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.restXdsPort }}"
-    enableRestEds: {{ .Values.settings.enableRestEds }}
 {{- end }}
+    enableRestEds: {{ .Values.settings.enableRestEds }}
 {{- /* .Values.settings.replaceInvalidRoutes for backwards compatibility */}}
 {{- if or (.Values.settings.invalidConfigPolicy) (.Values.settings.replaceInvalidRoutes) }}
     invalidConfigPolicy:
