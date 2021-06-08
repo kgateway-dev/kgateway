@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4696
+    description: Gatway objects for custom proxies are still created when the default gateway proxy is disabled.
