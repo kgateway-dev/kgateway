@@ -11,3 +11,10 @@ message Sanitize {
   // configuration is applied. If using the default ext auth server, do not set this value.
   string custom_auth_server_name = 2;
 }
+
+message SanitizePerRoute {
+  // The name of the custom ext auth server
+  // This is only set in the case where multiple auth servers exist and a non-default server
+  // configuration is applied. If using the default ext auth server, do not set this value.
+  string custom_auth_server_name = 2;
+}

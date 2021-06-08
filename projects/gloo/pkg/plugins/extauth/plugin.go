@@ -30,17 +30,19 @@ func NewCustomAuthPlugin() *Plugin {
 }
 
 type Plugin struct {
-	extAuthSettings *extauthv1.Settings
+	extAuthSettings      *extauthv1.Settings
+	namedExtAuthSettings map[string]*extauthv1.Settings
 }
 
 func (p *Plugin) Init(params plugins.InitParams) error {
 	p.extAuthSettings = params.Settings.GetExtauth()
+	p.namedExtAuthSettings = params.Settings.GetNamedExtauth()
 	return nil
 }
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	// Delegate to a function with a simpler signature, will make it easier to reuse
-	return BuildHttpFilters(p.extAuthSettings, listener, params.Snapshot.Upstreams)
+	return BuildSingleHttpFilter(p.extAuthSettings, p.namedExtAuthSettings, listener, params.Snapshot.Upstreams)
 }
 
 // This function generates the ext_authz TypedPerFilterConfig for this virtual host. If the ext_authz filter was not
@@ -157,7 +159,7 @@ func (p *Plugin) ProcessWeightedDestination(
 func (p *Plugin) isExtAuthzFilterConfigured(listener *v1.HttpListener, upstreams v1.UpstreamList) bool {
 
 	// Call the same function called by HttpFilters to verify whether the filter was created
-	filters, err := BuildHttpFilters(p.extAuthSettings, listener, upstreams)
+	filters, err := BuildSingleHttpFilter(p.extAuthSettings, p.namedExtAuthSettings, listener, upstreams)
 	if err != nil {
 		// If it returned an error, the filter was not configured
 		return false

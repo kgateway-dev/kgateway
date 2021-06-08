@@ -26,7 +26,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 
 	When("no global extauth settings are provided", func() {
 		It("does not return any filter", func() {
-			filters, err := BuildHttpFilters(nil, nil, nil)
+			filters, err := BuildSingleHttpFilter(nil, nil, nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters).To(HaveLen(0))
 		})
@@ -34,7 +34,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 
 	When("settings do not contain ext auth server ref", func() {
 		It("returns an error", func() {
-			_, err := BuildHttpFilters(&extauthv1.Settings{}, nil, nil)
+			_, err := BuildSingleHttpFilter(&extauthv1.Settings{}, nil, nil, nil)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(NoServerRefErr))
 		})
@@ -46,9 +46,26 @@ var _ = Describe("Extauth Http filter builder function", func() {
 				Name:      "non",
 				Namespace: "existent",
 			}
-			_, err := BuildHttpFilters(&extauthv1.Settings{ExtauthzServerRef: invalidUs}, nil, nil)
+			_, err := BuildSingleHttpFilter(&extauthv1.Settings{ExtauthzServerRef: invalidUs}, nil, nil, nil)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(HaveInErrorChain(ServerNotFound(invalidUs)))
+		})
+	})
+
+	When("default extauth settings and named settings are provided", func() {
+		It("does not return any filter", func() {
+			defaultSettings := &extauthv1.Settings{
+				StatPrefix: "default-stat-prefix",
+			}
+			namedSettings := map[string]*extauthv1.Settings{
+				"custom-auth-server": {
+					StatPrefix: "custom-stat-prefix",
+				},
+			}
+			filters, err := BuildSingleHttpFilter(defaultSettings, namedSettings, nil, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(filters).To(HaveLen(0))
+
 		})
 	})
 
@@ -173,7 +190,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			})
 
 			It("uses the expected defaults", func() {
-				filters, err := BuildHttpFilters(settings, nil, gloov1.UpstreamList{upstream})
+				filters, err := BuildSingleHttpFilter(settings, nil, nil, gloov1.UpstreamList{upstream})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(filters).To(HaveLen(1))
 
@@ -189,7 +206,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 					ExtauthzServerRef: upstream.Metadata.Ref(),
 				}
 
-				filters, err := BuildHttpFilters(settings, nil, gloov1.UpstreamList{upstream})
+				filters, err := BuildSingleHttpFilter(settings, nil, nil, gloov1.UpstreamList{upstream})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(filters).To(HaveLen(1))
 
@@ -243,7 +260,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			})
 
 			It("generates the expected configuration", func() {
-				filters, err := BuildHttpFilters(settings, nil, gloov1.UpstreamList{upstream})
+				filters, err := BuildSingleHttpFilter(settings, nil, nil, gloov1.UpstreamList{upstream})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(filters).To(HaveLen(1))
 
@@ -259,13 +276,13 @@ var _ = Describe("Extauth Http filter builder function", func() {
 
 				settings = &extauthv1.Settings{
 					ExtauthzServerRef: usRef,
-					// This is the only thing that can go wrong in the BuildHttpFilters function
+					// This is the only thing that can go wrong in the BuildSingleHttpFilter function
 					StatusOnError: 999,
 				}
 			})
 
 			It("returns an error", func() {
-				_, err := BuildHttpFilters(settings, nil, gloov1.UpstreamList{upstream})
+				_, err := BuildSingleHttpFilter(settings, nil, nil, gloov1.UpstreamList{upstream})
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(HaveInErrorChain(InvalidStatusOnErrorErr(999)))
 			})
@@ -333,7 +350,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			})
 
 			It("uses the expected defaults", func() {
-				filters, err := BuildHttpFilters(settings, nil, gloov1.UpstreamList{upstream})
+				filters, err := BuildSingleHttpFilter(settings, nil, nil, gloov1.UpstreamList{upstream})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(filters).To(HaveLen(1))
 

@@ -32,22 +32,47 @@ var (
 
 const JWTFilterName = "envoy.filters.http.jwt_authn"
 
-func BuildHttpFilters(
+func BuildSingleHttpFilter(
 	globalSettings *extauthv1.Settings,
+	namedSettings map[string]*extauthv1.Settings,
 	listener *v1.HttpListener,
 	upstreams v1.UpstreamList,
 ) ([]plugins.StagedHttpFilter, error) {
 	var filters []plugins.StagedHttpFilter
 
-	// If no extauth settings are provided, don't configure the ext_authz filter
+	// If extauth isn't defined on the listener, fallback to the default extauth settings
 	settings := listener.GetOptions().GetExtauth()
 	if settings == nil {
 		settings = globalSettings
 	}
+
+	// If extauth isn't defined on the listener or default settings, no extauth is configured
 	if settings == nil {
 		return filters, nil
 	}
 
+	// If extauth is defined on the default settings, and on the named settings,
+	// we expect to create multiple auth filters. The open source plugin is not responsible
+	// for handling this case. Don't configure the extauth filter, and rely on the closed source
+	// plugin to do so.
+	if globalSettings != nil && namedSettings != nil {
+		return filters, nil
+	}
+
+	extAuthCfg, err := GenerateEnvoyConfigForExtAuthSettings(settings, upstreams)
+	if err != nil {
+		return nil, err
+	}
+
+	stagedFilter, err := plugins.NewStagedFilterWithConfig(wellknown.HTTPExternalAuthorization, extAuthCfg, FilterStage)
+	if err != nil {
+		return nil, err
+	}
+	filters = append(filters, stagedFilter)
+	return filters, nil
+}
+
+func GenerateEnvoyConfigForExtAuthSettings(settings *extauthv1.Settings, upstreams v1.UpstreamList) (*envoyauth.ExtAuthz, error) {
 	upstreamRef := settings.GetExtauthzServerRef()
 	if upstreamRef == nil {
 		return nil, NoServerRefErr
@@ -59,17 +84,7 @@ func BuildHttpFilters(
 		return nil, ServerNotFound(upstreamRef)
 	}
 
-	extAuthCfg, err := generateEnvoyConfigForFilter(settings, upstreamRef)
-	if err != nil {
-		return nil, err
-	}
-
-	stagedFilter, err := plugins.NewStagedFilterWithConfig(wellknown.HTTPExternalAuthorization, extAuthCfg, FilterStage)
-	if err != nil {
-		return nil, err
-	}
-	filters = append(filters, stagedFilter)
-	return filters, nil
+	return generateEnvoyConfigForFilter(settings, upstreamRef)
 }
 
 func generateEnvoyConfigForFilter(settings *extauthv1.Settings, extauthUpstreamRef *core.ResourceRef) (*envoyauth.ExtAuthz, error) {
@@ -122,6 +137,7 @@ func generateEnvoyConfigForFilter(settings *extauthv1.Settings, extauthUpstreamR
 	cfg.FailureModeAllow = settings.FailureModeAllow
 	cfg.WithRequestBody = translateRequestBody(settings.RequestBody)
 	cfg.ClearRouteCache = settings.ClearRouteCache
+	cfg.StatPrefix = settings.StatPrefix
 
 	statusOnError, err := translateStatusOnError(settings.StatusOnError)
 	if err != nil {
