@@ -53,7 +53,7 @@ spec:
   - {{ $name | kebabcase }}
 {{- end }}
 ---
-{{- if not $gatewaySettings.disableHttpsGateway -}}
+{{- if not $gatewaySettings.disableHttpsGateway }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
