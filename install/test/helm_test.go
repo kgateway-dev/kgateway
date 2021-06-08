@@ -937,6 +937,17 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectCustomResource("Gateway", namespace, "another-gateway-proxy")
 					})
 
+					It("renders custom gateway when gatewayProxy is disabled and custom disabled is not set", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.disabled=true",
+								//anotherGatewayProxy should exist but not have a value for disabled
+								"gatewayProxies.anotherGatewayProxy.loopbackAddress=127.0.0.1",
+							},
+						})
+						testManifest.Expect("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
+						testManifest.ExpectCustomResource("Gateway", namespace, "another-gateway-proxy")
+					})
 					var (
 						proxyNames = []string{defaults.GatewayProxyName}
 					)
