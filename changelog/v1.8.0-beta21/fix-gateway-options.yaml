@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4591
+    description: Helm chart values with the pattern `gatewayProxies.gatewayProxy.gatewaySettings.options.*` can be set correctly

@@ -31,16 +31,11 @@ spec:
 {{- else }}
   httpGateway: {}
 {{- end }}
-{{ if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
+{{ if ($gatewaySettings.accessLoggingService) }}
   options:
-{{- end }}
-  {{- if $gatewaySettings.options }}
-  {{ toYaml $gatewaySettings.options | nindent 6 }}
-  {{- end }}
-  {{- if $gatewaySettings.accessLoggingService }}
     accessLoggingService:
   {{ toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
-  {{- end }}
+{{- end }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
   ssl: false
   proxyNames:
@@ -82,16 +77,11 @@ spec:
 {{- else }}
   httpGateway: {}
 {{- end }}{{/* if $gatewaySettings.customHttpsGateway */}}
-{{ if or ($gatewaySettings.options) ($gatewaySettings.accessLoggingService) }}
+{{ if ($gatewaySettings.accessLoggingService) }}
   options:
-{{- end }}
-  {{- if $gatewaySettings.options }}
-  {{ toYaml $gatewaySettings.options | nindent 6 }}
-  {{- end }}
-  {{- if $gatewaySettings.accessLoggingService }}
     accessLoggingService:
   {{ toYaml $gatewaySettings.accessLoggingService | nindent 6 }}
-  {{- end }}
+{{- end }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
   ssl: true
   proxyNames:
