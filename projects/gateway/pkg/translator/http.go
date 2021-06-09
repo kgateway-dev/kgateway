@@ -80,10 +80,34 @@ func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnap
 
 		virtualServices := getVirtualServicesForGateway(gateway, snap.VirtualServices)
 		validateVirtualServiceDomains(gateway, virtualServices, reports)
-		listener := t.desiredListenerForHttp(gateway, virtualServices, snap.RouteTables, reports)
+		// Merge deligated options into route options
+		// Route options specified on the Route override delegated options
+		flattenVhOpts(virtualServices, snap.VirtualHostOptions, reports)
+		listener := t.desiredListenerForHttp(gateway, virtualServices, snap, reports)
 		result = append(result, listener)
 	}
 	return result
+}
+
+func flattenVhOpts(virtualServices v1.VirtualServiceList, options v1.VirtualHostOptionList, reports reporter.ResourceReports) {
+	for _, vs := range virtualServices {
+		optionRefs := vs.GetVirtualHost().GetDelegateOptions()
+		for _, optionRef := range optionRefs {
+			vhOption, err := options.Find(optionRef.GetNamespace(), optionRef.GetName())
+			if err != nil {
+				reports.AddError(vs, err)
+				continue
+			}
+			if vs.GetVirtualHost().GetOptions() == nil {
+				vs.GetVirtualHost().Options = vhOption.GetOptions()
+				continue
+			}
+			vs.GetVirtualHost().Options, err = mergeVirtualHostOptions(vs.GetVirtualHost().GetOptions(), vhOption.GetOptions())
+			if err != nil {
+				reports.AddError(vs, err)
+			}
+		}
+	}
 }
 
 // Errors will be added to the report object.
@@ -202,7 +226,7 @@ func hasSsl(vs *v1.VirtualService) bool {
 	return vs.SslConfig != nil
 }
 
-func (t *HttpTranslator) desiredListenerForHttp(gateway *v1.Gateway, virtualServicesForGateway v1.VirtualServiceList, tables v1.RouteTableList, reports reporter.ResourceReports) *gloov1.Listener {
+func (t *HttpTranslator) desiredListenerForHttp(gateway *v1.Gateway, virtualServicesForGateway v1.VirtualServiceList, snapshot *v1.ApiSnapshot, reports reporter.ResourceReports) *gloov1.Listener {
 	var (
 		virtualHosts []*gloov1.VirtualHost
 		sslConfigs   []*gloov1.SslConfig
@@ -212,7 +236,7 @@ func (t *HttpTranslator) desiredListenerForHttp(gateway *v1.Gateway, virtualServ
 		if virtualService.VirtualHost == nil {
 			virtualService.VirtualHost = &v1.VirtualHost{}
 		}
-		vh, err := t.virtualServiceToVirtualHost(virtualService, tables, reports)
+		vh, err := t.virtualServiceToVirtualHost(virtualService, snapshot, reports)
 		if err != nil {
 			reports.AddError(virtualService, err)
 			continue
@@ -244,9 +268,9 @@ func (t *HttpTranslator) desiredListenerForHttp(gateway *v1.Gateway, virtualServ
 	return listener
 }
 
-func (t *HttpTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
-	converter := NewRouteConverter(NewRouteTableSelector(tables), NewRouteTableIndexer())
-	routes, err := converter.ConvertVirtualService(vs, reports)
+func (t *HttpTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, snapshot *v1.ApiSnapshot, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
+	converter := NewRouteConverter(NewRouteTableSelector(snapshot.RouteTables), NewRouteTableIndexer())
+	routes, err := converter.ConvertVirtualService(vs, snapshot, reports)
 	if err != nil {
 		// internal error, should never happen
 		return nil, err

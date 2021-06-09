@@ -18,7 +18,9 @@ import (
 )
 
 var _ = Describe("Route converter", func() {
-
+	var (
+		snapshot *v1.ApiSnapshot
+	)
 	DescribeTable("should detect bad config on a delegate route",
 		func(route *v1.Route, expectedErr error) {
 			reports := reporter.ResourceReports{}
@@ -32,7 +34,7 @@ var _ = Describe("Route converter", func() {
 				},
 			}
 			rv := translator.NewRouteConverter(nil, nil)
-			_, err := rv.ConvertVirtualService(vs, reports)
+			_, err := rv.ConvertVirtualService(vs, snapshot, reports)
 			Expect(err).NotTo(HaveOccurred())
 
 			// One error on the VS, one on the RT
@@ -146,7 +148,7 @@ var _ = Describe("Route converter", func() {
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
 				translator.NewRouteTableIndexer(),
 			)
-			converted, err := rv.ConvertVirtualService(vs, rpt)
+			converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
 		})
@@ -183,7 +185,7 @@ var _ = Describe("Route converter", func() {
 				translator.NewRouteTableSelector(v1.RouteTableList{}),
 				translator.NewRouteTableIndexer(),
 			)
-			converted, err := rv.ConvertVirtualService(vs, rpt)
+			converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted[0].GetRouteAction().GetSingle().GetUpstream().GetNamespace()).To(Equal("vs-ns"))
 		})
@@ -226,7 +228,7 @@ var _ = Describe("Route converter", func() {
 				translator.NewRouteTableSelector(v1.RouteTableList{}),
 				translator.NewRouteTableIndexer(),
 			)
-			converted, err := rv.ConvertVirtualService(vs, rpt)
+			converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 			Expect(err).NotTo(HaveOccurred())
 			dest0 := converted[0].GetRouteAction().GetMulti().GetDestinations()[0]
 			Expect(dest0.GetDestination().GetUpstream().GetNamespace()).To(Equal("vs-ns"))
@@ -278,7 +280,7 @@ var _ = Describe("Route converter", func() {
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
 				translator.NewRouteTableIndexer(),
 			)
-			converted, err := rv.ConvertVirtualService(vs, rpt)
+			converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted).To(HaveLen(3))
@@ -332,7 +334,7 @@ var _ = Describe("Route converter", func() {
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
 				translator.NewRouteTableIndexer(),
 			)
-			converted, err := rv.ConvertVirtualService(vs, rpt)
+			converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted).To(HaveLen(3))
@@ -441,7 +443,7 @@ var _ = Describe("Route converter", func() {
 				expectedHeaders := append(rtOnlyHeaders, vsOnlyHeaders...)
 
 				rpt := reporter.ResourceReports{}
-				converted, err := rv.ConvertVirtualService(vs, rpt)
+				converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(1))
 				Expect(rpt).To(HaveLen(0))
@@ -506,7 +508,7 @@ var _ = Describe("Route converter", func() {
 				expectedHeaders := append(rtOnlyHeaders, vsOnlyHeaders...)
 
 				rpt := reporter.ResourceReports{}
-				converted, err := rv.ConvertVirtualService(vs, rpt)
+				converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(1))
 				Expect(rpt).To(HaveLen(0))
@@ -553,7 +555,7 @@ var _ = Describe("Route converter", func() {
 				vs.VirtualHost.Routes[0].InheritablePathMatchers = &wrappers.BoolValue{Value: true}
 
 				rpt := reporter.ResourceReports{}
-				converted, err := rv.ConvertVirtualService(vs, rpt)
+				converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(1))
 				Expect(rpt).To(HaveLen(0))
@@ -588,7 +590,7 @@ var _ = Describe("Route converter", func() {
 				rt.Routes[0].InheritableMatchers = &wrappers.BoolValue{Value: true}
 
 				rpt := reporter.ResourceReports{}
-				converted, err := rv.ConvertVirtualService(vs, rpt)
+				converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(1))
 				Expect(rpt).To(HaveLen(0))
@@ -738,7 +740,7 @@ var _ = Describe("Route converter", func() {
 
 			It("assigns vhost transformation config to route level", func() {
 				rpt := reporter.ResourceReports{}
-				converted, err := rv.ConvertVirtualService(vs, rpt)
+				converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 				Expect(rpt).To(HaveLen(0))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(1))
@@ -764,7 +766,7 @@ var _ = Describe("Route converter", func() {
 				vs.GetVirtualHost().GetOptions().GetStagedTransformations().Regular = nil
 
 				rpt := reporter.ResourceReports{}
-				converted, err := rv.ConvertVirtualService(vs, rpt)
+				converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 				Expect(rpt).To(HaveLen(0))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(1))
@@ -789,7 +791,7 @@ var _ = Describe("Route converter", func() {
 				vs.GetVirtualHost().GetRoutes()[0].GetOptions().GetStagedTransformations().InheritTransformation = false
 
 				rpt := reporter.ResourceReports{}
-				converted, err := rv.ConvertVirtualService(vs, rpt)
+				converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 				Expect(rpt).To(HaveLen(0))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(1))
@@ -883,7 +885,7 @@ var _ = Describe("Route converter", func() {
 				}
 
 				rpt := reporter.ResourceReports{}
-				converted, err := rv.ConvertVirtualService(vs, rpt)
+				converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(BeNil())
 				Expect(rpt).To(HaveLen(2))
@@ -911,7 +913,7 @@ var _ = Describe("Route converter", func() {
 				}
 
 				rpt := reporter.ResourceReports{}
-				converted, err := rv.ConvertVirtualService(vs, rpt)
+				converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(BeNil())
 				Expect(rpt).To(HaveLen(2))
@@ -960,7 +962,7 @@ var _ = Describe("Route converter", func() {
 				}
 
 				rpt := reporter.ResourceReports{}
-				converted, err := rv.ConvertVirtualService(vs, rpt)
+				converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(1))
 				Expect(rpt).To(HaveLen(0))
@@ -1002,7 +1004,7 @@ var _ = Describe("Route converter", func() {
 					}
 
 					rpt := reporter.ResourceReports{}
-					converted, err := rv.ConvertVirtualService(vs, rpt)
+					converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
@@ -1037,7 +1039,7 @@ var _ = Describe("Route converter", func() {
 					}
 
 					rpt := reporter.ResourceReports{}
-					converted, err := rv.ConvertVirtualService(vs, rpt)
+					converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
@@ -1088,7 +1090,7 @@ var _ = Describe("Route converter", func() {
 				}
 
 				rpt := reporter.ResourceReports{}
-				converted, err := rv.ConvertVirtualService(vs, rpt)
+				converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(1))
 				Expect(rpt).To(HaveLen(0))
@@ -1130,7 +1132,7 @@ var _ = Describe("Route converter", func() {
 					}
 
 					rpt := reporter.ResourceReports{}
-					converted, err := rv.ConvertVirtualService(vs, rpt)
+					converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
@@ -1165,7 +1167,7 @@ var _ = Describe("Route converter", func() {
 					}
 
 					rpt := reporter.ResourceReports{}
-					converted, err := rv.ConvertVirtualService(vs, rpt)
+					converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
@@ -1209,7 +1211,7 @@ var _ = Describe("Route converter", func() {
 				}
 
 				rpt := reporter.ResourceReports{}
-				converted, err := rv.ConvertVirtualService(vs, rpt)
+				converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(1))
 				Expect(rpt).To(HaveLen(0))
@@ -1251,7 +1253,7 @@ var _ = Describe("Route converter", func() {
 					}
 
 					rpt := reporter.ResourceReports{}
-					converted, err := rv.ConvertVirtualService(vs, rpt)
+					converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
@@ -1284,7 +1286,7 @@ var _ = Describe("Route converter", func() {
 					}
 
 					rpt := reporter.ResourceReports{}
-					converted, err := rv.ConvertVirtualService(vs, rpt)
+					converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(converted).To(BeNil())
 					Expect(rpt).To(HaveLen(2))
@@ -1304,7 +1306,7 @@ var _ = Describe("Route converter", func() {
 		When("route table has no matchers and the parent route matcher is not the default one", func() {
 			It("reports error on the route table and on the virtual service", func() {
 				rpt := reporter.ResourceReports{}
-				converted, err := rv.ConvertVirtualService(vs, rpt)
+				converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(BeNil())
 				Expect(rpt).To(HaveLen(2))
@@ -1324,7 +1326,7 @@ var _ = Describe("Route converter", func() {
 				vs.VirtualHost.Routes[0].Matchers = []*matchers.Matcher{defaults.DefaultMatcher()}
 
 				rpt := reporter.ResourceReports{}
-				converted, err := rv.ConvertVirtualService(vs, rpt)
+				converted, err := rv.ConvertVirtualService(vs, snapshot, rpt)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(1))
 				Expect(rpt).To(HaveLen(0))
@@ -1398,7 +1400,7 @@ var _ = Describe("Route converter", func() {
 					Namespaces: []string{"ns-1"},
 				})
 
-				converted, err := visitor.ConvertVirtualService(vs, reports)
+				converted, err := visitor.ConvertVirtualService(vs, snapshot, reports)
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(4))
@@ -1435,7 +1437,7 @@ var _ = Describe("Route converter", func() {
 			DescribeTable("selector works as expected",
 				func(selector *v1.RouteTableSelector, expectedPrefixMatchers []string) {
 					vs = buildVirtualService(selector)
-					converted, err := visitor.ConvertVirtualService(vs, reports)
+					converted, err := visitor.ConvertVirtualService(vs, snapshot, reports)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(converted).To(HaveLen(len(expectedPrefixMatchers)))
 					for i, prefix := range expectedPrefixMatchers {
@@ -1491,7 +1493,7 @@ var _ = Describe("Route converter", func() {
 				func(selector *v1.RouteTableSelector, routeName string, expectedNames []string) {
 
 					vs = buildVirtualServiceWithName(selector, routeName)
-					converted, err := visitor.ConvertVirtualService(vs, reports)
+					converted, err := visitor.ConvertVirtualService(vs, snapshot, reports)
 
 					Expect(err).NotTo(HaveOccurred())
 					Expect(converted).To(HaveLen(len(expectedNames)))
@@ -1564,7 +1566,7 @@ var _ = Describe("Route converter", func() {
 				DescribeTable("delegation cycles are detected",
 					func(selector *v1.RouteTableSelector, expectedCycleInfoMessage string, offendingTable core.Metadata) {
 						vs = buildVirtualService(selector)
-						_, err := visitor.ConvertVirtualService(vs, reports)
+						_, err := visitor.ConvertVirtualService(vs, snapshot, reports)
 						Expect(err).NotTo(HaveOccurred())
 
 						expectedErrStr := translator.DelegationCycleErr(expectedCycleInfoMessage).Error()
@@ -1625,7 +1627,7 @@ var _ = Describe("Route converter", func() {
 				DescribeTable("delegation cycles are detected",
 					func(selector *v1.RouteTableSelector, expectedCycleInfoMessage string, offendingTable core.Metadata) {
 						vs = buildVirtualService(selector)
-						_, err := visitor.ConvertVirtualService(vs, reports)
+						_, err := visitor.ConvertVirtualService(vs, snapshot, reports)
 						Expect(err).NotTo(HaveOccurred())
 
 						expectedErrStr := translator.DelegationCycleErr(expectedCycleInfoMessage).Error()
@@ -1709,7 +1711,7 @@ var _ = Describe("Route converter", func() {
 
 			It("works as expected", func() {
 
-				converted, err := visitor.ConvertVirtualService(vs, reports)
+				converted, err := visitor.ConvertVirtualService(vs, snapshot, reports)
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(6))
