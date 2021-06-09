@@ -336,10 +336,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/#Route
     package: gateway.solo.io
   gateway.solo.io.RouteOption:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/options.proto.sk/#RouteOption
-    package: gateway.solo.io
-  gateway.solo.io.RouteOptionRefs:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/options.proto.sk/#RouteOptionRefs
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/external_options.proto.sk/#RouteOption
     package: gateway.solo.io
   gateway.solo.io.RouteTable:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk/#RouteTable
@@ -354,10 +351,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/#VirtualHost
     package: gateway.solo.io
   gateway.solo.io.VirtualHostOption:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/options.proto.sk/#VirtualHostOption
-    package: gateway.solo.io
-  gateway.solo.io.VirtualHostOptionRefs:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/options.proto.sk/#VirtualHostOptionRefs
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/external_options.proto.sk/#VirtualHostOption
     package: gateway.solo.io
   gateway.solo.io.VirtualService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/#VirtualService

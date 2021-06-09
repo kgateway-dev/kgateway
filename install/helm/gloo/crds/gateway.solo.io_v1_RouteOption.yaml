@@ -20,8 +20,9 @@ spec:
     openAPIV3Schema:
       properties:
         spec:
-          description: RouteOption CRD, used to externalize Route options configuration,
-            and can be reused across multiple Routes
+          description: The **RouteOption** holds `options` configuration for a Route.
+            Routes can inherit `options` config from `RouteOption` objects by delegating
+            to them.
           properties:
             options:
               description: Route options. See Route for delegation behavior.

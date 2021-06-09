@@ -3,8 +3,6 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    helm.sh/hook: crd-install
   creationTimestamp: null
   name: virtualservices.gateway.solo.io
 spec:
@@ -154,7 +152,7 @@ spec:
                 one route in the list, the first route matched will be selected. If
                 the list of routes is empty, the virtual host will be ignored by Gloo.
               properties:
-                delegateOption:
+                delegateOptions:
                   description: Delegate the VirtualHost options to an external VirtualHostOption
                     Resource. Any options configured in the VirtualHost's `options`
                     field will override all delegated options. If multiple VirtualHostOption
@@ -166,19 +164,15 @@ spec:
                     If the config is removed from the VirtualHost-level `options`
                     field, then the config from the first delegated `VirtualHostOption`,
                     vhost-opt-1, is applied.
-                  properties:
-                    refs:
-                      description: reference to a `VirtualHostOption` resource
-                      items:
-                        description: A way to reference resources across namespaces
-                        properties:
-                          name:
-                            type: string
-                          namespace:
-                            type: string
-                        type: object
-                      type: array
-                  type: object
+                  items:
+                    description: A way to reference resources across namespaces
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                    type: object
+                  type: array
                 domains:
                   description: 'The list of domains (i.e.: matching the `Host` header
                     of a request) that belong to this virtual host. Note that the
@@ -3732,7 +3726,7 @@ spec:
                                 type: array
                             type: object
                         type: object
-                      delegateOption:
+                      delegateOptions:
                         description: Delegate the Route options to an external RouteOption
                           Resource. Any options configured in the Route's `options`
                           field will override all delegated options. If multiple RouteOption
@@ -3744,19 +3738,15 @@ spec:
                           `options` will be applied. If the config is removed from
                           the Route-level `options` field, then the config from the
                           first delegated `RouteOption`, route-opt-1, is applied.
-                        properties:
-                          refs:
-                            description: reference to a `RouteOption` resource
-                            items:
-                              description: A way to reference resources across namespaces
-                              properties:
-                                name:
-                                  type: string
-                                namespace:
-                                  type: string
-                              type: object
-                            type: array
-                        type: object
+                        items:
+                          description: A way to reference resources across namespaces
+                          properties:
+                            name:
+                              type: string
+                            namespace:
+                              type: string
+                          type: object
+                        type: array
                       directResponseAction:
                         description: Return an arbitrary HTTP response directly, without
                           proxying.
@@ -11598,5 +11588,5 @@ status:
   acceptedNames:
     kind: ""
     plural: ""
-  conditions: null
-  storedVersions: null
+  conditions: []
+  storedVersions: []
