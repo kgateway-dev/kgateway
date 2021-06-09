@@ -82,32 +82,10 @@ func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnap
 		validateVirtualServiceDomains(gateway, virtualServices, reports)
 		// Merge deligated options into route options
 		// Route options specified on the Route override delegated options
-		flattenVhOpts(virtualServices, snap.VirtualHostOptions, reports)
 		listener := t.desiredListenerForHttp(gateway, virtualServices, snap, reports)
 		result = append(result, listener)
 	}
 	return result
-}
-
-func flattenVhOpts(virtualServices v1.VirtualServiceList, options v1.VirtualHostOptionList, reports reporter.ResourceReports) {
-	for _, vs := range virtualServices {
-		optionRefs := vs.GetVirtualHost().GetDelegateOptions()
-		for _, optionRef := range optionRefs {
-			vhOption, err := options.Find(optionRef.GetNamespace(), optionRef.GetName())
-			if err != nil {
-				reports.AddError(vs, err)
-				continue
-			}
-			if vs.GetVirtualHost().GetOptions() == nil {
-				vs.GetVirtualHost().Options = vhOption.GetOptions()
-				continue
-			}
-			vs.GetVirtualHost().Options, err = mergeVirtualHostOptions(vs.GetVirtualHost().GetOptions(), vhOption.GetOptions())
-			if err != nil {
-				reports.AddError(vs, err)
-			}
-		}
-	}
 }
 
 // Errors will be added to the report object.
@@ -270,6 +248,8 @@ func (t *HttpTranslator) desiredListenerForHttp(gateway *v1.Gateway, virtualServ
 
 func (t *HttpTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, snapshot *v1.ApiSnapshot, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
 	converter := NewRouteConverter(NewRouteTableSelector(snapshot.RouteTables), NewRouteTableIndexer())
+	t.mergeDelegatedVirtualHostOptions(vs, snapshot.VirtualHostOptions, reports)
+
 	routes, err := converter.ConvertVirtualService(vs, snapshot, reports)
 	if err != nil {
 		// internal error, should never happen
@@ -295,6 +275,26 @@ func (t *HttpTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, snap
 	}
 
 	return vh, nil
+}
+
+// finds delegated VirtualHostOption Objects and merges the options into the virtual service
+func (t *HttpTranslator) mergeDelegatedVirtualHostOptions(vs *v1.VirtualService, options v1.VirtualHostOptionList, reports reporter.ResourceReports) {
+	optionRefs := vs.GetVirtualHost().GetDelegateOptions()
+	for _, optionRef := range optionRefs {
+		vhOption, err := options.Find(optionRef.GetNamespace(), optionRef.GetName())
+		if err != nil {
+			reports.AddError(vs, err)
+			continue
+		}
+		if vs.GetVirtualHost().GetOptions() == nil {
+			vs.GetVirtualHost().Options = vhOption.GetOptions()
+			continue
+		}
+		vs.GetVirtualHost().Options, err = mergeVirtualHostOptions(vs.GetVirtualHost().GetOptions(), vhOption.GetOptions())
+		if err != nil {
+			reports.AddError(vs, err)
+		}
+	}
 }
 
 func VirtualHostName(vs *v1.VirtualService) string {
