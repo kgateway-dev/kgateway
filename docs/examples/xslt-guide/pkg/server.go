@@ -4,14 +4,15 @@ import (
 	"encoding/csv"
 	"encoding/xml"
 	"fmt"
-	"github.com/foomo/soap"
-	"github.com/lithammer/fuzzysearch/fuzzy"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/foomo/soap"
+	"github.com/lithammer/fuzzysearch/fuzzy"
 )
 
 // Query a simple request
