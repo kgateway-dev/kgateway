@@ -13,7 +13,7 @@ spec:
     plural: routeoptions
     shortNames:
     - rto
-    - rtopt
+    - rtopts
   preserveUnknownFields: false
   scope: Namespaced
   validation:
