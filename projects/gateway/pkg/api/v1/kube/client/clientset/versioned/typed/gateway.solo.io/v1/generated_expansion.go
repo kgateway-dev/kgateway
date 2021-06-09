@@ -20,6 +20,10 @@ package v1
 
 type GatewayExpansion interface{}
 
+type RouteOptionExpansion interface{}
+
 type RouteTableExpansion interface{}
+
+type VirtualHostOptionExpansion interface{}
 
 type VirtualServiceExpansion interface{}

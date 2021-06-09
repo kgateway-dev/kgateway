@@ -55,8 +55,12 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=gateway.solo.io, Version=v1
 	case v1.SchemeGroupVersion.WithResource("gateways"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1().Gateways().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("routeoptions"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1().RouteOptions().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("routetables"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1().RouteTables().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("virtualhostoptions"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1().VirtualHostOptions().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("virtualservices"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Gateway().V1().VirtualServices().Informer()}, nil
 

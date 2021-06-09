@@ -26,6 +26,14 @@ type GatewayListerExpansion interface{}
 // GatewayNamespaceLister.
 type GatewayNamespaceListerExpansion interface{}
 
+// RouteOptionListerExpansion allows custom methods to be added to
+// RouteOptionLister.
+type RouteOptionListerExpansion interface{}
+
+// RouteOptionNamespaceListerExpansion allows custom methods to be added to
+// RouteOptionNamespaceLister.
+type RouteOptionNamespaceListerExpansion interface{}
+
 // RouteTableListerExpansion allows custom methods to be added to
 // RouteTableLister.
 type RouteTableListerExpansion interface{}
@@ -33,6 +41,14 @@ type RouteTableListerExpansion interface{}
 // RouteTableNamespaceListerExpansion allows custom methods to be added to
 // RouteTableNamespaceLister.
 type RouteTableNamespaceListerExpansion interface{}
+
+// VirtualHostOptionListerExpansion allows custom methods to be added to
+// VirtualHostOptionLister.
+type VirtualHostOptionListerExpansion interface{}
+
+// VirtualHostOptionNamespaceListerExpansion allows custom methods to be added to
+// VirtualHostOptionNamespaceLister.
+type VirtualHostOptionNamespaceListerExpansion interface{}
 
 // VirtualServiceListerExpansion allows custom methods to be added to
 // VirtualServiceLister.
