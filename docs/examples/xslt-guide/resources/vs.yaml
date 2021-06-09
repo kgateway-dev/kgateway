@@ -18,3 +18,35 @@ spec:
               namespace: gloo-system
         options:
           autoHostRewrite: true
+          stagedTransformations:
+            regular: # any transformation stage is fine here
+              requestTransforms:
+                - requestTransformation:
+                    xsltTransformation:
+                      xslt: |
+                        <?xml version="1.0" encoding="UTF-8"?>
+                          <xsl:stylesheet
+                            xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                            xmlns:math="http://www.w3.org/2005/xpath-functions/math"
+                            xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                            exclude-result-prefixes="xs math" version="3.0">
+                            <xsl:output indent="yes" omit-xml-declaration="yes" />
+                            <xsl:strip-space elements="*"/>
+                            <xsl:template match="/" xmlns="http://schemas.xmlsoap.org/soap/envelope/">
+                              <Envelope >
+                              <Header/>
+                              <Body>
+                              <Query>
+                                <xsl:apply-templates select="json-to-xml(.)/*"/>
+                              </Query>
+                              </Body>
+                              </Envelope>
+                            </xsl:template>
+                            <xsl:template match="map" xpath-default-namespace="http://www.w3.org/2005/xpath-functions"
+                                xmlns:web="http://www.qas.com/OnDemand-2011-03">
+                              <CityQuery><xsl:value-of select="string[@key='cityQuery']" /></CityQuery>
+                            </xsl:template>
+                          </xsl:stylesheet>
+                      nonXmlTransform: true
+                      setContentType: text/xml
+
