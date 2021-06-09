@@ -53,14 +53,14 @@ var _ = Describe("Kube2e: helm", func() {
 		By("apply new `VirtualHostOption` CRD")
 		runAndCleanCommand("kubectl", "apply", "-f", vhoCrdTemplateName)
 		Eventually(func() string {
-			outputBytes := runAndCleanCommand("kubectl", "get", "crd", rlcCrdName)
+			outputBytes := runAndCleanCommand("kubectl", "get", "crd", vhoCrdName)
 			return string(outputBytes)
 		}, "5s", "1s").Should(ContainSubstring(vhoCrdName))
 
 		By("apply new `RouteOption` CRD")
 		runAndCleanCommand("kubectl", "apply", "-f", rtoCrdTemplateName)
 		Eventually(func() string {
-			outputBytes := runAndCleanCommand("kubectl", "get", "crd", rlcCrdName)
+			outputBytes := runAndCleanCommand("kubectl", "get", "crd", rtoCrdName)
 			return string(outputBytes)
 		}, "5s", "1s").Should(ContainSubstring(rtoCrdName))
 
