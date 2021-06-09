@@ -52,8 +52,8 @@ func init() {
 		"routetables.gateway.solo.io",
 		"authconfigs.enterprise.gloo.solo.io",
 		"ratelimitconfigs.ratelimit.solo.io",
-		"virtualhostoption.gateway.solo.io",
-		"routeoption.gateway.solo.io",
+		"virtualhostoptions.gateway.solo.io",
+		"routeoptions.gateway.solo.io",
 	}
 
 	GlooFedCrdNames = []string{
