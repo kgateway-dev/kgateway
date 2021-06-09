@@ -1,4 +1,4 @@
-package http_path_test
+package advanced_http_test
 
 import (
 	"testing"
@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestHttpPath(t *testing.T) {
+func TestAdvancedHttp(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "HttpPath Suite", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "AdvancedHttp Suite", []Reporter{junitReporter})
 }

@@ -88,8 +88,14 @@ Enabling route replacement can be done by directly patching the **Settings** CRD
 kubectl patch settings -n gloo-system default --patch '{"spec": {"gloo": {"invalidConfigPolicy": {"replaceInvalidRoutes": true, "invalidRouteResponseCode": 404, "invalidRouteResponseBody": "Gloo Gateway has invalid configuration. Administrators should run glooctl check to find and fix config errors."}}}}' --type=merge
 {{< /tab >}}
 {{< tab name="using Helm" codelang="bash">}}
-# set the following value when running `helm install` or `helm template`
---set settings.invalidConfigPolicy.replaceInvalidRoutes=true
+# set the following in the helm overrides file
+settings:
+  replaceInvalidRoutes: true
+  invalidConfigPolicy:
+    invalidRouteResponseBody: Gloo Edge has invalid configuration. Administrators
+      should run `glooctl check` to find and fix config errors.
+    invalidRouteResponseCode: 404
+    replaceInvalidRoutes: true
 {{< /tab >}}
 {{< /tabs >}}
 

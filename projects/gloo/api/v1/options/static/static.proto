@@ -36,16 +36,18 @@ message UpstreamSpec {
 message Host {
     // Address (hostname or IP)
     string addr = 1;
+
     // Port the instance is listening on
     uint32 port = 2;
 
     // Address to use for SNI if using ssl.
     string sni_addr = 4;
 
-
     message HealthCheckConfig {
         // (Enterprise Only): Path to use when health checking this specific host.
         string path = 1;
+        // (Enterprise Only): Method to use when health checking this specific host.
+        string method = 2;
     }
 
     // (Enterprise Only): Host specific health checking configuration.

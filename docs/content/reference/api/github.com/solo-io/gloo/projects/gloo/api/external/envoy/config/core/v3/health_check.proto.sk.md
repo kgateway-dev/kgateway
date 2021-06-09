@@ -120,7 +120,7 @@ Describes the encoding of the payload bytes in the payload.
 ### HttpHealthCheck
 
  
-[#next-free-field: 12]
+[#next-free-field: 13]
 
 ```yaml
 "host": string
@@ -132,6 +132,7 @@ Describes the encoding of the payload bytes in the payload.
 "expectedStatuses": []solo.io.envoy.type.v3.Int64Range
 "codecClientType": .solo.io.envoy.type.v3.CodecClientType
 "serviceNameMatcher": .solo.io.envoy.type.matcher.v3.StringMatcher
+"responseAssertions": .advancedhttp.options.gloo.solo.io.ResponseAssertions
 
 ```
 
@@ -146,6 +147,7 @@ Describes the encoding of the payload bytes in the payload.
 | `expectedStatuses` | [[]solo.io.envoy.type.v3.Int64Range](../../../../type/v3/range.proto.sk/#int64range) | Specifies a list of HTTP response statuses considered healthy. If provided, replaces default 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open semantics of :ref:`Int64Range <envoy_api_msg_type.v3.Int64Range>`. The start and end of each range are required. Only statuses in the range [100, 600) are allowed. |
 | `codecClientType` | [.solo.io.envoy.type.v3.CodecClientType](../../../../type/v3/http.proto.sk/#codecclienttype) | Use specified application protocol for health checks. |
 | `serviceNameMatcher` | [.solo.io.envoy.type.matcher.v3.StringMatcher](../../../../type/matcher/v3/string.proto.sk/#stringmatcher) | An optional service name parameter which is used to validate the identity of the health checked cluster using a :ref:`StringMatcher <envoy_api_msg_type.matcher.v3.StringMatcher>`. See the :ref:`architecture overview <arch_overview_health_checking_identity>` for more information. |
+| `responseAssertions` | [.advancedhttp.options.gloo.solo.io.ResponseAssertions](../../../../../../v1/options/advanced_http/advanced_http.proto.sk/#responseassertions) | (Enterprise Only): If defined, the response health check rules take precedence over the http `expected_statuses`. |
 
 
 
