@@ -29,7 +29,7 @@ type Match struct {
 
 // FoundResponse a simple response
 type FoundResponse struct {
-	Matches []Match
+	Match []Match
 }
 
 func GetCities() ([]string, []string, []string, []string) {
@@ -102,7 +102,7 @@ func RunServer() {
 					})
 				}
 				response = &FoundResponse{
-					Matches: matches,
+					Match: matches,
 				}
 			} else {
 				err = fmt.Errorf("unable to find query %s in cities", req.CityQuery)
