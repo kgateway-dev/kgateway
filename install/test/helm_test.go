@@ -606,7 +606,7 @@ var _ = Describe("Helm Test", func() {
 						if structuredDeployment.GetName() == "gateway-proxy" {
 							Expect(len(structuredDeployment.Spec.Template.Spec.Containers)).To(Equal(3), "should have exactly 3 containers")
 							Ω(haveSdsSidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue(), "gateway-proxy should have an sds sidecar")
-							Ω(istioSidecarVersion(structuredDeployment.Spec.Template.Spec.Containers)).To(Equal("docker.io/istio/proxyv2:1.9.4"), "istio proxy sidecar should be the default")
+							Ω(istioSidecarVersion(structuredDeployment.Spec.Template.Spec.Containers)).To(Equal("docker.io/istio/proxyv2:1.9.5"), "istio proxy sidecar should be the default")
 							Ω(haveIstioSidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue(), "gateway-proxy should have an istio-proxy sidecar")
 							Ω(sdsIsIstioMode(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue(), "sds sidecar should have istio mode enabled")
 							Expect(structuredDeployment.Spec.Template.Spec.Volumes).To(ContainElement(istioCertsVolume), "should have istio-certs volume mounted")
@@ -937,6 +937,17 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectCustomResource("Gateway", namespace, "another-gateway-proxy")
 					})
 
+					It("renders custom gateway when gatewayProxy is disabled and custom disabled is not set", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.disabled=true",
+								//anotherGatewayProxy should exist but not have a value for disabled
+								"gatewayProxies.anotherGatewayProxy.loopbackAddress=127.0.0.1",
+							},
+						})
+						testManifest.Expect("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
+						testManifest.ExpectCustomResource("Gateway", namespace, "another-gateway-proxy")
+					})
 					var (
 						proxyNames = []string{defaults.GatewayProxyName}
 					)
