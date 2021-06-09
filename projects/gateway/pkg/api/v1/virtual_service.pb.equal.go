@@ -152,14 +152,21 @@ func (m *VirtualHost) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetDelegateOption()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetDelegateOption()) {
-			return false
+	if len(m.GetDelegateOptions()) != len(target.GetDelegateOptions()) {
+		return false
+	}
+	for idx, v := range m.GetDelegateOptions() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetDelegateOptions()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetDelegateOptions()[idx]) {
+				return false
+			}
 		}
-	} else {
-		if !proto.Equal(m.GetDelegateOption(), target.GetDelegateOption()) {
-			return false
-		}
+
 	}
 
 	return true
@@ -237,14 +244,21 @@ func (m *Route) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetDelegateOption()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetDelegateOption()) {
-			return false
+	if len(m.GetDelegateOptions()) != len(target.GetDelegateOptions()) {
+		return false
+	}
+	for idx, v := range m.GetDelegateOptions() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetDelegateOptions()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetDelegateOptions()[idx]) {
+				return false
+			}
 		}
-	} else {
-		if !proto.Equal(m.GetDelegateOption(), target.GetDelegateOption()) {
-			return false
-		}
+
 	}
 
 	switch m.Action.(type) {

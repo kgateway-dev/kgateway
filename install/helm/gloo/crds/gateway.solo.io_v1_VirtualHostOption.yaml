@@ -20,8 +20,9 @@ spec:
     openAPIV3Schema:
       properties:
         spec:
-          description: VirtualHostOption CRD, used to externalize VirtualHost options
-            configuration, and can be reused across multiple VirtualHosts
+          description: The **VirtualHostOption** holds `options` configuration for
+            a VirtualHost. VirtualHosts can inherit `options` config from `VirtualHostOption`
+            objects by delegating to them.
           properties:
             options:
               description: VirtualHost options. See VirtualHost for delegation behavior.
