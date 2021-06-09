@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4846
+    resolvesIssue: true
+    description: Bump istio proxy version to 1.9.5

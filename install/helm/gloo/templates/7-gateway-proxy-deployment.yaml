@@ -318,7 +318,7 @@ spec:
 {{- end }}
 {{- if not $global.istioSDS.customSidecars }}
       - name: istio-proxy
-        image: docker.io/istio/proxyv2:1.9.4
+        image: docker.io/istio/proxyv2:1.9.5
         {{- if $global.glooMtls.sdsResources }}
         resources:
 {{ toYaml $global.glooMtls.sdsResources | indent 10}}

@@ -108,7 +108,7 @@ Describes the encoding of the payload bytes in the payload.
 ### HttpHealthCheck
 
  
-[#comment:next free field: 10]
+[#comment:next free field: 11]
 
 ```yaml
 "host": string
@@ -118,6 +118,7 @@ Describes the encoding of the payload bytes in the payload.
 "requestHeadersToRemove": []string
 "useHttp2": bool
 "expectedStatuses": []solo.io.envoy.type.Int64Range
+"responseAssertions": .advancedhttp.options.gloo.solo.io.ResponseAssertions
 
 ```
 
@@ -130,6 +131,7 @@ Describes the encoding of the payload bytes in the payload.
 | `requestHeadersToRemove` | `[]string` | Specifies a list of HTTP headers that should be removed from each request that is sent to the health checked cluster. |
 | `useHttp2` | `bool` | If set, health checks will be made using http/2. |
 | `expectedStatuses` | [[]solo.io.envoy.type.Int64Range](../../../../type/range.proto.sk/#int64range) | Specifies a list of HTTP response statuses considered healthy. If provided, replaces default 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open semantics of `Int64Range (envoy_api_msg_type.Int64Range)`. |
+| `responseAssertions` | [.advancedhttp.options.gloo.solo.io.ResponseAssertions](../../../../../../v1/options/advanced_http/advanced_http.proto.sk/#responseassertions) | (Enterprise Only): If defined, the response health check rules take precedence over the http `expected_statuses`. |
 
 
 
