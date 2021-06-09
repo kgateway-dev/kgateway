@@ -49,4 +49,34 @@ spec:
                           </xsl:stylesheet>
                       nonXmlTransform: true
                       setContentType: text/xml
+                  responseTransformation:
+                    xsltTransformation:
+                      xslt: |
+                        <?xml version="1.0" encoding="UTF-8"?>
+                          <xsl:stylesheet
+                            xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                            xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                            xpath-default-namespace="http://schemas.xmlsoap.org/soap/envelope/"
+                            version="3.0">
+                            <xsl:output method="text" omit-xml-declaration="yes" />
+
+                            <xsl:variable name="myMap">
+                              <map xmlns="http://www.w3.org/2005/xpath-functions">
+                                <array key="matches" >
+                                  <xsl:for-each select="/Envelope/Body/Content/Match">
+                                    <map >
+                                        <string key="city"><xsl:value-of select="City"/></string>
+                                        <string key="country"><xsl:value-of select="Country" /></string>
+                                        <string key="subCountry"><xsl:value-of select="SubCountry" /></string>
+                                        <string key="geoNameId"><xsl:value-of select="GeoNameId" /></string>
+                                    </map>
+                                  </xsl:for-each>
+                                </array>
+                              </map>
+                              </xsl:variable>
+                            <xsl:template match="/">
+                              <xsl:apply-templates select="xml-to-json($myMap, map{'indent': true()})" />
+                            </xsl:template>
+                          </xsl:stylesheet>
+                      setContentType: application/json
 
