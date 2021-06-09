@@ -1,0 +1,11 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/2837
+    resolvesIssue: false
+    description: >-
+      Implement _enterprise-only_ advanced HTTP health checking API for envoy. Previously, Gloo supported
+      per-endpoint paths in the HTTP health checking config on static upstreams. After this change we support
+      per-endpoint method configuration of the HTTP health check requests to static upstreams, as well as complex
+      regex json / regex parsing of the HTTP response to make determination on the HTTP health check response (rather
+      than just look at the HTTP status, like upstream envoy). Regex/json parsing of the response can be configured
+      in the `ResponseAssertions` field on the upstream's HTTP health check.

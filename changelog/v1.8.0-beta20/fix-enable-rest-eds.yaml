@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4495
+    description: The setting for enableRestEds is no longer ignored when glooMtls is enabled
