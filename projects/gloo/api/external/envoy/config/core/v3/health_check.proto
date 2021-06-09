@@ -7,6 +7,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/http.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/range.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/advanced_http/advanced_http.proto";
 
 import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
@@ -73,7 +74,7 @@ message HealthCheck {
     }
   }
 
-  // [#next-free-field: 12]
+  // [#next-free-field: 13]
   message HttpHealthCheck {
     option (solo.io.udpa.annotations.versioning).previous_message_type =
         ".solo.io.envoy.api.v2.core.HealthCheck.HttpHealthCheck";
@@ -127,6 +128,10 @@ message HealthCheck {
     // <envoy_api_msg_type.matcher.v3.StringMatcher>`. See the :ref:`architecture overview
     // <arch_overview_health_checking_identity>` for more information.
     type.matcher.v3.StringMatcher service_name_matcher = 11;
+
+    // (Enterprise Only): If defined, the response health check rules take precedence over the http
+    // `expected_statuses`.
+    .advancedhttp.options.gloo.solo.io.ResponseAssertions response_assertions = 12;
   }
 
   message TcpHealthCheck {

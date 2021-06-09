@@ -9,6 +9,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envo
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/range.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/advanced_http/advanced_http.proto";
 
 import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
@@ -89,7 +90,7 @@ message HealthCheck {
         }
     }
 
-    // [#comment:next free field: 10]
+    // [#comment:next free field: 11]
     message HttpHealthCheck {
         // The value of the host header in the HTTP health check request. If
         // left empty (default value), the name of the cluster this health check is associated
@@ -129,6 +130,10 @@ message HealthCheck {
         // 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open
         // semantics of `Int64Range (envoy_api_msg_type.Int64Range)`.
         repeated .solo.io.envoy.type.Int64Range expected_statuses = 9;
+
+        // (Enterprise Only): If defined, the response health check rules take precedence over the http
+        // `expected_statuses`.
+        .advancedhttp.options.gloo.solo.io.ResponseAssertions response_assertions = 10;
     }
 
     message TcpHealthCheck {

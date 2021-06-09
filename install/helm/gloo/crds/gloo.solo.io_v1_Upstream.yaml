@@ -883,6 +883,82 @@ spec:
                         items:
                           type: string
                         type: array
+                      responseAssertions:
+                        description: '(Enterprise Only): If defined, the response
+                          health check rules take precedence over the http `expected_statuses`.'
+                        properties:
+                          noMatchHealth:
+                            description: The default health response if none of the
+                              response health checks were matches. If omitted, defaults
+                              to unhealthy.
+                            enum:
+                            - default
+                            - healthy
+                            - degraded
+                            - unhealthy
+                            type: string
+                          responseMatchers:
+                            description: A bunch of match rules, the first match wins
+                              out and short-circuits
+                            items:
+                              description: Defines a transformation template.
+                              properties:
+                                matchHealth:
+                                  description: The health response if this response_match
+                                    is a match. If omitted, defaults to healthy
+                                  enum:
+                                  - default
+                                  - healthy
+                                  - degraded
+                                  - unhealthy
+                                  type: string
+                                responseMatch:
+                                  description: Defines the parameters to determine
+                                    a single match
+                                  properties:
+                                    body:
+                                      description: Extract information from the request/response
+                                        body
+                                      maxProperties: 0
+                                      type: object
+                                    header:
+                                      description: Extract information from headers
+                                      type: string
+                                    ignoreErrorOnParse:
+                                      description: If set to true, Envoy will not
+                                        throw an exception in case the json body parsing
+                                        fails.
+                                      type: boolean
+                                    jsonKey:
+                                      description: Configuration to get the json key.
+                                        Treats the body as raw text if omitted.
+                                      properties:
+                                        path:
+                                          description: The path to retrieve the Value.
+                                          items:
+                                            description: Specifies the segment in
+                                              a path to retrieve value.
+                                            properties:
+                                              key:
+                                                description: If specified, use the
+                                                  key to retrieve the value. If the
+                                                  key is not found, the value defaults
+                                                  to empty string.
+                                                type: string
+                                            type: object
+                                          type: array
+                                      type: object
+                                    regex:
+                                      description: Only strings matching this regular
+                                        expression will be considered a match. The
+                                        most simple value for this field is '.*',
+                                        which matches the whole source. The field
+                                        is required.
+                                      type: string
+                                  type: object
+                              type: object
+                            type: array
+                        type: object
                       serviceName:
                         description: An optional service name parameter which is used
                           to validate the identity of the health checked cluster.
@@ -1743,6 +1819,10 @@ spec:
                         description: '(Enterprise Only): Host specific health checking
                           configuration.'
                         properties:
+                          method:
+                            description: '(Enterprise Only): Method to use when health
+                              checking this specific host.'
+                            type: string
                           path:
                             description: '(Enterprise Only): Path to use when health
                               checking this specific host.'

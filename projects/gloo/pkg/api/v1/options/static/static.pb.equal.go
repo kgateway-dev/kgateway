@@ -161,5 +161,9 @@ func (m *Host_HealthCheckConfig) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetMethod(), target.GetMethod()) != 0 {
+		return false
+	}
+
 	return true
 }
