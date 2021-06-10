@@ -79,4 +79,3 @@ spec:
                             </xsl:template>
                           </xsl:stylesheet>
                       setContentType: application/json
-

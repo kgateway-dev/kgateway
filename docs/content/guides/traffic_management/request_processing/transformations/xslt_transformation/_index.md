@@ -322,8 +322,92 @@ The `requestTransformation` specified on the VirtualService uses an XSLT 3.0 fun
 our JSON to an XML. The `responseTransformation` uses another function, [xml-to-json()](https://www.w3.org/TR/xslt-30/#func-xml-to-json) to convert the XML from the service
 back to a JSON, which we see above.
 
+### The XSLT Transformations
+
+#### Request Transformation
+
+Let's break down what is happening in these transformations. On the request path, we have the following transformation config:
+{{< highlight yaml "hl_lines=17">}}
+requestTransformation:
+  xsltTransformation:
+    xslt: |
+      <?xml version="1.0" encoding="UTF-8"?>
+        <xsl:stylesheet
+        xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+        xmlns:math="http://www.w3.org/2005/xpath-functions/math"
+        xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        exclude-result-prefixes="xs math" version="3.0">
+          <xsl:output indent="yes" omit-xml-declaration="yes" />
+          <xsl:strip-space elements="*"/>
+          <xsl:template match="/" xmlns="http://schemas.xmlsoap.org/soap/envelope/">
+            <Envelope >
+              <Header/>
+              <Body>
+                <Query>
+                  <xsl:apply-templates select="json-to-xml(.)/*"/>
+                </Query>
+              </Body>
+            </Envelope>
+          </xsl:template>
+          <xsl:template match="map" xpath-default-namespace="http://www.w3.org/2005/xpath-functions"
+          xmlns:web="http://www.qas.com/OnDemand-2011-03">
+            <CityQuery><xsl:value-of select="string[@key='cityQuery']" /></CityQuery>
+          </xsl:template>
+        </xsl:stylesheet>
+    nonXmlTransform: true
+    setContentType: text/xml
+{{< /highlight >}}
+
+`xslt`: This is the main XSLT transformation. The highlighted line uses `json-to-xml`, an XSLT 3.0 function
+which transforms our JSON to the XML which the world cities service understands.
+
+`nonXmlTransform`: This is set to true since we are transforming JSON to XML. Natively, XSLT can only transform
+XML data. However, our input to the transformation is JSON, so by specifying this flag, we signal to our XSLT transformation
+filter that we are supplying non-xml (JSON) data as the input.
+
+`setContentType`: Since we are transforming the content type of the data from `application/json` to `text/xml`, we 
+can set the new content-type header here.
+
+#### Response transformation
+
+{{< highlight yaml "hl_lines=26" >}}
+responseTransformation:
+  xsltTransformation:
+    xslt: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <xsl:stylesheet
+      xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+      xmlns:xs="http://www.w3.org/2001/XMLSchema"
+      xpath-default-namespace="http://schemas.xmlsoap.org/soap/envelope/"
+      version="3.0">
+      <xsl:output method="text" omit-xml-declaration="yes" />
+        <xsl:variable name="myMap">
+          <map xmlns="http://www.w3.org/2005/xpath-functions">
+            <array key="matches" >
+              <xsl:for-each select="/Envelope/Body/Content/Match">
+                <map>
+                  <string key="city"><xsl:value-of select="City"/></string>
+                  <string key="country"><xsl:value-of select="Country" /></string>
+                  <string key="subCountry"><xsl:value-of select="SubCountry" /></string>
+                  <string key="geoNameId"><xsl:value-of select="GeoNameId" /></string>
+                </map>
+              </xsl:for-each>
+            </array>
+          </map>
+        </xsl:variable>
+        <xsl:template match="/">
+          <xsl:apply-templates select="xml-to-json($myMap, map{'indent': true()})" />
+        </xsl:template>
+      </xsl:stylesheet>
+    setContentType: application/json
+{{< /highlight >}}
+
+Once again, we can see the important line highlighted. The `xml-to-json` function translates the XML
+response from the server to the JSON that we see on the client side. We transform the content-type header from the 
+server to `application/json` using the `setContentType` field.
+
 ## Summary
 
-In this guide, we installed Gloo Edge Enterprise and created a SOAP service which uses XML as a communication protocol. 
+In this guide, we installed Gloo Edge Enterprise and created a SOAP service which uses XML as it's communication protocol. 
 We were then able to modernize the service using XSLT transformations to convert JSON -> XML and XML -> JSON. This allowed
-us to query our SOAP service with a JSON query, and to recieve a JSON response in return, without ever changing the service.
+us to query our SOAP service with a JSON query, and to receive a JSON response in return, without ever changing the service.
