@@ -3,9 +3,9 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
+	"github.com/solo-io/go-utils/testutils"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -792,7 +792,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 	})
 
-	FContext("tests with VirtualHostOptions", func() {
+	Context("tests with VirtualHostOptions", func() {
 
 		AfterEach(func() {
 			cancel()
@@ -923,18 +923,18 @@ var _ = Describe("Kube2e: gateway", func() {
 					found = true
 					opts := vhost.GetOptions()
 					// option config on VirtualHost overrides all delegated options
-					Expect(proto.Equal(opts.GetHeaderManipulation(), vs.GetVirtualHost().GetOptions().GetHeaderManipulation())).To(BeTrue())
-					// since vh1 is delegated to first, it overrides vh2, which was delegated later
-					Expect(proto.Equal(opts.GetCors(), vh1.GetOptions().GetCors())).To(BeTrue())
-					// options that weren't already set in previously delegated options are set from vh2
-					Expect(proto.Equal(opts.GetTransformations(), vh2.GetOptions().GetTransformations())).To(BeTrue())
+					testutils.ExpectEqualProtoMessages(opts.GetHeaderManipulation(), vs.GetVirtualHost().GetOptions().GetHeaderManipulation())
+					// since rt1 is delegated to first, it overrides rt2, which was delegated later
+					testutils.ExpectEqualProtoMessages(opts.GetCors(), vh1.GetOptions().GetCors())
+					// options that weren't already set in previously delegated options are set from rt2
+					testutils.ExpectEqualProtoMessages(opts.GetTransformations(), vh2.GetOptions().GetTransformations())
 				}
 			}
 			Expect(found).To(BeTrue())
 		})
 	})
 
-	FContext("tests with RouteOptions", func() {
+	Context("tests with RouteOptions", func() {
 
 		AfterEach(func() {
 			cancel()
@@ -1081,11 +1081,11 @@ var _ = Describe("Kube2e: gateway", func() {
 						found = true
 						opts := route.GetOptions()
 						// option config on VirtualHost overrides all delegated options
-						Expect(proto.Equal(opts.GetHeaderManipulation(), vs.GetVirtualHost().GetOptions().GetHeaderManipulation()))
+						testutils.ExpectEqualProtoMessages(opts.GetHeaderManipulation(), vs.GetVirtualHost().GetRoutes()[0].GetOptions().GetHeaderManipulation())
 						// since rt1 is delegated to first, it overrides rt2, which was delegated later
-						Expect(proto.Equal(opts.GetCors(), rt1.GetOptions().GetCors()))
+						testutils.ExpectEqualProtoMessages(opts.GetCors(), rt1.GetOptions().GetCors())
 						// options that weren't already set in previously delegated options are set from rt2
-						Expect(!proto.Equal(opts.GetTransformations(), rt2.GetOptions().GetTransformations())).To(BeTrue())
+						testutils.ExpectEqualProtoMessages(opts.GetTransformations(), rt2.GetOptions().GetTransformations())
 					}
 				}
 			}
