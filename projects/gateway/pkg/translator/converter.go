@@ -181,7 +181,7 @@ func (rv *routeVisitor) visit(
 		name, routeHasName := routeName(resource.InputResource(), routeClone, parentRoute)
 		routeClone.Name = name
 
-		// Merge deligated options into route options
+		// Merge delegated options into route options
 		// Route options specified on the Route override delegated options
 		optionRefs := routeClone.GetDelegateOptions()
 		for _, optionRef := range optionRefs {
