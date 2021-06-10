@@ -422,19 +422,6 @@
 |gatewayProxies.NAME.gatewaySettings.useProxyProto|bool||use proxy protocol|
 |gatewayProxies.NAME.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
 |gatewayProxies.NAME.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
-|gatewayProxies.NAME.gatewaySettings.options.validation_server_addr|string|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.proxy_validation_server_addr|string|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.validation_webhook_tls_cert|string|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.validation_webhook_tls_key|string|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.ignore_gloo_validation_failure|bool|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.always_accept.value|bool|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.allow_warnings.value|bool|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.warn_route_short_circuiting.value|bool|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.disable_transformation_validation.value|bool|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.validation_server_grpc_max_size.value|int64|||
-|gatewayProxies.NAME.gatewaySettings.options.read_gateways_from_all_namespaces|bool|||
-|gatewayProxies.NAME.gatewaySettings.options.always_sort_route_table_routes|bool|||
-|gatewayProxies.NAME.gatewaySettings.options.compressed_proxy_spec|bool|||
 |gatewayProxies.NAME.gatewaySettings.accessLoggingService.access_log[]|interface|||
 |gatewayProxies.NAME.gatewaySettings.httpGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.gatewaySettings.httpsGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
@@ -590,19 +577,6 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.useProxyProto|bool|false|use proxy protocol|
 |gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
 |gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation_server_addr|string|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.proxy_validation_server_addr|string|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.validation_webhook_tls_cert|string|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.validation_webhook_tls_key|string|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.ignore_gloo_validation_failure|bool|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.always_accept.value|bool|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.allow_warnings.value|bool|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.warn_route_short_circuiting.value|bool|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.disable_transformation_validation.value|bool|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.validation_server_grpc_max_size.value|int64|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.read_gateways_from_all_namespaces|bool|false||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.always_sort_route_table_routes|bool|false||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.compressed_proxy_spec|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.accessLoggingService.access_log[]|interface|||
 |gatewayProxies.gatewayProxy.gatewaySettings.httpGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.gatewaySettings.httpsGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|

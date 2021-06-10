@@ -1,4 +1,4 @@
 changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/4591
-    description: Helm chart values with the pattern `gatewayProxies.gatewayProxy.gatewaySettings.options.*` can be set correctly
+    description: Ensure that the value for gateway.compressedProxySpec is set and remove an unused Helm chart value.

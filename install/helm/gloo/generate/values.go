@@ -1,7 +1,6 @@
 package generate
 
 import (
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	appsv1 "k8s.io/api/core/v1"
 )
@@ -348,7 +347,6 @@ type GatewayProxyGatewaySettings struct {
 	UseProxyProto            *bool                    `json:"useProxyProto,omitempty" desc:"use proxy protocol"`
 	CustomHttpGateway        *string                  `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
 	CustomHttpsGateway       *string                  `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
-	GatewayOptions           v1.GatewayOptions        `json:"options,omitempty" desc:"custom options for http(s) gateways"`
 	AccessLoggingService     als.AccessLoggingService `json:"accessLoggingService,omitempty"`
 	HttpGatewayOverride      *KubeResourceOverride    `json:"httpGatewayKubeOverride,omitempty"`
 	HttpsGatewayOverride     *KubeResourceOverride    `json:"httpsGatewayKubeOverride,omitempty"`
