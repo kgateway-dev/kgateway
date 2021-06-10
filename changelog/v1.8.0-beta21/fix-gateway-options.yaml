@@ -1,4 +1,9 @@
 changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/4591
-    description: Ensure that the value for gateway.compressedProxySpec is set and remove an unused Helm chart value.
+    description: Ensure that the value for gateway.compressedProxySpec is set.
+  - type: BREAKING_CHANGE
+    issueLink: https://github.com/solo-io/gloo/issues/4591
+    description: >-
+        Update values.go and generated documentation to reflect the correct type for
+        gatewayProxies.gatewayProxy.gatewaySettings.options and the new place for compressedProxySpec
