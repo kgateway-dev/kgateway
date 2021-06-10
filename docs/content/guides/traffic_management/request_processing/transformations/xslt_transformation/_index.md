@@ -4,12 +4,12 @@ weight: 10
 description: Transforming the request body with an XSLT transformation. 
 ---
 
-## Background
+## Introduction
 
 SOAP remains prevalent today for enterprise web services across a number of industries, 
 including financial services and healthcare. However, SOAP uses XML, a verbose communication protocol over 2 decades old. 
 Modern services have adopted newer communication protocols, one of which is JSON. Modernizing a legacy SOAP service to use
-JSON can often mean rewriting the service entirely. This guide introduces a way of allowing for clients and services'
+JSON can often mean rewriting the service entirely. This guide shows you a way of allowing for clients and services'
 communication protocols to differ by performing the translation within Gloo Edge. We leverage 
 powerful XSLT transformations to allow for an XML-based service to communicate with a JSON client.
 
