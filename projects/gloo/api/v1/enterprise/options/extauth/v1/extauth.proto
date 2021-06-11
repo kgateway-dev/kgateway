@@ -207,7 +207,7 @@ message CustomAuth {
     // for more details.
     map<string, string> context_extensions = 1;
 
-    // Enterprise-only
+    // [Enterprise-only]
     // Only required in the case where multiple auth servers are configured in Settings
     // This name must match a key in the named_extauth Settings.
     string name = 2;
