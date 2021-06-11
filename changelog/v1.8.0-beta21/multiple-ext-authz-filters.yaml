@@ -1,5 +1,7 @@
 changelog:
   - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4874
+    resolvesIssue: false
     description: >
       Introduce API for a new enterprise-only feature of configuring
       multiple ext auth servers in Settings. Allow for configuring
