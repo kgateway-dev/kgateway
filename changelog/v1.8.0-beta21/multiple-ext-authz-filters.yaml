@@ -1,0 +1,10 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Introduce API for a new enterprise-only feature of configuring
+      multiple ext auth servers in Settings. Allow for configuring
+      an ext_authz filter that points to one of those servers per route.
+  - type: NEW_FEATURE
+    description: >
+      Allow `stat_prefix` to be enabled for an ext_authz filter.
+      This is an additional prefix that is used when emitting statistics.
