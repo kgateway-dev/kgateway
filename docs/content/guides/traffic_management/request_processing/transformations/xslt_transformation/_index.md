@@ -7,11 +7,11 @@ description: Transforming the request body with an XSLT transformation.
 ## Introduction
 
 SOAP remains prevalent today for enterprise web services across a number of industries, 
-including financial services and healthcare. However, SOAP uses XML, a verbose communication protocol over 2 decades old. 
-Modern services have adopted newer communication protocols, one of which is JSON. Modernizing a legacy SOAP service to use
+including financial services and healthcare. However, SOAP uses XML, a message format over 2 decades old. 
+Modern services have adopted newer message formats, one of which is JSON. Modernizing a legacy SOAP service to use
 JSON can often mean rewriting the service entirely. This guide shows you a way of allowing for clients and services'
-communication protocols to differ by performing the translation within Gloo Edge. We leverage 
-powerful XSLT transformations to allow for an XML-based service to communicate with a JSON client.
+message formats to differ by performing the translation within Gloo Edge. We leverage 
+powerful XSLT transformations to allow for an XML-based SOAP service to communicate with a JSON client.
 
 {{% notice note %}}
 The XSLT transformation feature was introduced with **Gloo Edge Enterprise**, release 1.8.0-beta3. If you are using an earlier version, this tutorial will not work.
@@ -408,6 +408,6 @@ server to `application/json` using the `setContentType` field.
 
 ## Summary
 
-In this guide, we installed Gloo Edge Enterprise and created a SOAP service which uses XML as it's communication protocol. 
+In this guide, we installed Gloo Edge Enterprise and created a SOAP service which uses XML as it's message format. 
 We were then able to modernize the service using XSLT transformations to convert JSON -> XML and XML -> JSON. This allowed
 us to query our SOAP service with a JSON query, and to receive a JSON response in return, without ever changing the service.
