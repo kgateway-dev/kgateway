@@ -120,7 +120,7 @@ In this model, all traffic between the clusters routes between the API Gateways 
 
 Now that you have an understanding of the Gloo Edge deployment patterns, there are number of potential next steps that we'd like to recommend.
 
-* **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo Edge yourself or try one of our Katacoda courses.
+* **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo Edge yourself.
 * **[Deployment Options]({{% versioned_link_path fromRoot="/introduction/architecture/deployment_arch/" %}})**: Learn about specific implementations of Gloo Edge with Kubernetes or HashiCorp.
 * **[Concepts]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}})**: Learn more about the core concepts behind Gloo Edge and how they interact.
 * **[Developer Guides]({{% versioned_link_path fromRoot="/guides/dev/" %}})**: extend Gloo Edge's functionality for your use case through various plugins.
