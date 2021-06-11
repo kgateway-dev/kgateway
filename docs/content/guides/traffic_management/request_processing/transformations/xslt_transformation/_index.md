@@ -1,7 +1,7 @@
 ---
-title: XSLT transformation
+title: SOAP/XSLT transformation
 weight: 10
-description: Transforming the request body with an XSLT transformation. 
+description: Transforming the request body from SOAP/XML to a JSON.
 ---
 
 ## Introduction
@@ -22,7 +22,7 @@ The XSLT transformation feature was introduced with **Gloo Edge Enterprise**, re
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 We will also be using the [jq](https://stedolan.github.io/jq/) commmand line utility to pretty print JSON strings.
 
-This guide uses a custom image for running a SOAP service. The source code for this image is available in the [Gloo Edge repository][https://github.com/solo-io/gloo] in `docs/examples/xslt-guide`.
+This guide uses a custom image for running a SOAP service. The source code for this image is available in the [Gloo Edge repository](https://github.com/solo-io/gloo) in `docs/examples/xslt-guide`.
 In this guide, we pull the pre-built image from a remote repository, but if you want to rebuild the image, simply run `make docker-local`.
 
 
