@@ -69,6 +69,8 @@ func Inject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 	pflags := cmd.PersistentFlags()
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	addIstioNamespaceFlag(pflags, &opts.Istio.Namespace)
+	addIstioMetaMeshIdFlag(pflags, &opts.Istio.IstioMetaMeshId)
+	addIstioMetaClusterIdFlag(pflags, &opts.Istio.IstioMetaClusterId)
 	return cmd
 }
 
@@ -334,4 +336,12 @@ func genGatewayProxyCluster() *envoy_config_cluster.Cluster {
 
 func addIstioNamespaceFlag(set *pflag.FlagSet, strptr *string) {
 	set.StringVar(strptr, "istio-namespace", istioDefaultNS, "namespace in which istio is installed")
+}
+
+func addIstioMetaMeshIdFlag(set *pflag.FlagSet, strptr *string) {
+	set.StringVar(strptr, "istio-meta-mesh-id", "", "sets ISTIO_META_MESH_ID env var")
+}
+
+func addIstioMetaClusterIdFlag(set *pflag.FlagSet, strptr *string) {
+	set.StringVar(strptr, "istio-meta-cluster-id", "", "sets ISTIO_META_CLUSTER_ID env var")
 }
