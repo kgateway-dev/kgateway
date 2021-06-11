@@ -759,7 +759,8 @@ spec:
                 are needed to authorize separate routes. Even with multiple auth servers
                 configured in Settings, only 1 will ever be configured and executed
                 on a route. The name of the auth server (ie the key in the map) will
-                be used to apply the configuration on the route.'
+                be used to apply the configuration on the route. If an auth server
+                name is not supplied on a route, the default auth server will be applied.'
               type: object
             observabilityOptions:
               description: Provides settings related to the observability deployment

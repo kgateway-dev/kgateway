@@ -1673,10 +1673,10 @@ spec:
                                             that you define on the source of the request.
                                           type: object
                                         name:
-                                          description: Enterprise-only Only required
+                                          description: '[Enterprise-only] Only required
                                             in the case where multiple auth servers
                                             are configured in Settings This name must
-                                            match a key in the named_extauth Settings.
+                                            match a key in the named_extauth Settings.'
                                           type: string
                                       type: object
                                     disable:
@@ -5969,11 +5969,11 @@ spec:
                                                   the request.
                                                 type: object
                                               name:
-                                                description: Enterprise-only Only
+                                                description: '[Enterprise-only] Only
                                                   required in the case where multiple
                                                   auth servers are configured in Settings
                                                   This name must match a key in the
-                                                  named_extauth Settings.
+                                                  named_extauth Settings.'
                                                 type: string
                                             type: object
                                           disable:
@@ -10946,14 +10946,14 @@ spec:
                                                                 of the request.
                                                               type: object
                                                             name:
-                                                              description: Enterprise-only
+                                                              description: '[Enterprise-only]
                                                                 Only required in the
                                                                 case where multiple
                                                                 auth servers are configured
                                                                 in Settings This name
                                                                 must match a key in
                                                                 the named_extauth
-                                                                Settings.
+                                                                Settings.'
                                                               type: string
                                                           type: object
                                                         disable:
@@ -17811,12 +17811,12 @@ spec:
                                                           of the request.
                                                         type: object
                                                       name:
-                                                        description: Enterprise-only
+                                                        description: '[Enterprise-only]
                                                           Only required in the case
                                                           where multiple auth servers
                                                           are configured in Settings
                                                           This name must match a key
-                                                          in the named_extauth Settings.
+                                                          in the named_extauth Settings.'
                                                         type: string
                                                     type: object
                                                   disable:

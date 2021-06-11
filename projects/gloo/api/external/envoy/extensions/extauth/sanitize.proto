@@ -7,14 +7,12 @@ message Sanitize {
   repeated string headers_to_remove = 1;
 
   // The name of the custom ext auth server
-  // This is only set in the case where multiple auth servers exist and a non-default server
-  // configuration is applied. If using the default ext auth server, do not set this value.
+  // This is only set in the case where multiple auth servers exist.
   string custom_auth_server_name = 2;
 }
 
 message SanitizePerRoute {
   // The name of the custom ext auth server
-  // This is only set in the case where multiple auth servers exist and a non-default server
-  // configuration is applied. If using the default ext auth server, do not set this value.
+  // This is only set in the case where multiple auth servers exist.
   string custom_auth_server_name = 1;
 }

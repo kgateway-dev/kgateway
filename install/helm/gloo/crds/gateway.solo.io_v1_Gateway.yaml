@@ -2015,11 +2015,11 @@ spec:
                                                     the source of the request.
                                                   type: object
                                                 name:
-                                                  description: Enterprise-only Only
-                                                    required in the case where multiple
-                                                    auth servers are configured in
-                                                    Settings This name must match
-                                                    a key in the named_extauth Settings.
+                                                  description: '[Enterprise-only]
+                                                    Only required in the case where
+                                                    multiple auth servers are configured
+                                                    in Settings This name must match
+                                                    a key in the named_extauth Settings.'
                                                   type: string
                                               type: object
                                             disable:

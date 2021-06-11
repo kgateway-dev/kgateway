@@ -33,8 +33,7 @@ type Sanitize struct {
 
 	HeadersToRemove []string `protobuf:"bytes,1,rep,name=headers_to_remove,json=headersToRemove,proto3" json:"headers_to_remove,omitempty"`
 	// The name of the custom ext auth server
-	// This is only set in the case where multiple auth servers exist and a non-default server
-	// configuration is applied. If using the default ext auth server, do not set this value.
+	// This is only set in the case where multiple auth servers exist.
 	CustomAuthServerName string `protobuf:"bytes,2,opt,name=custom_auth_server_name,json=customAuthServerName,proto3" json:"custom_auth_server_name,omitempty"`
 }
 
@@ -90,8 +89,7 @@ type SanitizePerRoute struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The name of the custom ext auth server
-	// This is only set in the case where multiple auth servers exist and a non-default server
-	// configuration is applied. If using the default ext auth server, do not set this value.
+	// This is only set in the case where multiple auth servers exist.
 	CustomAuthServerName string `protobuf:"bytes,1,opt,name=custom_auth_server_name,json=customAuthServerName,proto3" json:"custom_auth_server_name,omitempty"`
 }
 

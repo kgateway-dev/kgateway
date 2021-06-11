@@ -304,7 +304,7 @@ This is used with custom auth servers.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `contextExtensions` | `map<string, string>` | When a request matches the virtual host, route, or weighted destination on which this configuration is defined, Gloo will add the given context_extensions to the request that is sent to the external authorization server. This allows the server to base the auth decision on metadata that you define on the source of the request. This attribute is analogous to Envoy's config.filter.http.ext_authz.v2.CheckSettings. See the official [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto.html?highlight=ext_authz#config-filter-http-ext-authz-v2-checksettings) for more details. |
-| `name` | `string` | Enterprise-only Only required in the case where multiple auth servers are configured in Settings This name must match a key in the named_extauth Settings. |
+| `name` | `string` | [Enterprise-only] Only required in the case where multiple auth servers are configured in Settings This name must match a key in the named_extauth Settings. |
 
 
 

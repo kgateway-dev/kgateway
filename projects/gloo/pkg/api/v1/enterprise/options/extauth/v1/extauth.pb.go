@@ -569,7 +569,7 @@ type CustomAuth struct {
 	// [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto.html?highlight=ext_authz#config-filter-http-ext-authz-v2-checksettings)
 	// for more details.
 	ContextExtensions map[string]string `protobuf:"bytes,1,rep,name=context_extensions,json=contextExtensions,proto3" json:"context_extensions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// Enterprise-only
+	// [Enterprise-only]
 	// Only required in the case where multiple auth servers are configured in Settings
 	// This name must match a key in the named_extauth Settings.
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`

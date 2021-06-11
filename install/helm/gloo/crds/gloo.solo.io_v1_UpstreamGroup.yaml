@@ -504,10 +504,10 @@ spec:
                                   of the request.
                                 type: object
                               name:
-                                description: Enterprise-only Only required in the
+                                description: '[Enterprise-only] Only required in the
                                   case where multiple auth servers are configured
                                   in Settings This name must match a key in the named_extauth
-                                  Settings.
+                                  Settings.'
                                 type: string
                             type: object
                           disable:
