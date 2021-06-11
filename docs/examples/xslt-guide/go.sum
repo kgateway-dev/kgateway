@@ -1,0 +1,7 @@
+github.com/foomo/soap v0.1.0 h1:THvxMF2JQrVtPE2b6Y0lScv9bXBQUr71gMw0cf6y2ZI=
+github.com/foomo/soap v0.1.0/go.mod h1:iEr9ZbPhpWb/xprwFGaxmpV3uXTP0veBkSRA5kkGlWg=
+github.com/lithammer/fuzzysearch v1.1.2 h1:ePUtm14xKxbpCxozcFbIDRtvANxnVnE+RKpJUqkr2gA=
+github.com/lithammer/fuzzysearch v1.1.2/go.mod h1:v6tYW/9kpfV6LNcweXdSjQsfCku/1M/oObmSox1fzP8=
+golang.org/x/text v0.3.5 h1:i6eZZ+zk0SOf0xgBpEpPD18qWcJda6q1sxt3S0kzyUQ=
+golang.org/x/text v0.3.5/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=
+golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
