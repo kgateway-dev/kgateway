@@ -44,11 +44,17 @@ func NewTranslatorSyncerExtension(
 func (s *TranslatorSyncerExtension) Sync(
 	ctx context.Context,
 	snap *gloov1.ApiSnapshot,
+	settings *gloov1.Settings,
 	xdsCache envoycache.SnapshotCache,
 	reports reporter.ResourceReports,
 ) (string, error) {
 	ctx = contextutils.WithLogger(ctx, "extAuthTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
+
+	if settings.GetNamedExtauth() != nil {
+		logger.Error(ErrEnterpriseOnly)
+		return ExtAuthServerRole, eris.New(ErrEnterpriseOnly)
+	}
 
 	for _, proxy := range snap.Proxies {
 		for _, listener := range proxy.Listeners {

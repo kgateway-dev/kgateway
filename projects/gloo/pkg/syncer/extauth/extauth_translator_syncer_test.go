@@ -29,6 +29,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 		apiSnapshot *gloov1.ApiSnapshot
 		proxyClient clients.ResourceClient
 		snapCache   *syncer.MockXdsCache
+		settings    *gloov1.Settings
 	)
 	JustBeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
@@ -62,6 +63,8 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 			Secrets:     []*gloov1.Secret{},
 			AuthConfigs: extauth.AuthConfigList{config},
 		}
+
+		settings = &gloov1.Settings{}
 	})
 
 	AfterEach(func() {
@@ -69,8 +72,30 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 	})
 
 	Context("config with enterprise extauth feature is set on listener", func() {
+
+		BeforeEach(func() {
+			// Ensure that NamedExtauth is not configured
+			settings.NamedExtauth = nil
+		})
+
 		It("should error when enterprise extauth config is set", func() {
-			_, err := translator.Sync(ctx, apiSnapshot, snapCache, make(reporter.ResourceReports))
+			_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ErrEnterpriseOnly))
+		})
+
+	})
+
+	Context("config with enterprise named_extauth feature in settings", func() {
+
+		BeforeEach(func() {
+			settings.NamedExtauth = map[string]*extauth.Settings{
+				"custom-auth-server": nil,
+			}
+		})
+
+		It("should error", func() {
+			_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ErrEnterpriseOnly))
 		})
