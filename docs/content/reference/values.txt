@@ -304,6 +304,7 @@
 |gateway.serviceAccount.disableAutomount|bool||disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |gateway.serviceAccount.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gateway.readGatewaysFromAllNamespaces|bool|false|if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller|
+|gateway.compressedProxySpec|bool||if true, enables compression for the Proxy CRD spec|
 |gateway.logLevel|string||Level at which the pod should log. Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info|
 |gateway.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.kind.deployment.replicas|int||number of instances to deploy|
@@ -421,20 +422,15 @@
 |gatewayProxies.NAME.gatewaySettings.useProxyProto|bool||use proxy protocol|
 |gatewayProxies.NAME.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
 |gatewayProxies.NAME.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
-|gatewayProxies.NAME.gatewaySettings.options.validation_server_addr|string|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.proxy_validation_server_addr|string|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.validation_webhook_tls_cert|string|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.validation_webhook_tls_key|string|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.ignore_gloo_validation_failure|bool|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.always_accept.value|bool|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.allow_warnings.value|bool|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.warn_route_short_circuiting.value|bool|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.disable_transformation_validation.value|bool|||
-|gatewayProxies.NAME.gatewaySettings.options.validation.validation_server_grpc_max_size.value|int64|||
-|gatewayProxies.NAME.gatewaySettings.options.read_gateways_from_all_namespaces|bool|||
-|gatewayProxies.NAME.gatewaySettings.options.always_sort_route_table_routes|bool|||
-|gatewayProxies.NAME.gatewaySettings.options.compressed_proxy_spec|bool|||
 |gatewayProxies.NAME.gatewaySettings.accessLoggingService.access_log[]|interface|||
+|gatewayProxies.NAME.gatewaySettings.options.access_logging_service.access_log[]|interface|||
+|gatewayProxies.NAME.gatewaySettings.options.extensions.configs.NAME.fields.NAME|interface|||
+|gatewayProxies.NAME.gatewaySettings.options.per_connection_buffer_limit_bytes.value|uint32|||
+|gatewayProxies.NAME.gatewaySettings.options.socket_options[].description|string|||
+|gatewayProxies.NAME.gatewaySettings.options.socket_options[].level|int64|||
+|gatewayProxies.NAME.gatewaySettings.options.socket_options[].name|int64|||
+|gatewayProxies.NAME.gatewaySettings.options.socket_options[]|interface|||
+|gatewayProxies.NAME.gatewaySettings.options.socket_options[].state|int32|||
 |gatewayProxies.NAME.gatewaySettings.httpGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.gatewaySettings.httpsGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.gatewaySettings.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
@@ -589,20 +585,15 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.useProxyProto|bool|false|use proxy protocol|
 |gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
 |gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation_server_addr|string|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.proxy_validation_server_addr|string|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.validation_webhook_tls_cert|string|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.validation_webhook_tls_key|string|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.ignore_gloo_validation_failure|bool|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.always_accept.value|bool|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.allow_warnings.value|bool|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.warn_route_short_circuiting.value|bool|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.disable_transformation_validation.value|bool|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.validation_server_grpc_max_size.value|int64|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.read_gateways_from_all_namespaces|bool|false||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.always_sort_route_table_routes|bool|false||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.compressed_proxy_spec|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.accessLoggingService.access_log[]|interface|||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.access_logging_service.access_log[]|interface|||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.extensions.configs.NAME.fields.NAME|interface|||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.per_connection_buffer_limit_bytes.value|uint32|||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.socket_options[].description|string|||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.socket_options[].level|int64|||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.socket_options[].name|int64|||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.socket_options[]|interface|||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.socket_options[].state|int32|||
 |gatewayProxies.gatewayProxy.gatewaySettings.httpGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.gatewaySettings.httpsGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.gatewaySettings.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
