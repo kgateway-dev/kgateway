@@ -21,10 +21,10 @@ When we say Gloo Edge is a "next-generation" gateway, we mean that it was purpos
 
 ## Getting to know Gloo Edge
 
+* [**Getting Started**]({{% versioned_link_path fromRoot="/getting_started/" %}})
 * [**Installation**]({{% versioned_link_path fromRoot="/installation" %}})
 * [**Developers**]({{% versioned_link_path fromRoot="/guides/dev/" %}})
 * [**Website**](https://www.solo.io/products/gloo)
-* [**Hands On Tutorials**](https://www.katacoda.com/solo-io)
 * [**Slack**](https://slack.solo.io)
 * [**Twitter**](https://twitter.com/soloio_inc)
 

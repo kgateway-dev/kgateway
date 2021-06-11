@@ -3,9 +3,7 @@ title: Getting Started
 weight: 5
 ---
 
-We know you want to jump right in and start hacking away with Gloo Edge. That's awesome! If you want to try out Gloo Edge in a hosted setting, please check out our [Katacoda](https://katacoda.com/solo-io) courses that will guide you through a number of scenarios using Gloo Edge, all in a sandboxed environment.
-
-If you'd rather use your own Kubernetes cluster, all you need to do is install Gloo Edge using `glooctl` or Helm.
+We know you want to jump right in and start hacking away with Gloo Edge. That's awesome! The easiest way to do that is with your own Kubernetes cluster, either on your local workstation or in a cloud environment. First, you'll need to install Gloo Edge using either the `glooctl` utility or Helm.
 
 {{< tabs >}}
 {{< tab name="glooctl" codelang="shell">}}
