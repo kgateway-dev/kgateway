@@ -107,7 +107,7 @@ The following discovery methods are currently supported:
 
 Now that you have a basic understanding of the Gloo Edge architecture, there are number of potential next steps that we'd like to recommend.
 
-* **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo Edge yourself or try one of our Katacoda courses.
+* **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo Edge yourself.
 * **[Deployment Architecture]({{% versioned_link_path fromRoot="/introduction/architecture/deployment_arch/" %}})**: Learn about specific implementations of Gloo Edge on different software stacks.
 * **[Concepts]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}})**: Learn more about the core concepts behind Gloo Edge and how they interact.
 * **[Developer Guides]({{% versioned_link_path fromRoot="/guides/dev/" %}})**: extend Gloo Edge's functionality for your use case through various plugins.
