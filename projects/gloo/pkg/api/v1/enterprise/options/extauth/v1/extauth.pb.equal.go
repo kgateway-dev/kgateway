@@ -982,6 +982,10 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetAfterLogout(), target.GetAfterLogout()) != 0 {
+		return false
+	}
+
 	if len(m.GetScopes()) != len(target.GetScopes()) {
 		return false
 	}
