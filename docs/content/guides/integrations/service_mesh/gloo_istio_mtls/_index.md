@@ -9,7 +9,7 @@ Serving as the Ingress for an Istio cluster -- without compromising on security 
 
 ### Istio versions
 
-This guide was tested with Istio 1.6.6, 1.7.2, and 1.8.1. For older versions of Istio, see [here]({{% versioned_link_path fromRoot="/guides/integrations/service_mesh/gloo_istio_mtls/older_istio_versions/" %}}).
+This guide was tested with Istio 1.6.6, 1.7.2, 1.8.1 and 1.9.5. For older versions of Istio, see [here]({{% versioned_link_path fromRoot="/guides/integrations/service_mesh/gloo_istio_mtls/older_istio_versions/" %}}).
 
 ### Gloo Edge versions
 
@@ -19,11 +19,13 @@ This guide was tested with Gloo Edge v1.5.0.
 
 The Gloo Edge integration with Istio 1.6.6+ requires Gloo Edge version 1.4.10+, or 1.5.0+.
 
+The Gloo Edge integration with Istio 1.10.0 requires Gloo Edge version 1.8.0-beta21+.
+
 {{% /notice %}}
 
 ### Kubernetes versions
 
-This guide was tested with GKE v1.15.
+This guide was tested with GKE v1.17.
 
 
 {{% notice note %}}
@@ -41,8 +43,8 @@ For local development and testing, if you remove the istio-token mount then Isti
 To download and install the latest version of Istio, we will be following the installation instructions [here](https://istio.io/docs/setup/getting-started/).
 
 ```bash
-curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.8.1 sh -
-cd istio-1.8.1
+curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.9.5 sh -
+cd istio-1.9.5
 istioctl install --set profile=demo
 ```
 
@@ -72,7 +74,7 @@ glooctl install gateway
 ```
 or with helm:
 ```
-kubectl create ns gloo-system; helm install --namespace gloo-system --version 1.5.0-beta25 gloo gloo/gloo
+kubectl create ns gloo-system; helm install --namespace gloo-system --version 1.5.0 gloo gloo/gloo
 ```
 See the [quick start]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) guide for more information.
 
