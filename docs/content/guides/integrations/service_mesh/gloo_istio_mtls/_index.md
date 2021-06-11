@@ -273,7 +273,7 @@ spec:
               fieldPath: metadata.namespace
         - name: ISTIO_MTLS_SDS_ENABLED
           value: "true"
-        image: quay.io/solo-io/sds:1.5.0-beta24
+        image: quay.io/solo-io/sds:1.5.0
         imagePullPolicy: IfNotPresent
         name: sds
         ports:
