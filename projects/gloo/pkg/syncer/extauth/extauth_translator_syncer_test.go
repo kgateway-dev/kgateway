@@ -73,7 +73,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 
 	Context("config with enterprise extauth feature is set on listener", func() {
 
-		BeforeEach(func() {
+		JustBeforeEach(func() {
 			// Ensure that NamedExtauth is not configured
 			settings.NamedExtauth = nil
 		})
@@ -88,7 +88,7 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 
 	Context("config with enterprise named_extauth feature in settings", func() {
 
-		BeforeEach(func() {
+		JustBeforeEach(func() {
 			settings.NamedExtauth = map[string]*extauth.Settings{
 				"custom-auth-server": nil,
 			}
