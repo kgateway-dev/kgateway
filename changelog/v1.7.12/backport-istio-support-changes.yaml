@@ -1,0 +1,7 @@
+changelog:
+- type: NON_USER_FACING
+  description: Backport add istio 1.10.0 support for glooctl istio inject
+  issueLink: https://github.com/solo-io/gloo/issues/4884
+- type: NON_USER_FACING
+  description: Backport bump istio proxy from 1.8.1 to 1.9.5 for CVE fixes
+  issueLink: https://github.com/solo-io/gloo/issues/4883
