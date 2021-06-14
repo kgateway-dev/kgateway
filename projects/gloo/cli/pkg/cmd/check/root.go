@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -413,7 +415,7 @@ func checkRateLimitConfigs(ctx context.Context, namespaces []string) ([]string, 
 
 		rlcClient, err := helpers.RateLimitConfigClient(ctx, []string{ns})
 		if err != nil {
-			if isCrdNotFoundErr(err) {
+			if isCrdNotFoundErr(ratelimit.RateLimitConfigCrd, err) {
 				// Just warn. If the CRD is required, the check would have failed on the crashing gloo/gloo-ee pod.
 				fmt.Printf("WARN: %s\n", CrdNotFoundErr(ratelimit.RateLimitConfigCrd.KindName).Error())
 				return nil, nil
@@ -449,7 +451,16 @@ func checkVirtualHostOptions(ctx context.Context, namespaces []string) ([]string
 	var knownVhOpts []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		vhOpts, err := helpers.MustNamespacedVirtualHostOptionClient(ctx, ns).List(ns, clients.ListOpts{})
+		vhoptClient, err := helpers.VirtualHostOptionClient(ctx, []string{ns})
+		if err != nil {
+			if isCrdNotFoundErr(gatewayv1.VirtualHostOptionCrd, err) {
+				// Just warn. If the CRD is required, the check would have failed on the crashing gloo/gloo-ee pod.
+				fmt.Printf("WARN: %s\n", CrdNotFoundErr(gatewayv1.VirtualHostOptionCrd.KindName).Error())
+				return nil, nil
+			}
+			return nil, err
+		}
+		vhOpts, err := vhoptClient.List(ns, clients.ListOpts{})
 		if err != nil {
 			return nil, err
 		}
@@ -479,7 +490,16 @@ func checkRouteOptions(ctx context.Context, namespaces []string) ([]string, erro
 	var knownVhOpts []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		vhOpts, err := helpers.MustNamespacedRouteOptionClient(ctx, ns).List(ns, clients.ListOpts{})
+		routeOptionClient, err := helpers.RouteOptionClient(ctx, []string{ns})
+		if err != nil {
+			if isCrdNotFoundErr(gatewayv1.RouteOptionCrd, err) {
+				// Just warn. If the CRD is required, the check would have failed on the crashing gloo/gloo-ee pod.
+				fmt.Printf("WARN: %s\n", CrdNotFoundErr(gatewayv1.RouteOptionCrd.KindName).Error())
+				return nil, nil
+			}
+			return nil, err
+		}
+		vhOpts, err := routeOptionClient.List(ns, clients.ListOpts{})
 		if err != nil {
 			return nil, err
 		}
@@ -578,7 +598,7 @@ func checkVirtualServices(ctx context.Context, namespaces, knownUpstreams, known
 				if err := isAuthConfigRefValid(knownAuthConfigs, route.GetOptions().GetExtauth().GetConfigRef()); err != nil {
 					multiErr = multierror.Append(multiErr, err)
 				}
-				if err := isOptionsRefValid(knownAuthConfigs, route.GetDelegateOptions()); err != nil {
+				if err := isOptionsRefValid(knownRouteOptions, route.GetDelegateOptions()); err != nil {
 					multiErr = multierror.Append(multiErr, err)
 				}
 				// Check weighted destination options
@@ -744,12 +764,12 @@ func checkConnection(ctx context.Context, ns string) error {
 	return nil
 }
 
-func isCrdNotFoundErr(err error) bool {
+func isCrdNotFoundErr(crd crd.Crd, err error) bool {
 	for {
 		if statusErr, ok := err.(*apierrors.StatusError); ok {
 			if apierrors.IsNotFound(err) &&
 				statusErr.ErrStatus.Details != nil &&
-				statusErr.ErrStatus.Details.Kind == ratelimit.RateLimitConfigCrd.Plural {
+				statusErr.ErrStatus.Details.Kind == crd.Plural {
 				return true
 			}
 			return false
