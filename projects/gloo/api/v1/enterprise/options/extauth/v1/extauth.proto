@@ -806,7 +806,7 @@ message ExtAuthConfig {
         // If not provided, logout functionality will be disabled.
         string logout_path = 9;
 
-        // Where to redirect after logout.
+        // path to redirect to after logout.
         // This should be a publicly available URL. If not provided, will default to the `app_url`.
         string after_logout = 15;
 
