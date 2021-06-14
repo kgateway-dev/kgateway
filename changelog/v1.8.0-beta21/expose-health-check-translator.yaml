@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: |
+      Expose health check translator in clusters.go to simplify and make enterprise code less brittle.
