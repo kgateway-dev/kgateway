@@ -81,7 +81,7 @@ func (t *translatorInstance) initializeCluster(
 	reports reporter.ResourceReports,
 	secrets *v1.SecretList,
 ) *envoy_config_cluster_v3.Cluster {
-	hcConfig, err := createHealthCheckConfig(upstream, secrets)
+	hcConfig, err := CreateHealthCheckConfig(upstream, secrets)
 	if err != nil {
 		reports.AddError(upstream, err)
 	}
@@ -135,7 +135,7 @@ var (
 	}
 )
 
-func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*envoy_config_core_v3.HealthCheck, error) {
+func CreateHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*envoy_config_core_v3.HealthCheck, error) {
 	if upstream == nil {
 		return nil, nil
 	}
