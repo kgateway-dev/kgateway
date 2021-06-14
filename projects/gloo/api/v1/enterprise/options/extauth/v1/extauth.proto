@@ -806,6 +806,10 @@ message ExtAuthConfig {
         // If not provided, logout functionality will be disabled.
         string logout_path = 9;
 
+        // Where to redirect after logout.
+        // This should be a publicly available URL. If not provided, will default to the `app_url`.
+        string after_logout = 15;
+
         // scopes to request in addition to the openid scope.
         repeated string scopes = 7;
 
