@@ -48,13 +48,13 @@ spec:
     metadata:
       labels:
         app: world-cities-soap-service
-  spec:
-    containers:
-      - name: world-cities-soap-service
-        image: quay.io/solo-io/world-cities-soap-service:0.0.1
-        imagePullPolicy: IfNotPresent
-        ports:
-          - containerPort: 8080
+    spec:
+      containers:
+        - name: world-cities-soap-service
+          image: quay.io/solo-io/world-cities-soap-service:0.0.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
 EOF
 {{< /highlight >}}
 
