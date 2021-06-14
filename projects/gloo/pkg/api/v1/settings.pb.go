@@ -174,7 +174,8 @@ type Settings struct {
 	Extauth *v1.Settings `protobuf:"bytes,29,opt,name=extauth,proto3" json:"extauth,omitempty"`
 	// Enterprise-only: External auth related settings for additional auth servers
 	// This should only be used in the case where separate servers are needed to authorize separate routes.
-	// Even with multiple auth servers configured in Settings, only 1 will ever be configured and executed on a route.
+	// With multiple auth servers configured in Settings, multiple filters will be configured
+	// on the filter chain, but only 1 will be executed on a route.
 	// The name of the auth server (ie the key in the map) will be used to apply the configuration on the route.
 	// If an auth server name is not supplied on a route, the default auth server will be applied.
 	NamedExtauth map[string]*v1.Settings `protobuf:"bytes,33,rep,name=named_extauth,json=namedExtauth,proto3" json:"named_extauth,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
