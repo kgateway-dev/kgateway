@@ -122,6 +122,16 @@ func CheckResources(opts *options.Options) error {
 		multiErr = multierror.Append(multiErr, err)
 	}
 
+	knownVirtualHostOptions, err := checkVirtualHostOptions(opts.Top.Ctx, namespaces)
+	if err != nil {
+		multiErr = multierror.Append(multiErr, err)
+	}
+
+	knownRouteOptions, err := checkRouteOptions(opts.Top.Ctx, namespaces)
+	if err != nil {
+		multiErr = multierror.Append(multiErr, err)
+	}
+
 	includeSecrets := doesNotContain(opts.Top.CheckName, "secrets")
 	if includeSecrets {
 		err := checkSecrets(opts.Top.Ctx, namespaces)
@@ -130,7 +140,7 @@ func CheckResources(opts *options.Options) error {
 		}
 	}
 
-	err = checkVirtualServices(opts.Top.Ctx, namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs)
+	err = checkVirtualServices(opts.Top.Ctx, namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs, knownVirtualHostOptions, knownRouteOptions)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
@@ -434,7 +444,67 @@ func checkRateLimitConfigs(ctx context.Context, namespaces []string) ([]string, 
 	return knownConfigs, nil
 }
 
-func checkVirtualServices(ctx context.Context, namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs []string) error {
+func checkVirtualHostOptions(ctx context.Context, namespaces []string) ([]string, error) {
+	fmt.Printf("Checking VirtualHostOptions... ")
+	var knownVhOpts []string
+	var multiErr *multierror.Error
+	for _, ns := range namespaces {
+		vhOpts, err := helpers.MustNamespacedVirtualHostOptionClient(ctx, ns).List(ns, clients.ListOpts{})
+		if err != nil {
+			return nil, err
+		}
+		for _, vhOpt := range vhOpts {
+			if vhOpt.Status.GetState() == core.Status_Rejected {
+				errMessage := fmt.Sprintf("Found rejected VirtualHostOption: %s ", renderMetadata(vhOpt.GetMetadata()))
+				errMessage += fmt.Sprintf("(Reason: %s)", vhOpt.Status.Reason)
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
+			} else if vhOpt.Status.GetState() == core.Status_Warning {
+				errMessage := fmt.Sprintf("Found VirtualHostOption with warnings: %s ", renderMetadata(vhOpt.GetMetadata()))
+				errMessage += fmt.Sprintf("(Reason: %s)", vhOpt.Status.Reason)
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
+			}
+			knownVhOpts = append(knownVhOpts, renderMetadata(vhOpt.GetMetadata()))
+		}
+	}
+	if multiErr != nil {
+		fmt.Printf("%v Errors!\n", multiErr.Len())
+		return nil, multiErr
+	}
+	fmt.Printf("OK\n")
+	return knownVhOpts, nil
+}
+
+func checkRouteOptions(ctx context.Context, namespaces []string) ([]string, error) {
+	fmt.Printf("Checking RouteOptions... ")
+	var knownVhOpts []string
+	var multiErr *multierror.Error
+	for _, ns := range namespaces {
+		vhOpts, err := helpers.MustNamespacedRouteOptionClient(ctx, ns).List(ns, clients.ListOpts{})
+		if err != nil {
+			return nil, err
+		}
+		for _, routeOpt := range vhOpts {
+			if routeOpt.Status.GetState() == core.Status_Rejected {
+				errMessage := fmt.Sprintf("Found rejected RouteOption: %s ", renderMetadata(routeOpt.GetMetadata()))
+				errMessage += fmt.Sprintf("(Reason: %s)", routeOpt.Status.Reason)
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
+			} else if routeOpt.Status.GetState() == core.Status_Warning {
+				errMessage := fmt.Sprintf("Found RouteOption with warnings: %s ", renderMetadata(routeOpt.GetMetadata()))
+				errMessage += fmt.Sprintf("(Reason: %s)", routeOpt.Status.Reason)
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
+			}
+			knownVhOpts = append(knownVhOpts, renderMetadata(routeOpt.GetMetadata()))
+		}
+	}
+	if multiErr != nil {
+		fmt.Printf("%v Errors!\n", multiErr.Len())
+		return nil, multiErr
+	}
+	fmt.Printf("OK\n")
+	return knownVhOpts, nil
+}
+
+func checkVirtualServices(ctx context.Context, namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs, knownVirtualHostOptions, knownRouteOptions []string) error {
 	fmt.Printf("Checking virtual services... ")
 	var multiErr *multierror.Error
 
@@ -483,13 +553,32 @@ func checkVirtualServices(ctx context.Context, namespaces, knownUpstreams, known
 				}
 				return nil
 			}
+			isOptionsRefValid := func(knownOptions []string, refs []*core.ResourceRef) error {
+				// If the virtual host points to a specifc, non-existent VirtualHostOption, it is not valid.
+				for _, ref := range refs {
+					if ref != nil && !cliutils.Contains(knownOptions, renderRef(ref)) {
+						errMessage := fmt.Sprintf("Virtual service references unknown VirtualHostOption:\n")
+						errMessage += fmt.Sprintf("  Virtual service: %s\n", renderMetadata(virtualService.GetMetadata()))
+						errMessage += fmt.Sprintf("  VirtualHostOption: %s\n", renderRef(ref))
+						return fmt.Errorf(errMessage)
+					}
+				}
+				return nil
+			}
 			// Check virtual host options
 			if err := isAuthConfigRefValid(knownAuthConfigs, virtualService.GetVirtualHost().GetOptions().GetExtauth().GetConfigRef()); err != nil {
 				multiErr = multierror.Append(multiErr, err)
 			}
+			if err := isOptionsRefValid(knownVirtualHostOptions, virtualService.GetVirtualHost().GetDelegateOptions()); err != nil {
+				multiErr = multierror.Append(multiErr, err)
+			}
+
 			// Check route options
 			for _, route := range virtualService.GetVirtualHost().GetRoutes() {
 				if err := isAuthConfigRefValid(knownAuthConfigs, route.GetOptions().GetExtauth().GetConfigRef()); err != nil {
+					multiErr = multierror.Append(multiErr, err)
+				}
+				if err := isOptionsRefValid(knownAuthConfigs, route.GetDelegateOptions()); err != nil {
 					multiErr = multierror.Append(multiErr, err)
 				}
 				// Check weighted destination options
