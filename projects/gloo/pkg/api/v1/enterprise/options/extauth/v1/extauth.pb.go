@@ -1437,7 +1437,7 @@ type OidcAuthorizationCode struct {
 	// should not be used by the application.
 	// If not provided, logout functionality will be disabled.
 	LogoutPath string `protobuf:"bytes,9,opt,name=logout_path,json=logoutPath,proto3" json:"logout_path,omitempty"`
-	// Where to redirect after logout.
+	// path to redirect to after logout.
 	// This should be a publicly available URL. If not provided, will default to the `app_url`.
 	AfterLogout string `protobuf:"bytes,15,opt,name=after_logout,json=afterLogout,proto3" json:"after_logout,omitempty"`
 	// Scopes to request in addition to openid scope.
@@ -3612,7 +3612,7 @@ type ExtAuthConfig_OidcAuthorizationCodeConfig struct {
 	// should not be used by the application.
 	// If not provided, logout functionality will be disabled.
 	LogoutPath string `protobuf:"bytes,9,opt,name=logout_path,json=logoutPath,proto3" json:"logout_path,omitempty"`
-	// Where to redirect after logout.
+	// path to redirect to after logout.
 	// This should be a publicly available URL. If not provided, will default to the `app_url`.
 	AfterLogout string `protobuf:"bytes,15,opt,name=after_logout,json=afterLogout,proto3" json:"after_logout,omitempty"`
 	// scopes to request in addition to the openid scope.

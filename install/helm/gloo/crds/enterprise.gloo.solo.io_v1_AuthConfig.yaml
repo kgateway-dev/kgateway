@@ -348,7 +348,7 @@ spec:
                           of ID token. can also authorize the access token if configured.
                         properties:
                           afterLogout:
-                            description: Where to redirect after logout. This should
+                            description: path to redirect to after logout. This should
                               be a publicly available URL. If not provided, will default
                               to the `app_url`.
                             type: string
