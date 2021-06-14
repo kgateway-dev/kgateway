@@ -635,7 +635,7 @@ not yet in the local cache.
 "appUrl": string
 "callbackPath": string
 "logoutPath": string
-"afterLogout": string
+"afterLogoutUrl": string
 "scopes": []string
 "session": .enterprise.gloo.solo.io.UserSession
 "headers": .enterprise.gloo.solo.io.HeaderConfiguration
@@ -655,7 +655,7 @@ not yet in the local cache.
 | `appUrl` | `string` | where to redirect after successful auth, if we can't determine the original url. this should be your publicly available app url. |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. should not be used by the application. |
 | `logoutPath` | `string` | a path relative to app url that will be used for logging out from an OIDC session. should not be used by the application. If not provided, logout functionality will be disabled. |
-| `afterLogout` | `string` | path to redirect to after logout. This should be a publicly available URL. If not provided, will default to the `app_url`. |
+| `afterLogoutUrl` | `string` | url to redirect to after logout. This should be a publicly available URL. If not provided, will default to the `app_url`. |
 | `scopes` | `[]string` | Scopes to request in addition to openid scope. |
 | `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) | Configuration related to the user session. |
 | `headers` | [.enterprise.gloo.solo.io.HeaderConfiguration](../extauth.proto.sk/#headerconfiguration) | Configures headers added to requests. |
@@ -1076,7 +1076,7 @@ Deprecated, prefer OAuth2Config
 "appUrl": string
 "callbackPath": string
 "logoutPath": string
-"afterLogout": string
+"afterLogoutUrl": string
 "scopes": []string
 "session": .enterprise.gloo.solo.io.UserSession
 "headers": .enterprise.gloo.solo.io.HeaderConfiguration
@@ -1096,7 +1096,7 @@ Deprecated, prefer OAuth2Config
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application. |
 | `logoutPath` | `string` | a path relative to app url that will be used for logging out from an OIDC session. should not be used by the application. If not provided, logout functionality will be disabled. |
-| `afterLogout` | `string` | path to redirect to after logout. This should be a publicly available URL. If not provided, will default to the `app_url`. |
+| `afterLogoutUrl` | `string` | url to redirect to after logout. This should be a publicly available URL. If not provided, will default to the `app_url`. |
 | `scopes` | `[]string` | scopes to request in addition to the openid scope. |
 | `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) |  |
 | `headers` | [.enterprise.gloo.solo.io.HeaderConfiguration](../extauth.proto.sk/#headerconfiguration) | Configures headers added to requests. |
