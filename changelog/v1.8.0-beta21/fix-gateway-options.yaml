@@ -1,0 +1,10 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4591
+    description: Ensure that the value for gateway.compressedProxySpec is set. Fix type mismatch between protobufs and helm templates.
+  - type: BREAKING_CHANGE
+    issueLink: https://github.com/solo-io/gloo/issues/4591
+    description: >-
+        The setting compressedProxySpec is now set in the helm chart with gateway.compressedProxySpec
+        (instead of gatewayProxies.gatewayProxy.gatewaySettings.options.compressed_proxy_spec)
+        Changed type of gatewayProxies.gatewayProxy.gatewaySettings.options from GatewayOptions to ListenerOptions.
