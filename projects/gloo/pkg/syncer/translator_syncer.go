@@ -45,6 +45,7 @@ type TranslatorSyncerExtension interface {
 	Sync(
 		ctx context.Context,
 		snap *v1.ApiSnapshot,
+		settings *v1.Settings,
 		xdsCache envoycache.SnapshotCache,
 		reports reporter.ResourceReports,
 	) (string, error)
@@ -89,7 +90,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	s.extensionKeys = map[string]struct{}{}
 	for _, extension := range s.extensions {
 		intermediateReports := make(reporter.ResourceReports)
-		nodeID, err := extension.Sync(ctx, snap, s.xdsCache, intermediateReports)
+		nodeID, err := extension.Sync(ctx, snap, s.settings, s.xdsCache, intermediateReports)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}

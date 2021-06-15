@@ -12,6 +12,7 @@ weight: 5
 
 
 - [Sanitize](#sanitize)
+- [SanitizePerRoute](#sanitizeperroute)
   
 
 
@@ -29,12 +30,31 @@ weight: 5
 
 ```yaml
 "headersToRemove": []string
+"customAuthServerName": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `headersToRemove` | `[]string` |  |
+| `customAuthServerName` | `string` | The name of the custom ext auth server This is only set in the case where multiple auth servers exist. |
+
+
+
+
+---
+### SanitizePerRoute
+
+
+
+```yaml
+"customAuthServerName": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `customAuthServerName` | `string` | The name of the custom ext auth server This is only set in the case where multiple auth servers exist. |
 
 
 

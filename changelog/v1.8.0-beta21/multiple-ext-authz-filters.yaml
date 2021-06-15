@@ -1,0 +1,11 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4874
+    resolvesIssue: false
+    description: >
+      Introduce API for a new enterprise-only feature of configuring
+      multiple ext auth servers in Settings. Allow for configuring
+      an ext_authz filter that points to one of those servers per route.
+      Allow `stat_prefix` to be enabled for an ext_authz filter.
+      This is an additional prefix that is used when emitting statistics.
+

@@ -525,6 +525,12 @@ spec:
                                 description: Timeout for the ext auth service to respond.
                                   Defaults to 200ms
                                 type: string
+                              statPrefix:
+                                description: Optional additional prefix to use when
+                                  emitting statistics. This allows to distinguish
+                                  emitted statistics between configured ext_authz
+                                  filters in an HTTP filter chain.
+                                type: string
                               statusOnError:
                                 description: 'Sets the HTTP status that is returned
                                   to the client when there is a network error between
@@ -1666,6 +1672,12 @@ spec:
                                             server to base the auth decision on metadata
                                             that you define on the source of the request.
                                           type: object
+                                        name:
+                                          description: '[Enterprise-only] Only required
+                                            in the case where multiple auth servers
+                                            are configured in Settings This name must
+                                            match a key in the named_extauth Settings.'
+                                          type: string
                                       type: object
                                     disable:
                                       description: Set to true to disable auth on
@@ -5956,6 +5968,13 @@ spec:
                                                   that you define on the source of
                                                   the request.
                                                 type: object
+                                              name:
+                                                description: '[Enterprise-only] Only
+                                                  required in the case where multiple
+                                                  auth servers are configured in Settings
+                                                  This name must match a key in the
+                                                  named_extauth Settings.'
+                                                type: string
                                             type: object
                                           disable:
                                             description: Set to true to disable auth
@@ -10926,6 +10945,16 @@ spec:
                                                                 define on the source
                                                                 of the request.
                                                               type: object
+                                                            name:
+                                                              description: '[Enterprise-only]
+                                                                Only required in the
+                                                                case where multiple
+                                                                auth servers are configured
+                                                                in Settings This name
+                                                                must match a key in
+                                                                the named_extauth
+                                                                Settings.'
+                                                              type: string
                                                           type: object
                                                         disable:
                                                           description: Set to true
@@ -17781,6 +17810,14 @@ spec:
                                                           you define on the source
                                                           of the request.
                                                         type: object
+                                                      name:
+                                                        description: '[Enterprise-only]
+                                                          Only required in the case
+                                                          where multiple auth servers
+                                                          are configured in Settings
+                                                          This name must match a key
+                                                          in the named_extauth Settings.'
+                                                        type: string
                                                     type: object
                                                   disable:
                                                     description: Set to true to disable

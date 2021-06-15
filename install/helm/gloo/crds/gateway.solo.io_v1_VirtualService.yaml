@@ -467,6 +467,12 @@ spec:
                                 server. This allows the server to base the auth decision
                                 on metadata that you define on the source of the request.
                               type: object
+                            name:
+                              description: '[Enterprise-only] Only required in the
+                                case where multiple auth servers are configured in
+                                Settings This name must match a key in the named_extauth
+                                Settings.'
+                              type: string
                           type: object
                         disable:
                           description: Set to true to disable auth on the virtual
@@ -4185,6 +4191,12 @@ spec:
                                       on metadata that you define on the source of
                                       the request.
                                     type: object
+                                  name:
+                                    description: '[Enterprise-only] Only required
+                                      in the case where multiple auth servers are
+                                      configured in Settings This name must match
+                                      a key in the named_extauth Settings.'
+                                    type: string
                                 type: object
                               disable:
                                 description: Set to true to disable auth on the virtual
@@ -8065,6 +8077,13 @@ spec:
                                                     on metadata that you define on
                                                     the source of the request.
                                                   type: object
+                                                name:
+                                                  description: '[Enterprise-only]
+                                                    Only required in the case where
+                                                    multiple auth servers are configured
+                                                    in Settings This name must match
+                                                    a key in the named_extauth Settings.'
+                                                  type: string
                                               type: object
                                             disable:
                                               description: Set to true to disable

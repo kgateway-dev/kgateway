@@ -29,6 +29,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 		apiSnapshot *gloov1.ApiSnapshot
 		proxyClient clients.ResourceClient
 		snapCache   *syncer.MockXdsCache
+		settings    *gloov1.Settings
 	)
 
 	Context("config with enterprise ratelimit feature is set on listener", func() {
@@ -80,6 +81,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				apiSnapshot = &gloov1.ApiSnapshot{
 					Proxies: []*gloov1.Proxy{proxy},
 				}
+				settings = &gloov1.Settings{}
 			})
 
 			AfterEach(func() {
@@ -87,7 +89,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			})
 
 			It("should error when enterprise ratelimitBasic config is set", func() {
-				_, err := translator.Sync(ctx, apiSnapshot, snapCache, make(reporter.ResourceReports))
+				_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'ratelimitBasic' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
 			})
@@ -156,7 +158,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			})
 
 			It("should error when enterprise RateLimitConfig config is set", func() {
-				_, err := translator.Sync(ctx, apiSnapshot, snapCache, make(reporter.ResourceReports))
+				_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitConfig' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
 			})
@@ -219,7 +221,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			})
 
 			It("should error when enterprise setActions config is set", func() {
-				_, err := translator.Sync(ctx, apiSnapshot, snapCache, make(reporter.ResourceReports))
+				_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'setActions' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
 			})
