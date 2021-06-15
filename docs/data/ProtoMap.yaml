@@ -251,6 +251,9 @@ apis:
   envoy.config.filter.http.sanitize.v2.Sanitize:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/extauth/sanitize.proto.sk/#Sanitize
     package: envoy.config.filter.http.sanitize.v2
+  envoy.config.filter.http.sanitize.v2.SanitizePerRoute:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/extauth/sanitize.proto.sk/#SanitizePerRoute
+    package: envoy.config.filter.http.sanitize.v2
   envoy.config.filter.http.solo_jwt_authn.v2.JwtWithStage:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/jwt/solo_jwt_authn.proto.sk/#JwtWithStage
     package: envoy.config.filter.http.solo_jwt_authn.v2
