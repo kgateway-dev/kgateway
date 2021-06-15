@@ -56,7 +56,7 @@ type HelmInstall struct {
 }
 
 type Install struct {
-	Gloo HelmInstall
+	Gloo        HelmInstall
 	Federation  HelmInstall
 	Knative     Knative
 	LicenseKey  string
