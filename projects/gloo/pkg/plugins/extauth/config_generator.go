@@ -4,20 +4,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/solo-io/solo-kit/pkg/utils/prototime"
-
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/extauth"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
+
+const JWTFilterName = "envoy.filters.http.jwt_authn"
 
 var (
 	DefaultTimeout = prototime.DurationToProto(200 * time.Millisecond)
@@ -30,67 +32,201 @@ var (
 	}
 )
 
-const JWTFilterName = "envoy.filters.http.jwt_authn"
+type ExtAuthzConfigGenerator interface {
+	IsMulti() bool
+	GenerateListenerExtAuthzConfig(listener *v1.HttpListener, upstreams v1.UpstreamList) ([]*envoyauth.ExtAuthz, error)
+	GenerateVirtualHostExtAuthzConfig(virtualHost *v1.VirtualHost, params plugins.VirtualHostParams) (*envoyauth.ExtAuthzPerRoute, error)
+	GenerateRouteExtAuthzConfig(route *v1.Route) (*envoyauth.ExtAuthzPerRoute, error)
+	GenerateWeightedDestinationExtAuthzConfig(weightedDestination *v1.WeightedDestination) (*envoyauth.ExtAuthzPerRoute, error)
+}
 
-func BuildSingleHttpFilter(
-	globalSettings *extauthv1.Settings,
-	namedSettings map[string]*extauthv1.Settings,
-	listener *v1.HttpListener,
-	upstreams v1.UpstreamList,
-) ([]plugins.StagedHttpFilter, error) {
-	var filters []plugins.StagedHttpFilter
+func getOpenSourceConfigGenerator(defaultSettings *extauthv1.Settings, namedSettings map[string]*extauthv1.Settings) ExtAuthzConfigGenerator {
+	if namedSettings == nil {
+		return NewDefaultConfigGenerator(defaultSettings)
+	}
 
+	return NewMultiConfigGenerator()
+}
+
+type DefaultConfigGenerator struct {
+	defaultSettings *extauthv1.Settings
+}
+
+func NewDefaultConfigGenerator(defaultSettings *extauthv1.Settings) *DefaultConfigGenerator {
+	return &DefaultConfigGenerator{
+		defaultSettings: defaultSettings,
+	}
+}
+
+func (d *DefaultConfigGenerator) IsMulti() bool {
+	// This generator is only responsible for creating a single ext_authz filter
+	return false
+}
+
+func (d *DefaultConfigGenerator) GenerateListenerExtAuthzConfig(listener *v1.HttpListener, upstreams v1.UpstreamList) ([]*envoyauth.ExtAuthz, error) {
 	// If extauth isn't defined on the listener, fallback to the default extauth settings
 	settings := listener.GetOptions().GetExtauth()
 	if settings == nil {
-		settings = globalSettings
+		settings = d.defaultSettings
 	}
 
 	// If extauth isn't defined on the listener or default settings, no extauth is configured
 	if settings == nil {
-		return filters, nil
+		return nil, nil
 	}
 
-	// If extauth is defined on the default settings, and on the named settings,
-	// we expect to create multiple auth filters. The open source plugin is not responsible
-	// for handling this case. Don't configure the extauth filter, and rely on the closed source
-	// plugin to do so.
-	if globalSettings != nil && namedSettings != nil {
-		return filters, nil
-	}
-
-	extAuthCfg, err := GenerateEnvoyConfigForExtAuthSettings(settings, upstreams)
+	extAuthCfg, err := GenerateEnvoyConfigForFilter(settings, upstreams)
 	if err != nil {
 		return nil, err
 	}
 
-	stagedFilter, err := plugins.NewStagedFilterWithConfig(wellknown.HTTPExternalAuthorization, extAuthCfg, FilterStage)
+	return []*envoyauth.ExtAuthz{extAuthCfg}, nil
+}
+
+func (d *DefaultConfigGenerator) GenerateVirtualHostExtAuthzConfig(virtualHost *v1.VirtualHost, params plugins.VirtualHostParams) (*envoyauth.ExtAuthzPerRoute, error) {
+	extension := virtualHost.GetOptions().GetExtauth()
+	if extension == nil {
+		return GetDisabledAuth(), nil
+	}
+
+	// If extauth is explicitly disabled on this virtual host, disable it
+	if extension.GetDisable() {
+		return GetDisabledAuth(), nil
+	}
+
+	customAuthConfig := extension.GetCustomAuth()
+
+	// No extauth config on this virtual host, disable it
+	if customAuthConfig == nil {
+		return GetDisabledAuth(), nil
+	}
+
+	config := &envoyauth.ExtAuthzPerRoute{
+		Override: &envoyauth.ExtAuthzPerRoute_CheckSettings{
+			CheckSettings: &envoyauth.CheckSettings{
+				ContextExtensions: customAuthConfig.GetContextExtensions(),
+			},
+		},
+	}
+	return config, nil
+}
+
+func (d *DefaultConfigGenerator) GenerateRouteExtAuthzConfig(route *v1.Route) (*envoyauth.ExtAuthzPerRoute, error) {
+	extension := route.GetOptions().GetExtauth()
+	if extension == nil {
+		return nil, nil
+	}
+
+	// If extauth is explicitly disabled on this route, disable it
+	if extension.GetDisable() {
+		return GetDisabledAuth(), nil
+	}
+
+	customAuthConfig := extension.GetCustomAuth()
+
+	// No custom config, do nothing
+	if customAuthConfig == nil {
+		return nil, nil
+	}
+
+	config := &envoyauth.ExtAuthzPerRoute{
+		Override: &envoyauth.ExtAuthzPerRoute_CheckSettings{
+			CheckSettings: &envoyauth.CheckSettings{
+				ContextExtensions: customAuthConfig.GetContextExtensions(),
+			},
+		},
+	}
+	return config, nil
+}
+
+func (d *DefaultConfigGenerator) GenerateWeightedDestinationExtAuthzConfig(weightedDestination *v1.WeightedDestination) (*envoyauth.ExtAuthzPerRoute, error) {
+	extension := weightedDestination.GetOptions().GetExtauth()
+	if extension == nil {
+		return nil, nil
+	}
+
+	// If extauth is explicitly disabled on this weighted destination, disable it
+	if extension.GetDisable() {
+		return GetDisabledAuth(), nil
+	}
+
+	customAuthConfig := extension.GetCustomAuth()
+
+	// No custom config, do nothing
+	if customAuthConfig == nil {
+		return nil, nil
+	}
+
+	config := &envoyauth.ExtAuthzPerRoute{
+		Override: &envoyauth.ExtAuthzPerRoute_CheckSettings{
+			CheckSettings: &envoyauth.CheckSettings{
+				ContextExtensions: customAuthConfig.GetContextExtensions(),
+			},
+		},
+	}
+	return config, nil
+}
+
+func GetDisabledAuth() *envoyauth.ExtAuthzPerRoute {
+	return &envoyauth.ExtAuthzPerRoute{
+		Override: &envoyauth.ExtAuthzPerRoute_Disabled{
+			Disabled: true,
+		},
+	}
+}
+
+type MultiConfigGenerator struct {
+	*DefaultConfigGenerator
+}
+
+func NewMultiConfigGenerator() *MultiConfigGenerator {
+	return &MultiConfigGenerator{}
+}
+
+func (m *MultiConfigGenerator) IsMulti() bool {
+	return true
+}
+
+func (m *MultiConfigGenerator) GenerateListenerExtAuthzConfig(listener *v1.HttpListener, upstreams v1.UpstreamList) ([]*envoyauth.ExtAuthz, error) {
+	return nil, extauth.ErrEnterpriseOnly
+}
+
+func BuildStagedHttpFilters(configurationGenerator func() ([]*envoyauth.ExtAuthz, error), stage plugins.FilterStage) ([]plugins.StagedHttpFilter, error) {
+	var filters []plugins.StagedHttpFilter
+
+	configurations, err := configurationGenerator()
 	if err != nil {
 		return nil, err
 	}
-	filters = append(filters, stagedFilter)
+
+	for _, extAuthCfg := range configurations {
+		stagedFilter, err := plugins.NewStagedFilterWithConfig(wellknown.HTTPExternalAuthorization, extAuthCfg, stage)
+		if err != nil {
+			return nil, err
+		}
+
+		filters = append(filters, stagedFilter)
+	}
+
 	return filters, nil
 }
 
-func GenerateEnvoyConfigForExtAuthSettings(settings *extauthv1.Settings, upstreams v1.UpstreamList) (*envoyauth.ExtAuthz, error) {
-	upstreamRef := settings.GetExtauthzServerRef()
-	if upstreamRef == nil {
+func GenerateEnvoyConfigForFilter(settings *extauthv1.Settings, upstreams v1.UpstreamList) (*envoyauth.ExtAuthz, error) {
+	extauthUpstreamRef := settings.GetExtauthzServerRef()
+	if extauthUpstreamRef == nil {
 		return nil, NoServerRefErr
 	}
 
 	// Make sure the server exists
-	_, err := upstreams.Find(upstreamRef.Namespace, upstreamRef.Name)
+	_, err := upstreams.Find(extauthUpstreamRef.Namespace, extauthUpstreamRef.Name)
 	if err != nil {
-		return nil, ServerNotFound(upstreamRef)
+		return nil, ServerNotFound(extauthUpstreamRef)
 	}
 
-	return generateEnvoyConfigForFilter(settings, upstreamRef)
-}
-
-func generateEnvoyConfigForFilter(settings *extauthv1.Settings, extauthUpstreamRef *core.ResourceRef) (*envoyauth.ExtAuthz, error) {
 	cfg := &envoyauth.ExtAuthz{
 		MetadataContextNamespaces: []string{JWTFilterName},
 	}
+
 	httpService := settings.GetHttpService()
 	if httpService == nil {
 		svc := &envoycore.GrpcService{
