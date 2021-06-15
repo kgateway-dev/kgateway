@@ -5,8 +5,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// Sidecar for Istio 1.7.x releases, also works for Istio 1.8.x and 1.9.x releases
-func generateIstio17or18or19Sidecar(version, jwtPolicy string, istioMetaMeshID string, istioMetaClusterID string) *corev1.Container {
+// Sidecar for Istio 1.7.x releases, also works for Istio 1.8.x, 1.9.x and 1.10.x releases
+func generateIstio17or18or19or10Sidecar(version, jwtPolicy string, istioMetaMeshID string, istioMetaClusterID string) *corev1.Container {
 	sidecar := &corev1.Container{
 		Name:  "istio-proxy",
 		Image: "docker.io/istio/proxyv2:" + version,
