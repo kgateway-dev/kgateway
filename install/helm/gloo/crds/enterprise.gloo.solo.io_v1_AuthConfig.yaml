@@ -347,6 +347,11 @@ spec:
                           flow for you. requests authorized by validating the contents
                           of ID token. can also authorize the access token if configured.
                         properties:
+                          afterLogoutUrl:
+                            description: url to redirect to after logout. This should
+                              be a publicly available URL. If not provided, will default
+                              to the `app_url`.
+                            type: string
                           appUrl:
                             description: where to redirect after successful auth,
                               if we can't determine the original url. this should

@@ -982,6 +982,10 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetAfterLogoutUrl(), target.GetAfterLogoutUrl()) != 0 {
+		return false
+	}
+
 	if len(m.GetScopes()) != len(target.GetScopes()) {
 		return false
 	}
@@ -2455,6 +2459,10 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool
 	}
 
 	if strings.Compare(m.GetLogoutPath(), target.GetLogoutPath()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetAfterLogoutUrl(), target.GetAfterLogoutUrl()) != 0 {
 		return false
 	}
 

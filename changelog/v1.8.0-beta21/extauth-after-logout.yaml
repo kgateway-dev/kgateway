@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4391
+    resolvesIssue: false
+    description: >
+      Add an ExtAuth config field `oauth2.oidcAuthorizationCode.afterLogoutUrl` to redirect
+      to a specified endpoint after logout.
