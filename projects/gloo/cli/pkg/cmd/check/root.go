@@ -590,7 +590,8 @@ func checkVirtualServices(ctx context.Context, namespaces, knownUpstreams, known
 			if err := isAuthConfigRefValid(knownAuthConfigs, virtualService.GetVirtualHost().GetOptions().GetExtauth().GetConfigRef()); err != nil {
 				multiErr = multierror.Append(multiErr, err)
 			}
-			if err := isOptionsRefValid(knownVirtualHostOptions, virtualService.GetVirtualHost().GetDelegateOptions()); err != nil {
+			vhDelegateOptions := virtualService.GetVirtualHost().GetOptionsConfigRefs().GetDelegateOptions()
+			if err := isOptionsRefValid(knownVirtualHostOptions, vhDelegateOptions); err != nil {
 				multiErr = multierror.Append(multiErr, err)
 			}
 
@@ -599,7 +600,7 @@ func checkVirtualServices(ctx context.Context, namespaces, knownUpstreams, known
 				if err := isAuthConfigRefValid(knownAuthConfigs, route.GetOptions().GetExtauth().GetConfigRef()); err != nil {
 					multiErr = multierror.Append(multiErr, err)
 				}
-				if err := isOptionsRefValid(knownRouteOptions, route.GetDelegateOptions()); err != nil {
+				if err := isOptionsRefValid(knownRouteOptions, route.GetOptionsConfigRefs().GetDelegateOptions()); err != nil {
 					multiErr = multierror.Append(multiErr, err)
 				}
 				// Check weighted destination options

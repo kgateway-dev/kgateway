@@ -279,7 +279,7 @@ func (t *HttpTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, snap
 
 // finds delegated VirtualHostOption Objects and merges the options into the virtual service
 func (t *HttpTranslator) mergeDelegatedVirtualHostOptions(vs *v1.VirtualService, options v1.VirtualHostOptionList, reports reporter.ResourceReports) {
-	optionRefs := vs.GetVirtualHost().GetDelegateOptions()
+	optionRefs := vs.GetVirtualHost().GetOptionsConfigRefs().GetDelegateOptions()
 	for _, optionRef := range optionRefs {
 		vhOption, err := options.Find(optionRef.GetNamespace(), optionRef.GetName())
 		if err != nil {

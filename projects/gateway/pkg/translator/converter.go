@@ -183,7 +183,7 @@ func (rv *routeVisitor) visit(
 
 		// Merge delegated options into route options
 		// Route options specified on the Route override delegated options
-		optionRefs := routeClone.GetDelegateOptions()
+		optionRefs := routeClone.GetOptionsConfigRefs().GetDelegateOptions()
 		for _, optionRef := range optionRefs {
 			routeOpts, err := reporterHelper.snapshot.RouteOptions.Find(optionRef.GetNamespace(), optionRef.GetName())
 			if err != nil {
