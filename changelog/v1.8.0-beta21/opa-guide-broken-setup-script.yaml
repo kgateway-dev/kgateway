@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Remove the setup and teardown section of the OPA guide and the accompanying scripts
+    issueLink: https://github.com/solo-io/gloo/issues/4834
+    resolvesIssue: true

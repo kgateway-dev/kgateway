@@ -16,20 +16,6 @@ In this document we will show a simple OPA policy that dictates that all virtual
 
 Before you get started, you will need to have Gloo Edge running in a Kubernetes cluster. For more information, you can follow this [installation guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
 
-### Setup
-
-First, setup OPA as a validating web hook. In this mode, OPA validates the Kubernetes objects before they are visible to the controllers that act on them (Gloo Edge in our case).
-
-You can use the [setup.sh](setup.sh) script for that purpose.
-
-This script follows the docs outlined in [official OPA docs](https://www.openpolicyagent.org/docs/latest/kubernetes-admission-control/) with some small adaptations for the Gloo Edge API.
-
-{{% expand "Click to see the full setup.sh file that should be used for this project." %}}
-```
-{{% readfile file="guides/security/opa/setup.sh" %}}
-```
-{{% /expand %}}
-
 ---
 
 ## Policy
@@ -145,16 +131,6 @@ Resource: "gateway.solo.io/v1, Resource=virtualservices", GroupVersionKind: "gat
 Name: "default", Namespace: "gloo-system"
 Object: &{map["apiVersion":"gateway.solo.io/v1" "kind":"VirtualService" "metadata":map["annotations":map["kubectl.kubernetes.io/last-applied-configuration":"{\"apiVersion\":\"gateway.solo.io/v1\",\"kind\":\"VirtualService\",\"metadata\":{\"annotations\":{},\"name\":\"default\",\"namespace\":\"gloo-system\"},\"spec\":{\"virtualHost\":{\"domains\":[\"*\"],\"routes\":[{\"matchers\":[{\"exact\":\"/sample-route-1\"}],\"routeAction\":{\"single\":{\"upstream\":{\"name\":\"default-petstore-8080\",\"namespace\":\"gloo-system\"}}}}]}}}\n"] "creationTimestamp":"2020-01-29T14:41:28Z" "generation":'\x06' "name":"default" "namespace":"gloo-system" "resourceVersion":"7076134" "selfLink":"/apis/gateway.solo.io/v1/namespaces/gloo-system/virtualservices/default" "uid":"6ed4d802-42a5-11ea-84a5-56542bf21e7d"] "spec":map["virtualHost":map["domains":["*"] "routes":[map["matchers":[map["exact":"/sample-route-1"]] "routeAction":map["single":map["upstream":map["name":"default-petstore-8080" "namespace":"gloo-system"]]]]]]] "status":map["reported_by":"gateway" "state":'\x01' "subresource_statuses":map["*v1.Proxy.gloo-system.gateway-proxy":map["reported_by":"gloo" "state":'\x01']]]]}
 for: "vs-err.yaml": admission webhook "validating-webhook.openpolicyagent.org" denied the request: prefix re-write not allowed
-```
-
----
-
-## Cleanup
-you can use the [teardown.sh](teardown.sh) to clean-up the resources created in this document.
-
-For your convenience, here's the content of teardown.sh:
-```
-{{% readfile file="guides/security/opa/teardown.sh" %}}
 ```
 
 ---
