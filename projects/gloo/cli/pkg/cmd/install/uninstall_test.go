@@ -252,7 +252,7 @@ spec:
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
 			err := uninstaller.Uninstall(ctx, &options.HelmUninstall{
 				Namespace:       defaults.GlooFed,
-				HelmReleaseName: constants.GlooFedReleaseName,
+				HelmReleaseName: constants.GlooReleaseName,
 				DeleteCrds:      true,
 			}, install.Federation)
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
