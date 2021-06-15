@@ -575,6 +575,14 @@ spec:
                                           value allows overriding the cluster level
                                           configuration for a specific endpoint.
                                         type: string
+                                      method:
+                                        description: Method to use when health checking
+                                          the failover host.
+                                        type: string
+                                      path:
+                                        description: Path to use when health checking
+                                          the failover host.
+                                        type: string
                                       portValue:
                                         description: Optional alternative health check
                                           port value.
