@@ -34,7 +34,7 @@ When a VirtualHost delegates to an external VirtualHostOptions object, any optio
 defined on the VirtualHost will override the external options config.
 Similarly, `VirtualHostOption`s which are delegated to first will get priority over following `VirtualHostOption`s.
 
-An example configuration with a VirtualService with it's own options config and delegating to two VirtualHostOption objects:
+An example configuration with a VirtualService with its own options config and delegating to two VirtualHostOption objects:
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -93,7 +93,7 @@ spec:
               value: this header was added in the VirtualHostOption object - #2
 ```
 
-The final virtual host options (visible in the Proxy CRD) would be:
+The final virtual host options (visible in the Proxy CR) would be:
 ```yaml
 spec:
   virtualHost:
@@ -127,7 +127,7 @@ Notice how the order of VirtualHostOption delegations matters, and that the Virt
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |
+| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gateway during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `options` | [.gloo.solo.io.VirtualHostOptions](../../../../gloo/api/v1/options.proto.sk/#virtualhostoptions) | VirtualHost options. See VirtualHost for delegation behavior. |
 
@@ -145,7 +145,7 @@ When a Route delegates to an external RouteOptions object, any options config
 defined on the Route will override the external options config.
 Similarly, `RouteOption`s which are delegated to first will get priority over following `RouteOption`s.
 
-An example configuration with a Route with it's own options config and delegating to two RouteOption objects:
+An example configuration with a Route with its own options config and delegating to two RouteOption objects:
 
 ```yaml
 apiVersion: gateway.solo.io/v1

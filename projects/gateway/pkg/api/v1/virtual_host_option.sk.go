@@ -143,7 +143,7 @@ var (
 		VirtualHostOptionGVK.Group,
 		VirtualHostOptionGVK.Version,
 		VirtualHostOptionGVK.Kind,
-		"vsopts",
+		"vhopts",
 		false,
 		&VirtualHostOption{})
 )
