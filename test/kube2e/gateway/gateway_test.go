@@ -743,13 +743,13 @@ var _ = Describe("Kube2e: gateway", func() {
 	Context("tests with route tables", func() {
 
 		AfterEach(func() {
-			cancel()
 			err := virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			err = routeTableClient.Delete(testHelper.InstallNamespace, "rt1", clients.DeleteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			err = routeTableClient.Delete(testHelper.InstallNamespace, "rt2", clients.DeleteOpts{})
 			Expect(err).NotTo(HaveOccurred())
+			cancel()
 		})
 
 		It("correctly routes requests to an upstream", func() {
@@ -796,13 +796,13 @@ var _ = Describe("Kube2e: gateway", func() {
 	Context("tests with VirtualHostOptions", func() {
 
 		AfterEach(func() {
-			cancel()
 			err := virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			err = virtualHostOptionClient.Delete(testHelper.InstallNamespace, "vh-opt-one", clients.DeleteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			err = virtualHostOptionClient.Delete(testHelper.InstallNamespace, "vh-opt-two", clients.DeleteOpts{})
 			Expect(err).NotTo(HaveOccurred())
+			cancel()
 		})
 
 		It("correctly delegates options from VirtualHostOption", func() {
@@ -871,14 +871,18 @@ var _ = Describe("Kube2e: gateway", func() {
 							RequestHeadersToRemove: []string{"header-from-vhost"},
 						},
 					},
-					DelegateOptions: []*core.ResourceRef{
-						{
-							Namespace: testHelper.InstallNamespace,
-							Name:      "vh-opt-one",
-						},
-						{
-							Namespace: testHelper.InstallNamespace,
-							Name:      "vh-opt-two",
+					ExternalOptionsConfig: &gatewayv1.VirtualHost_OptionsConfigRefs{
+						OptionsConfigRefs: &gatewayv1.DelegateOptionsRefs{
+							DelegateOptions: []*core.ResourceRef{
+								{
+									Namespace: testHelper.InstallNamespace,
+									Name:      "vh-opt-one",
+								},
+								{
+									Namespace: testHelper.InstallNamespace,
+									Name:      "vh-opt-two",
+								},
+							},
 						},
 					},
 				},
@@ -889,7 +893,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			_, err = virtualHostOptionClient.Write(vh2, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			// give settings a chance to propogate
+			// give vhost options a chance to propogate
 			Eventually(func() error {
 				_, err := virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
 				return err
@@ -938,13 +942,13 @@ var _ = Describe("Kube2e: gateway", func() {
 	Context("tests with RouteOptions", func() {
 
 		AfterEach(func() {
-			cancel()
 			err := virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			err = routeOptionClient.Delete(testHelper.InstallNamespace, "rt-opt-one", clients.DeleteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			err = routeOptionClient.Delete(testHelper.InstallNamespace, "rt-opt-two", clients.DeleteOpts{})
 			Expect(err).NotTo(HaveOccurred())
+			cancel()
 		})
 
 		It("correctly delegates options from RouteOption", func() {
@@ -1026,14 +1030,18 @@ var _ = Describe("Kube2e: gateway", func() {
 									RequestHeadersToRemove: []string{"header-from-vhost"},
 								},
 							},
-							DelegateOptions: []*core.ResourceRef{
-								{
-									Namespace: testHelper.InstallNamespace,
-									Name:      "rt-opt-one",
-								},
-								{
-									Namespace: testHelper.InstallNamespace,
-									Name:      "rt-opt-two",
+							ExternalOptionsConfig: &gatewayv1.Route_OptionsConfigRefs{
+								OptionsConfigRefs: &gatewayv1.DelegateOptionsRefs{
+									DelegateOptions: []*core.ResourceRef{
+										{
+											Namespace: testHelper.InstallNamespace,
+											Name:      "rt-opt-one",
+										},
+										{
+											Namespace: testHelper.InstallNamespace,
+											Name:      "rt-opt-two",
+										},
+									},
 								},
 							},
 						},

@@ -80,7 +80,7 @@ func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnap
 
 		virtualServices := getVirtualServicesForGateway(gateway, snap.VirtualServices)
 		validateVirtualServiceDomains(gateway, virtualServices, reports)
-		// Merge deligated options into route options
+		// Merge delegated options into route options
 		// Route options specified on the Route override delegated options
 		listener := t.desiredListenerForHttp(gateway, virtualServices, snap, reports)
 		result = append(result, listener)
