@@ -7,8 +7,6 @@ import (
 	"os"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/yaml"
@@ -20,9 +18,6 @@ import (
 func Uninstall(opts *options.Options, cli install.KubeCli, mode Mode) error {
 	uninstaller := NewUninstaller(DefaultHelmClient(), cli)
 	uninstallArgs := &opts.Uninstall.GlooUninstall
-	if mode == Federation {
-		uninstallArgs = &opts.Uninstall.FedUninstall
-	}
 	if err := uninstaller.Uninstall(opts.Top.Ctx, uninstallArgs, mode); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Uninstall failed. Detailed logs available at %s.\n", cliutil.GetLogsPath())
 		return err
@@ -57,19 +52,6 @@ func (u *uninstaller) Uninstall(ctx context.Context, cliArgs *options.HelmUninst
 	err := u.runUninstall(ctx, cliArgs, mode)
 	if err != nil {
 		return err
-	}
-	// Attempt to delete gloo fed if installed alongside with gloo
-	if mode == Gloo && cliArgs.DeleteAll {
-		fedExists, _ := u.helmClient.ReleaseExists(defaults.GlooFed, constants.GlooFedReleaseName)
-		if fedExists {
-			uninstallFedArgs := cliArgs
-			uninstallFedArgs.Namespace = defaults.GlooFed
-			uninstallFedArgs.HelmReleaseName = constants.GlooFedReleaseName
-			err := u.runUninstall(ctx, uninstallFedArgs, Federation)
-			if err != nil {
-				return err
-			}
-		}
 	}
 	return nil
 }
@@ -113,6 +95,8 @@ func (u *uninstaller) runUninstall(ctx context.Context, cliArgs *options.HelmUni
 		// the originals installation. We take a best effort approach.
 		glooLabels := LabelsToFlagString(GlooComponentLabels)
 		if mode == Federation {
+			// TODO(mitchaman): I'd like to remove the 'Federation' mode. Should we just append
+			//   GlooFedComponentLabels to GlooComponentLabels since this is "best effort"?
 			glooLabels = LabelsToFlagString(GlooFedComponentLabels)
 		}
 		for _, kind := range GlooNamespacedKinds {
@@ -131,13 +115,14 @@ func (u *uninstaller) runUninstall(ctx context.Context, cliArgs *options.HelmUni
 		}
 	}
 
-	if mode != Federation {
-		u.uninstallKnativeIfNecessary(ctx)
-	}
+	// TODO(mitchaman): Why were we not uninstalling knative in Fed mode?
+	u.uninstallKnativeIfNecessary(ctx)
 
 	// may need to delete hard-coded crd names even if releaseExists because helm chart for glooe doesn't show gloo dependency (https://github.com/helm/helm/issues/7847)
 	if cliArgs.DeleteCrds || cliArgs.DeleteAll {
 		if mode == Federation {
+			// TODO(mitchaman): I'd like to remove the 'Federation' mode. Should we just append
+			//   GlooFedCrdNames to GlooCrdNames since this is "best effort"?
 			u.deleteGlooCrds(GlooFedCrdNames)
 		} else {
 			if len(crdNames) == 0 {

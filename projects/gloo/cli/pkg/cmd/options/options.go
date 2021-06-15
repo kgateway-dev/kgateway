@@ -56,7 +56,7 @@ type HelmInstall struct {
 }
 
 type Install struct {
-	Gloo        HelmInstall
+	Gloo HelmInstall
 	Federation  HelmInstall
 	Knative     Knative
 	LicenseKey  string
@@ -84,7 +84,6 @@ type HelmUninstall struct {
 
 type Uninstall struct {
 	GlooUninstall HelmUninstall
-	FedUninstall  HelmUninstall
 }
 
 type Proxy struct {

@@ -1,0 +1,8 @@
+changelog:
+  - type: BREAKING_CHANGE
+    issueLink: https://github.com/solo-io/gloo/issues/4556
+    description: >-
+      Remove glooctl install federation. Remove glooctl uninstall federation. Remove
+      --gloo-fed-file option from glooctl install gateway enterprise. Federation
+      should now be installed/uninstalled alongside gloo enterprise by enabling/disabling
+      the 'gloo-fed.enabled' helm value.

@@ -13,7 +13,7 @@ glooctl cluster list [flags]
 ### Options
 
 ```
-      --federation-namespace string   namespace of the Gloo Federation control plane (default "gloo-fed")
+      --federation-namespace string   namespace of the Gloo Federation control plane (default "gloo-system")
   -h, --help                          help for list
 ```
 

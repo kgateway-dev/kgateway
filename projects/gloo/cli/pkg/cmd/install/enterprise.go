@@ -21,7 +21,8 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			extraValues := map[string]interface{}{
-				"license_key": opts.Install.LicenseKey,
+				"license_key":      opts.Install.LicenseKey,
+				"gloo-fed.enabled": opts.Install.WithGlooFed,
 			}
 
 			mode := Enterprise
@@ -42,7 +43,8 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 	pFlags := cmd.PersistentFlags()
 	flagutils.AddGlooInstallFlags(cmd.Flags(), &opts.Install)
 	flagutils.AddEnterpriseInstallFlags(pFlags, &opts.Install)
-	pFlags.Lookup("gloo-fed-file").Hidden = true
+
+	// TODO(mitchaman): Determine if these flags are still needed
 	pFlags.Lookup("gloo-fed-values").Hidden = true
 	pFlags.Lookup("gloo-fed-release-name").Hidden = true
 	pFlags.Lookup("gloo-fed-create-namespace").Hidden = true
