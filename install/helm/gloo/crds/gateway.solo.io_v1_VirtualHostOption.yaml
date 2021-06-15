@@ -12,8 +12,8 @@ spec:
     listKind: VirtualHostOptionList
     plural: virtualhostoptions
     shortNames:
-    - vso
-    - vsopts
+    - vho
+    - vhopts
   preserveUnknownFields: false
   scope: Namespaced
   validation:
@@ -3342,13 +3342,13 @@ spec:
               type: object
             status:
               description: Status indicates the validation status of this resource.
-                Status is read-only by clients, and set by gloo during validation
+                Status is read-only by clients, and set by gateway during validation
               type: object
               x-kubernetes-preserve-unknown-fields: true
           type: object
         status:
           description: Status indicates the validation status of this resource. Status
-            is read-only by clients, and set by gloo during validation
+            is read-only by clients, and set by gateway during validation
           type: object
           x-kubernetes-preserve-unknown-fields: true
       type: object

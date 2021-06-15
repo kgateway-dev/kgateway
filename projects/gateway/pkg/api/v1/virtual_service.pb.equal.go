@@ -152,21 +152,28 @@ func (m *VirtualHost) Equal(that interface{}) bool {
 		}
 	}
 
-	if len(m.GetDelegateOptions()) != len(target.GetDelegateOptions()) {
-		return false
-	}
-	for idx, v := range m.GetDelegateOptions() {
+	switch m.ExternalOptionsConfig.(type) {
 
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetDelegateOptions()[idx]) {
+	case *VirtualHost_OptionsConfigRefs:
+		if _, ok := target.ExternalOptionsConfig.(*VirtualHost_OptionsConfigRefs); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetOptionsConfigRefs()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOptionsConfigRefs()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetDelegateOptions()[idx]) {
+			if !proto.Equal(m.GetOptionsConfigRefs(), target.GetOptionsConfigRefs()) {
 				return false
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.ExternalOptionsConfig != target.ExternalOptionsConfig {
+			return false
+		}
 	}
 
 	return true
@@ -244,23 +251,6 @@ func (m *Route) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetDelegateOptions()) != len(target.GetDelegateOptions()) {
-		return false
-	}
-	for idx, v := range m.GetDelegateOptions() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetDelegateOptions()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetDelegateOptions()[idx]) {
-				return false
-			}
-		}
-
-	}
-
 	switch m.Action.(type) {
 
 	case *Route_RouteAction:
@@ -328,6 +318,71 @@ func (m *Route) Equal(that interface{}) bool {
 		if m.Action != target.Action {
 			return false
 		}
+	}
+
+	switch m.ExternalOptionsConfig.(type) {
+
+	case *Route_OptionsConfigRefs:
+		if _, ok := target.ExternalOptionsConfig.(*Route_OptionsConfigRefs); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetOptionsConfigRefs()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOptionsConfigRefs()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetOptionsConfigRefs(), target.GetOptionsConfigRefs()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.ExternalOptionsConfig != target.ExternalOptionsConfig {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *DelegateOptionsRefs) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*DelegateOptionsRefs)
+	if !ok {
+		that2, ok := that.(DelegateOptionsRefs)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetDelegateOptions()) != len(target.GetDelegateOptions()) {
+		return false
+	}
+	for idx, v := range m.GetDelegateOptions() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetDelegateOptions()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetDelegateOptions()[idx]) {
+				return false
+			}
+		}
+
 	}
 
 	return true
