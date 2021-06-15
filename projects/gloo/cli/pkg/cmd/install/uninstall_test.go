@@ -247,7 +247,7 @@ spec:
 		})
 
 		It("can uninstall CRDs when requested", func() {
-			mockKubectl := installutil.NewMockKubectl([]string{"delete crd " + strings.Join(install.GlooFedCrdNames, " ")}, []string{})
+			mockKubectl := installutil.NewMockKubectl([]string{"delete crd " + strings.Join(install.GlooCrdNames, " ")}, []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
 			err := uninstaller.Uninstall(ctx, &options.HelmUninstall{
@@ -276,7 +276,7 @@ spec:
 
 		It("--all flag behaves as expected", func() {
 			mockKubectl := installutil.NewMockKubectl([]string{
-				"delete crd " + strings.Join(install.GlooFedCrdNames, " "),
+				"delete crd " + strings.Join(install.GlooCrdNames, " "),
 				"delete namespace " + defaults.GlooFed,
 			}, []string{})
 

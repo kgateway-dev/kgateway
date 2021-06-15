@@ -94,11 +94,6 @@ func (u *uninstaller) runUninstall(ctx context.Context, cliArgs *options.HelmUni
 		// The release object does not exist, so it is not possible to exactly tell which resources are part of
 		// the originals installation. We take a best effort approach.
 		glooLabels := LabelsToFlagString(GlooComponentLabels)
-		if mode == Federation {
-			// TODO(mitchaman): I'd like to remove the 'Federation' mode. Should we just append
-			//   GlooFedComponentLabels to GlooComponentLabels since this is "best effort"?
-			glooLabels = LabelsToFlagString(GlooFedComponentLabels)
-		}
 		for _, kind := range GlooNamespacedKinds {
 			if err := u.kubeCli.Kubectl(nil, "delete", kind, "-n", namespace, "-l", glooLabels); err != nil {
 				return err
@@ -115,21 +110,14 @@ func (u *uninstaller) runUninstall(ctx context.Context, cliArgs *options.HelmUni
 		}
 	}
 
-	// TODO(mitchaman): Why were we not uninstalling knative in Fed mode?
 	u.uninstallKnativeIfNecessary(ctx)
 
 	// may need to delete hard-coded crd names even if releaseExists because helm chart for glooe doesn't show gloo dependency (https://github.com/helm/helm/issues/7847)
 	if cliArgs.DeleteCrds || cliArgs.DeleteAll {
-		if mode == Federation {
-			// TODO(mitchaman): I'd like to remove the 'Federation' mode. Should we just append
-			//   GlooFedCrdNames to GlooCrdNames since this is "best effort"?
-			u.deleteGlooCrds(GlooFedCrdNames)
-		} else {
-			if len(crdNames) == 0 {
-				crdNames = GlooCrdNames
-			}
-			u.deleteGlooCrds(crdNames)
+		if len(crdNames) == 0 {
+			crdNames = GlooCrdNames
 		}
+		u.deleteGlooCrds(crdNames)
 	}
 
 	if cliArgs.DeleteNamespace || cliArgs.DeleteAll {
@@ -176,9 +164,7 @@ func (u *uninstaller) deleteGlooCrds(crdNames []string) {
 
 	_, _ = fmt.Fprintf(u.output, "Removing Gloo CRDs...\n")
 	args := []string{"delete", "crd"}
-	for _, crdName := range crdNames {
-		args = append(args, crdName)
-	}
+	args = append(args, crdNames...)
 	if err := u.kubeCli.Kubectl(nil, args...); err != nil {
 		_, _ = fmt.Fprintf(u.output, "Unable to delete Gloo CRDs. Continuing...\n")
 	}
