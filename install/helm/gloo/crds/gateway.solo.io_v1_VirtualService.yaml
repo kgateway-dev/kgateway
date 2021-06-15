@@ -152,27 +152,6 @@ spec:
                 one route in the list, the first route matched will be selected. If
                 the list of routes is empty, the virtual host will be ignored by Gloo.
               properties:
-                delegateOptions:
-                  description: Delegate the VirtualHost options to an external VirtualHostOption
-                    Resource. Any options configured in the VirtualHost's `options`
-                    field will override all delegated options. If multiple VirtualHostOption
-                    CRs are delegated to, configuration will be taken from prior VirtualHostOption
-                    CRs over later ones. For example if `headerManipulation` is specified
-                    on the VirtualHost options, a delegated `VirtualHostOption` vhost-opt-1,
-                    and a second delegated `VirtualHostOption` vhost-opt-2, the `headerManipulation`
-                    config from only the VirtualHost-level `options` will be applied.
-                    If the config is removed from the VirtualHost-level `options`
-                    field, then the config from the first delegated `VirtualHostOption`,
-                    vhost-opt-1, is applied.
-                  items:
-                    description: A way to reference resources across namespaces
-                    properties:
-                      name:
-                        type: string
-                      namespace:
-                        type: string
-                    type: object
-                  type: array
                 domains:
                   description: 'The list of domains (i.e.: matching the `Host` header
                     of a request) that belong to this virtual host. Note that the
@@ -3637,6 +3616,31 @@ spec:
                           type: array
                       type: object
                   type: object
+                optionsConfigRefs:
+                  description: Delegate the VirtualHost options to an external VirtualHostOption
+                    Resource. Any options configured in the VirtualHost's `options`
+                    field will override all delegated options. If multiple VirtualHostOption
+                    CRs are delegated to, configuration will be taken from prior VirtualHostOption
+                    CRs over later ones. For example if `headerManipulation` is specified
+                    on the VirtualHost options, a delegated `VirtualHostOption` vhost-opt-1,
+                    and a second delegated `VirtualHostOption` vhost-opt-2, the `headerManipulation`
+                    config from only the VirtualHost-level `options` will be applied.
+                    If the config is removed from the VirtualHost-level `options`
+                    field, then the config from the first delegated `VirtualHostOption`,
+                    vhost-opt-1, is applied.
+                  properties:
+                    delegateOptions:
+                      description: List of resource refs to Option CRs
+                      items:
+                        description: A way to reference resources across namespaces
+                        properties:
+                          name:
+                            type: string
+                          namespace:
+                            type: string
+                        type: object
+                      type: array
+                  type: object
                 routes:
                   description: The list of HTTP routes define routing actions to be
                     taken for incoming HTTP requests whose host header matches this
@@ -3726,27 +3730,6 @@ spec:
                                 type: array
                             type: object
                         type: object
-                      delegateOptions:
-                        description: Delegate the Route options to an external RouteOption
-                          Resource. Any options configured in the Route's `options`
-                          field will override all delegated options. If multiple RouteOption
-                          CRs are delegated to, configuration will be taken from prior
-                          RouteOption CRs over later ones. For example if `headerManipulation`
-                          is specified on the route options, a delegated `RouteOption`
-                          route-opt-1, and a second delegated `RouteOption` route-opt-2,
-                          the `headerManipulation` config from only the Route-level
-                          `options` will be applied. If the config is removed from
-                          the Route-level `options` field, then the config from the
-                          first delegated `RouteOption`, route-opt-1, is applied.
-                        items:
-                          description: A way to reference resources across namespaces
-                          properties:
-                            name:
-                              type: string
-                            namespace:
-                              type: string
-                          type: object
-                        type: array
                       directResponseAction:
                         description: Return an arbitrary HTTP response directly, without
                           proxying.
@@ -7460,6 +7443,31 @@ spec:
                                   type: object
                                 type: array
                             type: object
+                        type: object
+                      optionsConfigRefs:
+                        description: Delegate the Route options to an external RouteOption
+                          Resource. Any options configured in the Route's `options`
+                          field will override all delegated options. If multiple RouteOption
+                          CRs are delegated to, configuration will be taken from prior
+                          RouteOption CRs over later ones. For example if `headerManipulation`
+                          is specified on the route options, a delegated `RouteOption`
+                          route-opt-1, and a second delegated `RouteOption` route-opt-2,
+                          the `headerManipulation` config from only the Route-level
+                          `options` will be applied. If the config is removed from
+                          the Route-level `options` field, then the config from the
+                          first delegated `RouteOption`, route-opt-1, is applied.
+                        properties:
+                          delegateOptions:
+                            description: List of resource refs to Option CRs
+                            items:
+                              description: A way to reference resources across namespaces
+                              properties:
+                                name:
+                                  type: string
+                                namespace:
+                                  type: string
+                              type: object
+                            type: array
                         type: object
                       redirectAction:
                         description: Redirect actions tell the proxy to return a redirect

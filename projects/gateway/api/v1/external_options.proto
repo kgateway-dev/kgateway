@@ -21,7 +21,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 * defined on the VirtualHost will override the external options config.
 * Similarly, `VirtualHostOption`s which are delegated to first will get priority over following `VirtualHostOption`s.
 *
-* An example configuration with a VirtualService with it's own options config and delegating to two VirtualHostOption objects:
+* An example configuration with a VirtualService with its own options config and delegating to two VirtualHostOption objects:
 *
 * ```yaml
 * apiVersion: gateway.solo.io/v1
@@ -80,7 +80,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 *               value: this header was added in the VirtualHostOption object - #2
 * ```
 *
-* The final virtual host options (visible in the Proxy CRD) would be:
+* The final virtual host options (visible in the Proxy CR) would be:
 * ```yaml
 * spec:
 *   virtualHost:
@@ -107,11 +107,11 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 */
 message VirtualHostOption {
 
-  option (core.solo.io.resource).short_name = "vsopts";
+  option (core.solo.io.resource).short_name = "vhopts";
   option (core.solo.io.resource).plural_name = "virtual_host_options";
 
   // Status indicates the validation status of this resource.
-  // Status is read-only by clients, and set by gloo during validation
+  // Status is read-only by clients, and set by gateway during validation
   core.solo.io.Status status = 1 [(extproto.skip_hashing) = true];
 
   // Metadata contains the object metadata for this resource
@@ -129,7 +129,7 @@ message VirtualHostOption {
 * defined on the Route will override the external options config.
 * Similarly, `RouteOption`s which are delegated to first will get priority over following `RouteOption`s.
 *
-* An example configuration with a Route with it's own options config and delegating to two RouteOption objects:
+* An example configuration with a Route with its own options config and delegating to two RouteOption objects:
 *
 * ```yaml
 * apiVersion: gateway.solo.io/v1

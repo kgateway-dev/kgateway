@@ -38,7 +38,7 @@ const _ = proto.ProtoPackageIsVersion4
 // defined on the VirtualHost will override the external options config.
 // Similarly, `VirtualHostOption`s which are delegated to first will get priority over following `VirtualHostOption`s.
 //
-// An example configuration with a VirtualService with it's own options config and delegating to two VirtualHostOption objects:
+// An example configuration with a VirtualService with its own options config and delegating to two VirtualHostOption objects:
 //
 // ```yaml
 // apiVersion: gateway.solo.io/v1
@@ -97,7 +97,7 @@ const _ = proto.ProtoPackageIsVersion4
 //               value: this header was added in the VirtualHostOption object - #2
 // ```
 //
-// The final virtual host options (visible in the Proxy CRD) would be:
+// The final virtual host options (visible in the Proxy CR) would be:
 // ```yaml
 // spec:
 //   virtualHost:
@@ -127,7 +127,7 @@ type VirtualHostOption struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Status indicates the validation status of this resource.
-	// Status is read-only by clients, and set by gloo during validation
+	// Status is read-only by clients, and set by gateway during validation
 	Status *core.Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 	// Metadata contains the object metadata for this resource
 	Metadata *core.Metadata `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
@@ -196,7 +196,7 @@ func (x *VirtualHostOption) GetOptions() *v1.VirtualHostOptions {
 // defined on the Route will override the external options config.
 // Similarly, `RouteOption`s which are delegated to first will get priority over following `RouteOption`s.
 //
-// An example configuration with a Route with it's own options config and delegating to two RouteOption objects:
+// An example configuration with a Route with its own options config and delegating to two RouteOption objects:
 //
 // ```yaml
 // apiVersion: gateway.solo.io/v1
@@ -388,7 +388,7 @@ var file_github_com_solo_io_gloo_projects_gateway_api_v1_external_options_proto_
 	0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x56, 0x69, 0x72,
 	0x74, 0x75, 0x61, 0x6c, 0x48, 0x6f, 0x73, 0x74, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52,
 	0x07, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x3a, 0x26, 0x82, 0xf1, 0x04, 0x08, 0x0a, 0x06,
-	0x76, 0x73, 0x6f, 0x70, 0x74, 0x73, 0x82, 0xf1, 0x04, 0x16, 0x12, 0x14, 0x76, 0x69, 0x72, 0x74,
+	0x76, 0x68, 0x6f, 0x70, 0x74, 0x73, 0x82, 0xf1, 0x04, 0x16, 0x12, 0x14, 0x76, 0x69, 0x72, 0x74,
 	0x75, 0x61, 0x6c, 0x5f, 0x68, 0x6f, 0x73, 0x74, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
 	0x22, 0xcc, 0x01, 0x0a, 0x0b, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
 	0x12, 0x32, 0x0a, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
