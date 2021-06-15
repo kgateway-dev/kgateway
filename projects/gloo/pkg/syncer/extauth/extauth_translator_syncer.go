@@ -21,7 +21,10 @@ var (
 const (
 	Name              = "extauth"
 	ExtAuthServerRole = "extauth"
-	ErrEnterpriseOnly = "The Gloo Advanced Extauth API is an enterprise-only feature, please upgrade or use the Envoy Extauth API instead"
+)
+
+var (
+	ErrEnterpriseOnly = eris.New("The Gloo Advanced Extauth API is an enterprise-only feature, please upgrade or use the Envoy Extauth API instead")
 )
 
 type TranslatorSyncerExtension struct{}
@@ -44,11 +47,21 @@ func NewTranslatorSyncerExtension(
 func (s *TranslatorSyncerExtension) Sync(
 	ctx context.Context,
 	snap *gloov1.ApiSnapshot,
+	settings *gloov1.Settings,
 	xdsCache envoycache.SnapshotCache,
 	reports reporter.ResourceReports,
 ) (string, error) {
 	ctx = contextutils.WithLogger(ctx, "extAuthTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
+
+	getEnterpriseOnlyErr := func() (string, error) {
+		logger.Error(ErrEnterpriseOnly.Error())
+		return ExtAuthServerRole, ErrEnterpriseOnly
+	}
+
+	if settings.GetNamedExtauth() != nil {
+		return getEnterpriseOnlyErr()
+	}
 
 	for _, proxy := range snap.Proxies {
 		for _, listener := range proxy.Listeners {
@@ -62,20 +75,29 @@ func (s *TranslatorSyncerExtension) Sync(
 
 			for _, virtualHost := range virtualHosts {
 				if virtualHost.GetOptions().GetExtauth().GetConfigRef() != nil {
-					logger.Error(ErrEnterpriseOnly)
-					return ExtAuthServerRole, eris.New(ErrEnterpriseOnly)
+					return getEnterpriseOnlyErr()
+				}
+
+				if virtualHost.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
+					return getEnterpriseOnlyErr()
 				}
 
 				for _, route := range virtualHost.Routes {
 					if route.GetOptions().GetExtauth().GetConfigRef() != nil {
-						logger.Error(ErrEnterpriseOnly)
-						return ExtAuthServerRole, eris.New(ErrEnterpriseOnly)
+						return getEnterpriseOnlyErr()
+					}
+
+					if route.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
+						return getEnterpriseOnlyErr()
 					}
 
 					for _, weightedDestination := range route.GetRouteAction().GetMulti().GetDestinations() {
 						if weightedDestination.GetOptions().GetExtauth().GetConfigRef() != nil {
-							logger.Error(ErrEnterpriseOnly)
-							return ExtAuthServerRole, eris.New(ErrEnterpriseOnly)
+							return getEnterpriseOnlyErr()
+						}
+
+						if weightedDestination.GetOptions().GetExtauth().GetCustomAuth().GetName() != "" {
+							return getEnterpriseOnlyErr()
 						}
 					}
 				}

@@ -288,6 +288,11 @@ spec:
                   description: Timeout for the ext auth service to respond. Defaults
                     to 200ms
                   type: string
+                statPrefix:
+                  description: Optional additional prefix to use when emitting statistics.
+                    This allows to distinguish emitted statistics between configured
+                    ext_authz filters in an HTTP filter chain.
+                  type: string
                 statusOnError:
                   description: 'Sets the HTTP status that is returned to the client
                     when there is a network error between the filter and the authorization
@@ -620,6 +625,144 @@ spec:
               description: Enable automatic linkerd upstream header addition for easier
                 routing to linkerd services
               type: boolean
+            namedExtauth:
+              additionalProperties:
+                properties:
+                  clearRouteCache:
+                    description: 'Clears route cache in order to allow the external
+                      authorization service to correctly affect routing decisions.
+                      Filter clears all cached routes when:'
+                    type: boolean
+                  extauthzServerRef:
+                    description: The upstream to ask about auth decisions
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                    type: object
+                  failureModeAllow:
+                    description: In case of a failure or timeout querying the auth
+                      server, normally a request is denied. if this is set to true,
+                      the request will be allowed.
+                    type: boolean
+                  httpService:
+                    description: If this is set, communication to the upstream will
+                      be via HTTP and not GRPC.
+                    properties:
+                      pathPrefix:
+                        description: Sets a prefix to the value of authorization request
+                          header *Path*.
+                        type: string
+                      request:
+                        properties:
+                          allowedHeaders:
+                            description: 'These headers will be copied from the incoming
+                              request to the request going to the auth server. Note
+                              that in addition to the user''s supplied matchers:'
+                            items:
+                              type: string
+                            type: array
+                          headersToAdd:
+                            additionalProperties:
+                              type: string
+                            description: These headers that will be included to the
+                              request to authorization service. Note that client request
+                              of the same key will be overridden.
+                            type: object
+                        type: object
+                      response:
+                        properties:
+                          allowedClientHeaders:
+                            description: When this. is set, authorization response
+                              headers that will be added to the client's response
+                              when auth request is denied. Note that when this list
+                              is *not* set, all the authorization response headers,
+                              except *Authority (Host)* will be in the response to
+                              the client. When a header is included in this list,
+                              *Path*, *Status*, *Content-Length*, *WWW-Authenticate*
+                              and *Location* are automatically added.
+                            items:
+                              type: string
+                            type: array
+                          allowedUpstreamHeaders:
+                            description: When this is set, authorization response
+                              headers that have a will be added to the original client
+                              request and sent to the upstream. Note that coexistent
+                              headers will be overridden.
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                    type: object
+                  requestBody:
+                    description: Set this if you also want to send the body of the
+                      request, and not just the headers.
+                    properties:
+                      allowPartialMessage:
+                        description: When this field is true, Envoy will buffer the
+                          message until *max_request_bytes* is reached. The authorization
+                          request will be dispatched and no 413 HTTP error will be
+                          returned by the filter.
+                        type: boolean
+                      maxRequestBytes:
+                        description: Sets the maximum size of a message body that
+                          the filter will hold in memory. Envoy will return *HTTP
+                          413* and will *not* initiate the authorization process when
+                          buffer reaches the number set in this field. Note that this
+                          setting will have precedence over failure_mode_allow. Defaults
+                          to 4KB.
+                        format: int32
+                        type: integer
+                      packAsBytes:
+                        description: When this field is true, Envoy will send the
+                          body sent to the external authorization service with raw
+                          bytes.
+                        type: boolean
+                    type: object
+                  requestTimeout:
+                    description: Timeout for the ext auth service to respond. Defaults
+                      to 200ms
+                    type: string
+                  statPrefix:
+                    description: Optional additional prefix to use when emitting statistics.
+                      This allows to distinguish emitted statistics between configured
+                      ext_authz filters in an HTTP filter chain.
+                    type: string
+                  statusOnError:
+                    description: 'Sets the HTTP status that is returned to the client
+                      when there is a network error between the filter and the authorization
+                      server. The default status is HTTP 403 Forbidden. If set, this
+                      must be one of the following: - 100 - 200 201 202 203 204 205
+                      206 207 208 226 - 300 301 302 303 304 305 307 308 - 400 401
+                      402 403 404 405 406 407 408 409 410 411 412 413 414 415 416
+                      417 421 422 423 424 426 428 429 431 - 500 501 502 503 504 505
+                      506 507 508 510 511'
+                    format: int32
+                    type: integer
+                  transportApiVersion:
+                    description: Determines the API version for the `ext_authz` transport
+                      protocol that will be used by Envoy to communicate with the
+                      auth server. Defaults to `V2`. For more info, see the `transport_api_version`
+                      field [here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#extensions-filters-http-ext-authz-v3-extauthz).
+                    enum:
+                    - V3
+                    type: string
+                  userIdHeader:
+                    description: If the auth server trusted id of the user, it will
+                      be set in this header. Specifically this means that this header
+                      will be sanitized form the incoming request.
+                    type: string
+                type: object
+              description: 'Enterprise-only: External auth related settings for additional
+                auth servers This should only be used in the case where separate servers
+                are needed to authorize separate routes. With multiple auth servers
+                configured in Settings, multiple filters will be configured on the
+                filter chain, but only 1 will be executed on a route. The name of
+                the auth server (ie the key in the map) will be used to apply the
+                configuration on the route. If an auth server name is not supplied
+                on a route, the default auth server will be applied.'
+              type: object
             observabilityOptions:
               description: Provides settings related to the observability deployment
                 (enterprise only)

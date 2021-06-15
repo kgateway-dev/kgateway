@@ -174,6 +174,7 @@ Global external auth settings
 "clearRouteCache": bool
 "statusOnError": int
 "transportApiVersion": .enterprise.gloo.solo.io.Settings.ApiVersion
+"statPrefix": string
 
 ```
 
@@ -188,6 +189,7 @@ Global external auth settings
 | `clearRouteCache` | `bool` | Clears route cache in order to allow the external authorization service to correctly affect routing decisions. Filter clears all cached routes when: 1. The field is set to *true*. 2. The status returned from the authorization service is a HTTP 200 or gRPC 0. 3. At least one *authorization response header* is added to the client request, or is used for altering another client request header. |
 | `statusOnError` | `int` | Sets the HTTP status that is returned to the client when there is a network error between the filter and the authorization server. The default status is HTTP 403 Forbidden. If set, this must be one of the following: - 100 - 200 201 202 203 204 205 206 207 208 226 - 300 301 302 303 304 305 307 308 - 400 401 402 403 404 405 406 407 408 409 410 411 412 413 414 415 416 417 421 422 423 424 426 428 429 431 - 500 501 502 503 504 505 506 507 508 510 511. |
 | `transportApiVersion` | [.enterprise.gloo.solo.io.Settings.ApiVersion](../extauth.proto.sk/#apiversion) | Determines the API version for the `ext_authz` transport protocol that will be used by Envoy to communicate with the auth server. Defaults to `V2`. For more info, see the `transport_api_version` field [here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_authz/v3/ext_authz.proto#extensions-filters-http-ext-authz-v3-extauthz). |
+| `statPrefix` | `string` | Optional additional prefix to use when emitting statistics. This allows to distinguish emitted statistics between configured ext_authz filters in an HTTP filter chain. |
 
 
 
@@ -295,12 +297,14 @@ This is used with custom auth servers.
 
 ```yaml
 "contextExtensions": map<string, string>
+"name": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `contextExtensions` | `map<string, string>` | When a request matches the virtual host, route, or weighted destination on which this configuration is defined, Gloo will add the given context_extensions to the request that is sent to the external authorization server. This allows the server to base the auth decision on metadata that you define on the source of the request. This attribute is analogous to Envoy's config.filter.http.ext_authz.v2.CheckSettings. See the official [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/ext_authz/v2/ext_authz.proto.html?highlight=ext_authz#config-filter-http-ext-authz-v2-checksettings) for more details. |
+| `name` | `string` | [Enterprise-only] Only required in the case where multiple auth servers are configured in Settings This name must match a key in the named_extauth Settings. |
 
 
 
