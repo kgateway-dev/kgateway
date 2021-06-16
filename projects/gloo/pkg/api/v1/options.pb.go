@@ -458,7 +458,7 @@ func (x *TcpListenerOptions) GetTcpProxySettings() *tcp.TcpProxySettings {
 }
 
 // Optional, feature-specific configuration that lives on virtual hosts.
-// Each VirtualHostPlugin object contains configuration for a specific feature.
+// Each VirtualHostOptions object contains configuration for a specific feature.
 // Note to developers: new Virtual Host plugins must be added to this struct
 // to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 type VirtualHostOptions struct {
@@ -777,7 +777,7 @@ func (*VirtualHostOptions_Jwt) isVirtualHostOptions_JwtConfig() {}
 func (*VirtualHostOptions_JwtStaged) isVirtualHostOptions_JwtConfig() {}
 
 // Optional, feature-specific configuration that lives on routes.
-// Each RouteOption object contains configuration for a specific feature.
+// Each RouteOptions object contains configuration for a specific feature.
 // Note to developers: new Route plugins must be added to this struct
 // to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 type RouteOptions struct {

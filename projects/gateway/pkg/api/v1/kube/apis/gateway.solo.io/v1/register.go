@@ -29,8 +29,12 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Gateway{},
 		&GatewayList{},
+		&RouteOption{},
+		&RouteOptionList{},
 		&RouteTable{},
 		&RouteTableList{},
+		&VirtualHostOption{},
+		&VirtualHostOptionList{},
 		&VirtualService{},
 		&VirtualServiceList{},
 	)

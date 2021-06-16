@@ -14,7 +14,6 @@ import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
-
 import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 
 /*
@@ -168,6 +167,20 @@ message VirtualHost {
     // Virtual host options contain additional configuration to be applied to all traffic served by the Virtual Host.
     // Some configuration here can be overridden by Route Options.
     gloo.solo.io.VirtualHostOptions options = 4;
+
+    oneof external_options_config {
+    /* Delegate the VirtualHost options to an external VirtualHostOption Resource.
+     Any options configured in the VirtualHost's `options` field will override all
+     delegated options. If multiple VirtualHostOption CRs are delegated to, configuration will
+     be taken from prior VirtualHostOption CRs over later ones.
+     For example if `headerManipulation` is specified on the VirtualHost options, a delegated
+     `VirtualHostOption` vhost-opt-1, and a second delegated `VirtualHostOption` vhost-opt-2, the `headerManipulation`
+     config from only the VirtualHost-level `options` will be applied. If the config is removed from the VirtualHost-level `options` field,
+     then the config from the first delegated `VirtualHostOption`, vhost-opt-1, is applied.
+    */
+      DelegateOptionsRefs options_config_refs = 5;
+    }
+
 }
 
 /*
@@ -218,6 +231,28 @@ message Route {
 
     // The name provides a convenience for users to be able to refer to a route by name.
     string name = 7;
+
+    oneof external_options_config {
+
+      /* Delegate the Route options to an external RouteOption Resource.
+     Any options configured in the Route's `options` field will override all
+     delegated options. If multiple RouteOption CRs are delegated to, configuration will
+     be taken from prior RouteOption CRs over later ones.
+     For example if `headerManipulation` is specified on the route options, a delegated
+     `RouteOption` route-opt-1, and a second delegated `RouteOption` route-opt-2, the `headerManipulation`
+     config from only the Route-level `options` will be applied. If the config is removed from the Route-level `options` field,
+     then the config from the first delegated `RouteOption`, route-opt-1, is applied.
+     */
+      DelegateOptionsRefs options_config_refs = 10;
+    }
+
+}
+
+message DelegateOptionsRefs {
+  /*
+    List of resource refs to Option CRs
+   */
+  repeated core.solo.io.ResourceRef delegate_options = 1;
 }
 
 // DelegateActions are used to delegate routing decisions to Route Tables.
