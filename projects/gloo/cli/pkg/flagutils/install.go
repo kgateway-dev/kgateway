@@ -22,11 +22,7 @@ func AddEnterpriseInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	set.StringVar(&install.LicenseKey, "license-key", "", "License key to activate GlooE features")
 	set.BoolVar(&install.WithGlooFed, "with-gloo-fed", true, "Install Gloo-Fed alongside Gloo Enterprise")
 	// Gloo-fed
-	// TODO(mitchaman): Determine if these flags are still needed
 	set.StringSliceVar(&install.Federation.HelmChartValueFileNames, "gloo-fed-values", []string{}, "List of files with value overrides for the Gloo Fed Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)")
-	set.StringVar(&install.Federation.HelmReleaseName, "gloo-fed-release-name", constants.GlooFedReleaseName, "helm release name")
-	set.BoolVar(&install.Federation.CreateNamespace, "gloo-fed-create-namespace", true, "Create the namespace to install gloo fed into")
-	set.StringVar(&install.Federation.Namespace, "gloo-fed-namespace", defaults.GlooFed, "namespace to install gloo fed into")
 }
 
 func AddFederationDemoFlags(set *pflag.FlagSet, install *options.Install) {

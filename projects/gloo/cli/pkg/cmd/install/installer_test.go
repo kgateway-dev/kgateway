@@ -185,7 +185,6 @@ rules:
 		defaultInstall(install.Enterprise,
 			map[string]interface{}{},
 			glooEnterpriseChartUri)
-		// TODO(mitchaman): How do I verify that fed has been installed?
 	})
 
 	It("installs as enterprise cleanly if passed enterprise helmchart override", func() {
