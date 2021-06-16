@@ -59,7 +59,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       with:
-        repoToken: ${{ secrets.GITHUB_TOKEN }}
+        repoToken: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         firebaseServiceAccount: ${{ secrets.GC_FIREBASE_GHA_SA_JSON_KEY }}
         projectId: ${{ secrets.GC_FIREBASE_GHA_PROJECT_ID }}
         entryPoint: ./docs/ci
