@@ -14,6 +14,7 @@ weight: 5
 - [VirtualService](#virtualservice) **Top-Level Resource**
 - [VirtualHost](#virtualhost)
 - [Route](#route)
+- [DelegateOptionsRefs](#delegateoptionsrefs)
 - [DelegateAction](#delegateaction)
 - [RouteTableSelector](#routetableselector)
 - [Expression](#expression)
@@ -160,6 +161,7 @@ Gateway* Virtual Hosts can **delegate** their routes to `RouteTables`.
 "domains": []string
 "routes": []gateway.solo.io.Route
 "options": .gloo.solo.io.VirtualHostOptions
+"optionsConfigRefs": .gateway.solo.io.DelegateOptionsRefs
 
 ```
 
@@ -168,6 +170,7 @@ Gateway* Virtual Hosts can **delegate** their routes to `RouteTables`.
 | `domains` | `[]string` | The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host. Note that the wildcard will not match the empty string. e.g. “\*-bar.foo.com” will match “baz-bar.foo.com” but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header. Only a single virtual host on a gateway can match on “*”. A domain must be unique across all virtual hosts on a gateway or the config will be invalidated by Gloo Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto). |
 | `routes` | [[]gateway.solo.io.Route](../virtual_service.proto.sk/#route) | The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |
 | `options` | [.gloo.solo.io.VirtualHostOptions](../../../../gloo/api/v1/options.proto.sk/#virtualhostoptions) | Virtual host options contain additional configuration to be applied to all traffic served by the Virtual Host. Some configuration here can be overridden by Route Options. |
+| `optionsConfigRefs` | [.gateway.solo.io.DelegateOptionsRefs](../virtual_service.proto.sk/#delegateoptionsrefs) | Delegate the VirtualHost options to an external VirtualHostOption Resource. Any options configured in the VirtualHost's `options` field will override all delegated options. If multiple VirtualHostOption CRs are delegated to, configuration will be taken from prior VirtualHostOption CRs over later ones. For example if `headerManipulation` is specified on the VirtualHost options, a delegated `VirtualHostOption` vhost-opt-1, and a second delegated `VirtualHostOption` vhost-opt-2, the `headerManipulation` config from only the VirtualHost-level `options` will be applied. If the config is removed from the VirtualHost-level `options` field, then the config from the first delegated `VirtualHostOption`, vhost-opt-1, is applied. |
 
 
 
@@ -196,6 +199,7 @@ top-level `RouteTable` resources.
 "delegateAction": .gateway.solo.io.DelegateAction
 "options": .gloo.solo.io.RouteOptions
 "name": string
+"optionsConfigRefs": .gateway.solo.io.DelegateOptionsRefs
 
 ```
 
@@ -210,6 +214,24 @@ top-level `RouteTable` resources.
 | `delegateAction` | [.gateway.solo.io.DelegateAction](../virtual_service.proto.sk/#delegateaction) | Delegate routing actions for the given matcher to one or more RouteTables. Only one of `delegateAction`, `routeAction`, or `directResponseAction` can be set. |
 | `options` | [.gloo.solo.io.RouteOptions](../../../../gloo/api/v1/options.proto.sk/#routeoptions) | Route Options extend the behavior of routes. Route options include configuration such as retries, rate limiting, and request/response transformation. RouteOption behavior will be inherited by delegated routes which do not specify their own `options`. |
 | `name` | `string` | The name provides a convenience for users to be able to refer to a route by name. |
+| `optionsConfigRefs` | [.gateway.solo.io.DelegateOptionsRefs](../virtual_service.proto.sk/#delegateoptionsrefs) | Delegate the Route options to an external RouteOption Resource. Any options configured in the Route's `options` field will override all delegated options. If multiple RouteOption CRs are delegated to, configuration will be taken from prior RouteOption CRs over later ones. For example if `headerManipulation` is specified on the route options, a delegated `RouteOption` route-opt-1, and a second delegated `RouteOption` route-opt-2, the `headerManipulation` config from only the Route-level `options` will be applied. If the config is removed from the Route-level `options` field, then the config from the first delegated `RouteOption`, route-opt-1, is applied. |
+
+
+
+
+---
+### DelegateOptionsRefs
+
+
+
+```yaml
+"delegateOptions": []core.solo.io.ResourceRef
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `delegateOptions` | [[]core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | List of resource refs to Option CRs. |
 
 
 

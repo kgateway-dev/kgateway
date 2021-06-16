@@ -231,13 +231,15 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 	}
 
 	return translator.Opts{
-		GlooNamespace:   meta.GetNamespace(),
-		WriteNamespace:  runOptions.NsToWrite,
-		WatchNamespaces: runOptions.NsToWatch,
-		Gateways:        f,
-		VirtualServices: f,
-		RouteTables:     f,
-		Proxies:         f,
+		GlooNamespace:      meta.GetNamespace(),
+		WriteNamespace:     runOptions.NsToWrite,
+		WatchNamespaces:    runOptions.NsToWatch,
+		Gateways:           f,
+		VirtualServices:    f,
+		RouteTables:        f,
+		VirtualHostOptions: f,
+		RouteOptions:       f,
+		Proxies:            f,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: time.Minute,

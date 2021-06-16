@@ -97,7 +97,7 @@ metadata:
         gloo: rbac
 rules:
 - apiGroups: ["gateway.solo.io"]
-  resources: ["virtualservices", "routetables"]
+  resources: ["virtualservices", "routetables", "virtualhostoptions", "routeoptions"]
   # update is needed for status updates
   verbs: ["get", "list", "watch", "update"]
 - apiGroups: ["gateway.solo.io"]

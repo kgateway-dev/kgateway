@@ -26,8 +26,10 @@ import (
 )
 
 // RouteTableLister helps list RouteTables.
+// All objects returned here must be treated as read-only.
 type RouteTableLister interface {
 	// List lists all RouteTables in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.RouteTable, err error)
 	// RouteTables returns an object that can list and get RouteTables.
 	RouteTables(namespace string) RouteTableNamespaceLister
@@ -58,10 +60,13 @@ func (s *routeTableLister) RouteTables(namespace string) RouteTableNamespaceList
 }
 
 // RouteTableNamespaceLister helps list and get RouteTables.
+// All objects returned here must be treated as read-only.
 type RouteTableNamespaceLister interface {
 	// List lists all RouteTables in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.RouteTable, err error)
 	// Get retrieves the RouteTable from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.RouteTable, error)
 	RouteTableNamespaceListerExpansion
 }

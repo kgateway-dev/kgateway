@@ -27,7 +27,9 @@ import (
 type GatewayV1Interface interface {
 	RESTClient() rest.Interface
 	GatewaysGetter
+	RouteOptionsGetter
 	RouteTablesGetter
+	VirtualHostOptionsGetter
 	VirtualServicesGetter
 }
 
@@ -40,8 +42,16 @@ func (c *GatewayV1Client) Gateways(namespace string) GatewayInterface {
 	return newGateways(c, namespace)
 }
 
+func (c *GatewayV1Client) RouteOptions(namespace string) RouteOptionInterface {
+	return newRouteOptions(c, namespace)
+}
+
 func (c *GatewayV1Client) RouteTables(namespace string) RouteTableInterface {
 	return newRouteTables(c, namespace)
+}
+
+func (c *GatewayV1Client) VirtualHostOptions(namespace string) VirtualHostOptionInterface {
+	return newVirtualHostOptions(c, namespace)
 }
 
 func (c *GatewayV1Client) VirtualServices(namespace string) VirtualServiceInterface {

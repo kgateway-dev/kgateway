@@ -22,11 +22,13 @@ API Version: `gateway.solo.io.v1`
 - [Ingress](../github.com/solo-io/gloo/projects/ingress/api/v1/ingress.proto.sk#ingress)
 - [KubeService](../github.com/solo-io/gloo/projects/ingress/api/v1/service.proto.sk#kubeservice)
 - [Proxy](../github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk#proxy)
+- [RouteOption](../github.com/solo-io/gloo/projects/gateway/api/v1/external_options.proto.sk#routeoption)
 - [RouteTable](../github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk#routetable)
 - [Secret](../github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk#secret)
 - [Settings](../github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk#settings)
 - [Upstream](../github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk#upstream)
 - [UpstreamGroup](../github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk#upstreamgroup)
+- [VirtualHostOption](../github.com/solo-io/gloo/projects/gateway/api/v1/external_options.proto.sk#virtualhostoption)
 - [VirtualService](../github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk#virtualservice)
 
 <!-- Start of HubSpot Embed Code -->

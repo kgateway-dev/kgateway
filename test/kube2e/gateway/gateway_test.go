@@ -8,6 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
+	"github.com/solo-io/go-utils/testutils"
+
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -68,13 +72,15 @@ var _ = Describe("Kube2e: gateway", func() {
 		cache      kube.SharedCache
 		kubeClient kubernetes.Interface
 
-		gatewayClient        gatewayv1.GatewayClient
-		virtualServiceClient gatewayv1.VirtualServiceClient
-		routeTableClient     gatewayv1.RouteTableClient
-		upstreamGroupClient  gloov1.UpstreamGroupClient
-		upstreamClient       gloov1.UpstreamClient
-		proxyClient          gloov1.ProxyClient
-		serviceClient        skkube.ServiceClient
+		gatewayClient           gatewayv1.GatewayClient
+		virtualServiceClient    gatewayv1.VirtualServiceClient
+		routeTableClient        gatewayv1.RouteTableClient
+		virtualHostOptionClient gatewayv1.VirtualHostOptionClient
+		routeOptionClient       gatewayv1.RouteOptionClient
+		upstreamGroupClient     gloov1.UpstreamGroupClient
+		upstreamClient          gloov1.UpstreamClient
+		proxyClient             gloov1.ProxyClient
+		serviceClient           skkube.ServiceClient
 	)
 
 	BeforeEach(func() {
@@ -118,6 +124,16 @@ var _ = Describe("Kube2e: gateway", func() {
 			Cfg:         cfg,
 			SharedCache: cache,
 		}
+		virtualHostOptionClientFactory := &factory.KubeResourceClientFactory{
+			Crd:         gatewayv1.VirtualHostOptionCrd,
+			Cfg:         cfg,
+			SharedCache: cache,
+		}
+		routeOptionClientFactory := &factory.KubeResourceClientFactory{
+			Crd:         gatewayv1.RouteOptionCrd,
+			Cfg:         cfg,
+			SharedCache: cache,
+		}
 
 		gatewayClient, err = gatewayv1.NewGatewayClient(ctx, gatewayClientFactory)
 		Expect(err).NotTo(HaveOccurred())
@@ -147,6 +163,16 @@ var _ = Describe("Kube2e: gateway", func() {
 		proxyClient, err = gloov1.NewProxyClient(ctx, proxyClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		err = proxyClient.Register()
+		Expect(err).NotTo(HaveOccurred())
+
+		virtualHostOptionClient, err = gatewayv1.NewVirtualHostOptionClient(ctx, virtualHostOptionClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+		err = virtualHostOptionClient.Register()
+		Expect(err).NotTo(HaveOccurred())
+
+		routeOptionClient, err = gatewayv1.NewRouteOptionClient(ctx, routeOptionClientFactory)
+		Expect(err).NotTo(HaveOccurred())
+		err = routeOptionClient.Register()
 		Expect(err).NotTo(HaveOccurred())
 
 		kubeCoreCache, err := kubecache.NewKubeCoreCache(ctx, kubeClient)
@@ -717,13 +743,13 @@ var _ = Describe("Kube2e: gateway", func() {
 	Context("tests with route tables", func() {
 
 		AfterEach(func() {
-			cancel()
 			err := virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			err = routeTableClient.Delete(testHelper.InstallNamespace, "rt1", clients.DeleteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			err = routeTableClient.Delete(testHelper.InstallNamespace, "rt2", clients.DeleteOpts{})
 			Expect(err).NotTo(HaveOccurred())
+			cancel()
 		})
 
 		It("correctly routes requests to an upstream", func() {
@@ -764,6 +790,315 @@ var _ = Describe("Kube2e: gateway", func() {
 				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
 			}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
+		})
+	})
+
+	Context("tests with VirtualHostOptions", func() {
+
+		AfterEach(func() {
+			err := virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			err = virtualHostOptionClient.Delete(testHelper.InstallNamespace, "vh-opt-one", clients.DeleteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			err = virtualHostOptionClient.Delete(testHelper.InstallNamespace, "vh-opt-two", clients.DeleteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			cancel()
+		})
+
+		It("correctly delegates options from VirtualHostOption", func() {
+			dest := &gloov1.Destination{
+				DestinationType: &gloov1.Destination_Upstream{
+					Upstream: &core.ResourceRef{
+						Namespace: testHelper.InstallNamespace,
+						Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+					},
+				},
+			}
+			vh1 := &gatewayv1.VirtualHostOption{
+				Metadata: &core.Metadata{
+					Namespace: testHelper.InstallNamespace,
+					Name:      "vh-opt-one",
+				},
+				Options: &gloov1.VirtualHostOptions{
+					HeaderManipulation: &headers.HeaderManipulation{
+						RequestHeadersToRemove: []string{"header-from-external-options1"},
+					},
+					Cors: &cors.CorsPolicy{
+						ExposeHeaders: []string{"header-from-extopt1"},
+						AllowOrigin:   []string{"some-origin-1"},
+					},
+				},
+			}
+			vh2 := &gatewayv1.VirtualHostOption{
+				Metadata: &core.Metadata{
+					Namespace: testHelper.InstallNamespace,
+					Name:      "vh-opt-two",
+				},
+				Options: &gloov1.VirtualHostOptions{
+					HeaderManipulation: &headers.HeaderManipulation{
+						RequestHeadersToRemove: []string{"header-from-external-options2"},
+					},
+					Cors: &cors.CorsPolicy{
+						ExposeHeaders: []string{"header-from-extopt2"},
+						AllowOrigin:   []string{"some-origin-2"},
+					},
+					Transformations: &glootransformation.Transformations{
+						RequestTransformation: &glootransformation.Transformation{
+							TransformationType: &glootransformation.Transformation_TransformationTemplate{
+								TransformationTemplate: &transformation.TransformationTemplate{
+									Headers: map[string]*transformation.InjaTemplate{
+										"x-header-added-in-opt2": {
+											Text: "this header was added in the VirtualHostOption object vhOpt2",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			vs := &gatewayv1.VirtualService{
+				Metadata: &core.Metadata{
+					Namespace: testHelper.InstallNamespace,
+					Name:      "vs",
+				},
+				VirtualHost: &gatewayv1.VirtualHost{
+					Domains: []string{"*"},
+					Routes:  []*gatewayv1.Route{getRouteWithDest(dest, "/")},
+					Options: &gloov1.VirtualHostOptions{
+						HeaderManipulation: &headers.HeaderManipulation{
+							RequestHeadersToRemove: []string{"header-from-vhost"},
+						},
+					},
+					ExternalOptionsConfig: &gatewayv1.VirtualHost_OptionsConfigRefs{
+						OptionsConfigRefs: &gatewayv1.DelegateOptionsRefs{
+							DelegateOptions: []*core.ResourceRef{
+								{
+									Namespace: testHelper.InstallNamespace,
+									Name:      "vh-opt-one",
+								},
+								{
+									Namespace: testHelper.InstallNamespace,
+									Name:      "vh-opt-two",
+								},
+							},
+						},
+					},
+				},
+			}
+
+			_, err := virtualHostOptionClient.Write(vh1, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = virtualHostOptionClient.Write(vh2, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// give vhost options a chance to propogate
+			Eventually(func() error {
+				_, err := virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
+				return err
+			}, "5s", "0.1s").ShouldNot(HaveOccurred())
+
+			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
+			// wait for default gateway to be created
+			Eventually(func() (*gatewayv1.Gateway, error) {
+				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
+			}, "15s", "0.5s").Should(Not(BeNil()))
+
+			var proxy *gloov1.Proxy
+			// wait for the expected proxy configuration to be accepted
+			Eventually(func() error {
+				proxy, err = proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				if err != nil {
+					return err
+				}
+
+				if status := proxy.GetStatus(); status.GetState() != core.Status_Accepted {
+					return eris.Errorf("unexpected proxy state: %v. Reason: %v", status.GetState(), status.GetReason())
+				}
+				return nil
+			}, "15s", "0.5s").Should(BeNil())
+			var found bool
+			for _, l := range proxy.Listeners {
+				httpListener := l.GetHttpListener()
+				if httpListener == nil {
+					continue
+				}
+				for _, vhost := range httpListener.GetVirtualHosts() {
+					found = true
+					opts := vhost.GetOptions()
+					// option config on VirtualHost overrides all delegated options
+					testutils.ExpectEqualProtoMessages(opts.GetHeaderManipulation(), vs.GetVirtualHost().GetOptions().GetHeaderManipulation())
+					// since rt1 is delegated to first, it overrides rt2, which was delegated later
+					testutils.ExpectEqualProtoMessages(opts.GetCors(), vh1.GetOptions().GetCors())
+					// options that weren't already set in previously delegated options are set from rt2
+					testutils.ExpectEqualProtoMessages(opts.GetTransformations(), vh2.GetOptions().GetTransformations())
+				}
+			}
+			Expect(found).To(BeTrue())
+		})
+	})
+
+	Context("tests with RouteOptions", func() {
+
+		AfterEach(func() {
+			err := virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			err = routeOptionClient.Delete(testHelper.InstallNamespace, "rt-opt-one", clients.DeleteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			err = routeOptionClient.Delete(testHelper.InstallNamespace, "rt-opt-two", clients.DeleteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			cancel()
+		})
+
+		It("correctly delegates options from RouteOption", func() {
+			dest := &gloov1.Destination{
+				DestinationType: &gloov1.Destination_Upstream{
+					Upstream: &core.ResourceRef{
+						Namespace: testHelper.InstallNamespace,
+						Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+					},
+				},
+			}
+			rt1 := &gatewayv1.RouteOption{
+				Metadata: &core.Metadata{
+					Namespace: testHelper.InstallNamespace,
+					Name:      "rt-opt-one",
+				},
+				Options: &gloov1.RouteOptions{
+					HeaderManipulation: &headers.HeaderManipulation{
+						RequestHeadersToRemove: []string{"header-from-external-options1"},
+					},
+					Cors: &cors.CorsPolicy{
+						ExposeHeaders: []string{"header-from-extopt1"},
+						AllowOrigin:   []string{"some-origin-1"},
+					},
+				},
+			}
+			rt2 := &gatewayv1.RouteOption{
+				Metadata: &core.Metadata{
+					Namespace: testHelper.InstallNamespace,
+					Name:      "rt-opt-two",
+				},
+				Options: &gloov1.RouteOptions{
+					HeaderManipulation: &headers.HeaderManipulation{
+						RequestHeadersToRemove: []string{"header-from-external-options2"},
+					},
+					Cors: &cors.CorsPolicy{
+						ExposeHeaders: []string{"header-from-extopt2"},
+						AllowOrigin:   []string{"some-origin-2"},
+					},
+					Transformations: &glootransformation.Transformations{
+						RequestTransformation: &glootransformation.Transformation{
+							TransformationType: &glootransformation.Transformation_TransformationTemplate{
+								TransformationTemplate: &transformation.TransformationTemplate{
+									Headers: map[string]*transformation.InjaTemplate{
+										"x-header-added-in-opt2": {
+											Text: "this header was added in the VirtualHostOption object vhOpt2",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			vs := &gatewayv1.VirtualService{
+				Metadata: &core.Metadata{
+					Namespace: testHelper.InstallNamespace,
+					Name:      "vs",
+				},
+				VirtualHost: &gatewayv1.VirtualHost{
+					Domains: []string{"*"},
+					Routes: []*gatewayv1.Route{
+						{
+							Matchers: []*matchers.Matcher{{
+								PathSpecifier: &matchers.Matcher_Prefix{
+									Prefix: "/",
+								},
+							}},
+							Action: &gatewayv1.Route_RouteAction{
+								RouteAction: &gloov1.RouteAction{
+									Destination: &gloov1.RouteAction_Single{
+										Single: dest,
+									},
+								},
+							},
+							Options: &gloov1.RouteOptions{
+								HeaderManipulation: &headers.HeaderManipulation{
+									RequestHeadersToRemove: []string{"header-from-vhost"},
+								},
+							},
+							ExternalOptionsConfig: &gatewayv1.Route_OptionsConfigRefs{
+								OptionsConfigRefs: &gatewayv1.DelegateOptionsRefs{
+									DelegateOptions: []*core.ResourceRef{
+										{
+											Namespace: testHelper.InstallNamespace,
+											Name:      "rt-opt-one",
+										},
+										{
+											Namespace: testHelper.InstallNamespace,
+											Name:      "rt-opt-two",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			_, err := routeOptionClient.Write(rt1, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = routeOptionClient.Write(rt2, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			// give settings a chance to propogate
+			Eventually(func() error {
+				_, err := virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
+				return err
+			}, "5s", "0.1s").ShouldNot(HaveOccurred())
+
+			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
+			// wait for default gateway to be created
+			Eventually(func() (*gatewayv1.Gateway, error) {
+				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
+			}, "15s", "0.5s").Should(Not(BeNil()))
+
+			var proxy *gloov1.Proxy
+			// wait for the expected proxy configuration to be accepted
+			Eventually(func() error {
+				proxy, err = proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				if err != nil {
+					return err
+				}
+
+				if status := proxy.GetStatus(); status.GetState() != core.Status_Accepted {
+					return eris.Errorf("unexpected proxy state: %v. Reason: %v", status.GetState(), status.GetReason())
+				}
+				return nil
+			}, "15s", "0.5s").Should(BeNil())
+			var found bool
+			for _, l := range proxy.Listeners {
+				httpListener := l.GetHttpListener()
+				if httpListener == nil {
+					continue
+				}
+				for _, vhost := range httpListener.GetVirtualHosts() {
+					for _, route := range vhost.GetRoutes() {
+						found = true
+						opts := route.GetOptions()
+						// option config on VirtualHost overrides all delegated options
+						testutils.ExpectEqualProtoMessages(opts.GetHeaderManipulation(), vs.GetVirtualHost().GetRoutes()[0].GetOptions().GetHeaderManipulation())
+						// since rt1 is delegated to first, it overrides rt2, which was delegated later
+						testutils.ExpectEqualProtoMessages(opts.GetCors(), rt1.GetOptions().GetCors())
+						// options that weren't already set in previously delegated options are set from rt2
+						testutils.ExpectEqualProtoMessages(opts.GetTransformations(), rt2.GetOptions().GetTransformations())
+					}
+				}
+			}
+			Expect(found).To(BeTrue())
 		})
 	})
 
