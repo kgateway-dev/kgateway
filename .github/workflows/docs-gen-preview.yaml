@@ -2,8 +2,8 @@ name: Docs Preview
 
 on:
   pull_request:
-    # paths:
-    # - "docs/**"
+    paths:
+    - "docs/**"
     branches:
     - 'master'
 jobs:
