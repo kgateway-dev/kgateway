@@ -18,7 +18,7 @@ glooctl cluster deregister [flags]
 
 ```
       --cluster-name string           name of the cluster to deregister
-      --federation-namespace string   namespace of the Gloo Federation control plane (default "gloo-fed")
+      --federation-namespace string   namespace of the Gloo Federation control plane (default "gloo-system")
   -h, --help                          help for deregister
       --remote-context string         name of the kubeconfig context to use for deregistration
       --remote-kubeconfig string      path to the kubeconfig from which the deregistered cluster will be accessed
