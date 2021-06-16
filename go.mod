@@ -110,9 +110,6 @@ require (
 )
 
 replace (
-	// github.com/Azure/go-autorest/autorest has different versions for the Go
-	// modules than it does for releases on the repository, so we need to manually
-	// Note the correct  version when updating.
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/apache/thrift => github.com/apache/thrift v0.14.0
 	github.com/census-instrumentation/opencensus-proto => github.com/census-instrumentation/opencensus-proto v0.2.0 // indirect

@@ -13,6 +13,8 @@ type Opts struct {
 	VirtualServices               factory.ResourceClientFactory
 	RouteTables                   factory.ResourceClientFactory
 	Proxies                       factory.ResourceClientFactory
+	RouteOptions                  factory.ResourceClientFactory
+	VirtualHostOptions            factory.ResourceClientFactory
 	WatchOpts                     clients.WatchOpts
 	ValidationServerAddress       string
 	DevMode                       bool

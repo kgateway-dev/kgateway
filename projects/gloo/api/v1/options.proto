@@ -157,7 +157,7 @@ message TcpListenerOptions {
 }
 
 // Optional, feature-specific configuration that lives on virtual hosts.
-// Each VirtualHostPlugin object contains configuration for a specific feature.
+// Each VirtualHostOptions object contains configuration for a specific feature.
 // Note to developers: new Virtual Host plugins must be added to this struct
 // to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 message VirtualHostOptions {
@@ -257,7 +257,7 @@ message VirtualHostOptions {
 }
 
 // Optional, feature-specific configuration that lives on routes.
-// Each RouteOption object contains configuration for a specific feature.
+// Each RouteOptions object contains configuration for a specific feature.
 // Note to developers: new Route plugins must be added to this struct
 // to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 message RouteOptions {
@@ -384,7 +384,6 @@ message RouteOptions {
     // for more details about the `regex_rewrite` attribute
     .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute regex_rewrite = 27;
 }
-
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
 message DestinationSpec {
     // Note to developers: new DestinationSpecs must be added to this oneof field

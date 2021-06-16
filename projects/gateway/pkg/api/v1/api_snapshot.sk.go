@@ -14,16 +14,20 @@ import (
 )
 
 type ApiSnapshot struct {
-	VirtualServices VirtualServiceList
-	RouteTables     RouteTableList
-	Gateways        GatewayList
+	VirtualServices    VirtualServiceList
+	RouteTables        RouteTableList
+	Gateways           GatewayList
+	VirtualHostOptions VirtualHostOptionList
+	RouteOptions       RouteOptionList
 }
 
 func (s ApiSnapshot) Clone() ApiSnapshot {
 	return ApiSnapshot{
-		VirtualServices: s.VirtualServices.Clone(),
-		RouteTables:     s.RouteTables.Clone(),
-		Gateways:        s.Gateways.Clone(),
+		VirtualServices:    s.VirtualServices.Clone(),
+		RouteTables:        s.RouteTables.Clone(),
+		Gateways:           s.Gateways.Clone(),
+		VirtualHostOptions: s.VirtualHostOptions.Clone(),
+		RouteOptions:       s.RouteOptions.Clone(),
 	}
 }
 
@@ -40,6 +44,12 @@ func (s ApiSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
 	if _, err := s.hashGateways(hasher); err != nil {
 		return 0, err
 	}
+	if _, err := s.hashVirtualHostOptions(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashRouteOptions(hasher); err != nil {
+		return 0, err
+	}
 	return hasher.Sum64(), nil
 }
 
@@ -53,6 +63,14 @@ func (s ApiSnapshot) hashRouteTables(hasher hash.Hash64) (uint64, error) {
 
 func (s ApiSnapshot) hashGateways(hasher hash.Hash64) (uint64, error) {
 	return hashutils.HashAllSafe(hasher, s.Gateways.AsInterfaces()...)
+}
+
+func (s ApiSnapshot) hashVirtualHostOptions(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.VirtualHostOptions.AsInterfaces()...)
+}
+
+func (s ApiSnapshot) hashRouteOptions(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.RouteOptions.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) HashFields() []zap.Field {
@@ -73,6 +91,16 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("gateways", GatewaysHash))
+	VirtualHostOptionsHash, err := s.hashVirtualHostOptions(hasher)
+	if err != nil {
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("virtualHostOptions", VirtualHostOptionsHash))
+	RouteOptionsHash, err := s.hashRouteOptions(hasher)
+	if err != nil {
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("routeOptions", RouteOptionsHash))
 	snapshotHash, err := s.Hash(hasher)
 	if err != nil {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
@@ -81,10 +109,12 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 }
 
 type ApiSnapshotStringer struct {
-	Version         uint64
-	VirtualServices []string
-	RouteTables     []string
-	Gateways        []string
+	Version            uint64
+	VirtualServices    []string
+	RouteTables        []string
+	Gateways           []string
+	VirtualHostOptions []string
+	RouteOptions       []string
 }
 
 func (ss ApiSnapshotStringer) String() string {
@@ -105,6 +135,16 @@ func (ss ApiSnapshotStringer) String() string {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
+	s += fmt.Sprintf("  VirtualHostOptions %v\n", len(ss.VirtualHostOptions))
+	for _, name := range ss.VirtualHostOptions {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  RouteOptions %v\n", len(ss.RouteOptions))
+	for _, name := range ss.RouteOptions {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
 	return s
 }
 
@@ -114,9 +154,11 @@ func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return ApiSnapshotStringer{
-		Version:         snapshotHash,
-		VirtualServices: s.VirtualServices.NamespacesDotNames(),
-		RouteTables:     s.RouteTables.NamespacesDotNames(),
-		Gateways:        s.Gateways.NamespacesDotNames(),
+		Version:            snapshotHash,
+		VirtualServices:    s.VirtualServices.NamespacesDotNames(),
+		RouteTables:        s.RouteTables.NamespacesDotNames(),
+		Gateways:           s.Gateways.NamespacesDotNames(),
+		VirtualHostOptions: s.VirtualHostOptions.NamespacesDotNames(),
+		RouteOptions:       s.RouteOptions.NamespacesDotNames(),
 	}
 }

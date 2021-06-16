@@ -45,7 +45,9 @@ func init() {
 		"routetables.gateway.solo.io",
 		"authconfigs.enterprise.gloo.solo.io",
 		"ratelimitconfigs.ratelimit.solo.io",
-		// gloo-fed CRDs:
+		"virtualhostoptions.gateway.solo.io",
+		"routeoptions.gateway.solo.io",
+    // gloo-fed CRDs:
 		"glooinstances.fed.solo.io",
 		"failoverschemes.fed.solo.io",
 		"federatedauthconfigs.fed.enterprise.gloo.solo.io",
