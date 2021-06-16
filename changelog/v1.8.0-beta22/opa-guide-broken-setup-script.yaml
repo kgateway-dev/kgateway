@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Fix broken Deployment manifest in OPA setup script
+    issueLink: https://github.com/solo-io/gloo/issues/4834
+    resolvesIssue: true
