@@ -26,8 +26,12 @@ import (
 type Interface interface {
 	// Gateways returns a GatewayInformer.
 	Gateways() GatewayInformer
+	// RouteOptions returns a RouteOptionInformer.
+	RouteOptions() RouteOptionInformer
 	// RouteTables returns a RouteTableInformer.
 	RouteTables() RouteTableInformer
+	// VirtualHostOptions returns a VirtualHostOptionInformer.
+	VirtualHostOptions() VirtualHostOptionInformer
 	// VirtualServices returns a VirtualServiceInformer.
 	VirtualServices() VirtualServiceInformer
 }
@@ -48,9 +52,19 @@ func (v *version) Gateways() GatewayInformer {
 	return &gatewayInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
+// RouteOptions returns a RouteOptionInformer.
+func (v *version) RouteOptions() RouteOptionInformer {
+	return &routeOptionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // RouteTables returns a RouteTableInformer.
 func (v *version) RouteTables() RouteTableInformer {
 	return &routeTableInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// VirtualHostOptions returns a VirtualHostOptionInformer.
+func (v *version) VirtualHostOptions() VirtualHostOptionInformer {
+	return &virtualHostOptionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // VirtualServices returns a VirtualServiceInformer.

@@ -72,6 +72,16 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		return err
 	}
 
+	virtualHostOptionFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.VirtualHostOptionCrd)
+	if err != nil {
+		return err
+	}
+
+	routeOptionFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.RouteOptionCrd)
+	if err != nil {
+		return err
+	}
+
 	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.GatewayCrd)
 	if err != nil {
 		return err
@@ -130,13 +140,15 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	}
 
 	opts := translator.Opts{
-		GlooNamespace:   settings.Metadata.Namespace,
-		WriteNamespace:  writeNamespace,
-		WatchNamespaces: watchNamespaces,
-		Gateways:        gatewayFactory,
-		VirtualServices: virtualServiceFactory,
-		RouteTables:     routeTableFactory,
-		Proxies:         proxyFactory,
+		GlooNamespace:      settings.Metadata.Namespace,
+		WriteNamespace:     writeNamespace,
+		WatchNamespaces:    watchNamespaces,
+		Gateways:           gatewayFactory,
+		VirtualServices:    virtualServiceFactory,
+		RouteTables:        routeTableFactory,
+		Proxies:            proxyFactory,
+		VirtualHostOptions: virtualHostOptionFactory,
+		RouteOptions:       routeOptionFactory,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: refreshRate,
@@ -187,7 +199,29 @@ func RunGateway(opts translator.Opts) error {
 		return err
 	}
 
-	rpt := reporter.NewReporter("gateway", gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())
+	virtualHostOptionClient, err := v1.NewVirtualHostOptionClient(ctx, opts.VirtualHostOptions)
+	if err != nil {
+		return err
+	}
+	if err := virtualHostOptionClient.Register(); err != nil {
+		return err
+	}
+
+	routeOptionClient, err := v1.NewRouteOptionClient(ctx, opts.RouteOptions)
+	if err != nil {
+		return err
+	}
+	if err := routeOptionClient.Register(); err != nil {
+		return err
+	}
+
+	rpt := reporter.NewReporter("gateway",
+		gatewayClient.BaseClient(),
+		virtualServiceClient.BaseClient(),
+		routeTableClient.BaseClient(),
+		virtualHostOptionClient.BaseClient(),
+		routeOptionClient.BaseClient(),
+	)
 	writeErrs := make(chan error)
 
 	txlator := translator.NewDefaultTranslator(opts)
@@ -221,7 +255,7 @@ func RunGateway(opts translator.Opts) error {
 		allowWarnings = opts.Validation.AllowWarnings
 	}
 
-	emitter := v1.NewApiEmitterWithEmit(virtualServiceClient, routeTableClient, gatewayClient, notifications)
+	emitter := v1.NewApiEmitterWithEmit(virtualServiceClient, routeTableClient, gatewayClient, virtualHostOptionClient, routeOptionClient, notifications)
 
 	validationSyncer := gatewayvalidation.NewValidator(gatewayvalidation.NewValidatorConfig(
 		txlator,
