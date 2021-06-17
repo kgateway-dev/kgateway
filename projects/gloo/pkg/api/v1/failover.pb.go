@@ -398,8 +398,9 @@ type LbEndpoint_HealthCheckConfig struct {
 	// to a non-empty value allows overriding the cluster level configuration for a specific endpoint.
 	Hostname string `protobuf:"bytes,2,opt,name=hostname,proto3" json:"hostname,omitempty"`
 	// Path to use when health checking this failover endpoint.
+	// Default is empty path.
 	Path string `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
-	// Method to use when health checking this failover endpoint.
+	// Method to use when health checking this failover endpoint. Defaults to `GET`.
 	Method string `protobuf:"bytes,4,opt,name=method,proto3" json:"method,omitempty"`
 }
 

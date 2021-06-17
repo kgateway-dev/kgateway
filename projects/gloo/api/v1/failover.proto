@@ -86,8 +86,9 @@ message LbEndpoint {
         string hostname = 2;
 
         // Path to use when health checking this failover endpoint.
+        // Default is empty path.
         string path = 3;
-        // Method to use when health checking this failover endpoint.
+        // Method to use when health checking this failover endpoint. Defaults to `GET`.
         string method = 4;
     }
 
