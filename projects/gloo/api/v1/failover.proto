@@ -85,9 +85,9 @@ message LbEndpoint {
         // to a non-empty value allows overriding the cluster level configuration for a specific endpoint.
         string hostname = 2;
 
-        // Path to use when health checking the failover host.
+        // Path to use when health checking this failover endpoint.
         string path = 3;
-        // Method to use when health checking the failover host.
+        // Method to use when health checking this failover endpoint.
         string method = 4;
     }
 

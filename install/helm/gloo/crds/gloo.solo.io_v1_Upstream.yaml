@@ -575,11 +575,11 @@ spec:
                                         type: string
                                       method:
                                         description: Method to use when health checking
-                                          the failover host.
+                                          this failover endpoint.
                                         type: string
                                       path:
                                         description: Path to use when health checking
-                                          the failover host.
+                                          this failover endpoint.
                                         type: string
                                       portValue:
                                         description: Optional alternative health check

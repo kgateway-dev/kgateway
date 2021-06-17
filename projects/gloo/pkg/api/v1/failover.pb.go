@@ -397,9 +397,9 @@ type LbEndpoint_HealthCheckConfig struct {
 	// By default, the host header for L7 health checks is controlled by cluster level configuration. Setting this
 	// to a non-empty value allows overriding the cluster level configuration for a specific endpoint.
 	Hostname string `protobuf:"bytes,2,opt,name=hostname,proto3" json:"hostname,omitempty"`
-	// Path to use when health checking the failover host.
+	// Path to use when health checking this failover endpoint.
 	Path string `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
-	// Method to use when health checking the failover host.
+	// Method to use when health checking this failover endpoint.
 	Method string `protobuf:"bytes,4,opt,name=method,proto3" json:"method,omitempty"`
 }
 
