@@ -593,7 +593,7 @@ func (x *CallCredentials) GetFileCredentialSource() *CallCredentials_FileCredent
 	return nil
 }
 
-// General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/auth/cert.proto#envoy-api-enum-auth-tlsparameters-tlsprotocol)
+// General TLS parameters. See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters)
 // for more information on the meaning of these values.
 type SslParameters struct {
 	state         protoimpl.MessageState
