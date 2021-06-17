@@ -84,7 +84,6 @@ type HelmUninstall struct {
 
 type Uninstall struct {
 	GlooUninstall HelmUninstall
-	FedUninstall  HelmUninstall
 }
 
 type Proxy struct {

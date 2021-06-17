@@ -1,16 +1,11 @@
-name: Docs
+name: Docs Preview
 
 on:
-  push:
-    branches:
-    - 'master'
   pull_request:
+    paths:
+    - "docs/**"
     branches:
     - 'master'
-  workflow_run:
-    workflows: ["security-scan"]
-    types:
-      - completed
 jobs:
   build:
     name: Generate versioned docs site
@@ -60,13 +55,9 @@ jobs:
         USE_PR_SHA_AS_MASTER: ${{ github.event_name == 'pull_request' && !steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
         PULL_REQUEST_SHA: ${{ github.event.pull_request.head.sha }}
     - name: Deploy to Firebase
-      # Do not publish docs if this workflow was triggered by a pull request
-      # Only deploy if this was triggered by a push to master, or a successful trivy workflow_run
-      if: ${{ github.event_name != 'pull_request' }}
       uses: FirebaseExtended/action-hosting-deploy@v0
       with:
         repoToken: ${{ secrets.GITHUB_TOKEN }}
         firebaseServiceAccount: ${{ secrets.GC_FIREBASE_GHA_SA_JSON_KEY }}
         projectId: ${{ secrets.GC_FIREBASE_GHA_PROJECT_ID }}
-        channelId: live
         entryPoint: ./docs/ci
