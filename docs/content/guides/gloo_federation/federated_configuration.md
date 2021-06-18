@@ -26,7 +26,7 @@ apiVersion: fed.gloo.solo.io/v1
 kind: FederatedUpstream
 metadata:
   name: my-federated-upstream
-  namespace: gloo-fed
+  namespace: gloo-system
 spec:
   placement:
     clusters:
@@ -49,7 +49,7 @@ As you can see in the spec for the FederatedUpstream resource, the placement set
 Once we run the command, we can validate that it was successful by running the following:
 
 ```
-kubectl get federatedupstreams -n gloo-fed -oyaml
+kubectl get federatedupstreams -n gloo-system -oyaml
 ```
 
 In the resulting output you should see the state as `PLACED` in the status section:
@@ -90,7 +90,7 @@ apiVersion: fed.gateway.solo.io/v1
 kind: FederatedVirtualService
 metadata:
   name: my-federated-vs
-  namespace: gloo-fed
+  namespace: gloo-system
 spec:
   placement:
     clusters:
@@ -120,7 +120,7 @@ EOF
 Once we run the command, we can validate that it was successful by running the following:
 
 ```
-kubectl get federatedvirtualservice -n gloo-fed -oyaml
+kubectl get federatedvirtualservice -n gloo-system -oyaml
 ```
 
 In the resulting output you should see the state as `PLACED` in the status section:

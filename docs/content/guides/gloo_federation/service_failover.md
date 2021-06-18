@@ -441,7 +441,7 @@ spec:
 
 Once health checking has been enabled we can go ahead and actually create our FailoverScheme resource. This is the Gloo Edge Federation resource which will dynamically configure failover from one root Upstream, to a set of prioritized Upstreams.
 
-We will create the FailoverScheme resource in the `gloo-fed` namespace:
+We will create the FailoverScheme resource in the `gloo-system` namespace:
 
 ```shell script
 kubectl apply --context $LOCAL_CLUSTER_CONTEXT -f - <<EOF
@@ -449,7 +449,7 @@ apiVersion: fed.solo.io/v1
 kind: FailoverScheme
 metadata:
  name: failover-scheme
- namespace: gloo-fed
+ namespace: gloo-system
 spec:
  failoverGroups:
  - priorityGroup:
@@ -572,7 +572,7 @@ You may want to clean up the resources deployed during this guide. Run the follo
 
 ```
 # Remove the FailoverScheme
-kubectl delete failoverscheme -n gloo-fed failover-scheme --context $LOCAL_CLUSTER_CONTEXT
+kubectl delete failoverscheme -n gloo-system failover-scheme --context $LOCAL_CLUSTER_CONTEXT
 
 # Remove the Blue Deployment
 kubectl delete deployment echo-blue --context $LOCAL_CLUSTER_CONTEXT

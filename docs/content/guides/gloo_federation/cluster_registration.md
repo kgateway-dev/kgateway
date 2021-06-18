@@ -49,10 +49,10 @@ glooctl cluster register --cluster-name local --remote-context kind-local \
 Cluster registration creates a KubernetesCluster CR that contains information about the cluster
 that was just registered, including its credentials.
 
-Credentials for the remote cluster are stored in a secret in the gloo-fed namespace. The secret name will be the same as the `cluster-name` specified when registering the cluster.
+Credentials for the remote cluster are stored in a secret in the gloo-system namespace. The secret name will be the same as the `cluster-name` specified when registering the cluster.
 
 ```
-kubectl get secret -n gloo-fed local
+kubectl get secret -n gloo-system local
 ```
 
 ```
@@ -68,10 +68,10 @@ kubectl get clusterrole gloo-federation-controller
 kubectl get clusterrolebinding local-gloo-federation-controller-clusterrole-binding
 ```
 
-Once a cluster has been registered, Gloo Edge Federation will automatically discover all instances of Gloo Edge within the cluster. The discovered instances are stored in a Custom Resource of type `glooinstances.fed.solo.io` in the `gloo-fed` namespace. You can view the discovered instances by running the following:
+Once a cluster has been registered, Gloo Edge Federation will automatically discover all instances of Gloo Edge within the cluster. The discovered instances are stored in a Custom Resource of type `glooinstances.fed.solo.io` in the `gloo-system` namespace. You can view the discovered instances by running the following:
 
 ```
-kubectl get glooinstances -n gloo-fed
+kubectl get glooinstances -n gloo-system
 ```
 
 ```
