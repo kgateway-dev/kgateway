@@ -46,7 +46,6 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				proxyClient, err = resourceClientFactory.NewResourceClient(ctx, factory.NewResourceClientParams{ResourceType: &gloov1.Proxy{}})
 				Expect(err).NotTo(HaveOccurred())
 
-				params.Reports = make(reporter.ResourceReports)
 				translator, err = NewTranslatorSyncerExtension(ctx, params)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -90,11 +89,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			})
 
 			It("should error when enterprise ratelimitBasic config is set", func() {
-<<<<<<< HEAD
-				_, err := translator.Sync(ctx, apiSnapshot, snapCache)
-=======
 				_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
->>>>>>> 9cf4b287c... Support multiple ext_authz filters (enterprise-only) (#4870)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'ratelimitBasic' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
 			})
@@ -112,7 +107,6 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				proxyClient, err = resourceClientFactory.NewResourceClient(ctx, factory.NewResourceClientParams{ResourceType: &gloov1.Proxy{}})
 				Expect(err).NotTo(HaveOccurred())
 
-				params.Reports = make(reporter.ResourceReports)
 				translator, err = NewTranslatorSyncerExtension(ctx, params)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -164,11 +158,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			})
 
 			It("should error when enterprise RateLimitConfig config is set", func() {
-<<<<<<< HEAD
-				_, err := translator.Sync(ctx, apiSnapshot, snapCache)
-=======
 				_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
->>>>>>> 9cf4b287c... Support multiple ext_authz filters (enterprise-only) (#4870)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'RateLimitConfig' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
 			})
@@ -186,7 +176,6 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 				proxyClient, err = resourceClientFactory.NewResourceClient(ctx, factory.NewResourceClientParams{ResourceType: &gloov1.Proxy{}})
 				Expect(err).NotTo(HaveOccurred())
 
-				params.Reports = make(reporter.ResourceReports)
 				translator, err = NewTranslatorSyncerExtension(ctx, params)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -232,11 +221,7 @@ var _ = Describe("RatelimitTranslatorSyncer", func() {
 			})
 
 			It("should error when enterprise setActions config is set", func() {
-<<<<<<< HEAD
-				_, err := translator.Sync(ctx, apiSnapshot, snapCache)
-=======
 				_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, make(reporter.ResourceReports))
->>>>>>> 9cf4b287c... Support multiple ext_authz filters (enterprise-only) (#4870)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("The Gloo Advanced Rate limit API feature 'setActions' is enterprise-only, please upgrade or use the Envoy rate-limit API instead"))
 			})

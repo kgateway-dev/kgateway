@@ -38,12 +38,9 @@ func (s *TranslatorSyncerExtension) IsUpgrade() bool {
 }
 
 func NewTranslatorSyncerExtension(_ context.Context, params syncer.TranslatorSyncerExtensionParams) (syncer.TranslatorSyncerExtension, error) {
-	return &TranslatorSyncerExtension{reports: params.Reports}, nil
+	return &TranslatorSyncerExtension{}, nil
 }
 
-<<<<<<< HEAD
-func (s *TranslatorSyncerExtension) Sync(ctx context.Context, snap *gloov1.ApiSnapshot, xdsCache envoycache.SnapshotCache) (string, error) {
-=======
 func (s *TranslatorSyncerExtension) Sync(
 	ctx context.Context,
 	snap *gloov1.ApiSnapshot,
@@ -51,7 +48,6 @@ func (s *TranslatorSyncerExtension) Sync(
 	xdsCache envoycache.SnapshotCache,
 	reports reporter.ResourceReports,
 ) (string, error) {
->>>>>>> 9cf4b287c... Support multiple ext_authz filters (enterprise-only) (#4870)
 	ctx = contextutils.WithLogger(ctx, "rateLimitTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
 

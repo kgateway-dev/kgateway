@@ -34,45 +34,15 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 		translator, err = NewTranslatorSyncerExtension(ctx, syncer.TranslatorSyncerExtensionParams{})
 		Expect(err).NotTo(HaveOccurred())
 
-<<<<<<< HEAD
-		params.Reports = make(reporter.ResourceReports)
-		translator, err = NewTranslatorSyncerExtension(ctx, params)
-		Expect(err).NotTo(HaveOccurred())
-
-		config := &extauth.AuthConfig{
-			Metadata: &skcore.Metadata{
-				Name:      "auth",
-				Namespace: defaults.GlooSystem,
-			},
-			Configs: []*extauth.AuthConfig_Config{{
-				AuthConfig: &extauth.AuthConfig_Config_Oauth{},
-			}},
-		}
-
-		proxy = getProxy(config.Metadata.Ref())
-		proxyClient.Write(proxy, clients.WriteOpts{})
-
-		apiSnapshot = &gloov1.ApiSnapshot{
-			Proxies:     []*gloov1.Proxy{proxy},
-			Secrets:     []*gloov1.Secret{},
-			AuthConfigs: extauth.AuthConfigList{config},
-		}
-=======
 		apiSnapshot = &gloov1.ApiSnapshot{}
 		settings = &gloov1.Settings{}
 		resourceReports = make(reporter.ResourceReports)
->>>>>>> 9cf4b287c... Support multiple ext_authz filters (enterprise-only) (#4870)
 	})
 
 	AfterEach(func() {
 		cancel()
 	})
 
-<<<<<<< HEAD
-	Context("config with enterprise extauth feature is set on listener", func() {
-		It("should error when enterprise extauth config is set", func() {
-			_, err := translator.Sync(ctx, apiSnapshot, snapCache)
-=======
 	Context("Listener contains ExtAuthExtension.ConfigRef", func() {
 
 		var (
@@ -243,7 +213,6 @@ var _ = Describe("ExtauthTranslatorSyncer", func() {
 
 		It("should error", func() {
 			_, err := translator.Sync(ctx, apiSnapshot, settings, snapCache, resourceReports)
->>>>>>> 9cf4b287c... Support multiple ext_authz filters (enterprise-only) (#4870)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ErrEnterpriseOnly))
 		})
