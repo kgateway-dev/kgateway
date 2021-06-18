@@ -11,3 +11,6 @@ changelog:
       an ext_authz filter that points to one of those servers per route.
       Allow `stat_prefix` to be enabled for an ext_authz filter.
       This is an additional prefix that is used when emitting statistics.
+  - type: FIX
+    description: Fix enterprise install commands to use latest patch version based off of the CLI minor version.
+    issueLink: https://github.com/solo-io/gloo/issues/4555

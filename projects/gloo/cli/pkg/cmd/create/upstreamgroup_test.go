@@ -123,7 +123,7 @@ var _ = Describe("UpstreamGroup", func() {
 		It("can print as kube yaml in dry-run", func() {
 			out, err := testutils.GlooctlOut("create upstreamgroup test --namespace gloo-system --weighted-upstreams gloo-system.us1=2 --dry-run")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out).To(Equal(`apiVersion: gloo.solo.io/v1
+			Expect(out).To(ContainSubstring(`apiVersion: gloo.solo.io/v1
 kind: UpstreamGroup
 metadata:
   creationTimestamp: null
