@@ -31,23 +31,7 @@ jobs:
           ${{ runner.os }}-go-
     - name: Generate Code
       run: |
-        ./ci/check-code-and-docs-gen.sh
-    - name: Setup Hugo
-      uses: peaceiris/actions-hugo@v2
-      with:
-        hugo-version: '0.69.2'
-    - name: Detect Communinty PR
-      id: community-pr-check
-      if: ${{ github.event.pull_request.head.repo.full_name != 'solo-io/gloo' }}
-      shell: bash
-      run: |
-          echo "Pull Request is from a fork. Setting IS_COMMUNITY_PR to true"
-          echo "::set-output name=IS_COMMUNITY_PR::true"
-    - name: Generate versioned docs site
-      run: make -C docs build-site
-      env:
-        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        SKIP_CHANGELOG_GENERATION: ${{ steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
+        ./ci/check-generated-code.sh
   regression_tests:
     name: k8s regression tests
     runs-on: ubuntu-18.04

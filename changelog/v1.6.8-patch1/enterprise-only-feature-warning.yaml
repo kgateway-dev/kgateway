@@ -14,3 +14,7 @@ changelog:
   - type: FIX
     description: Fix enterprise install commands to use latest patch version based off of the CLI minor version.
     issueLink: https://github.com/solo-io/gloo/issues/4555
+  - type: NON_USER_FACING
+    description: >
+      Cleanup our docs gen github workflow to ensure that docs are only build on pull requests to master.
+      Consolidate the logic into a single place so that we maintain a single source of truth.
