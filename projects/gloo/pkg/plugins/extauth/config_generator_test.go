@@ -189,7 +189,6 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 						}
 
 						expectedConfig = &envoyauth.ExtAuthz{
-							TransportApiVersion:       envoycore.ApiVersion_V3,
 							MetadataContextNamespaces: []string{JWTFilterName},
 							Services: &envoyauth.ExtAuthz_GrpcService{
 								GrpcService: &envoycore.GrpcService{
@@ -214,24 +213,6 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 					})
 				})
 
-				When("transport protocol version is set to V3 in settings", func() {
-
-					BeforeEach(func() {
-						defaultSettings = &extauthv1.Settings{
-							ExtauthzServerRef: upstream.Metadata.Ref(),
-						}
-					})
-
-					It("sets TransportApiVersion to V3 on the ext auth filter", func() {
-						filters, err := extAuthzConfigGenerator.GenerateListenerExtAuthzConfig(nil, gloov1.UpstreamList{upstream})
-						Expect(err).NotTo(HaveOccurred())
-						Expect(filters).To(HaveLen(1))
-
-						actualFilterConfig := filters[0]
-						Expect(actualFilterConfig.GetTransportApiVersion()).To(Equal(envoycore.ApiVersion_V3))
-					})
-				})
-
 				When("complete settings are provided", func() {
 
 					BeforeEach(func() {
@@ -253,7 +234,6 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 						}
 
 						expectedConfig = &envoyauth.ExtAuthz{
-							TransportApiVersion:       envoycore.ApiVersion_V3,
 							MetadataContextNamespaces: []string{JWTFilterName},
 							Services: &envoyauth.ExtAuthz_GrpcService{
 								GrpcService: &envoycore.GrpcService{
@@ -326,7 +306,6 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 						}
 
 						expectedConfig = &envoyauth.ExtAuthz{
-							TransportApiVersion:       envoycore.ApiVersion_V3,
 							MetadataContextNamespaces: []string{JWTFilterName},
 							Services: &envoyauth.ExtAuthz_HttpService{
 								HttpService: &envoyauth.HttpService{
