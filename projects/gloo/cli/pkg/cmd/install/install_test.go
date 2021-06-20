@@ -134,7 +134,7 @@ var _ = Describe("Install", func() {
 
 	It("should not error when providing the admin console flag", func() {
 		version.Version = "1.3.2" // pretend we set this using linker on a release build of glooctl
-		
+
 		// This test fetches the corresponding GlooE helm chart, thus it needs the version that gets linked
 		// into the glooctl binary at build time
 		out, err := exec.RunCommandOutput(RootDir, true, filepath.Join("_output", "glooctl"), "install", "gateway", "--dry-run", "--with-admin-console")
