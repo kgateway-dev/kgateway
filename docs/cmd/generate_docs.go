@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
 
@@ -50,6 +51,7 @@ func rootApp(ctx context.Context) *cobra.Command {
 	}
 	app.AddCommand(changelogMdFromGithubCmd(opts))
 	app.AddCommand(securityScanMdFromCmd(opts))
+	app.AddCommand(enterpriseHelmValuesMdFromGithubCmd(opts))
 
 	app.PersistentFlags().StringVar(&opts.HugoDataSoloOpts.version, "version", "", "version of docs and code")
 	app.PersistentFlags().StringVar(&opts.HugoDataSoloOpts.product, "product", "gloo", "product to which the docs refer (defaults to gloo)")
@@ -82,6 +84,17 @@ func changelogMdFromGithubCmd(opts *options) *cobra.Command {
 				return nil
 			}
 			return generateChangelogMd(args)
+		},
+	}
+	return app
+}
+
+func enterpriseHelmValuesMdFromGithubCmd(opts *options) *cobra.Command {
+	app := &cobra.Command{
+		Use:   "get-enterprise-helm-values",
+		Short: "Get documentation of valid helm values from Gloo Enterprise github",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return fetchEnterpriseHelmValues(args)
 		},
 	}
 	return app
@@ -253,4 +266,34 @@ func generateSecurityScanGlooE(ctx context.Context) error {
 	}
 
 	return BuildSecurityScanReportGlooE(tagNames)
+}
+
+func fetchEnterpriseHelmValues(args []string) error {
+	ctx := context.Background()
+	// Initialize Auth
+	if os.Getenv("GITHUB_TOKEN") == "" {
+		return MissingGithubTokenError(skipSecurityScan)
+	}
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	client := github.NewClient(tc)
+
+	// Download the file at the specified path on the latest released branch of solo-projects
+	path := "install/helm/gloo-ee/reference/values.txt"
+	releaseTag, err := githubutils.FindLatestReleaseTag(ctx, client, "solo-io", "solo-projects")
+	files, err := githubutils.GetFilesFromGit(ctx, client, "solo-io", glooEnterpriseRepo, releaseTag, path)
+	if err != nil {
+		return err
+	}
+
+	// Decode the file and log to the console
+	decodedContents, err := base64.StdEncoding.DecodeString(*files[0].Content)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s", decodedContents)
+
+	return nil
 }

@@ -24,6 +24,7 @@ site-common: clean
 	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 	GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md gloo > content/static/content/gloo-security-scan.docgen
 	GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md glooe > content/static/content/glooe-security-scan.docgen
+	GO111MODULE=on go run cmd/generate_docs.go get-enterprise-helm-values 1.1 > content/static/content/glooe-values.docgen
 
 .PHONY: site-test
 site-test: site-common
