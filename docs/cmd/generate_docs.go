@@ -126,6 +126,9 @@ var (
 	MissingGithubTokenError = func(envVar string) error {
 		return eris.Errorf("Must either set GITHUB_TOKEN or set %s environment variable to true", envVar)
 	}
+	FileNotFoundError = func(path string, branch string) error {
+		return eris.Errorf("Could not find file at path %s on branch %s", path, branch)
+	}
 )
 
 // Generates changelog for releases as fetched from Github
@@ -286,6 +289,9 @@ func fetchEnterpriseHelmValues(args []string) error {
 	files, err := githubutils.GetFilesFromGit(ctx, client, "solo-io", glooEnterpriseRepo, releaseTag, path)
 	if err != nil {
 		return err
+	}
+	if len(files) <= 0 {
+		return FileNotFoundError(path, releaseTag)
 	}
 
 	// Decode the file and log to the console
