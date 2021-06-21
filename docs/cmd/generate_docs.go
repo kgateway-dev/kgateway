@@ -49,6 +49,8 @@ func rootApp(ctx context.Context) *cobra.Command {
 	return app
 }
 
+// Serializes github repository release and prints serialized releases to stdout
+// To be used for caching release data for changelog/security scan docsgen.
 func getReleases(opts *options) *cobra.Command {
 	app := &cobra.Command{
 		Use:   "gen-releases",
@@ -86,8 +88,8 @@ func getReleases(opts *options) *cobra.Command {
 	return app
 }
 
+// Serialized github RepositoryRelease array to be written to file
 func getRepoReleases(ctx context.Context, repo string, client *github.Client) error {
-	print("getting releases for: " + repo)
 	allReleases, err := githubutils.GetAllRepoReleases(ctx, client, "solo-io", repo)
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
