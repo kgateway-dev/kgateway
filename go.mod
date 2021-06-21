@@ -125,6 +125,8 @@ replace (
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
 
+	github.com/solo-io/go-utils => /Users/sai/go/src/github.com/solo-io/go-utils
+
 	// kube 0.19: redirects needed for most k8s.io dependencies because
 	// k8s.io/kubernetes tries to import v0.0.0 of everything.
 	k8s.io/api => k8s.io/api v0.19.6

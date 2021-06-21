@@ -20,10 +20,13 @@ SOLO_HUGO_THEME_REVISION := 41587dc9dc719bd22cedd9803994f756e25f571f
 site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
 	git -C themes/hugo-theme-soloio checkout $(SOLO_HUGO_THEME_REVISION)
+	GO111MODULE=on go run cmd/generate_docs.go gen-releases gloo > opensource.out
+	GO111MODULE=on go run cmd/generate_docs.go gen-releases glooe > enterprise.out
 	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
 	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 	GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md gloo > content/static/content/gloo-security-scan.docgen
 	GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md glooe > content/static/content/glooe-security-scan.docgen
+	rm -f opensource.out enterprise.out
 
 .PHONY: site-test
 site-test: site-common
