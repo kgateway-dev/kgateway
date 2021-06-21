@@ -189,6 +189,7 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 						}
 
 						expectedConfig = &envoyauth.ExtAuthz{
+							TransportApiVersion:       envoycore.ApiVersion_V3,
 							MetadataContextNamespaces: []string{JWTFilterName},
 							Services: &envoyauth.ExtAuthz_GrpcService{
 								GrpcService: &envoycore.GrpcService{
@@ -234,6 +235,7 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 						}
 
 						expectedConfig = &envoyauth.ExtAuthz{
+							TransportApiVersion:       envoycore.ApiVersion_V3,
 							MetadataContextNamespaces: []string{JWTFilterName},
 							Services: &envoyauth.ExtAuthz_GrpcService{
 								GrpcService: &envoycore.GrpcService{
@@ -306,6 +308,7 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 						}
 
 						expectedConfig = &envoyauth.ExtAuthz{
+							TransportApiVersion:       envoycore.ApiVersion_V3,
 							MetadataContextNamespaces: []string{JWTFilterName},
 							Services: &envoyauth.ExtAuthz_HttpService{
 								HttpService: &envoyauth.HttpService{
