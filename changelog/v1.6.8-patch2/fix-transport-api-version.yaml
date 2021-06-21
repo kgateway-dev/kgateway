@@ -3,4 +3,5 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/4874
     resolvesIssue: false
     description: >
-      Update the transport API version to v3 in extauth to leverage v3 features in enterprise for the multi extauth flow.
+      Update the transport API version to v3 in extauth to leverage v3 features in enterprise for the multi extauth
+      flow. Any custom extauth servers must now use extauth v3 API instead of v2.
