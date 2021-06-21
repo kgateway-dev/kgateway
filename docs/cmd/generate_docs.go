@@ -285,7 +285,7 @@ func fetchEnterpriseHelmValues(args []string) error {
 
 	// Download the file at the specified path on the latest released branch of solo-projects
 	path := "install/helm/gloo-ee/reference/values.txt"
-	releaseTag, err := githubutils.FindLatestReleaseTag(ctx, client, "solo-io", "solo-projects")
+	releaseTag, err := githubutils.FindLatestReleaseBySemver(ctx, client, "solo-io", "solo-projects")
 	files, err := githubutils.GetFilesFromGit(ctx, client, "solo-io", glooEnterpriseRepo, releaseTag, path)
 	if err != nil {
 		return err
