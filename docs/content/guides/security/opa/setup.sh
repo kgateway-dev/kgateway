@@ -107,7 +107,7 @@ spec:
     port: 443
     targetPort: 443
 ---
-apiVersion: apps/v1
+apiVersion: extension/v1beta1
 kind: Deployment
 metadata:
   labels:
