@@ -281,6 +281,8 @@ func GenerateEnvoyConfigForFilter(settings *extauthv1.Settings, upstreams v1.Ups
 	}
 	cfg.StatusOnError = statusOnError
 
+	cfg.TransportApiVersion = envoycore.ApiVersion_V3
+
 	return cfg, nil
 }
 
