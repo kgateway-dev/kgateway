@@ -273,15 +273,10 @@ func generateSecurityScanGlooE(ctx context.Context) error {
 
 func fetchEnterpriseHelmValues(args []string) error {
 	ctx := context.Background()
-	// Initialize Auth
-	if os.Getenv("GITHUB_TOKEN") == "" {
-		return MissingGithubTokenError(skipSecurityScan)
+	client, err := githubutils.GetClient(ctx)
+	if err != nil {
+		return err
 	}
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
 
 	// Download the file at the specified path on the latest released branch of solo-projects
 	path := "install/helm/gloo-ee/reference/values.txt"
