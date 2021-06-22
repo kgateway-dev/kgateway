@@ -66,7 +66,7 @@ require (
 	github.com/sergi/go-diff v1.1.0
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/solo-io/go-list-licenses v0.1.0
-	github.com/solo-io/go-utils v0.21.7
+	github.com/solo-io/go-utils v0.21.8
 	github.com/solo-io/k8s-utils v0.0.8
 	github.com/solo-io/protoc-gen-ext v0.0.15
 	github.com/solo-io/reporting-client v0.2.0
@@ -83,7 +83,6 @@ require (
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/mod v0.3.1-0.20200828183125-ce943fd02449
-	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/tools v0.0.0-20201027213030-631220838841
 	google.golang.org/genproto v0.0.0-20201019141844-1ed22bb0c154
@@ -124,8 +123,6 @@ replace (
 	github.com/opencontainers/go-digest => github.com/opencontainers/go-digest v1.0.0-rc1
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
-
-	github.com/solo-io/go-utils => /Users/sai/go/src/github.com/solo-io/go-utils
 
 	// kube 0.19: redirects needed for most k8s.io dependencies because
 	// k8s.io/kubernetes tries to import v0.0.0 of everything.

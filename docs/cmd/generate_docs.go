@@ -15,7 +15,6 @@ import (
 	changelogdocutils "github.com/solo-io/go-utils/changeloggenutils"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/spf13/cobra"
-	"golang.org/x/oauth2"
 )
 
 func main() {
@@ -44,61 +43,45 @@ func rootApp(ctx context.Context) *cobra.Command {
 	}
 	app.AddCommand(changelogMdFromGithubCmd(opts))
 	app.AddCommand(securityScanMdFromCmd(opts))
-	app.AddCommand(getReleases(opts))
+	app.AddCommand(getReleasesCmd(opts))
 
 	return app
 }
 
 // Serializes github repository release and prints serialized releases to stdout
 // To be used for caching release data for changelog/security scan docsgen.
-func getReleases(opts *options) *cobra.Command {
+func getReleasesCmd(opts *options) *cobra.Command {
 	app := &cobra.Command{
 		Use:   "gen-releases",
 		Short: "cache github releases for gloo edge repository",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if !useCachedReleases() {
-				return nil
-			}
-			ctx := opts.ctx
-			// Create github client
-			if os.Getenv("GITHUB_TOKEN") == "" {
-				return MissingGithubTokenError(skipSecurityScan)
-			}
-			ts := oauth2.StaticTokenSource(
-				&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
-			)
-			tc := oauth2.NewClient(ctx, ts)
-			client := github.NewClient(tc)
-			if len(args) != 1 {
-				return InvalidInputError(fmt.Sprintf("%v", len(args)-1))
-			}
-			target := args[0]
-			var err error
-			switch target {
-			case glooDocGen:
-				err = getRepoReleases(ctx, glooOpenSourceRepo, client)
-			case glooEDocGen:
-				err = getRepoReleases(ctx, glooEnterpriseRepo, client)
-			default:
-				return InvalidInputError(target)
-			}
-			return err
-		},
+		RunE:  fetchAndSerializeReleases(opts),
 	}
 	return app
 }
 
-// Serialized github RepositoryRelease array to be written to file
-func getRepoReleases(ctx context.Context, repo string, client *github.Client) error {
-	allReleases, err := githubutils.GetAllRepoReleases(ctx, client, "solo-io", repo)
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err = enc.Encode(allReleases)
-	if err != nil {
+func fetchAndSerializeReleases(opts *options) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		if !useCachedReleases() {
+			return nil
+		}
+		if len(args) != 1 {
+			return InvalidInputError(fmt.Sprintf("%v", len(args)-1))
+		}
+		client, err := githubutils.GetClient(opts.ctx)
+		if err != nil {
+			return err
+		}
+		target := args[0]
+		switch target {
+		case glooDocGen:
+			err = getRepoReleases(opts.ctx, glooOpenSourceRepo, client)
+		case glooEDocGen:
+			err = getRepoReleases(opts.ctx, glooEnterpriseRepo, client)
+		default:
+			return InvalidInputError(target)
+		}
 		return err
 	}
-	fmt.Print(buf.String())
-	return nil
 }
 
 func securityScanMdFromCmd(opts *options) *cobra.Command {
@@ -127,6 +110,19 @@ func changelogMdFromGithubCmd(opts *options) *cobra.Command {
 		},
 	}
 	return app
+}
+
+// Serialized github RepositoryRelease array to be written to file
+func getRepoReleases(ctx context.Context, repo string, client *github.Client) error {
+	allReleases, err := githubutils.GetAllRepoReleases(ctx, client, "solo-io", repo)
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err = enc.Encode(allReleases)
+	if err != nil {
+		return err
+	}
+	fmt.Print(buf.String())
+	return nil
 }
 
 const (
@@ -198,11 +194,10 @@ func generateGlooEChangelog() error {
 	if ghToken == "" {
 		return MissingGithubTokenError(skipChangelogGeneration)
 	}
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: ghToken},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client, err := githubutils.GetClient(ctx)
+	if err != nil {
+		return err
+	}
 	opts := changelogdocutils.Options{
 		NumVersions:           200,
 		MainRepo:              "solo-projects",
@@ -298,18 +293,11 @@ func generateSecurityScanGloo(ctx context.Context) error {
 
 func generateSecurityScanGlooE(ctx context.Context) error {
 	// Initialize Auth
-	if os.Getenv("GITHUB_TOKEN") == "" {
-		return MissingGithubTokenError(skipSecurityScan)
+	client, err := githubutils.GetClient(ctx)
+	if err != nil {
+		return err
 	}
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
-	var (
-		allReleases []*github.RepositoryRelease
-		err         error
-	)
+	var allReleases []*github.RepositoryRelease
 	if useCachedReleases() {
 		allReleases = getCachedReleases(glooeCachedReleasesFile)
 	} else {
