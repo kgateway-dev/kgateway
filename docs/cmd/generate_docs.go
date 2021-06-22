@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"github.com/Masterminds/semver/v3"
@@ -12,7 +15,6 @@ import (
 	changelogdocutils "github.com/solo-io/go-utils/changeloggenutils"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/spf13/cobra"
-	"golang.org/x/oauth2"
 )
 
 func main() {
@@ -25,16 +27,7 @@ func main() {
 }
 
 type options struct {
-	ctx              context.Context
-	HugoDataSoloOpts HugoDataSoloOpts
-}
-
-type HugoDataSoloOpts struct {
-	product string
-	version string
-	// if set, will override the version when rendering the
-	callLatest bool
-	noScope    bool
+	ctx context.Context
 }
 
 func rootApp(ctx context.Context) *cobra.Command {
@@ -50,13 +43,45 @@ func rootApp(ctx context.Context) *cobra.Command {
 	}
 	app.AddCommand(changelogMdFromGithubCmd(opts))
 	app.AddCommand(securityScanMdFromCmd(opts))
-
-	app.PersistentFlags().StringVar(&opts.HugoDataSoloOpts.version, "version", "", "version of docs and code")
-	app.PersistentFlags().StringVar(&opts.HugoDataSoloOpts.product, "product", "gloo", "product to which the docs refer (defaults to gloo)")
-	app.PersistentFlags().BoolVar(&opts.HugoDataSoloOpts.noScope, "no-scope", false, "if set, will not nest the served docs by product or version")
-	app.PersistentFlags().BoolVar(&opts.HugoDataSoloOpts.callLatest, "call-latest", false, "if set, will use the string 'latest' in the scope, rather than the particular release version")
+	app.AddCommand(getReleasesCmd(opts))
 
 	return app
+}
+
+// Serializes github repository release and prints serialized releases to stdout
+// To be used for caching release data for changelog/security scan docsgen.
+func getReleasesCmd(opts *options) *cobra.Command {
+	app := &cobra.Command{
+		Use:   "gen-releases",
+		Short: "cache github releases for gloo edge repository",
+		RunE:  fetchAndSerializeReleases(opts),
+	}
+	return app
+}
+
+func fetchAndSerializeReleases(opts *options) func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		if !useCachedReleases() {
+			return nil
+		}
+		if len(args) != 1 {
+			return InvalidInputError(fmt.Sprintf("%v", len(args)-1))
+		}
+		client, err := githubutils.GetClient(opts.ctx)
+		if err != nil {
+			return err
+		}
+		target := args[0]
+		switch target {
+		case glooDocGen:
+			err = getRepoReleases(opts.ctx, glooOpenSourceRepo, client)
+		case glooEDocGen:
+			err = getRepoReleases(opts.ctx, glooEnterpriseRepo, client)
+		default:
+			return InvalidInputError(target)
+		}
+		return err
+	}
 }
 
 func securityScanMdFromCmd(opts *options) *cobra.Command {
@@ -87,9 +112,18 @@ func changelogMdFromGithubCmd(opts *options) *cobra.Command {
 	return app
 }
 
-const (
-	latestVersionPath = "latest"
-)
+// Serialized github RepositoryRelease array to be written to file
+func getRepoReleases(ctx context.Context, repo string, client *github.Client) error {
+	allReleases, err := githubutils.GetAllRepoReleases(ctx, client, "solo-io", repo)
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err = enc.Encode(allReleases)
+	if err != nil {
+		return err
+	}
+	fmt.Print(buf.String())
+	return nil
+}
 
 const (
 	glooDocGen              = "gloo"
@@ -101,6 +135,11 @@ const (
 const (
 	glooOpenSourceRepo = "gloo"
 	glooEnterpriseRepo = "solo-projects"
+)
+
+const (
+	glooCachedReleasesFile  = "opensource.out"
+	glooeCachedReleasesFile = "enterprise.out"
 )
 
 var (
@@ -126,8 +165,9 @@ func generateChangelogMd(args []string) error {
 	switch target {
 	case glooDocGen:
 		generator := changelogdocutils.NewMinorReleaseGroupedChangelogGenerator(changelogdocutils.Options{
-			MainRepo:  "gloo",
-			RepoOwner: "solo-io",
+			MainRepo:         "gloo",
+			RepoOwner:        "solo-io",
+			MainRepoReleases: getCachedReleases(glooCachedReleasesFile),
 		}, client)
 		out, err := generator.GenerateJSON(context.Background())
 		if err != nil {
@@ -154,16 +194,17 @@ func generateGlooEChangelog() error {
 	if ghToken == "" {
 		return MissingGithubTokenError(skipChangelogGeneration)
 	}
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: ghToken},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client, err := githubutils.GetClient(ctx)
+	if err != nil {
+		return err
+	}
 	opts := changelogdocutils.Options{
-		NumVersions:   200,
-		MainRepo:      "solo-projects",
-		DependentRepo: "gloo",
-		RepoOwner:     "solo-io",
+		NumVersions:           200,
+		MainRepo:              "solo-projects",
+		DependentRepo:         "gloo",
+		RepoOwner:             "solo-io",
+		MainRepoReleases:      getCachedReleases(glooeCachedReleasesFile),
+		DependentRepoReleases: getCachedReleases(glooCachedReleasesFile),
 	}
 	depFn, err := changelogdocutils.GetOSDependencyFunc("solo-io", "solo-projects", "gloo", ghToken)
 	if err != nil {
@@ -176,6 +217,28 @@ func generateGlooEChangelog() error {
 	}
 	fmt.Println(out)
 	return nil
+}
+
+func getCachedReleases(fileName string) []*github.RepositoryRelease {
+	bArray, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return nil
+	}
+	buf := bytes.NewBuffer(bArray)
+	enc := gob.NewDecoder(buf)
+	var releases []*github.RepositoryRelease
+	err = enc.Decode(&releases)
+	if err != nil {
+		return nil
+	}
+	return releases
+}
+
+func useCachedReleases() bool {
+	if os.Getenv("USE_CACHED_RELEASES") == "false" {
+		return false
+	}
+	return true
 }
 
 // Generates security scan log for releases
@@ -201,14 +264,19 @@ func generateSecurityScanMd(args []string) error {
 
 func generateSecurityScanGloo(ctx context.Context) error {
 	client := github.NewClient(nil)
-	allReleases, err := githubutils.GetAllRepoReleases(ctx, client, "solo-io", glooOpenSourceRepo)
-	if err != nil {
-		return err
+	var (
+		allReleases []*github.RepositoryRelease
+		err         error
+	)
+	if useCachedReleases() {
+		allReleases = getCachedReleases(glooCachedReleasesFile)
+	} else {
+		allReleases, err = githubutils.GetAllRepoReleases(ctx, client, "solo-io", glooOpenSourceRepo)
+		if err != nil {
+			return err
+		}
 	}
 	githubutils.SortReleasesBySemver(allReleases)
-	if err != nil {
-		return err
-	}
 
 	var tagNames []string
 	for _, release := range allReleases {
@@ -225,22 +293,20 @@ func generateSecurityScanGloo(ctx context.Context) error {
 
 func generateSecurityScanGlooE(ctx context.Context) error {
 	// Initialize Auth
-	if os.Getenv("GITHUB_TOKEN") == "" {
-		return MissingGithubTokenError(skipSecurityScan)
-	}
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
-	allReleases, err := githubutils.GetAllRepoReleases(ctx, client, "solo-io", glooEnterpriseRepo)
+	client, err := githubutils.GetClient(ctx)
 	if err != nil {
 		return err
+	}
+	var allReleases []*github.RepositoryRelease
+	if useCachedReleases() {
+		allReleases = getCachedReleases(glooeCachedReleasesFile)
+	} else {
+		allReleases, err = githubutils.GetAllRepoReleases(ctx, client, "solo-io", glooEnterpriseRepo)
+		if err != nil {
+			return err
+		}
 	}
 	githubutils.SortReleasesBySemver(allReleases)
-	if err != nil {
-		return err
-	}
 
 	var tagNames []string
 	for _, release := range allReleases {
