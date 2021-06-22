@@ -30,7 +30,7 @@ If you are running the registration command against a kind cluster on MacOS or L
 <pre><code>
 # MacOS
 glooctl cluster register --cluster-name local --remote-context kind-local \
-  --local-cluster-domain-override host.docker.internal:6443
+  --local-cluster-domain-override host.docker.internal
 
 </code></pre>
 
