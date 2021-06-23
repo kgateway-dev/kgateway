@@ -125,9 +125,6 @@ func enterpriseHelmValuesMdFromGithubCmd(opts *options) *cobra.Command {
 	return app
 }
 
-const (
-	latestVersionPath = "latest"
-)
 
 // Serialized github RepositoryRelease array to be written to file
 func getRepoReleases(ctx context.Context, repo string, client *github.Client) error {
