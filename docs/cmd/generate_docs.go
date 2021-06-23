@@ -125,7 +125,6 @@ func enterpriseHelmValuesMdFromGithubCmd(opts *options) *cobra.Command {
 	return app
 }
 
-
 // Serialized github RepositoryRelease array to be written to file
 func getRepoReleases(ctx context.Context, repo string, client *github.Client) error {
 	allReleases, err := githubutils.GetAllRepoReleases(ctx, client, "solo-io", repo)
@@ -347,13 +346,18 @@ func fetchEnterpriseHelmValues(args []string) error {
 
 	// Download the file at the specified path on the latest released branch of solo-projects
 	path := "install/helm/gloo-ee/reference/values.txt"
-	releaseTag, err := githubutils.FindLatestReleaseBySemver(ctx, client, "solo-io", "solo-projects")
-	files, err := githubutils.GetFilesFromGit(ctx, client, "solo-io", glooEnterpriseRepo, releaseTag, path)
+	semverReleaseTag, err := githubutils.FindLatestReleaseBySemver(ctx, client, "solo-io", "solo-projects")
+	version, err := semver.NewVersion(semverReleaseTag)
+	if err != nil {
+		return err
+	}
+	minorReleaseTag := fmt.Sprintf("%d.%d", version.Major(), version.Minor())
+	files, err := githubutils.GetFilesFromGit(ctx, client, "solo-io", glooEnterpriseRepo, minorReleaseTag, path)
 	if err != nil {
 		return err
 	}
 	if len(files) <= 0 {
-		return FileNotFoundError(path, releaseTag)
+		return FileNotFoundError(path, minorReleaseTag)
 	}
 
 	// Decode the file and log to the console
