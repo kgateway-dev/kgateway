@@ -3,8 +3,6 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    helm.sh/hook: crd-install
   creationTimestamp: null
   name: upstreams.gloo.solo.io
 spec:
@@ -574,6 +572,15 @@ spec:
                                           level configuration. Setting this to a non-empty
                                           value allows overriding the cluster level
                                           configuration for a specific endpoint.
+                                        type: string
+                                      method:
+                                        description: Method to use when health checking
+                                          this failover endpoint. Defaults to `GET`.
+                                        type: string
+                                      path:
+                                        description: Path to use when health checking
+                                          this failover endpoint. Default is empty
+                                          path.
                                         type: string
                                       portValue:
                                         description: Optional alternative health check
@@ -2050,5 +2057,5 @@ status:
   acceptedNames:
     kind: ""
     plural: ""
-  conditions: null
-  storedVersions: null
+  conditions: []
+  storedVersions: []

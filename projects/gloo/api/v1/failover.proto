@@ -84,6 +84,12 @@ message LbEndpoint {
         // By default, the host header for L7 health checks is controlled by cluster level configuration. Setting this
         // to a non-empty value allows overriding the cluster level configuration for a specific endpoint.
         string hostname = 2;
+
+        // Path to use when health checking this failover endpoint.
+        // Default is empty path.
+        string path = 3;
+        // Method to use when health checking this failover endpoint. Defaults to `GET`.
+        string method = 4;
     }
 
     .gloo.solo.io.UpstreamSslConfig upstream_ssl_config = 4;

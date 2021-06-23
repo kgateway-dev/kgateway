@@ -42,7 +42,7 @@ To add the customization of a trusted certificate authority to the Gloo Edge Ent
 
 ```bash
 # Add the Gloo Edge Enterprise repo to Helm if you haven't already
-helm repo add glooe http://storage.googleapis.com/gloo-ee-helm
+helm repo add glooe https://storage.googleapis.com/gloo-ee-helm
 helm repo update
 
 # Grab the current Gloo Edge Enterprise version

@@ -246,3 +246,88 @@ Hello, world!
 ```
 
 Great! Now we've seen how Gloo Edge can be configured to encrypt traffic sent to a backend service which is configured to serve TLS.
+
+## Troubleshooting
+
+### Mismatched Ciphers
+
+There have been cases where users have experienced issues with valid `Upstream` TLS configurations failing to even establish a connection with the upstream service.  In some cases, this is due to a reduction in the set of ciphers presented by default to upstream services.  This [change](https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.17.0#minor-behavior-changes) occurred in Envoy 1.17.0 (January 2021) when RSA key transport and SHA-1 cipher suites were removed from client-side defaults. This impacts Gloo Edge versions 1.6+.  If the default cipher set offered by Envoy does not match any of the ciphers in the upstream service's cipher suite, then requests will fail as described earlier.
+
+#### How to Detect Mismatched Ciphers
+
+The current set of default ciphers offered by Envoy clients is documented [here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters).  This is the current complete list:
+* [ECDHE-ECDSA-AES128-GCM-SHA256|ECDHE-ECDSA-CHACHA20-POLY1305]
+* [ECDHE-RSA-AES128-GCM-SHA256|ECDHE-RSA-CHACHA20-POLY1305]
+* ECDHE-ECDSA-AES256-GCM-SHA384
+* ECDHE-RSA-AES256-GCM-SHA384
+
+If your upstream server does not support at least one of these ciphers in its TLS config, then requests will fail.  To determine the contents of your server's cipher suite, we recommend using this bash script:
+```bash
+#!/usr/bin/env bash
+
+# OpenSSL requires the port number. Example: httpbin.org:443
+SERVER=$1
+DELAY=1
+ciphers=$(openssl ciphers 'ALL:eNULL' | sed -e 's/:/ /g')
+
+echo Obtaining cipher list from $(openssl version).
+
+for cipher in ${ciphers[@]}
+do
+echo -n Testing $cipher...
+result=$(echo -n | openssl s_client -cipher "$cipher" -connect $SERVER 2>&1)
+if [[ "$result" =~ ":error:" ]] ; then
+  error=$(echo -n $result | cut -d':' -f6)
+  echo NO \($error\)
+else
+  if [[ "$result" =~ "Cipher is ${cipher}" || "$result" =~ "Cipher    :" ]] ; then
+    echo YES
+  else
+    echo UNKNOWN RESPONSE
+    echo $result
+  fi
+fi
+sleep $DELAY
+done
+```
+
+The script will evaluate a list of known ciphers against your upstream service.  The output will look something like this:
+```
+% ./cipher-test.sh httpbin.org:443
+Obtaining cipher list from LibreSSL 2.8.3.
+Testing ECDHE-RSA-AES256-GCM-SHA384...YES
+Testing ECDHE-ECDSA-AES256-GCM-SHA384...NO (sslv3 alert handshake failure)
+Testing ECDHE-RSA-AES256-SHA384...YES
+Testing ECDHE-ECDSA-AES256-SHA384...NO (sslv3 alert handshake failure)
+```
+
+#### Remediating Mismatched Ciphers
+
+Are there any matches between the ciphers in Envoy's default list and the cipher suite offered by your upstream service, as enumerated by the `YES` entries from the cipher list bash script?  If not, then you will need to modify your Gloo Edge `Upstream` configuration to support a custom cipher list that does match at least one of the offered ciphers.  The example below adds the cipher `ECDHE-RSA-AES256-SHA` to the default Envoy client list.
+
+{{< highlight yaml "hl_lines=11-17" >}}
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: my-upstream
+  namespace: gloo-system
+spec:
+  sslConfig:
+    secretRef:
+      name: my-upstream-tls
+      namespace: gloo-system
+    parameters:
+      cipherSuites:
+        - "[ECDHE-ECDSA-AES128-GCM-SHA256|ECDHE-ECDSA-CHACHA20-POLY1305]"
+        - "[ECDHE-RSA-AES128-GCM-SHA256|ECDHE-RSA-CHACHA20-POLY1305]"
+        - "ECDHE-ECDSA-AES256-GCM-SHA384"
+        - "ECDHE-RSA-AES256-GCM-SHA384"
+        - "ECDHE-RSA-AES256-SHA"
+  static:
+    hosts:
+      - addr: my-upstream.example.com
+        port: 443
+    useTls: true
+{{< /highlight >}}
+
+Once the custom cipher suite list is deployed in your Envoy configuration, then the mismatched cipher problem should disappear.

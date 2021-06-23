@@ -295,5 +295,13 @@ func (m *LbEndpoint_HealthCheckConfig) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetPath(), target.GetPath()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetMethod(), target.GetMethod()) != 0 {
+		return false
+	}
+
 	return true
 }

@@ -32,8 +32,16 @@ func (c *FakeGatewayV1) Gateways(namespace string) v1.GatewayInterface {
 	return &FakeGateways{c, namespace}
 }
 
+func (c *FakeGatewayV1) RouteOptions(namespace string) v1.RouteOptionInterface {
+	return &FakeRouteOptions{c, namespace}
+}
+
 func (c *FakeGatewayV1) RouteTables(namespace string) v1.RouteTableInterface {
 	return &FakeRouteTables{c, namespace}
+}
+
+func (c *FakeGatewayV1) VirtualHostOptions(namespace string) v1.VirtualHostOptionInterface {
+	return &FakeVirtualHostOptions{c, namespace}
 }
 
 func (c *FakeGatewayV1) VirtualServices(namespace string) v1.VirtualServiceInterface {

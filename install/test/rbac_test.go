@@ -404,7 +404,7 @@ var _ = Describe("RBAC Test", func() {
 						Rules: []rbacv1.PolicyRule{
 							{
 								APIGroups: []string{"gateway.solo.io"},
-								Resources: []string{"virtualservices", "routetables"},
+								Resources: []string{"virtualservices", "routetables", "virtualhostoptions", "routeoptions"},
 								Verbs:     []string{"get", "list", "watch", "update"},
 							}, {
 								APIGroups: []string{"gateway.solo.io"},

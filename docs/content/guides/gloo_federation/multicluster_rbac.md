@@ -26,7 +26,7 @@ Multicluster RBAC can be enabled during Gloo Edge Federation installation by ove
 ```bash
 echo "enableMultiClusterRbac: true" > values.yaml
 
-glooctl install federation --values values.yaml --license-key LICENSE_KEY
+glooctl install gateway enterprise --gloo-fed-values values.yaml --license-key LICENSE_KEY
 ```
 
 On an existing installation, the `enableMultiClusterRbac` setting can be updated by running `helm upgrade` and overriding the value. Enabling the Multicluster RBAC feature creates an RBAC webhook and pod enforcing permissions on the Gloo Edge Federation API groups.
@@ -41,14 +41,14 @@ helm repo add gloo-fed https://storage.googleapis.com/gloo-fed-helm
 helm repo update
 
 # Upgrade your Gloo Edge Federation deployment
-# Assumes your install is called gloo-fed in the gloo-fed namspace
-helm upgrade -n gloo-fed gloo-fed gloo-fed/gloo-fed --set enableMultiClusterRbac=true
+# Assumes your install is called gloo-fed in the gloo-system namspace
+helm upgrade -n gloo-system gloo-fed gloo-fed/gloo-fed --set enableMultiClusterRbac=true
 ```
 
 Once the installation or upgrade is complete, you can verify by running the following:
 
 ```bash
-kubectl get deployment -n gloo-fed rbac-validating-webhook-gloo-fed
+kubectl get deployment -n gloo-system rbac-validating-webhook-gloo-fed
 ```
 
 You should see the following output:
@@ -62,7 +62,7 @@ rbac-validating-webhook-gloo-fed   1/1     1            1           33m
 The installation of Multicluster RBAC also creates two MultiClusterRole Custom Resources and two MultiClusterRoleBinding Custom Resources.
 
 ```bash
-kubectl get multiclusterrole -n gloo-fed 
+kubectl get multiclusterrole -n gloo-system 
 ```
 
 ```console
@@ -72,7 +72,7 @@ gloo-fed-console   35m
 ```
 
 ```bash
-kubectl get multiclusterrolebinding -n gloo-fed
+kubectl get multiclusterrolebinding -n gloo-system
 ```
 
 ```console
@@ -124,7 +124,7 @@ The `gloo-fed` MultiClusterRoleBinding associates the MultiClusterRole with the 
 spec:
   roleRef:
     name: gloo-fed
-    namespace: gloo-fed
+    namespace: gloo-system
   subjects:
   - kind: User
     name: system:serviceaccount:gloo-fed:gloo-fed
@@ -144,7 +144,7 @@ apiVersion: fed.gloo.solo.io/v1
 kind: FederatedUpstream
 metadata:
   name: my-federated-upstream
-  namespace: gloo-fed
+  namespace: gloo-system
 spec:
   placement:
     clusters:
@@ -176,11 +176,11 @@ apiVersion: multicluster.solo.io/v1alpha1
 kind: MultiClusterRoleBinding
 metadata:
   name: kind-admin
-  namespace: gloo-fed
+  namespace: gloo-system
 spec:
   roleRef:
     name: gloo-fed
-    namespace: gloo-fed
+    namespace: gloo-system
   subjects:
   - kind: User
     name: kubernetes-admin
@@ -203,7 +203,7 @@ apiVersion: multicluster.solo.io/v1alpha1
 kind: MultiClusterRole
 metadata:
   name: remote-admin
-  namespace: gloo-fed
+  namespace: gloo-system
 spec:
   rules:
   - apiGroup: fed.solo.io
@@ -249,7 +249,7 @@ The MultiClusterRole allows the `CREATE` action for all Gloo Edge Federation API
 The next step is to create a service account and bind it to the role. We'll create an account by running the following:
 
 ```bash
-kubectl create serviceaccount remote-admin -n gloo-fed
+kubectl create serviceaccount remote-admin -n gloo-system
 ```
 
 Now we will create the binding between the MultiClusterRole and the service account:
@@ -260,11 +260,11 @@ apiVersion: multicluster.solo.io/v1alpha1
 kind: MultiClusterRoleBinding
 metadata:
   name: remote-admin
-  namespace: gloo-fed
+  namespace: gloo-system
 spec:
   roleRef:
     name: remote-admin
-    namespace: gloo-fed
+    namespace: gloo-system
   subjects:
   - kind: User
     name: system:serviceaccount:gloo-fed:remote-admin
@@ -274,7 +274,7 @@ EOF
 It is possible to set multiple subjects in the binding if necessary. We can check on the binding by running:
 
 ```bash
-kubectl get multiclusterrolebinding -n gloo-fed remote-admin -oyaml
+kubectl get multiclusterrolebinding -n gloo-system remote-admin -oyaml
 ```
 
 You can customize both the MultiClusterRole and MultiClusterRoleBindings to match your unique requirements. Since the RBAC model is deny by default, any access not explicitly granted will be denied.

@@ -19,11 +19,17 @@ import (
 var _ = Describe("Kube2e: helm", func() {
 
 	var (
+		crdDir             = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
 		chartUri           string
 		rlcCrdName         = "ratelimitconfigs.ratelimit.solo.io"
-		rlcCrdTemplateName = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds", "ratelimit_config.yaml")
-		ctx                context.Context
-		cancel             context.CancelFunc
+		rlcCrdTemplateName = filepath.Join(crdDir, "ratelimit_config.yaml")
+		vhoCrdName         = "virtualhostoptions.gateway.solo.io"
+		vhoCrdTemplateName = filepath.Join(crdDir, "gateway.solo.io_v1_VirtualHostOption.yaml")
+		rtoCrdName         = "routeoptions.gateway.solo.io"
+		rtoCrdTemplateName = filepath.Join(crdDir, "gateway.solo.io_v1_RouteOption.yaml")
+
+		ctx    context.Context
+		cancel context.CancelFunc
 	)
 
 	BeforeEach(func() {
@@ -43,6 +49,20 @@ var _ = Describe("Kube2e: helm", func() {
 			outputBytes := runAndCleanCommand("kubectl", "get", "crd", rlcCrdName)
 			return string(outputBytes)
 		}, "5s", "1s").Should(ContainSubstring(rlcCrdName))
+
+		By("apply new `VirtualHostOption` CRD")
+		runAndCleanCommand("kubectl", "apply", "-f", vhoCrdTemplateName)
+		Eventually(func() string {
+			outputBytes := runAndCleanCommand("kubectl", "get", "crd", vhoCrdName)
+			return string(outputBytes)
+		}, "5s", "1s").Should(ContainSubstring(vhoCrdName))
+
+		By("apply new `RouteOption` CRD")
+		runAndCleanCommand("kubectl", "apply", "-f", rtoCrdTemplateName)
+		Eventually(func() string {
+			outputBytes := runAndCleanCommand("kubectl", "get", "crd", rtoCrdName)
+			return string(outputBytes)
+		}, "5s", "1s").Should(ContainSubstring(rtoCrdName))
 
 		// upgrade to the gloo version being tested
 		chartUri = filepath.Join("../../..", testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")

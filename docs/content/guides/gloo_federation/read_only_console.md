@@ -21,11 +21,11 @@ For the purposes of this example, we have two clusters `local` and `remote`. The
 
 ## Configure access to the console
 
-The Gloo Edge Federation console is exposed by the `gloo-fed-console` service running in the `gloo-fed` namespace. The console is available on port 8090. In a production scenario, you could choose to create a new service exposing the console on an IP address available outside the cluster. For our example, we are going to port-forward the service to the local IP address of the machine running the demonstration environment.
+The Gloo Edge Federation console is exposed by the `gloo-fed-console` service running in the `gloo-system` namespace. The console is available on port 8090. In a production scenario, you could choose to create a new service exposing the console on an IP address available outside the cluster. For our example, we are going to port-forward the service to the local IP address of the machine running the demonstration environment.
 
 ```bash
 # Launch the port-forward for port 8090
-kubectl port-forward svc/gloo-fed-console -n gloo-fed 8090:8090
+kubectl port-forward svc/gloo-fed-console -n gloo-system 8090:8090
 
 
 ```

@@ -9,20 +9,13 @@ var (
 	GlooNamespacedKinds    []string
 	GlooClusterScopedKinds []string
 	GlooCrdNames           []string
-	GlooFedCrdNames        []string
-
 	GlooComponentLabels    map[string]string
-	GlooFedComponentLabels map[string]string
 )
 
 func init() {
 
 	GlooComponentLabels = map[string]string{
-		"app": "(gloo,glooe-prometheus)",
-	}
-
-	GlooFedComponentLabels = map[string]string{
-		"app": "(gloo-fed)",
+		"app": "(gloo,glooe-prometheus,gloo-fed)",
 	}
 
 	GlooNamespacedKinds = []string{
@@ -52,9 +45,9 @@ func init() {
 		"routetables.gateway.solo.io",
 		"authconfigs.enterprise.gloo.solo.io",
 		"ratelimitconfigs.ratelimit.solo.io",
-	}
-
-	GlooFedCrdNames = []string{
+		"virtualhostoptions.gateway.solo.io",
+		"routeoptions.gateway.solo.io",
+		// gloo-fed CRDs:
 		"glooinstances.fed.solo.io",
 		"failoverschemes.fed.solo.io",
 		"federatedauthconfigs.fed.enterprise.gloo.solo.io",

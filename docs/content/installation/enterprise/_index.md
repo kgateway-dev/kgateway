@@ -94,7 +94,7 @@ the Gloo Edge control plane and the proxies Gloo Edge manages.
 As a first step, you have to add the Gloo Edge repository to the list of known chart repositories:
 
 ```shell
-helm repo add glooe http://storage.googleapis.com/gloo-ee-helm
+helm repo add glooe https://storage.googleapis.com/gloo-ee-helm
 ```
 
 Finally, install Gloo Edge using the following command:

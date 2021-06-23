@@ -56,7 +56,7 @@ That command performs the following actions:
 
 1. Deploy two kind clusters called local and remote
 1. Install Gloo Edge Enterprise on both clusters in the gloo-system namespace
-1. Install Gloo Edge Federation on the local cluster in the gloo-fed namespace
+1. Install Gloo Edge Federation on the local cluster in the gloo-system namespace
 1. Register both Gloo Edge Enterprise instances with Gloo Edge Federation
 1. Created federated configuration resources
 1. Create a Failover Service configuration using both Gloo Edge Enterprise instance
@@ -102,7 +102,7 @@ redis           1/1     1            1           8m45s
 You can verify the Gloo Edge Federation installation by running the following command:
 
 ```
-kubectl get deployment -n gloo-fed --context kind-local
+kubectl get deployment -n gloo-system --context kind-local
 ```
 
 ```
@@ -115,10 +115,10 @@ gloo-fed-console   1/1     1            1           24m
 
 Kubernetes clusters running Gloo Edge Enterprise must be registered with Gloo Edge Federation to be managed. Once registered, Gloo Edge Federation will automatically discover all instances of Gloo Edge running on the cluster. The `glooctl federation demo` command took care of the registration process for us. The registration creates a service account, cluster role, and cluster role binding on the target cluster, and stores the access credentials in a Kubernetes secret resource in the admin cluster.
 
-Credentials for the target cluster are stored in a secret in the gloo-fed namespace. The secret name will be the same as the `cluster-name` specified when registering the cluster. Let's take a look at the secret for the remote cluster.
+Credentials for the target cluster are stored in a secret in the gloo-system namespace. The secret name will be the same as the `cluster-name` specified when registering the cluster. Let's take a look at the secret for the remote cluster.
 
 ```
-kubectl get secret -n gloo-fed kind-remote
+kubectl get secret -n gloo-system kind-remote
 ```
 
 ```
@@ -134,12 +134,12 @@ kubectl get clusterrole gloo-federation-controller --context kind-remote
 kubectl get clusterrolebinding kind-remote-gloo-federation-controller-clusterrole-binding --context kind-remote
 ```
 
-Once a cluster has been registered, Gloo Edge Federation will automatically discover all instances of Gloo Edge within the cluster. The discovered instances are stored in a Custom Resource of type glooinstances.fed.solo.io in the gloo-fed namespace. The naming of each resource will follow the convention `clustername-gloo-namespace`. 
+Once a cluster has been registered, Gloo Edge Federation will automatically discover all instances of Gloo Edge within the cluster. The discovered instances are stored in a Custom Resource of type glooinstances.fed.solo.io in the gloo-system namespace. The naming of each resource will follow the convention `clustername-gloo-namespace`. 
 
 You can view the discovered instances by running the following:
 
 ```
-kubectl get glooinstances -n gloo-fed
+kubectl get glooinstances -n gloo-system
 ```
 
 ```
@@ -155,7 +155,7 @@ Gloo Edge Federation enables you to create consistent configurations across mult
 In the demo environment two Kubernetes services have been deployed, echo-blue in the local cluster and echo-green in the remote cluster. A FederatedUpstream resource has been created for the echo-blue service on the local cluster. We can view the FederatedUpstream by running the following:
 
 ```
-kubectl get FederatedUpstream -n gloo-fed
+kubectl get FederatedUpstream -n gloo-system
 ```
 
 ```
@@ -177,7 +177,7 @@ default-service-blue-10000   18m
 The FederatedUpstream is associated with a FederatedVirtualService that provides a simple route to the Upstream. We can view the FederatedVirtualService by running the following:
 
 ```
-kubectl get FederatedVirtualService -n gloo-fed
+kubectl get FederatedVirtualService -n gloo-system
 ```
 
 ```
@@ -207,7 +207,7 @@ We can create a FailoverScheme in Gloo Edge Federation that specifies the echo-b
 We can view the FailoverScheme by running the following:
 
 ```
-kubectl get FailoverScheme -n gloo-fed
+kubectl get FailoverScheme -n gloo-system
 ```
 
 ```

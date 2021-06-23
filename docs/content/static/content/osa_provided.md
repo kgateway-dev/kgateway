@@ -45,7 +45,6 @@ Name|Version|License
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.6.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.16.0|MIT License
 [x/mod](https://golang.org/x/mod)|v0.3.1-0.20200828183125-ce943fd02449|BSD 3-clause "New" or "Revised" License
-[x/oauth2](https://golang.org/x/oauth2)|v0.0.0-20210113205817-d3ed898aa8a3|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.0.0-20201020160332-67f06af15bc9|BSD 3-clause "New" or "Revised" License
 [x/tools](https://golang.org/x/tools)|v0.0.0-20201027213030-631220838841|BSD 3-clause "New" or "Revised" License
 [google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20201019141844-1ed22bb0c154|Apache License 2.0

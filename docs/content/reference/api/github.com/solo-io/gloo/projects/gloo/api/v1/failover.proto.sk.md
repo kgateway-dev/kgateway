@@ -133,6 +133,8 @@ The optional health check configuration.
 ```yaml
 "portValue": int
 "hostname": string
+"path": string
+"method": string
 
 ```
 
@@ -140,6 +142,8 @@ The optional health check configuration.
 | ----- | ---- | ----------- | 
 | `portValue` | `int` | Optional alternative health check port value. By default the health check address port of an upstream host is the same as the host's serving address port. This provides an alternative health check port. Setting this with a non-zero value allows an upstream host to have different health check address port. |
 | `hostname` | `string` | By default, the host header for L7 health checks is controlled by cluster level configuration. Setting this to a non-empty value allows overriding the cluster level configuration for a specific endpoint. |
+| `path` | `string` | Path to use when health checking this failover endpoint. Default is empty path. |
+| `method` | `string` | Method to use when health checking this failover endpoint. Defaults to `GET`. |
 
 
 
