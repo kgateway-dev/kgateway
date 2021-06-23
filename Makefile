@@ -5,11 +5,6 @@
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 
-# If you just put your username, then that refers to your account at hub.docker.com
-ifeq ($(IMAGE_REPO),) # Set quay.io/solo-io as default if IMAGE_REPO is unset
-	IMAGE_REPO := quay.io/solo-io
-endif
-
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
 
@@ -38,13 +33,28 @@ endif
 # only set CREATE_ASSETS to true if RELEASE is true or CREATE_TEST_ASSETS is true
 # workaround since makefile has no Logical OR for conditionals
 ifeq ($(CREATE_TEST_ASSETS), "true")
-  # set quay image expiration if creating test assets
-  QUAY_EXPIRATION_LABEL := --label "quay.expires-after=3w"
+  # set quay image expiration if creating test assets and we're not using the GCR Workflow
+  ifneq ($(GCR_WORKFLOW), "true")
+    QUAY_EXPIRATION_LABEL := --label "quay.expires-after=3w"
+  endif
 else
   ifeq ($(RELEASE), "true")
   else
     CREATE_ASSETS := "false"
   endif
+endif
+
+GCR_IMAGE_REPO := "gcr.io/gloo-edge"
+QUAY_IMAGE_REPO := "quay.io/solo-io"
+# If you just put your username, then that refers to your account at hub.docker.com
+ifeq ($(IMAGE_REPO),)
+	ifeq ($(GCR_WORKFLOW), "true")
+    # Set gcr.io/gloo-edge if IMAGE_REPO is unspecified and we're using the GCR Workflow
+    IMAGE_REPO := $(GCR_IMAGE_REPO)
+	else
+    # Set quay.io/solo-io as default if IMAGE_REPO and GCR_WORKFLOW are unset
+    IMAGE_REPO := $(QUAY_IMAGE_REPO)
+	endif
 endif
 
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.19.0-rc3
@@ -571,7 +581,11 @@ upload-github-release-assets: print-git-info build-cli render-manifests
 
 DOCKER_IMAGES :=
 ifeq ($(CREATE_ASSETS),"true")
-	DOCKER_IMAGES := docker
+	ifeq ($(GCR_WORKFLOW),"true") # if we are running the GCR workflow, retag already built images for GCR
+		DOCKER_IMAGES := docker-tag-gcr
+	else # if we aren't running the GCR workflow, build images
+		DOCKER_IMAGES := docker
+	endif
 endif
 
 .PHONY: docker docker-push
@@ -600,6 +614,20 @@ endif
 docker-push-extended:
 ifeq ($(CREATE_ASSETS), "true")
 	ci/extended-docker/extended-docker.sh
+endif
+
+# Tag images built with Quay tags for upload in GCR
+.PHONY: docker-tag-gcr
+docker-tag-gcr:
+ifeq ($(CREATE_ASSETS), "true")
+	docker tag $(QUAY_IMAGE_REPO)/gateway:$(VERSION) $(GCR_IMAGE_REPO)/gateway:$(VERSION) && \
+	docker tag $(QUAY_IMAGE_REPO)/ingress:$(VERSION) $(GCR_IMAGE_REPO)/ingress:$(VERSION) && \
+	docker tag $(QUAY_IMAGE_REPO)/discovery:$(VERSION) $(GCR_IMAGE_REPO)/discovery:$(VERSION) && \
+	docker tag $(QUAY_IMAGE_REPO)/gloo:$(VERSION) $(GCR_IMAGE_REPO)/gloo:$(VERSION) && \
+	docker tag $(QUAY_IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) $(GCR_IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
+	docker tag $(QUAY_IMAGE_REPO)/certgen:$(VERSION) $(GCR_IMAGE_REPO)/certgen:$(VERSION) && \
+	docker tag $(QUAY_IMAGE_REPO)/sds:$(VERSION) $(GCR_IMAGE_REPO)/sds:$(VERSION) && \
+	docker tag $(QUAY_IMAGE_REPO)/access-logger:$(VERSION) $(GCR_IMAGE_REPO)/access-logger:$(VERSION)
 endif
 
 CLUSTER_NAME ?= kind
