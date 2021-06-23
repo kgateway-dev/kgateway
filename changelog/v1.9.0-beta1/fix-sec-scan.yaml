@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4920
+    resolvesIssue: false
+    description: >
+      Fixes "No Scan Found" dialog under the security scan docs
+      for [gloo-ee-envoy-wrapper](https://github.com/solo-io/gloo/issues/4920).
