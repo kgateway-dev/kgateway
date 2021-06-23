@@ -75,7 +75,7 @@ EOF
 {{< tab name="Gloo Edge Enterprise" codelang="shell" >}}
 kubectl create namespace 'gloo-system'
 
-helm repo add glooe 'http://storage.googleapis.com/gloo-ee-helm'
+helm repo add glooe 'https://storage.googleapis.com/gloo-ee-helm'
 
 helm install glooe glooe/gloo-ee \
   --namespace='gloo-system' \
@@ -318,7 +318,7 @@ EOF
 {{< tab name="Gloo Edge Enterprise" codelang="shell" >}}
 kubectl create namespace 'gloo-system'
 
-helm repo add glooe 'http://storage.googleapis.com/gloo-ee-helm'
+helm repo add glooe 'https://storage.googleapis.com/gloo-ee-helm'
 
 helm install glooe glooe/gloo-ee \
   --namespace='gloo-system' \
