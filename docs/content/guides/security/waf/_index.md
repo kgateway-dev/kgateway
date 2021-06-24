@@ -237,7 +237,7 @@ ModSecurity: intervention occurred
 There are a couple important things to note from the config above. The `coreRuleSet` object is the first. By setting this object to non-nil the `coreRuleSet` is automatically applied to the gateway/vhost/route is has been added to. The Core Rule Set can be applied manually as well if a specific version of it is required which we do not mount into the container. The second thing to note is the config string. This config string is an important part of configuring the Core Rule Set, an example of which can be found [here](https://github.com/SpiderLabs/owasp-modsecurity-crs/blob/v3.2/dev/crs-setup.conf.example).
 
 
-## IP Whitelisting
+## IP Allowlist
 
 A very common use case in many organizations is restricting access for an API to a specific IP address or subnet range. This requirement manifests in many ways, such as maintaining an access control list (ACL) for certain internal services or enforcing network boundaries between various, discrete environments.
 
