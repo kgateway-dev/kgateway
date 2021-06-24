@@ -47,14 +47,8 @@ endif
 GCR_IMAGE_REPO := "gcr.io/gloo-edge"
 QUAY_IMAGE_REPO := "quay.io/solo-io"
 # If you just put your username, then that refers to your account at hub.docker.com
-ifeq ($(IMAGE_REPO),)
-	ifeq ($(GCR_WORKFLOW), "true")
-    # Set gcr.io/gloo-edge if IMAGE_REPO is unspecified and we're using the GCR Workflow
-    IMAGE_REPO := $(GCR_IMAGE_REPO)
-	else
-    # Set quay.io/solo-io as default if IMAGE_REPO and GCR_WORKFLOW are unset
-    IMAGE_REPO := $(QUAY_IMAGE_REPO)
-	endif
+ifeq ($(IMAGE_REPO),) # Set quay.io/solo-io as default if IMAGE_REPO is unset
+  IMAGE_REPO := $(QUAY_IMAGE_REPO)
 endif
 
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.19.0-rc3
@@ -581,9 +575,9 @@ upload-github-release-assets: print-git-info build-cli render-manifests
 
 DOCKER_IMAGES :=
 ifeq ($(CREATE_ASSETS),"true")
-	ifeq ($(GCR_WORKFLOW),"true") # if we are running the GCR workflow, retag already built images for GCR
-		DOCKER_IMAGES := docker-gcr
-	else # if we aren't running the GCR workflow, build images
+	ifeq ($(RETAG_IMAGE_REGISTRY),"true") # if specified, retag already built images for GCR
+		DOCKER_IMAGES := docker-retag
+	else # build images
 		DOCKER_IMAGES := docker
 	endif
 endif
@@ -617,9 +611,10 @@ ifeq ($(CREATE_ASSETS), "true")
 endif
 
 # check if all images are already built with Quay tags.
-# if so, retag them for GCR. if not, build them with GCR tags.
-.PHONY: docker-gcr
-docker-gcr:
+# if so, retag them for the repository specified by IMAGE_REPO.
+# if not, build them with tags for the repository specified by IMAGE_REPO.
+.PHONY: docker-retag
+docker-retag:
 ifeq ($(CREATE_ASSETS), "true")
 	docker image inspect $(QUAY_IMAGE_REPO)/gateway:$(VERSION) >/dev/null 2>&1 && \
 	docker image inspect $(QUAY_IMAGE_REPO)/ingress:$(VERSION) >/dev/null 2>&1 && \
@@ -629,22 +624,15 @@ ifeq ($(CREATE_ASSETS), "true")
 	docker image inspect $(QUAY_IMAGE_REPO)/certgen:$(VERSION) >/dev/null 2>&1 && \
 	docker image inspect $(QUAY_IMAGE_REPO)/sds:$(VERSION) >/dev/null 2>&1 && \
 	docker image inspect $(QUAY_IMAGE_REPO)/access-logger:$(VERSION) >/dev/null 2>&1 && \
-	make docker-tag-gcr || \
+	docker tag $(QUAY_IMAGE_REPO)/gateway:$(VERSION) $(IMAGE_REPO)/gateway:$(VERSION) && \
+	docker tag $(QUAY_IMAGE_REPO)/ingress:$(VERSION) $(IMAGE_REPO)/ingress:$(VERSION) && \
+	docker tag $(QUAY_IMAGE_REPO)/discovery:$(VERSION) $(IMAGE_REPO)/discovery:$(VERSION) && \
+	docker tag $(QUAY_IMAGE_REPO)/gloo:$(VERSION) $(IMAGE_REPO)/gloo:$(VERSION) && \
+	docker tag $(QUAY_IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
+	docker tag $(QUAY_IMAGE_REPO)/certgen:$(VERSION) $(IMAGE_REPO)/certgen:$(VERSION) && \
+	docker tag $(QUAY_IMAGE_REPO)/sds:$(VERSION) $(IMAGE_REPO)/sds:$(VERSION) && \
+	docker tag $(QUAY_IMAGE_REPO)/access-logger:$(VERSION) $(IMAGE_REPO)/access-logger:$(VERSION) || \
 	make docker
-endif
-
-# Tag images built with Quay tags for upload in GCR
-.PHONY: docker-tag-gcr
-docker-tag-gcr:
-ifeq ($(CREATE_ASSETS), "true")
-	docker tag $(QUAY_IMAGE_REPO)/gateway:$(VERSION) $(GCR_IMAGE_REPO)/gateway:$(VERSION) && \
-	docker tag $(QUAY_IMAGE_REPO)/ingress:$(VERSION) $(GCR_IMAGE_REPO)/ingress:$(VERSION) && \
-	docker tag $(QUAY_IMAGE_REPO)/discovery:$(VERSION) $(GCR_IMAGE_REPO)/discovery:$(VERSION) && \
-	docker tag $(QUAY_IMAGE_REPO)/gloo:$(VERSION) $(GCR_IMAGE_REPO)/gloo:$(VERSION) && \
-	docker tag $(QUAY_IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) $(GCR_IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
-	docker tag $(QUAY_IMAGE_REPO)/certgen:$(VERSION) $(GCR_IMAGE_REPO)/certgen:$(VERSION) && \
-	docker tag $(QUAY_IMAGE_REPO)/sds:$(VERSION) $(GCR_IMAGE_REPO)/sds:$(VERSION) && \
-	docker tag $(QUAY_IMAGE_REPO)/access-logger:$(VERSION) $(GCR_IMAGE_REPO)/access-logger:$(VERSION)
 endif
 
 CLUSTER_NAME ?= kind

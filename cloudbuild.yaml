@@ -156,7 +156,8 @@ steps:
   - 'DOCKER_CONFIG=/workspace/docker-config'
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'TEST_ASSET_ID=$_PR_NUM'
-  - 'GCR_WORKFLOW="true"'
+  - 'IMAGE_REPO=gcr.io/gloo-edge'
+  - 'RETAG_IMAGE_REGISTRY="true"'
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
   waitFor: ['gcr-auth', 'set-gcr-zone', 'docker-push-extended']
