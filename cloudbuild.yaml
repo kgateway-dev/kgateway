@@ -120,6 +120,7 @@ steps:
   - 'DOCKER_CONFIG=/workspace/docker-config'
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'TEST_ASSET_ID=$_PR_NUM'
+  - 'QUAY_WORKFLOW="true"'
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
   waitFor: ['docker-login']

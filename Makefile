@@ -33,8 +33,8 @@ endif
 # only set CREATE_ASSETS to true if RELEASE is true or CREATE_TEST_ASSETS is true
 # workaround since makefile has no Logical OR for conditionals
 ifeq ($(CREATE_TEST_ASSETS), "true")
-  # set quay image expiration if creating test assets and we're not using the GCR Workflow
-  ifneq ($(GCR_WORKFLOW), "true")
+  # set quay image expiration if creating test assets and we're pushing to Quay
+  ifeq ($(QUAY_WORKFLOW),"true")
     QUAY_EXPIRATION_LABEL := --label "quay.expires-after=3w"
   endif
 else
