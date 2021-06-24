@@ -6,7 +6,7 @@ ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 
 # If you just put your username, then that refers to your account at hub.docker.com
-# To use quay images, set the IMAGE_REPO to "quay.io/solo-io"
+# To use quay images, set the IMAGE_REPO to "quay.io/solo-io" (or leave unset)
 # To use dockerhub images, set the IMAGE_REPO to "soloio"
 # To use gcr images, set the IMAGE_REPO to "gcr.io/$PROJECT_NAME"
 IMAGE_REPO ?= "quay.io/solo-io"
@@ -574,7 +574,7 @@ upload-github-release-assets: print-git-info build-cli render-manifests
 
 DOCKER_IMAGES :=
 ifeq ($(CREATE_ASSETS),"true")
-	DOCKER_IMAGE := docker
+	DOCKER_IMAGES := docker
 endif
 
 # check if all images are already built for RETAG_IMAGE_REGISTRY.
