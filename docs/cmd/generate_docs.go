@@ -351,7 +351,7 @@ func fetchEnterpriseHelmValues(args []string) error {
 	if err != nil {
 		return err
 	}
-	minorReleaseTag := fmt.Sprintf("%d.%d", version.Major(), version.Minor())
+	minorReleaseTag := fmt.Sprintf("v%d.%d.x", version.Major(), version.Minor())
 	files, err := githubutils.GetFilesFromGit(ctx, client, "solo-io", glooEnterpriseRepo, minorReleaseTag, path)
 	if err != nil {
 		return err
