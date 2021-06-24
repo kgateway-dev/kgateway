@@ -120,7 +120,6 @@ steps:
   - 'DOCKER_CONFIG=/workspace/docker-config'
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'TEST_ASSET_ID=$_PR_NUM'
-  - 'QUAY_WORKFLOW="true"'
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
   waitFor: ['docker-login']
@@ -157,7 +156,7 @@ steps:
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'TEST_ASSET_ID=$_PR_NUM'
   - 'IMAGE_REPO=gcr.io/gloo-edge'
-  - 'RETAG_IMAGE_REGISTRY="true"'
+  - 'RETAG_IMAGE_REGISTRY=quay.io/solo-io'
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
   waitFor: ['gcr-auth', 'set-gcr-zone', 'docker-push-extended']

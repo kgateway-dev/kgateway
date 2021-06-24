@@ -5,6 +5,12 @@
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 
+# If you just put your username, then that refers to your account at hub.docker.com
+# To use quay images, set the IMAGE_REPO to "quay.io/solo-io"
+# To use dockerhub images, set the IMAGE_REPO to "soloio"
+# To use gcr images, set the IMAGE_REPO to "gcr.io/$PROJECT_NAME"
+IMAGE_REPO ?= "quay.io/solo-io"
+
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
 
@@ -34,7 +40,7 @@ endif
 # workaround since makefile has no Logical OR for conditionals
 ifeq ($(CREATE_TEST_ASSETS), "true")
   # set quay image expiration if creating test assets and we're pushing to Quay
-  ifeq ($(QUAY_WORKFLOW),"true")
+  ifeq ($(IMAGE_REPO),"quay.io/solo-io")
     QUAY_EXPIRATION_LABEL := --label "quay.expires-after=3w"
   endif
 else
@@ -42,13 +48,6 @@ else
   else
     CREATE_ASSETS := "false"
   endif
-endif
-
-GCR_IMAGE_REPO := "gcr.io/gloo-edge"
-QUAY_IMAGE_REPO := "quay.io/solo-io"
-# If you just put your username, then that refers to your account at hub.docker.com
-ifeq ($(IMAGE_REPO),) # Set quay.io/solo-io as default if IMAGE_REPO is unset
-  IMAGE_REPO := $(QUAY_IMAGE_REPO)
 endif
 
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.19.0-rc3
@@ -575,15 +574,34 @@ upload-github-release-assets: print-git-info build-cli render-manifests
 
 DOCKER_IMAGES :=
 ifeq ($(CREATE_ASSETS),"true")
-	ifeq ($(RETAG_IMAGE_REGISTRY),"true") # if specified, retag already built images for GCR
-		DOCKER_IMAGES := docker-retag
-	else # build images
-		DOCKER_IMAGES := docker
-	endif
+	DOCKER_IMAGE := docker
 endif
 
-.PHONY: docker docker-push
-docker: discovery-docker gateway-docker gloo-docker \
+# check if all images are already built for RETAG_IMAGE_REGISTRY.
+# if so, retag them for the repository specified by IMAGE_REPO.
+# if not, build them with tags for the repository specified by IMAGE_REPO.
+.PHONY: docker
+docker:
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/gateway:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/certgen:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION) >/dev/null 2>&1 && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/gateway:$(VERSION) $(IMAGE_REPO)/gateway:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) $(IMAGE_REPO)/ingress:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) $(IMAGE_REPO)/discovery:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION) $(IMAGE_REPO)/gloo:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/certgen:$(VERSION) $(IMAGE_REPO)/certgen:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION) $(IMAGE_REPO)/sds:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION) $(IMAGE_REPO)/access-logger:$(VERSION) || \
+	make docker-build
+
+.PHONY: docker-build docker-push
+docker-build: discovery-docker gateway-docker gloo-docker \
 		gloo-envoy-wrapper-docker certgen-docker sds-docker \
 		ingress-docker access-logger-docker
 
@@ -608,31 +626,6 @@ endif
 docker-push-extended:
 ifeq ($(CREATE_ASSETS), "true")
 	ci/extended-docker/extended-docker.sh
-endif
-
-# check if all images are already built with Quay tags.
-# if so, retag them for the repository specified by IMAGE_REPO.
-# if not, build them with tags for the repository specified by IMAGE_REPO.
-.PHONY: docker-retag
-docker-retag:
-ifeq ($(CREATE_ASSETS), "true")
-	docker image inspect $(QUAY_IMAGE_REPO)/gateway:$(VERSION) >/dev/null 2>&1 && \
-	docker image inspect $(QUAY_IMAGE_REPO)/ingress:$(VERSION) >/dev/null 2>&1 && \
-	docker image inspect $(QUAY_IMAGE_REPO)/discovery:$(VERSION) >/dev/null 2>&1 && \
-	docker image inspect $(QUAY_IMAGE_REPO)/gloo:$(VERSION) >/dev/null 2>&1 && \
-	docker image inspect $(QUAY_IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) >/dev/null 2>&1 && \
-	docker image inspect $(QUAY_IMAGE_REPO)/certgen:$(VERSION) >/dev/null 2>&1 && \
-	docker image inspect $(QUAY_IMAGE_REPO)/sds:$(VERSION) >/dev/null 2>&1 && \
-	docker image inspect $(QUAY_IMAGE_REPO)/access-logger:$(VERSION) >/dev/null 2>&1 && \
-	docker tag $(QUAY_IMAGE_REPO)/gateway:$(VERSION) $(IMAGE_REPO)/gateway:$(VERSION) && \
-	docker tag $(QUAY_IMAGE_REPO)/ingress:$(VERSION) $(IMAGE_REPO)/ingress:$(VERSION) && \
-	docker tag $(QUAY_IMAGE_REPO)/discovery:$(VERSION) $(IMAGE_REPO)/discovery:$(VERSION) && \
-	docker tag $(QUAY_IMAGE_REPO)/gloo:$(VERSION) $(IMAGE_REPO)/gloo:$(VERSION) && \
-	docker tag $(QUAY_IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
-	docker tag $(QUAY_IMAGE_REPO)/certgen:$(VERSION) $(IMAGE_REPO)/certgen:$(VERSION) && \
-	docker tag $(QUAY_IMAGE_REPO)/sds:$(VERSION) $(IMAGE_REPO)/sds:$(VERSION) && \
-	docker tag $(QUAY_IMAGE_REPO)/access-logger:$(VERSION) $(IMAGE_REPO)/access-logger:$(VERSION) || \
-	make docker
 endif
 
 CLUSTER_NAME ?= kind
