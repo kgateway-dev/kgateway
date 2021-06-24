@@ -582,7 +582,7 @@ upload-github-release-assets: print-git-info build-cli render-manifests
 DOCKER_IMAGES :=
 ifeq ($(CREATE_ASSETS),"true")
 	ifeq ($(GCR_WORKFLOW),"true") # if we are running the GCR workflow, retag already built images for GCR
-		DOCKER_IMAGES := docker-tag-gcr
+		DOCKER_IMAGES := docker-gcr
 	else # if we aren't running the GCR workflow, build images
 		DOCKER_IMAGES := docker
 	endif
@@ -614,6 +614,23 @@ endif
 docker-push-extended:
 ifeq ($(CREATE_ASSETS), "true")
 	ci/extended-docker/extended-docker.sh
+endif
+
+# check if all images are already built with Quay tags.
+# if so, retag them for GCR. if not, build them with GCR tags.
+.PHONY: docker-gcr
+docker-gcr:
+ifeq ($(CREATE_ASSETS), "true")
+	docker image inspect $(QUAY_IMAGE_REPO)/gateway:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(QUAY_IMAGE_REPO)/ingress:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(QUAY_IMAGE_REPO)/discovery:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(QUAY_IMAGE_REPO)/gloo:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(QUAY_IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(QUAY_IMAGE_REPO)/certgen:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(QUAY_IMAGE_REPO)/sds:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(QUAY_IMAGE_REPO)/access-logger:$(VERSION) >/dev/null 2>&1 && \
+	make docker-tag-gcr || \
+	make docker
 endif
 
 # Tag images built with Quay tags for upload in GCR
