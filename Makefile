@@ -582,6 +582,7 @@ endif
 # if not, build them with tags for the repository specified by IMAGE_REPO.
 .PHONY: docker
 docker:
+ifeq ($(CREATE_ASSETS), "true")
 	docker image inspect $(RETAG_IMAGE_REGISTRY)/gateway:$(VERSION) >/dev/null 2>&1 && \
 	docker image inspect $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) >/dev/null 2>&1 && \
 	docker image inspect $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) >/dev/null 2>&1 && \
@@ -599,6 +600,7 @@ docker:
 	docker tag $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION) $(IMAGE_REPO)/sds:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION) $(IMAGE_REPO)/access-logger:$(VERSION) || \
 	make docker-build
+endif
 
 .PHONY: docker-build docker-push
 docker-build: discovery-docker gateway-docker gloo-docker \
@@ -606,7 +608,7 @@ docker-build: discovery-docker gateway-docker gloo-docker \
 		ingress-docker access-logger-docker
 
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
-# This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker`
+# This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker-build`
 # to be used for local testing.
 # docker-push is intended to be run by CI
 .PHONY: docker-push
