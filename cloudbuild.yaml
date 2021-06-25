@@ -103,7 +103,7 @@ steps:
   secretEnv: ['AWS_ARN_ROLE_1', "AWS_ROLE_ARN_STS", "JWT_PRIVATE_KEY"]
   id: 'test'
 
-# Build and tag docker images
+# Log into quay.io
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
   env:
@@ -113,7 +113,7 @@ steps:
   waitFor: ['prepare-workspace']
   id: 'docker-login'
 
-  # 1) Run make targets to push docker images
+  # 1) Run make targets to push docker images to quay.io
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
   args: ['docker-push-extended']
   env:
@@ -147,6 +147,20 @@ steps:
   secretEnv: ['GITHUB_TOKEN']
   waitFor: ['gcr-auth', 'test']
   id: 'release-chart'
+
+# Run make targets to retag and push docker images to GCR
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
+  args: ['docker-push-extended']
+  env:
+  - 'DOCKER_CONFIG=/workspace/docker-config'
+  - 'TAGGED_VERSION=$TAG_NAME'
+  - 'TEST_ASSET_ID=$_PR_NUM'
+  - 'IMAGE_REPO=gcr.io/gloo-edge'
+  - 'RETAG_IMAGE_REGISTRY=quay.io/solo-io'
+  dir: *dir
+  secretEnv: ['GITHUB_TOKEN']
+  waitFor: ['gcr-auth', 'set-gcr-zone', 'docker-push-extended']
+  id: 'docker-push-extended-gcr'
 
 secrets:
 - kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key

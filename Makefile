@@ -6,9 +6,10 @@ ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 
 # If you just put your username, then that refers to your account at hub.docker.com
-ifeq ($(IMAGE_REPO),) # Set quay.io/solo-io as default if IMAGE_REPO is unset
-	IMAGE_REPO := quay.io/solo-io
-endif
+# To use quay images, set the IMAGE_REPO to "quay.io/solo-io" (or leave unset)
+# To use dockerhub images, set the IMAGE_REPO to "soloio"
+# To use gcr images, set the IMAGE_REPO to "gcr.io/$PROJECT_NAME"
+IMAGE_REPO ?= "quay.io/solo-io"
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
@@ -38,8 +39,10 @@ endif
 # only set CREATE_ASSETS to true if RELEASE is true or CREATE_TEST_ASSETS is true
 # workaround since makefile has no Logical OR for conditionals
 ifeq ($(CREATE_TEST_ASSETS), "true")
-  # set quay image expiration if creating test assets
-  QUAY_EXPIRATION_LABEL := --label "quay.expires-after=3w"
+  # set quay image expiration if creating test assets and we're pushing to Quay
+  ifeq ($(IMAGE_REPO),"quay.io/solo-io")
+    QUAY_EXPIRATION_LABEL := --label "quay.expires-after=3w"
+  endif
 else
   ifeq ($(RELEASE), "true")
   else
@@ -574,13 +577,36 @@ ifeq ($(CREATE_ASSETS),"true")
 	DOCKER_IMAGES := docker
 endif
 
-.PHONY: docker docker-push
-docker: discovery-docker gateway-docker gloo-docker \
+# check if all images are already built for RETAG_IMAGE_REGISTRY.
+# if so, retag them for the repository specified by IMAGE_REPO.
+# if not, build them with tags for the repository specified by IMAGE_REPO.
+.PHONY: docker
+docker:
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/gateway:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/certgen:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION) >/dev/null 2>&1 && \
+	docker image inspect $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION) >/dev/null 2>&1 && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/gateway:$(VERSION) $(IMAGE_REPO)/gateway:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) $(IMAGE_REPO)/ingress:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) $(IMAGE_REPO)/discovery:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION) $(IMAGE_REPO)/gloo:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/certgen:$(VERSION) $(IMAGE_REPO)/certgen:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION) $(IMAGE_REPO)/sds:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION) $(IMAGE_REPO)/access-logger:$(VERSION) || \
+	make docker-build
+
+.PHONY: docker-build docker-push
+docker-build: discovery-docker gateway-docker gloo-docker \
 		gloo-envoy-wrapper-docker certgen-docker sds-docker \
 		ingress-docker access-logger-docker
 
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
-# This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker`
+# This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker-build`
 # to be used for local testing.
 # docker-push is intended to be run by CI
 .PHONY: docker-push
