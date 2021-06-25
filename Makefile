@@ -582,7 +582,6 @@ endif
 # if not, build them with tags for the repository specified by IMAGE_REPO.
 .PHONY: docker
 docker:
-ifeq ($(CREATE_ASSETS), "true")
 	docker image inspect $(RETAG_IMAGE_REGISTRY)/gateway:$(VERSION) >/dev/null 2>&1 && \
 	docker image inspect $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) >/dev/null 2>&1 && \
 	docker image inspect $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) >/dev/null 2>&1 && \
@@ -600,7 +599,6 @@ ifeq ($(CREATE_ASSETS), "true")
 	docker tag $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION) $(IMAGE_REPO)/sds:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION) $(IMAGE_REPO)/access-logger:$(VERSION) || \
 	make docker-build
-endif
 
 .PHONY: docker-build docker-push
 docker-build: discovery-docker gateway-docker gloo-docker \
