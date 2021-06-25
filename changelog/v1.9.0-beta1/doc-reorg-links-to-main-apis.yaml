@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: simplify and reorganize links to main APIs
+
