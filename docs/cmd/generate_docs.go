@@ -346,8 +346,11 @@ func fetchEnterpriseHelmValues(args []string) error {
 
 	// Download the file at the specified path on the latest released branch of solo-projects
 	path := "install/helm/gloo-ee/reference/values.txt"
-	semverReleaseTag, err := githubutils.FindLatestReleaseBySemver(ctx, client, "solo-io", "solo-projects")
-	version, err := semver.NewVersion(semverReleaseTag)
+	semverReleaseTag, err := ioutil.ReadFile("../_output/gloo-enterprise-version")
+	if err != nil {
+		return err
+	}
+	version, err := semver.NewVersion(string(semverReleaseTag))
 	if err != nil {
 		return err
 	}
