@@ -2721,7 +2721,7 @@ spec:
   gloo:
     xdsBindAddr: "0.0.0.0:9977"
     restXdsBindAddr: "0.0.0.0:9976"
-    enableRestEds: true
+    enableRestEds: false
     disableKubernetesDestinations: false
     disableProxyGarbageCollection: false
     invalidConfigPolicy:
