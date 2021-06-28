@@ -510,12 +510,8 @@ spec:
                   nullable: true
                   type: boolean
                 enableRestEds:
-                  description: 'Whether or not to use rest xds for all EDS by default.
-                    Set to true by default in versions > `v1.6.0`. This setting is
-                    meant to solve the bug which causes updated upstreams to dissapear,
-                    or have 0 endpoints. Some examples are: 1. https://github.com/solo-io/gloo/issues/3673
-                    2. https://github.com/solo-io/gloo/issues/3710 3. https://github.com/solo-io/gloo/issues/3219
-                    Rest XDS, as opposed to grpc, uses http polling rather than streaming'
+                  description: Whether or not to use rest xds for all EDS by default.
+                    Rest XDS, as opposed to grpc, uses http polling rather than streaming
                   nullable: true
                   type: boolean
                 endpointsWarmingTimeout:

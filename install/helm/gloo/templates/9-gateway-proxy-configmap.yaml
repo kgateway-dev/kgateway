@@ -191,7 +191,6 @@ data:
                     address: 127.0.0.1
                     port_value: 8234
 {{- end }}
-{{- if .Values.settings.enableRestEds }}
       - name: rest_xds_cluster
         alt_stat_name: rest_xds_cluster
         connect_timeout: 5.000s
@@ -208,7 +207,6 @@ data:
           tcp_keepalive: {}
         type: STRICT_DNS
         respect_dns_ttl: true
-{{- end }}
 {{- if $global.glooMtls.enabled }}
         transport_socket:
           name: envoy.transport_sockets.tls

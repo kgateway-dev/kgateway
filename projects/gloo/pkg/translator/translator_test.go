@@ -237,6 +237,7 @@ var _ = Describe("Translator", func() {
 		return report
 	}
 
+	// returns md5 Sum of current snapshot
 	translate := func() {
 		snap, errs, report, err := translator.Translate(params, proxy)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
@@ -268,6 +269,7 @@ var _ = Describe("Translator", func() {
 		endpoints = snap.GetResources(resource.EndpointTypeV3)
 
 		snapshot = snap
+
 	}
 
 	It("sanitizes an invalid virtual host name", func() {
@@ -1255,7 +1257,8 @@ var _ = Describe("Translator", func() {
 
 			endpoints := snapshot.GetResources(resource.EndpointTypeV3)
 
-			clusterName := UpstreamToClusterName(upstream.Metadata.Ref())
+			clusterName := getEndpointClusterName(upstream)
+
 			Expect(endpoints.Items).To(HaveKey(clusterName))
 			endpointsResource := endpoints.Items[clusterName]
 			claConfiguration = endpointsResource.ResourceProto().(*envoy_config_endpoint_v3.ClusterLoadAssignment)
@@ -1332,8 +1335,7 @@ var _ = Describe("Translator", func() {
 			translate()
 
 			endpoints := snapshot.GetResources(resource.EndpointTypeV3)
-
-			clusterName := UpstreamToClusterName(upstream.Metadata.Ref())
+			clusterName := getEndpointClusterName(upstream)
 			Expect(endpoints.Items).To(HaveKey(clusterName))
 			endpointsResource := endpoints.Items[clusterName]
 			claConfiguration = endpointsResource.ResourceProto().(*envoy_config_endpoint_v3.ClusterLoadAssignment)
@@ -2747,6 +2749,12 @@ var _ = Describe("Translator", func() {
 		Expect(listener.GetListenerFilters()[0].GetName()).To(Equal(wellknown.TlsInspector))
 	})
 })
+
+// The endpoint Cluster is now the UpstreamToClusterName-<hash of upstream> to facilitate
+// gRPC EDS updates
+func getEndpointClusterName(upstream *v1.Upstream) string {
+	return fmt.Sprintf("%s-%d", UpstreamToClusterName(upstream.Metadata.Ref()), upstream.MustHash())
+}
 
 func sv(s string) *structpb.Value {
 	return &structpb.Value{

@@ -2466,26 +2466,6 @@ spec:
 							gatewayProxyDeployment.GetName()).To(BeNil())
 					})
 
-					It("Removes rest_xds_cluster when enableRestEds is false", func() {
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"settings.enableRestEds=false"},
-						})
-
-						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-							return resource.GetKind() == "ConfigMap"
-						}).ExpectAll(func(configMap *unstructured.Unstructured) {
-							configMapObject, err := kuberesource.ConvertUnstructured(configMap)
-							Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", configMap))
-							structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
-							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", configMap))
-
-							if structuredConfigMap.Name == "gateway-proxy-envoy-config" {
-								Expect(structuredConfigMap.Data["envoy.yaml"]).To(Not(ContainSubstring("rest_xds_cluster")), "should not have an rest_xds_cluster configured")
-							}
-						})
-
-					})
-
 					It("Adds rest_xds_cluster when enableRestEds is true", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"settings.enableRestEds=true"},
@@ -2721,7 +2701,7 @@ spec:
   gloo:
     xdsBindAddr: "0.0.0.0:9977"
     restXdsBindAddr: "0.0.0.0:9976"
-    enableRestEds: true
+    enableRestEds: false
     disableKubernetesDestinations: false
     disableProxyGarbageCollection: false
     invalidConfigPolicy:
