@@ -27,7 +27,7 @@ func (t *translatorInstance) computeClusters(
 	reports reporter.ResourceReports,
 	upstreamRefKeyToEndpoints map[string][]*v1.Endpoint,
 	proxy *v1.Proxy,
-) []*envoy_config_cluster_v3.Cluster {
+) ([]*envoy_config_cluster_v3.Cluster, map[*envoy_config_cluster_v3.Cluster]*v1.Upstream) {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.computeClusters")
 	params.Ctx = ctx
@@ -39,14 +39,16 @@ func (t *translatorInstance) computeClusters(
 	clusters := make([]*envoy_config_cluster_v3.Cluster, 0, len(upstreams))
 	validateUpstreamLambdaFunctions(proxy, upstreams, upstreamGroups, reports)
 
+	clusterToUpstreamMap := make(map[*envoy_config_cluster_v3.Cluster]*v1.Upstream)
 	// snapshot contains both real and service-derived upstreams
 	for _, upstream := range upstreams {
 
 		cluster := t.computeCluster(params, upstream, upstreamRefKeyToEndpoints, reports)
+		clusterToUpstreamMap[cluster] = upstream
 		clusters = append(clusters, cluster)
 	}
 
-	return clusters
+	return clusters, clusterToUpstreamMap
 }
 
 func (t *translatorInstance) computeCluster(

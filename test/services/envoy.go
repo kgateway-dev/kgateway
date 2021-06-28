@@ -616,7 +616,7 @@ func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
 
 func (ei *EnvoyInstance) waitForEnvoyToBeRunning() error {
 	pingInterval := time.Tick(time.Second)
-	pingDuration := time.Second * 5
+	pingDuration := time.Second * 15
 	pingEndpoint := fmt.Sprintf("localhost:%d", ei.AdminPort)
 
 	ctx, cancel := context.WithTimeout(context.Background(), pingDuration)

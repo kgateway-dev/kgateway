@@ -76,8 +76,9 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 		checkClusterEndpoints = func() {
 			Eventually(func() bool {
 				if upstreamChangesPickedUp() {
+					numEndpoints := findPetstoreClusterEndpoints()
 					By("check that endpoints were discovered")
-					Expect(findPetstoreClusterEndpoints()).Should(BeNumerically(">", 0), "petstore endpoints should exist")
+					Expect(numEndpoints).Should(BeNumerically(">", 0), "petstore endpoints should exist")
 					fmt.Println("Endpoints exist for cluster!")
 					return true
 				}
@@ -165,18 +166,9 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 			kube2e.UpdateRestEdsSetting(ctx, false, defaults.GlooSystem)
 		})
 
-		// we expect this test to have failures due to upstream envoy bug https://github.com/solo-io/gloo/issues/4151
-		// if this test starts failing.. then upstream fixed the bug! hooray
-		//
-		// we should switch back to gRPC over REST EDS as a default when this happens
 		It("can modify upstreams repeatedly, and endpoints don't lag via EDS", func() {
-			failures := InterceptGomegaFailures(func() {
-				endpointsDontLagTest()
-			})
-			Expect(failures).ToNot(BeEmpty())
-			for _, f := range failures {
-				Expect(f).To(ContainSubstring("petstore endpoints should exist"))
-			}
+			failures := InterceptGomegaFailures(endpointsDontLagTest)
+			Expect(failures).To(BeEmpty())
 		})
 	})
 

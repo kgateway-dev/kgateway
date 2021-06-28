@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	proto2 "google.golang.org/protobuf/proto"
-
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/proto"
+	"github.com/mitchellh/hashstructure"
+	errors "github.com/rotisserie/eris"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -22,10 +22,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-
-	"github.com/mitchellh/hashstructure"
-	errors "github.com/rotisserie/eris"
 	"go.opencensus.io/trace"
+	proto2 "google.golang.org/protobuf/proto"
 )
 
 type Translator interface {
@@ -114,7 +112,7 @@ func (t *translatorInstance) Translate(
 
 	// endpoints and listeners are shared between listeners
 	logger.Debugf("computing envoy clusters for proxy: %v", proxy.Metadata.Name)
-	clusters := t.computeClusters(params, reports, upstreamRefKeyToEndpoints, proxy)
+	clusters, clusterToUpstreamMap := t.computeClusters(params, reports, upstreamRefKeyToEndpoints, proxy)
 	logger.Debugf("computing envoy endpoints for proxy: %v", proxy.Metadata.Name)
 
 	endpoints := t.computeClusterEndpoints(params, upstreamRefKeyToEndpoints, reports)
@@ -126,13 +124,25 @@ ClusterLoop:
 		if c.GetType() != envoy_config_cluster_v3.Cluster_EDS {
 			continue
 		}
+		// get upstream that generated this cluster
+		upstream := clusterToUpstreamMap[c]
+		endpointClusterName, err := getEndpointClusterName(c.Name, upstream)
+		if err != nil {
+			reports.AddError(upstream, errors.Wrapf(err, "could not marshal upstream to JSON"))
+		}
+		// Workaround for envoy bug: https://github.com/envoyproxy/envoy/issues/13009
+		// Change the cluster eds config, forcing envoy to re-request latest EDS config
+		c.EdsClusterConfig.ServiceName = endpointClusterName
 		for _, ep := range endpoints {
 			if ep.ClusterName == c.Name {
+
+				// the endpoint ClusterName needs to match the cluster's EdsClusterConfig ServiceName
+				ep.ClusterName = endpointClusterName
 				continue ClusterLoop
 			}
 		}
 		emptyendpointlist := &envoy_config_endpoint_v3.ClusterLoadAssignment{
-			ClusterName: c.Name,
+			ClusterName: endpointClusterName,
 		}
 		// make sure to call EndpointPlugin with empty endpoint
 		for _, upstream := range params.Snapshot.Upstreams {
@@ -327,4 +337,13 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 		panic(errors.Wrap(err, "constructing version hash for routes envoy snapshot components"))
 	}
 	return envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto)
+}
+
+func getEndpointClusterName(clusterName string, upstream *v1.Upstream) (string, error) {
+	hash, err := upstream.Hash(nil)
+	if err != nil {
+		return "", err
+	}
+	endpointClusterName := fmt.Sprintf("%s-%d", clusterName, hash)
+	return endpointClusterName, nil
 }

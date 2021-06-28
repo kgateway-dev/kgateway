@@ -15,12 +15,12 @@ func SetEdsOnCluster(out *envoy_config_cluster_v3.Cluster, settings *v1.Settings
 		Type: envoy_config_cluster_v3.Cluster_EDS,
 	}
 
-	restEds := true
+	restEds := false
 	if restEdsSetting := settings.GetGloo().GetEnableRestEds(); restEdsSetting != nil {
 		restEds = restEdsSetting.GetValue()
 	}
-	// The default value for enableRestEds should be set to true via helm.
-	// If nil, will enable rest eds
+	// The default value for enableRestEds should be set to false via helm.
+	// If nil, will use grpc eds
 	if restEds {
 		out.EdsClusterConfig = &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
 			EdsConfig: &envoy_config_core_v3.ConfigSource{
