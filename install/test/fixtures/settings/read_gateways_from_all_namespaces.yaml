@@ -12,7 +12,7 @@ spec:
  gateway:
    readGatewaysFromAllNamespaces: true
  gloo:
-   enableRestEds: false
+   enableRestEds: true
    xdsBindAddr: 0.0.0.0:9977
    restXdsBindAddr: 0.0.0.0:9976
    disableKubernetesDestinations: false
