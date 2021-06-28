@@ -128,7 +128,7 @@ ClusterLoop:
 		upstream := clusterToUpstreamMap[c]
 		endpointClusterName, err := getEndpointClusterName(c.Name, upstream)
 		if err != nil {
-			reports.AddError(upstream, errors.Wrapf(err, "Could not marshal upstream to JSON"))
+			reports.AddError(upstream, errors.Wrapf(err, "could not marshal upstream to JSON"))
 		}
 		// Workaround for envoy bug: https://github.com/envoyproxy/envoy/issues/13009
 		// Change the cluster eds config, forcing envoy to re-request latest EDS config
@@ -344,7 +344,6 @@ func getEndpointClusterName(clusterName string, upstream *v1.Upstream) (string, 
 	if err != nil {
 		return "", err
 	}
-	uId := fmt.Sprintf("%d", hash)
-	endpointClusterName := clusterName + "-" + uId
+	endpointClusterName := fmt.Sprintf("%s-%d", clusterName, hash)
 	return endpointClusterName, nil
 }

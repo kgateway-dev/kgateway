@@ -91,7 +91,6 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 		ctx, cancel = context.WithCancel(context.Background())
 		cfg, err = utils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
-		prevConfigDumpLen = 0
 
 		cache := kube.NewKubeCache(ctx)
 		upstreamClientFactory := &factory.KubeResourceClientFactory{
@@ -167,10 +166,6 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 			kube2e.UpdateRestEdsSetting(ctx, false, defaults.GlooSystem)
 		})
 
-		// we expect this test to have failures due to upstream envoy bug https://github.com/solo-io/gloo/issues/4151
-		// if this test starts failing.. then upstream fixed the bug! hooray
-		//
-		// we should switch back to gRPC over REST EDS as a default when this happens
 		It("can modify upstreams repeatedly, and endpoints don't lag via EDS", func() {
 			failures := InterceptGomegaFailures(endpointsDontLagTest)
 			Expect(failures).To(BeEmpty())

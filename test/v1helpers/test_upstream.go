@@ -217,7 +217,7 @@ func TestUpstreamReachableWithOffset(offset int, envoyPort uint32, tu *TestUpstr
 
 	ExpectHttpOK(body, rootca, envoyPort, "")
 
-	timeout := time.After(30 * time.Second)
+	timeout := time.After(15 * time.Second)
 	var receivedRequest *ReceivedRequest
 	for {
 		select {
@@ -285,7 +285,7 @@ func ExpectHttpStatusWithOffset(offset int, body []byte, rootca *string, envoyPo
 		}
 
 		return nil
-	}, "45s", "1s").Should(BeNil())
+	}, "30s", "1s").Should(BeNil())
 
 	if response != "" {
 		body, err := ioutil.ReadAll(res.Body)
