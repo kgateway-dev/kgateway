@@ -40,7 +40,7 @@ import (
 	"k8s.io/kubernetes/pkg/apis/core/validation"
 )
 
-var _ = FDescribe("Happy path", func() {
+var _ = Describe("Happy path", func() {
 
 	var (
 		ctx           context.Context
@@ -379,7 +379,7 @@ var _ = FDescribe("Happy path", func() {
 				})
 			})
 
-			FDescribe("kubernetes happy path", func() {
+			Describe("kubernetes happy path", func() {
 				BeforeEach(func() {
 					if os.Getenv("RUN_KUBE_TESTS") != "1" {
 						Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
@@ -530,7 +530,7 @@ var _ = FDescribe("Happy path", func() {
 					})
 				})
 
-				FContext("all namespaces", func() {
+				Context("all namespaces", func() {
 					BeforeEach(func() {
 						namespace = "gloo-e2e-" + helpers.RandString(8)
 						prepNamespace()
