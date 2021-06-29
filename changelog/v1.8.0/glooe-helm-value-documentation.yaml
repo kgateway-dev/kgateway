@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Document Helm values for the GlooE chart
+    issueLink: https://github.com/solo-io/gloo/issues/3679
+    resolvesIssue: true

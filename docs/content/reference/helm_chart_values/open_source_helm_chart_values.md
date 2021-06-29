@@ -1,11 +1,11 @@
 ---
-title: "Helm Chart Values"
-description: Listing of Helm chart values for the Gloo Edge chart
+title: "Open Source Gloo Edge"
+description: Listing of Helm values for the Open Source Gloo Edge chart
 weight: 30
 ---
 
 The table below describes all the values that you can override in your custom values file when working with the Helm 
-chart for the Gloo Edge. More information on using a Helm chart to install the Gloo Edge can be found 
+chart for Open Source Gloo Edge. More information on using a Helm chart to install the Gloo Edge can be found 
 [here]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-on-kubernetes-with-helm" %}}).
 
 {{% notice warning %}}

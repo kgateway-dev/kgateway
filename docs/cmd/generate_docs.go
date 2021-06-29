@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/gob"
 	"fmt"
 	"io/ioutil"
@@ -43,6 +44,7 @@ func rootApp(ctx context.Context) *cobra.Command {
 	}
 	app.AddCommand(changelogMdFromGithubCmd(opts))
 	app.AddCommand(securityScanMdFromCmd(opts))
+	app.AddCommand(enterpriseHelmValuesMdFromGithubCmd(opts))
 	app.AddCommand(getReleasesCmd(opts))
 
 	return app
@@ -112,6 +114,17 @@ func changelogMdFromGithubCmd(opts *options) *cobra.Command {
 	return app
 }
 
+func enterpriseHelmValuesMdFromGithubCmd(opts *options) *cobra.Command {
+	app := &cobra.Command{
+		Use:   "get-enterprise-helm-values",
+		Short: "Get documentation of valid helm values from Gloo Enterprise github",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return fetchEnterpriseHelmValues(args)
+		},
+	}
+	return app
+}
+
 // Serialized github RepositoryRelease array to be written to file
 func getRepoReleases(ctx context.Context, repo string, client *github.Client) error {
 	allReleases, err := githubutils.GetAllRepoReleases(ctx, client, "solo-io", repo)
@@ -151,6 +164,9 @@ var (
 	}
 	MissingGithubTokenError = func(envVar string) error {
 		return eris.Errorf("Must either set GITHUB_TOKEN or set %s environment variable to true", envVar)
+	}
+	FileNotFoundError = func(path string, branch string) error {
+		return eris.Errorf("Could not find file at path %s on branch %s", path, branch)
 	}
 )
 
@@ -319,4 +335,40 @@ func generateSecurityScanGlooE(ctx context.Context) error {
 	}
 
 	return BuildSecurityScanReportGlooE(tagNames)
+}
+
+func fetchEnterpriseHelmValues(args []string) error {
+	ctx := context.Background()
+	client, err := githubutils.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Download the file at the specified path on the latest released branch of solo-projects
+	path := "install/helm/gloo-ee/reference/values.txt"
+	semverReleaseTag, err := ioutil.ReadFile("../_output/gloo-enterprise-version")
+	if err != nil {
+		return err
+	}
+	version, err := semver.NewVersion(string(semverReleaseTag))
+	if err != nil {
+		return err
+	}
+	minorReleaseTag := fmt.Sprintf("v%d.%d.x", version.Major(), version.Minor())
+	files, err := githubutils.GetFilesFromGit(ctx, client, "solo-io", glooEnterpriseRepo, minorReleaseTag, path)
+	if err != nil {
+		return err
+	}
+	if len(files) <= 0 {
+		return FileNotFoundError(path, minorReleaseTag)
+	}
+
+	// Decode the file and log to the console
+	decodedContents, err := base64.StdEncoding.DecodeString(*files[0].Content)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s", decodedContents)
+
+	return nil
 }
