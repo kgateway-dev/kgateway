@@ -175,6 +175,10 @@ additional steps to ensure there is no downtime because the charts do not have t
 Using Helm 2 is not supported in Gloo Edge v1.8.0.
 {{% /notice %}}
 
+{{% notice note %}}
+If you are upgrading across major versions, to v1.8+ from v1.7.x or below, then the process outlined in this section will not work for you. That's because v1.8 adds new CRDs that helm upgrades do not handle seamlessly. Use this [v1.8-specific upgrade document]({{% versioned_link_path fromRoot="/operations/upgrading/1.8.0" %}}) instead.
+{{% /notice %}}
+
 If we have Gloo Edge released under the Helm release name `gloo` to `gloo-system`, upgrading the server components is easy:
 
 ```shell script
