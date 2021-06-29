@@ -82,8 +82,11 @@ jobs:
           severity: 'CRITICAL,HIGH'
       - name: Publish Docs
         if: ${{ steps.check-scan-exists.outputs.EXISTS == 1 }}
+        env:
+          TAGGED_VERSION: v${{ steps.check-scan-exists.outputs.VERSION }}
+          SCAN_FILE: ${{ matrix.image-type }}_cve_report.docgen
         run: |
-          VERSION=${{ steps.check-scan-exists.outputs.VERSION }} SCAN_FILE=${{ matrix.image-type }}_cve_report.docgen make publish-security-scan
+            make publish-security-scan
       - name: Run Trivy vulnerability scanner
         if: ${{ steps.check-scan-exists.outputs.EXISTS == 1 }}
         uses: aquasecurity/trivy-action@master
