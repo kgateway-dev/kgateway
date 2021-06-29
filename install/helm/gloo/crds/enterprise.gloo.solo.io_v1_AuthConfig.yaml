@@ -589,7 +589,10 @@ spec:
                                 type: object
                             type: object
                           sessionIdHeaderName:
-                            description: The name of the header to use to send the
+                            description: If set, the randomly generated session id
+                              will be sent to the token endpoint as part of the code
+                              exchange The session id is used as the key for sessions
+                              in Redis
                             type: string
                           tokenEndpointQueryParams:
                             additionalProperties:
