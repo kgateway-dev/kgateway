@@ -332,12 +332,12 @@ config:
   staticPasswords:
   - email: "admin@example.com"
     # bcrypt hash of the string "password"
-    hash: "\$2a\$10\$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+    hash: $2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W
     username: "admin"
     userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
   - email: "user@example.com"
     # bcrypt hash of the string "password"
-    hash: "\$2a\$10\$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+    hash: $2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W
     username: "user"
     userID: "123456789-db88-4b73-90a9-3cd1661f5466"
 EOF
@@ -350,7 +350,7 @@ Using this configuration, we can deploy Dex to our cluster using Helm.
 If `help repo list` doesn't list the `stable` repo, invoke:
 
 ```shell
-helm repo add stable https://kubernetes-charts.storage.googleapis.com
+helm repo add stable https://charts.helm.sh/stable
 ```
 
 And then install dex (helm 3 command follows):
@@ -430,7 +430,7 @@ kubectl --namespace=gloo-system create configmap allow-jwt --from-file=check-jwt
 {{% /notice %}}
 
 Now that all the necessary resources are in place we can create the `AuthConfig` resource that we will use to secure our 
-Virtual Service.
+Virtual Service.  Save the code block below as `jwt-opa.yaml`.
 
 {{< highlight shell "hl_lines=8-22" >}}
 apiVersion: enterprise.gloo.solo.io/v1
@@ -460,6 +460,10 @@ spec:
         namespace: gloo-system
       query: "data.test.allow == true"
 {{< /highlight >}}
+
+```
+kubectl apply -f jwt-opa.yaml
+```
 
 The above `AuthConfig` defines two configurations that Gloo Edge will execute in order: 
 
