@@ -490,6 +490,10 @@ message OidcAuthorizationCode {
     // in the future we may implement this:
     // add optional configuration for validation of the access token received during the OIDC flow
     // AccessTokenValidation access_token_validation = 8;
+
+    // If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange
+    // The session id is used as the key for sessions in Redis
+    string session_id_header_name = 16;
 }
 
 message AccessTokenValidation {
@@ -867,6 +871,10 @@ message ExtAuthConfig {
         // in the future we may implement this:
         // add optional configuration for validation of the access token received during the OIDC flow
         // AccessTokenValidation access_token_validation = 8;
+
+        // If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange
+        // The session id is used as the key for sessions in Redis
+        string session_id_header_name = 16;
     }
 
     message AccessTokenValidationConfig {

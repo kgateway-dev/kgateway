@@ -588,6 +588,9 @@ spec:
                                     type: object
                                 type: object
                             type: object
+                          sessionIdHeaderName:
+                            description: The name of the header to use to send the
+                            type: string
                           tokenEndpointQueryParams:
                             additionalProperties:
                               type: string
