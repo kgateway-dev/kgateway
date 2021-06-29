@@ -11,7 +11,6 @@ jobs:
     env:
       SCAN_DIR: _output/scans
       IMAGE_REPO: quay.io/solo-io
-      TAGGED_VERSION: ${{ github.ref }}
     strategy:
       matrix:
         image-type: [ 'access-logger', 'certgen', 'discovery', 'gateway', 'gloo', 'gloo-envoy-wrapper', 'ingress', 'sds' ]
