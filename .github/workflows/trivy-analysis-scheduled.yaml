@@ -78,7 +78,7 @@ jobs:
           image-ref: ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:${{ steps.check-scan-exists.outputs.VERSION }}
           format: 'template'
           template: '@hack/utils/security_scan_report/markdown.tpl'
-          output: ${{ env.SCAN_DIR }}/${{ steps.build-docker-image.outputs.VERSION }}/${{ matrix.image-type }}_cve_report.docgen
+          output: ${{ env.SCAN_DIR }}/${{ steps.check-scan-exists.outputs.VERSION }}/${{ matrix.image-type }}_cve_report.docgen
           severity: 'CRITICAL,HIGH'
       - name: Publish Docs
         if: ${{ steps.check-scan-exists.outputs.EXISTS == 1 }}
