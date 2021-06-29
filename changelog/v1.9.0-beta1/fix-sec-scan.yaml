@@ -5,3 +5,7 @@ changelog:
     description: >
       Fixes "No Scan Found" dialog under the security scan docs
       for [gloo-ee-envoy-wrapper](https://github.com/solo-io/gloo/issues/4920).
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4944
+    description: >
+      Fixes `go: command not found` error observed during scheduled security scans

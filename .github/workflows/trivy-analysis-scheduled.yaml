@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         image-type: [ 'access-logger', 'certgen', 'discovery', 'gateway', 'gloo', 'gloo-envoy-wrapper', 'ingress', 'sds' ]
-        gloo-version: [ 'master', 'v1.7.x', 'v1.6.x', 'v1.5.x']
+        gloo-version: [ 'master', 'v1.8.x', 'v1.7.x', 'v1.6.x', 'v1.5.x']
     steps:
       - name: Cancel Previous Actions
         uses: styfle/cancel-workflow-action@0.4.1
@@ -38,6 +38,11 @@ jobs:
 
           echo "After clearing disk space:"
           df -h
+      - name: Set up Go 1.16.3
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16.3
+        id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
         with:
