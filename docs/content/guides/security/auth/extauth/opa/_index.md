@@ -430,7 +430,7 @@ kubectl --namespace=gloo-system create configmap allow-jwt --from-file=check-jwt
 {{% /notice %}}
 
 Now that all the necessary resources are in place we can create the `AuthConfig` resource that we will use to secure our 
-Virtual Service.
+Virtual Service.  Save the code block below as `jwt-opa.yaml`.
 
 {{< highlight shell "hl_lines=8-22" >}}
 apiVersion: enterprise.gloo.solo.io/v1
