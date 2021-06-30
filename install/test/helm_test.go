@@ -1395,6 +1395,7 @@ spec:
 				})
 
 				Context("custom gateway", func() {
+
 					Context("when the default values weren't overridden", func() {
 						BeforeEach(func() {
 							prepareMakefile(namespace, helmValues{
@@ -1435,6 +1436,7 @@ spec:
 							Expect(configMapStr.Data).ToNot(BeNil()) // Uses the default config data
 						})
 					})
+
 					Context("when default values are overridden by custom gatewayproxy", func() {
 						BeforeEach(func() {
 							prepareMakefile(namespace, helmValues{
@@ -1477,6 +1479,28 @@ spec:
 							Expect(configMapStr.Data).To(Equal(map[string]string{"customData": "someData"}))
 						})
 					})
+
+					Context("when non-default values are overridden by custom gatewayproxy", func() {
+						BeforeEach(func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"gatewayProxies.gatewayProxy.service.extraAnnotations.original=original",
+									"gatewayProxies.anotherGatewayProxy.service.extraAnnotations.override=override",
+								},
+							})
+						})
+
+						It("does not merge extraAnnotations for service", func() {
+							serviceUns := testManifest.ExpectCustomResource("Service", namespace, "another-gateway-proxy")
+							service, err := kuberesource.ConvertUnstructured(serviceUns)
+							Expect(err).NotTo(HaveOccurred())
+							Expect(service).To(BeAssignableToTypeOf(&v1.Service{}))
+							serviceStr := *service.(*v1.Service)
+							Expect(serviceStr.ObjectMeta.Annotations).To(Equal(map[string]string{"override": "override"}))
+						})
+
+					})
+
 				})
 
 				Context("when multiple custom gatewayproxy override disabled default proxy", func() {
