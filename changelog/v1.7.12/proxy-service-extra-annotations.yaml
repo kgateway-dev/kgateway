@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: |
+      Ensure the annotations for custom gateway-proxy services do not contain
+      references to the default gateway-proxy service annotations
+    issueLink: https://github.com/solo-io/gloo/issues/4914
+    resolvesIssue: true

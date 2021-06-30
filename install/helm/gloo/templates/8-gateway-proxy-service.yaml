@@ -1,7 +1,9 @@
 {{- if .Values.gateway.enabled }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
-{{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
+{{- $defaultGatewayProxySafe := deepCopy $gatewayProxy -}}
+{{- $_ := unset $defaultGatewayProxySafe.service "extraAnnotations" -}}
+{{- $spec := deepCopy $gatewaySpec | mergeOverwrite $defaultGatewayProxySafe -}}
 {{- if not $spec.disabled }}
 {{- $svcName := default $name $spec.service.name }}
 ---
