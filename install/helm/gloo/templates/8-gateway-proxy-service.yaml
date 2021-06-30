@@ -122,8 +122,10 @@ spec:
 
 {{- if .Values.gateway.enabled }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
+{{- $defaultGatewayProxySafe := deepCopy $gatewayProxy -}}
+{{- $_ := unset $defaultGatewayProxySafe.service "extraAnnotations" -}}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
-{{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
+{{- $spec := deepCopy $gatewaySpec | mergeOverwrite $defaultGatewayProxySafe -}}
 {{/* Render each gatewayProxy template with it's yaml overrides */}}
 {{- $serviceYamlOverride := dict -}}
 {{- $configDumpServiceYamlOverride := dict -}}
