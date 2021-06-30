@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4210
+    resolvesIssue: false
+    description: >
+      Add an ExtAuth config field `oauth2.oidcAuthorizationCode.sessionIdHeaderName` to configure sending the Redis
+      session id to the IDP on token exchange requests.
