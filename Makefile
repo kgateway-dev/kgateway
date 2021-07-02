@@ -9,7 +9,7 @@ OUTPUT_DIR ?= $(ROOTDIR)/_output
 # To use quay images, set the IMAGE_REPO to "quay.io/solo-io" (or leave unset)
 # To use dockerhub images, set the IMAGE_REPO to "soloio"
 # To use gcr images, set the IMAGE_REPO to "gcr.io/$PROJECT_NAME"
-IMAGE_REPO ?= "quay.io/solo-io"
+IMAGE_REPO ?= quay.io/solo-io
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
