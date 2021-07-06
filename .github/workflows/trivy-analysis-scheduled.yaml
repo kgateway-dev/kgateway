@@ -4,8 +4,28 @@ on:
     # Monday 9am EST
     - cron: "0 13 * * 1"
   workflow_dispatch: # on button click
+    inputs:
+      gloo-version:
+        description: 'Gloo version'
+        required: false
+        default: ''
 jobs:
+  setup-versions:
+    runs-on: "ubuntu-18.04"
+    outputs:
+      matrix: ${{ steps.set-gloo-version.outputs.matrix }}
+    steps:
+      - id: set-gloo-version
+        run: |
+          if [ -z "${{github.event.inputs.gloo-version}}" ]; then
+#            todo(sai): dynamically fetch recent versions to do security scan on
+#            VERSIONS=$(echo $(curl "https://api.github.com/repos/solo-io/gloo/releases?page=1&per_page=100" | jq -c 'map(.tag_name|select(.|test("^((?!-).)*$")))'))
+            echo '::set-output name=matrix::["master","v1.8.x","v1.7.x","v1.6.x","v1.5.x"]'
+          else
+            echo '::set-output name=matrix::["${{github.event.inputs.gloo-version}}"]'
+          fi
   scan-images:
+    needs: setup-versions
     name: Trivy Scan
     runs-on: "ubuntu-18.04"
     env:
@@ -14,7 +34,7 @@ jobs:
     strategy:
       matrix:
         image-type: [ 'access-logger', 'certgen', 'discovery', 'gateway', 'gloo', 'gloo-envoy-wrapper', 'ingress', 'sds' ]
-        gloo-version: [ 'master', 'v1.8.x', 'v1.7.x', 'v1.6.x', 'v1.5.x']
+        gloo-version: ${{ fromJson(needs.setup-versions.outputs.matrix) }}
     steps:
       - name: Cancel Previous Actions
         uses: styfle/cancel-workflow-action@0.4.1
