@@ -1,14 +1,15 @@
 name: security-scan-scheduled
 on:
-  schedule:
-    # Monday 9am EST
-    - cron: "0 13 * * 1"
-  workflow_dispatch: # on button click
+  workflow_dispatch:
+    # allow for version to be manually specified under actions page
     inputs:
       gloo-version:
         description: 'Gloo version'
         required: false
         default: ''
+  schedule:
+    # Monday 9am EST
+    - cron: "0 13 * * 1"
 jobs:
   setup-versions:
     runs-on: "ubuntu-18.04"
@@ -18,8 +19,6 @@ jobs:
       - id: set-gloo-version
         run: |
           if [ -z "${{github.event.inputs.gloo-version}}" ]; then
-#            todo(sai): dynamically fetch recent versions to do security scan on
-#            VERSIONS=$(echo $(curl "https://api.github.com/repos/solo-io/gloo/releases?page=1&per_page=100" | jq -c 'map(.tag_name|select(.|test("^((?!-).)*$")))'))
             echo '::set-output name=matrix::["master","v1.8.x","v1.7.x","v1.6.x","v1.5.x"]'
           else
             echo '::set-output name=matrix::["${{github.event.inputs.gloo-version}}"]'
