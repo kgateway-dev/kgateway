@@ -103,7 +103,7 @@ func getLbStatus(services v1.KubeServiceList) ([]kubev1.LoadBalancerIngress, err
 	}())
 }
 
-func serviceAddrs(svc *kubev1.Service, kubeSvcRef *core.ResourceRef) ([]string, error) {
+func serviceAddrs(svc *kubev1.Service, kubeSvcRef core.ResourceRef) ([]string, error) {
 	if svc.Spec.Type == kubev1.ServiceTypeExternalName {
 
 		// Remove the possibility of using localhost in ExternalNames as endpoints
