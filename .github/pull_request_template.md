@@ -11,7 +11,7 @@ Users ran into this bug doing ... \ Users needed this feature to ...
 # Checklist:
 
 - [ ] I included a concise, user-facing changelog (for details, see https://github.com/solo-io/go-utils/tree/master/changelogutils) which references the issue that is resolved.
-- [ ] If I updated APIs (our protos) or helm values, I ran `make install-go-tools generated-code` to ensure there will be no code diff
+- [ ] If I updated APIs (our protos) or helm values, I ran `make -B install-go-tools generated-code` to ensure there will be no code diff
 - [ ] I followed guidelines laid out in the Gloo Edge [contribution guide](https://docs.solo.io/gloo-edge/latest/contributing/)
 - [ ] I opened a draft PR or added the work in progress label if my PR is not ready for review
 - [ ] I have performed a self-review of my own code
