@@ -50,6 +50,7 @@ jobs:
           ${{ runner.os }}-go-
     - uses: engineerd/setup-kind@v0.5.0
       with:
+        # We rely on the `deploy-to-kind-cluster` script to create a kind cluster
         skipClusterCreation: true
     - uses: azure/setup-kubectl@v1
       id: kubectl
@@ -61,8 +62,11 @@ jobs:
     - name: Setup test env
       env:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
+        CLUSTER_NAME: 'kind'
+        CLUSTER_NODE_VERSION: 'v1.17.0'
+        VERSION: 'kind'
       run: |
-        ./ci/kind.sh
+        ./ci/deploy-to-kind-cluster.sh
     - name: Testing - kube e2e regression tests
       env:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
