@@ -32,39 +32,44 @@ var _ = Describe("StatusSyncer", func() {
 		cfg       *rest.Config
 		ctx       context.Context
 		cancel    context.CancelFunc
+
+		err           error
+		kubeClientset *kubernetes.Clientset
 	)
 
 	BeforeEach(func() {
+		// https://github.com/solo-io/gloo/issues/3304
 		if os.Getenv("RUN_KUBE_TESTS") != "1" {
 			Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		}
-		namespace = helpers.RandString(8)
-		var err error
+
 		ctx, cancel = context.WithCancel(context.Background())
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
-		kube, err := kubernetes.NewForConfig(cfg)
+		// Initialize the kube Clientset
+		kubeClientset, err = kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		_, err = kube.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
+
+		// Create test namespace
+		namespace = helpers.RandString(8)
+		_, err = kubeClientset.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: namespace,
 			},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-
 	})
+
 	AfterEach(func() {
-		setup.TeardownKube(namespace)
+		_ = setup.TeardownKube(namespace)
 		cancel()
 	})
 
 	It("updates kube ingresses with endpoints from the service", func() {
-		kube, err := kubernetes.NewForConfig(cfg)
-		Expect(err).NotTo(HaveOccurred())
-		baseIngressClient := ingress.NewResourceClient(kube, &v1.Ingress{})
+		baseIngressClient := ingress.NewResourceClient(kubeClientset, &v1.Ingress{})
 		ingressClient := v1.NewIngressClientWithBase(baseIngressClient)
-		baseKubeServiceClient := service.NewResourceClient(kube, &v1.KubeService{})
+		baseKubeServiceClient := service.NewResourceClient(kubeClientset, &v1.KubeService{})
 		kubeServiceClient := v1.NewKubeServiceClientWithBase(baseKubeServiceClient)
 		kubeServiceClient = service.NewClientWithSelector(kubeServiceClient, map[string]string{
 			"gloo": "ingress-proxy",
@@ -80,7 +85,7 @@ var _ = Describe("StatusSyncer", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}()
 
-		kubeIngressClient := kube.ExtensionsV1beta1().Ingresses(namespace)
+		kubeIngressClient := kubeClientset.ExtensionsV1beta1().Ingresses(namespace)
 		backend := &v1beta1.IngressBackend{
 			ServiceName: "foo",
 			ServicePort: intstr.IntOrString{
@@ -120,7 +125,7 @@ var _ = Describe("StatusSyncer", func() {
 			},
 		}, metav1.CreateOptions{})
 
-		kubeSvcClient := kube.CoreV1().Services(namespace)
+		kubeSvcClient := kubeClientset.CoreV1().Services(namespace)
 		svc_def := kubev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "dusty",
@@ -154,7 +159,7 @@ var _ = Describe("StatusSyncer", func() {
 		svc, err := kubeSvcClient.Create(ctx, &svc_def, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = kube.CoreV1().Pods(namespace).Create(ctx, &kubev1.Pod{
+		_, err = kubeClientset.CoreV1().Pods(namespace).Create(ctx, &kubev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "musty",
 				Namespace: namespace,
@@ -173,9 +178,10 @@ var _ = Describe("StatusSyncer", func() {
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		time.Sleep(time.Second) // give the kube service time to update lb endpoints
-		svc, err = kubeSvcClient.Get(ctx, svc.Name, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			svc, err = kubeSvcClient.Get(ctx, svc.Name, metav1.GetOptions{})
+			return err
+		}, time.Second*10).ShouldNot(HaveOccurred())
 
 		if len(svc.Status.LoadBalancer.Ingress) == 0 {
 			// kubernetes does set ingress lb, set service status explicitly instead
@@ -190,5 +196,135 @@ var _ = Describe("StatusSyncer", func() {
 			}
 			return ing.Status.LoadBalancer.Ingress, nil
 		}, time.Second*10).Should(Equal(svc.Status.LoadBalancer.Ingress))
+	})
+
+	It("errors when kube service ExternalName = localhost", func() {
+		baseIngressClient := ingress.NewResourceClient(kubeClientset, &v1.Ingress{})
+		ingressClient := v1.NewIngressClientWithBase(baseIngressClient)
+		baseKubeServiceClient := service.NewResourceClient(kubeClientset, &v1.KubeService{})
+		kubeServiceClient := v1.NewKubeServiceClientWithBase(baseKubeServiceClient)
+		kubeServiceClient = service.NewClientWithSelector(kubeServiceClient, map[string]string{
+			"gloo": "ingress-proxy",
+		})
+		statusEmitter := v1.NewStatusEmitter(kubeServiceClient, ingressClient)
+		statusSync := status.NewSyncer(ingressClient)
+		statusEventLoop := v1.NewStatusEventLoop(statusEmitter, statusSync)
+		statusEventLoopErrs, err := statusEventLoop.Run([]string{namespace}, clients.WatchOpts{Ctx: context.TODO()})
+		Expect(err).NotTo(HaveOccurred())
+		go func() {
+			defer GinkgoRecover()
+			err := <-statusEventLoopErrs
+			// Expect an error to have occurred during the statusEventLoop
+			Expect(err).Should(MatchError(ContainSubstring("Invalid attempt to use localhost name")))
+		}()
+
+		backend := &v1beta1.IngressBackend{
+			ServiceName: "foo",
+			ServicePort: intstr.IntOrString{
+				IntVal: 8080,
+			},
+		}
+
+		kubeIngressClient := kubeClientset.ExtensionsV1beta1().Ingresses(namespace)
+		kubeIngress, err := kubeIngressClient.Create(ctx, &v1beta1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "rusty",
+				Namespace: namespace,
+				Annotations: map[string]string{
+					translator.IngressClassKey: "gloo",
+				},
+			},
+			Spec: v1beta1.IngressSpec{
+				Backend: backend,
+				TLS: []v1beta1.IngressTLS{
+					{
+						Hosts:      []string{"some.host"},
+						SecretName: "doesntexistanyway",
+					},
+				},
+				Rules: []v1beta1.IngressRule{
+					{
+						Host: "some.host",
+						IngressRuleValue: v1beta1.IngressRuleValue{
+							HTTP: &v1beta1.HTTPIngressRuleValue{
+								Paths: []v1beta1.HTTPIngressPath{
+									{
+										Backend: *backend,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}, metav1.CreateOptions{})
+
+		kubeSvcClient := kubeClientset.CoreV1().Services(namespace)
+		kubeSvcDefinition := kubev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "dusty",
+				Namespace: namespace,
+				Labels: map[string]string{
+					"gloo": "ingress-proxy",
+				},
+			},
+			Spec: kubev1.ServiceSpec{
+				Selector: map[string]string{
+					"gloo": "ingress-proxy",
+				},
+				Type:         kubev1.ServiceTypeExternalName,
+				ExternalName: "localhost", // this should not be allowed
+			},
+			Status: kubev1.ServiceStatus{
+				LoadBalancer: kubev1.LoadBalancerStatus{
+					Ingress: []kubev1.LoadBalancerIngress{
+						{
+							Hostname: "hostname",
+						},
+					},
+				},
+			},
+		}
+		kubeSvc, err := kubeSvcClient.Create(ctx, &kubeSvcDefinition, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = kubeClientset.CoreV1().Pods(namespace).Create(ctx, &kubev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "musty",
+				Namespace: namespace,
+				Labels: map[string]string{
+					"gloo": "ingress-proxy",
+				},
+			},
+			Spec: kubev1.PodSpec{
+				Containers: []kubev1.Container{
+					{
+						Name:  "nginx",
+						Image: "nginx:latest",
+					},
+				},
+			},
+		}, metav1.CreateOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() error {
+			kubeSvc, err = kubeSvcClient.Get(ctx, kubeSvc.Name, metav1.GetOptions{})
+			return err
+		}, time.Second*10).ShouldNot(HaveOccurred())
+
+		if len(kubeSvc.Status.LoadBalancer.Ingress) == 0 {
+			// kubernetes does set ingress lb, set service status explicitly instead
+			kubeSvc, err = kubeSvcClient.UpdateStatus(ctx, &kubeSvcDefinition, metav1.UpdateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		// The only service that we have configured should be rejected
+		Eventually(func() ([]kubev1.LoadBalancerIngress, error) {
+			ing, err := kubeIngressClient.Get(ctx, kubeIngress.Name, metav1.GetOptions{})
+			if err != nil {
+				return nil, err
+			}
+			return ing.Status.LoadBalancer.Ingress, nil
+		}, time.Second*10).Should(BeEmpty())
 	})
 })

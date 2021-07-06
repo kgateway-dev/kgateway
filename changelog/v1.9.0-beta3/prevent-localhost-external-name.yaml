@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Remove the possibility of using 'localhost' in KubeService ExternalName
+  - type: NON_USER_FACING
+    description: >
+      Update script used for CI regression tests to expose useful environment variables.
+      This allows developers to leverage this script to easily run regression tests locally.
+      Also, update the README for our regression tests to clarify how to setup and run them.
