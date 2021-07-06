@@ -1,12 +1,28 @@
 #!/bin/bash -ex
 
-kindClusterName=kind
-kindClusterImage=kindest/node:v1.17.0
+# 0. Assign default values to some of our environment variables
+# The name of the kind cluster to deploy to
+CLUSTER_NAME="${CLUSTER_NAME:-kind}"
+# The version of the Node Docker image to use for booting the cluster
+CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.17.0}"
+# The version used to tag images
+VERSION="${VERSION:-kind}"
 
+# 1. Create a kind cluster (or skip creation if a cluster with name=CLUSTER_NAME already exists)
 # This config is roughly based on: https://kind.sigs.k8s.io/docs/user/ingress/
-cat <<EOF | kind create cluster --name $kindClusterName --image $kindClusterImage --config=-
+function create_kind_cluster_or_skip() {
+  echo "creating cluster ${CLUSTER_NAME}"
+
+  activeClusters=$(kind get clusters)
+
+  if [[ "$activeClusters" =~ .*"$CLUSTER_NAME".* ]]; then
+    echo "cluster exists"
+    return
+  fi
+
+  cat <<EOF | kind create cluster --name "$CLUSTER_NAME" --image "kindest/node:$CLUSTER_NODE_VERSION" --config=-
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha3
+apiVersion: kind.x-k8s.io/v1alpha4
 kubeadmConfigPatches:
 - |
   apiVersion: kubeadm.k8s.io/v1beta2
@@ -32,29 +48,23 @@ kubeadmConfigPatches:
       "feature-gates": "EphemeralContainers=true"
 EOF
 
-# make all the docker images
-# write the output to a temp file so that we can grab the image names out of it
-# also ensure we clean up the file once we're done
-TEMP_FILE=$(mktemp)
-VERSION=kind make docker | tee ${TEMP_FILE}
-
-cleanup() {
-    echo ">> Removing ${TEMP_FILE}"
-    rm ${TEMP_FILE}
+  echo "Finished setting up cluster $CLUSTER_NAME"
 }
-trap "cleanup" EXIT SIGINT
+create_kind_cluster_or_skip
 
-echo ">> Temporary output file ${TEMP_FILE}"
+# 2. Make all the docker images and load them to the kind cluster
+VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make push-kind-images
 
-# grab the image names out of the `make docker` output
-sed -nE 's|(\\x1b\[0m)?Successfully tagged (.*$)|\2|p' ${TEMP_FILE} | while read f; do kind load docker-image --name kind $f; done
+# 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
+VERSION=$VERSION make build-test-chart
 
-VERSION=kind make build-test-chart
+# 4. Build the gloo command line tool, ensuring we have one in the `_output` folder
 make glooctl-linux-amd64
 
+# 5. Install additional resources used for particular KUBE2E tests
 if [ "$KUBE2E_TESTS" = "eds" ]; then
   echo "Installing Gloo Edge"
-  _output/glooctl-linux-amd64 install gateway --file _test/gloo-kind.tgz
+  _output/glooctl-linux-amd64 install gateway --file "_test/gloo-$VERSION".tgz
 
   kubectl -n gloo-system rollout status deployment gloo --timeout=2m || true
   kubectl -n gloo-system rollout status deployment discovery --timeout=2m || true
@@ -70,6 +80,7 @@ if [ "$KUBE2E_TESTS" = "eds" ]; then
 fi
 
 if [ "$KUBE2E_TESTS" = "glooctl" ]; then
+  echo "Installing Istio 1.7.4"
   curl -sSL https://github.com/istio/istio/releases/download/1.7.4/istio-1.7.4-linux-amd64.tar.gz | tar -xzf - istio-1.7.4/bin/istioctl
   ./istio-1.7.4/bin/istioctl install --set profile=minimal
 fi
