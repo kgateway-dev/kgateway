@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4974
+    description: >
+      Fixes duplicate versions issue in our [security scan docs](https://docs.solo.io/gloo-edge/master/reference/security-updates/enterprise/).
+      Also allows us to run security scans on individual versions that may be missing security scans because more than one version was
+      released in between weekly security scans.
