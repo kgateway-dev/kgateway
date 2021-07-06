@@ -109,7 +109,7 @@ func serviceAddrs(svc *kubev1.Service, kubeSvcRef *core.ResourceRef) ([]string, 
 		// Remove the possibility of using localhost in ExternalNames as endpoints
 		svcIp := net.ParseIP(svc.Spec.ExternalName)
 		if svc.Spec.ExternalName == "localhost" || (svcIp != nil && svcIp.IsLoopback()) {
-			return nil, errors.Errorf("Invalid attempt to use localhost name %s, in %q", svc.Spec.ExternalName, kubeSvcRef)
+			return nil, errors.Errorf("Invalid attempt to use localhost name %s, in %v", svc.Spec.ExternalName, kubeSvcRef)
 		}
 		return []string{svc.Spec.ExternalName}, nil
 	}

@@ -178,9 +178,10 @@ var _ = Describe("StatusSyncer", func() {
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		time.Sleep(time.Second) // give the kube service time to update lb endpoints
-		svc, err = kubeSvcClient.Get(ctx, svc.Name, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			svc, err = kubeSvcClient.Get(ctx, svc.Name, metav1.GetOptions{})
+			return err
+		}, time.Second*10).ShouldNot(HaveOccurred())
 
 		if len(svc.Status.LoadBalancer.Ingress) == 0 {
 			// kubernetes does set ingress lb, set service status explicitly instead
@@ -214,7 +215,7 @@ var _ = Describe("StatusSyncer", func() {
 			defer GinkgoRecover()
 			err := <-statusEventLoopErrs
 			// Expect an error to have occurred during the statusEventLoop
-			Expect(err).To(HaveOccurred())
+			Expect(err).Should(MatchError(ContainSubstring("Invalid attempt to use localhost name")))
 		}()
 
 		backend := &v1beta1.IngressBackend{
@@ -306,9 +307,10 @@ var _ = Describe("StatusSyncer", func() {
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		time.Sleep(time.Second) // give the kube service time to update lb endpoints
-		kubeSvc, err = kubeSvcClient.Get(ctx, kubeSvc.Name, metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			kubeSvc, err = kubeSvcClient.Get(ctx, kubeSvc.Name, metav1.GetOptions{})
+			return err
+		}, time.Second*10).ShouldNot(HaveOccurred())
 
 		if len(kubeSvc.Status.LoadBalancer.Ingress) == 0 {
 			// kubernetes does set ingress lb, set service status explicitly instead
