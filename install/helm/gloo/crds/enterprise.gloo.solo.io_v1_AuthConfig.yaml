@@ -618,6 +618,18 @@ spec:
                               type: string
                           type: object
                         type: array
+                      options:
+                        description: Additional Options for Opa Auth configuration.
+                        properties:
+                          fastInputConversion:
+                            description: optimize input conversion, but doesn't convert
+                              all fields from the check request. specifically, only
+                              http_request and state fields that are scalar, map or
+                              string array will be added. this can reduce latency
+                              if you do not need access to the dropped fields in your
+                              policy.
+                            type: boolean
+                        type: object
                       query:
                         description: The query that determines the auth decision.
                           The result of this query must be either a boolean or an
