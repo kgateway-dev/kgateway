@@ -30,8 +30,6 @@ var _ = Describe("StatusSyncer", func() {
 	var (
 		namespace string
 		cfg       *rest.Config
-		ctx       context.Context
-		cancel    context.CancelFunc
 
 		err           error
 		kubeClientset *kubernetes.Clientset
@@ -43,7 +41,6 @@ var _ = Describe("StatusSyncer", func() {
 			Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		}
 
-		ctx, cancel = context.WithCancel(context.Background())
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
@@ -63,7 +60,6 @@ var _ = Describe("StatusSyncer", func() {
 
 	AfterEach(func() {
 		_ = setup.TeardownKube(namespace)
-		cancel()
 	})
 
 	It("updates kube ingresses with endpoints from the service", func() {
