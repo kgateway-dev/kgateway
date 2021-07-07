@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: > 
+      Skip enterprise docs generation on community PRs during the docs-gen-preview workflow.
