@@ -10,7 +10,7 @@ For these tests to run, we require the following conditions:
   - `glooctl` be built in the`_output` folder
   - kind cluster set up and loaded with the images to be installed by the helm chart
 
-### (Option A) - Use the CI Install Script (preferred)
+#### (Option A) - Use the CI Install Script (preferred)
 
 `ci/deploy-to-kind-cluster.sh` (`https://github.com/solo-io/gloo/blob/master/ci/deploy-to-kind-cluster.sh`) gets run in CI to setup the test environment for the above requirements.
 It accepts a number of environment variables, to control the creation of a kind cluster and deployment of Gloo resources to that kind cluster.
@@ -26,14 +26,15 @@ Example:
 CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.17.0 VERSION=v1.0.0-solo-test ci/deploy-to-kind-cluster.sh
 ```
 
-### (Option B) - Manually Run Make Targets
+#### (Option B) - Manually Run Make Targets
 
 The CI install script executes a series of make targets.
 
-Create a kind cluster: `kind create cluster --name kind`
-Build the helm chart: `VERSION=kind make build-test-chart`
-Build glooctl: `make glooctl`
+Create a kind cluster: `kind create cluster --name kind`\
+Build the helm chart: `VERSION=kind make build-test-chart`\
+Build glooctl: `make glooctl`\
 Load the images into the cluster: `CLUSTER_NAME=kind VERSION=kind make push-kind-images`
+
 
 ## Verify Your Setup
 Before running your tests, it's worthwhile to verify that a cluster was created, and the proper images have been loaded.
@@ -46,8 +47,8 @@ crictl images
 
 You should see the list of images in the cluster, including the ones you just uploaded
 
-### Common Setup Errors
-`Error: validation: chart.metadata.version "solo" is invalid`
+#### Common Setup Errors
+`Error: validation: chart.metadata.version "solo" is invalid`\
 In newer versions of helm (>3.5), the version used to build the helm chart (ie the VERSION env variable), needs to respect semantic versioning. This error implies that the version provided does not.
 
 ## Run Tests
@@ -55,21 +56,21 @@ In newer versions of helm (>3.5), the version used to build the helm chart (ie t
 To run the regression tests, your kubeconfig file must point to a running Kubernetes cluster.
 `kubectl config current-context` should run `kind-<CLUSTER_NAME>`
 
-### (Option A) - Use the Make Target (preferred)
+#### (Option A) - Use the Make Target (preferred)
 
 Use the same command that CI relies on:
 ```bash
 KUBE2E_TESTS=<test-to-run> make run-ci-regression-tests
 ```
 
-### (Option A) - Use Ginkgo Directly
+#### (Option B) - Use Ginkgo Directly
 
 The make target just runs ginkgo with a set of useful flags. If you want to control the flags that are provided, you can run:
 ```bash
 KUBE2E_TESTS=<test-to-run> ginkgo -r <other-flags>
 ```
 
-### Test Environment Variables
+#### Test Environment Variables
 The below table contains the environment variables that can be used to configure the test execution.
 
 | Name              | Default   | Description |
@@ -79,6 +80,6 @@ The below table contains the environment variables that can be used to configure
 | WAIT_ON_FAIL      | 0         | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output.
 | TEAR_DOWN         | false     | Set to true to uninstall Gloo after the test suite completes |
 
-### Common Test Errors
-`getting Helm chart version: expected a single entry with name [gloo], found: 5`
+#### Common Test Errors
+`getting Helm chart version: expected a single entry with name [gloo], found: 5`\
 The test helm charts are written to the `_test` directory, with the `index.yaml` file containing references to all available charts. The tests require that this file contain only 1 entry. Delete the other entries manually, or run `make clean` to delete this folder entirely, and then re-build the test helm chart.
