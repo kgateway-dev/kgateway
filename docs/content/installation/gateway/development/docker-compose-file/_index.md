@@ -82,7 +82,7 @@ The files used for installation live in the `install/docker-compose-file` direct
 
 ### Prepare the Directory Structure
 
-Since we are using the filesystem to store the Gloo Edge configuration and credentials, we need to set up a directory structure to support that. Each of the Gloo Edge containers created by the `docker-compose.yaml` file will attach to the `data` directory inside the `install/docker-compose-file` parent directory. 
+Since we are using the filesystem to store the Gloo Edge configuration and credentials, we need to set up a directory structure to support that. Each of the Gloo Edge containers created by the `docker-compose.yaml` file will attach to the `data` directory inside the `install/docker-compose-file` parent directory.
 
 Although much of the structure is already set up, there are some additional empty directories that must be created for use by the Gloo Edge containers. Let's run the `prepare-directories.sh` script to create the rest.
 
@@ -106,6 +106,8 @@ The updated `data` directory structure should look like this:
 │   │   └── gloo-system
 │   ├── ratelimitconfigs
 │   │   └── gloo-system
+│   ├── routeoptions
+│   │   └── gloo-system
 │   ├── routetables
 │   │   └── gloo-system
 │   ├── upstreamgroups
@@ -113,6 +115,8 @@ The updated `data` directory structure should look like this:
 │   ├── upstreams
 │   │   └── gloo-system
 │   │       └── petstore.yaml
+│   └── virtualhostoptions
+│   │   └── gloo-system
 │   └── virtualservices
 │       └── gloo-system
 │           └── default.yaml
@@ -153,11 +157,11 @@ docker-compose up
 The following ports will be exposed to the host machine:
 
 |  service  | port |
-| ----- | ---- |  
-| gloo/http | 8080 | 
+| ----- | ---- |
+| gloo/http | 8080 |
 | petstore | 8090 |
-| gloo/https | 8443 | 
-| gloo/admin | 19000 | 
+| gloo/https | 8443 |
+| gloo/admin | 19000 |
 
 In addition to opening ports, there should be a new file in the `data` directory.
 
@@ -327,6 +331,6 @@ curl http://localhost:8080/petstore/findWithId/1
 
 ## Next Steps
 
-Congratulations! You've successfully deployed Gloo Edge with Docker Compose and created your first route. Now let's delve deeper into the world of [Traffic Management with Gloo Edge]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}). 
+Congratulations! You've successfully deployed Gloo Edge with Docker Compose and created your first route. Now let's delve deeper into the world of [Traffic Management with Gloo Edge]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}).
 
 Most of the existing tutorials for Gloo Edge use Kubernetes as the underlying resource, but they can also use a Docker Compose deployment. It will be necessary to handcraft the proper YAML files for each configuration, so it might make more sense to check out using either Kubernetes or Consul & Vault to store configuration data.
