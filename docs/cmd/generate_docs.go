@@ -119,6 +119,9 @@ func enterpriseHelmValuesMdFromGithubCmd(opts *options) *cobra.Command {
 		Use:   "get-enterprise-helm-values",
 		Short: "Get documentation of valid helm values from Gloo Enterprise github",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if os.Getenv(skipEnterpriseDocsGeneration) != "" {
+				return nil
+			}
 			return fetchEnterpriseHelmValues(args)
 		},
 	}
@@ -139,10 +142,11 @@ func getRepoReleases(ctx context.Context, repo string, client *github.Client) er
 }
 
 const (
-	glooDocGen              = "gloo"
-	glooEDocGen             = "glooe"
-	skipChangelogGeneration = "SKIP_CHANGELOG_GENERATION"
-	skipSecurityScan        = "SKIP_SECURITY_SCAN"
+	glooDocGen                   = "gloo"
+	glooEDocGen                  = "glooe"
+	skipChangelogGeneration      = "SKIP_CHANGELOG_GENERATION"
+	skipSecurityScan             = "SKIP_SECURITY_SCAN"
+	skipEnterpriseDocsGeneration = "SKIP_ENTERPRISE_DOCS_GENERATION"
 )
 
 const (

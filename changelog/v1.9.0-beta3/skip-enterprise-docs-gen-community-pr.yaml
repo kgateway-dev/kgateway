@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: > 
+      Skip enterprise docs generation on community PRs. CI was failing on community PRs during the
+      "Generate versioned docs site" step of the docs-gen workflow, because enterprise docs generation
+      required the presence of a github access token with access to the solo-projects repository.
