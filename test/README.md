@@ -1,16 +1,16 @@
-## Setup for running Gloo tests locally 
+## Setup for running Gloo tests locally
 
-### Consult Vault Test Setup 
+### e2e Tests
 
-The consul vault test downloads and runs vault and is disabled by default. To enable, set `RUN_VAULT_TESTS=1` and `RUN_CONSUL_TESTS=1` in your local environment.
+Instructions for setting up and running the end-to-end tests can be found [here](https://github.com/solo-io/gloo/tree/master/test/e2e#end-to-end-tests).
 
-### e2e Test Setup
-
-If running the e2e tests on a Mac, you will need to run `TAGGED_VERSION=v${NAME} make gloo-envoy-wrapper-docker`, then set the `ENVOY_GLOO_IMAGE` to the `TAGGED_VERSION` name. You can run the tests using a binary on linux.
-
-### Kube e2e Test Setup
+### Kube e2e Tests
 
 Instructions for setting up and running the regression tests can be found [here](https://github.com/solo-io/gloo/tree/master/test/kube2e#regression-tests).
+
+### Consult Vault Test Setup
+
+The consul vault test downloads and runs vault and is disabled by default. To enable, set `RUN_VAULT_TESTS=1` and `RUN_CONSUL_TESTS=1` in your local environment.
 
 ## Debugging Tests
 
