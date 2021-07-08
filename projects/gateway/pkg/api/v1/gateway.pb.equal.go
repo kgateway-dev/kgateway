@@ -199,15 +199,14 @@ func (m *HttpGateway) Equal(that interface{}) bool {
 
 	}
 
-	if len(m.GetVirtualServiceSelector()) != len(target.GetVirtualServiceSelector()) {
-		return false
-	}
-	for k, v := range m.GetVirtualServiceSelector() {
-
-		if strings.Compare(v, target.GetVirtualServiceSelector()[k]) != 0 {
+	if h, ok := interface{}(m.GetVirtualServiceSelector()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetVirtualServiceSelector()) {
 			return false
 		}
-
+	} else {
+		if !proto.Equal(m.GetVirtualServiceSelector(), target.GetVirtualServiceSelector()) {
+			return false
+		}
 	}
 
 	if len(m.GetVirtualServiceNamespaces()) != len(target.GetVirtualServiceNamespaces()) {
@@ -280,6 +279,112 @@ func (m *TcpGateway) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetOptions(), target.GetOptions()) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *VirtualServiceSelector) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*VirtualServiceSelector)
+	if !ok {
+		that2, ok := that.(VirtualServiceSelector)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetNamespaces()) != len(target.GetNamespaces()) {
+		return false
+	}
+	for idx, v := range m.GetNamespaces() {
+
+		if strings.Compare(v, target.GetNamespaces()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetLabels()) != len(target.GetLabels()) {
+		return false
+	}
+	for k, v := range m.GetLabels() {
+
+		if strings.Compare(v, target.GetLabels()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetExpressions()) != len(target.GetExpressions()) {
+		return false
+	}
+	for idx, v := range m.GetExpressions() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetExpressions()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetExpressions()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *VirtualServiceSelector_Expression) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*VirtualServiceSelector_Expression)
+	if !ok {
+		that2, ok := that.(VirtualServiceSelector_Expression)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
+		return false
+	}
+
+	if m.GetOperator() != target.GetOperator() {
+		return false
+	}
+
+	if len(m.GetValues()) != len(target.GetValues()) {
+		return false
+	}
+	for idx, v := range m.GetValues() {
+
+		if strings.Compare(v, target.GetValues()[idx]) != 0 {
+			return false
+		}
+
 	}
 
 	return true

@@ -663,7 +663,11 @@ func routesContainRefs(list []*v1.Route, refs refSet) bool {
 
 func gatewayListContainsVirtualService(gwList v1.GatewayList, vs *v1.VirtualService) bool {
 	for _, gw := range gwList {
-		if translator.GatewayContainsVirtualService(gw, vs) {
+		contains, err := translator.GatewayContainsVirtualService(gw, vs)
+		if err != nil {
+			return false
+		}
+		if contains {
 			return true
 		}
 	}

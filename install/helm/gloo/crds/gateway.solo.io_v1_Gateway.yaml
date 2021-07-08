@@ -1214,12 +1214,56 @@ spec:
                     type: string
                   type: array
                 virtualServiceSelector:
-                  additionalProperties:
-                    type: string
                   description: Select virtual services by their label. If `virtual_service_namespaces`
                     is provided below, this will apply only to virtual services in
                     the namespaces specified. Only one of `virtualServices` or `virtualServiceSelector`
                     should be provided.
+                  properties:
+                    expressions:
+                      description: Expressions allow for more flexible Route Tables
+                        label matching, such as equality-based requirements, set-based
+                        requirements, or a combination of both. https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
+                      items:
+                        properties:
+                          key:
+                            description: Kubernetes label key, must conform to Kubernetes
+                              syntax requirements https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+                            type: string
+                          operator:
+                            description: The operator can only be in, notin, =, ==,
+                              !=, exists, ! (DoesNotExist), gt (GreaterThan), lt (LessThan).
+                            enum:
+                            - Equals
+                            - DoubleEquals
+                            - NotEquals
+                            - In
+                            - NotIn
+                            - Exists
+                            - DoesNotExist
+                            - GreaterThan
+                            - LessThan
+                            type: string
+                          values:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                      type: array
+                    labels:
+                      additionalProperties:
+                        type: string
+                      description: Select Virtual Services whose labels match the
+                        ones specified here.
+                      type: object
+                    namespaces:
+                      description: Namespaces to select Virtual Services from. If
+                        omitted, Gloo will only select Virtual Services in the same
+                        namespace as the Virtual Service that owns this selector.
+                        The reserved value "*" can be used to select Virtual Services
+                        in all namespaces watched by Gloo.
+                      items:
+                        type: string
+                      type: array
                   type: object
                 virtualServices:
                   description: Names & namespace refs of the virtual services which

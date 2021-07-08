@@ -14,6 +14,9 @@ weight: 5
 - [Gateway](#gateway) **Top-Level Resource**
 - [HttpGateway](#httpgateway)
 - [TcpGateway](#tcpgateway)
+- [VirtualServiceSelector](#virtualserviceselector)
+- [Expression](#expression)
+- [Operator](#operator)
   
 
 
@@ -70,7 +73,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 
 ```yaml
 "virtualServices": []core.solo.io.ResourceRef
-"virtualServiceSelector": map<string, string>
+"virtualServiceSelector": .gateway.solo.io.VirtualServiceSelector
 "virtualServiceNamespaces": []string
 "options": .gloo.solo.io.HttpListenerOptions
 
@@ -79,7 +82,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `virtualServices` | [[]core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Names & namespace refs of the virtual services which contain the actual routes for the gateway. If the list is empty, all virtual services in all namespaces that Gloo watches will apply, with accordance to `ssl` flag on `Gateway` above. The default namespace matching behavior can be overridden via `virtual_service_namespaces` flag below. Only one of `virtualServices` or `virtualServiceSelector` should be provided. |
-| `virtualServiceSelector` | `map<string, string>` | Select virtual services by their label. If `virtual_service_namespaces` is provided below, this will apply only to virtual services in the namespaces specified. Only one of `virtualServices` or `virtualServiceSelector` should be provided. |
+| `virtualServiceSelector` | [.gateway.solo.io.VirtualServiceSelector](../gateway.proto.sk/#virtualserviceselector) | Select virtual services by their label. If `virtual_service_namespaces` is provided below, this will apply only to virtual services in the namespaces specified. Only one of `virtualServices` or `virtualServiceSelector` should be provided. |
 | `virtualServiceNamespaces` | `[]string` | Restrict the search by providing a list of valid search namespaces here. Setting '*' will search all namespaces, equivalent to omitting this value. |
 | `options` | [.gloo.solo.io.HttpListenerOptions](../../../../gloo/api/v1/options.proto.sk/#httplisteneroptions) | HTTP Gateway configuration. |
 
@@ -101,6 +104,70 @@ and the routing configuration to upstreams that are reachable via a specific por
 | ----- | ---- | ----------- | 
 | `tcpHosts` | [[]gloo.solo.io.TcpHost](../../../../gloo/api/v1/proxy.proto.sk/#tcphost) | TCP hosts that the gateway can route to. |
 | `options` | [.gloo.solo.io.TcpListenerOptions](../../../../gloo/api/v1/options.proto.sk/#tcplisteneroptions) | TCP Gateway configuration. |
+
+
+
+
+---
+### VirtualServiceSelector
+
+ 
+Select route tables for delegation by namespace, labels, or both.
+
+```yaml
+"namespaces": []string
+"labels": map<string, string>
+"expressions": []gateway.solo.io.VirtualServiceSelector.Expression
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `namespaces` | `[]string` | Namespaces to select Virtual Services from. If omitted, Gloo will only select Virtual Services in the same namespace as the Virtual Service that owns this selector. The reserved value "*" can be used to select Virtual Services in all namespaces watched by Gloo. |
+| `labels` | `map<string, string>` | Select Virtual Services whose labels match the ones specified here. |
+| `expressions` | [[]gateway.solo.io.VirtualServiceSelector.Expression](../gateway.proto.sk/#expression) | Expressions allow for more flexible Route Tables label matching, such as equality-based requirements, set-based requirements, or a combination of both. https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement. |
+
+
+
+
+---
+### Expression
+
+
+
+```yaml
+"key": string
+"operator": .gateway.solo.io.VirtualServiceSelector.Expression.Operator
+"values": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `key` | `string` | Kubernetes label key, must conform to Kubernetes syntax requirements https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set. |
+| `operator` | [.gateway.solo.io.VirtualServiceSelector.Expression.Operator](../gateway.proto.sk/#operator) | The operator can only be in, notin, =, ==, !=, exists, ! (DoesNotExist), gt (GreaterThan), lt (LessThan). |
+| `values` | `[]string` |  |
+
+
+
+
+---
+### Operator
+
+ 
+Route Table Selector expression operator, while the set-based syntax differs from Kubernetes (kubernetes: `key: !mylabel`, gloo: `key: mylabel, operator: "!"` | kubernetes: `key: mylabel`, gloo: `key: mylabel, operator: exists`), the functionality remains the same.
+
+| Name | Description |
+| ----- | ----------- | 
+| `Equals` | = |
+| `DoubleEquals` | == |
+| `NotEquals` | != |
+| `In` | in |
+| `NotIn` | notin |
+| `Exists` | exists |
+| `DoesNotExist` | ! |
+| `GreaterThan` | gt |
+| `LessThan` | lt |
 
 
 

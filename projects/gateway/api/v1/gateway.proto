@@ -118,12 +118,12 @@ message TcpGateway {
 // Select route tables for delegation by namespace, labels, or both.
 message VirtualServiceSelector {
 
-    // Delegate to Route Tables in these namespaces. If omitted, Gloo will only select Route Tables in the same namespace
-    // as the resource (Virtual Service or Route Table) that owns this selector. The reserved value "*" can be used to
-    // select Route Tables in all namespaces watched by Gloo.
+    // Namespaces to select Virtual Services from. If omitted, Gloo will only select Virtual Services in the same namespace
+    // as the Virtual Service that owns this selector. The reserved value "*" can be used to
+    // select Virtual Services in all namespaces watched by Gloo.
     repeated string namespaces = 1;
 
-    // Delegate to Route Tables whose labels match the ones specified here.
+    // Select Virtual Services whose labels match the ones specified here.
     map<string, string> labels = 2;
 
     message Expression {
