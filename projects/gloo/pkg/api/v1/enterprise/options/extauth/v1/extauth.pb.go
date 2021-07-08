@@ -2101,9 +2101,10 @@ type OpaAuthOptions struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// optimize input conversion, but doesn't convert all fields from the check request.
-	// specifically, only http_request and state fields that are scalar, map or string array will be added.
-	// this can reduce latency if you do not need access to the dropped fields in your policy.
+	// Decreases OPA latency by speeding up conversion of input to the OPA engine.
+	// If this is set to true, only http_request and state fields which are a scalar, map, or string array
+	// are included in the request input. All other fields are dropped. Dropped fields will not be evaluated by the OPA engine.
+	// By default, this is set to false and all fields are evaluated by OPA.
 	FastInputConversion bool `protobuf:"varint,1,opt,name=fast_input_conversion,json=fastInputConversion,proto3" json:"fast_input_conversion,omitempty"`
 }
 
