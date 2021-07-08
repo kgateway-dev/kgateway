@@ -476,7 +476,9 @@ var _ = Describe("Translator", func() {
 				It("should translate a gateway to only have its virtual services", func() {
 					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
 						HttpGateway: &v1.HttpGateway{
-							VirtualServiceSelector: labelSet,
+							VirtualServiceSelector: &v1.VirtualServiceSelector {
+								Labels: labelSet,
+							},
 						},
 					}
 
@@ -488,11 +490,35 @@ var _ = Describe("Translator", func() {
 					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 					Expect(listener.VirtualHosts).To(HaveLen(2))
 				})
+				It("should translate a gateway to only have virtual services that match the provided expressions", func() {
+					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
+						HttpGateway: &v1.HttpGateway{
+							VirtualServiceSelector: &v1.VirtualServiceSelector {
+								Expressions: []*v1.VirtualServiceSelector_Expression{
+									{
+										Key:      "a",
+										Operator: v1.VirtualServiceSelector_Expression_In,
+										Values:   []string{"b"},
+									},
+								},
+							},
+						},
+					}
 
+					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+
+					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+					Expect(proxy).NotTo(BeNil())
+					Expect(proxy.Listeners).To(HaveLen(1))
+					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+					Expect(listener.VirtualHosts).To(HaveLen(2))
+				})
 				It("should prevent a gateway from matching virtual services outside its own namespace if so configured", func() {
 					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
 						HttpGateway: &v1.HttpGateway{
-							VirtualServiceSelector:   labelSet,
+							VirtualServiceSelector: &v1.VirtualServiceSelector {
+								Labels: labelSet,
+							},
 							VirtualServiceNamespaces: []string{"gloo-system"},
 						},
 					}

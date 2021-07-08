@@ -94,7 +94,7 @@ message HttpGateway {
     // Select virtual services by their label. If `virtual_service_namespaces` is provided below, this will apply only
     // to virtual services in the namespaces specified.
     // Only one of `virtualServices` or `virtualServiceSelector` should be provided.
-    VirtualServiceSelector virtual_service_selector = 2;
+    VirtualServiceSelector virtual_service_selector = 9;
 
     // The virtual services that compose a gateway are referenced by name via `virtual_services` or by label selector
     // via `virtual_service_selector` on the `HttpGateway` object.
