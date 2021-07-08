@@ -56,6 +56,7 @@ jobs:
         USE_PR_SHA_AS_MASTER: ${{ github.event_name == 'pull_request' && !steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
         PULL_REQUEST_SHA: ${{ github.event.pull_request.head.sha }}
     - name: Deploy to Firebase
+      if: ${{ !steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
       uses: FirebaseExtended/action-hosting-deploy@v0
       with:
         repoToken: ${{ secrets.GITHUB_TOKEN }}
