@@ -47,6 +47,7 @@ weight: 5
 - [SecretKey](#secretkey)
 - [ApiKeySecret](#apikeysecret)
 - [OpaAuth](#opaauth)
+- [OpaAuthOptions](#opaauthoptions)
 - [Ldap](#ldap)
 - [ConnectionPool](#connectionpool)
 - [PassThroughAuth](#passthroughauth)
@@ -912,6 +913,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 ```yaml
 "modules": []core.solo.io.ResourceRef
 "query": string
+"options": .enterprise.gloo.solo.io.OpaAuthOptions
 
 ```
 
@@ -919,6 +921,24 @@ These values will be encoded in a basic auth header in order to authenticate the
 | ----- | ---- | ----------- | 
 | `modules` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | An optional resource reference to config maps containing modules to assist in the resolution of `query`. |
 | `query` | `string` | The query that determines the auth decision. The result of this query must be either a boolean or an array with boolean as the first element. A boolean `true` value means that the request will be authorized. Any other value, or error, means that the request will be denied. |
+| `options` | [.enterprise.gloo.solo.io.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) | Additional Options for Opa Auth configuration. |
+
+
+
+
+---
+### OpaAuthOptions
+
+
+
+```yaml
+"fastInputConversion": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `fastInputConversion` | `bool` | Decreases OPA latency by speeding up conversion of input to the OPA engine. If this is set to true, only http_request and state fields which are a scalar, map, or string array are included in the request input. All other fields are dropped. Dropped fields will not be evaluated by the OPA engine. By default, this is set to false and all fields are evaluated by OPA. |
 
 
 
@@ -1333,6 +1353,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 ```yaml
 "modules": map<string, string>
 "query": string
+"options": .enterprise.gloo.solo.io.OpaAuthOptions
 
 ```
 
@@ -1340,6 +1361,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | ----- | ---- | ----------- | 
 | `modules` | `map<string, string>` | An optional modules (filename, module content) maps containing modules assist in the resolution of `query`. |
 | `query` | `string` | The query that determines the auth decision. The result of this query must be either a boolean or an array with boolean as the first element. A boolean `true` value means that the request will be authorized. Any other value, or error, means that the request will be denied. |
+| `options` | [.enterprise.gloo.solo.io.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) | Additional Options for Opa Auth configuration. |
 
 
 

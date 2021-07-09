@@ -25,7 +25,7 @@ ratelimitBasic:
 ```
 
 - Rate limits can be set for anonymous requests, authorized requests, both, or neither.
-- `authorized_requests` represent the rate limits imposed on requests that are associated with a known user id
+- `authorized_requests` represent the rate limits imposed on requests that are associated with a known user id. Note that this user id is included in the [external auth service's]({{% versioned_link_path fromRoot="/guides/security/auth/extauth" %}}) [AuthorizationResponse]({{% versioned_link_path fromRoot="/guides/dev/writing_auth_plugins/#header-propagation" %}}) in the `UserInfo.UserID` field.
 - `anonymous_requests` represent the rate limits imposed on requests that are not associated with a known user id. In this case, the limit is applied to the request's remote address.
 - `requests_per_unit` takes an integer value
 - `unit` must be one of these strings: `SECOND`, `MINUTE`, `HOUR`, `DAY`
