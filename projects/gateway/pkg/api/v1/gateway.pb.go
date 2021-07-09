@@ -304,17 +304,17 @@ type HttpGateway struct {
 	// If the list is empty, all virtual services in all namespaces that Gloo watches will apply,
 	// with accordance to `ssl` flag on `Gateway` above.
 	// The default namespace matching behavior can be overridden via `virtual_service_namespaces` flag below.
-	// Only one of `virtualServices` or `virtualServiceSelector` should be provided.
+	// Only one of `virtualServices`, `virtualServiceExpressions` or `virtualServiceSelector` should be provided.
 	// If more than one is provided only one will be checked with priority virtualServiceExpressions, virtualServiceSelector, virtualServices
 	VirtualServices []*core.ResourceRef `protobuf:"bytes,1,rep,name=virtual_services,json=virtualServices,proto3" json:"virtual_services,omitempty"`
 	// Select virtual services by their label. If `virtual_service_namespaces` is provided below, this will apply only
 	// to virtual services in the namespaces specified.
-	// Only one of `virtualServices` or `virtualServiceSelector` should be provided.
+	// Only one of `virtualServices`, `virtualServiceExpressions` or `virtualServiceSelector` should be provided.
 	// If more than one is provided only one will be checked with priority virtualServiceExpressions, virtualServiceSelector, virtualServices
 	VirtualServiceSelector map[string]string `protobuf:"bytes,2,rep,name=virtual_service_selector,json=virtualServiceSelector,proto3" json:"virtual_service_selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// Select virtual services using expressions If `virtual_service_namespaces` is provided below, this will apply only
+	// Select virtual services using expressions. If `virtual_service_namespaces` is provided below, this will apply only
 	// to virtual services in the namespaces specified.
-	// Only one of `virtualServices` or `virtualServiceSelector` should be provided.
+	// Only one of `virtualServices`, `virtualServiceExpressions` or `virtualServiceSelector` should be provided.
 	// If more than one is provided only one will be checked with priority virtualServiceExpressions, virtualServiceSelector, virtualServices
 	VirtualServiceExpressions *VirtualServiceSelectorExpressions `protobuf:"bytes,9,opt,name=virtual_service_expressions,json=virtualServiceExpressions,proto3" json:"virtual_service_expressions,omitempty"`
 	// Restrict the search by providing a list of valid search namespaces here.

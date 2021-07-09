@@ -6,22 +6,16 @@ import (
 	"regexp"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/selection"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-
-	"github.com/solo-io/go-utils/hashutils"
-
 	errors "github.com/rotisserie/eris"
-
-	"k8s.io/apimachinery/pkg/labels"
-
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 )
 
 var (
@@ -156,6 +150,7 @@ func getVirtualServicesForGateway(gateway *v1.Gateway, virtualServices v1.Virtua
 		contains, err := GatewayContainsVirtualService(gateway, vs)
 		if err != nil {
 			reports.AddError(gateway, err)
+			continue
 		}
 		if contains {
 			virtualServicesForGateway = append(virtualServicesForGateway, vs)
