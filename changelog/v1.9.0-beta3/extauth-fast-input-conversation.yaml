@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4918
+    resolvesIssue: false
+    description: >
+      Add an ExtAuth config field `opaAuth.options.fastInputConversion` to configure
+      optimized input conversion.

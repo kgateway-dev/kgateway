@@ -1369,6 +1369,44 @@ func (m *OpaAuth) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetOptions(), target.GetOptions()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *OpaAuthOptions) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*OpaAuthOptions)
+	if !ok {
+		that2, ok := that.(OpaAuthOptions)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetFastInputConversion() != target.GetFastInputConversion() {
+		return false
+	}
+
 	return true
 }
 
@@ -2809,6 +2847,16 @@ func (m *ExtAuthConfig_OpaAuthConfig) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetQuery(), target.GetQuery()) != 0 {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetOptions(), target.GetOptions()) {
+			return false
+		}
 	}
 
 	return true

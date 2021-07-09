@@ -618,6 +618,19 @@ spec:
                               type: string
                           type: object
                         type: array
+                      options:
+                        description: Additional Options for Opa Auth configuration.
+                        properties:
+                          fastInputConversion:
+                            description: Decreases OPA latency by speeding up conversion
+                              of input to the OPA engine. If this is set to true,
+                              only http_request and state fields which are a scalar,
+                              map, or string array are included in the request input.
+                              All other fields are dropped. Dropped fields will not
+                              be evaluated by the OPA engine. By default, this is
+                              set to false and all fields are evaluated by OPA.
+                            type: boolean
+                        type: object
                       query:
                         description: The query that determines the auth decision.
                           The result of this query must be either a boolean or an
