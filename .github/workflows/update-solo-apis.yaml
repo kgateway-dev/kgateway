@@ -1,11 +1,6 @@
 name: Update solo-apis
 on:
-  #release:
-  #  types: [created]
-  # small test
   pull_request:
-    branches:
-      - solo-apis-gha
 jobs:
   publish-apis:
     env:
