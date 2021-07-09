@@ -1210,10 +1210,12 @@ spec:
                   description: Select virtual services using expressions If `virtual_service_namespaces`
                     is provided below, this will apply only to virtual services in
                     the namespaces specified. Only one of `virtualServices` or `virtualServiceSelector`
-                    should be provided.
+                    should be provided. If more than one is provided only one will
+                    be checked with priority virtualServiceExpressions, virtualServiceSelector,
+                    virtualServices
                   properties:
                     expressions:
-                      description: Expressions allow for more flexible Route Tables
+                      description: Expressions allow for more flexible virtual service
                         label matching, such as equality-based requirements, set-based
                         requirements, or a combination of both. https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
                       items:
@@ -1256,7 +1258,9 @@ spec:
                   description: Select virtual services by their label. If `virtual_service_namespaces`
                     is provided below, this will apply only to virtual services in
                     the namespaces specified. Only one of `virtualServices` or `virtualServiceSelector`
-                    should be provided.
+                    should be provided. If more than one is provided only one will
+                    be checked with priority virtualServiceExpressions, virtualServiceSelector,
+                    virtualServices
                   type: object
                 virtualServices:
                   description: Names & namespace refs of the virtual services which
@@ -1265,7 +1269,9 @@ spec:
                     apply, with accordance to `ssl` flag on `Gateway` above. The default
                     namespace matching behavior can be overridden via `virtual_service_namespaces`
                     flag below. Only one of `virtualServices` or `virtualServiceSelector`
-                    should be provided.
+                    should be provided. If more than one is provided only one will
+                    be checked with priority virtualServiceExpressions, virtualServiceSelector,
+                    virtualServices
                   items:
                     description: A way to reference resources across namespaces
                     properties:

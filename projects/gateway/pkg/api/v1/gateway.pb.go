@@ -30,7 +30,7 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
-// Route Table Selector expression operator, while the set-based syntax differs from Kubernetes (kubernetes: `key: !mylabel`, gloo: `key: mylabel, operator: "!"` | kubernetes: `key: mylabel`, gloo: `key: mylabel, operator: exists`), the functionality remains the same.
+// Virtual Service Selector expression operator, while the set-based syntax differs from Kubernetes (kubernetes: `key: !mylabel`, gloo: `key: mylabel, operator: "!"` | kubernetes: `key: mylabel`, gloo: `key: mylabel, operator: exists`), the functionality remains the same.
 type VirtualServiceSelectorExpressions_Expression_Operator int32
 
 const (
@@ -305,14 +305,17 @@ type HttpGateway struct {
 	// with accordance to `ssl` flag on `Gateway` above.
 	// The default namespace matching behavior can be overridden via `virtual_service_namespaces` flag below.
 	// Only one of `virtualServices` or `virtualServiceSelector` should be provided.
+	// If more than one is provided only one will be checked with priority virtualServiceExpressions, virtualServiceSelector, virtualServices
 	VirtualServices []*core.ResourceRef `protobuf:"bytes,1,rep,name=virtual_services,json=virtualServices,proto3" json:"virtual_services,omitempty"`
 	// Select virtual services by their label. If `virtual_service_namespaces` is provided below, this will apply only
 	// to virtual services in the namespaces specified.
 	// Only one of `virtualServices` or `virtualServiceSelector` should be provided.
+	// If more than one is provided only one will be checked with priority virtualServiceExpressions, virtualServiceSelector, virtualServices
 	VirtualServiceSelector map[string]string `protobuf:"bytes,2,rep,name=virtual_service_selector,json=virtualServiceSelector,proto3" json:"virtual_service_selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Select virtual services using expressions If `virtual_service_namespaces` is provided below, this will apply only
 	// to virtual services in the namespaces specified.
 	// Only one of `virtualServices` or `virtualServiceSelector` should be provided.
+	// If more than one is provided only one will be checked with priority virtualServiceExpressions, virtualServiceSelector, virtualServices
 	VirtualServiceExpressions *VirtualServiceSelectorExpressions `protobuf:"bytes,9,opt,name=virtual_service_expressions,json=virtualServiceExpressions,proto3" json:"virtual_service_expressions,omitempty"`
 	// Restrict the search by providing a list of valid search namespaces here.
 	// Setting '*' will search all namespaces, equivalent to omitting this value.
@@ -451,7 +454,7 @@ type VirtualServiceSelectorExpressions struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Expressions allow for more flexible Route Tables label matching, such as equality-based requirements, set-based requirements, or a combination of both.
+	// Expressions allow for more flexible virtual service label matching, such as equality-based requirements, set-based requirements, or a combination of both.
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
 	Expressions []*VirtualServiceSelectorExpressions_Expression `protobuf:"bytes,3,rep,name=expressions,proto3" json:"expressions,omitempty"`
 }
