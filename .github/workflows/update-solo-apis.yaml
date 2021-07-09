@@ -7,19 +7,6 @@ jobs:
       RELEASE_TAG_NAME: v1.6.0 # ${{ github.event.release.tag_name }}
       # The LTS branch that was released (ie v1.8.x)
       RELEASE_BRANCH: v1.6.x # ${{ github.event.release.target_commitish }}
-      # The tag to apply after merging the published apis (ie gloo-v1.8.0)
-      SOLO_APIS_RELEASE_TAG_NAME: 'gloo-${{ env.RELEASE_TAG_NAME }}'
-      # The LTS branch in solo-apis that will hold the published apis (ie gloo-v1.8.x)
-      SOLO_APIS_RELEASE_BRANCH: 'gloo-${{ env.RELEASE_BRANCH }}'
-      # The branch that this GHA will commit to.
-      # The structure of this branch name allows the solo-apis repo to generate pull requests
-      # to LTS branches in solo-apis that track gloo and generate corresponding tags
-      # For example, releasing v1.8.0 will create a pull request:
-      #   gloo-v1.8.x <-- sync-apis/gloo-v1.8.x/gloo-v1.8.0
-      SOLO_APIS_SOURCE_BRANCH: 'sync-apis/${{ env.SOLO_APIS_RELEASE_BRANCH }}/${{ env.SOLO_APIS_RELEASE_TAG_NAME }}'
-      # GitHub user details
-      GIT_USER_NAME: soloio-bot
-      GIT_USER_EMAIL: soloio-bot@github.com
     name: Publish Gloo APIs
     runs-on: ubuntu-18.04
     steps:
@@ -64,19 +51,30 @@ jobs:
           path: gloo
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
+        env:
+          # The LTS branch in solo-apis that will hold the published apis (ie gloo-v1.8.x)
+          SOLO_APIS_RELEASE_BRANCH: 'gloo-${{ env.RELEASE_BRANCH }}'
         with:
           repository: solo-io/solo-apis
           path: solo-apis
-          # Ensure that we checkout the solo-apis LTS branch initially (ie gloo-v1.8.x)
-          ref: ${{ env.SOLO_APIS_RELEASE_BRANCH }}
+          ref: ${SOLO_APIS_RELEASE_BRANCH}
       - name: Update solo-apis
+        env:
+          # The branch that this GHA will commit to.
+          # The structure of this branch name allows the solo-apis repo to generate pull requests
+          # to LTS branches in solo-apis that track gloo and generate corresponding tags
+          # For example, releasing v1.8.0 will create a pull request:
+          #   gloo-v1.8.x <-- sync-apis/gloo-v1.8.x/gloo-v1.8.0
+          SOLO_APIS_SOURCE_BRANCH: 'sync-apis/gloo-${{ env.RELEASE_BRANCH }}/gloo-${{ env.RELEASE_TAG_NAME }}'
+          GIT_USER_NAME: soloio-bot
+          GIT_USER_EMAIL: soloio-bot@github.com
         run: |
           cd solo-apis
           make mod-download update-deps; ./hack/sync-gloo-apis.sh; make generate
-          git config --local user.name ${{ env.GIT_USER_NAME }}
-          git config --local user.email ${{ env.GIT_USER_EMAIL }}
+          git config --local user.name ${GIT_USER_NAME}
+          git config --local user.email ${GIT_USER_EMAIL}
           git add .
-          git checkout -B ${{ env.SOLO_APIS_SOURCE_BRANCH }}
+          git checkout -B ${SOLO_APIS_SOURCE_BRANCH}
           git commit -m "Sync Gloo APIs" --allow-empty
           git remote add solo-apis git@github.com:solo-io/solo-apis.git
-          git push solo-apis ${{ env.SOLO_APIS_SOURCE_BRANCH }}
+          git push solo-apis ${SOLO_APIS_SOURCE_BRANCH}
