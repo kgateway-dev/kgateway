@@ -62,21 +62,19 @@ var (
 		return errors.Errorf("virtual host [%s] has unordered regex routes, earlier regex [%s] short-circuited "+
 			"later route [%v]", vh, regex, matcher)
 	}
-	VirtualServiceSelectorExpressionsAndLabelsWarning = errors.New("cannot use both labels and expressions within the " +
-		"same selector")
 
-	VirtualServiceSelectorInvalidExpressionWarning = errors.New("the route table selector expression is invalid")
+	VirtualServiceSelectorInvalidExpressionWarning = errors.New("the virtual service selector expression is invalid")
 	// Map connecting Gloo Virtual Services expression operator values and Kubernetes expression operator string values.
-	VirtualServiceExpressionOperatorValues = map[v1.VirtualServiceSelector_Expression_Operator]selection.Operator{
-		v1.VirtualServiceSelector_Expression_Equals:       selection.Equals,
-		v1.VirtualServiceSelector_Expression_DoubleEquals: selection.DoubleEquals,
-		v1.VirtualServiceSelector_Expression_NotEquals:    selection.NotEquals,
-		v1.VirtualServiceSelector_Expression_In:           selection.In,
-		v1.VirtualServiceSelector_Expression_NotIn:        selection.NotIn,
-		v1.VirtualServiceSelector_Expression_Exists:       selection.Exists,
-		v1.VirtualServiceSelector_Expression_DoesNotExist: selection.DoesNotExist,
-		v1.VirtualServiceSelector_Expression_GreaterThan:  selection.GreaterThan,
-		v1.VirtualServiceSelector_Expression_LessThan:     selection.LessThan,
+	VirtualServiceExpressionOperatorValues = map[v1.VirtualServiceSelectorExpressions_Expression_Operator]selection.Operator{
+		v1.VirtualServiceSelectorExpressions_Expression_Equals:       selection.Equals,
+		v1.VirtualServiceSelectorExpressions_Expression_DoubleEquals: selection.DoubleEquals,
+		v1.VirtualServiceSelectorExpressions_Expression_NotEquals:    selection.NotEquals,
+		v1.VirtualServiceSelectorExpressions_Expression_In:           selection.In,
+		v1.VirtualServiceSelectorExpressions_Expression_NotIn:        selection.NotIn,
+		v1.VirtualServiceSelectorExpressions_Expression_Exists:       selection.Exists,
+		v1.VirtualServiceSelectorExpressions_Expression_DoesNotExist: selection.DoesNotExist,
+		v1.VirtualServiceSelectorExpressions_Expression_GreaterThan:  selection.GreaterThan,
+		v1.VirtualServiceSelectorExpressions_Expression_LessThan:     selection.LessThan,
 	}
 )
 
@@ -176,8 +174,13 @@ func GatewayContainsVirtualService(gateway *v1.Gateway, virtualService *v1.Virtu
 		return false, nil
 	}
 
+	if httpGateway.VirtualServiceExpressions != nil {
+		return virtualServiceValidForSelector(virtualService, httpGateway.GetVirtualServiceExpressions(),
+			httpGateway.VirtualServiceNamespaces)
+	}
 	if httpGateway.VirtualServiceSelector != nil {
-		return VirtualServiceValidForSelector(virtualService, httpGateway.GetVirtualServiceSelector(), httpGateway.VirtualServiceNamespaces)
+		return virtualServiceMatchesLabels(virtualService, httpGateway.GetVirtualServiceSelector(),
+			httpGateway.GetVirtualServiceNamespaces()), nil
 	}
 	// use individual refs to collect virtual services
 	virtualServiceRefs := httpGateway.VirtualServices
@@ -196,24 +199,17 @@ func GatewayContainsVirtualService(gateway *v1.Gateway, virtualService *v1.Virtu
 
 	return false, nil
 }
-
-func VirtualServiceValidForSelector(virtualService *v1.VirtualService, selector *v1.VirtualServiceSelector, virtualServiceNamespaces []string) (bool, error) {
-
+func virtualServiceMatchesLabels(virtualService *v1.VirtualService, validLabels map[string]string, virtualServiceNamespaces []string) bool {
 	vsLabels := labels.Set(virtualService.Metadata.Labels)
 	var labelSelector labels.Selector
 
 	// Check whether labels match (strict equality)
-	if len(selector.Labels) > 0 {
-		// expressions and labels cannot be both specified at the same time
-		if len(selector.Expressions) > 0 {
-			return false, VirtualServiceSelectorExpressionsAndLabelsWarning
-		}
-		labelSelector = labels.SelectorFromSet(selector.Labels)
-		if !labelSelector.Matches(vsLabels) {
-			return false, nil
-		}
-	}
+	labelSelector = labels.SelectorFromSet(validLabels)
+	return labelSelector.Matches(vsLabels) && virtualServiceNamespaceValidForGateway(virtualServiceNamespaces, virtualService)
+}
+func virtualServiceValidForSelector(virtualService *v1.VirtualService, selector *v1.VirtualServiceSelectorExpressions, virtualServiceNamespaces []string) (bool, error) {
 
+	vsLabels := labels.Set(virtualService.Metadata.Labels)
 	// Check whether labels match (expression requirements)
 	if len(selector.Expressions) > 0 {
 		var requirements labels.Requirements

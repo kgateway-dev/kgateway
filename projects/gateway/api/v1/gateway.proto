@@ -94,7 +94,12 @@ message HttpGateway {
     // Select virtual services by their label. If `virtual_service_namespaces` is provided below, this will apply only
     // to virtual services in the namespaces specified.
     // Only one of `virtualServices` or `virtualServiceSelector` should be provided.
-    VirtualServiceSelector virtual_service_selector = 9;
+    map<string, string> virtual_service_selector = 2;
+
+    // Select virtual services using expressions If `virtual_service_namespaces` is provided below, this will apply only
+    // to virtual services in the namespaces specified.
+    // Only one of `virtualServices` or `virtualServiceSelector` should be provided.
+    VirtualServiceSelectorExpressions virtual_service_expressions = 9;
 
     // The virtual services that compose a gateway are referenced by name via `virtual_services` or by label selector
     // via `virtual_service_selector` on the `HttpGateway` object.
@@ -115,16 +120,8 @@ message TcpGateway {
     gloo.solo.io.TcpListenerOptions options = 8;
 
 }
-// Select route tables for delegation by namespace, labels, or both.
-message VirtualServiceSelector {
-
-    // Namespaces to select Virtual Services from. If omitted, Gloo will only select Virtual Services in the same namespace
-    // as the Virtual Service that owns this selector. The reserved value "*" can be used to
-    // select Virtual Services in all namespaces watched by Gloo.
-    repeated string namespaces = 1;
-
-    // Select Virtual Services whose labels match the ones specified here.
-    map<string, string> labels = 2;
+// Expressions to define which virtual services to select
+message VirtualServiceSelectorExpressions {
 
     message Expression {
         // Kubernetes label key, must conform to Kubernetes syntax requirements

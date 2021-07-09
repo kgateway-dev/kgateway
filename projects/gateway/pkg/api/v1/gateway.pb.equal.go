@@ -199,12 +199,23 @@ func (m *HttpGateway) Equal(that interface{}) bool {
 
 	}
 
-	if h, ok := interface{}(m.GetVirtualServiceSelector()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetVirtualServiceSelector()) {
+	if len(m.GetVirtualServiceSelector()) != len(target.GetVirtualServiceSelector()) {
+		return false
+	}
+	for k, v := range m.GetVirtualServiceSelector() {
+
+		if strings.Compare(v, target.GetVirtualServiceSelector()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if h, ok := interface{}(m.GetVirtualServiceExpressions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetVirtualServiceExpressions()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetVirtualServiceSelector(), target.GetVirtualServiceSelector()) {
+		if !proto.Equal(m.GetVirtualServiceExpressions(), target.GetVirtualServiceExpressions()) {
 			return false
 		}
 	}
@@ -285,14 +296,14 @@ func (m *TcpGateway) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *VirtualServiceSelector) Equal(that interface{}) bool {
+func (m *VirtualServiceSelectorExpressions) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*VirtualServiceSelector)
+	target, ok := that.(*VirtualServiceSelectorExpressions)
 	if !ok {
-		that2, ok := that.(VirtualServiceSelector)
+		that2, ok := that.(VirtualServiceSelectorExpressions)
 		if ok {
 			target = &that2
 		} else {
@@ -303,28 +314,6 @@ func (m *VirtualServiceSelector) Equal(that interface{}) bool {
 		return m == nil
 	} else if m == nil {
 		return false
-	}
-
-	if len(m.GetNamespaces()) != len(target.GetNamespaces()) {
-		return false
-	}
-	for idx, v := range m.GetNamespaces() {
-
-		if strings.Compare(v, target.GetNamespaces()[idx]) != 0 {
-			return false
-		}
-
-	}
-
-	if len(m.GetLabels()) != len(target.GetLabels()) {
-		return false
-	}
-	for k, v := range m.GetLabels() {
-
-		if strings.Compare(v, target.GetLabels()[k]) != 0 {
-			return false
-		}
-
 	}
 
 	if len(m.GetExpressions()) != len(target.GetExpressions()) {
@@ -348,14 +337,14 @@ func (m *VirtualServiceSelector) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *VirtualServiceSelector_Expression) Equal(that interface{}) bool {
+func (m *VirtualServiceSelectorExpressions_Expression) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*VirtualServiceSelector_Expression)
+	target, ok := that.(*VirtualServiceSelectorExpressions_Expression)
 	if !ok {
-		that2, ok := that.(VirtualServiceSelector_Expression)
+		that2, ok := that.(VirtualServiceSelectorExpressions_Expression)
 		if ok {
 			target = &that2
 		} else {

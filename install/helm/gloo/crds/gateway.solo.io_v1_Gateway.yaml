@@ -1206,15 +1206,8 @@ spec:
                           type: array
                       type: object
                   type: object
-                virtualServiceNamespaces:
-                  description: Restrict the search by providing a list of valid search
-                    namespaces here. Setting '*' will search all namespaces, equivalent
-                    to omitting this value.
-                  items:
-                    type: string
-                  type: array
-                virtualServiceSelector:
-                  description: Select virtual services by their label. If `virtual_service_namespaces`
+                virtualServiceExpressions:
+                  description: Select virtual services using expressions If `virtual_service_namespaces`
                     is provided below, this will apply only to virtual services in
                     the namespaces specified. Only one of `virtualServices` or `virtualServiceSelector`
                     should be provided.
@@ -1249,21 +1242,21 @@ spec:
                             type: array
                         type: object
                       type: array
-                    labels:
-                      additionalProperties:
-                        type: string
-                      description: Select Virtual Services whose labels match the
-                        ones specified here.
-                      type: object
-                    namespaces:
-                      description: Namespaces to select Virtual Services from. If
-                        omitted, Gloo will only select Virtual Services in the same
-                        namespace as the Virtual Service that owns this selector.
-                        The reserved value "*" can be used to select Virtual Services
-                        in all namespaces watched by Gloo.
-                      items:
-                        type: string
-                      type: array
+                  type: object
+                virtualServiceNamespaces:
+                  description: Restrict the search by providing a list of valid search
+                    namespaces here. Setting '*' will search all namespaces, equivalent
+                    to omitting this value.
+                  items:
+                    type: string
+                  type: array
+                virtualServiceSelector:
+                  additionalProperties:
+                    type: string
+                  description: Select virtual services by their label. If `virtual_service_namespaces`
+                    is provided below, this will apply only to virtual services in
+                    the namespaces specified. Only one of `virtualServices` or `virtualServiceSelector`
+                    should be provided.
                   type: object
                 virtualServices:
                   description: Names & namespace refs of the virtual services which
