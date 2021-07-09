@@ -680,6 +680,17 @@ message OpaAuth {
     // or an array with boolean as the first element. A boolean `true` value means that the request
     // will be authorized. Any other value, or error, means that the request will be denied.
     string query = 2;
+
+    // Additional Options for Opa Auth configuration.
+    OpaAuthOptions options = 3;
+}
+
+message OpaAuthOptions {
+    // Decreases OPA latency by speeding up conversion of input to the OPA engine. 
+    // If this is set to true, only http_request and state fields which are a scalar, map, or string array 
+    // are included in the request input. All other fields are dropped. Dropped fields will not be evaluated by the OPA engine. 
+    // By default, this is set to false and all fields are evaluated by OPA.
+    bool fast_input_conversion = 1;
 }
 
 // Authenticates and authorizes requests by querying an LDAP server. Gloo makes the following assumptions:
@@ -1055,6 +1066,9 @@ message ExtAuthConfig {
         // or an array with boolean as the first element. A boolean `true` value means that the request
         // will be authorized. Any other value, or error, means that the request will be denied.
         string query = 2;
+
+        // Additional Options for Opa Auth configuration.
+        OpaAuthOptions options = 3;
     }
 
     message Config {
