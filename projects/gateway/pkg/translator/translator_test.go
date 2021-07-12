@@ -489,6 +489,29 @@ var _ = Describe("Translator", func() {
 					Expect(listener.VirtualHosts).To(HaveLen(2))
 				})
 				It("should translate a gateway to only have virtual services that match the provided expressions", func() {
+					labelSuperSet := map[string]string{"a":"b", "extraLabel":"andValue"}
+					vs :=  &v1.VirtualService{
+						Metadata: &core.Metadata{Namespace: ns, Name: "name1", Labels: labelSuperSet},
+						VirtualHost: &v1.VirtualHost{
+							Domains: []string{"d4.com"},
+							Routes: []*v1.Route{
+								{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
+											Prefix: "/4",
+										},
+									}},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d4",
+										},
+									},
+								},
+							},
+						},
+					}
+
+					snap.VirtualServices = append(snap.VirtualServices, vs)
 					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
 						HttpGateway: &v1.HttpGateway{
 							VirtualServiceExpressions: &v1.VirtualServiceSelectorExpressions{
@@ -497,6 +520,11 @@ var _ = Describe("Translator", func() {
 										Key:      "a",
 										Operator: v1.VirtualServiceSelectorExpressions_Expression_In,
 										Values:   []string{"b"},
+									},
+									{
+										Key:      "extraLabel",
+										Operator: v1.VirtualServiceSelectorExpressions_Expression_In,
+										Values:   []string{"andValue"},
 									},
 								},
 							},
@@ -509,7 +537,7 @@ var _ = Describe("Translator", func() {
 					Expect(proxy).NotTo(BeNil())
 					Expect(proxy.Listeners).To(HaveLen(1))
 					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-					Expect(listener.VirtualHosts).To(HaveLen(2))
+					Expect(listener.VirtualHosts).To(HaveLen(1))
 				})
 
 				It("should not select using both labels and expressions", func() {
@@ -528,6 +556,9 @@ var _ = Describe("Translator", func() {
 					Expect(proxy).NotTo(BeNil())
 					Expect(proxy.Listeners).To(HaveLen(1))
 					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+					for  _, host := range(listener.VirtualHosts) {
+						print(host.GetMetadata())
+					}
 					Expect(listener.VirtualHosts).To(HaveLen(3))
 				})
 				It("should prevent a gateway from matching virtual services outside its own namespace if so configured", func() {

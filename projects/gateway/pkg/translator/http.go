@@ -3,9 +3,6 @@ package translator
 import (
 	"context"
 	"fmt"
-	"regexp"
-	"strings"
-
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -16,6 +13,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+	"regexp"
+	"strings"
 )
 
 var (
@@ -170,7 +169,7 @@ func GatewayContainsVirtualService(gateway *v1.Gateway, virtualService *v1.Virtu
 	}
 
 	if httpGateway.VirtualServiceExpressions != nil {
-		return virtualServiceValidForSelector(virtualService, httpGateway.GetVirtualServiceExpressions(),
+		return virtualServiceValidForSelectorExpressions(virtualService, httpGateway.GetVirtualServiceExpressions(),
 			httpGateway.VirtualServiceNamespaces)
 	}
 	if httpGateway.VirtualServiceSelector != nil {
@@ -202,7 +201,7 @@ func virtualServiceMatchesLabels(virtualService *v1.VirtualService, validLabels 
 	labelSelector = labels.SelectorFromSet(validLabels)
 	return labelSelector.Matches(vsLabels) && virtualServiceNamespaceValidForGateway(virtualServiceNamespaces, virtualService)
 }
-func virtualServiceValidForSelector(virtualService *v1.VirtualService, selector *v1.VirtualServiceSelectorExpressions, virtualServiceNamespaces []string) (bool, error) {
+func virtualServiceValidForSelectorExpressions(virtualService *v1.VirtualService, selector *v1.VirtualServiceSelectorExpressions, virtualServiceNamespaces []string) (bool, error) {
 
 	vsLabels := labels.Set(virtualService.Metadata.Labels)
 	// Check whether labels match (expression requirements)
