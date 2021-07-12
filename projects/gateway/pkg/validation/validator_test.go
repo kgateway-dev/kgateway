@@ -310,13 +310,37 @@ var _ = Describe("Validator", func() {
 						return
 					}
 					http.HttpGateway.VirtualServiceSelector = map[string]string{"nobody": "hastheselabels"}
-
 				})
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 				proxyReports, err := v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proxyReports).To(HaveLen(0))
+			})
+		})
+		Context("invalid selector expression for virtual service", func() {
+			It("rejects the vs", func() {
+				vc.validateProxy = failProxy
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				snap.Gateways.Each(func(element *gatewayv1.Gateway) {
+					http, ok := element.GatewayType.(*gatewayv1.Gateway_HttpGateway)
+					if !ok {
+						return
+					}
+					http.HttpGateway.VirtualServiceExpressions = &gatewayv1.VirtualServiceSelectorExpressions{
+						Expressions: []*gatewayv1.VirtualServiceSelectorExpressions_Expression{
+							{
+								Key:      "a",
+								Operator: gatewayv1.VirtualServiceSelectorExpressions_Expression_Equals,
+								Values:   []string{"b", "c"},
+							},
+						},
+					}
+				})
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("expression is invalid"))
 			})
 		})
 		Context("virtual service rejected", func() {

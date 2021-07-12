@@ -88,13 +88,21 @@ message HttpGateway {
     // If the list is empty, all virtual services in all namespaces that Gloo watches will apply,
     // with accordance to `ssl` flag on `Gateway` above.
     // The default namespace matching behavior can be overridden via `virtual_service_namespaces` flag below.
-    // Only one of `virtualServices` or `virtualServiceSelector` should be provided.
+    // Only one of `virtualServices`, `virtualServiceExpressions` or `virtualServiceSelector` should be provided.
+    // If more than one is provided only one will be checked with priority virtualServiceExpressions, virtualServiceSelector, virtualServices
     repeated core.solo.io.ResourceRef virtual_services = 1;
 
     // Select virtual services by their label. If `virtual_service_namespaces` is provided below, this will apply only
     // to virtual services in the namespaces specified.
-    // Only one of `virtualServices` or `virtualServiceSelector` should be provided.
+    // Only one of `virtualServices`, `virtualServiceExpressions` or `virtualServiceSelector` should be provided.
+    // If more than one is provided only one will be checked with priority virtualServiceExpressions, virtualServiceSelector, virtualServices
     map<string, string> virtual_service_selector = 2;
+
+    // Select virtual services using expressions. If `virtual_service_namespaces` is provided below, this will apply only
+    // to virtual services in the namespaces specified.
+    // Only one of `virtualServices`, `virtualServiceExpressions` or `virtualServiceSelector` should be provided.
+    // If more than one is provided only one will be checked with priority virtualServiceExpressions, virtualServiceSelector, virtualServices
+    VirtualServiceSelectorExpressions virtual_service_expressions = 9;
 
     // The virtual services that compose a gateway are referenced by name via `virtual_services` or by label selector
     // via `virtual_service_selector` on the `HttpGateway` object.
@@ -113,4 +121,48 @@ message TcpGateway {
     repeated gloo.solo.io.TcpHost tcp_hosts = 1;
     // TCP Gateway configuration
     gloo.solo.io.TcpListenerOptions options = 8;
+
+}
+// Expressions to define which virtual services to select
+// Example:
+// expressions:
+//    - key: domain
+//      operator: in
+//      values: example.com
+message VirtualServiceSelectorExpressions {
+
+    message Expression {
+        // Kubernetes label key, must conform to Kubernetes syntax requirements
+        // https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+        string key = 1;
+
+        // Virtual Service Selector expression operator, while the set-based syntax differs from Kubernetes (kubernetes: `key: !mylabel`, gloo: `key: mylabel, operator: "!"` | kubernetes: `key: mylabel`, gloo: `key: mylabel, operator: exists`), the functionality remains the same.
+        enum Operator {
+            // =
+            Equals = 0;
+            // ==
+            DoubleEquals = 1;
+            // !=
+            NotEquals = 2;
+            // in
+            In = 3;
+            // notin
+            NotIn = 4;
+            // exists
+            Exists = 5;
+            // !
+            DoesNotExist = 6;
+            // gt
+            GreaterThan = 7;
+            // lt
+            LessThan = 8;
+        }
+        // The operator can only be in, notin, =, ==, !=, exists, ! (DoesNotExist), gt (GreaterThan), lt (LessThan).
+        Operator operator = 2;
+        repeated string values = 3;
+    }
+
+    // Expressions allow for more flexible virtual service label matching, such as equality-based requirements, set-based requirements, or a combination of both.
+    // https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
+    repeated Expression expressions = 3;
 }
