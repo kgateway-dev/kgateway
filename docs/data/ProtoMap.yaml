@@ -365,6 +365,9 @@ apis:
   gateway.solo.io.VirtualService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/#VirtualService
     package: gateway.solo.io
+  gateway.solo.io.VirtualServiceSelectorExpressions:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#VirtualServiceSelectorExpressions
+    package: gateway.solo.io
   gloo.solo.io.Artifact:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/artifact.proto.sk/#Artifact
     package: gloo.solo.io
