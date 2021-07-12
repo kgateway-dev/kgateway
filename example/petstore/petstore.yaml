@@ -40,7 +40,8 @@ metadata:
     service: petstore
 spec:
   ports:
-  - port: 8080
+  - name: http
+    port: 8080
     protocol: TCP
   selector:
     app: petstore
