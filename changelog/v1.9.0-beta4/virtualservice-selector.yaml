@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Support specifiying virtual services with expressions similar to the ones used for route tables
+    issueLink: https://github.com/solo-io/gloo/issues/4154

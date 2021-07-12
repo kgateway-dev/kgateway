@@ -6,20 +6,16 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-
-	"github.com/solo-io/go-utils/hashutils"
-
 	errors "github.com/rotisserie/eris"
-
-	"k8s.io/apimachinery/pkg/labels"
-
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 )
 
 var (
@@ -60,6 +56,20 @@ var (
 		return errors.Errorf("virtual host [%s] has unordered regex routes, earlier regex [%s] short-circuited "+
 			"later route [%v]", vh, regex, matcher)
 	}
+
+	VirtualServiceSelectorInvalidExpressionWarning = errors.New("the virtual service selector expression is invalid")
+	// Map connecting Gloo Virtual Services expression operator values and Kubernetes expression operator string values.
+	VirtualServiceExpressionOperatorValues = map[v1.VirtualServiceSelectorExpressions_Expression_Operator]selection.Operator{
+		v1.VirtualServiceSelectorExpressions_Expression_Equals:       selection.Equals,
+		v1.VirtualServiceSelectorExpressions_Expression_DoubleEquals: selection.DoubleEquals,
+		v1.VirtualServiceSelectorExpressions_Expression_NotEquals:    selection.NotEquals,
+		v1.VirtualServiceSelectorExpressions_Expression_In:           selection.In,
+		v1.VirtualServiceSelectorExpressions_Expression_NotIn:        selection.NotIn,
+		v1.VirtualServiceSelectorExpressions_Expression_Exists:       selection.Exists,
+		v1.VirtualServiceSelectorExpressions_Expression_DoesNotExist: selection.DoesNotExist,
+		v1.VirtualServiceSelectorExpressions_Expression_GreaterThan:  selection.GreaterThan,
+		v1.VirtualServiceSelectorExpressions_Expression_LessThan:     selection.LessThan,
+	}
 )
 
 type HttpTranslator struct {
@@ -78,7 +88,7 @@ func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnap
 			continue
 		}
 
-		virtualServices := getVirtualServicesForGateway(gateway, snap.VirtualServices)
+		virtualServices := getVirtualServicesForGateway(gateway, snap.VirtualServices, reports)
 		validateVirtualServiceDomains(gateway, virtualServices, reports)
 		// Merge delegated options into route options
 		// Route options specified on the Route override delegated options
@@ -133,11 +143,16 @@ func validateVirtualServiceDomains(gateway *v1.Gateway, virtualServices v1.Virtu
 	}
 }
 
-func getVirtualServicesForGateway(gateway *v1.Gateway, virtualServices v1.VirtualServiceList) v1.VirtualServiceList {
+func getVirtualServicesForGateway(gateway *v1.Gateway, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports) v1.VirtualServiceList {
 
 	var virtualServicesForGateway v1.VirtualServiceList
 	for _, vs := range virtualServices {
-		if GatewayContainsVirtualService(gateway, vs) {
+		contains, err := GatewayContainsVirtualService(gateway, vs)
+		if err != nil {
+			reports.AddError(gateway, err)
+			continue
+		}
+		if contains {
 			virtualServicesForGateway = append(virtualServicesForGateway, vs)
 		}
 	}
@@ -145,50 +160,75 @@ func getVirtualServicesForGateway(gateway *v1.Gateway, virtualServices v1.Virtua
 	return virtualServicesForGateway
 }
 
-func GatewayContainsVirtualService(gateway *v1.Gateway, virtualService *v1.VirtualService) bool {
+func GatewayContainsVirtualService(gateway *v1.Gateway, virtualService *v1.VirtualService) (bool, error) {
 	httpGateway := gateway.GetHttpGateway()
 	if httpGateway == nil {
-		return false
+		return false, nil
 	}
-
 	if gateway.Ssl != hasSsl(virtualService) {
-		return false
+		return false, nil
 	}
 
-	if len(httpGateway.VirtualServiceSelector) > 0 {
-		// select virtual services by the label selector
-		selector := labels.SelectorFromSet(httpGateway.VirtualServiceSelector)
-
-		vsLabels := labels.Set(virtualService.Metadata.Labels)
-
-		return virtualServiceNamespaceValidForGateway(gateway, virtualService) && selector.Matches(vsLabels)
+	if httpGateway.VirtualServiceExpressions != nil {
+		return virtualServiceValidForSelectorExpressions(virtualService, httpGateway.GetVirtualServiceExpressions(),
+			httpGateway.VirtualServiceNamespaces)
+	}
+	if httpGateway.VirtualServiceSelector != nil {
+		return virtualServiceMatchesLabels(virtualService, httpGateway.GetVirtualServiceSelector(),
+			httpGateway.GetVirtualServiceNamespaces()), nil
 	}
 	// use individual refs to collect virtual services
 	virtualServiceRefs := httpGateway.VirtualServices
 
 	if len(virtualServiceRefs) == 0 {
-		return virtualServiceNamespaceValidForGateway(gateway, virtualService)
+		return virtualServiceNamespaceValidForGateway(httpGateway.GetVirtualServiceNamespaces(), virtualService), nil
 	}
 
 	vsRef := virtualService.Metadata.Ref()
 
 	for _, ref := range virtualServiceRefs {
 		if ref.Equal(vsRef) {
-			return true
+			return true, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
+func virtualServiceMatchesLabels(virtualService *v1.VirtualService, validLabels map[string]string, virtualServiceNamespaces []string) bool {
+	vsLabels := labels.Set(virtualService.Metadata.Labels)
+	var labelSelector labels.Selector
 
-func virtualServiceNamespaceValidForGateway(gateway *v1.Gateway, virtualService *v1.VirtualService) bool {
-	httpGateway := gateway.GetHttpGateway()
-	if httpGateway == nil {
-		return false
+	// Check whether labels match (strict equality)
+	labelSelector = labels.SelectorFromSet(validLabels)
+	return labelSelector.Matches(vsLabels) && virtualServiceNamespaceValidForGateway(virtualServiceNamespaces, virtualService)
+}
+func virtualServiceValidForSelectorExpressions(virtualService *v1.VirtualService, selector *v1.VirtualServiceSelectorExpressions, virtualServiceNamespaces []string) (bool, error) {
+
+	vsLabels := labels.Set(virtualService.Metadata.Labels)
+	// Check whether labels match (expression requirements)
+	if len(selector.Expressions) > 0 {
+		var requirements labels.Requirements
+		for _, expression := range selector.Expressions {
+			r, err := labels.NewRequirement(
+				expression.Key,
+				VirtualServiceExpressionOperatorValues[expression.Operator],
+				expression.Values)
+			if err != nil {
+				return false, errors.Wrap(VirtualServiceSelectorInvalidExpressionWarning, err.Error())
+			}
+			requirements = append(requirements, *r)
+		}
+		if !virtualServiceLabelsMatchesExpressionRequirements(requirements, vsLabels) {
+			return false, nil
+		}
 	}
-
-	if len(httpGateway.VirtualServiceNamespaces) > 0 {
-		for _, ns := range httpGateway.VirtualServiceNamespaces {
+	// check if the namespace is valid
+	nsMatches := virtualServiceNamespaceValidForGateway(virtualServiceNamespaces, virtualService)
+	return nsMatches, nil
+}
+func virtualServiceNamespaceValidForGateway(virtualServiceNamespaces []string, virtualService *v1.VirtualService) bool {
+	if len(virtualServiceNamespaces) > 0 {
+		for _, ns := range virtualServiceNamespaces {
 			if ns == "*" || virtualService.Metadata.Namespace == ns {
 				return true
 			}
@@ -200,6 +240,15 @@ func virtualServiceNamespaceValidForGateway(gateway *v1.Gateway, virtualService 
 	return true
 }
 
+// Asserts that the virtual service labels matches all of the expression requirements (logical AND).
+func virtualServiceLabelsMatchesExpressionRequirements(requirements labels.Requirements, vsLabels labels.Set) bool {
+	for _, r := range requirements {
+		if !r.Matches(vsLabels) {
+			return false
+		}
+	}
+	return true
+}
 func hasSsl(vs *v1.VirtualService) bool {
 	return vs.SslConfig != nil
 }
