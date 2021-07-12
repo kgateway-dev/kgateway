@@ -3,6 +3,9 @@ package translator
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
+
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -13,8 +16,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	"regexp"
-	"strings"
 )
 
 var (

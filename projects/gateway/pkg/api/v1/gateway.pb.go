@@ -449,6 +449,11 @@ func (x *TcpGateway) GetOptions() *v1.TcpListenerOptions {
 }
 
 // Expressions to define which virtual services to select
+// Example:
+// expressions:
+//    - key: domain
+//      operator: in
+//      values: example.com
 type VirtualServiceSelectorExpressions struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

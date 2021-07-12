@@ -115,6 +115,11 @@ and the routing configuration to upstreams that are reachable via a specific por
 
  
 Expressions to define which virtual services to select
+Example:
+expressions:
+   - key: domain
+     operator: in
+     values: example.com
 
 ```yaml
 "expressions": []gateway.solo.io.VirtualServiceSelectorExpressions.Expression
