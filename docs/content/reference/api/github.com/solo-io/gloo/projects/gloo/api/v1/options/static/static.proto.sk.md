@@ -61,6 +61,7 @@ Represents a single instance of an upstream
 "addr": string
 "port": int
 "sniAddr": string
+"loadBalancingWeight": .google.protobuf.UInt32Value
 "healthCheckConfig": .static.options.gloo.solo.io.Host.HealthCheckConfig
 
 ```
@@ -70,6 +71,7 @@ Represents a single instance of an upstream
 | `addr` | `string` | Address (hostname or IP). |
 | `port` | `int` | Port the instance is listening on. |
 | `sniAddr` | `string` | Address to use for SNI if using ssl. |
+| `loadBalancingWeight` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The optional load balancing weight of the upstream host; at least 1. Envoy uses the load balancing weight in some of the built in load balancers. The load balancing weight for an endpoint is divided by the sum of the weights of all endpoints in the endpoint's locality to produce a percentage of traffic for the endpoint. This percentage is then further weighted by the endpoint's locality's load balancing weight from LocalityLbEndpoints. If unspecified, each host is presumed to have equal weight in a locality. |
 | `healthCheckConfig` | [.static.options.gloo.solo.io.Host.HealthCheckConfig](../static.proto.sk/#healthcheckconfig) | (Enterprise Only): Host specific health checking configuration. |
 
 

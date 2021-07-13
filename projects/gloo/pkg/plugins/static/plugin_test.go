@@ -157,6 +157,14 @@ var _ = Describe("Plugin", func() {
 
 	})
 
+	Context("load balancing weight config", func() {
+		It("load balancing weight config gets propagated", func() {
+			upstreamSpec.Hosts[0].LoadBalancingWeight = &wrappers.UInt32Value{Value: 3}
+			p.ProcessUpstream(params, upstream, out)
+			Expect(out.LoadAssignment.Endpoints[0].LbEndpoints[0].LoadBalancingWeight.Value).To(Equal(uint32(3)))
+		})
+
+	})
 	Context("ssl", func() {
 		tlsContext := func() *envoyauth.UpstreamTlsContext {
 			if out.TransportSocket == nil {

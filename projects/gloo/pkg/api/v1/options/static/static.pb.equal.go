@@ -123,6 +123,16 @@ func (m *Host) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetLoadBalancingWeight()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLoadBalancingWeight()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetLoadBalancingWeight(), target.GetLoadBalancingWeight()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetHealthCheckConfig()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetHealthCheckConfig()) {
 			return false

@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      In static upstreams, support specifying `LoadBalancingWeight` on hosts. When the round robin load balancing
+      policy is in place and `LoadBalancingWeight` is provided a weighted round robin load balancing strategy will be used.
+    issueLink: https://github.com/solo-io/gloo/issues/4872

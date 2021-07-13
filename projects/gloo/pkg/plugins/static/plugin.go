@@ -117,8 +117,8 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 						},
 					},
 				},
+				LoadBalancingWeight: host.GetLoadBalancingWeight(),
 			})
-
 	}
 
 	// if host port is 443 or if the user wants it, we will use TLS
