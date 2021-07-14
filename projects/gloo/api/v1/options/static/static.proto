@@ -9,6 +9,7 @@ option (extproto.hash_all) = true;
 
 import "google/protobuf/wrappers.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/service_spec.proto";
+import "validate/validate.proto";
 
 // Static upstreams are used to route request to services listening at fixed IP/Host & Port pairs.
 // Static upstreams can be used to proxy any kind of service, and therefore contain a ServiceSpec
@@ -42,6 +43,16 @@ message Host {
 
     // Address to use for SNI if using ssl.
     string sni_addr = 4;
+
+    // The optional load balancing weight of the upstream host; at least 1.
+    // Envoy uses the load balancing weight in some of the built in load
+    // balancers. The load balancing weight for an endpoint is divided by the sum
+    // of the weights of all endpoints in the endpoint's locality to produce a
+    // percentage of traffic for the endpoint. This percentage is then further
+    // weighted by the endpoint's locality's load balancing weight from
+    // LocalityLbEndpoints. If unspecified, each host is presumed to have equal
+    // weight in a locality.
+    google.protobuf.UInt32Value load_balancing_weight = 5 [(validate.rules).uint32.gte = 1];
 
     message HealthCheckConfig {
         // (Enterprise Only): Path to use when health checking this specific host.
