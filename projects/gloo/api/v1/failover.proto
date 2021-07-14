@@ -7,6 +7,7 @@ option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 import "google/protobuf/wrappers.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
+import "validate/validate.proto";
 
 /*
 
@@ -102,7 +103,7 @@ message LbEndpoint {
     // weighted by the endpoint's locality's load balancing weight from
     // LocalityLbEndpoints. If unspecified, each host is presumed to have equal
     // weight in a locality.
-    google.protobuf.UInt32Value load_balancing_weight = 5;
+    google.protobuf.UInt32Value load_balancing_weight = 5 [(validate.rules).uint32.gte = 1];
 }
 
 // Identifies location of where either Envoy runs or where upstream hosts run.
