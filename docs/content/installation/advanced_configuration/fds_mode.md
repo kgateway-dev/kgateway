@@ -10,7 +10,7 @@ Gloo Edge's **Function Discovery Service** (FDS) attempts to poll endpoints for:
 * gRPC Services with [gRPC Reflection](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md) enabled.
 
 
-The default endpoints evaluated for `swagger` or `OpenAPISepc` docs are:
+The default endpoints evaluated for `swagger` or `OpenAPISpec` docs are:
 
 ```
 "/swagger.json"
