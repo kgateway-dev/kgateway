@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3247
+    resolvesIssue: false
+    description: Ensure proxy reconciliaton does not duplicate virtual hosts
