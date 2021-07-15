@@ -267,7 +267,7 @@ The extracted information can then be referenced in template fields.
 | ----- | ---- | ----------- | 
 | `header` | `string` | Extract information from headers. Only one of `header` or `body` can be set. |
 | `body` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Extract information from the request/response body. Only one of `body` or `header` can be set. |
-| `regex` | `string` | Only strings matching this regular expression will be part of the extraction. The most simple value for this field is '.*', which matches the whole source. The field is required. If extraction fails the result is an empty value. |
+| `regex` | `string` | Only strings matching this regular expression will be part of the extraction. This regex **must match the entire source** in order for a value to be extracted. The most simple value for this field is '.*', which matches the whole source. The field is required. If extraction fails the result is an empty value. |
 | `subgroup` | `int` | If your regex contains capturing groups, use this field to determine which group should be selected. |
 
 
