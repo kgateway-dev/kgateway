@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4769
+    resolvesIssue: false
+    description: Make generated route names more unique to avoid duplicate name errors in the ratelimit plugin.
