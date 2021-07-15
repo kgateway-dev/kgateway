@@ -70,7 +70,7 @@ Gloo Edge discovered that it was a REST service and, using it's function discove
 added the functions it found in the Swagger definition to the upstream.
 
 {{% notice note %}}
-The default endpoints evaluated for `swagger` or `OpenAPISepc` docs are:
+The default endpoints evaluated for `swagger` or `OpenAPISpec` docs are:
 
 ```
 "/swagger.json"
