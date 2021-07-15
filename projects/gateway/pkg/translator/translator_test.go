@@ -1073,7 +1073,7 @@ var _ = Describe("Translator", func() {
 				})
 
 				It("merges the vs and route tables to a single gloov1.VirtualHost", func() {
-					proxy, errs := translator.Translate(context.TODO(), "", ns, snap, snap.Gateways)
+					proxy, errs := translator.Translate(context.TODO(), "proxy1", ns, snap, snap.Gateways)
 					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 					Expect(proxy.Listeners).To(HaveLen(1))
 					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
@@ -1093,7 +1093,7 @@ var _ = Describe("Translator", func() {
 
 					Expect(listener.VirtualHosts[0].Routes).To(Equal([]*gloov1.Route{
 						{
-							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:<unnamed>",
+							Name: "vs:name_proxy1_gloo-system_name1_route:testRouteName_rt:gloo-system_delegate-1_route:<unnamed-0>",
 							Matchers: []*matchers.Matcher{{
 								PathSpecifier: &matchers.Matcher_Prefix{
 									Prefix: "/a/1-upstream",
@@ -1116,7 +1116,7 @@ var _ = Describe("Translator", func() {
 							Options: rootLevelRoutePlugins,
 						},
 						{
-							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:delegate1Route2_rt:delegate-3_route:<unnamed>",
+							Name: "vs:name_proxy1_gloo-system_name1_route:testRouteName_rt:gloo-system_delegate-1_route:delegate1Route2_rt:gloo-system_delegate-3_route:<unnamed-0>",
 							Matchers: []*matchers.Matcher{{
 								PathSpecifier: &matchers.Matcher_Prefix{
 									Prefix: "/a/3-delegate/upstream1",
@@ -1139,7 +1139,7 @@ var _ = Describe("Translator", func() {
 							Options: mergedMidLevelRoutePlugins,
 						},
 						{
-							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:delegate1Route2_rt:delegate-3_route:delegate3Route2",
+							Name: "vs:name_proxy1_gloo-system_name1_route:testRouteName_rt:gloo-system_delegate-1_route:delegate1Route2_rt:gloo-system_delegate-3_route:delegate3Route2",
 							Matchers: []*matchers.Matcher{{
 								PathSpecifier: &matchers.Matcher_Prefix{
 									Prefix: "/a/3-delegate/upstream2",
@@ -1164,7 +1164,7 @@ var _ = Describe("Translator", func() {
 					}))
 					Expect(listener.VirtualHosts[1].Routes).To(Equal([]*gloov1.Route{
 						{
-							Name: "vs:name2_route:<unnamed>_rt:delegate-2_route:delegate2Route1",
+							Name: "vs:name_proxy1_gloo-system_name2_route:<unnamed-0>_rt:gloo-system_delegate-2_route:delegate2Route1",
 							Matchers: []*matchers.Matcher{{
 								PathSpecifier: &matchers.Matcher_Prefix{
 									Prefix: "/b/2-upstream",
