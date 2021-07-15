@@ -226,6 +226,30 @@ extractors:
     subgroup: 2
 ```
 
+Another example shows how to extract a value from the body using a regex.
+If the body is:
+
+```text
+Here is a body containing the identification number of the object.
+
+id: 4423
+```
+and we want to extract the id number, we can define an extractor:
+```yaml
+extractors:
+  # This is the name of the extraction
+  bodyIdExtractor:
+    # This empty struct must be included to extract from the body
+    body: {}
+    # The regex must match the ENTIRE body, else the extraction will not work
+    # The [\s\S]* allows us to match any character, making the regex match the entire source.
+    regex: '[\s\S]*id: ([0-9]{4})[\s\S]*'
+    # Select the first subgroup match ([0-9]{4}) since we only want the id number
+    subgroup: 1
+```
+
+The result will be the `bodyIdExtractor` having value `4423`.
+
 Extracted values can be used in two ways:
 
 - You can reference extractors by their name in template strings, e.g. `{{ my-extractor }}` (or `{{ extraction(my-extractor) }}`, if you are setting `advancedTemplates` to `true`) will render to the value of the `my-extractor` extractor.
