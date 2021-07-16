@@ -7,9 +7,22 @@ option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 
 message SubsetSpec {
-    repeated Selector selectors =1;
+  repeated Selector selectors = 1;
+  FallbackPolicy fallbackPolicy = 2;
+  Subset default_subset = 3;
+  bool single_host_per_subset = 4;
 }
 
 message Selector {
-    repeated string keys = 1;
+  repeated string keys = 1;
+}
+
+message Subset {
+  map<string, string> values = 1;
+}
+
+enum FallbackPolicy {
+  NO_FALLBACK = 0;
+  ANY_ENDPOINT = 1;
+  DEFAULT_SUBSET = 2;
 }

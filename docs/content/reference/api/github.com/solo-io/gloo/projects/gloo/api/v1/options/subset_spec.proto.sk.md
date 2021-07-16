@@ -13,7 +13,15 @@ weight: 5
 
 - [SubsetSpec](#subsetspec)
 - [Selector](#selector)
+- [Subset](#subset)
   
+
+ 
+
+##### Enums:
+
+
+	- [FallbackPolicy](#fallbackpolicy)
 
 
 
@@ -30,12 +38,18 @@ weight: 5
 
 ```yaml
 "selectors": []options.gloo.solo.io.Selector
+"fallbackPolicy": .options.gloo.solo.io.FallbackPolicy
+"defaultSubset": .options.gloo.solo.io.Subset
+"singleHostPerSubset": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `selectors` | [[]options.gloo.solo.io.Selector](../subset_spec.proto.sk/#selector) |  |
+| `fallbackPolicy` | [.options.gloo.solo.io.FallbackPolicy](../subset_spec.proto.sk/#fallbackpolicy) |  |
+| `defaultSubset` | [.options.gloo.solo.io.Subset](../subset_spec.proto.sk/#subset) |  |
+| `singleHostPerSubset` | `bool` |  |
 
 
 
@@ -56,6 +70,33 @@ weight: 5
 
 
 
+
+---
+### Subset
+
+
+
+```yaml
+"values": map<string, string>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `values` | `map<string, string>` |  |
+
+
+
+  
+### FallbackPolicy
+
+Description: 
+
+| Name | Description |
+| ----- | ----------- | 
+| NO_FALLBACK |  |
+| ANY_ENDPOINT |  |
+| DEFAULT_SUBSET |  |
 
 
 <!-- Start of HubSpot Embed Code -->
