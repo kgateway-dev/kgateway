@@ -414,7 +414,9 @@ spec:
                                     regex:
                                       description: Only strings matching this regular
                                         expression will be part of the extraction.
-                                        The most simple value for this field is '.*',
+                                        This regex **must match the entire source**
+                                        in order for a value to be extracted. The
+                                        most simple value for this field is '.*',
                                         which matches the whole source. The field
                                         is required. If extraction fails the result
                                         is an empty value.
@@ -1210,7 +1212,9 @@ spec:
                                     regex:
                                       description: Only strings matching this regular
                                         expression will be part of the extraction.
-                                        The most simple value for this field is '.*',
+                                        This regex **must match the entire source**
+                                        in order for a value to be extracted. The
+                                        most simple value for this field is '.*',
                                         which matches the whole source. The field
                                         is required. If extraction fails the result
                                         is an empty value.
@@ -1613,7 +1617,9 @@ spec:
                                     regex:
                                       description: Only strings matching this regular
                                         expression will be part of the extraction.
-                                        The most simple value for this field is '.*',
+                                        This regex **must match the entire source**
+                                        in order for a value to be extracted. The
+                                        most simple value for this field is '.*',
                                         which matches the whole source. The field
                                         is required. If extraction fails the result
                                         is an empty value.
@@ -1951,7 +1957,9 @@ spec:
                                     regex:
                                       description: Only strings matching this regular
                                         expression will be part of the extraction.
-                                        The most simple value for this field is '.*',
+                                        This regex **must match the entire source**
+                                        in order for a value to be extracted. The
+                                        most simple value for this field is '.*',
                                         which matches the whole source. The field
                                         is required. If extraction fails the result
                                         is an empty value.
