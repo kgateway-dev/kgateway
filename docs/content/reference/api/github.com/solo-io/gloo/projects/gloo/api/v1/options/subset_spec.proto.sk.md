@@ -40,7 +40,6 @@ weight: 5
 "selectors": []options.gloo.solo.io.Selector
 "fallbackPolicy": .options.gloo.solo.io.FallbackPolicy
 "defaultSubset": .options.gloo.solo.io.Subset
-"singleHostPerSubset": bool
 
 ```
 
@@ -49,7 +48,6 @@ weight: 5
 | `selectors` | [[]options.gloo.solo.io.Selector](../subset_spec.proto.sk/#selector) |  |
 | `fallbackPolicy` | [.options.gloo.solo.io.FallbackPolicy](../subset_spec.proto.sk/#fallbackpolicy) |  |
 | `defaultSubset` | [.options.gloo.solo.io.Subset](../subset_spec.proto.sk/#subset) |  |
-| `singleHostPerSubset` | `bool` |  |
 
 
 
@@ -61,12 +59,14 @@ weight: 5
 
 ```yaml
 "keys": []string
+"singleHostPerSubset": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `keys` | `[]string` |  |
+| `singleHostPerSubset` | `bool` |  |
 
 
 

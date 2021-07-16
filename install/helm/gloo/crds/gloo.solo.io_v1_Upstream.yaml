@@ -1328,10 +1328,10 @@ spec:
                             items:
                               type: string
                             type: array
+                          singleHostPerSubset:
+                            type: boolean
                         type: object
                       type: array
-                    singleHostPerSubset:
-                      type: boolean
                   type: object
               type: object
             loadBalancerConfig:

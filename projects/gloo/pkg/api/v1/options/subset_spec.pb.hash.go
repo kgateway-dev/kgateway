@@ -87,11 +87,6 @@ func (m *SubsetSpec) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetSingleHostPerSubset())
-	if err != nil {
-		return 0, err
-	}
-
 	return hasher.Sum64(), nil
 }
 
@@ -114,6 +109,11 @@ func (m *Selector) Hash(hasher hash.Hash64) (uint64, error) {
 			return 0, err
 		}
 
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetSingleHostPerSubset())
+	if err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil

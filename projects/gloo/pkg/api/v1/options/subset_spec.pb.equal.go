@@ -77,10 +77,6 @@ func (m *SubsetSpec) Equal(that interface{}) bool {
 		}
 	}
 
-	if m.GetSingleHostPerSubset() != target.GetSingleHostPerSubset() {
-		return false
-	}
-
 	return true
 }
 
@@ -114,6 +110,10 @@ func (m *Selector) Equal(that interface{}) bool {
 			return false
 		}
 
+	}
+
+	if m.GetSingleHostPerSubset() != target.GetSingleHostPerSubset() {
+		return false
 	}
 
 	return true
