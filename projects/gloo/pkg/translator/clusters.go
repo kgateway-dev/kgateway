@@ -9,6 +9,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
+	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
@@ -20,6 +21,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"go.opencensus.io/trace"
+	_structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 func (t *translatorInstance) computeClusters(
@@ -182,12 +184,27 @@ func createLbConfig(upstream *v1.Upstream) *envoy_config_cluster_v3.Cluster_LbSu
 		return nil
 	}
 
+	var defaultSubset *_struct.Struct
+	if glooSubsetConfig.DefaultSubset != nil {
+		subsetVals := make(map[string]interface{}, len(glooSubsetConfig.DefaultSubset.Values))
+		for k, v := range glooSubsetConfig.DefaultSubset.Values {
+			subsetVals[k] = v
+		}
+		var err error
+		defaultSubset, err = _structpb.NewStruct(subsetVals)
+		if err != nil {
+			return nil
+		}
+	}
+
 	subsetConfig := &envoy_config_cluster_v3.Cluster_LbSubsetConfig{
 		FallbackPolicy: envoy_config_cluster_v3.Cluster_LbSubsetConfig_ANY_ENDPOINT,
+		DefaultSubset:  defaultSubset,
 	}
-	for _, keys := range glooSubsetConfig.GetSelectors() {
+	for _, selector := range glooSubsetConfig.GetSelectors() {
 		subsetConfig.SubsetSelectors = append(subsetConfig.GetSubsetSelectors(), &envoy_config_cluster_v3.Cluster_LbSubsetConfig_LbSubsetSelector{
-			Keys: keys.GetKeys(),
+			Keys:                selector.GetKeys(),
+			SingleHostPerSubset: selector.SingleHostPerSubset,
 		})
 	}
 
