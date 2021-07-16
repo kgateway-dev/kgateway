@@ -302,7 +302,6 @@ var _ = Describe("Route converter", func() {
 			Expect(converted[2].Name).To(Equal("vs:gw1_proxy1_vs-ns_vs1_route:route1_rt:ns_any_route:routeAction1"))
 		})
 
-		// TODO 2
 		It("builds correct route name when the parent route is unnamed", func() {
 			ref := core.ResourceRef{
 				Name:      "any",
