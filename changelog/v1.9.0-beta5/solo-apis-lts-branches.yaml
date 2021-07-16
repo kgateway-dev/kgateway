@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4836
+    resolvesIssue: false
+    description: Introduce GHA to support tracking Gloo API in LTS branches of solo-apis
