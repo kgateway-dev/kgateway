@@ -205,10 +205,11 @@ The `body` extraction source has been introduced with **Gloo Edge**, release 0.2
 
 Extracting the body is generally not useful when Gloo Edge has already parsed it as JSON, the default behavior. The parsed body data can be directly referenced using standard JSON syntax. The `body` extractor treats the body as plaintext, and is interpreted using a regular expression as noted below. This can be useful for body data that cannot be parsed as JSON.
 
-An extraction must also define which information is to be extracted from the source. This can be done by providing a regular expression via the `regex` attribute. The regular expression will be applied to the body or to the value of relevant header. If your regular expression uses _capturing groups_, you can select the group match you want to use via the `subgroup` attribute.
+An extraction must also define which information is to be extracted from the source. This can be done by providing a regular expression via the `regex` attribute. The regular expression will be applied to the body or to the value of relevant header and must match the entire source. If your regular expression uses _capturing groups_, you can select the group match you want to use via the `subgroup` attribute.
 
 {{% notice note %}}
 The `regex` attribute is required when specifying an extraction. Even if a `regex` attribute is not required to capture a subset of the source information, you must still specify a catch-all pattern like `regex: '.*'`. If no `regex` is specified, the extractor will silently fail.
+The `regex` **must match the entire source** even if you are looking to extract a subset of the source information in a capturing group. If the regex doesn't match the entire input, the regex will silently fail.
 {{% /notice %}}
 
 As an example, to define an extraction named `foo` which will contain the value of the `foo` query parameter you can apply the following configuration:
@@ -224,6 +225,30 @@ extractors:
     # Select the second group match
     subgroup: 2
 ```
+
+Another example shows how to extract a value from the body using a regex.
+If the body is:
+
+```text
+Here is a body containing the identification number of the object.
+
+id: 4423
+```
+and we want to extract the id number, we can define an extractor:
+```yaml
+extractors:
+  # This is the name of the extraction
+  bodyIdExtractor:
+    # This empty struct must be included to extract from the body
+    body: {}
+    # The regex must match the ENTIRE body, else the extraction will not work
+    # The [\s\S]* allows us to match any character, making the regex match the entire source.
+    regex: '[\s\S]*id: ([0-9]{4})[\s\S]*'
+    # Select the first subgroup match ([0-9]{4}) since we only want the id number
+    subgroup: 1
+```
+
+The result will be the `bodyIdExtractor` having value `4423`.
 
 Extracted values can be used in two ways:
 

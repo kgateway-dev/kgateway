@@ -529,7 +529,8 @@ type Extraction struct {
 	//	*Extraction_Body
 	Source isExtraction_Source `protobuf_oneof:"source"`
 	// Only strings matching this regular expression will be part of the
-	// extraction. The most simple value for this field is '.*', which matches the
+	// extraction. This regex **must match the entire source** in order for a value to be extracted.
+	// The most simple value for this field is '.*', which matches the
 	// whole source. The field is required. If extraction fails the result is an
 	// empty value.
 	Regex string `protobuf:"bytes,2,opt,name=regex,proto3" json:"regex,omitempty"`
