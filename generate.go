@@ -50,6 +50,7 @@ func main() {
 		ValidationSchemaOptions: &schemagen.ValidationSchemaOptions{
 			CrdDirectory:   "install/helm/gloo/crds",
 			JsonSchemaTool: "protoc",
+			MaxDescriptionCharacters: 20,
 		},
 	}
 	if err := cmd.Generate(generateOptions); err != nil {
