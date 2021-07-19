@@ -198,7 +198,7 @@ func createLbConfig(upstream *v1.Upstream) *envoy_config_cluster_v3.Cluster_LbSu
 	}
 
 	subsetConfig := &envoy_config_cluster_v3.Cluster_LbSubsetConfig{
-		FallbackPolicy: envoy_config_cluster_v3.Cluster_LbSubsetConfig_ANY_ENDPOINT,
+		FallbackPolicy: envoy_config_cluster_v3.Cluster_LbSubsetConfig_LbSubsetFallbackPolicy(glooSubsetConfig.FallbackPolicy),
 		DefaultSubset:  defaultSubset,
 	}
 	for _, selector := range glooSubsetConfig.GetSelectors() {
