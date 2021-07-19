@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5024
+    description: Extend SubsetSpec to include Envoy options fallbackPolicy, defaultSubset, single_host_per_subset
