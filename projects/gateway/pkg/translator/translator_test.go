@@ -1301,6 +1301,324 @@ var _ = Describe("Translator", func() {
 			})
 
 		})
+
+		Context("generating unique route names", func() {
+			BeforeEach(func() {
+				translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}}, Opts{})
+			})
+
+			It("should generate unique names for multiple gateways", func() {
+				snap = &v1.ApiSnapshot{
+					Gateways: v1.GatewayList{
+						{
+							Metadata: &core.Metadata{Namespace: ns, Name: "gw1"},
+							BindPort: 1111,
+							GatewayType: &v1.Gateway_HttpGateway{
+								HttpGateway: &v1.HttpGateway{},
+							},
+						},
+						{
+							Metadata: &core.Metadata{Namespace: ns, Name: "gw2"},
+							BindPort: 2222,
+							GatewayType: &v1.Gateway_HttpGateway{
+								HttpGateway: &v1.HttpGateway{},
+							},
+						},
+					},
+					VirtualServices: v1.VirtualServiceList{
+						{
+							Metadata: &core.Metadata{Namespace: ns, Name: "vs1"},
+							VirtualHost: &v1.VirtualHost{
+								Domains: []string{"*"},
+								Routes: []*v1.Route{
+									{
+										Name: "route1",
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
+												Prefix: "/a",
+											},
+										}},
+										Action: &v1.Route_RouteAction{
+											RouteAction: &gloov1.RouteAction{
+												Destination: &gloov1.RouteAction_Single{
+													Single: &gloov1.Destination{
+														DestinationType: &gloov1.Destination_Upstream{
+															Upstream: &core.ResourceRef{
+																Name:      "my-upstream-1",
+																Namespace: ns,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				proxy, errs := translator.Translate(context.Background(), "proxy123", ns, snap, snap.Gateways)
+
+				Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+				Expect(proxy.Listeners).To(HaveLen(2))
+				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+				Expect(listener.VirtualHosts).To(HaveLen(1))
+				Expect(listener.VirtualHosts[0].Routes).To(HaveLen(1))
+				Expect(listener.VirtualHosts[0].Routes[0].Name).To(Equal("vs:gw1_proxy123_gloo-system_vs1_route:route1"))
+				listener = proxy.Listeners[1].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+				Expect(listener.VirtualHosts).To(HaveLen(1))
+				Expect(listener.VirtualHosts[0].Routes).To(HaveLen(1))
+				Expect(listener.VirtualHosts[0].Routes[0].Name).To(Equal("vs:gw2_proxy123_gloo-system_vs1_route:route1"))
+			})
+
+			It("should generate unique names for multiple proxies", func() {
+				snap = &v1.ApiSnapshot{
+					Gateways: v1.GatewayList{
+						{
+							Metadata: &core.Metadata{Namespace: ns, Name: "gw1"},
+							GatewayType: &v1.Gateway_HttpGateway{
+								HttpGateway: &v1.HttpGateway{},
+							},
+						},
+					},
+					VirtualServices: v1.VirtualServiceList{
+						{
+							Metadata: &core.Metadata{Namespace: ns, Name: "vs1"},
+							VirtualHost: &v1.VirtualHost{
+								Domains: []string{"*"},
+								Routes: []*v1.Route{
+									{
+										Name: "route1",
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
+												Prefix: "/a",
+											},
+										}},
+										Action: &v1.Route_RouteAction{
+											RouteAction: &gloov1.RouteAction{
+												Destination: &gloov1.RouteAction_Single{
+													Single: &gloov1.Destination{
+														DestinationType: &gloov1.Destination_Upstream{
+															Upstream: &core.ResourceRef{
+																Name:      "my-upstream-1",
+																Namespace: ns,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				proxy, errs := translator.Translate(context.Background(), "proxy123", ns, snap, snap.Gateways)
+				Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+				Expect(proxy.Listeners).To(HaveLen(1))
+				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+				Expect(listener.VirtualHosts).To(HaveLen(1))
+				Expect(listener.VirtualHosts[0].Routes).To(HaveLen(1))
+				Expect(listener.VirtualHosts[0].Routes[0].Name).To(Equal("vs:gw1_proxy123_gloo-system_vs1_route:route1"))
+
+				proxy, errs = translator.Translate(context.Background(), "proxy456", ns, snap, snap.Gateways)
+				Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+				Expect(proxy.Listeners).To(HaveLen(1))
+				listener = proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+				Expect(listener.VirtualHosts).To(HaveLen(1))
+				Expect(listener.VirtualHosts[0].Routes).To(HaveLen(1))
+				Expect(listener.VirtualHosts[0].Routes[0].Name).To(Equal("vs:gw1_proxy456_gloo-system_vs1_route:route1"))
+			})
+
+			It("should generate unique names for virtual services in different namespaces", func() {
+				snap = &v1.ApiSnapshot{
+					Gateways: v1.GatewayList{
+						{
+							Metadata: &core.Metadata{Namespace: ns, Name: "gw1"},
+							GatewayType: &v1.Gateway_HttpGateway{
+								HttpGateway: &v1.HttpGateway{},
+							},
+						},
+					},
+					VirtualServices: v1.VirtualServiceList{
+						{
+							Metadata: &core.Metadata{Namespace: ns, Name: "vs1"},
+							VirtualHost: &v1.VirtualHost{
+								Domains: []string{"vs1.example.com"},
+								Routes: []*v1.Route{
+									{
+										Name: "route1",
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
+												Prefix: "/a",
+											},
+										}},
+										Action: &v1.Route_RouteAction{
+											RouteAction: &gloov1.RouteAction{
+												Destination: &gloov1.RouteAction_Single{
+													Single: &gloov1.Destination{
+														DestinationType: &gloov1.Destination_Upstream{
+															Upstream: &core.ResourceRef{
+																Name:      "my-upstream-1",
+																Namespace: ns,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Metadata: &core.Metadata{Namespace: ns2, Name: "vs1"},
+							VirtualHost: &v1.VirtualHost{
+								Domains: []string{"vs2.example.com"},
+								Routes: []*v1.Route{
+									{
+										Name: "route1",
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
+												Prefix: "/a",
+											},
+										}},
+										Action: &v1.Route_RouteAction{
+											RouteAction: &gloov1.RouteAction{
+												Destination: &gloov1.RouteAction_Single{
+													Single: &gloov1.Destination{
+														DestinationType: &gloov1.Destination_Upstream{
+															Upstream: &core.ResourceRef{
+																Name:      "my-upstream-1",
+																Namespace: ns,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				proxy, errs := translator.Translate(context.Background(), "proxy123", ns, snap, snap.Gateways)
+
+				Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+				Expect(proxy.Listeners).To(HaveLen(1))
+				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+				Expect(listener.VirtualHosts).To(HaveLen(2))
+				Expect(listener.VirtualHosts[0].Routes).To(HaveLen(1))
+				Expect(listener.VirtualHosts[0].Routes[0].Name).To(Equal("vs:gw1_proxy123_gloo-system_vs1_route:route1"))
+				Expect(listener.VirtualHosts[1].Routes).To(HaveLen(1))
+				Expect(listener.VirtualHosts[1].Routes[0].Name).To(Equal("vs:gw1_proxy123_gloo-system2_vs1_route:route1"))
+			})
+
+			It("should generate unique names for multiple unnamed routes", func() {
+				snap = &v1.ApiSnapshot{
+					Gateways: v1.GatewayList{
+						{
+							Metadata: &core.Metadata{Namespace: ns, Name: "gw1"},
+							GatewayType: &v1.Gateway_HttpGateway{
+								HttpGateway: &v1.HttpGateway{},
+							},
+						},
+					},
+					VirtualServices: v1.VirtualServiceList{
+						{
+							Metadata: &core.Metadata{Namespace: ns, Name: "vs1"},
+							VirtualHost: &v1.VirtualHost{
+								Domains: []string{"*"},
+								Routes: []*v1.Route{
+									{
+										Name: "route1",
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
+												Prefix: "/a",
+											},
+										}},
+										Action: &v1.Route_DelegateAction{
+											DelegateAction: &v1.DelegateAction{
+												DelegationType: &v1.DelegateAction_Ref{
+													Ref: &core.ResourceRef{
+														Name:      "rt1",
+														Namespace: ns,
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					RouteTables: []*v1.RouteTable{
+						{
+							Metadata: &core.Metadata{
+								Name:      "rt1",
+								Namespace: ns,
+							},
+							Routes: []*v1.Route{
+								{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
+											Prefix: "/a/1",
+										},
+									}},
+									Action: &v1.Route_RouteAction{
+										RouteAction: &gloov1.RouteAction{
+											Destination: &gloov1.RouteAction_Single{
+												Single: &gloov1.Destination{
+													DestinationType: &gloov1.Destination_Upstream{
+														Upstream: &core.ResourceRef{
+															Name:      "my-upstream-1",
+															Namespace: ns,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+								{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
+											Prefix: "/a/2",
+										},
+									}},
+									Action: &v1.Route_RouteAction{
+										RouteAction: &gloov1.RouteAction{
+											Destination: &gloov1.RouteAction_Single{
+												Single: &gloov1.Destination{
+													DestinationType: &gloov1.Destination_Upstream{
+														Upstream: &core.ResourceRef{
+															Name:      "my-upstream-2",
+															Namespace: ns,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				proxy, errs := translator.Translate(context.Background(), "proxy123", ns, snap, snap.Gateways)
+
+				Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+				Expect(proxy.Listeners).To(HaveLen(1))
+				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+				Expect(listener.VirtualHosts).To(HaveLen(1))
+				Expect(listener.VirtualHosts[0].Routes).To(HaveLen(2))
+				Expect(listener.VirtualHosts[0].Routes[0].Name).To(Equal("vs:gw1_proxy123_gloo-system_vs1_route:route1_rt:gloo-system_rt1_route:<unnamed-0>"))
+				Expect(listener.VirtualHosts[0].Routes[1].Name).To(Equal("vs:gw1_proxy123_gloo-system_vs1_route:route1_rt:gloo-system_rt1_route:<unnamed-1>"))
+			})
+		})
 	})
 
 	Context("tcp", func() {
