@@ -20,22 +20,17 @@ spec:
     openAPIV3Schema:
       properties:
         spec:
-          description: This is the user-fac...
           properties:
             booleanExpr:
-              description: How to handle proces...
               nullable: true
               type: string
             configs:
-              description: List of auth configs...
               items:
                 properties:
                   apiKeyAuth:
                     properties:
                       apiKeySecretRefs:
-                        description: A way to directly re...
                         items:
-                          description: A way to reference r...
                           properties:
                             name:
                               type: string
@@ -44,24 +39,19 @@ spec:
                           type: object
                         type: array
                       headerName:
-                        description: When receiving a req...
                         type: string
                       headersFromMetadata:
                         additionalProperties:
                           properties:
                             name:
-                              description: (Required) The key o...
                               type: string
                             required:
-                              description: If this field is set...
                               type: boolean
                           type: object
-                        description: API key secrets migh...
                         type: object
                       labelSelector:
                         additionalProperties:
                           type: string
-                        description: Identify all valid A...
                         type: object
                     type: object
                   basicAuth:
@@ -82,64 +72,50 @@ spec:
                         type: string
                     type: object
                   jwt:
-                    description: This is a "dummy" ex...
                     maxProperties: 0
                     type: object
                   ldap:
                     properties:
                       address:
-                        description: Address of the LDAP ...
                         type: string
                       allowedGroups:
-                        description: In order for the req...
                         items:
                           type: string
                         type: array
                       membershipAttributeName:
-                        description: Case-insensitive nam...
                         type: string
                       pool:
-                        description: Use this property to...
                         properties:
                           initialSize:
-                            description: Number of connection...
                             maximum: 4294967295
                             minimum: 0
                             nullable: true
                             type: integer
                           maxSize:
-                            description: Maximum number conne...
                             maximum: 4294967295
                             minimum: 0
                             nullable: true
                             type: integer
                         type: object
                       userDnTemplate:
-                        description: Template to build us...
                         type: string
                     type: object
                   name:
-                    description: 'optional: used when ...'
                     nullable: true
                     type: string
                   oauth:
                     properties:
                       appUrl:
-                        description: we to redirect after...
                         type: string
                       authEndpointQueryParams:
                         additionalProperties:
                           type: string
-                        description: extra query paramete...
                         type: object
                       callbackPath:
-                        description: a callback path rela...
                         type: string
                       clientId:
-                        description: your client id as re...
                         type: string
                       clientSecretRef:
-                        description: your client secret a...
                         properties:
                           name:
                             type: string
@@ -147,10 +123,8 @@ spec:
                             type: string
                         type: object
                       issuerUrl:
-                        description: The url of the issue...
                         type: string
                       scopes:
-                        description: Scopes to request in...
                         items:
                           type: string
                         type: array
@@ -158,19 +132,14 @@ spec:
                   oauth2:
                     properties:
                       accessTokenValidation:
-                        description: provide the access t...
                         properties:
                           cacheTimeout:
-                            description: How long the token i...
                             type: string
                           introspection:
-                            description: Defines how (opaque)...
                             properties:
                               clientId:
-                                description: Your client id as re...
                                 type: string
                               clientSecretRef:
-                                description: Your client secret a...
                                 properties:
                                   name:
                                     type: string
@@ -178,41 +147,30 @@ spec:
                                     type: string
                                 type: object
                               introspectionUrl:
-                                description: The URL for the [OAu...
                                 type: string
                               userIdAttributeName:
-                                description: The name of the [int...
                                 type: string
                             type: object
                           introspectionUrl:
-                            description: The URL for the [OAu...
                             type: string
                           jwt:
-                            description: Validate access toke...
                             properties:
                               issuer:
-                                description: Allow only tokens th...
                                 type: string
                               localJwks:
-                                description: Loads the JWKS from ...
                                 properties:
                                   inlineString:
-                                    description: JWKS is embedded as ...
                                     type: string
                                 type: object
                               remoteJwks:
-                                description: Fetches the JWKS fro...
                                 properties:
                                   refreshInterval:
-                                    description: The frequency at whi...
                                     type: string
                                   url:
-                                    description: The HTTP URI to fetc...
                                     type: string
                                 type: object
                             type: object
                           requiredScopes:
-                            description: Require access token...
                             properties:
                               scope:
                                 items:
@@ -220,31 +178,23 @@ spec:
                                 type: array
                             type: object
                           userinfoUrl:
-                            description: The URL for the OIDC...
                             type: string
                         type: object
                       oidcAuthorizationCode:
-                        description: provide issuer locat...
                         properties:
                           afterLogoutUrl:
-                            description: url to redirect to a...
                             type: string
                           appUrl:
-                            description: where to redirect af...
                             type: string
                           authEndpointQueryParams:
                             additionalProperties:
                               type: string
-                            description: extra query paramete...
                             type: object
                           callbackPath:
-                            description: a callback path rela...
                             type: string
                           clientId:
-                            description: your client id as re...
                             type: string
                           clientSecretRef:
-                            description: your client secret a...
                             properties:
                               name:
                                 type: string
@@ -252,163 +202,122 @@ spec:
                                 type: string
                             type: object
                           discoveryOverride:
-                            description: OIDC configuration i...
                             properties:
                               authEndpoint:
-                                description: url of the provider ...
                                 type: string
                               authMethods:
-                                description: list of client authe...
                                 items:
                                   type: string
                                 type: array
                               claims:
-                                description: list of claim types ...
                                 items:
                                   type: string
                                 type: array
                               idTokenAlgs:
-                                description: list of json web sig...
                                 items:
                                   type: string
                                 type: array
                               jwksUri:
-                                description: url of the provider ...
                                 type: string
                               responseTypes:
-                                description: list of response typ...
                                 items:
                                   type: string
                                 type: array
                               scopes:
-                                description: list of scope values...
                                 items:
                                   type: string
                                 type: array
                               subjects:
-                                description: list of subject iden...
                                 items:
                                   type: string
                                 type: array
                               tokenEndpoint:
-                                description: url of the provider ...
                                 type: string
                             type: object
                           discoveryPollInterval:
-                            description: The interval at whic...
                             type: string
                           headers:
-                            description: Configures headers a...
                             properties:
                               accessTokenHeader:
-                                description: If set, the access t...
                                 type: string
                               idTokenHeader:
-                                description: If set, the id token...
                                 type: string
                             type: object
                           issuerUrl:
-                            description: The url of the issue...
                             type: string
                           jwksCacheRefreshPolicy:
-                            description: If a user executes a...
                             properties:
                               always:
-                                description: If a key is not in t...
                                 maxProperties: 0
                                 type: object
                               maxIdpReqPerPollingInterval:
-                                description: If a key is not in t...
                                 format: int32
                                 type: integer
                               never:
-                                description: Never refresh the lo...
                                 maxProperties: 0
                                 type: object
                             type: object
                           logoutPath:
-                            description: a path relative to a...
                             type: string
                           scopes:
-                            description: Scopes to request in...
                             items:
                               type: string
                             type: array
                           session:
-                            description: Configuration relate...
                             properties:
                               cookie:
-                                description: Set the tokens in th...
                                 type: object
                               cookieOptions:
-                                description: Set-Cookie options
                                 properties:
                                   domain:
-                                    description: Cookie domain
                                     type: string
                                   maxAge:
-                                    description: Max age for the cook...
                                     maximum: 4294967295
                                     minimum: 0
                                     nullable: true
                                     type: integer
                                   notSecure:
-                                    description: Use a non-secure coo...
                                     type: boolean
                                   path:
-                                    description: Path of the cookie. ...
                                     nullable: true
                                     type: string
                                 type: object
                               failOnFetchFailure:
-                                description: should we fail auth ...
                                 type: boolean
                               redis:
-                                description: Use redis to store t...
                                 properties:
                                   allowRefreshing:
-                                    description: When set, refresh ex...
                                     nullable: true
                                     type: boolean
                                   cookieName:
-                                    description: Cookie name to set a...
                                     type: string
                                   keyPrefix:
-                                    description: Key prefix inside re...
                                     type: string
                                   options:
-                                    description: Options to connect t...
                                     properties:
                                       db:
-                                        description: db to use. can leave...
                                         format: int32
                                         type: integer
                                       host:
-                                        description: address of the redis...
                                         type: string
                                       poolSize:
-                                        description: size of the connecti...
                                         format: int32
                                         type: integer
                                     type: object
                                 type: object
                             type: object
                           sessionIdHeaderName:
-                            description: If set, the randomly...
                             type: string
                           tokenEndpointQueryParams:
                             additionalProperties:
                               type: string
-                            description: extra query paramete...
                             type: object
                         type: object
                     type: object
                   opaAuth:
                     properties:
                       modules:
-                        description: An optional resource...
                         items:
-                          description: A way to reference r...
                           properties:
                             name:
                               type: string
@@ -417,29 +326,23 @@ spec:
                           type: object
                         type: array
                       options:
-                        description: Additional Options f...
                         properties:
                           fastInputConversion:
-                            description: Decreases OPA latenc...
                             type: boolean
                         type: object
                       query:
-                        description: The query that deter...
                         type: string
                     type: object
                   passThroughAuth:
                     properties:
                       config:
-                        description: Custom config to be ...
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
                       grpc:
                         properties:
                           address:
-                            description: Address of the auth ...
                             type: string
                           connectionTimeout:
-                            description: Timeout for the auth...
                             type: string
                         type: object
                     type: object
@@ -449,24 +352,19 @@ spec:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
                       exportedSymbolName:
-                        description: Name of the exported...
                         type: string
                       name:
-                        description: Name of the plugin
                         type: string
                       pluginFileName:
-                        description: Name of the compiled...
                         type: string
                     type: object
                 type: object
               type: array
             status:
-              description: Status indicates the...
               type: object
               x-kubernetes-preserve-unknown-fields: true
           type: object
         status:
-          description: Status indicates the...
           type: object
           x-kubernetes-preserve-unknown-fields: true
       type: object

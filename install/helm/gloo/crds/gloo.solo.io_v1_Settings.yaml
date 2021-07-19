@@ -21,68 +21,49 @@ spec:
     openAPIV3Schema:
       properties:
         spec:
-          description: Represents global se...
           properties:
             consul:
-              description: Options to configure...
               properties:
                 address:
-                  description: 'Deprecated: prefer h...'
                   type: string
                 caFile:
-                  description: caFile is the option...
                   type: string
                 caPath:
-                  description: caPath is the option...
                   type: string
                 certFile:
-                  description: CertFile is the opti...
                   type: string
                 datacenter:
-                  description: Datacenter to use. I...
                   type: string
                 dnsAddress:
-                  description: The address of the D...
                   type: string
                 dnsPollingInterval:
-                  description: The polling interval...
                   type: string
                 httpAddress:
-                  description: The address of the C...
                   type: string
                 insecureSkipVerify:
-                  description: InsecureSkipVerify i...
                   nullable: true
                   type: boolean
                 keyFile:
-                  description: KeyFile is the optio...
                   type: string
                 password:
-                  description: Password to use for ...
                   type: string
                 serviceDiscovery:
-                  description: Enable Service Disco...
                   properties:
                     dataCenters:
-                      description: Use this parameter t...
                       items:
                         type: string
                       type: array
                   type: object
                 token:
-                  description: Token is used to pro...
                   type: string
                 username:
-                  description: Username to use for ...
                   type: string
                 waitTime:
-                  description: WaitTime limits how ...
                   type: string
               type: object
             consulDiscovery:
               properties:
                 rootCa:
-                  description: The reference for th...
                   properties:
                     name:
                       type: string
@@ -90,29 +71,23 @@ spec:
                       type: string
                   type: object
                 splitTlsServices:
-                  description: If true, then create...
                   type: boolean
                 tlsTagName:
-                  description: The tag that gloo sh...
                   type: string
                 useTlsTagging:
-                  description: If true, then gloo w...
                   type: boolean
               type: object
             consulKvArtifactSource:
               properties:
                 rootKey:
-                  description: all keys stored in C...
                   type: string
               type: object
             consulKvSource:
               properties:
                 rootKey:
-                  description: all keys stored in C...
                   type: string
               type: object
             devMode:
-              description: Enable serving debug...
               type: boolean
             directoryArtifactSource:
               properties:
@@ -130,7 +105,6 @@ spec:
                   type: string
               type: object
             discovery:
-              description: Options for configur...
               properties:
                 fdsMode:
                   enum:
@@ -140,16 +114,12 @@ spec:
                   type: string
               type: object
             discoveryNamespace:
-              description: This is the namespac...
               type: string
             extauth:
-              description: 'Enterprise-only: Ext...'
               properties:
                 clearRouteCache:
-                  description: Clears route cache i...
                   type: boolean
                 extauthzServerRef:
-                  description: The upstream to ask ...
                   properties:
                     name:
                       type: string
@@ -157,76 +127,59 @@ spec:
                       type: string
                   type: object
                 failureModeAllow:
-                  description: In case of a failure...
                   type: boolean
                 httpService:
-                  description: If this is set, comm...
                   properties:
                     pathPrefix:
-                      description: Sets a prefix to the...
                       type: string
                     request:
                       properties:
                         allowedHeaders:
-                          description: These headers will b...
                           items:
                             type: string
                           type: array
                         headersToAdd:
                           additionalProperties:
                             type: string
-                          description: These headers that w...
                           type: object
                       type: object
                     response:
                       properties:
                         allowedClientHeaders:
-                          description: When this. is set, a...
                           items:
                             type: string
                           type: array
                         allowedUpstreamHeaders:
-                          description: When this is set, au...
                           items:
                             type: string
                           type: array
                       type: object
                   type: object
                 requestBody:
-                  description: Set this if you also...
                   properties:
                     allowPartialMessage:
-                      description: When this field is t...
                       type: boolean
                     maxRequestBytes:
-                      description: Sets the maximum siz...
                       format: int32
                       type: integer
                     packAsBytes:
-                      description: When this field is t...
                       type: boolean
                   type: object
                 requestTimeout:
-                  description: Timeout for the ext ...
                   type: string
                 statPrefix:
-                  description: Optional additional ...
                   type: string
                 statusOnError:
-                  description: Sets the HTTP status...
                   format: int32
                   type: integer
                 transportApiVersion:
-                  description: Determines the API v...
                   enum:
                   - V3
                   type: string
                 userIdHeader:
-                  description: If the auth server t...
                   type: string
               type: object
             extensions:
-              description: Extensions will be p...
               properties:
                 configs:
                   additionalProperties:
@@ -235,86 +188,63 @@ spec:
                   type: object
               type: object
             gateway:
-              description: Options for configur...
               properties:
                 alwaysSortRouteTableRoutes:
-                  description: Deprecated. This set...
                   type: boolean
                 compressedProxySpec:
-                  description: If set, compresses p...
                   type: boolean
                 readGatewaysFromAllNamespaces:
-                  description: When true, the Gatew...
                   type: boolean
                 validation:
-                  description: If provided, the Gat...
                   properties:
                     allowWarnings:
-                      description: Accept resources if ...
                       nullable: true
                       type: boolean
                     alwaysAccept:
-                      description: Always accept resour...
                       nullable: true
                       type: boolean
                     disableTransformationValidation:
-                      description: By default gloo will...
                       nullable: true
                       type: boolean
                     ignoreGlooValidationFailure:
-                      description: When Gateway cannot ...
                       type: boolean
                     proxyValidationServerAddr:
-                      description: Address of the `gloo...
                       type: string
                     validationServerGrpcMaxSize:
-                      description: By default, gRPC val...
                       properties:
                         value:
-                          description: The int64 value.
                           format: int64
                           type: integer
                           x-kubernetes-int-or-string: true
                       type: object
                     validationWebhookTlsCert:
-                      description: Path to TLS Certific...
                       type: string
                     validationWebhookTlsKey:
-                      description: Path to TLS Private ...
                       type: string
                     warnRouteShortCircuiting:
-                      description: Write a warning to r...
                       nullable: true
                       type: boolean
                   type: object
                 validationServerAddr:
-                  description: Address of the `gloo...
                   type: string
               type: object
             gloo:
-              description: Options for configur...
               properties:
                 awsOptions:
                   properties:
                     enableCredentialsDiscovey:
-                      description: Enable credential di...
                       type: boolean
                     serviceAccountCredentials:
-                      description: Use projected servic...
                       properties:
                         cluster:
-                          description: The name of the envo...
                           type: string
                         timeout:
-                          description: timeout for the requ...
                           type: string
                         uri:
-                          description: The full uri of the ...
                           type: string
                       type: object
                   type: object
                 circuitBreakers:
-                  description: Default circuit brea...
                   properties:
                     maxConnections:
                       maximum: 4294967295
@@ -338,80 +268,58 @@ spec:
                       type: integer
                   type: object
                 disableGrpcWeb:
-                  description: Default policy for g...
                   nullable: true
                   type: boolean
                 disableKubernetesDestinations:
-                  description: Gloo allows you to d...
                   type: boolean
                 disableProxyGarbageCollection:
-                  description: Set this option to d...
                   nullable: true
                   type: boolean
                 enableRestEds:
-                  description: Whether or not to us...
                   nullable: true
                   type: boolean
                 endpointsWarmingTimeout:
-                  description: Timeout to get initi...
                   type: string
                 failoverUpstreamDnsPollingInterval:
-                  description: The polling interval...
                   type: string
                 invalidConfigPolicy:
-                  description: set these options to...
                   properties:
                     invalidRouteResponseBody:
-                      description: replaced routes repl...
                       type: string
                     invalidRouteResponseCode:
-                      description: replaced routes repl...
                       format: int32
                       type: integer
                     replaceInvalidRoutes:
-                      description: if set to `true`, Gl...
                       type: boolean
                   type: object
                 regexMaxProgramSize:
-                  description: Set this option to s...
                   maximum: 4294967295
                   minimum: 0
                   nullable: true
                   type: integer
                 restXdsBindAddr:
-                  description: Where the `gloo` RES...
                   type: string
                 validationBindAddr:
-                  description: Where the `gloo` val...
                   type: string
                 xdsBindAddr:
-                  description: Where the `gloo` xDS...
                   type: string
               type: object
             knative:
-              description: Configuration option...
               properties:
                 clusterIngressProxyAddress:
-                  description: Address of the clust...
                   type: string
                 knativeExternalProxyAddress:
-                  description: Address of the exter...
                   type: string
                 knativeInternalProxyAddress:
-                  description: Address of the inter...
                   type: string
               type: object
             kubernetes:
-              description: Options to configure...
               properties:
                 rateLimits:
-                  description: Rate limits for the ...
                   properties:
                     QPS:
-                      description: The maximum queries-...
                       type: number
                     burst:
-                      description: Maximum burst for th...
                       format: int32
                       type: integer
                   type: object
@@ -423,16 +331,13 @@ spec:
             kubernetesSecretSource:
               type: object
             linkerd:
-              description: Enable automatic lin...
               type: boolean
             namedExtauth:
               additionalProperties:
                 properties:
                   clearRouteCache:
-                    description: Clears route cache i...
                     type: boolean
                   extauthzServerRef:
-                    description: The upstream to ask ...
                     properties:
                       name:
                         type: string
@@ -440,84 +345,64 @@ spec:
                         type: string
                     type: object
                   failureModeAllow:
-                    description: In case of a failure...
                     type: boolean
                   httpService:
-                    description: If this is set, comm...
                     properties:
                       pathPrefix:
-                        description: Sets a prefix to the...
                         type: string
                       request:
                         properties:
                           allowedHeaders:
-                            description: These headers will b...
                             items:
                               type: string
                             type: array
                           headersToAdd:
                             additionalProperties:
                               type: string
-                            description: These headers that w...
                             type: object
                         type: object
                       response:
                         properties:
                           allowedClientHeaders:
-                            description: When this. is set, a...
                             items:
                               type: string
                             type: array
                           allowedUpstreamHeaders:
-                            description: When this is set, au...
                             items:
                               type: string
                             type: array
                         type: object
                     type: object
                   requestBody:
-                    description: Set this if you also...
                     properties:
                       allowPartialMessage:
-                        description: When this field is t...
                         type: boolean
                       maxRequestBytes:
-                        description: Sets the maximum siz...
                         format: int32
                         type: integer
                       packAsBytes:
-                        description: When this field is t...
                         type: boolean
                     type: object
                   requestTimeout:
-                    description: Timeout for the ext ...
                     type: string
                   statPrefix:
-                    description: Optional additional ...
                     type: string
                   statusOnError:
-                    description: Sets the HTTP status...
                     format: int32
                     type: integer
                   transportApiVersion:
-                    description: Determines the API v...
                     enum:
                     - V3
                     type: string
                   userIdHeader:
-                    description: If the auth server t...
                     type: string
                 type: object
-              description: 'Enterprise-only: Ext...'
               type: object
             observabilityOptions:
-              description: Provides settings re...
               properties:
                 grafanaIntegration:
-                  description: Options to configure...
                   properties:
                     defaultDashboardFolderId:
-                      description: (UInt32Value) Grafan...
                       maximum: 4294967295
                       minimum: 0
                       nullable: true
@@ -525,23 +410,18 @@ spec:
                   type: object
               type: object
             ratelimit:
-              description: 'Enterprise-only: Par...'
               properties:
                 descriptors:
                   items:
-                    description: A descriptor is a li...
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                   type: array
                 setDescriptors:
                   items:
-                    description: A setDescriptor is a...
                     properties:
                       alwaysApply:
-                        description: Typically, rule prio...
                         type: boolean
                       rateLimit:
-                        description: Rate limit rule for ...
                         properties:
                           requestsPerUnit:
                             format: int32
@@ -556,15 +436,11 @@ spec:
                             type: string
                         type: object
                       simpleDescriptors:
-                        description: Simple descriptor ke...
                         items:
-                          description: A simpleDescriptor i...
                           properties:
                             key:
-                              description: The key of the descr...
                               type: string
                             value:
-                              description: Optional value for t...
                               type: string
                           type: object
                         type: array
@@ -572,12 +448,10 @@ spec:
                   type: array
               type: object
             ratelimitServer:
-              description: 'Enterprise-only: Set...'
               properties:
                 denyOnFail:
                   type: boolean
                 rateLimitBeforeAuth:
-                  description: Set this is set to t...
                   type: boolean
                 ratelimitServerRef:
                   properties:
@@ -590,24 +464,18 @@ spec:
                   type: string
               type: object
             rbac:
-              description: 'Enterprise-only: Set...'
               properties:
                 requireRbac:
-                  description: Require RBAC for all...
                   type: boolean
               type: object
             refreshRate:
-              description: How frequently to re...
               type: string
             status:
-              description: Status indicates the...
               type: object
               x-kubernetes-preserve-unknown-fields: true
             upstreamOptions:
-              description: Default configuratio...
               properties:
                 sslParameters:
-                  description: Default ssl paramete...
                   properties:
                     cipherSuites:
                       items:
@@ -638,42 +506,31 @@ spec:
             vaultSecretSource:
               properties:
                 address:
-                  description: address is the addre...
                   type: string
                 caCert:
-                  description: caCert is the path t...
                   type: string
                 caPath:
-                  description: caPath is the path t...
                   type: string
                 clientCert:
-                  description: clientCert is the pa...
                   type: string
                 clientKey:
-                  description: clientKey is the pat...
                   type: string
                 insecure:
-                  description: Insecure enables or ...
                   nullable: true
                   type: boolean
                 rootKey:
-                  description: all keys stored in V...
                   type: string
                 tlsServerName:
-                  description: tlsServerName, if se...
                   type: string
                 token:
-                  description: the Token used to au...
                   type: string
               type: object
             watchNamespaces:
-              description: Use this setting to ...
               items:
                 type: string
               type: array
           type: object
         status:
-          description: Status indicates the...
           type: object
           x-kubernetes-preserve-unknown-fields: true
       type: object

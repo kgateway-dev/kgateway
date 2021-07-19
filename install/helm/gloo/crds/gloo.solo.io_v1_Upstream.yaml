@@ -20,34 +20,25 @@ spec:
     openAPIV3Schema:
       properties:
         spec:
-          description: Upstreams represent ...
           properties:
             aws:
               properties:
                 lambdaFunctions:
-                  description: The list of Lambda F...
                   items:
-                    description: Each Lambda Function...
                     properties:
                       lambdaFunctionName:
-                        description: The Name of the Lamb...
                         type: string
                       logicalName:
-                        description: the logical name glo...
                         type: string
                       qualifier:
-                        description: The Qualifier for th...
                         type: string
                     type: object
                   type: array
                 region:
-                  description: The AWS Region where...
                   type: string
                 roleArn:
-                  description: '(Optional): role_arn...'
                   type: string
                 secretRef:
-                  description: A [Gloo Secret Ref](...
                   properties:
                     name:
                       type: string
@@ -58,39 +49,29 @@ spec:
             awsEc2:
               properties:
                 filters:
-                  description: List of tag filters ...
                   items:
                     properties:
                       key:
-                        description: if set, only instanc...
                         type: string
                       kvPair:
-                        description: if set, only instanc...
                         properties:
                           key:
-                            description: keys are not case-se...
                             type: string
                           value:
-                            description: values are case-sens...
                             type: string
                         type: object
                     type: object
                   type: array
                 port:
-                  description: If set, will use thi...
                   format: int32
                   type: integer
                 publicIp:
-                  description: If set, will use the...
                   type: boolean
                 region:
-                  description: The AWS Region where...
                   type: string
                 roleArn:
-                  description: Optional, Amazon Res...
                   type: string
                 secretRef:
-                  description: Optional, if not set...
                   properties:
                     name:
                       type: string
@@ -101,26 +82,21 @@ spec:
             azure:
               properties:
                 functionAppName:
-                  description: The Name of the Azur...
                   type: string
                 functions:
                   items:
-                    description: Function Spec for Fu...
                     properties:
                       authLevel:
-                        description: Auth Level can bve e...
                         enum:
                         - Anonymous
                         - Function
                         - Admin
                         type: string
                       functionName:
-                        description: The Name of the Azur...
                         type: string
                     type: object
                   type: array
                 secretRef:
-                  description: A [Gloo Secret Ref](...
                   properties:
                     name:
                       type: string
@@ -129,7 +105,6 @@ spec:
                   type: object
               type: object
             circuitBreakers:
-              description: Circuit breakers for...
               properties:
                 maxConnections:
                   maximum: 4294967295
@@ -155,101 +130,77 @@ spec:
             connectionConfig:
               properties:
                 commonHttpProtocolOptions:
-                  description: Additional options w...
                   properties:
                     headersWithUnderscoresAction:
-                      description: Action to take when ...
                       enum:
                       - ALLOW
                       - REJECT_REQUEST
                       - DROP_HEADER
                       type: string
                     idleTimeout:
-                      description: The idle timeout for...
                       type: string
                     maxHeadersCount:
-                      description: The maximum number o...
                       format: int32
                       type: integer
                     maxStreamDuration:
-                      description: Total duration to ke...
                       type: string
                   type: object
                 connectTimeout:
-                  description: The timeout for new ...
                   type: string
                 maxRequestsPerConnection:
-                  description: Maximum requests for...
                   format: int32
                   type: integer
                 perConnectionBufferLimitBytes:
-                  description: Soft limit on size o...
                   maximum: 4294967295
                   minimum: 0
                   nullable: true
                   type: integer
                 tcpKeepalive:
-                  description: Configure OS-level t...
                   properties:
                     keepaliveInterval:
-                      description: The number of second...
                       type: string
                     keepaliveProbes:
-                      description: Maximum number of ke...
                       format: int32
                       type: integer
                     keepaliveTime:
-                      description: The number of second...
                       type: string
                   type: object
               type: object
             consul:
               properties:
                 connectEnabled:
-                  description: Is this consul servi...
                   type: boolean
                 dataCenters:
-                  description: The data centers in ...
                   items:
                     type: string
                   type: array
                 instanceBlacklistTags:
-                  description: The opposite of inst...
                   items:
                     type: string
                   type: array
                 instanceTags:
-                  description: The list of service ...
                   items:
                     type: string
                   type: array
                 serviceName:
-                  description: The name of the Cons...
                   type: string
                 serviceSpec:
-                  description: An optional Service ...
                   properties:
                     grpc:
                       properties:
                         descriptors:
-                          description: Descriptors that con...
                           format: byte
                           type: string
                         grpcServices:
-                          description: List of services use...
                           items:
-                            description: Describes a grpc ser...
                             properties:
                               functionNames:
-                                description: The functions availa...
                                 items:
                                   type: string
                                 type: array
                               packageName:
-                                description: The package of this ...
                                 type: string
                               serviceName:
-                                description: The service name of ...
                                 type: string
                             type: object
                           type: array
@@ -267,27 +218,20 @@ spec:
                           additionalProperties:
                             properties:
                               advancedTemplates:
-                                description: If set to true, use ...
                                 type: boolean
                               body:
-                                description: Apply a template to ...
                                 properties:
                                   text:
                                     type: string
                                 type: object
                               dynamicMetadataValues:
-                                description: Use this field to se...
                                 items:
-                                  description: Defines an [Envoy Dy...
                                   properties:
                                     key:
-                                      description: The metadata key.
                                       type: string
                                     metadataNamespace:
-                                      description: The metadata namespa...
                                       type: string
                                     value:
-                                      description: A template that dete...
                                       properties:
                                         text:
                                           type: string
@@ -298,21 +242,16 @@ spec:
                                 additionalProperties:
                                   properties:
                                     body:
-                                      description: Extract information ...
                                       maxProperties: 0
                                       type: object
                                     header:
-                                      description: Extract information ...
                                       type: string
                                     regex:
-                                      description: Only strings matchin...
                                       type: string
                                     subgroup:
-                                      description: If your regex contai...
                                       format: int32
                                       type: integer
                                   type: object
-                                description: Use this attribute t...
                                 type: object
                               headers:
                                 additionalProperties:
@@ -320,18 +259,13 @@ spec:
                                     text:
                                       type: string
                                   type: object
-                                description: Use this attribute t...
                                 type: object
                               headersToAppend:
-                                description: Use this attribute t...
                                 items:
-                                  description: Defines a header-tem...
                                   properties:
                                     key:
-                                      description: Header name
                                       type: string
                                     value:
-                                      description: Apply a template to ...
                                       properties:
                                         text:
                                           type: string
@@ -339,10 +273,8 @@ spec:
                                   type: object
                                 type: array
                               ignoreErrorOnParse:
-                                description: If set to true, Envo...
                                 type: boolean
                               mergeExtractorsToBody:
-                                description: Merge all defined ex...
                                 type: object
                               parseBodyBehavior:
                                 enum:
@@ -350,82 +282,63 @@ spec:
                                 - DontParse
                                 type: string
                               passthrough:
-                                description: This will cause the ...
                                 type: object
                             type: object
                           type: object
                       type: object
                   type: object
                 serviceTags:
-                  description: 'Deprecated: This fie...'
                   items:
                     type: string
                   type: array
                 subsetTags:
-                  description: Gloo will segment in...
                   items:
                     type: string
                   type: array
               type: object
             discoveryMetadata:
-              description: Upstreams and their ...
               properties:
                 labels:
                   additionalProperties:
                     type: string
-                  description: Labels inherited fro...
                   type: object
               type: object
             failover:
-              description: Failover endpoints f...
               properties:
                 prioritizedLocalities:
-                  description: PrioritizedLocality ...
                   items:
                     properties:
                       localityEndpoints:
                         items:
-                          description: A group of endpoints...
                           properties:
                             lbEndpoints:
-                              description: The group of endpoin...
                               items:
-                                description: An Endpoint that Env...
                                 properties:
                                   address:
-                                    description: Address (hostname or...
                                     type: string
                                   healthCheckConfig:
-                                    description: The optional health ...
                                     properties:
                                       hostname:
-                                        description: By default, the host...
                                         type: string
                                       method:
-                                        description: Method to use when h...
                                         type: string
                                       path:
-                                        description: Path to use when hea...
                                         type: string
                                       portValue:
-                                        description: Optional alternative...
                                         format: int32
                                         type: integer
                                     type: object
                                   loadBalancingWeight:
-                                    description: The optional load ba...
                                     maximum: 4294967295
                                     minimum: 0
                                     nullable: true
                                     type: integer
                                   port:
-                                    description: Port the instance is...
                                     format: int32
                                     type: integer
                                   upstreamSslConfig:
                                     properties:
                                       alpnProtocols:
-                                        description: Set Application Leve...
                                         items:
                                           type: string
                                         type: array
@@ -457,38 +370,27 @@ spec:
                                             type: string
                                         type: object
                                       sds:
-                                        description: Use secret discovery...
                                         properties:
                                           callCredentials:
-                                            description: Call credentials.
                                             properties:
                                               fileCredentialSource:
-                                                description: Call credentials are...
                                                 properties:
                                                   header:
-                                                    description: Header to carry the
-                                                      ...
                                                     type: string
                                                   tokenFileName:
-                                                    description: File containing auth...
                                                     type: string
                                                 type: object
                                             type: object
                                           certificatesSecretName:
-                                            description: The name of the secr...
                                             type: string
                                           clusterName:
-                                            description: The name of the sds ...
                                             type: string
                                           targetUri:
-                                            description: Target uri for the s...
                                             type: string
                                           validationContextName:
-                                            description: The name of secret c...
                                             type: string
                                         type: object
                                       secretRef:
-                                        description: SecretRef contains t...
                                         properties:
                                           name:
                                             type: string
@@ -496,13 +398,10 @@ spec:
                                             type: string
                                         type: object
                                       sni:
-                                        description: optional. the SNI do...
                                         type: string
                                       sslFiles:
-                                        description: SSLFiles reference p...
                                         properties:
                                           rootCa:
-                                            description: for client cert vali...
                                             type: string
                                           tlsCert:
                                             type: string
@@ -510,7 +409,6 @@ spec:
                                             type: string
                                         type: object
                                       verifySubjectAltName:
-                                        description: Verify that the Subj...
                                         items:
                                           type: string
                                         type: array
@@ -518,22 +416,17 @@ spec:
                                 type: object
                               type: array
                             loadBalancingWeight:
-                              description: 'Optional: Per priori...'
                               maximum: 4294967295
                               minimum: 0
                               nullable: true
                               type: integer
                             locality:
-                              description: Identifies where the...
                               properties:
                                 region:
-                                  description: Region this zone bel...
                                   type: string
                                 subZone:
-                                  description: When used for locali...
                                   type: string
                                 zone:
-                                  description: Defines the local se...
                                   type: string
                               type: object
                           type: object
@@ -545,90 +438,67 @@ spec:
               items:
                 properties:
                   alwaysLogHealthCheckFailures:
-                    description: If set to true, heal...
                     type: boolean
                   customHealthCheck:
-                    description: Custom health check.
                     properties:
                       config:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
                       name:
-                        description: The registered name ...
                         type: string
                       typedConfig:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
                     type: object
                   eventLogPath:
-                    description: Specifies the path t...
                     type: string
                   grpcHealthCheck:
-                    description: gRPC health check.
                     properties:
                       authority:
-                        description: The value of the :au...
                         type: string
                       serviceName:
-                        description: An optional service ...
                         type: string
                     type: object
                   healthyEdgeInterval:
-                    description: The "healthy edge in...
                     type: string
                   healthyThreshold:
-                    description: The number of health...
                     maximum: 4294967295
                     minimum: 0
                     nullable: true
                     type: integer
                   httpHealthCheck:
-                    description: HTTP health check.
                     properties:
                       expectedStatuses:
-                        description: Specifies a list of ...
                         items:
-                          description: Specifies the int64 ...
                           properties:
                             end:
-                              description: end of the range (ex...
                               format: int64
                               type: integer
                               x-kubernetes-int-or-string: true
                             start:
-                              description: start of the range (...
                               format: int64
                               type: integer
                               x-kubernetes-int-or-string: true
                           type: object
                         type: array
                       host:
-                        description: The value of the hos...
                         type: string
                       path:
-                        description: Specifies the HTTP p...
                         type: string
                       requestHeadersToAdd:
-                        description: Specifies a list of ...
                         items:
-                          description: Header name/value pa...
                           properties:
                             append:
-                              description: Should the value be ...
                               nullable: true
                               type: boolean
                             header:
-                              description: Explicitly specified...
                               properties:
                                 key:
-                                  description: Header name.
                                   type: string
                                 value:
-                                  description: Header value.
                                   type: string
                               type: object
                             headerSecretRef:
-                              description: Reference to header ...
                               properties:
                                 name:
                                   type: string
@@ -638,15 +508,12 @@ spec:
                           type: object
                         type: array
                       requestHeadersToRemove:
-                        description: Specifies a list of ...
                         items:
                           type: string
                         type: array
                       responseAssertions:
-                        description: '(Enterprise Only): I...'
                         properties:
                           noMatchHealth:
-                            description: The default health r...
                             enum:
                             - default
                             - healthy
@@ -654,12 +521,9 @@ spec:
                             - unhealthy
                             type: string
                           responseMatchers:
-                            description: A bunch of match rul...
                             items:
-                              description: Defines a transforma...
                               properties:
                                 matchHealth:
-                                  description: The health response ...
                                   enum:
                                   - default
                                   - healthy
@@ -667,98 +531,71 @@ spec:
                                   - unhealthy
                                   type: string
                                 responseMatch:
-                                  description: Defines the paramete...
                                   properties:
                                     body:
-                                      description: Extract information ...
                                       maxProperties: 0
                                       type: object
                                     header:
-                                      description: Extract information ...
                                       type: string
                                     ignoreErrorOnParse:
-                                      description: If set to true, Envo...
                                       type: boolean
                                     jsonKey:
-                                      description: Configuration to get...
                                       properties:
                                         path:
-                                          description: The path to retrieve...
                                           items:
-                                            description: Specifies the segmen...
                                             properties:
                                               key:
-                                                description: If specified, use th...
                                                 type: string
                                             type: object
                                           type: array
                                       type: object
                                     regex:
-                                      description: Only strings matchin...
                                       type: string
                                   type: object
                               type: object
                             type: array
                         type: object
                       serviceName:
-                        description: An optional service ...
                         type: string
                       useHttp2:
-                        description: If set, health check...
                         type: boolean
                     type: object
                   initialJitter:
-                    description: An optional jitter a...
                     type: string
                   interval:
-                    description: The interval between...
                     type: string
                   intervalJitter:
-                    description: An optional jitter a...
                     type: string
                   intervalJitterPercent:
-                    description: An optional jitter a...
                     format: int32
                     type: integer
                   noTrafficInterval:
-                    description: The "no traffic inte...
                     type: string
                   reuseConnection:
-                    description: Reuse health check c...
                     nullable: true
                     type: boolean
                   tcpHealthCheck:
-                    description: TCP health check.
                     properties:
                       receive:
-                        description: When checking the re...
                         items:
-                          description: Describes the encodi...
                           properties:
                             text:
-                              description: Hex encoded payload....
                               type: string
                           type: object
                         type: array
                       send:
-                        description: Empty payloads imply...
                         properties:
                           text:
-                            description: Hex encoded payload....
                             type: string
                         type: object
                     type: object
                   timeout:
-                    description: The time to wait for...
                     type: string
                   unhealthyEdgeInterval:
-                    description: The "unhealthy edge ...
                     type: string
                   unhealthyInterval:
-                    description: The "unhealthy inter...
                     type: string
                   unhealthyThreshold:
-                    description: The number of unheal...
                     maximum: 4294967295
                     minimum: 0
                     nullable: true
@@ -766,17 +603,14 @@ spec:
                 type: object
               type: array
             httpProxyHostname:
-              description: Tells envoy that the...
               nullable: true
               type: string
             initialConnectionWindowSize:
-              description: (UInt32Value) Simila...
               maximum: 4294967295
               minimum: 0
               nullable: true
               type: integer
             initialStreamWindowSize:
-              description: (UInt32Value) Initia...
               maximum: 4294967295
               minimum: 0
               nullable: true
@@ -786,42 +620,31 @@ spec:
                 selector:
                   additionalProperties:
                     type: string
-                  description: Allows finer-grained...
                   type: object
                 serviceName:
-                  description: The name of the Kube...
                   type: string
                 serviceNamespace:
-                  description: The namespace where ...
                   type: string
                 servicePort:
-                  description: The access port of t...
                   format: int32
                   type: integer
                 serviceSpec:
-                  description: An optional Service ...
                   properties:
                     grpc:
                       properties:
                         descriptors:
-                          description: Descriptors that con...
                           format: byte
                           type: string
                         grpcServices:
-                          description: List of services use...
                           items:
-                            description: Describes a grpc ser...
                             properties:
                               functionNames:
-                                description: The functions availa...
                                 items:
                                   type: string
                                 type: array
                               packageName:
-                                description: The package of this ...
                                 type: string
                               serviceName:
-                                description: The service name of ...
                                 type: string
                             type: object
                           type: array
@@ -839,27 +662,20 @@ spec:
                           additionalProperties:
                             properties:
                               advancedTemplates:
-                                description: If set to true, use ...
                                 type: boolean
                               body:
-                                description: Apply a template to ...
                                 properties:
                                   text:
                                     type: string
                                 type: object
                               dynamicMetadataValues:
-                                description: Use this field to se...
                                 items:
-                                  description: Defines an [Envoy Dy...
                                   properties:
                                     key:
-                                      description: The metadata key.
                                       type: string
                                     metadataNamespace:
-                                      description: The metadata namespa...
                                       type: string
                                     value:
-                                      description: A template that dete...
                                       properties:
                                         text:
                                           type: string
@@ -870,21 +686,16 @@ spec:
                                 additionalProperties:
                                   properties:
                                     body:
-                                      description: Extract information ...
                                       maxProperties: 0
                                       type: object
                                     header:
-                                      description: Extract information ...
                                       type: string
                                     regex:
-                                      description: Only strings matchin...
                                       type: string
                                     subgroup:
-                                      description: If your regex contai...
                                       format: int32
                                       type: integer
                                   type: object
-                                description: Use this attribute t...
                                 type: object
                               headers:
                                 additionalProperties:
@@ -892,18 +703,13 @@ spec:
                                     text:
                                       type: string
                                   type: object
-                                description: Use this attribute t...
                                 type: object
                               headersToAppend:
-                                description: Use this attribute t...
                                 items:
-                                  description: Defines a header-tem...
                                   properties:
                                     key:
-                                      description: Header name
                                       type: string
                                     value:
-                                      description: Apply a template to ...
                                       properties:
                                         text:
                                           type: string
@@ -911,10 +717,8 @@ spec:
                                   type: object
                                 type: array
                               ignoreErrorOnParse:
-                                description: If set to true, Envo...
                                 type: boolean
                               mergeExtractorsToBody:
-                                description: Merge all defined ex...
                                 type: object
                               parseBodyBehavior:
                                 enum:
@@ -922,14 +726,12 @@ spec:
                                 - DontParse
                                 type: string
                               passthrough:
-                                description: This will cause the ...
                                 type: object
                             type: object
                           type: object
                       type: object
                   type: object
                 subsetSpec:
-                  description: Subset configuration...
                   properties:
                     selectors:
                       items:
@@ -945,131 +747,104 @@ spec:
             loadBalancerConfig:
               properties:
                 healthyPanicThreshold:
-                  description: Configures envoy's p...
                   nullable: true
                   type: number
                 leastRequest:
-                  description: Use least request fo...
                   properties:
                     choiceCount:
-                      description: How many choices to ...
                       format: int32
                       type: integer
                   type: object
                 localityWeightedLbConfig:
-                  description: (Enterprise Only) ht...
                   maxProperties: 0
                   type: object
                 maglev:
-                  description: Use maglev for load ...
                   type: object
                 random:
-                  description: Use random for load ...
                   type: object
                 ringHash:
-                  description: Use ring hash for lo...
                   properties:
                     ringHashConfig:
-                      description: Optional, customizes...
                       properties:
                         maximumRingSize:
-                          description: Maximum hash ring si...
                           format: int64
                           type: integer
                           x-kubernetes-int-or-string: true
                         minimumRingSize:
-                          description: Minimum hash ring si...
                           format: int64
                           type: integer
                           x-kubernetes-int-or-string: true
                       type: object
                   type: object
                 roundRobin:
-                  description: Use round robin for ...
                   type: object
                 updateMergeWindow:
-                  description: This allows batch up...
                   type: string
               type: object
             outlierDetection:
               properties:
                 baseEjectionTime:
-                  description: The base time that a...
                   type: string
                 consecutive5xx:
-                  description: The number of consec...
                   maximum: 4294967295
                   minimum: 0
                   nullable: true
                   type: integer
                 consecutiveGatewayFailure:
-                  description: The number of consec...
                   maximum: 4294967295
                   minimum: 0
                   nullable: true
                   type: integer
                 consecutiveLocalOriginFailure:
-                  description: The number of consec...
                   maximum: 4294967295
                   minimum: 0
                   nullable: true
                   type: integer
                 enforcingConsecutive5xx:
-                  description: The % chance that a ...
                   maximum: 4294967295
                   minimum: 0
                   nullable: true
                   type: integer
                 enforcingConsecutiveGatewayFailure:
-                  description: The % chance that a ...
                   maximum: 4294967295
                   minimum: 0
                   nullable: true
                   type: integer
                 enforcingConsecutiveLocalOriginFailure:
-                  description: The % chance that a ...
                   maximum: 4294967295
                   minimum: 0
                   nullable: true
                   type: integer
                 enforcingLocalOriginSuccessRate:
-                  description: The % chance that a ...
                   maximum: 4294967295
                   minimum: 0
                   nullable: true
                   type: integer
                 enforcingSuccessRate:
-                  description: The % chance that a ...
                   maximum: 4294967295
                   minimum: 0
                   nullable: true
                   type: integer
                 interval:
-                  description: The time interval be...
                   type: string
                 maxEjectionPercent:
-                  description: The maximum % of an ...
                   maximum: 4294967295
                   minimum: 0
                   nullable: true
                   type: integer
                 splitExternalLocalOriginErrors:
-                  description: Determines whether t...
                   type: boolean
                 successRateMinimumHosts:
-                  description: The number of hosts ...
                   maximum: 4294967295
                   minimum: 0
                   nullable: true
                   type: integer
                 successRateRequestVolume:
-                  description: The minimum number o...
                   maximum: 4294967295
                   minimum: 0
                   nullable: true
                   type: integer
                 successRateStdevFactor:
-                  description: This factor is used ...
                   maximum: 4294967295
                   minimum: 0
                   nullable: true
@@ -1078,32 +853,24 @@ spec:
             pipe:
               properties:
                 path:
-                  description: The Unix Domain Sock...
                   type: string
                 serviceSpec:
-                  description: An optional Service ...
                   properties:
                     grpc:
                       properties:
                         descriptors:
-                          description: Descriptors that con...
                           format: byte
                           type: string
                         grpcServices:
-                          description: List of services use...
                           items:
-                            description: Describes a grpc ser...
                             properties:
                               functionNames:
-                                description: The functions availa...
                                 items:
                                   type: string
                                 type: array
                               packageName:
-                                description: The package of this ...
                                 type: string
                               serviceName:
-                                description: The service name of ...
                                 type: string
                             type: object
                           type: array
@@ -1121,27 +888,20 @@ spec:
                           additionalProperties:
                             properties:
                               advancedTemplates:
-                                description: If set to true, use ...
                                 type: boolean
                               body:
-                                description: Apply a template to ...
                                 properties:
                                   text:
                                     type: string
                                 type: object
                               dynamicMetadataValues:
-                                description: Use this field to se...
                                 items:
-                                  description: Defines an [Envoy Dy...
                                   properties:
                                     key:
-                                      description: The metadata key.
                                       type: string
                                     metadataNamespace:
-                                      description: The metadata namespa...
                                       type: string
                                     value:
-                                      description: A template that dete...
                                       properties:
                                         text:
                                           type: string
@@ -1152,21 +912,16 @@ spec:
                                 additionalProperties:
                                   properties:
                                     body:
-                                      description: Extract information ...
                                       maxProperties: 0
                                       type: object
                                     header:
-                                      description: Extract information ...
                                       type: string
                                     regex:
-                                      description: Only strings matchin...
                                       type: string
                                     subgroup:
-                                      description: If your regex contai...
                                       format: int32
                                       type: integer
                                   type: object
-                                description: Use this attribute t...
                                 type: object
                               headers:
                                 additionalProperties:
@@ -1174,18 +929,13 @@ spec:
                                     text:
                                       type: string
                                   type: object
-                                description: Use this attribute t...
                                 type: object
                               headersToAppend:
-                                description: Use this attribute t...
                                 items:
-                                  description: Defines a header-tem...
                                   properties:
                                     key:
-                                      description: Header name
                                       type: string
                                     value:
-                                      description: Apply a template to ...
                                       properties:
                                         text:
                                           type: string
@@ -1193,10 +943,8 @@ spec:
                                   type: object
                                 type: array
                               ignoreErrorOnParse:
-                                description: If set to true, Envo...
                                 type: boolean
                               mergeExtractorsToBody:
-                                description: Merge all defined ex...
                                 type: object
                               parseBodyBehavior:
                                 enum:
@@ -1204,7 +952,6 @@ spec:
                                 - DontParse
                                 type: string
                               passthrough:
-                                description: This will cause the ...
                                 type: object
                             type: object
                           type: object
@@ -1212,10 +959,8 @@ spec:
                   type: object
               type: object
             sslConfig:
-              description: SslConfig contains t...
               properties:
                 alpnProtocols:
-                  description: Set Application Leve...
                   items:
                     type: string
                   type: array
@@ -1247,37 +992,27 @@ spec:
                       type: string
                   type: object
                 sds:
-                  description: Use secret discovery...
                   properties:
                     callCredentials:
-                      description: Call credentials.
                       properties:
                         fileCredentialSource:
-                          description: Call credentials are...
                           properties:
                             header:
-                              description: Header to carry the ...
                               type: string
                             tokenFileName:
-                              description: File containing auth...
                               type: string
                           type: object
                       type: object
                     certificatesSecretName:
-                      description: The name of the secr...
                       type: string
                     clusterName:
-                      description: The name of the sds ...
                       type: string
                     targetUri:
-                      description: Target uri for the s...
                       type: string
                     validationContextName:
-                      description: The name of secret c...
                       type: string
                   type: object
                 secretRef:
-                  description: SecretRef contains t...
                   properties:
                     name:
                       type: string
@@ -1285,13 +1020,10 @@ spec:
                       type: string
                   type: object
                 sni:
-                  description: optional. the SNI do...
                   type: string
                 sslFiles:
-                  description: SSLFiles reference p...
                   properties:
                     rootCa:
-                      description: for client cert vali...
                       type: string
                     tlsCert:
                       type: string
@@ -1299,7 +1031,6 @@ spec:
                       type: string
                   type: object
                 verifySubjectAltName:
-                  description: Verify that the Subj...
                   items:
                     type: string
                   type: array
@@ -1307,66 +1038,49 @@ spec:
             static:
               properties:
                 autoSniRewrite:
-                  description: When set, automatica...
                   nullable: true
                   type: boolean
                 hosts:
-                  description: A list of addresses ...
                   items:
-                    description: Represents a single ...
                     properties:
                       addr:
-                        description: Address (hostname or...
                         type: string
                       healthCheckConfig:
-                        description: '(Enterprise Only): H...'
                         properties:
                           method:
-                            description: '(Enterprise Only): M...'
                             type: string
                           path:
-                            description: '(Enterprise Only): P...'
                             type: string
                         type: object
                       loadBalancingWeight:
-                        description: The optional load ba...
                         maximum: 4294967295
                         minimum: 0
                         nullable: true
                         type: integer
                       port:
-                        description: Port the instance is...
                         format: int32
                         type: integer
                       sniAddr:
-                        description: Address to use for S...
                         type: string
                     type: object
                   type: array
                 serviceSpec:
-                  description: An optional Service ...
                   properties:
                     grpc:
                       properties:
                         descriptors:
-                          description: Descriptors that con...
                           format: byte
                           type: string
                         grpcServices:
-                          description: List of services use...
                           items:
-                            description: Describes a grpc ser...
                             properties:
                               functionNames:
-                                description: The functions availa...
                                 items:
                                   type: string
                                 type: array
                               packageName:
-                                description: The package of this ...
                                 type: string
                               serviceName:
-                                description: The service name of ...
                                 type: string
                             type: object
                           type: array
@@ -1384,27 +1098,20 @@ spec:
                           additionalProperties:
                             properties:
                               advancedTemplates:
-                                description: If set to true, use ...
                                 type: boolean
                               body:
-                                description: Apply a template to ...
                                 properties:
                                   text:
                                     type: string
                                 type: object
                               dynamicMetadataValues:
-                                description: Use this field to se...
                                 items:
-                                  description: Defines an [Envoy Dy...
                                   properties:
                                     key:
-                                      description: The metadata key.
                                       type: string
                                     metadataNamespace:
-                                      description: The metadata namespa...
                                       type: string
                                     value:
-                                      description: A template that dete...
                                       properties:
                                         text:
                                           type: string
@@ -1415,21 +1122,16 @@ spec:
                                 additionalProperties:
                                   properties:
                                     body:
-                                      description: Extract information ...
                                       maxProperties: 0
                                       type: object
                                     header:
-                                      description: Extract information ...
                                       type: string
                                     regex:
-                                      description: Only strings matchin...
                                       type: string
                                     subgroup:
-                                      description: If your regex contai...
                                       format: int32
                                       type: integer
                                   type: object
-                                description: Use this attribute t...
                                 type: object
                               headers:
                                 additionalProperties:
@@ -1437,18 +1139,13 @@ spec:
                                     text:
                                       type: string
                                   type: object
-                                description: Use this attribute t...
                                 type: object
                               headersToAppend:
-                                description: Use this attribute t...
                                 items:
-                                  description: Defines a header-tem...
                                   properties:
                                     key:
-                                      description: Header name
                                       type: string
                                     value:
-                                      description: Apply a template to ...
                                       properties:
                                         text:
                                           type: string
@@ -1456,10 +1153,8 @@ spec:
                                   type: object
                                 type: array
                               ignoreErrorOnParse:
-                                description: If set to true, Envo...
                                 type: boolean
                               mergeExtractorsToBody:
-                                description: Merge all defined ex...
                                 type: object
                               parseBodyBehavior:
                                 enum:
@@ -1467,27 +1162,22 @@ spec:
                                 - DontParse
                                 type: string
                               passthrough:
-                                description: This will cause the ...
                                 type: object
                             type: object
                           type: object
                       type: object
                   type: object
                 useTls:
-                  description: Attempt to use outbo...
                   type: boolean
               type: object
             status:
-              description: Status indicates the...
               type: object
               x-kubernetes-preserve-unknown-fields: true
             useHttp2:
-              description: Use http2 when commu...
               nullable: true
               type: boolean
           type: object
         status:
-          description: Status indicates the...
           type: object
           x-kubernetes-preserve-unknown-fields: true
       type: object

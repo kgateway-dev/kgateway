@@ -20,160 +20,120 @@ spec:
     openAPIV3Schema:
       properties:
         spec:
-          description: The **VirtualHostOpt...
           properties:
             options:
-              description: VirtualHost options....
               properties:
                 bufferPerRoute:
-                  description: BufferPerRoute can b...
                   properties:
                     buffer:
-                      description: Override the global ...
                       properties:
                         maxRequestBytes:
-                          description: The maximum request ...
                           maximum: 4294967295
                           minimum: 0
                           nullable: true
                           type: integer
                       type: object
                     disabled:
-                      description: Disable the buffer f...
                       type: boolean
                   type: object
                 cors:
-                  description: Defines a CORS polic...
                   properties:
                     allowCredentials:
-                      description: Specifies whether th...
                       type: boolean
                     allowHeaders:
-                      description: Specifies the conten...
                       items:
                         type: string
                       type: array
                     allowMethods:
-                      description: Specifies the conten...
                       items:
                         type: string
                       type: array
                     allowOrigin:
-                      description: Specifies the origin...
                       items:
                         type: string
                       type: array
                     allowOriginRegex:
-                      description: Specifies regex patt...
                       items:
                         type: string
                       type: array
                     disableForRoute:
-                      description: Optional, only appli...
                       type: boolean
                     exposeHeaders:
-                      description: Specifies the conten...
                       items:
                         type: string
                       type: array
                     maxAge:
-                      description: Specifies the conten...
                       type: string
                   type: object
                 csrf:
-                  description: Csrf can be used to ...
                   properties:
                     additionalOrigins:
-                      description: Specifies additional...
                       items:
-                        description: Specifies the way to...
                         properties:
                           exact:
-                            description: The input string mus...
                             type: string
                           ignoreCase:
-                            description: If true, indicates t...
                             type: boolean
                           prefix:
-                            description: The input string mus...
                             type: string
                           safeRegex:
-                            description: The input string mus...
                             properties:
                               googleRe2:
-                                description: Google's RE2 regex e...
                                 properties:
                                   maxProgramSize:
-                                    description: This field controls ...
                                     maximum: 4294967295
                                     minimum: 0
                                     nullable: true
                                     type: integer
                                 type: object
                               regex:
-                                description: The regex match stri...
                                 type: string
                             type: object
                           suffix:
-                            description: The input string mus...
                             type: string
                         type: object
                       type: array
                     filterEnabled:
-                      description: Specifies the % of r...
                       properties:
                         defaultValue:
-                          description: Default value if the...
                           properties:
                             denominator:
-                              description: Specifies the denomi...
                               enum:
                               - HUNDRED
                               - TEN_THOUSAND
                               - MILLION
                               type: string
                             numerator:
-                              description: Specifies the numera...
                               format: int32
                               type: integer
                           type: object
                         runtimeKey:
-                          description: Runtime key for a YA...
                           type: string
                       type: object
                     shadowEnabled:
-                      description: Specifies that CSRF ...
                       properties:
                         defaultValue:
-                          description: Default value if the...
                           properties:
                             denominator:
-                              description: Specifies the denomi...
                               enum:
                               - HUNDRED
                               - TEN_THOUSAND
                               - MILLION
                               type: string
                             numerator:
-                              description: Specifies the numera...
                               format: int32
                               type: integer
                           type: object
                         runtimeKey:
-                          description: Runtime key for a YA...
                           type: string
                       type: object
                   type: object
                 dlp:
-                  description: 'Enterprise-only: Con...'
                   properties:
                     actions:
-                      description: List of data loss pr...
                       items:
-                        description: A single action mean...
                         properties:
                           actionType:
-                            description: The action type to i...
                             enum:
                             - CUSTOM
                             - SSN
@@ -187,33 +147,26 @@ spec:
                             - ALL_CREDIT_CARDS
                             type: string
                           customAction:
-                            description: The custom user acti...
                             properties:
                               maskChar:
-                                description: The masking characte...
                                 type: string
                               name:
-                                description: The name of the cust...
                                 type: string
                               percent:
-                                description: The percent of the s...
                                 properties:
                                   value:
                                     type: number
                                 type: object
                               regex:
-                                description: The list of regex st...
                                 items:
                                   type: string
                                 type: array
                             type: object
                           shadow:
-                            description: Shadow represents wh...
                             type: boolean
                         type: object
                       type: array
                     enabledFor:
-                      description: Whether responses, a...
                       enum:
                       - RESPONSE_BODY
                       - ACCESS_LOGS
@@ -221,10 +174,8 @@ spec:
                       type: string
                   type: object
                 extauth:
-                  description: 'Enterprise-only: Aut...'
                   properties:
                     configRef:
-                      description: A reference to an Au...
                       properties:
                         name:
                           type: string
@@ -232,23 +183,18 @@ spec:
                           type: string
                       type: object
                     customAuth:
-                      description: Use this field if yo...
                       properties:
                         contextExtensions:
                           additionalProperties:
                             type: string
-                          description: When a request match...
                           type: object
                         name:
-                          description: '[Enterprise-only] On...'
                           type: string
                       type: object
                     disable:
-                      description: Set to true to disab...
                       type: boolean
                   type: object
                 extensions:
-                  description: Extensions will be p...
                   properties:
                     configs:
                       additionalProperties:
@@ -257,29 +203,21 @@ spec:
                       type: object
                   type: object
                 headerManipulation:
-                  description: Append/Remove header...
                   properties:
                     requestHeadersToAdd:
-                      description: Specifies a list of ...
                       items:
-                        description: Header name/value pa...
                         properties:
                           append:
-                            description: Should the value be ...
                             nullable: true
                             type: boolean
                           header:
-                            description: Explicitly specified...
                             properties:
                               key:
-                                description: Header name.
                                 type: string
                               value:
-                                description: Header value.
                                 type: string
                             type: object
                           headerSecretRef:
-                            description: Reference to header ...
                             properties:
                               name:
                                 type: string
@@ -289,96 +227,71 @@ spec:
                         type: object
                       type: array
                     requestHeadersToRemove:
-                      description: Specifies a list of ...
                       items:
                         type: string
                       type: array
                     responseHeadersToAdd:
-                      description: Specifies a list of ...
                       items:
-                        description: Header name/value pa...
                         properties:
                           append:
-                            description: Should the value be ...
                             nullable: true
                             type: boolean
                           header:
-                            description: Header name/value pa...
                             properties:
                               key:
-                                description: Header name.
                                 type: string
                               value:
-                                description: Header value.
                                 type: string
                             type: object
                         type: object
                       type: array
                     responseHeadersToRemove:
-                      description: Specifies a list of ...
                       items:
                         type: string
                       type: array
                   type: object
                 includeAttemptCountInResponse:
-                  description: IncludeAttemptCountI...
                   nullable: true
                   type: boolean
                 includeRequestAttemptCount:
-                  description: IncludeRequestAttemp...
                   nullable: true
                   type: boolean
                 jwt:
-                  description: 'Enterprise-only: Con...'
                   properties:
                     allowMissingOrFailedJwt:
-                      description: Allow pass through o...
                       type: boolean
                     providers:
                       additionalProperties:
                         properties:
                           audiences:
-                            description: An incoming JWT must...
                             items:
                               type: string
                             type: array
                           claimsToHeaders:
-                            description: What claims should b...
                             items:
-                              description: Allows copying verif...
                               properties:
                                 append:
-                                  description: If the header exists...
                                   type: boolean
                                 claim:
-                                  description: Claim name. for exam...
                                   type: string
                                 header:
-                                  description: The header the claim...
                                   type: string
                               type: object
                             type: array
                           issuer:
-                            description: Issuer of the JWT. t...
                             type: string
                           jwks:
-                            description: The source for the k...
                             properties:
                               local:
-                                description: Use an inline JWKS
                                 properties:
                                   key:
-                                    description: Inline key. this can...
                                     type: string
                                 type: object
                               remote:
-                                description: Use a remote JWKS se...
                                 properties:
                                   cacheDuration:
-                                    description: Duration after which...
                                     type: string
                                   upstreamRef:
-                                    description: The Upstream represe...
                                     properties:
                                       name:
                                         type: string
@@ -386,93 +299,68 @@ spec:
                                         type: string
                                     type: object
                                   url:
-                                    description: The url used when ac...
                                     type: string
                                 type: object
                             type: object
                           keepToken:
-                            description: Should the token for...
                             type: boolean
                           tokenSource:
-                            description: Where to find the JW...
                             properties:
                               headers:
-                                description: Try to retrieve toke...
                                 items:
-                                  description: Describes how to ret...
                                   properties:
                                     header:
-                                      description: The name of the head...
                                       type: string
                                     prefix:
-                                      description: Prefix before the to...
                                       type: string
                                   type: object
                                 type: array
                               queryParams:
-                                description: Try to retrieve toke...
                                 items:
                                   type: string
                                 type: array
                             type: object
                         type: object
-                      description: Map of JWT provider ...
                       type: object
                   type: object
                 jwtStaged:
-                  description: 'Enterprise-only: Con...'
                   properties:
                     afterExtAuth:
-                      description: JWT Virtual host con...
                       properties:
                         allowMissingOrFailedJwt:
-                          description: Allow pass through o...
                           type: boolean
                         providers:
                           additionalProperties:
                             properties:
                               audiences:
-                                description: An incoming JWT must...
                                 items:
                                   type: string
                                 type: array
                               claimsToHeaders:
-                                description: What claims should b...
                                 items:
-                                  description: Allows copying verif...
                                   properties:
                                     append:
-                                      description: If the header exists...
                                       type: boolean
                                     claim:
-                                      description: Claim name. for exam...
                                       type: string
                                     header:
-                                      description: The header the claim...
                                       type: string
                                   type: object
                                 type: array
                               issuer:
-                                description: Issuer of the JWT. t...
                                 type: string
                               jwks:
-                                description: The source for the k...
                                 properties:
                                   local:
-                                    description: Use an inline JWKS
                                     properties:
                                       key:
-                                        description: Inline key. this can...
                                         type: string
                                     type: object
                                   remote:
-                                    description: Use a remote JWKS se...
                                     properties:
                                       cacheDuration:
-                                        description: Duration after which...
                                         type: string
                                       upstreamRef:
-                                        description: The Upstream represe...
                                         properties:
                                           name:
                                             type: string
@@ -480,90 +368,66 @@ spec:
                                             type: string
                                         type: object
                                       url:
-                                        description: The url used when ac...
                                         type: string
                                     type: object
                                 type: object
                               keepToken:
-                                description: Should the token for...
                                 type: boolean
                               tokenSource:
-                                description: Where to find the JW...
                                 properties:
                                   headers:
-                                    description: Try to retrieve toke...
                                     items:
-                                      description: Describes how to ret...
                                       properties:
                                         header:
-                                          description: The name of the head...
                                           type: string
                                         prefix:
-                                          description: Prefix before the to...
                                           type: string
                                       type: object
                                     type: array
                                   queryParams:
-                                    description: Try to retrieve toke...
                                     items:
                                       type: string
                                     type: array
                                 type: object
                             type: object
-                          description: Map of JWT provider ...
                           type: object
                       type: object
                     beforeExtAuth:
-                      description: JWT Virtual host con...
                       properties:
                         allowMissingOrFailedJwt:
-                          description: Allow pass through o...
                           type: boolean
                         providers:
                           additionalProperties:
                             properties:
                               audiences:
-                                description: An incoming JWT must...
                                 items:
                                   type: string
                                 type: array
                               claimsToHeaders:
-                                description: What claims should b...
                                 items:
-                                  description: Allows copying verif...
                                   properties:
                                     append:
-                                      description: If the header exists...
                                       type: boolean
                                     claim:
-                                      description: Claim name. for exam...
                                       type: string
                                     header:
-                                      description: The header the claim...
                                       type: string
                                   type: object
                                 type: array
                               issuer:
-                                description: Issuer of the JWT. t...
                                 type: string
                               jwks:
-                                description: The source for the k...
                                 properties:
                                   local:
-                                    description: Use an inline JWKS
                                     properties:
                                       key:
-                                        description: Inline key. this can...
                                         type: string
                                     type: object
                                   remote:
-                                    description: Use a remote JWKS se...
                                     properties:
                                       cacheDuration:
-                                        description: Duration after which...
                                         type: string
                                       upstreamRef:
-                                        description: The Upstream represe...
                                         properties:
                                           name:
                                             type: string
@@ -571,46 +435,35 @@ spec:
                                             type: string
                                         type: object
                                       url:
-                                        description: The url used when ac...
                                         type: string
                                     type: object
                                 type: object
                               keepToken:
-                                description: Should the token for...
                                 type: boolean
                               tokenSource:
-                                description: Where to find the JW...
                                 properties:
                                   headers:
-                                    description: Try to retrieve toke...
                                     items:
-                                      description: Describes how to ret...
                                       properties:
                                         header:
-                                          description: The name of the head...
                                           type: string
                                         prefix:
-                                          description: Prefix before the to...
                                           type: string
                                       type: object
                                     type: array
                                   queryParams:
-                                    description: Try to retrieve toke...
                                     items:
                                       type: string
                                     type: array
                                 type: object
                             type: object
-                          description: Map of JWT provider ...
                           type: object
                       type: object
                   type: object
                 rateLimitConfigs:
-                  description: References to RateLi...
                   properties:
                     refs:
                       items:
-                        description: A reference to a `Ra...
                         properties:
                           name:
                             type: string
@@ -620,244 +473,177 @@ spec:
                       type: array
                   type: object
                 ratelimit:
-                  description: 'Enterprise-only: Par...'
                   properties:
                     rateLimits:
-                      description: Define individual ra...
                       items:
-                        description: Each action and setA...
                         properties:
                           actions:
                             items:
-                              description: Copied directly from...
                               properties:
                                 destinationCluster:
-                                  description: Rate limit on destin...
                                   type: object
                                 genericKey:
-                                  description: Rate limit on a gene...
                                   properties:
                                     descriptorValue:
-                                      description: The value to use in ...
                                       type: string
                                   type: object
                                 headerValueMatch:
-                                  description: Rate limit on the ex...
                                   properties:
                                     descriptorValue:
-                                      description: The value to use in ...
                                       type: string
                                     expectMatch:
-                                      description: If set to true, the ...
                                       nullable: true
                                       type: boolean
                                     headers:
-                                      description: Specifies a set of h...
                                       items:
                                         properties:
                                           exactMatch:
-                                            description: If specified, header...
                                             type: string
                                           invertMatch:
-                                            description: If specified, the ma...
                                             type: boolean
                                           name:
-                                            description: Specifies the name o...
                                             type: string
                                           prefixMatch:
-                                            description: If specified, header...
                                             type: string
                                           presentMatch:
-                                            description: If specified, header...
                                             type: boolean
                                           rangeMatch:
-                                            description: If specified, header...
                                             properties:
                                               end:
-                                                description: end of the range (ex...
                                                 format: int64
                                                 type: integer
                                                 x-kubernetes-int-or-string: true
                                               start:
-                                                description: start of the range (...
                                                 format: int64
                                                 type: integer
                                                 x-kubernetes-int-or-string: true
                                             type: object
                                           regexMatch:
-                                            description: If specified, this r...
                                             type: string
                                           suffixMatch:
-                                            description: If specified, header...
                                             type: string
                                         type: object
                                       type: array
                                   type: object
                                 metadata:
-                                  description: Rate limit on metada...
                                   properties:
                                     defaultValue:
-                                      description: An optional value to...
                                       type: string
                                     descriptorKey:
-                                      description: Required. The key to...
                                       type: string
                                     metadataKey:
-                                      description: Required. Metadata s...
                                       properties:
                                         key:
-                                          description: Required. The key na...
                                           type: string
                                         path:
-                                          description: Must have at least o...
                                           items:
-                                            description: Specifies the segmen...
                                             properties:
                                               key:
-                                                description: Required. If specifi...
                                                 type: string
                                             type: object
                                           type: array
                                       type: object
                                     source:
-                                      description: Source of metadata
                                       enum:
                                       - DYNAMIC
                                       - ROUTE_ENTRY
                                       type: string
                                   type: object
                                 remoteAddress:
-                                  description: Rate limit on remote...
                                   type: object
                                 requestHeaders:
-                                  description: Rate limit on reques...
                                   properties:
                                     descriptorKey:
-                                      description: The key to use in th...
                                       type: string
                                     headerName:
-                                      description: The header name to b...
                                       type: string
                                   type: object
                                 sourceCluster:
-                                  description: Rate limit on source...
                                   type: object
                               type: object
                             type: array
                           setActions:
                             items:
-                              description: Copied directly from...
                               properties:
                                 destinationCluster:
-                                  description: Rate limit on destin...
                                   type: object
                                 genericKey:
-                                  description: Rate limit on a gene...
                                   properties:
                                     descriptorValue:
-                                      description: The value to use in ...
                                       type: string
                                   type: object
                                 headerValueMatch:
-                                  description: Rate limit on the ex...
                                   properties:
                                     descriptorValue:
-                                      description: The value to use in ...
                                       type: string
                                     expectMatch:
-                                      description: If set to true, the ...
                                       nullable: true
                                       type: boolean
                                     headers:
-                                      description: Specifies a set of h...
                                       items:
                                         properties:
                                           exactMatch:
-                                            description: If specified, header...
                                             type: string
                                           invertMatch:
-                                            description: If specified, the ma...
                                             type: boolean
                                           name:
-                                            description: Specifies the name o...
                                             type: string
                                           prefixMatch:
-                                            description: If specified, header...
                                             type: string
                                           presentMatch:
-                                            description: If specified, header...
                                             type: boolean
                                           rangeMatch:
-                                            description: If specified, header...
                                             properties:
                                               end:
-                                                description: end of the range (ex...
                                                 format: int64
                                                 type: integer
                                                 x-kubernetes-int-or-string: true
                                               start:
-                                                description: start of the range (...
                                                 format: int64
                                                 type: integer
                                                 x-kubernetes-int-or-string: true
                                             type: object
                                           regexMatch:
-                                            description: If specified, this r...
                                             type: string
                                           suffixMatch:
-                                            description: If specified, header...
                                             type: string
                                         type: object
                                       type: array
                                   type: object
                                 metadata:
-                                  description: Rate limit on metada...
                                   properties:
                                     defaultValue:
-                                      description: An optional value to...
                                       type: string
                                     descriptorKey:
-                                      description: Required. The key to...
                                       type: string
                                     metadataKey:
-                                      description: Required. Metadata s...
                                       properties:
                                         key:
-                                          description: Required. The key na...
                                           type: string
                                         path:
-                                          description: Must have at least o...
                                           items:
-                                            description: Specifies the segmen...
                                             properties:
                                               key:
-                                                description: Required. If specifi...
                                                 type: string
                                             type: object
                                           type: array
                                       type: object
                                     source:
-                                      description: Source of metadata
                                       enum:
                                       - DYNAMIC
                                       - ROUTE_ENTRY
                                       type: string
                                   type: object
                                 remoteAddress:
-                                  description: Rate limit on remote...
                                   type: object
                                 requestHeaders:
-                                  description: Rate limit on reques...
                                   properties:
                                     descriptorKey:
-                                      description: The key to use in th...
                                       type: string
                                     headerName:
-                                      description: The header name to b...
                                       type: string
                                   type: object
                                 sourceCluster:
-                                  description: Rate limit on source...
                                   type: object
                               type: object
                             type: array
@@ -865,7 +651,6 @@ spec:
                       type: array
                   type: object
                 ratelimitBasic:
-                  description: 'Enterprise-only: Con...'
                   properties:
                     anonymousLimits:
                       properties:
@@ -897,162 +682,118 @@ spec:
                       type: object
                   type: object
                 rbac:
-                  description: 'Enterprise-only: Con...'
                   properties:
                     disable:
-                      description: Disable RBAC checks ...
                       type: boolean
                     policies:
                       additionalProperties:
                         properties:
                           permissions:
-                            description: Permissions granted ...
                             properties:
                               methods:
-                                description: What http methods (G...
                                 items:
                                   type: string
                                 type: array
                               pathPrefix:
-                                description: Paths that have this...
                                 type: string
                             type: object
                           principals:
-                            description: Principals in this p...
                             items:
-                              description: An RBAC principal - ...
                               properties:
                                 jwtPrincipal:
                                   properties:
                                     claims:
                                       additionalProperties:
                                         type: string
-                                      description: Set of claims that m...
                                       type: object
                                     provider:
-                                      description: Verify that the JWT ...
                                       type: string
                                   type: object
                               type: object
                             type: array
                         type: object
-                      description: Named policies to ap...
                       type: object
                   type: object
                 retries:
                   properties:
                     numRetries:
-                      description: Specifies the allowe...
                       format: int32
                       type: integer
                     perTryTimeout:
-                      description: Specifies a non-zero...
                       type: string
                     retryOn:
-                      description: Specifies the condit...
                       type: string
                   type: object
                 stagedTransformations:
-                  description: Early transformation...
                   properties:
                     early:
-                      description: Early transformation...
                       properties:
                         requestTransforms:
-                          description: Transformations to a...
                           items:
                             properties:
                               clearRouteCache:
-                                description: Should we clear the ...
                                 type: boolean
                               matcher:
-                                description: Matches on the reque...
                                 properties:
                                   caseSensitive:
-                                    description: Indicates that prefi...
                                     nullable: true
                                     type: boolean
                                   exact:
-                                    description: If specified, the ro...
                                     type: string
                                   headers:
-                                    description: Specifies a set of h...
                                     items:
-                                      description: Internally, Gloo alw...
                                       properties:
                                         invertMatch:
-                                          description: If set to true, the ...
                                           type: boolean
                                         name:
-                                          description: Specifies the name o...
                                           type: string
                                         regex:
-                                          description: Specifies whether th...
                                           type: boolean
                                         value:
-                                          description: Specifies the value ...
                                           type: string
                                       type: object
                                     type: array
                                   methods:
-                                    description: HTTP Method/Verb(s) ...
                                     items:
                                       type: string
                                     type: array
                                   prefix:
-                                    description: If specified, the ro...
                                     type: string
                                   queryParameters:
-                                    description: Specifies a set of U...
                                     items:
-                                      description: Query parameter matc...
                                       properties:
                                         name:
-                                          description: Specifies the name o...
                                           type: string
                                         regex:
-                                          description: Specifies whether th...
                                           type: boolean
                                         value:
-                                          description: Specifies the value ...
                                           type: string
                                       type: object
                                     type: array
                                   regex:
-                                    description: If specified, the ro...
                                     type: string
                                 type: object
                               requestTransformation:
-                                description: Transformation to ap...
                                 properties:
                                   headerBodyTransform:
-                                    description: This type of transfo...
                                     type: object
                                   transformationTemplate:
-                                    description: Apply transformation...
                                     properties:
                                       advancedTemplates:
-                                        description: If set to true, use ...
                                         type: boolean
                                       body:
-                                        description: Apply a template to ...
                                         properties:
                                           text:
                                             type: string
                                         type: object
                                       dynamicMetadataValues:
-                                        description: Use this field to se...
                                         items:
-                                          description: Defines an [Envoy Dy...
                                           properties:
                                             key:
-                                              description: The metadata key.
                                               type: string
                                             metadataNamespace:
-                                              description: The metadata namespa...
                                               type: string
                                             value:
-                                              description: A template that dete...
                                               properties:
                                                 text:
                                                   type: string
@@ -1063,21 +804,16 @@ spec:
                                         additionalProperties:
                                           properties:
                                             body:
-                                              description: Extract information ...
                                               maxProperties: 0
                                               type: object
                                             header:
-                                              description: Extract information ...
                                               type: string
                                             regex:
-                                              description: Only strings matchin...
                                               type: string
                                             subgroup:
-                                              description: If your regex contai...
                                               format: int32
                                               type: integer
                                           type: object
-                                        description: Use this attribute t...
                                         type: object
                                       headers:
                                         additionalProperties:
@@ -1085,18 +821,13 @@ spec:
                                             text:
                                               type: string
                                           type: object
-                                        description: Use this attribute t...
                                         type: object
                                       headersToAppend:
-                                        description: Use this attribute t...
                                         items:
-                                          description: Defines a header-tem...
                                           properties:
                                             key:
-                                              description: Header name
                                               type: string
                                             value:
-                                              description: Apply a template to ...
                                               properties:
                                                 text:
                                                   type: string
@@ -1104,10 +835,8 @@ spec:
                                           type: object
                                         type: array
                                       ignoreErrorOnParse:
-                                        description: If set to true, Envo...
                                         type: boolean
                                       mergeExtractorsToBody:
-                                        description: Merge all defined ex...
                                         type: object
                                       parseBodyBehavior:
                                         enum:
@@ -1115,54 +844,39 @@ spec:
                                         - DontParse
                                         type: string
                                       passthrough:
-                                        description: This will cause the ...
                                         type: object
                                     type: object
                                   xsltTransformation:
-                                    description: '(Enterprise Only): X...'
                                     properties:
                                       nonXmlTransform:
-                                        description: This should be set t...
                                         type: boolean
                                       setContentType:
-                                        description: Changes the content-...
                                         type: string
                                       xslt:
-                                        description: XSLT transformation ...
                                         type: string
                                     type: object
                                 type: object
                               responseTransformation:
-                                description: Transformation to ap...
                                 properties:
                                   headerBodyTransform:
-                                    description: This type of transfo...
                                     type: object
                                   transformationTemplate:
-                                    description: Apply transformation...
                                     properties:
                                       advancedTemplates:
-                                        description: If set to true, use ...
                                         type: boolean
                                       body:
-                                        description: Apply a template to ...
                                         properties:
                                           text:
                                             type: string
                                         type: object
                                       dynamicMetadataValues:
-                                        description: Use this field to se...
                                         items:
-                                          description: Defines an [Envoy Dy...
                                           properties:
                                             key:
-                                              description: The metadata key.
                                               type: string
                                             metadataNamespace:
-                                              description: The metadata namespa...
                                               type: string
                                             value:
-                                              description: A template that dete...
                                               properties:
                                                 text:
                                                   type: string
@@ -1173,21 +887,16 @@ spec:
                                         additionalProperties:
                                           properties:
                                             body:
-                                              description: Extract information ...
                                               maxProperties: 0
                                               type: object
                                             header:
-                                              description: Extract information ...
                                               type: string
                                             regex:
-                                              description: Only strings matchin...
                                               type: string
                                             subgroup:
-                                              description: If your regex contai...
                                               format: int32
                                               type: integer
                                           type: object
-                                        description: Use this attribute t...
                                         type: object
                                       headers:
                                         additionalProperties:
@@ -1195,18 +904,13 @@ spec:
                                             text:
                                               type: string
                                           type: object
-                                        description: Use this attribute t...
                                         type: object
                                       headersToAppend:
-                                        description: Use this attribute t...
                                         items:
-                                          description: Defines a header-tem...
                                           properties:
                                             key:
-                                              description: Header name
                                               type: string
                                             value:
-                                              description: Apply a template to ...
                                               properties:
                                                 text:
                                                   type: string
@@ -1214,10 +918,8 @@ spec:
                                           type: object
                                         type: array
                                       ignoreErrorOnParse:
-                                        description: If set to true, Envo...
                                         type: boolean
                                       mergeExtractorsToBody:
-                                        description: Merge all defined ex...
                                         type: object
                                       parseBodyBehavior:
                                         enum:
@@ -1225,82 +927,59 @@ spec:
                                         - DontParse
                                         type: string
                                       passthrough:
-                                        description: This will cause the ...
                                         type: object
                                     type: object
                                   xsltTransformation:
-                                    description: '(Enterprise Only): X...'
                                     properties:
                                       nonXmlTransform:
-                                        description: This should be set t...
                                         type: boolean
                                       setContentType:
-                                        description: Changes the content-...
                                         type: string
                                       xslt:
-                                        description: XSLT transformation ...
                                         type: string
                                     type: object
                                 type: object
                             type: object
                           type: array
                         responseTransforms:
-                          description: Transformations to a...
                           items:
                             properties:
                               matchers:
-                                description: Response headers to ...
                                 items:
-                                  description: Internally, Gloo alw...
                                   properties:
                                     invertMatch:
-                                      description: If set to true, the ...
                                       type: boolean
                                     name:
-                                      description: Specifies the name o...
                                       type: string
                                     regex:
-                                      description: Specifies whether th...
                                       type: boolean
                                     value:
-                                      description: Specifies the value ...
                                       type: string
                                   type: object
                                 type: array
                               responseCodeDetails:
-                                description: Response code detail...
                                 type: string
                               responseTransformation:
-                                description: Transformation to ap...
                                 properties:
                                   headerBodyTransform:
-                                    description: This type of transfo...
                                     type: object
                                   transformationTemplate:
-                                    description: Apply transformation...
                                     properties:
                                       advancedTemplates:
-                                        description: If set to true, use ...
                                         type: boolean
                                       body:
-                                        description: Apply a template to ...
                                         properties:
                                           text:
                                             type: string
                                         type: object
                                       dynamicMetadataValues:
-                                        description: Use this field to se...
                                         items:
-                                          description: Defines an [Envoy Dy...
                                           properties:
                                             key:
-                                              description: The metadata key.
                                               type: string
                                             metadataNamespace:
-                                              description: The metadata namespa...
                                               type: string
                                             value:
-                                              description: A template that dete...
                                               properties:
                                                 text:
                                                   type: string
@@ -1311,21 +990,16 @@ spec:
                                         additionalProperties:
                                           properties:
                                             body:
-                                              description: Extract information ...
                                               maxProperties: 0
                                               type: object
                                             header:
-                                              description: Extract information ...
                                               type: string
                                             regex:
-                                              description: Only strings matchin...
                                               type: string
                                             subgroup:
-                                              description: If your regex contai...
                                               format: int32
                                               type: integer
                                           type: object
-                                        description: Use this attribute t...
                                         type: object
                                       headers:
                                         additionalProperties:
@@ -1333,18 +1007,13 @@ spec:
                                             text:
                                               type: string
                                           type: object
-                                        description: Use this attribute t...
                                         type: object
                                       headersToAppend:
-                                        description: Use this attribute t...
                                         items:
-                                          description: Defines a header-tem...
                                           properties:
                                             key:
-                                              description: Header name
                                               type: string
                                             value:
-                                              description: Apply a template to ...
                                               properties:
                                                 text:
                                                   type: string
@@ -1352,10 +1021,8 @@ spec:
                                           type: object
                                         type: array
                                       ignoreErrorOnParse:
-                                        description: If set to true, Envo...
                                         type: boolean
                                       mergeExtractorsToBody:
-                                        description: Merge all defined ex...
                                         type: object
                                       parseBodyBehavior:
                                         enum:
@@ -1363,20 +1030,15 @@ spec:
                                         - DontParse
                                         type: string
                                       passthrough:
-                                        description: This will cause the ...
                                         type: object
                                     type: object
                                   xsltTransformation:
-                                    description: '(Enterprise Only): X...'
                                     properties:
                                       nonXmlTransform:
-                                        description: This should be set t...
                                         type: boolean
                                       setContentType:
-                                        description: Changes the content-...
                                         type: string
                                       xslt:
-                                        description: XSLT transformation ...
                                         type: string
                                     type: object
                                 type: object
@@ -1384,106 +1046,75 @@ spec:
                           type: array
                       type: object
                     inheritTransformation:
-                      description: Inherit transformati...
                       type: boolean
                     regular:
-                      description: Regular transformati...
                       properties:
                         requestTransforms:
-                          description: Transformations to a...
                           items:
                             properties:
                               clearRouteCache:
-                                description: Should we clear the ...
                                 type: boolean
                               matcher:
-                                description: Matches on the reque...
                                 properties:
                                   caseSensitive:
-                                    description: Indicates that prefi...
                                     nullable: true
                                     type: boolean
                                   exact:
-                                    description: If specified, the ro...
                                     type: string
                                   headers:
-                                    description: Specifies a set of h...
                                     items:
-                                      description: Internally, Gloo alw...
                                       properties:
                                         invertMatch:
-                                          description: If set to true, the ...
                                           type: boolean
                                         name:
-                                          description: Specifies the name o...
                                           type: string
                                         regex:
-                                          description: Specifies whether th...
                                           type: boolean
                                         value:
-                                          description: Specifies the value ...
                                           type: string
                                       type: object
                                     type: array
                                   methods:
-                                    description: HTTP Method/Verb(s) ...
                                     items:
                                       type: string
                                     type: array
                                   prefix:
-                                    description: If specified, the ro...
                                     type: string
                                   queryParameters:
-                                    description: Specifies a set of U...
                                     items:
-                                      description: Query parameter matc...
                                       properties:
                                         name:
-                                          description: Specifies the name o...
                                           type: string
                                         regex:
-                                          description: Specifies whether th...
                                           type: boolean
                                         value:
-                                          description: Specifies the value ...
                                           type: string
                                       type: object
                                     type: array
                                   regex:
-                                    description: If specified, the ro...
                                     type: string
                                 type: object
                               requestTransformation:
-                                description: Transformation to ap...
                                 properties:
                                   headerBodyTransform:
-                                    description: This type of transfo...
                                     type: object
                                   transformationTemplate:
-                                    description: Apply transformation...
                                     properties:
                                       advancedTemplates:
-                                        description: If set to true, use ...
                                         type: boolean
                                       body:
-                                        description: Apply a template to ...
                                         properties:
                                           text:
                                             type: string
                                         type: object
                                       dynamicMetadataValues:
-                                        description: Use this field to se...
                                         items:
-                                          description: Defines an [Envoy Dy...
                                           properties:
                                             key:
-                                              description: The metadata key.
                                               type: string
                                             metadataNamespace:
-                                              description: The metadata namespa...
                                               type: string
                                             value:
-                                              description: A template that dete...
                                               properties:
                                                 text:
                                                   type: string
@@ -1494,21 +1125,16 @@ spec:
                                         additionalProperties:
                                           properties:
                                             body:
-                                              description: Extract information ...
                                               maxProperties: 0
                                               type: object
                                             header:
-                                              description: Extract information ...
                                               type: string
                                             regex:
-                                              description: Only strings matchin...
                                               type: string
                                             subgroup:
-                                              description: If your regex contai...
                                               format: int32
                                               type: integer
                                           type: object
-                                        description: Use this attribute t...
                                         type: object
                                       headers:
                                         additionalProperties:
@@ -1516,18 +1142,13 @@ spec:
                                             text:
                                               type: string
                                           type: object
-                                        description: Use this attribute t...
                                         type: object
                                       headersToAppend:
-                                        description: Use this attribute t...
                                         items:
-                                          description: Defines a header-tem...
                                           properties:
                                             key:
-                                              description: Header name
                                               type: string
                                             value:
-                                              description: Apply a template to ...
                                               properties:
                                                 text:
                                                   type: string
@@ -1535,10 +1156,8 @@ spec:
                                           type: object
                                         type: array
                                       ignoreErrorOnParse:
-                                        description: If set to true, Envo...
                                         type: boolean
                                       mergeExtractorsToBody:
-                                        description: Merge all defined ex...
                                         type: object
                                       parseBodyBehavior:
                                         enum:
@@ -1546,54 +1165,39 @@ spec:
                                         - DontParse
                                         type: string
                                       passthrough:
-                                        description: This will cause the ...
                                         type: object
                                     type: object
                                   xsltTransformation:
-                                    description: '(Enterprise Only): X...'
                                     properties:
                                       nonXmlTransform:
-                                        description: This should be set t...
                                         type: boolean
                                       setContentType:
-                                        description: Changes the content-...
                                         type: string
                                       xslt:
-                                        description: XSLT transformation ...
                                         type: string
                                     type: object
                                 type: object
                               responseTransformation:
-                                description: Transformation to ap...
                                 properties:
                                   headerBodyTransform:
-                                    description: This type of transfo...
                                     type: object
                                   transformationTemplate:
-                                    description: Apply transformation...
                                     properties:
                                       advancedTemplates:
-                                        description: If set to true, use ...
                                         type: boolean
                                       body:
-                                        description: Apply a template to ...
                                         properties:
                                           text:
                                             type: string
                                         type: object
                                       dynamicMetadataValues:
-                                        description: Use this field to se...
                                         items:
-                                          description: Defines an [Envoy Dy...
                                           properties:
                                             key:
-                                              description: The metadata key.
                                               type: string
                                             metadataNamespace:
-                                              description: The metadata namespa...
                                               type: string
                                             value:
-                                              description: A template that dete...
                                               properties:
                                                 text:
                                                   type: string
@@ -1604,21 +1208,16 @@ spec:
                                         additionalProperties:
                                           properties:
                                             body:
-                                              description: Extract information ...
                                               maxProperties: 0
                                               type: object
                                             header:
-                                              description: Extract information ...
                                               type: string
                                             regex:
-                                              description: Only strings matchin...
                                               type: string
                                             subgroup:
-                                              description: If your regex contai...
                                               format: int32
                                               type: integer
                                           type: object
-                                        description: Use this attribute t...
                                         type: object
                                       headers:
                                         additionalProperties:
@@ -1626,18 +1225,13 @@ spec:
                                             text:
                                               type: string
                                           type: object
-                                        description: Use this attribute t...
                                         type: object
                                       headersToAppend:
-                                        description: Use this attribute t...
                                         items:
-                                          description: Defines a header-tem...
                                           properties:
                                             key:
-                                              description: Header name
                                               type: string
                                             value:
-                                              description: Apply a template to ...
                                               properties:
                                                 text:
                                                   type: string
@@ -1645,10 +1239,8 @@ spec:
                                           type: object
                                         type: array
                                       ignoreErrorOnParse:
-                                        description: If set to true, Envo...
                                         type: boolean
                                       mergeExtractorsToBody:
-                                        description: Merge all defined ex...
                                         type: object
                                       parseBodyBehavior:
                                         enum:
@@ -1656,82 +1248,59 @@ spec:
                                         - DontParse
                                         type: string
                                       passthrough:
-                                        description: This will cause the ...
                                         type: object
                                     type: object
                                   xsltTransformation:
-                                    description: '(Enterprise Only): X...'
                                     properties:
                                       nonXmlTransform:
-                                        description: This should be set t...
                                         type: boolean
                                       setContentType:
-                                        description: Changes the content-...
                                         type: string
                                       xslt:
-                                        description: XSLT transformation ...
                                         type: string
                                     type: object
                                 type: object
                             type: object
                           type: array
                         responseTransforms:
-                          description: Transformations to a...
                           items:
                             properties:
                               matchers:
-                                description: Response headers to ...
                                 items:
-                                  description: Internally, Gloo alw...
                                   properties:
                                     invertMatch:
-                                      description: If set to true, the ...
                                       type: boolean
                                     name:
-                                      description: Specifies the name o...
                                       type: string
                                     regex:
-                                      description: Specifies whether th...
                                       type: boolean
                                     value:
-                                      description: Specifies the value ...
                                       type: string
                                   type: object
                                 type: array
                               responseCodeDetails:
-                                description: Response code detail...
                                 type: string
                               responseTransformation:
-                                description: Transformation to ap...
                                 properties:
                                   headerBodyTransform:
-                                    description: This type of transfo...
                                     type: object
                                   transformationTemplate:
-                                    description: Apply transformation...
                                     properties:
                                       advancedTemplates:
-                                        description: If set to true, use ...
                                         type: boolean
                                       body:
-                                        description: Apply a template to ...
                                         properties:
                                           text:
                                             type: string
                                         type: object
                                       dynamicMetadataValues:
-                                        description: Use this field to se...
                                         items:
-                                          description: Defines an [Envoy Dy...
                                           properties:
                                             key:
-                                              description: The metadata key.
                                               type: string
                                             metadataNamespace:
-                                              description: The metadata namespa...
                                               type: string
                                             value:
-                                              description: A template that dete...
                                               properties:
                                                 text:
                                                   type: string
@@ -1742,21 +1311,16 @@ spec:
                                         additionalProperties:
                                           properties:
                                             body:
-                                              description: Extract information ...
                                               maxProperties: 0
                                               type: object
                                             header:
-                                              description: Extract information ...
                                               type: string
                                             regex:
-                                              description: Only strings matchin...
                                               type: string
                                             subgroup:
-                                              description: If your regex contai...
                                               format: int32
                                               type: integer
                                           type: object
-                                        description: Use this attribute t...
                                         type: object
                                       headers:
                                         additionalProperties:
@@ -1764,18 +1328,13 @@ spec:
                                             text:
                                               type: string
                                           type: object
-                                        description: Use this attribute t...
                                         type: object
                                       headersToAppend:
-                                        description: Use this attribute t...
                                         items:
-                                          description: Defines a header-tem...
                                           properties:
                                             key:
-                                              description: Header name
                                               type: string
                                             value:
-                                              description: Apply a template to ...
                                               properties:
                                                 text:
                                                   type: string
@@ -1783,10 +1342,8 @@ spec:
                                           type: object
                                         type: array
                                       ignoreErrorOnParse:
-                                        description: If set to true, Envo...
                                         type: boolean
                                       mergeExtractorsToBody:
-                                        description: Merge all defined ex...
                                         type: object
                                       parseBodyBehavior:
                                         enum:
@@ -1794,20 +1351,15 @@ spec:
                                         - DontParse
                                         type: string
                                       passthrough:
-                                        description: This will cause the ...
                                         type: object
                                     type: object
                                   xsltTransformation:
-                                    description: '(Enterprise Only): X...'
                                     properties:
                                       nonXmlTransform:
-                                        description: This should be set t...
                                         type: boolean
                                       setContentType:
-                                        description: Changes the content-...
                                         type: string
                                       xslt:
-                                        description: XSLT transformation ...
                                         type: string
                                     type: object
                                 type: object
@@ -1818,59 +1370,42 @@ spec:
                 stats:
                   properties:
                     virtualClusters:
-                      description: Virtual clusters all...
                       items:
-                        description: Virtual clusters all...
                         properties:
                           method:
-                            description: If specified, statis...
                             type: string
                           name:
-                            description: The name of the virt...
                             type: string
                           pattern:
-                            description: The regex pattern us...
                             type: string
                         type: object
                       type: array
                   type: object
                 transformations:
-                  description: Transformations to a...
                   properties:
                     clearRouteCache:
-                      description: Clear the route cach...
                       type: boolean
                     requestTransformation:
-                      description: Apply a transformati...
                       properties:
                         headerBodyTransform:
-                          description: This type of transfo...
                           type: object
                         transformationTemplate:
-                          description: Apply transformation...
                           properties:
                             advancedTemplates:
-                              description: If set to true, use ...
                               type: boolean
                             body:
-                              description: Apply a template to ...
                               properties:
                                 text:
                                   type: string
                               type: object
                             dynamicMetadataValues:
-                              description: Use this field to se...
                               items:
-                                description: Defines an [Envoy Dy...
                                 properties:
                                   key:
-                                    description: The metadata key.
                                     type: string
                                   metadataNamespace:
-                                    description: The metadata namespa...
                                     type: string
                                   value:
-                                    description: A template that dete...
                                     properties:
                                       text:
                                         type: string
@@ -1881,21 +1416,16 @@ spec:
                               additionalProperties:
                                 properties:
                                   body:
-                                    description: Extract information ...
                                     maxProperties: 0
                                     type: object
                                   header:
-                                    description: Extract information ...
                                     type: string
                                   regex:
-                                    description: Only strings matchin...
                                     type: string
                                   subgroup:
-                                    description: If your regex contai...
                                     format: int32
                                     type: integer
                                 type: object
-                              description: Use this attribute t...
                               type: object
                             headers:
                               additionalProperties:
@@ -1903,18 +1433,13 @@ spec:
                                   text:
                                     type: string
                                 type: object
-                              description: Use this attribute t...
                               type: object
                             headersToAppend:
-                              description: Use this attribute t...
                               items:
-                                description: Defines a header-tem...
                                 properties:
                                   key:
-                                    description: Header name
                                     type: string
                                   value:
-                                    description: Apply a template to ...
                                     properties:
                                       text:
                                         type: string
@@ -1922,10 +1447,8 @@ spec:
                                 type: object
                               type: array
                             ignoreErrorOnParse:
-                              description: If set to true, Envo...
                               type: boolean
                             mergeExtractorsToBody:
-                              description: Merge all defined ex...
                               type: object
                             parseBodyBehavior:
                               enum:
@@ -1933,54 +1456,39 @@ spec:
                               - DontParse
                               type: string
                             passthrough:
-                              description: This will cause the ...
                               type: object
                           type: object
                         xsltTransformation:
-                          description: '(Enterprise Only): X...'
                           properties:
                             nonXmlTransform:
-                              description: This should be set t...
                               type: boolean
                             setContentType:
-                              description: Changes the content-...
                               type: string
                             xslt:
-                              description: XSLT transformation ...
                               type: string
                           type: object
                       type: object
                     responseTransformation:
-                      description: Apply a transformati...
                       properties:
                         headerBodyTransform:
-                          description: This type of transfo...
                           type: object
                         transformationTemplate:
-                          description: Apply transformation...
                           properties:
                             advancedTemplates:
-                              description: If set to true, use ...
                               type: boolean
                             body:
-                              description: Apply a template to ...
                               properties:
                                 text:
                                   type: string
                               type: object
                             dynamicMetadataValues:
-                              description: Use this field to se...
                               items:
-                                description: Defines an [Envoy Dy...
                                 properties:
                                   key:
-                                    description: The metadata key.
                                     type: string
                                   metadataNamespace:
-                                    description: The metadata namespa...
                                     type: string
                                   value:
-                                    description: A template that dete...
                                     properties:
                                       text:
                                         type: string
@@ -1991,21 +1499,16 @@ spec:
                               additionalProperties:
                                 properties:
                                   body:
-                                    description: Extract information ...
                                     maxProperties: 0
                                     type: object
                                   header:
-                                    description: Extract information ...
                                     type: string
                                   regex:
-                                    description: Only strings matchin...
                                     type: string
                                   subgroup:
-                                    description: If your regex contai...
                                     format: int32
                                     type: integer
                                 type: object
-                              description: Use this attribute t...
                               type: object
                             headers:
                               additionalProperties:
@@ -2013,18 +1516,13 @@ spec:
                                   text:
                                     type: string
                                 type: object
-                              description: Use this attribute t...
                               type: object
                             headersToAppend:
-                              description: Use this attribute t...
                               items:
-                                description: Defines a header-tem...
                                 properties:
                                   key:
-                                    description: Header name
                                     type: string
                                   value:
-                                    description: Apply a template to ...
                                     properties:
                                       text:
                                         type: string
@@ -2032,10 +1530,8 @@ spec:
                                 type: object
                               type: array
                             ignoreErrorOnParse:
-                              description: If set to true, Envo...
                               type: boolean
                             mergeExtractorsToBody:
-                              description: Merge all defined ex...
                               type: object
                             parseBodyBehavior:
                               enum:
@@ -2043,29 +1539,22 @@ spec:
                               - DontParse
                               type: string
                             passthrough:
-                              description: This will cause the ...
                               type: object
                           type: object
                         xsltTransformation:
-                          description: '(Enterprise Only): X...'
                           properties:
                             nonXmlTransform:
-                              description: This should be set t...
                               type: boolean
                             setContentType:
-                              description: Changes the content-...
                               type: string
                             xslt:
-                              description: XSLT transformation ...
                               type: string
                           type: object
                       type: object
                   type: object
                 waf:
-                  description: 'Enterprise-only: Con...'
                   properties:
                     auditLogging:
-                      description: Audit Log settings
                       properties:
                         action:
                           enum:
@@ -2080,53 +1569,40 @@ spec:
                           type: string
                       type: object
                     coreRuleSet:
-                      description: Add OWASP core rule ...
                       properties:
                         customSettingsFile:
-                          description: String representing ...
                           type: string
                         customSettingsString:
-                          description: String representing ...
                           type: string
                       type: object
                     customInterventionMessage:
-                      description: Custom massage to di...
                       type: string
                     disabled:
-                      description: Disable waf on this ...
                       type: boolean
                     requestHeadersOnly:
-                      description: Only process request...
                       type: boolean
                     responseHeadersOnly:
-                      description: Only process respons...
                       type: boolean
                     ruleSets:
-                      description: Custom rule sets rul...
                       items:
                         properties:
                           directory:
-                            description: A directory to inclu...
                             type: string
                           files:
-                            description: Array of files to in...
                             items:
                               type: string
                             type: array
                           ruleStr:
-                            description: String of rules whic...
                             type: string
                         type: object
                       type: array
                   type: object
               type: object
             status:
-              description: Status indicates the...
               type: object
               x-kubernetes-preserve-unknown-fields: true
           type: object
         status:
-          description: Status indicates the...
           type: object
           x-kubernetes-preserve-unknown-fields: true
       type: object
