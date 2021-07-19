@@ -1317,9 +1317,9 @@ spec:
                       type: object
                     fallbackPolicy:
                       enum:
-                      - NO_FALLBACK
                       - ANY_ENDPOINT
                       - DEFAULT_SUBSET
+                      - NO_FALLBACK
                       type: string
                     selectors:
                       items:
@@ -1329,6 +1329,7 @@ spec:
                               type: string
                             type: array
                           singleHostPerSubset:
+                            description: single_host_per_subset is false by default
                             type: boolean
                         type: object
                       type: array

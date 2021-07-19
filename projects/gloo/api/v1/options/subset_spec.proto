@@ -14,6 +14,7 @@ message SubsetSpec {
 
 message Selector {
   repeated string keys = 1;
+  // single_host_per_subset is false by default
   bool single_host_per_subset = 2;
 }
 
@@ -22,7 +23,8 @@ message Subset {
 }
 
 enum FallbackPolicy {
-  NO_FALLBACK = 0;
-  ANY_ENDPOINT = 1;
-  DEFAULT_SUBSET = 2;
+  // ANY_ENDOINT is the default
+  ANY_ENDPOINT = 0;
+  DEFAULT_SUBSET = 1;
+  NO_FALLBACK = 2;
 }

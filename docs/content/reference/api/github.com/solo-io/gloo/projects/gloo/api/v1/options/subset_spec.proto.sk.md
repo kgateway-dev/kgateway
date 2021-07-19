@@ -66,7 +66,7 @@ weight: 5
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `keys` | `[]string` |  |
-| `singleHostPerSubset` | `bool` |  |
+| `singleHostPerSubset` | `bool` | single_host_per_subset is false by default. |
 
 
 
@@ -94,9 +94,9 @@ Description:
 
 | Name | Description |
 | ----- | ----------- | 
-| NO_FALLBACK |  |
-| ANY_ENDPOINT |  |
+| ANY_ENDPOINT | ANY_ENDOINT is the default |
 | DEFAULT_SUBSET |  |
+| NO_FALLBACK |  |
 
 
 <!-- Start of HubSpot Embed Code -->
