@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	unnamedRouteName   = "<unnamed>"
 	defaultTableWeight = 0
+	// separator for generated route names
+	sep = "_"
 )
 
 var (
@@ -34,6 +35,9 @@ var (
 	InvalidQueryParamErr = errors.New("invalid route: route table matchers must have all query params that were specified on their parent route's matcher")
 	InvalidMethodErr     = errors.New("invalid route: route table matchers must have all methods that were specified on their parent route's matcher")
 
+	UnnamedRoute = func(index int) string {
+		return fmt.Sprintf("<unnamed-%d>", index)
+	}
 	DelegationCycleErr = func(cycleInfo string) error {
 		return errors.Errorf("invalid route: delegation cycle detected: %s", cycleInfo)
 	}
@@ -61,7 +65,7 @@ var (
 type RouteConverter interface {
 	// Converts a VirtualService to a set of Gloo API routes (i.e. routes on a Proxy resource).
 	// A non-nil error indicates an unexpected internal failure, all configuration errors are added to the given report object.
-	ConvertVirtualService(virtualService *gatewayv1.VirtualService, reports reporter.ResourceReports) ([]*gloov1.Route, error)
+	ConvertVirtualService(virtualService *gatewayv1.VirtualService, gateway *gatewayv1.Gateway, proxyName string, reports reporter.ResourceReports) ([]*gloov1.Route, error)
 }
 
 func NewRouteConverter(selector RouteTableSelector, indexer RouteTableIndexer) RouteConverter {
@@ -145,10 +149,12 @@ func (r *reporterHelper) addWarning(resource resources.InputResource, err error)
 	}
 }
 
-func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualService, reports reporter.ResourceReports) ([]*gloov1.Route, error) {
+func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualService, gateway *gatewayv1.Gateway, proxyName string, reports reporter.ResourceReports) ([]*gloov1.Route, error) {
 	wrapper := &visitableVirtualService{VirtualService: virtualService}
 	return rv.visit(
 		wrapper,
+		gateway,
+		proxyName,
 		nil,
 		nil,
 		&reporterHelper{
@@ -162,19 +168,21 @@ func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualS
 // The additional arguments are used to store the state of the traversal of the current branch of the route tree.
 func (rv *routeVisitor) visit(
 	resource resourceWithRoutes,
+	gateway *gatewayv1.Gateway,
+	proxyName string,
 	parentRoute *routeInfo,
 	visitedRouteTables gatewayv1.RouteTableList,
 	reporterHelper *reporterHelper,
 ) ([]*gloov1.Route, error) {
 	var routes []*gloov1.Route
 
-	for _, gatewayRoute := range resource.GetRoutes() {
+	for idx, gatewayRoute := range resource.GetRoutes() {
 
 		// Clone route to be safe, since we might mutate it
 		routeClone := proto.Clone(gatewayRoute).(*gatewayv1.Route)
 
 		// Determine route name
-		name, routeHasName := routeName(resource.InputResource(), routeClone, parentRoute)
+		name, routeHasName := routeName(resource.InputResource(), gateway, proxyName, routeClone, parentRoute, idx)
 		routeClone.Name = name
 
 		// If the parent route is not nil, this route has been delegated to and we need to perform additional operations
@@ -245,6 +253,8 @@ func (rv *routeVisitor) visit(
 					// Recursive call
 					subRoutes, err := rv.visit(
 						&visitableRouteTable{routeTable},
+						gateway,
+						proxyName,
 						currentRouteInfo,
 						visitedRtCopy,
 						reporterHelper,
@@ -307,36 +317,47 @@ func (rv *routeVisitor) visit(
 }
 
 // Returns the name of the route and a flag that is true if either the route or the parent route are explicitly named.
-// Route names have the following format: "vs:myvirtualservice_route:myfirstroute_rt:myroutetable_route:<unnamed>"
-func routeName(resource resources.InputResource, route *gatewayv1.Route, parentRouteInfo *routeInfo) (string, bool) {
-	var prefix string
+// Route names have the following format: "vs:mygateway_myproxy_myvirtualservice_route:myfirstroute_rt:myroutetable_route:<unnamed-0>"
+func routeName(resource resources.InputResource, gateway *gatewayv1.Gateway, proxyName string, route *gatewayv1.Route, parentRouteInfo *routeInfo, index int) (string, bool) {
+	nameBuilder := strings.Builder{}
 	if parentRouteInfo != nil {
-		prefix = parentRouteInfo.name + "_"
+		nameBuilder.WriteString(parentRouteInfo.name)
+		nameBuilder.WriteString(sep)
 	}
 
-	resourceKindName := ""
 	switch resource.(type) {
 	case *gatewayv1.VirtualService:
-		resourceKindName = "vs"
+		nameBuilder.WriteString("vs:")
+
+		// for virtual services, add gateway and proxy name to ensure name uniqueness
+		nameBuilder.WriteString(gateway.GetMetadata().GetName())
+		nameBuilder.WriteString(sep)
+		nameBuilder.WriteString(proxyName)
+		nameBuilder.WriteString(sep)
 	case *gatewayv1.RouteTable:
-		resourceKindName = "rt"
+		nameBuilder.WriteString("rt:")
 	default:
 		// Should never happen
 	}
-	resourceName := resource.GetMetadata().GetName()
+
+	nameBuilder.WriteString(resource.GetMetadata().GetNamespace())
+	nameBuilder.WriteString(sep)
+	nameBuilder.WriteString(resource.GetMetadata().GetName())
+	nameBuilder.WriteString("_route:")
 
 	var isRouteNamed bool
 	routeDisplayName := route.Name
 	if routeDisplayName == "" {
-		routeDisplayName = unnamedRouteName
+		routeDisplayName = UnnamedRoute(index)
 	} else {
 		isRouteNamed = true
 	}
+	nameBuilder.WriteString(routeDisplayName)
 
 	// If the current route has no name, but the parent one does, then we consider the resulting route to be named.
 	isRouteNamed = isRouteNamed || (parentRouteInfo != nil && parentRouteInfo.hasName)
 
-	return fmt.Sprintf("%s%s:%s_route:%s", prefix, resourceKindName, resourceName, routeDisplayName), isRouteNamed
+	return nameBuilder.String(), isRouteNamed
 }
 
 func convertSimpleAction(simpleRoute *gatewayv1.Route) (*gloov1.Route, error) {
