@@ -96,6 +96,7 @@ func runAndCleanCommand(name string, arg ...string) []byte {
 			fmt.Println("ExitError: ", string(v.Stderr))
 		}
 	}
+
 	Expect(err).To(BeNil())
 	cmd.Process.Kill()
 	cmd.Process.Release()
