@@ -176,18 +176,18 @@ func createOutlierDetectionConfig(upstream *v1.Upstream) (*envoy_config_cluster_
 }
 
 func convertDefaultSubset(defaultSubset *v1_options.Subset) *_struct.Struct {
-	if defaultSubset != nil {
-		subsetVals := make(map[string]interface{}, len(defaultSubset.Values))
-		for k, v := range defaultSubset.Values {
-			subsetVals[k] = v
-		}
-		converted, err := _structpb.NewStruct(subsetVals)
-		if err != nil {
-			return nil
-		}
-		return converted
+	if defaultSubset == nil {
+		return nil
 	}
-	return nil
+	subsetVals := make(map[string]interface{}, len(defaultSubset.Values))
+	for k, v := range defaultSubset.Values {
+		subsetVals[k] = v
+	}
+	converted, err := _structpb.NewStruct(subsetVals)
+	if err != nil {
+		return nil
+	}
+	return converted
 }
 
 func convertFallbackPolicy(fallbackPolicy v1_options.FallbackPolicy) envoy_config_cluster_v3.Cluster_LbSubsetConfig_LbSubsetFallbackPolicy {
