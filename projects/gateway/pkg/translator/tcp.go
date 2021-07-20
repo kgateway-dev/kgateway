@@ -10,7 +10,7 @@ import (
 
 type TcpTranslator struct{}
 
-func (t *TcpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
+func (t *TcpTranslator) GenerateListeners(ctx context.Context, proxyName string, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
 	var result []*gloov1.Listener
 	for _, gateway := range filteredGateways {
 		tcpGateway := gateway.GetTcpGateway()
