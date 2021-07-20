@@ -42,7 +42,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				return err
 			}
 
-			deployment, err := client.AppsV1().Deployments("gloo-fed").Get(opts.Top.Ctx, "gloo-fed-console", metav1.GetOptions{})
+			deployment, err := client.AppsV1().Deployments(opts.Metadata.Namespace).Get(opts.Top.Ctx, "gloo-fed-console", metav1.GetOptions{})
 			if err != nil {
 				if apierrors.IsNotFound(err) {
 					fmt.Printf("No Gloo dashboard found as part of the installation in namespace %s. The full dashboard is part of Gloo Enterprise by default. ", opts.Metadata.Namespace)
@@ -66,7 +66,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 			/** port-forward command **/
 
-			_, portFwdCmd, err := cliutil.PortForwardGet(opts.Top.Ctx, "gloo-fed", "deployment/gloo-fed-console",
+			_, portFwdCmd, err := cliutil.PortForwardGet(opts.Top.Ctx, opts.Metadata.Namespace, "deployment/gloo-fed-console",
 				staticPort, staticPort, opts.Top.Verbose, "")
 			if err != nil {
 				return err
