@@ -11,3 +11,7 @@ changelog:
     dependencyOwner: solo-io
     dependencyRepo: solo-kit
     dependencyTag: v0.21.1
+  - type: FIX
+    description: Fix glooctl dashboard cmd
+    issueLink: https://github.com/solo-io/gloo/issues/5010
+    resolvesIssue: true
