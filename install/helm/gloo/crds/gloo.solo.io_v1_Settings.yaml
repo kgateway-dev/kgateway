@@ -427,6 +427,22 @@ spec:
                   description: Address of the `gloo` config validation server. Defaults
                     to `gloo:9988`.
                   type: string
+                virtualServiceOptions:
+                  description: Default configuration to use for VirtualServices, when
+                    not provided by a specific virtual service When these properties
+                    are defined on a specific VirtualService, this configuration will
+                    be ignored
+                  properties:
+                    oneWayTls:
+                      description: Default one_way_tls value to use for all virtual
+                        services where one_way_tls config has not been specified.
+                        If the SSL config has the ca.crt (root CA) provided, Gloo
+                        uses it to perform mTLS by default. Set oneWayTls to true
+                        to disable mTLS in favor of server-only TLS (one-way TLS),
+                        even if Gloo has the root CA.
+                      nullable: true
+                      type: boolean
+                  type: object
               type: object
             gloo:
               description: Options for configuring `gloo`, the core Gloo controller,

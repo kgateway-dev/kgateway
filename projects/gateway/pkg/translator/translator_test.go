@@ -2,6 +2,7 @@ package translator_test
 
 import (
 	"context"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"time"
 
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -579,6 +580,30 @@ var _ = Describe("Translator", func() {
 					Expect(listener.VirtualHosts[0].Domains).To(Equal(snap.VirtualServices[0].VirtualHost.Domains))
 				})
 
+			})
+
+			FIt("oneWayTls from Settings", func() {
+				settings := &gloov1.Settings{
+					Gateway: &gloov1.GatewayOptions{
+						VirtualServiceOptions: &gloov1.VirtualServiceOptions{
+							OneWayTls: &wrappers.BoolValue{
+								Value: false,
+							},
+						},
+					},
+				}
+				ctx := settingsutil.WithSettings(context.Background(), settings)
+				snap.Gateways[0].Ssl = true
+				snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+
+				proxy, errs := translator.Translate(ctx, defaults.GatewayProxyName, ns, snap, snap.Gateways)
+
+				Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+
+				Expect(proxy.Listeners).To(HaveLen(1))
+				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+				Expect(listener.VirtualHosts).To(HaveLen(1))
+				Expect(listener.VirtualHosts[0].Name).To(ContainSubstring("name1"))
 			})
 
 			It("should not have vhosts with ssl", func() {

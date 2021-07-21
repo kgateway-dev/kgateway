@@ -36,7 +36,7 @@ message SslConfig {
 
     // If the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default.
     // Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA.
-    // If unset, defaults to true.
+    // If unset, defaults to false.
     google.protobuf.BoolValue one_way_tls = 8;
 }
 

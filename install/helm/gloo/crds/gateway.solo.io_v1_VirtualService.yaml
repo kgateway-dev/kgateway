@@ -43,7 +43,8 @@ spec:
                   description: If the SSL config has the ca.crt (root CA) provided,
                     Gloo uses it to perform mTLS by default. Set oneWayTls to true
                     to disable mTLS in favor of server-only TLS (one-way TLS), even
-                    if Gloo has the root CA. Defaults to false.
+                    if Gloo has the root CA. If unset, defaults to false.
+                  nullable: true
                   type: boolean
                 parameters:
                   properties:
