@@ -30,10 +30,12 @@ const _ = proto.ProtoPackageIsVersion4
 type FallbackPolicy int32
 
 const (
-	// ANY_ENDOINT is the default
-	FallbackPolicy_ANY_ENDPOINT   FallbackPolicy = 0
+	// Any cluster endpoint may be returned (default)
+	FallbackPolicy_ANY_ENDPOINT FallbackPolicy = 0
+	// Load balancing over the endpoints matching the values from the default_subset field
 	FallbackPolicy_DEFAULT_SUBSET FallbackPolicy = 1
-	FallbackPolicy_NO_FALLBACK    FallbackPolicy = 2
+	// A result equivalent to no healthy hosts is reported
+	FallbackPolicy_NO_FALLBACK FallbackPolicy = 2
 )
 
 // Enum value maps for FallbackPolicy.
@@ -77,14 +79,20 @@ func (FallbackPolicy) EnumDescriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_subset_spec_proto_rawDescGZIP(), []int{0}
 }
 
+// See envoy docs for details:
+// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#config-cluster-v3-cluster-lbsubsetconfig
 type SubsetSpec struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Selectors      []*Selector    `protobuf:"bytes,1,rep,name=selectors,proto3" json:"selectors,omitempty"`
+	// Defines the set of subsets of the upstream
+	Selectors []*Selector `protobuf:"bytes,1,rep,name=selectors,proto3" json:"selectors,omitempty"`
+	// The behavior used when no endpoint subset matches the selected route’s metadata
+	// The default value is ANY_ENDPOINT
 	FallbackPolicy FallbackPolicy `protobuf:"varint,2,opt,name=fallbackPolicy,proto3,enum=options.gloo.solo.io.FallbackPolicy" json:"fallbackPolicy,omitempty"`
-	DefaultSubset  *Subset        `protobuf:"bytes,3,opt,name=default_subset,json=defaultSubset,proto3" json:"default_subset,omitempty"`
+	// Specifies the default subset of endpoints used during fallback if fallback_policy is DEFAULT_SUBSET
+	DefaultSubset *Subset `protobuf:"bytes,3,opt,name=default_subset,json=defaultSubset,proto3" json:"default_subset,omitempty"`
 }
 
 func (x *SubsetSpec) Reset() {
@@ -145,8 +153,9 @@ type Selector struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// A subset is created for each unique combination of key and value
 	Keys []string `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys,omitempty"`
-	// single_host_per_subset is false by default
+	// Selects a mode of operation in which each subset has only one host. Default is false.
 	SingleHostPerSubset bool `protobuf:"varint,2,opt,name=single_host_per_subset,json=singleHostPerSubset,proto3" json:"single_host_per_subset,omitempty"`
 }
 
@@ -201,6 +210,7 @@ type Subset struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Any host that matches all key/value pairs is part of this subset
 	Values map[string]string `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
