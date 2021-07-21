@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix glooctl dashboard cmd
+    issueLink: https://github.com/solo-io/gloo/issues/5010

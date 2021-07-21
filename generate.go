@@ -48,8 +48,9 @@ func main() {
 		},
 		ExternalImports: protoImports,
 		ValidationSchemaOptions: &schemagen.ValidationSchemaOptions{
-			CrdDirectory:   "install/helm/gloo/crds",
-			JsonSchemaTool: "protoc",
+			CrdDirectory:                 "install/helm/gloo/crds",
+			JsonSchemaTool:               "protoc",
+			RemoveDescriptionsFromSchema: true,
 		},
 	}
 	if err := cmd.Generate(generateOptions); err != nil {

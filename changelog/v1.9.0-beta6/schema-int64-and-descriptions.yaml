@@ -1,0 +1,13 @@
+changelog:
+  - type: FIX
+    description: Ensure schemas for int64 fields include `x-kubernetes-int-or-string`
+    issueLink: https://github.com/solo-io/gloo/issues/5043
+    resolvesIssue: false
+  - type: FIX
+    description: Do not include descriptions with validation schemas
+    issueLink: https://github.com/solo-io/gloo/issues/4789
+    resolvesIssue: false
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.21.1
