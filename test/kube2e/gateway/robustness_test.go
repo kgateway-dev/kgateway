@@ -157,6 +157,56 @@ var _ = Describe("Robustness tests", func() {
 		cancel()
 	})
 
+	forceProxyIntoWarningState := func(virtualService *gatewayv1.VirtualService) {
+		By("add an invalid route to the virtual service")
+		virtualService, err = virtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, &gatewayv1.Route{
+			Matchers: []*matchers.Matcher{{
+				PathSpecifier: &matchers.Matcher_Prefix{
+					Prefix: "/3",
+				},
+			}},
+			Action: &gatewayv1.Route_RouteAction{
+				RouteAction: &gloov1.RouteAction{
+					Destination: &gloov1.RouteAction_Single{
+						Single: &gloov1.Destination{
+							DestinationType: &gloov1.Destination_Kube{
+								Kube: &gloov1.KubernetesServiceDestination{
+									Ref: &core.ResourceRef{
+										Namespace: namespace,
+										Name:      "non-existent-svc",
+									},
+									Port: 1234,
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+
+		// required to prevent gateway webhook from rejecting
+		virtualService.Metadata.Annotations = map[string]string{k8sadmisssion.SkipValidationKey: k8sadmisssion.SkipValidationValue}
+
+		virtualServiceReconciler := gatewayv1.NewVirtualServiceReconciler(virtualServiceClient)
+		err = virtualServiceReconciler.Reconcile(testHelper.InstallNamespace, gatewayv1.VirtualServiceList{virtualService}, nil, clients.ListOpts{})
+		Expect(err).NotTo(HaveOccurred())
+
+		By("wait for proxy to enter warning state")
+		Eventually(func() error {
+			proxy, err := proxyClient.Read(namespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+			if err != nil {
+				return err
+			}
+			if proxy.GetStatus().GetState() == core.Status_Warning {
+				return nil
+			}
+			return eris.Errorf("waiting for proxy to be warning, but status is %v", proxy.Status)
+		}, 20*time.Second, 1*time.Second).Should(BeNil())
+	}
+
 	It("updates Envoy endpoints even if proxy is rejected", func() {
 
 		By("create a virtual service routing to the service")
@@ -222,53 +272,7 @@ var _ = Describe("Robustness tests", func() {
 			WithoutStats:      true,
 		}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
 
-		By("add an invalid route to the virtual service")
-		virtualService, err = virtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, &gatewayv1.Route{
-			Matchers: []*matchers.Matcher{{
-				PathSpecifier: &matchers.Matcher_Prefix{
-					Prefix: "/3",
-				},
-			}},
-			Action: &gatewayv1.Route_RouteAction{
-				RouteAction: &gloov1.RouteAction{
-					Destination: &gloov1.RouteAction_Single{
-						Single: &gloov1.Destination{
-							DestinationType: &gloov1.Destination_Kube{
-								Kube: &gloov1.KubernetesServiceDestination{
-									Ref: &core.ResourceRef{
-										Namespace: namespace,
-										Name:      "non-existent-svc",
-									},
-									Port: 1234,
-								},
-							},
-						},
-					},
-				},
-			},
-		})
-
-		// required to prevent gateway webhook from rejecting
-		virtualService.Metadata.Annotations = map[string]string{k8sadmisssion.SkipValidationKey: k8sadmisssion.SkipValidationValue}
-
-		virtualServiceReconciler := gatewayv1.NewVirtualServiceReconciler(virtualServiceClient)
-		err = virtualServiceReconciler.Reconcile(testHelper.InstallNamespace, gatewayv1.VirtualServiceList{virtualService}, nil, clients.ListOpts{})
-		Expect(err).NotTo(HaveOccurred())
-
-		By("wait for proxy to enter warning state")
-		Eventually(func() error {
-			proxy, err := proxyClient.Read(namespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-			if err != nil {
-				return err
-			}
-			if proxy.GetStatus().GetState() == core.Status_Warning {
-				return nil
-			}
-			return eris.Errorf("waiting for proxy to be warning, but status is %v", proxy.Status)
-		}, 20*time.Second, 1*time.Second).Should(BeNil())
+		forceProxyIntoWarningState(virtualService)
 
 		By("force an update of the service endpoints")
 		initialIps := endpointsFor(kubeClient, appService)
@@ -390,32 +394,7 @@ var _ = Describe("Robustness tests", func() {
 			WithoutStats:      true,
 		}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
 
-		// Break config
-		By("add conflicting domains to the virtual service")
-		virtualService, err = virtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		// conflicting domains
-		virtualService.VirtualHost.Domains = []string{"*", "*"}
-
-		// required to prevent gateway webhook from rejecting
-		virtualService.Metadata.Annotations = map[string]string{k8sadmisssion.SkipValidationKey: k8sadmisssion.SkipValidationValue}
-
-		virtualServiceReconciler := gatewayv1.NewVirtualServiceReconciler(virtualServiceClient)
-		err = virtualServiceReconciler.Reconcile(testHelper.InstallNamespace, gatewayv1.VirtualServiceList{virtualService}, nil, clients.ListOpts{})
-		Expect(err).NotTo(HaveOccurred())
-
-		By("wait for proxy to enter rejected state")
-		Eventually(func() error {
-			proxy, err := proxyClient.Read(namespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-			if err != nil {
-				return err
-			}
-			if proxy.GetStatus().GetState() == core.Status_Rejected {
-				return nil
-			}
-			return eris.Errorf("waiting for proxy to be rejected, but status is %v", proxy.Status)
-		}, 20*time.Second, 1*time.Second).Should(BeNil())
+		forceProxyIntoWarningState(virtualService)
 
 		By("reset snapshot cache")
 		pods, err := kubeClient.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"gloo": "gloo"}).String()})
