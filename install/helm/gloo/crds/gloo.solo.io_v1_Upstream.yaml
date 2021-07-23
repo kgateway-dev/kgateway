@@ -733,6 +733,19 @@ spec:
                   type: object
                 subsetSpec:
                   properties:
+                    defaultSubset:
+                      properties:
+                        values:
+                          additionalProperties:
+                            type: string
+                          type: object
+                      type: object
+                    fallbackPolicy:
+                      enum:
+                      - ANY_ENDPOINT
+                      - DEFAULT_SUBSET
+                      - NO_FALLBACK
+                      type: string
                     selectors:
                       items:
                         properties:
@@ -740,6 +753,8 @@ spec:
                             items:
                               type: string
                             type: array
+                          singleHostPerSubset:
+                            type: boolean
                         type: object
                       type: array
                   type: object

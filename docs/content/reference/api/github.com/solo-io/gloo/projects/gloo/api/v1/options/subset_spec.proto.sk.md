@@ -13,7 +13,15 @@ weight: 5
 
 - [SubsetSpec](#subsetspec)
 - [Selector](#selector)
+- [Subset](#subset)
   
+
+ 
+
+##### Enums:
+
+
+	- [FallbackPolicy](#fallbackpolicy)
 
 
 
@@ -26,16 +34,22 @@ weight: 5
 ---
 ### SubsetSpec
 
-
+ 
+See envoy docs for details:
+https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#config-cluster-v3-cluster-lbsubsetconfig
 
 ```yaml
 "selectors": []options.gloo.solo.io.Selector
+"fallbackPolicy": .options.gloo.solo.io.FallbackPolicy
+"defaultSubset": .options.gloo.solo.io.Subset
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `selectors` | [[]options.gloo.solo.io.Selector](../subset_spec.proto.sk/#selector) |  |
+| `selectors` | [[]options.gloo.solo.io.Selector](../subset_spec.proto.sk/#selector) | Defines the set of subsets of the upstream. |
+| `fallbackPolicy` | [.options.gloo.solo.io.FallbackPolicy](../subset_spec.proto.sk/#fallbackpolicy) | The behavior used when no endpoint subset matches the selected route’s metadata The default value is ANY_ENDPOINT. |
+| `defaultSubset` | [.options.gloo.solo.io.Subset](../subset_spec.proto.sk/#subset) | Specifies the default subset of endpoints used during fallback if fallback_policy is DEFAULT_SUBSET. |
 
 
 
@@ -47,15 +61,44 @@ weight: 5
 
 ```yaml
 "keys": []string
+"singleHostPerSubset": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `keys` | `[]string` |  |
+| `keys` | `[]string` | A subset is created for each unique combination of key and value. |
+| `singleHostPerSubset` | `bool` | Selects a mode of operation in which each subset has only one host. Default is false. |
 
 
 
+
+---
+### Subset
+
+
+
+```yaml
+"values": map<string, string>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `values` | `map<string, string>` | Any host that matches all key/value pairs is part of this subset. |
+
+
+
+  
+### FallbackPolicy
+
+Description: 
+
+| Name | Description |
+| ----- | ----------- | 
+| ANY_ENDPOINT | Any cluster endpoint may be returned (default) |
+| DEFAULT_SUBSET | Load balancing over the endpoints matching the values from the default_subset field |
+| NO_FALLBACK | A result equivalent to no healthy hosts is reported |
 
 
 <!-- Start of HubSpot Embed Code -->

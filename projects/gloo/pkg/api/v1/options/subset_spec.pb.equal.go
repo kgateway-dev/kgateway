@@ -63,6 +63,20 @@ func (m *SubsetSpec) Equal(that interface{}) bool {
 
 	}
 
+	if m.GetFallbackPolicy() != target.GetFallbackPolicy() {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetDefaultSubset()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDefaultSubset()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDefaultSubset(), target.GetDefaultSubset()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -93,6 +107,45 @@ func (m *Selector) Equal(that interface{}) bool {
 	for idx, v := range m.GetKeys() {
 
 		if strings.Compare(v, target.GetKeys()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if m.GetSingleHostPerSubset() != target.GetSingleHostPerSubset() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Subset) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Subset)
+	if !ok {
+		that2, ok := that.(Subset)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetValues()) != len(target.GetValues()) {
+		return false
+	}
+	for k, v := range m.GetValues() {
+
+		if strings.Compare(v, target.GetValues()[k]) != 0 {
 			return false
 		}
 

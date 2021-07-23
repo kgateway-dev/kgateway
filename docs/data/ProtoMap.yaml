@@ -881,6 +881,9 @@ apis:
   options.gloo.solo.io.ServiceSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/service_spec.proto.sk/#ServiceSpec
     package: options.gloo.solo.io
+  options.gloo.solo.io.Subset:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/subset_spec.proto.sk/#Subset
+    package: options.gloo.solo.io
   options.gloo.solo.io.SubsetSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/subset_spec.proto.sk/#SubsetSpec
     package: options.gloo.solo.io
