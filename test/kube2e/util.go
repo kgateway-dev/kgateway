@@ -143,6 +143,14 @@ func getSnapOut(metricsPort string) string {
 	return snapOut
 }
 
+func UpdateDisableTransformationValidationSetting(ctx context.Context, shouldDisable bool, installNamespace string) {
+	UpdateSettings(func(settings *v1.Settings) {
+		Expect(settings.Gateway).NotTo(BeNil())
+		Expect(settings.Gateway.Validation).NotTo(BeNil())
+		settings.Gateway.Validation.DisableTransformationValidation = &wrappers.BoolValue{Value: shouldDisable}
+	}, ctx, installNamespace)
+}
+
 // enable/disable strict validation
 func UpdateAlwaysAcceptSetting(ctx context.Context, alwaysAccept bool, installNamespace string) {
 	UpdateSettings(func(settings *v1.Settings) {
