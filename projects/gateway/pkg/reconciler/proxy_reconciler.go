@@ -192,16 +192,18 @@ func stripInvalidListenersAndVirtualHosts(ctx context.Context, proxiesToWrite Ge
 // which is invalid and will be rejected by Envoy
 func transitionFunc(proxiesToWrite GeneratedProxies) gloov1.TransitionProxyFunc {
 	return func(original, desired *gloov1.Proxy) (b bool, e error) {
-		// if any listeners from the old proxy were rejected in the new reports, preserve those
-		if err := forEachListener(original, proxiesToWrite[desired], func(listener *gloov1.Listener, accepted bool) {
-			// old listener was rejected, preserve it on the desired proxy
-			if !accepted {
-				desired.Listeners = append(desired.Listeners, listener)
-			}
-		}); err != nil {
-			// should never happen
-			return false, err
-		}
+
+		// We intentionally process desired.Listeners first, and then original.Listeners second
+		// We modify the desired proxy object and have to perform 2 steps:
+		//	- Apply invalid listeners to the desired proxy
+		// 	- Apply invalid vhosts to the desired listener
+		// Since we are modifying the proxy directly, if we process invalid listeners first,
+		// we will append those, and then try to process invalid virtual hosts on those same
+		// listeners again, causing us to write the virtual host twice: first when we
+		// copied the stripped listener, second when we copied the stripped virtual host.
+		// To avoid this, we first process desired.Listeners to reconcile invalid virtual
+		// hosts on those listeners, and then process the original.Listeners to reconcile
+		// invalid listeners.
 
 		// preserve previous vhosts if new vservice was errored
 		for _, desiredListener := range desired.Listeners {
@@ -239,6 +241,17 @@ func transitionFunc(proxiesToWrite GeneratedProxies) gloov1.TransitionProxyFunc 
 				return desiredHttpListener.VirtualHosts[i].Name < desiredHttpListener.VirtualHosts[j].Name
 			})
 
+		}
+
+		// if any listeners from the old proxy were rejected in the new reports, preserve those
+		if err := forEachListener(original, proxiesToWrite[desired], func(listener *gloov1.Listener, accepted bool) {
+			// old listener was rejected, preserve it on the desired proxy
+			if !accepted {
+				desired.Listeners = append(desired.Listeners, listener)
+			}
+		}); err != nil {
+			// should never happen
+			return false, err
 		}
 
 		sort.SliceStable(desired.Listeners, func(i, j int) bool {
