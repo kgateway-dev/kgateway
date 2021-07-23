@@ -734,37 +734,26 @@ spec:
                 subsetSpec:
                   properties:
                     defaultSubset:
-                      description: Specifies the default subset of endpoints used
-                        during fallback if fallback_policy is DEFAULT_SUBSET
                       properties:
                         values:
                           additionalProperties:
                             type: string
-                          description: Any host that matches all key/value pairs is
-                            part of this subset
                           type: object
                       type: object
                     fallbackPolicy:
-                      description: The behavior used when no endpoint subset matches
-                        the selected route’s metadata The default value is ANY_ENDPOINT
                       enum:
                       - ANY_ENDPOINT
                       - DEFAULT_SUBSET
                       - NO_FALLBACK
                       type: string
                     selectors:
-                      description: Defines the set of subsets of the upstream
                       items:
                         properties:
                           keys:
-                            description: A subset is created for each unique combination
-                              of key and value
                             items:
                               type: string
                             type: array
                           singleHostPerSubset:
-                            description: Selects a mode of operation in which each
-                              subset has only one host. Default is false.
                             type: boolean
                         type: object
                       type: array
