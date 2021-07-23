@@ -1806,43 +1806,14 @@ spec:
 				"header template ':status': [inja.exception.parser_error] expected statement close, got '%'")))
 		})
 
-		// Using a seperate Context here in order to take advantage of Before/After Each.
-		// They are safer for cleaning up state as they will run regardless of whether a test fails
 		Context("disable_transformation_validation is set", func() {
 
-			var (
-				settingsClient gloov1.SettingsClient
-			)
-
 			BeforeEach(func() {
-				settingsClient = clienthelpers.MustSettingsClient(ctx)
-
-				settingsList, err := settingsClient.List(testHelper.InstallNamespace, clients.ListOpts{})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(settingsList).To(HaveLen(1))
-				settings := settingsList[0]
-
-				settings.Gateway.Validation.DisableTransformationValidation = &wrappers.BoolValue{
-					Value: true,
-				}
-
-				_, err = settingsClient.Write(settings, clients.WriteOpts{
-					OverwriteExisting: true,
-				})
-				Expect(err).NotTo(HaveOccurred())
-
+				kube2e.UpdateDisableTransformationValidationSetting(ctx, true, testHelper.InstallNamespace)
 			})
 
 			AfterEach(func() {
-				settingsList, err := settingsClient.List(testHelper.InstallNamespace, clients.ListOpts{})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(settingsList).To(HaveLen(1))
-				settings := settingsList[0]
-				settings.Gateway.Validation.DisableTransformationValidation = nil
-				_, err = settingsClient.Write(settings, clients.WriteOpts{
-					OverwriteExisting: true,
-				})
-				Expect(err).NotTo(HaveOccurred())
+				kube2e.UpdateDisableTransformationValidationSetting(ctx, false, testHelper.InstallNamespace)
 			})
 
 			It("will not reject invalid transformation", func() {
@@ -1873,11 +1844,14 @@ spec:
 				vs := getVirtualService(dest, nil)
 				vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: t}
 
-				// give settings a chance to propogate
+				// give settings a chance to propagate
 				Eventually(func() error {
 					_, err := virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
 					return err
 				}, "5s", "0.1s").ShouldNot(HaveOccurred())
+				helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+					return virtualServiceClient.Read(testHelper.InstallNamespace, vs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+				})
 
 				err := virtualServiceClient.Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
 				Expect(err).ToNot(HaveOccurred())
