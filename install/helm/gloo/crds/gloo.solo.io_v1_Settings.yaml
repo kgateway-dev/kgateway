@@ -481,6 +481,9 @@ spec:
               x-kubernetes-preserve-unknown-fields: true
             upstreamOptions:
               properties:
+                oneWayTls:
+                  nullable: true
+                  type: boolean
                 sslParameters:
                   properties:
                     cipherSuites:
