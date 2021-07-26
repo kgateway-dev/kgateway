@@ -1356,15 +1356,43 @@ var _ = Describe("Translator", func() {
 				Expect(fields["testkey"]).To(MatchProto(sv("testvalue")))
 			})
 
-			It("should add subset to cluster", func() {
+			It("should add simple subset configuration to cluster", func() {
 				translateWithEndpoints()
 
 				Expect(cluster.LbSubsetConfig).ToNot(BeNil())
 				Expect(cluster.LbSubsetConfig.FallbackPolicy).To(Equal(envoy_config_cluster_v3.Cluster_LbSubsetConfig_ANY_ENDPOINT))
 				Expect(cluster.LbSubsetConfig.SubsetSelectors).To(HaveLen(1))
+				Expect(cluster.LbSubsetConfig.SubsetSelectors[0].SingleHostPerSubset).To(BeFalse())
 				Expect(cluster.LbSubsetConfig.SubsetSelectors[0].Keys).To(HaveLen(1))
 				Expect(cluster.LbSubsetConfig.SubsetSelectors[0].Keys[0]).To(Equal("testkey"))
 			})
+
+			It("should add subset configuration with default subset to cluster", func() {
+				upstream.UpstreamType.(*v1.Upstream_Kube).Kube.SubsetSpec =
+					&v1plugins.SubsetSpec{
+						Selectors: []*v1plugins.Selector{{
+							SingleHostPerSubset: true,
+							Keys: []string{
+								"testkey",
+							},
+						}},
+						FallbackPolicy: v1plugins.FallbackPolicy_DEFAULT_SUBSET,
+						DefaultSubset: &v1plugins.Subset{Values: map[string]string{
+							"testkey": "testvalue",
+						}},
+					}
+				translateWithEndpoints()
+
+				Expect(cluster.LbSubsetConfig).ToNot(BeNil())
+				Expect(cluster.LbSubsetConfig.FallbackPolicy).To(Equal(envoy_config_cluster_v3.Cluster_LbSubsetConfig_DEFAULT_SUBSET))
+				translatedDefaultSubset := cluster.LbSubsetConfig.DefaultSubset.AsMap()
+				expectedVal, ok := translatedDefaultSubset["testkey"]
+				Expect(ok).To(BeTrue())
+				Expect(expectedVal).To(Equal("testvalue"))
+				Expect(cluster.LbSubsetConfig.SubsetSelectors).To(HaveLen(1))
+				Expect(cluster.LbSubsetConfig.SubsetSelectors[0].SingleHostPerSubset).To(BeTrue())
+			})
+
 			It("should add subset to route", func() {
 				translateWithEndpoints()
 

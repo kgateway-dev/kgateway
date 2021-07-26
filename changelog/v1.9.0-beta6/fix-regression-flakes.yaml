@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3247
+    resolvesIssue: false
+    description: Ensure proxy reconciliaton does not duplicate virtual hosts
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/4900
+    resolvesIssue: false
+    description: Ensure kube2e test gives validation settings enough time to propagate

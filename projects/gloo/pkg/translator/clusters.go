@@ -9,10 +9,12 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
+	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1_options "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
@@ -20,6 +22,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"go.opencensus.io/trace"
+	_structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
 func (t *translatorInstance) computeClusters(
@@ -172,6 +175,33 @@ func createOutlierDetectionConfig(upstream *v1.Upstream) (*envoy_config_cluster_
 	return api_conversion.ToEnvoyOutlierDetection(upstream.GetOutlierDetection()), nil
 }
 
+func convertDefaultSubset(defaultSubset *v1_options.Subset) *_struct.Struct {
+	if defaultSubset == nil {
+		return nil
+	}
+	subsetVals := make(map[string]interface{}, len(defaultSubset.Values))
+	for k, v := range defaultSubset.Values {
+		subsetVals[k] = v
+	}
+	converted, err := _structpb.NewStruct(subsetVals)
+	if err != nil {
+		return nil
+	}
+	return converted
+}
+
+func convertFallbackPolicy(fallbackPolicy v1_options.FallbackPolicy) envoy_config_cluster_v3.Cluster_LbSubsetConfig_LbSubsetFallbackPolicy {
+	if fallbackPolicy == v1_options.FallbackPolicy_NO_FALLBACK {
+		return envoy_config_cluster_v3.Cluster_LbSubsetConfig_NO_FALLBACK
+	} else if fallbackPolicy == v1_options.FallbackPolicy_ANY_ENDPOINT {
+		return envoy_config_cluster_v3.Cluster_LbSubsetConfig_ANY_ENDPOINT
+	} else if fallbackPolicy == v1_options.FallbackPolicy_DEFAULT_SUBSET {
+		return envoy_config_cluster_v3.Cluster_LbSubsetConfig_DEFAULT_SUBSET
+	}
+	// this should not happen, return the desired default
+	return envoy_config_cluster_v3.Cluster_LbSubsetConfig_ANY_ENDPOINT
+}
+
 func createLbConfig(upstream *v1.Upstream) *envoy_config_cluster_v3.Cluster_LbSubsetConfig {
 	specGetter, ok := upstream.GetUpstreamType().(v1.SubsetSpecGetter)
 	if !ok {
@@ -183,11 +213,14 @@ func createLbConfig(upstream *v1.Upstream) *envoy_config_cluster_v3.Cluster_LbSu
 	}
 
 	subsetConfig := &envoy_config_cluster_v3.Cluster_LbSubsetConfig{
-		FallbackPolicy: envoy_config_cluster_v3.Cluster_LbSubsetConfig_ANY_ENDPOINT,
+		// when omitted, fallback policy defaults to ANY_ENDPOINT
+		FallbackPolicy: convertFallbackPolicy(glooSubsetConfig.FallbackPolicy),
+		DefaultSubset:  convertDefaultSubset(glooSubsetConfig.DefaultSubset),
 	}
-	for _, keys := range glooSubsetConfig.GetSelectors() {
+	for _, selector := range glooSubsetConfig.GetSelectors() {
 		subsetConfig.SubsetSelectors = append(subsetConfig.GetSubsetSelectors(), &envoy_config_cluster_v3.Cluster_LbSubsetConfig_LbSubsetSelector{
-			Keys: keys.GetKeys(),
+			Keys:                selector.GetKeys(),
+			SingleHostPerSubset: selector.SingleHostPerSubset,
 		})
 	}
 
