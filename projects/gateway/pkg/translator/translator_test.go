@@ -585,7 +585,7 @@ var _ = Describe("Translator", func() {
 
 			Context("default virtual service oneWayTls from Settings", func() {
 
-				FIt("Virtual services one way tls defaults to true", func() {
+				It("Virtual services one way tls defaults to true", func() {
 					settings := &gloov1.Settings{
 						Gateway: &gloov1.GatewayOptions{
 							VirtualServiceOptions: &gloov1.VirtualServiceOptions{
@@ -624,7 +624,7 @@ var _ = Describe("Translator", func() {
 					Expect(sslConfigs[1].GetOneWayTls().GetValue()).To(BeFalse())
 				})
 
-				FIt("Virtual services one way tls defaults to true", func() {
+				It("Virtual services one way tls defaults to true", func() {
 					settings := &gloov1.Settings{
 						Gateway: &gloov1.GatewayOptions{
 							VirtualServiceOptions: &gloov1.VirtualServiceOptions{
@@ -663,7 +663,7 @@ var _ = Describe("Translator", func() {
 					Expect(sslConfigs[1].GetOneWayTls().GetValue()).To(BeTrue())
 				})
 
-				FIt("No default set", func() {
+				It("No default set", func() {
 					settings := &gloov1.Settings{
 						Gateway: &gloov1.GatewayOptions{
 							VirtualServiceOptions: &gloov1.VirtualServiceOptions{},
