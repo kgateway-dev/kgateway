@@ -583,28 +583,120 @@ var _ = Describe("Translator", func() {
 
 			})
 
-			FIt("oneWayTls from Settings", func() {
-				settings := &gloov1.Settings{
-					Gateway: &gloov1.GatewayOptions{
-						VirtualServiceOptions: &gloov1.VirtualServiceOptions{
+			Context("default virtual service oneWayTls from Settings", func() {
+
+				FIt("Virtual services one way tls defaults to true", func() {
+					settings := &gloov1.Settings{
+						Gateway: &gloov1.GatewayOptions{
+							VirtualServiceOptions: &gloov1.VirtualServiceOptions{
+								OneWayTls: &wrappers.BoolValue{
+									Value: true,
+								},
+							},
+						},
+					}
+					ctx := settingsutil.WithSettings(context.Background(), settings)
+					snap.Gateways[0].Ssl = true
+					snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+					snap.VirtualServices = append(snap.VirtualServices, &v1.VirtualService{
+						SslConfig: &gloov1.SslConfig{
 							OneWayTls: &wrappers.BoolValue{
 								Value: false,
 							},
 						},
-					},
-				}
-				ctx := settingsutil.WithSettings(context.Background(), settings)
-				snap.Gateways[0].Ssl = true
-				snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+						Metadata: &core.Metadata{
+							Name:      "test",
+							Namespace: "gloo-system",
+						},
+						VirtualHost: &v1.VirtualHost{},
+					})
 
-				proxy, errs := translator.Translate(ctx, defaults.GatewayProxyName, ns, snap, snap.Gateways)
+					proxy, errs := translator.Translate(ctx, defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
-				Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+					Expect(proxy.GetListeners()).To(HaveLen(1))
+					sslConfigs := proxy.GetListeners()[0].GetSslConfigurations()
+					Expect(sslConfigs).To(HaveLen(2))
+					// This sslConfig derives from the first virtual service, which we did not explicitly set oneWayTls on, so it
+					// should inherit from the VirtualServiceOptions default value in the settings
+					Expect(sslConfigs[0].GetOneWayTls().GetValue()).To(BeTrue())
+					// We explicitly set the second virtual service oneWayTls, so that should not be overidden by default
+					Expect(sslConfigs[1].GetOneWayTls().GetValue()).To(BeFalse())
+				})
 
-				Expect(proxy.Listeners).To(HaveLen(1))
-				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-				Expect(listener.VirtualHosts).To(HaveLen(1))
-				Expect(listener.VirtualHosts[0].Name).To(ContainSubstring("name1"))
+				FIt("Virtual services one way tls defaults to true", func() {
+					settings := &gloov1.Settings{
+						Gateway: &gloov1.GatewayOptions{
+							VirtualServiceOptions: &gloov1.VirtualServiceOptions{
+								OneWayTls: &wrappers.BoolValue{
+									Value: false,
+								},
+							},
+						},
+					}
+					ctx := settingsutil.WithSettings(context.Background(), settings)
+					snap.Gateways[0].Ssl = true
+					snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+					snap.VirtualServices = append(snap.VirtualServices, &v1.VirtualService{
+						SslConfig: &gloov1.SslConfig{
+							OneWayTls: &wrappers.BoolValue{
+								Value: true,
+							},
+						},
+						Metadata: &core.Metadata{
+							Name:      "test",
+							Namespace: "gloo-system",
+						},
+						VirtualHost: &v1.VirtualHost{},
+					})
+
+					proxy, errs := translator.Translate(ctx, defaults.GatewayProxyName, ns, snap, snap.Gateways)
+
+					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+					Expect(proxy.GetListeners()).To(HaveLen(1))
+					sslConfigs := proxy.GetListeners()[0].GetSslConfigurations()
+					Expect(sslConfigs).To(HaveLen(2))
+					// This sslConfig derives from the first virtual service, which we did not explicitly set oneWayTls on, so it
+					// should inherit from the VirtualServiceOptions default value in the settings
+					Expect(sslConfigs[0].GetOneWayTls().GetValue()).To(BeFalse())
+					// We explicitly set the second virtual service oneWayTls, so that should not be overidden by default
+					Expect(sslConfigs[1].GetOneWayTls().GetValue()).To(BeTrue())
+				})
+
+				FIt("No default set", func() {
+					settings := &gloov1.Settings{
+						Gateway: &gloov1.GatewayOptions{
+							VirtualServiceOptions: &gloov1.VirtualServiceOptions{},
+						},
+					}
+					ctx := settingsutil.WithSettings(context.Background(), settings)
+					snap.Gateways[0].Ssl = true
+					snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+					snap.VirtualServices = append(snap.VirtualServices, &v1.VirtualService{
+						SslConfig: &gloov1.SslConfig{
+							OneWayTls: &wrappers.BoolValue{
+								Value: true,
+							},
+						},
+						Metadata: &core.Metadata{
+							Name:      "test",
+							Namespace: "gloo-system",
+						},
+						VirtualHost: &v1.VirtualHost{},
+					})
+
+					proxy, errs := translator.Translate(ctx, defaults.GatewayProxyName, ns, snap, snap.Gateways)
+
+					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+					Expect(proxy.GetListeners()).To(HaveLen(1))
+					sslConfigs := proxy.GetListeners()[0].GetSslConfigurations()
+					Expect(sslConfigs).To(HaveLen(2))
+					// We do not expect oneWayTls on the first virtual service, so it should be false
+					Expect(sslConfigs[0].GetOneWayTls().GetValue()).To(BeFalse())
+					// We explicitly set the second virtual service oneWayTls
+					Expect(sslConfigs[1].GetOneWayTls().GetValue()).To(BeTrue())
+				})
+
 			})
 
 			It("should not have vhosts with ssl", func() {
