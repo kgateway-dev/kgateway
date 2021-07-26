@@ -380,5 +380,4 @@ func applyDefaultsToUpstreamSslConfig(sslConfig *v1.UpstreamSslConfig, options *
 	if sslConfig.GetParameters() == nil {
 		sslConfig.Parameters = options.GetSslParameters()
 	}
-	if sslConfig
 }
