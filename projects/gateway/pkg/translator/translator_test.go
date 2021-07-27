@@ -624,7 +624,7 @@ var _ = Describe("Translator", func() {
 					Expect(sslConfigs[1].GetOneWayTls().GetValue()).To(BeFalse())
 				})
 
-				It("Virtual services one way tls defaults to true", func() {
+				It("Virtual services one way tls defaults to false", func() {
 					settings := &gloov1.Settings{
 						Gateway: &gloov1.GatewayOptions{
 							VirtualServiceOptions: &gloov1.VirtualServiceOptions{
