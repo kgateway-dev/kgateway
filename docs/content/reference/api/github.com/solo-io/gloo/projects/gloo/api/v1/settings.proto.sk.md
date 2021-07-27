@@ -32,6 +32,7 @@ weight: 5
 - [GlooOptions](#gloooptions)
 - [AWSOptions](#awsoptions)
 - [InvalidConfigPolicy](#invalidconfigpolicy)
+- [VirtualServiceOptions](#virtualserviceoptions)
 - [GatewayOptions](#gatewayoptions)
 - [ValidationOptions](#validationoptions)
   
@@ -472,12 +473,14 @@ When these properties are defined on a specific upstream, this configuration wil
 
 ```yaml
 "sslParameters": .gloo.solo.io.SslParameters
+"oneWayTls": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `sslParameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk/#sslparameters) | Default ssl parameter configuration to use for upstreams. |
+| `oneWayTls` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Default one way TLS configuration to use for upstreams. |
 
 
 
@@ -566,6 +569,25 @@ Policy for how Gloo should handle invalid config
 
 
 ---
+### VirtualServiceOptions
+
+ 
+Default configuration to use for VirtualServices, when not provided by a specific virtual service
+When these properties are defined on a specific VirtualService, this configuration will be ignored
+
+```yaml
+"oneWayTls": .google.protobuf.BoolValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `oneWayTls` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Default one_way_tls value to use for all virtual services where one_way_tls config has not been specified. If the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default. Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA. |
+
+
+
+
+---
 ### GatewayOptions
 
  
@@ -577,6 +599,7 @@ Settings specific to the Gateway controller
 "readGatewaysFromAllNamespaces": bool
 "alwaysSortRouteTableRoutes": bool
 "compressedProxySpec": bool
+"virtualServiceOptions": .gloo.solo.io.VirtualServiceOptions
 
 ```
 
@@ -587,6 +610,7 @@ Settings specific to the Gateway controller
 | `readGatewaysFromAllNamespaces` | `bool` | When true, the Gateway controller will consume Gateway custom resources from all watch namespaces, rather than just the Gateway CRDs in its own namespace. |
 | `alwaysSortRouteTableRoutes` | `bool` | Deprecated. This setting is ignored. Maintained for backwards compatibility with settings exposed on 1.2.x branch of Gloo. |
 | `compressedProxySpec` | `bool` | If set, compresses proxy space. This can help make the Proxy CRD smaller to fit in etcd. This is an advanced option. Use with care. |
+| `virtualServiceOptions` | [.gloo.solo.io.VirtualServiceOptions](../settings.proto.sk/#virtualserviceoptions) | Default configuration to use for VirtualServices, when not provided by a specific virtual service When these properties are defined on a specific VirtualService, this configuration will be ignored. |
 
 
 

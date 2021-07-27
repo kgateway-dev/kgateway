@@ -2,6 +2,8 @@ syntax = "proto3";
 package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
+import "google/protobuf/wrappers.proto";
+
 import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
@@ -34,8 +36,8 @@ message SslConfig {
 
     // If the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default.
     // Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA.
-    // Defaults to false.
-    bool one_way_tls = 8;
+    // If unset, defaults to false.
+    google.protobuf.BoolValue one_way_tls = 8;
 }
 
 // SSLFiles reference paths to certificates which can be read by the proxy off of its local filesystem

@@ -1,0 +1,8 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Adds a default `oneWayTls` setting in `VirtualServiceOptions` in the Settings CRD. This setting will dictate the default
+      `oneWayTls` behaviour in VirtualServices where `oneWayTls` is not specified. If it is specified on the VirtualService,
+      it will not be overridden.
+    issueLink: https://github.com/solo-io/gloo/issues/5035
+    resolvesIssue: false
