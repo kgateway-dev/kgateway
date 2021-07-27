@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Removes extra `oneWayTls` option from Upstream Options in settings proto. It was added in https://github.com/solo-io/gloo/pull/5060#pullrequestreview-716173554
+      and needs to be removed because it has no function.
