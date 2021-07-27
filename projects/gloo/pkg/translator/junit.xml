@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuite name="Translator Suite" tests="73" failures="0" errors="0" time="0.049">
+      <testcase name="Translator sanitizes an invalid virtual host name" classname="Translator Suite" time="0.01062681"></testcase>
+      <testcase name="Translator translates listener options" classname="Translator Suite" time="0.00035578"></testcase>
+      <testcase name="Translator Auth configs will error if auth config is missing" classname="Translator Suite" time="0.000616728"></testcase>
+      <testcase name="Translator service spec changes in service spec should create a different snapshot" classname="Translator Suite" time="0.000811798"></testcase>
+      <testcase name="Translator route no path should error when path math is missing" classname="Translator Suite" time="0.000697006"></testcase>
+      <testcase name="Translator route no path should error when path math is missing even if we have grpc spec" classname="Translator Suite" time="0.000579413"></testcase>
+      <testcase name="Translator route path match - sensitive case should translate path matcher with sensitive case" classname="Translator Suite" time="0.000432001"></testcase>
+      <testcase name="Translator route path match - sensitive case should translate path matcher with case insensitive" classname="Translator Suite" time="0.000298933"></testcase>
+      <testcase name="Translator route header match should translate header matcher with no value to a PresentMatch" classname="Translator Suite" time="0.000280481"></testcase>
+      <testcase name="Translator route header match should translate header matcher with value to exact match" classname="Translator Suite" time="0.000381189"></testcase>
+      <testcase name="Translator route header match should translate header matcher with regex becomes regex match" classname="Translator Suite" time="0.000353176"></testcase>
+      <testcase name="Translator route header match should translate header matcher with regex becomes regex match, with non default program size" classname="Translator Suite" time="0.00025402"></testcase>
+      <testcase name="Translator route header match should translate header matcher logic inversion flag" classname="Translator Suite" time="0.000241485"></testcase>
+      <testcase name="Translator route header match should default to &#39;/&#39; prefix matcher if none is provided" classname="Translator Suite" time="0.000263184"></testcase>
+      <testcase name="Translator route header match Multiple matchers should translate multiple matchers on a single Gloo route to multiple Envoy routes" classname="Translator Suite" time="0.000336853"></testcase>
+      <testcase name="Translator non route_routeaction routes reports no errors with a redirect route or direct response route" classname="Translator Suite" time="0.00036808"></testcase>
+      <testcase name="Translator Health check config will error if required field is nil" classname="Translator Suite" time="0.000306799"></testcase>
+      <testcase name="Translator Health check config will error if no health checker is supplied" classname="Translator Suite" time="0.000255837"></testcase>
+      <testcase name="Translator Health check config can translate the http health check" classname="Translator Suite" time="0.000550557"></testcase>
+      <testcase name="Translator Health check config can translate the grpc health check" classname="Translator Suite" time="0.000267294"></testcase>
+      <testcase name="Translator Health check config can properly translate outlier detection config" classname="Translator Suite" time="0.000349644"></testcase>
+      <testcase name="Translator Health check config can properly validate outlier detection config" classname="Translator Suite" time="0.000260085"></testcase>
+      <testcase name="Translator Health check config can translate health check with secret header" classname="Translator Suite" time="0.000285838"></testcase>
+      <testcase name="Translator circuit breakers should NOT translate circuit breakers on upstream" classname="Translator Suite" time="0.000267882"></testcase>
+      <testcase name="Translator circuit breakers should translate circuit breakers on upstream" classname="Translator Suite" time="0.000896673"></testcase>
+      <testcase name="Translator circuit breakers should translate circuit breakers on settings" classname="Translator Suite" time="0.001085096"></testcase>
+      <testcase name="Translator circuit breakers should override circuit breakers on upstream" classname="Translator Suite" time="0.000382555"></testcase>
+      <testcase name="Translator eds should translate eds differently with different clusters" classname="Translator Suite" time="0.000688244"></testcase>
+      <testcase name="Translator lds should have same version and http filters when http filters with the same name are added in a different order" classname="Translator Suite" time="0.010571971"></testcase>
+      <testcase name="Translator when handling cluster_header HTTP header name with valid http header should translate valid HTTP header name" classname="Translator Suite" time="0.000331046"></testcase>
+      <testcase name="Translator when handling cluster_header HTTP header name with invalid http header should warn about invalid http header name" classname="Translator Suite" time="0.00021254"></testcase>
+      <testcase name="Translator when handling upstream groups should translate upstream groups" classname="Translator Suite" time="0.000383386"></testcase>
+      <testcase name="Translator when handling upstream groups should error on invalid ref in upstream groups" classname="Translator Suite" time="0.000352902"></testcase>
+      <testcase name="Translator when handling upstream groups should use upstreamGroup&#39;s namespace as default if namespace is omitted on upstream destination" classname="Translator Suite" time="0.000259613"></testcase>
+      <testcase name="Translator when handling missing upstream groups should set a ClusterSpecifier on the referring route" classname="Translator Suite" time="0.000270724"></testcase>
+      <testcase name="Translator when handling endpoints should transfer annotations to snapshot" classname="Translator Suite" time="0.000276092"></testcase>
+      <testcase name="Translator when handling subsets when happy path should transfer labels to envoy" classname="Translator Suite" time="0.000323483"></testcase>
+      <testcase name="Translator when handling subsets when happy path should add subset to cluster" classname="Translator Suite" time="0.000242878"></testcase>
+      <testcase name="Translator when handling subsets when happy path should add subset to route" classname="Translator Suite" time="0.000292826"></testcase>
+      <testcase name="Translator when handling subsets should create empty value if missing labels on the endpoint are provided in the upstream" classname="Translator Suite" time="0.000428557"></testcase>
+      <testcase name="Translator when handling subsets subset in route doesnt match subset in upstream should error the route" classname="Translator Suite" time="0.000394725"></testcase>
+      <testcase name="Translator when handling subsets when a route table is missing should warn a route when a destination is missing" classname="Translator Suite" time="0.000301746"></testcase>
+      <testcase name="Translator when translating a route that points directly to a service generates the expected envoy route configuration" classname="Translator Suite" time="0.000327274"></testcase>
+      <testcase name="Translator when translating a route that points to a Consul service generates the expected envoy route configuration" classname="Translator Suite" time="0.000858447"></testcase>
+      <testcase name="Translator when translating a route that points to an AWS lambda has no errors when pointing to a valid lambda" classname="Translator Suite" time="0.000694579"></testcase>
+      <testcase name="Translator when translating a route that points to an AWS lambda reports error when pointing to a lambda function that doesn&#39;t exist" classname="Translator Suite" time="0.000347499"></testcase>
+      <testcase name="Translator when translating a route that points to an AWS lambda reports error when route has Multi Cluster destination and points to at least one lambda function that doesn&#39;t exist" classname="Translator Suite" time="0.000497845"></testcase>
+      <testcase name="Translator Route plugin should have the virtual host when processing route" classname="Translator Suite" time="0.000258048"></testcase>
+      <testcase name="Translator EndpointPlugin should call the endpoint plugin" classname="Translator Suite" time="0.000728055"></testcase>
+      <testcase name="Translator EndpointPlugin should call the endpoint plugin with an empty endpoint" classname="Translator Suite" time="0.000333383"></testcase>
+      <testcase name="Translator Route option on direct response actions should have the virtual host when processing route" classname="Translator Suite" time="0.000434878"></testcase>
+      <testcase name="Translator TCP can properly create a tcp listener" classname="Translator Suite" time="0.000257465"></testcase>
+      <testcase name="Translator Ssl - cluster should process an upstream with tls config" classname="Translator Suite" time="0.000337974"></testcase>
+      <testcase name="Translator Ssl - cluster should process an upstream with tls config" classname="Translator Suite" time="0.000494978"></testcase>
+      <testcase name="Translator Ssl - cluster should process an upstream with rootca" classname="Translator Suite" time="0.000508718"></testcase>
+      <testcase name="Translator Ssl - cluster SslParameters should set upstream SslParameters if defined on upstream" classname="Translator Suite" time="0.000627307"></testcase>
+      <testcase name="Translator Ssl - cluster SslParameters should set settings.UpstreamOptions SslParameters if none defined on upstream" classname="Translator Suite" time="0.000285411"></testcase>
+      <testcase name="Translator Ssl - cluster failure should fail with only private key" classname="Translator Suite" time="0.000473585"></testcase>
+      <testcase name="Translator Ssl - cluster failure should fail with only cert chain" classname="Translator Suite" time="0.000276446"></testcase>
+      <testcase name="Translator Ssl files should translate ssl correctly" classname="Translator Suite" time="0.000290344"></testcase>
+      <testcase name="Translator Ssl files should not merge 2 ssl config if they are different" classname="Translator Suite" time="0.000464159"></testcase>
+      <testcase name="Translator Ssl files should merge 2 ssl config if they are the same" classname="Translator Suite" time="0.000411313"></testcase>
+      <testcase name="Translator Ssl files should reject configs if different FilterChains have identical FilterChainMatches" classname="Translator Suite" time="3.4471e-05"></testcase>
+      <testcase name="Translator Ssl files should combine sni matches" classname="Translator Suite" time="0.000618353"></testcase>
+      <testcase name="Translator Ssl files should combine 1 that has and 1 that doesn&#39;t have sni" classname="Translator Suite" time="0.000448795"></testcase>
+      <testcase name="Translator Ssl secret refs should combine sni matches " classname="Translator Suite" time="0.000271866"></testcase>
+      <testcase name="Translator Ssl secret refs should not combine when not matching" classname="Translator Suite" time="0.000536312"></testcase>
+      <testcase name="Translator Ssl secret refs should error when different parameters have the same sni domains" classname="Translator Suite" time="0.000382179"></testcase>
+      <testcase name="Translator Ssl secret refs should error when different parameters have no sni domains" classname="Translator Suite" time="0.000358997"></testcase>
+      <testcase name="Translator Ssl secret refs should work when different parameters have different sni domains" classname="Translator Suite" time="0.000286567"></testcase>
+      <testcase name="Translator Should report an error for virtual services with empty domains" classname="Translator Suite" time="1.4504e-05"></testcase>
+      <testcase name="Plugin empty namespace: should convert upstream to cluster name and back properly" classname="Translator Suite" time="4.081e-06"></testcase>
+      <testcase name="Plugin populated namespace: should convert upstream to cluster name and back properly" classname="Translator Suite" time="2.117e-06"></testcase>
+  </testsuite>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuite name="K8sAdmission Suite" tests="16" failures="0" errors="0" time="9.314">
+      <testcase name="certificateProvider reloads certificates upon changes" classname="K8sAdmission Suite" time="3.135778264"></testcase>
+      <testcase name="certificateProvider keeps same certificates if it has not changed" classname="K8sAdmission Suite" time="3.075016306"></testcase>
+      <testcase name="certificateProvider keeps old certificates on reload error" classname="K8sAdmission Suite" time="3.075404985"></testcase>
+      <testcase name="ValidatingAdmissionWebhook accepts valid admission requests, rejects bad ones valid gateway" classname="K8sAdmission Suite" time="0.009979193"></testcase>
+      <testcase name="ValidatingAdmissionWebhook accepts valid admission requests, rejects bad ones invalid gateway" classname="K8sAdmission Suite" time="0.001452207"></testcase>
+      <testcase name="ValidatingAdmissionWebhook accepts valid admission requests, rejects bad ones valid virtual service" classname="K8sAdmission Suite" time="0.004049328"></testcase>
+      <testcase name="ValidatingAdmissionWebhook accepts valid admission requests, rejects bad ones invalid virtual service" classname="K8sAdmission Suite" time="0.001551616"></testcase>
+      <testcase name="ValidatingAdmissionWebhook accepts valid admission requests, rejects bad ones valid route table" classname="K8sAdmission Suite" time="0.001133437"></testcase>
+      <testcase name="ValidatingAdmissionWebhook accepts valid admission requests, rejects bad ones invalid route table" classname="K8sAdmission Suite" time="0.001123058"></testcase>
+      <testcase name="ValidatingAdmissionWebhook accepts valid admission requests, rejects bad ones valid unstructured list" classname="K8sAdmission Suite" time="0.001011082"></testcase>
+      <testcase name="ValidatingAdmissionWebhook accepts valid admission requests, rejects bad ones invalid unstructured list" classname="K8sAdmission Suite" time="0.001064268"></testcase>
+      <testcase name="ValidatingAdmissionWebhook invalid yaml json encoded request to validation server rejects the resource even when alwaysAccept=true" classname="K8sAdmission Suite" time="0.001310874"></testcase>
+      <testcase name="ValidatingAdmissionWebhook invalid yaml yaml encoded request to validation server rejects the resource even when alwaysAccept=true" classname="K8sAdmission Suite" time="0.001757599"></testcase>
+      <testcase name="ValidatingAdmissionWebhook returns proxies returns proxy if requested" classname="K8sAdmission Suite" time="0.001469533"></testcase>
+      <testcase name="ValidatingAdmissionWebhook namespace scoping does not process the resource if it&#39;s not whitelisted by watchNamespaces" classname="K8sAdmission Suite" time="0.00085405"></testcase>
+      <testcase name="ValidatingAdmissionWebhook namespace scoping does not process other-namespace gateway resources if readGatewaysFromAllNamespaces is false, even if they&#39;re from whitelisted namespaces" classname="K8sAdmission Suite" time="0.000793864"></testcase>
+  </testsuite>

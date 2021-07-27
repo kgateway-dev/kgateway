@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuite name="Translator Suite" tests="2" failures="0" errors="0" time="0.507">
+      <testcase name="TranslatorSyncer propagates successful proxy status to the clusteringresses it was created from" classname="Translator Suite" time="0.505141097"></testcase>
+      <testcase name="Translate creates the appropriate proxy object for the provided ingress objects" classname="Translator Suite" time="0.001937359"></testcase>
+  </testsuite>

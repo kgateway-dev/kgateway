@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuite name="Translator Suite" tests="3" failures="0" errors="0" time="0.002">
+      <testcase name="Route converter should detect bad config on a delegate route route has a regex matcher" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter should detect bad config on a delegate route route has an exact matcher" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter should detect bad config on a delegate route route has multiple path prefix matchers" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when valid config uses &#39;/&#39; prefix matcher as default if matchers are omitted" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when valid config uses parent resource&#39;s namespace as default if namespace is omitted on routeAction with single upstream destination" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when valid config uses parent resource&#39;s namespace as default if namespace is omitted on routeAction with multi upstream destination" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when valid config builds correct route name when the parent route is named" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when valid config builds correct route name when the parent route is unnamed" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when valid config inheritance mode accepts the route table if its parent has different headers but inheritance is on" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when valid config inheritance mode accepts the route table if its parent has different headers but inheritance is on -- nested route tables" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when valid config inheritance mode inherits route config from parent" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when valid config inheritance mode child route inheritance config overrides parent route inheritance config" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when valid config transformation inheritance mode assigns vhost transformation config to route level" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when valid config transformation inheritance mode merges transformations from different stages to child routes" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when valid config transformation inheritance mode doesn&#39;t merge in parent transformations, if specified" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when bad route table config when route table has a matcher that doesn&#39;t match the prefix of the parent route reports error on the route table and on the virtual service" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when bad route table config when route table has a matcher case sensitivity that doesn&#39;t match the prefix case sensitivity of the parent route reports error on the route table and on the virtual service" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when bad route table config when route table has headers that don&#39;t match the headers of the parent route accepts the route table if its parent has no headers" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when bad route table config when route table has headers that don&#39;t match the headers of the parent route virtual service route has headers reports error on the route table and on the virtual service if virtual service has headers that aren&#39;t on the route table" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when bad route table config when route table has headers that don&#39;t match the headers of the parent route virtual service route has headers reports error on the route table and on the virtual service if virtual service has headers that aren&#39;t equal on the route table" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when bad route table config when route table has query parameters that don&#39;t match the query parameters of the parent route accepts the route table if its parent has no query params" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when bad route table config when route table has query parameters that don&#39;t match the query parameters of the parent route virtual service route has query params reports error on the route table and on the virtual service if virtual service has query params that aren&#39;t on the route table" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when bad route table config when route table has query parameters that don&#39;t match the query parameters of the parent route virtual service route has query params reports error on the route table and on the virtual service if virtual service has query params that aren&#39;t equal on the route table" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when bad route table config when route table has methods that don&#39;t match the methods of the parent route accepts the route table if its parent has no methods" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when bad route table config when route table has methods that don&#39;t match the methods of the parent route virtual service route has methods reports error on the route table and on the virtual service if virtual service has methods that aren&#39;t on the route table" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when bad route table config when route table has methods that don&#39;t match the methods of the parent route virtual service route has methods reports error on the route table and on the virtual service if virtual service has methods that aren&#39;t equal on the route table" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when bad route table config when route table has no matchers and the parent route matcher is not the default one reports error on the route table and on the virtual service" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter when bad route table config when route table has no matchers but the parent route matcher is the default one reports no errors" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter route table selection merged route ordering merged routes are sorted by descending specificity" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter route table selection when configuration is correct selector works as expected when no labels nor namespaces are provided" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter route table selection when configuration is correct selector works as expected when a label is specified in the selector (but no namespace)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter route table selection when configuration is correct selector works as expected when namespaces are specified in the selector (but no labels)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter route table selection when configuration is correct selector works as expected when both namespaces and labels are specified in the selector" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter route table selection when configuration is correct selector works as expected when we have multiple levels of delegation" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter route table selection when configuration is correct selector works as expected when selector contains &#39;all namespaces&#39; wildcard selector (*)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter route table selection when configuration is correct route naming works as expected when one delegate action matches multiple route tables" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter route table selection when configuration is correct route naming works as expected when we have multiple levels of delegation" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter route table selection when configuration is correct route naming works as expected when a route table is selected by multiple route tables" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter route table selection when there are circular references using a route table selector delegation cycles are detected a route table selects itself" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter route table selection when there are circular references using a route table selector delegation cycles are detected multi route table cycle scenario" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter route table selection when there are circular references using a hard reference delegation cycles are detected using the new ref format" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter route table selection when there are circular references using a hard reference delegation cycles are detected using the deprecated ref format" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Route converter route table selection route tables with weights works as expected" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator translator should translate proxy with default name" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator translator should properly translate listener plugins to proxy listener" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator translator should translate two gateways with same name (different types) to one proxy with the same name" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator translator should translate two gateways with same name (and types) to one proxy with the same name" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator translator should error on two gateways with the same port in the same namespace" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator translator should warn on vs with missing delegate action" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator translator when the gateway CRDs don&#39;t clash should have the same number of listeners as gateways in the cluster" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service should translate an empty gateway to have all virtual services" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service omitting matchers should default to &#39;/&#39; prefix matcher" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service should have no ssl config" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service with VirtualServices (refs) should translate a gateway to only have its virtual services" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service with VirtualServices (refs) can include a virtual service from some other namespace" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service with VirtualServiceSelector should translate a gateway to only have its virtual services" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service with VirtualServiceSelector should translate a gateway to only have virtual services that match the provided expressions" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service with VirtualServiceSelector should not select using both labels and expressions" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service with VirtualServiceSelector should prevent a gateway from matching virtual services outside its own namespace if so configured" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service default virtual service oneWayTls from Settings Virtual services one way tls defaults to true" classname="Translator Suite" time="0.001577087"></testcase>
+      <testcase name="Translator http all-in-one virtual service default virtual service oneWayTls from Settings Virtual services one way tls defaults to true" classname="Translator Suite" time="0.000109985"></testcase>
+      <testcase name="Translator http all-in-one virtual service default virtual service oneWayTls from Settings No default set" classname="Translator Suite" time="9.5961e-05"></testcase>
+      <testcase name="Translator http all-in-one virtual service should not have vhosts with ssl" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service should not have vhosts without ssl" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate domains should error when 2 virtual services linked to the same gateway have overlapping domains" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate domains should error when 2 virtual services linked to the same gateway have empty domains" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate domains should warn when a virtual services does not specify a virtual host" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate domains should error when a virtual services has invalid regex" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting duplicate matchers" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting duplicate paths but earlier has query parameter matcher" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting duplicate paths but later has query parameter matcher (prefix hijacking)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting duplicate paths but earlier has header matcher" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting duplicate paths but later has header matcher (prefix hijacking)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting duplicate paths but earlier has query parameter matchers that don&#39;t short circuit the latter" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting duplicate paths but earlier has query parameter matchers that don&#39;t short circuit the latter, with extras first" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting duplicate paths but earlier has query parameter matchers that don&#39;t short circuit the latter, with extras second" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting duplicate paths but earlier has header matchers that don&#39;t short circuit the latter" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting duplicate paths but earlier has header matchers that don&#39;t short circuit the latter, with extras first" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting duplicate paths but earlier has header matchers that don&#39;t short circuit the latter, with extras second" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting prefix hijacking" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting prefix hijacking with inverted header matcher, late matcher unreachable" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting prefix hijacking with inverted header matcher, late matcher reachable" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting regex hijacking" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting regex hijacking - with match all header matcher" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting regex hijacking - with match all query parameter matcher" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting prefix hijacking - handles case sensitive" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting regex hijacking - handles case sensitive (by ignoring it if set on the regex, since envoy will ignore case sensitive on regex routes)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting regex hijacking - handles case sensitive (by skipping validation; we can&#39;t validate case insensitive against a regex)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting inverted header matcher hijacks possible method matchers" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting prefix hijacking with inverted header matcher, late matcher partially unreachable" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http all-in-one virtual service validate matcher short-circuiting warnings warns on route short-circuiting invalid regex doesn&#39;t crash" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http using RouteTables and delegation valid configuration merges the vs and route tables to a single gloov1.VirtualHost" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http using RouteTables and delegation delegation cycle detects cycle and returns error" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http generating unique route names should generate unique names for multiple gateways" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http generating unique route names should generate unique names for multiple proxies" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http generating unique route names should generate unique names for virtual services in different namespaces" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator http generating unique route names should generate unique names for multiple unnamed routes" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="Translator tcp can properly translate a tcp proxy" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when missing ref on a delegate route returns nil and adds a warning" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when missing ref on a delegate route returns nil and adds a warning" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when expressions and labels are both specified in the selector returns nil and adds a warning" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when selector has no matches returns the appropriate warning" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when selector has matches selector works as expected when no labels nor namespaces nor expressions are provided" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when selector has matches selector works as expected when a label is specified in the selector (but no namespace nor expressions)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when selector has matches selector works as expected when namespaces are specified in the selector (but no labels nor expressions)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when selector has matches selector works as expected when both namespaces and labels are specified in the selector (but no expressions)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when selector has matches selector works as expected when selector contains &#39;all namespaces&#39; wildcard selector (*)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when selector has matches selector works as expected when an expression is specified in the selector (but no namespace or labels)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when selector has matches selector works as expected when an expression (in operator) and namespace are specified in the selector (but no labels)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when selector has matches selector works as expected when an expression (notin operator) and namespace are specified in the selector (but no labels)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when selector has matches selector works as expected when an expression (exists operator) and a namespace are specified in the selector (but no labels)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when selector has matches selector works as expected when an expression (greaterThan operator) and a namespace are specified in the selector (but no labels)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when selector has matches selector works as expected when an expression (LessThan operator) and a namespace are specified in the selector (but no labels)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when selector has matches selector works as expected when an expression (DoesNotExists operator) and a namespace are specified in the selector (but no labels)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableSelector when selector has matches selector works as expected when multiple expressions and a namespace are specified in the selector (but no labels)" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="ConfigSource appends sources to the gateway metadata" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MergeOptions merges top-level route options fields" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="MergeOptions merges top-level virtualhost options fields" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableIndexer when an empty list is passed returns nothing" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableIndexer when a single route table is passed returns the table" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableIndexer multiple route tables are passed when no route tables have weights correctly indexes them" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableIndexer multiple route tables are passed when all route tables have distinct weights correctly indexes them" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableIndexer multiple route tables are passed when some route tables have weights and others don&#39;t correctly indexes them" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+      <testcase name="RouteTableIndexer multiple route tables are passed when some route tables have the same weight correctly indexes them" classname="Translator Suite" time="0">
+          <skipped></skipped>
+      </testcase>
+  </testsuite>

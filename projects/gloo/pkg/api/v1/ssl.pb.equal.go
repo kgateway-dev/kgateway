@@ -89,8 +89,14 @@ func (m *SslConfig) Equal(that interface{}) bool {
 
 	}
 
-	if m.GetOneWayTls() != target.GetOneWayTls() {
-		return false
+	if h, ok := interface{}(m.GetOneWayTls()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetOneWayTls()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetOneWayTls(), target.GetOneWayTls()) {
+			return false
+		}
 	}
 
 	switch m.SslSecrets.(type) {

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuite name="Xds Suite" tests="3" failures="0" errors="0" time="0.003">
+      <testcase name="Utils disabled REST EDS by default" classname="Xds Suite" time="3.2294e-05"></testcase>
+      <testcase name="Utils sets EDS to true" classname="Xds Suite" time="1.503e-06"></testcase>
+      <testcase name="EnvoySnapshot clones correctly" classname="Xds Suite" time="0.003008777"></testcase>
+  </testsuite>

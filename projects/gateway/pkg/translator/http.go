@@ -6,6 +6,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -79,11 +83,23 @@ func (t *HttpTranslator) GenerateListeners(ctx context.Context, proxyName string
 		}
 
 		virtualServices := getVirtualServicesForGateway(gateway, snap.VirtualServices)
+		applyGlobalVirtualServiceSettings(ctx, virtualServices)
 		validateVirtualServiceDomains(gateway, virtualServices, reports)
 		listener := t.desiredListenerForHttp(gateway, proxyName, virtualServices, snap.RouteTables, reports)
 		result = append(result, listener)
 	}
 	return result
+}
+
+func applyGlobalVirtualServiceSettings(ctx context.Context, virtualServices v1.VirtualServiceList) {
+	// If oneWayTls is not defined on virtual service, use default value from global settings if defined there
+	if val := settingsutil.MaybeFromContext(ctx).GetGateway().GetVirtualServiceOptions().GetOneWayTls(); val != nil {
+		for _, vs := range virtualServices {
+			if vs.GetSslConfig().GetOneWayTls() == nil {
+				vs.SslConfig.OneWayTls = &wrappers.BoolValue{Value: val.GetValue()}
+			}
+		}
+	}
 }
 
 // Errors will be added to the report object.

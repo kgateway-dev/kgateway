@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuite name="Reporting Suite" tests="3" failures="0" errors="0" time="0.004">
+      <testcase name="CheckSourceReports returns true when all the sources for the config object are error-free" classname="Reporting Suite" time="0.003265736"></testcase>
+      <testcase name="CheckSourceReports returns true when false when any sources for the config object have an error" classname="Reporting Suite" time="0.000397179"></testcase>
+      <testcase name="AddProxyValidationResult it adds proxy validation errors to the resource reports" classname="Reporting Suite" time="0.001088093"></testcase>
+  </testsuite>

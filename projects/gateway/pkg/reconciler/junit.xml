@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuite name="Reconciler Suite" tests="7" failures="0" errors="0" time="7.852">
+      <testcase name="ReconcileGatewayProxies creating proxy a gateway has a reported error only creates the valid listeners" classname="Reconciler Suite" time="0.005739349"></testcase>
+      <testcase name="ReconcileGatewayProxies creating proxy a virtual service has a reported error only creates the valid virtual hosts" classname="Reconciler Suite" time="0.001937254"></testcase>
+      <testcase name="ReconcileGatewayProxies updating proxy updating status it carries over gloo status if proxy changed from gateway&#39;s point of view but not gloo&#39;s" classname="Reconciler Suite" time="0.002491701"></testcase>
+      <testcase name="ReconcileGatewayProxies updating proxy a gateway has a reported error only updates the valid listeners" classname="Reconciler Suite" time="0.002387172"></testcase>
+      <testcase name="ReconcileGatewayProxies updating proxy a gateway has been removed removes the listener" classname="Reconciler Suite" time="0.001854896"></testcase>
+      <testcase name="ReconcileGatewayProxies updating proxy a virtual service has a reported error only updates the valid virtual hosts" classname="Reconciler Suite" time="7.83207543"></testcase>
+      <testcase name="ReconcileGatewayProxies updating proxy a virtual service has been removed removes the virtual host" classname="Reconciler Suite" time="0.005324045"></testcase>
+  </testsuite>

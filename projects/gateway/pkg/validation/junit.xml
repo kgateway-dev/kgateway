@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuite name="Validation Suite" tests="40" failures="0" errors="0" time="13.715">
+      <testcase name="NotificationChannel refreshes the stream when a receive fails" classname="Validation Suite" time="0.02168559"></testcase>
+      <testcase name="RetryOnUnavailableClientConstructor creates a new client and closes the old one" classname="Validation Suite" time="10.003591408"></testcase>
+      <testcase name="RobustClient swaps out the client when it returns a connection error" classname="Validation Suite" time="0.102857842"></testcase>
+      <testcase name="Validator returns error before sync called" classname="Validation Suite" time="6.2641e-05"></testcase>
+      <testcase name="Validator validating a route table proxy validation accepted accepts the rt" classname="Validation Suite" time="0.002384764"></testcase>
+      <testcase name="Validator validating a route table proxy validation accepted accepts the rt and returns proxies each time" classname="Validation Suite" time="0.001781646"></testcase>
+      <testcase name="Validator validating a route table proxy validation returns error rejects the rt" classname="Validation Suite" time="0.000780844"></testcase>
+      <testcase name="Validator validating a route table proxy validation returns error allowWarnings=false rejects a vs with missing route table ref" classname="Validation Suite" time="0.000699253"></testcase>
+      <testcase name="Validator validating a route table proxy validation fails (bad connection) ignoreProxyValidation=false rejects the rt" classname="Validation Suite" time="1.7623297070000001"></testcase>
+      <testcase name="Validator validating a route table proxy validation fails (bad connection) ignoreProxyValidation=true accepts the rt" classname="Validation Suite" time="1.761038324"></testcase>
+      <testcase name="Validator validating a route table proxy validation fails (bad connection) allowWarnings=true accepts a vs with missing route table ref" classname="Validation Suite" time="3.4061e-05"></testcase>
+      <testcase name="Validator validating a route table proxy validation fails (bad connection) allowWarnings=true accepts a rt with missing route table ref" classname="Validation Suite" time="1.3518e-05"></testcase>
+      <testcase name="Validator validating a route table proxy validation fails (bad connection) allowWarnings=true accepts delete leaf route table" classname="Validation Suite" time="0.00049423"></testcase>
+      <testcase name="Validator validating a route table route table rejected rejects the rt" classname="Validation Suite" time="0.000849776"></testcase>
+      <testcase name="Validator delete a route table has parents rejects deletion" classname="Validation Suite" time="0.000785426"></testcase>
+      <testcase name="Validator delete a route table has no parents deletes safely" classname="Validation Suite" time="0.000207861"></testcase>
+      <testcase name="Validator validating a virtual service proxy validation returns error rejects the vs" classname="Validation Suite" time="0.00043576"></testcase>
+      <testcase name="Validator validating a virtual service proxy validation accepted accepts the vs" classname="Validation Suite" time="0.000335753"></testcase>
+      <testcase name="Validator validating a virtual service proxy validation accepted accepts the vs and returns proxies each time" classname="Validation Suite" time="0.001231557"></testcase>
+      <testcase name="Validator validating a virtual service no gateways for virtual service accepts the vs" classname="Validation Suite" time="0.000690705"></testcase>
+      <testcase name="Validator validating a virtual service virtual service rejected rejects the vs" classname="Validation Suite" time="0.000966012"></testcase>
+      <testcase name="Validator validating a virtual service dry-run accepts the vs and rejects the second" classname="Validation Suite" time="0.000944882"></testcase>
+      <testcase name="Validator validating a virtual service dry-run accepts the vs and accepts the second because of dry-run" classname="Validation Suite" time="0.000635573"></testcase>
+      <testcase name="Validator delete a virtual service has parent gateways rejects deletion" classname="Validation Suite" time="0.000300728"></testcase>
+      <testcase name="Validator delete a virtual service has no parent gateways deletes safely" classname="Validation Suite" time="0.000209316"></testcase>
+      <testcase name="Validator validating a gateway proxy validation returns error rejects the gw" classname="Validation Suite" time="0.00040439"></testcase>
+      <testcase name="Validator validating a gateway proxy validation accepted accepts the gw" classname="Validation Suite" time="0.00039338"></testcase>
+      <testcase name="Validator validating a gateway proxy validation accepted accepts the gateway and returns proxies each time" classname="Validation Suite" time="0.001222908"></testcase>
+      <testcase name="Validator validating a gateway gw rejected rejects the gw" classname="Validation Suite" time="0.0004104"></testcase>
+      <testcase name="Validator validating a list of virtual services proxy validation returns error rejects the vs list" classname="Validation Suite" time="0.0009769"></testcase>
+      <testcase name="Validator validating a list of virtual services proxy validation accepted accepts the vs list" classname="Validation Suite" time="0.000597678"></testcase>
+      <testcase name="Validator validating a list of virtual services proxy validation accepted accepts the multi vs list" classname="Validation Suite" time="0.001155957"></testcase>
+      <testcase name="Validator validating a list of virtual services proxy validation accepted rejects the multi vs list with overlapping domains" classname="Validation Suite" time="0.001562954"></testcase>
+      <testcase name="Validator validating a list of virtual services proxy validation accepted accepts the vs list and returns proxies each time" classname="Validation Suite" time="0.001850341"></testcase>
+      <testcase name="Validator validating a list of virtual services unmarshal errors doesn&#39;t mask other errors when there&#39;s an unmarshal error in a list" classname="Validation Suite" time="0.001953354"></testcase>
+      <testcase name="Validator validating a list of virtual services virtual service list rejected rejects the vs list" classname="Validation Suite" time="0.00075832"></testcase>
+      <testcase name="Validator validating a list of virtual services dry-run accepts the vs and rejects the second" classname="Validation Suite" time="0.001394748"></testcase>
+      <testcase name="Validator validating a list of virtual services dry-run accepts the vs and accepts the second because of dry-run" classname="Validation Suite" time="0.001129415"></testcase>
+      <testcase name="Validator validating concurrent scenario accepts only 1 vs when multiple are written concurrently" classname="Validation Suite" time="0.035401009"></testcase>
+      <testcase name="virtualServicesForRouteTable retrieves all virtual services containing the given route table" classname="Validation Suite" time="5.8478e-05"></testcase>
+  </testsuite>
