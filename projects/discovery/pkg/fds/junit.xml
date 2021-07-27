@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-  <testsuite name="Pkg Suite" tests="2" failures="0" errors="0" time="0.202">
-      <testcase name="Updater should detect functions when upstream type is known" classname="Pkg Suite" time="0.100851429"></testcase>
-      <testcase name="Updater should detect functions when upstream type is known" classname="Pkg Suite" time="0.101541086"></testcase>
-  </testsuite>

@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-  <testsuite name="Generated Kube Types Suite" tests="0" failures="0" errors="0" time="0.071">
-      <testcase name="Generated Kube Code can read and write a gloo resource as a typed kube object" classname="Generated Kube Types Suite" time="0.00049161">
-          <skipped>/Users/sai/go/src/github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/generated_kube_types_test.go:44&#xA;This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.&#xA;/Users/sai/go/src/github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/generated_kube_types_test.go:46</skipped>
-      </testcase>
-  </testsuite>

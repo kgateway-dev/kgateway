@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-  <testsuite name="Utils Suite" tests="1" failures="0" errors="0" time="0">
-      <testcase name="gateway util unit tests GatewaysByProxyName assigns each gateway once to each proxy by their proxyNames" classname="Utils Suite" time="3.0618e-05"></testcase>
-  </testsuite>

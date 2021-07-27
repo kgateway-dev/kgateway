@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-  <testsuite name="Generate Security Scan Docs Suite" tests="3" failures="0" errors="0" time="0.414">
-      <testcase name="generate security scan docgen check markdown reports exist for gloo" classname="Generate Security Scan Docs Suite" time="0.324825283"></testcase>
-      <testcase name="generate security scan docgen check markdown reports exist for glooe" classname="Generate Security Scan Docs Suite" time="0.024077752"></testcase>
-      <testcase name="generate security scan docgen check markdown report does not exist" classname="Generate Security Scan Docs Suite" time="0.065527294"></testcase>
-  </testsuite>
