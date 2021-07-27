@@ -473,14 +473,12 @@ When these properties are defined on a specific upstream, this configuration wil
 
 ```yaml
 "sslParameters": .gloo.solo.io.SslParameters
-"oneWayTls": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `sslParameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk/#sslparameters) | Default ssl parameter configuration to use for upstreams. |
-| `oneWayTls` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Default one way TLS configuration to use for upstreams. |
 
 
 
