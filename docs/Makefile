@@ -12,20 +12,23 @@ HUGO_VERSION := 0.69.2
 
 SOLO_HUGO_THEME_REVISION := 41587dc9dc719bd22cedd9803994f756e25f571f
 
+SECURITY_SCAN_MIN_VERSION ?= v1.6.0
+
 #----------------------------------------------------------------------------------
 # Docs
 #----------------------------------------------------------------------------------
+
 
 .PHONY: site-common
 site-common: clean gloo-enterprise-version
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
 	git -C themes/hugo-theme-soloio checkout $(SOLO_HUGO_THEME_REVISION)
-	GO111MODULE=on go run cmd/generate_docs.go gen-releases gloo > opensource.out
-	GO111MODULE=on go run cmd/generate_docs.go gen-releases glooe > enterprise.out
-	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
-	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
-	GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md gloo > content/static/content/gloo-security-scan.docgen
-	GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md glooe > content/static/content/glooe-security-scan.docgen
+	GO111MODULE=on go run cmd/generate_docs.go gen-releases -r gloo > opensource.out
+	GO111MODULE=on go run cmd/generate_docs.go gen-releases -r glooe > enterprise.out
+	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md -r gloo > content/static/content/gloo-changelog.docgen
+	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md -r glooe > content/static/content/glooe-changelog.docgen
+	MIN_SCANNED_VERSION=$(SECURITY_SCAN_MIN_VERSION) GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md -r gloo > content/static/content/gloo-security-scan.docgen
+	MIN_SCANNED_VERSION=$(SECURITY_SCAN_MIN_VERSION) GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md -r glooe > content/static/content/glooe-security-scan.docgen
 	GO111MODULE=on go run cmd/generate_docs.go get-enterprise-helm-values > content/static/content/glooe-values.docgen
 	rm -f opensource.out enterprise.out
 

@@ -1,6 +1,6 @@
 Name|Version|License
 ---|---|---
-[semver/v3](https://github.com/Masterminds/semver)|v3.1.0|MIT License
+[semver/v3](https://github.com/Masterminds/semver)|v3.1.1|MIT License
 [Netflix/go-expect](https://github.com/Netflix/go-expect)|v0.0.0-20180928190340-9d1f4485533b|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [aws/aws-sdk-go](https://github.com/aws/aws-sdk-go)|v1.34.9|Apache License 2.0
@@ -16,21 +16,21 @@ Name|Version|License
 [go-openapi/spec](https://github.com/go-openapi/spec)|v0.19.6|Apache License 2.0
 [go-openapi/swag](https://github.com/go-openapi/swag)|v0.19.7|Apache License 2.0
 [go-swagger/go-swagger](https://github.com/go-swagger/go-swagger)|v0.21.0|Apache License 2.0
-[gogo/googleapis](https://github.com/gogo/googleapis)|v1.3.1|Apache License 2.0
-[gogo/protobuf](https://github.com/gogo/protobuf)|v1.3.1|BSD 3-clause "New" or "Revised" License
+[gogo/googleapis](https://github.com/gogo/googleapis)|v1.3.2|Apache License 2.0
+[gogo/protobuf](https://github.com/gogo/protobuf)|v1.3.2|BSD 3-clause "New" or "Revised" License
 [golang/protobuf](https://github.com/golang/protobuf)|v1.4.3|BSD 3-clause "New" or "Revised" License
 [google/go-github](https://github.com/google/go-github)|v17.0.0+incompatible|BSD 3-clause "New" or "Revised" License
 [go-github/v32](https://github.com/google/go-github)|v32.0.0|BSD 3-clause "New" or "Revised" License
-[gorilla/mux](https://github.com/gorilla/mux)|v1.7.4|BSD 3-clause "New" or "Revised" License
-[grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.0.1-0.20190118093823-f849b5445de4|Apache License 2.0
+[gorilla/mux](https://github.com/gorilla/mux)|v1.8.0|BSD 3-clause "New" or "Revised" License
+[grpc-ecosystem/go-grpc-middleware](https://github.com/grpc-ecosystem/go-grpc-middleware)|v1.2.0|Apache License 2.0
 [hinshun/vt10x](https://github.com/hinshun/vt10x)|v0.0.0-20180809195222-d55458df857c|MIT License
 [inconshreveable/go-update](https://github.com/inconshreveable/go-update)|v0.0.0-20160112193335-8152e7eb6ccf|UNKNOWN
 [jhump/protoreflect](https://github.com/jhump/protoreflect)|v1.5.0|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [mitchellh/hashstructure](https://github.com/mitchellh/hashstructure)|v1.0.0|MIT License
 [olekukonko/tablewriter](https://github.com/olekukonko/tablewriter)|v0.0.4|MIT License
-[onsi/ginkgo](https://github.com/onsi/ginkgo)|v1.14.1|MIT License
-[onsi/gomega](https://github.com/onsi/gomega)|v1.10.2|MIT License
+[onsi/ginkgo](https://github.com/onsi/ginkgo)|v1.14.2|MIT License
+[onsi/gomega](https://github.com/onsi/gomega)|v1.10.3|MIT License
 [opencontainers/go-digest](https://github.com/opencontainers/go-digest)|v1.0.0-rc1|Apache License 2.0
 [pkg/browser](https://github.com/pkg/browser)|v0.0.0-20180916011732-0a3d74bf9ce4|BSD 2-clause "Simplified" License
 [prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.8.0|Apache License 2.0
@@ -40,14 +40,14 @@ Name|Version|License
 [spf13/afero](https://github.com/spf13/afero)|v1.3.4|Apache License 2.0
 [spf13/cobra](https://github.com/spf13/cobra)|v1.1.3|Apache License 2.0
 [spf13/pflag](https://github.com/spf13/pflag)|v1.0.5|BSD 3-clause "New" or "Revised" License
-[spf13/viper](https://github.com/spf13/viper)|v1.7.0|MIT License
-[go.opencensus.io](https://go.opencensus.io)|v0.22.5|Apache License 2.0
+[spf13/viper](https://github.com/spf13/viper)|v1.7.1|MIT License
+[go.opencensus.io](https://go.opencensus.io)|v0.22.6|Apache License 2.0
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.6.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.16.0|MIT License
 [x/mod](https://golang.org/x/mod)|v0.3.1-0.20200828183125-ce943fd02449|BSD 3-clause "New" or "Revised" License
-[x/sync](https://golang.org/x/sync)|v0.0.0-20201020160332-67f06af15bc9|BSD 3-clause "New" or "Revised" License
-[x/tools](https://golang.org/x/tools)|v0.0.0-20201027213030-631220838841|BSD 3-clause "New" or "Revised" License
-[google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20201019141844-1ed22bb0c154|Apache License 2.0
+[x/sync](https://golang.org/x/sync)|v0.0.0-20210220032951-036812b2e83c|BSD 3-clause "New" or "Revised" License
+[x/tools](https://golang.org/x/tools)|v0.0.0-20210106214847-113979e3529a|BSD 3-clause "New" or "Revised" License
+[google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20210219173056-d891e3cb3b5b|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.36.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.25.0|BSD 3-clause "New" or "Revised" License
 [AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
