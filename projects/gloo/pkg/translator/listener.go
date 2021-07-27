@@ -26,7 +26,6 @@ func (t *translatorInstance) computeListener(
 	listenerReport *validationapi.ListenerReport,
 ) *envoy_config_listener_v3.Listener {
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_listener."+listener.Name)
-
 	validateListenerPorts(proxy, listenerReport)
 	var filterChains []*envoy_config_listener_v3.FilterChain
 	switch listener.GetListenerType().(type) {
