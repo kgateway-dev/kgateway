@@ -389,9 +389,6 @@ message Settings {
 message UpstreamOptions {
     // Default ssl parameter configuration to use for upstreams
     SslParameters ssl_parameters = 1;
-
-    // Default one way TLS configuration to use for upstreams
-    google.protobuf.BoolValue one_way_tls = 2;
 }
 
 // Settings specific to the gloo (Envoy xDS server) controller
