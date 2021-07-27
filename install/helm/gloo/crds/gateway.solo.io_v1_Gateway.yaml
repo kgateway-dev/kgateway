@@ -2162,6 +2162,7 @@ spec:
                               type: string
                             type: array
                           oneWayTls:
+                            nullable: true
                             type: boolean
                           parameters:
                             properties:
