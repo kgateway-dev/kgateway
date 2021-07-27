@@ -77,10 +77,6 @@ Some metrics that may be useful to monitor (listed in Prometheus format):
 
 ### Troubleshooting monitoring components
 
-needed_disk_space = retention_time_seconds * ingested_samples_per_second * bytes_per_sample
-prometheus.server.retention
-prometheus.server.persistentVolume.size
-
 A common issue in production (or environments with high traffic) is to have sizing issues. This will result in an abnormal number of restarts like this:
 ```shell
 $ kubectl get all -n gloo-system
