@@ -215,7 +215,7 @@ func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 func TestUpstreamReachableWithOffset(offset int, envoyPort uint32, tu *TestUpstream, rootca *string) {
 	body := []byte("solo.io test")
 
-	ExpectHttpOK(body, rootca, envoyPort, "")
+	ExpectHttpOKWithOffset(offset+1, body, rootca, envoyPort, "")
 
 	timeout := time.After(15 * time.Second)
 	var receivedRequest *ReceivedRequest
@@ -251,7 +251,7 @@ func ExpectHttpUnavailableWithOffset(offset int, body []byte, rootca *string, en
 func ExpectHttpStatusWithOffset(offset int, body []byte, rootca *string, envoyPort uint32, response string, status int) {
 
 	var res *http.Response
-	EventuallyWithOffset(2, func() error {
+	EventuallyWithOffset(offset+1, func() error {
 		// send a request with a body
 		var buf bytes.Buffer
 		buf.Write(body)

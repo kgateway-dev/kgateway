@@ -14,11 +14,21 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 )
 
+type ProxyConnectionToPort func(ctx context.Context, conn net.Conn, port uint32)
+
 func StartSslProxy(ctx context.Context, port uint32) uint32 {
-	return StartSslProxyWithHelloCB(ctx, port, nil)
+	return StartSslProxyWithHelloCBAndCustomProxyConnection(ctx, port, nil, nil)
+}
+
+func StartSslProxyWithCustomProxyConnection(ctx context.Context, port uint32, customProxyConnection ProxyConnectionToPort) uint32 {
+	return StartSslProxyWithHelloCBAndCustomProxyConnection(ctx, port, nil, customProxyConnection)
 }
 
 func StartSslProxyWithHelloCB(ctx context.Context, port uint32, cb func(chi *tls.ClientHelloInfo)) uint32 {
+	return StartSslProxyWithHelloCBAndCustomProxyConnection(ctx, port, cb, nil)
+}
+
+func StartSslProxyWithHelloCBAndCustomProxyConnection(ctx context.Context, port uint32, cb func(chi *tls.ClientHelloInfo), customProxyConnection ProxyConnectionToPort) uint32 {
 	cert := []byte(helpers.Certificate())
 	key := []byte(helpers.PrivateKey())
 	cer, err := tls.X509KeyPair(cert, key)
@@ -41,6 +51,12 @@ func StartSslProxyWithHelloCB(ctx context.Context, port uint32, cb func(chi *tls
 		listener.Close()
 	}()
 
+	// Set the function responsible for proxying the connection to port
+	var proxyConnectionFunc = proxyConnection
+	if customProxyConnection != nil {
+		proxyConnectionFunc = customProxyConnection
+	}
+
 	go func() {
 		defer GinkgoRecover()
 		for {
@@ -51,7 +67,7 @@ func StartSslProxyWithHelloCB(ctx context.Context, port uint32, cb func(chi *tls
 			Expect(err).NotTo(HaveOccurred())
 			go func() {
 				defer GinkgoRecover()
-				proxyConnection(ctx, conn, port)
+				proxyConnectionFunc(ctx, conn, port)
 			}()
 		}
 	}()
@@ -63,14 +79,14 @@ func StartSslProxyWithHelloCB(ctx context.Context, port uint32, cb func(chi *tls
 	lport, err := strconv.Atoi(portstr)
 	Expect(err).NotTo(HaveOccurred())
 
-	fmt.Fprintf(GinkgoWriter, "starting ssl proxy to port %v to port %v\n", port, lport)
+	fmt.Fprintf(GinkgoWriter, "starting ssl proxy to port %v from port %v\n", port, lport)
 	return uint32(lport)
 }
 
 func proxyConnection(ctx context.Context, conn net.Conn, port uint32) {
 	defer conn.Close()
-	fmt.Fprintf(GinkgoWriter, "proxing connection to to port %v\n", port)
-	defer fmt.Fprintf(GinkgoWriter, "proxing connection to to port %v done\n", port)
+	fmt.Fprintf(GinkgoWriter, "proxing connection to port %v\n", port)
+	defer fmt.Fprintf(GinkgoWriter, "proxing connection to port %v done\n", port)
 
 	c, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
 	Expect(err).NotTo(HaveOccurred())
