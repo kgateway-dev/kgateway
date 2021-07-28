@@ -1,0 +1,10 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Runs Trivy scans on all LTS branch releases. These scans run weekly and upload the results to the github security tab as
+      well as a google cloud bucket. When we build the docs (on release / merge to master), the docs gen script pulls from
+      the bucket.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: go-utils
+    dependencyTag: v0.21.14

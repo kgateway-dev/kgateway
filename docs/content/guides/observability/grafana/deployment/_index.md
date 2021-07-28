@@ -3,14 +3,23 @@ title: Deployment Configuration
 weight: 2
 description: How to configure your Grafana installation
 ---
-
-> **Note**: This page details configuration for the Grafana deployment packaged with Gloo Edge Enterprise
+This functionality is turned on by default, and can be turned off a couple of different ways: through [Helm chart install
+options]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-the-gloo-gateway-on-kubernetes" >}}); and through environment variables.
 
  * [Default Installation](#default-installation)
     * [Credentials](#credentials)
  * [Custom Deployment](#custom-deployment)
  
 ### Default Installation
+
+{{% notice warning %}}
+Gloo is shipped by default with grafana 5.x charts, and provides a set of default values that are not suitable for production usage in most cases. Please provide your own instance of grafana or configure the helm chart options with production values
+{{% /notice %}}
+
+{{% notice note %}}
+For a complete set of options, please refer to: https://github.com/grafana/helm-charts/tree/main/charts/grafana
+{{% /notice %}}
+
 No special configuration is needed to use the instance of Grafana that ships by default with Gloo Edge. Find the deployment and port-forward to it:
 
 ```bash

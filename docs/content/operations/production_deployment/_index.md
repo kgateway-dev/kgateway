@@ -15,7 +15,26 @@ For example, Gloo Edge's data plane (the `gateway-proxy` pod) has ReadOnly file 
 * **Disable service account token mount**
     - For example, when integrating with Istio's SDS (see integration with Istio), you need to have a service account token mounted. If you're not integrating with Istio, you can eliminate the need for the service account token. When installing Gloo Edge, set the `gateway.proxyServiceAccount.disableAutomount` field. 
 * **Disable Kubernetes destinations**
-    - Gloo Edge out of the box routes to upstreams. It can also route directly to Kubernetes destinations (bypassing upstreams). Upstreams is the recommended abstraction to which to route in VirtualServices, and you can disable the Kubernetes destinations with the `settings.gloo.disableKubernetesDestinations`. This saves on memory overhead so Gloo Edge pod doesn't cache both upstreams and Kubernetes destinations. 
+    - Gloo Edge out of the box routes to upstreams. It can also route directly to Kubernetes destinations (bypassing upstreams). Upstreams is the recommended abstraction to which to route in VirtualServices, and you can disable the Kubernetes destinations with the `settings.disableKubernetesDestinations`. This saves on memory overhead so Gloo Edge pod doesn't cache both upstreams and Kubernetes destinations. 
+
+    You can set this value in the default `Settings` CRD by adding the following content:   
+    ```
+    apiVersion: gloo.solo.io/v1
+    kind: Settings
+    metadata:
+      name: default
+      namespace: gloo-system
+    spec:
+      gloo:
+        disableKubernetesDestinations: true
+        ...
+    ```
+
+    You can set this value helm overrides by setting
+    ```
+    settings:
+      disableKubernetesDestinations: true
+    ```
 
 ## Enable replacing invalid routes
 
@@ -61,6 +80,10 @@ See the [helm chart value reference]({{%versioned_link_path fromRoot="/reference
 
 ## Metrics and monitoring
 
+{{% notice note %}}
+Gloo Edge default prometheus server and grafana instance are not meant to be used `as-is` in production. Please provide your own instance or configure the provided one with production values
+{{% /notice %}}
+
 When running Gloo Edge (or any application for that matter) in a production environment, it is important to have a monitoring solution in place.
 Gloo Edge Enterprise provides a simple deployment of Prometheus and Grafana to assist with this necessity.
 However, depending on the requirements on your organization you may require a more robust solution, in which case you should make sure the metrics from the Gloo Edge components (especially Envoy) are available in whatever solution you are using.
@@ -70,6 +93,102 @@ Some metrics that may be useful to monitor (listed in Prometheus format):
 * `envoy_control_plane_connected_state` -- This metric shows whether or not a given Envoy instance is connected to the control plane, i.e. the Gloo pod.
  This metric should have a value of `1` otherwise it indicates that Envoy is having trouble connecting to the Gloo pod.
 * `container_cpu_cfs_throttled_seconds_total / container_cpu_cfs_throttled_periods_total` -- This is a generic expression that will show whether or not a given container is being throttled for CPU, which will result is performance issues and service degradation. If the Gloo Edge containers are being throttled, it is important to understand why and given the underlying cause, increase the resources allocated.
+
+### Troubleshooting monitoring components
+
+A common issue in production (or environments with high traffic) is to have sizing issues. This will result in an abnormal number of restarts like this:
+```shell
+$ kubectl get all -n gloo-system
+NAME                                                       READY   STATUS             RESTARTS   AGE
+pod/discovery-9d4c7fb4c-5wq5m                              1/1     Running            13         35d
+pod/extauth-77bb4fc79b-dsl6q                               1/1     Running            0          35d
+pod/gateway-f774b4d5b-jfhwn                                1/1     Running            0          35d
+pod/gateway-proxy-7656d9df87-qtn2s                         1/1     Running            0          35d
+pod/gloo-db4fb8c4-lfcrp                                    1/1     Running            13         35d
+pod/glooe-grafana-78c6f96db-wgl5k                          1/1     Running            0          41d
+pod/glooe-prometheus-kube-state-metrics-5dd77b76fc-s8prb   1/1     Running            0          41d
+pod/glooe-prometheus-server-59dcf7bc5b-jt654               1/2     CrashLoopBackOff   10692      41d
+pod/observability-656d47787-2fskq                          0/1     CrashLoopBackOff   9558       33d
+pod/rate-limit-7d6cf64fbf-ldgbp                            1/1     Running            0          35d
+pod/redis-55d6dbb6b7-ql89p                                 1/1     Running            0          41d
+```
+
+Looking at the cause of these restarts, we can see that the PV is exhausted:
+```shell
+kubectl logs -f pod/glooe-prometheus-server-59dcf7bc5b-jt654 -n gloo-system -c glooe-prometheus-server
+evel=info ts=2021-07-07T05:12:29.474Z caller=main.go:574 msg="Stopping scrape discovery manager..."
+level=info ts=2021-07-07T05:12:29.474Z caller=main.go:588 msg="Stopping notify discovery manager..."
+level=info ts=2021-07-07T05:12:29.474Z caller=main.go:610 msg="Stopping scrape manager..."
+level=info ts=2021-07-07T05:12:29.474Z caller=manager.go:908 component="rule manager" msg="Stopping rule manager..."
+level=info ts=2021-07-07T05:12:29.474Z caller=manager.go:918 component="rule manager" msg="Rule manager stopped"
+level=info ts=2021-07-07T05:12:29.474Z caller=notifier.go:601 component=notifier msg="Stopping notification manager..."
+level=info ts=2021-07-07T05:12:29.474Z caller=main.go:778 msg="Notifier manager stopped"
+level=info ts=2021-07-07T05:12:29.474Z caller=main.go:604 msg="Scrape manager stopped"
+level=info ts=2021-07-07T05:12:29.474Z caller=main.go:570 msg="Scrape discovery manager stopped"
+level=info ts=2021-07-07T05:12:29.474Z caller=main.go:584 msg="Notify discovery manager stopped"
+level=error ts=2021-07-07T05:12:29.474Z caller=main.go:787 err="opening storage failed: open /data/wal/00000721: no space left on device"
+```
+
+Next step is to check the pv size and the retention time:
+```shell
+kubectl get deploy/glooe-prometheus-server -n gloo-system -oyaml|grep "image: prom/prometheus" -C 10
+        - mountPath: /etc/config
+          name: config-volume
+          readOnly: true
+      - args:
+        - --storage.tsdb.retention.time=15d
+        - --config.file=/etc/config/prometheus.yml
+        - --storage.tsdb.path=/data
+        - --web.console.libraries=/etc/prometheus/console_libraries
+        - --web.console.templates=/etc/prometheus/consoles
+        - --web.enable-lifecycle
+        image: prom/prometheus:v2.21.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /-/healthy
+            port: 9090
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          successThreshold: 1
+```
+```shell
+kubectl get pv -oyaml|grep "glooe-prometheus-server" -C 10
+    selfLink: /api/v1/persistentvolumes/pvc-a616d9c6-9733-428f-bac5-c054ca8a025b
+    uid: 816c7e99-55e3-4888-83f0-2f31a8314b47
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    capacity:
+      storage: 16Gi
+    claimRef:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      name: glooe-prometheus-server
+      namespace: gloo-system
+      resourceVersion: "36337"
+      uid: a616d9c6-9733-428f-bac5-c054ca8a025b
+    gcePersistentDisk:
+      fsType: ext4
+      pdName: gke-jesus-lab-observability-9bc1029-pvc-a616d9c6-9733-428f-bac5-c054ca8a025b
+    nodeAffinity:
+      required:
+        nodeSelectorTerms:
+        - matchExpressions:
+```
+
+In this case, 16Gi volume size and 15d retention is not working well, so we must tune one or both parameters using these helm values:
+```
+prometheus.server.retention
+prometheus.server.persistentVolume.size
+```
+
+Choosing the right values requires some business knowledge, but as a rule of thumb a fair approach is:
+```
+persistentVolume.size = retention_in_seconds * ingested_samples_per_second * bytes_per_sample
+```
 
 ## Access Logging
 

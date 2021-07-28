@@ -504,6 +504,16 @@ message GlooOptions {
     google.protobuf.Duration failover_upstream_dns_polling_interval = 13;
 }
 
+
+// Default configuration to use for VirtualServices, when not provided by a specific virtual service
+// When these properties are defined on a specific VirtualService, this configuration will be ignored
+message VirtualServiceOptions {
+    // Default one_way_tls value to use for all virtual services where one_way_tls config has not been specified.
+    // If the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default.
+    // Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA.
+    google.protobuf.BoolValue one_way_tls = 1;
+}
+
 // Settings specific to the Gateway controller
 message GatewayOptions {
     // Address of the `gloo` config validation server. Defaults to `gloo:9988`.
@@ -574,4 +584,8 @@ message GatewayOptions {
     // If set, compresses proxy space. This can help make the Proxy CRD smaller to fit in etcd.
     // This is an advanced option. Use with care.
     bool compressed_proxy_spec = 6;
+
+    // Default configuration to use for VirtualServices, when not provided by a specific virtual service
+    // When these properties are defined on a specific VirtualService, this configuration will be ignored
+    VirtualServiceOptions virtual_service_options = 7;
 }

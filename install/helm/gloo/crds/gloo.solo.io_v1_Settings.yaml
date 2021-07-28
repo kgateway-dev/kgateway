@@ -227,6 +227,12 @@ spec:
                   type: object
                 validationServerAddr:
                   type: string
+                virtualServiceOptions:
+                  properties:
+                    oneWayTls:
+                      nullable: true
+                      type: boolean
+                  type: object
               type: object
             gloo:
               properties:

@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Clarify how to set disableKubernetesDestination in production deployment doc and give examples with Helm and editing the CRD directly

@@ -586,6 +586,40 @@ func (m *GlooOptions) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *VirtualServiceOptions) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*VirtualServiceOptions)
+	if !ok {
+		that2, ok := that.(VirtualServiceOptions)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetOneWayTls()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetOneWayTls()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetOneWayTls(), target.GetOneWayTls()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *GatewayOptions) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -630,6 +664,16 @@ func (m *GatewayOptions) Equal(that interface{}) bool {
 
 	if m.GetCompressedProxySpec() != target.GetCompressedProxySpec() {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetVirtualServiceOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetVirtualServiceOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetVirtualServiceOptions(), target.GetVirtualServiceOptions()) {
+			return false
+		}
 	}
 
 	return true

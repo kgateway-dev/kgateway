@@ -18,15 +18,18 @@ func BuildSecurityScanReportGloo(tags []string) error {
 			return err
 		}
 		if ix == 0 || semver.Minor() != prevMinorVersion.Minor() {
-			fmt.Println()
-			fmt.Printf("***Latest %d.%d.x Gloo Open Source Release: %s***\n", semver.Major(), semver.Minor(), tag)
-			fmt.Println()
-			printImageReportGloo(tag)
+			fmt.Printf("\n***Latest %d.%d.x Gloo Open Source Release: %s***\n\n", semver.Major(), semver.Minor(), tag)
+			err = printImageReportGloo(tag)
+			if err != nil {
+				return err
+			}
 			prevMinorVersion = semver
 		} else {
-			fmt.Printf("<details><summary> Release %s </summary>\n", tag)
-			fmt.Println()
-			printImageReportGloo(tag)
+			fmt.Printf("<details><summary> Release %s </summary>\n\n", tag)
+			err = printImageReportGloo(tag)
+			if err != nil {
+				return err
+			}
 			fmt.Println("</details>")
 		}
 	}
@@ -44,15 +47,18 @@ func BuildSecurityScanReportGlooE(tags []string) error {
 			return err
 		}
 		if ix == 0 || semver.Minor() != prevMinorVersion.Minor() {
-			fmt.Println()
-			fmt.Printf("***Latest %d.%d.x Gloo Enterprise Release: %s***\n", semver.Major(), semver.Minor(), tag)
-			fmt.Println()
-			printImageReportGlooE(semver)
+			fmt.Printf("\n***Latest %d.%d.x Gloo Enterprise Release: %s***\n\n", semver.Major(), semver.Minor(), tag)
+			err = printImageReportGlooE(semver)
+			if err != nil {
+				return err
+			}
 			prevMinorVersion = semver
 		} else {
-			fmt.Printf("<details><summary>Release %s </summary>\n", tag)
-			fmt.Println()
-			printImageReportGlooE(semver)
+			fmt.Printf("<details><summary>Release %s </summary>\n\n", tag)
+			err = printImageReportGlooE(semver)
+			if err != nil {
+				return err
+			}
 			fmt.Println("</details>")
 		}
 	}
@@ -60,48 +66,47 @@ func BuildSecurityScanReportGlooE(tags []string) error {
 	return nil
 }
 
+// List of images included in gloo edge open source
+func OpenSourceImages() []string {
+	return []string{"access-logger", "certgen", "discovery", "gateway", "gloo", "gloo-envoy-wrapper", "ingress", "sds"}
+}
+
+// List of images only included in gloo edge enterprise
+// In 1.7, we replaced the grpcserver images with gloo-fed images.
+// For images before 1.7, set before17 to true.
+func EnterpriseImages(before17 bool) []string {
+	extraImages := []string{"gloo-fed", "gloo-fed-apiserver", "gloo-fed-apiserver-envoy", "gloo-federation-console", "gloo-fed-rbac-validating-webhook"}
+	if before17 {
+		extraImages = []string{"grpcserver-ui", "grpcserver-envoy", "grpcserver-ee"}
+	}
+	return append([]string{"rate-limit-ee", "gloo-ee", "gloo-ee-envoy-wrapper", "observability-ee", "extauth-ee"}, extraImages...)
+}
+
 func printImageReportGloo(tag string) error {
-	images := []string{"gateway", "discovery", "gloo", "gloo-envoy-wrapper", "ingress", "access-logger", "sds", "certgen"}
-	for _, image := range images {
-		fmt.Printf("**Gloo %s image**\n", image)
-		fmt.Println()
-		// remove `v` from tag
-		url := "https://storage.googleapis.com/solo-gloo-security-scans/gloo/" + tag[1:] + "/" + image + "_cve_report.docgen"
+	for _, image := range OpenSourceImages() {
+		fmt.Printf("**Gloo %s image**\n\n", image)
+		url := "https://storage.googleapis.com/solo-gloo-security-scans/gloo/" + tag + "/" + image + "_cve_report.docgen"
 		report, err := GetSecurityScanReport(url)
 		if err != nil {
 			return err
 		}
-		fmt.Println(report)
-		fmt.Println()
+		fmt.Printf("%s\n\n", report)
 	}
 	return nil
 }
 
 func printImageReportGlooE(semver *version.Version) error {
 	tag := semver.String()
-	images := []string{"rate-limit-ee", "gloo-ee", "gloo-ee-envoy-wrapper", "observability-ee", "extauth-ee", "ext-auth-plugins"}
-
-	// gloo-fed images replaced grpcserver images in 1.7+
-	grpcserverImages := []string{"grpcserver-ee", "grpcserver-envoy", "grpcserver-ui"}
-	fedImages := []string{"gloo-fed", "gloo-fed-apiserver", "gloo-fed-apiserver-envoy", "gloo-federation-console", "gloo-fed-rbac-validating-webhook"}
 	hasFedVersion, _ := semver.Compare("1.7.0")
-	if hasFedVersion >= 0 {
-		images = append(images, fedImages...)
-	} else {
-		images = append(images, grpcserverImages...)
-	}
 
-	for _, image := range images {
-		fmt.Printf("**Gloo Enterprise %s image**\n", image)
-		fmt.Println()
-		// remove `v` from tag
-		url := "https://storage.googleapis.com/solo-gloo-security-scans/glooe/" + tag + "/" + image + "_cve_report.docgen"
+	for _, image := range EnterpriseImages(hasFedVersion < 0) {
+		fmt.Printf("**Gloo Enterprise %s image**\n\n", image)
+		url := "https://storage.googleapis.com/solo-gloo-security-scans/solo-projects/" + tag + "/" + image + "_cve_report.docgen"
 		report, err := GetSecurityScanReport(url)
 		if err != nil {
 			return err
 		}
-		fmt.Println(report)
-		fmt.Println()
+		fmt.Printf("%s\n\n", report)
 	}
 	return nil
 }

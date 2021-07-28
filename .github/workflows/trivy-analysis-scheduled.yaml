@@ -1,39 +1,17 @@
 name: security-scan-scheduled
 on:
-  workflow_dispatch:
-    # allow for version to be manually specified under actions page
-    inputs:
-      gloo-version:
-        description: 'Gloo version'
-        required: false
-        default: ''
+  # allow for version to be manually specified under actions page
+  workflow_dispatch: {}
   schedule:
     # Monday 9am EST
     - cron: "0 13 * * 1"
 jobs:
-  setup-versions:
-    runs-on: "ubuntu-18.04"
-    outputs:
-      matrix: ${{ steps.set-gloo-version.outputs.matrix }}
-    steps:
-      - id: set-gloo-version
-        run: |
-          if [ -z "${{github.event.inputs.gloo-version}}" ]; then
-            echo '::set-output name=matrix::["master","v1.8.x","v1.7.x","v1.6.x","v1.5.x"]'
-          else
-            echo '::set-output name=matrix::["${{github.event.inputs.gloo-version}}"]'
-          fi
   scan-images:
-    needs: setup-versions
     name: Trivy Scan
     runs-on: "ubuntu-18.04"
     env:
       SCAN_DIR: _output/scans
       IMAGE_REPO: quay.io/solo-io
-    strategy:
-      matrix:
-        image-type: [ 'access-logger', 'certgen', 'discovery', 'gateway', 'gloo', 'gloo-envoy-wrapper', 'ingress', 'sds' ]
-        gloo-version: ${{ fromJson(needs.setup-versions.outputs.matrix) }}
     steps:
       - name: Cancel Previous Actions
         uses: styfle/cancel-workflow-action@0.4.1
@@ -56,6 +34,10 @@ jobs:
 
           echo "After clearing disk space:"
           df -h
+      - name: Install Trivy
+        run: |
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.18.3/trivy_0.18.3_Linux-64bit.deb
+          sudo dpkg -i trivy_0.18.3_Linux-64bit.deb
       - name: Set up Go 1.16.3
         uses: actions/setup-go@v2
         with:
@@ -63,60 +45,23 @@ jobs:
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-          ref: ${{ matrix.gloo-version }}
       - name: Setup - gcloud / gsutil
         uses: google-github-actions/setup-gcloud@master
         with:
           service_account_key: ${{ secrets.GLOO_VULN_REPORTER }}
           project_id: solo-public
           export_default_credentials: true
-      - name: Check if scan exists
-        id: check-scan-exists
-        run: |
-          VERSION=$(git describe --tags --abbrev=0 | cut -c 2-)
-          echo "::set-output name=VERSION::$(echo $VERSION)"
-          EXISTS=$(gsutil -q stat gs://solo-gloo-security-scans/gloo/$(echo $VERSION)/${{ matrix.image-type }}_cve_report.docgen; echo $?)
-          echo "::set-output name=EXISTS::$(echo $EXISTS)"
-      - name: Build an image from Dockerfile
-        if: ${{ steps.check-scan-exists.outputs.EXISTS == 1 }}
-        id: build-docker-image
-        run: |
-          go env -w GOPRIVATE=github.com/solo-io
-          go mod tidy
-          TAGGED_VERSION=v${{ steps.check-scan-exists.outputs.VERSION }} LOCAL_BUILD=true make ${{ matrix.image-type }}-docker
-      - name: Setup Gloo Docs Output
-        if: ${{ steps.check-scan-exists.outputs.EXISTS == 1 }}
-        run: |
-          mkdir -p ${{ env.SCAN_DIR }}/${{ steps.check-scan-exists.outputs.VERSION }}
-      - name: Gloo Docs
-        if: ${{ steps.check-scan-exists.outputs.EXISTS == 1 }}
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:${{ steps.check-scan-exists.outputs.VERSION }}
-          format: 'template'
-          template: '@hack/utils/security_scan_report/markdown.tpl'
-          output: ${{ env.SCAN_DIR }}/${{ steps.check-scan-exists.outputs.VERSION }}/${{ matrix.image-type }}_cve_report.docgen
-          severity: 'CRITICAL,HIGH'
-      - name: Publish Docs
-        if: ${{ steps.check-scan-exists.outputs.EXISTS == 1 }}
+      - name: Run and Push Security Scan Files to Google Cloud Bucket
         env:
-          TAGGED_VERSION: v${{ steps.check-scan-exists.outputs.VERSION }}
-          SCAN_FILE: ${{ matrix.image-type }}_cve_report.docgen
+          SCAN_DIR: ${{ env.SCAN_DIR }}
+          IMAGE_REPO: quay.io/solo-io
+          MIN_SCANNED_VERSION: 'v1.6.0'
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
+          mkdir -p ${{ env.SCAN_DIR }}
+          make run-security-scan
           make publish-security-scan
-      - name: Run Trivy vulnerability scanner
-        if: ${{ steps.check-scan-exists.outputs.EXISTS == 1 }}
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.IMAGE_REPO }}/${{ matrix.image-type }}:${{ steps.check-scan-exists.outputs.VERSION }}
-          format: 'template'
-          template: '@/contrib/sarif.tpl'
-          output: trivy-results-${{ matrix.image-type }}.sarif
-          severity: 'CRITICAL,HIGH'
-      - name: Upload Trivy scan results to GitHub Security tab
-        if: ${{ steps.check-scan-exists.outputs.EXISTS == 1 }}
-        uses: github/codeql-action/upload-sarif@v1
-        with:
-          sarif_file: trivy-results-${{ matrix.image-type }}.sarif
+      - name: Alert on workflow failure
+        if: ${{ failure() }}
+        run : |
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"Gloo Edge Vulnerability Scan has failed, visit https://github.com/solo-io/gloo/actions/runs/${{github.run_id}} to view logs."}' ${{ secrets.SLACK_BOT_URL }}
