@@ -17,6 +17,25 @@ For example, Gloo Edge's data plane (the `gateway-proxy` pod) has ReadOnly file 
 * **Disable Kubernetes destinations**
     - Gloo Edge out of the box routes to upstreams. It can also route directly to Kubernetes destinations (bypassing upstreams). Upstreams is the recommended abstraction to which to route in VirtualServices, and you can disable the Kubernetes destinations with the `settings.gloo.disableKubernetesDestinations`. This saves on memory overhead so Gloo Edge pod doesn't cache both upstreams and Kubernetes destinations. 
 
+    You can set this value in the default `Settings` CRD by adding the following content:   
+    ```
+    apiVersion: gloo.solo.io/v1
+    kind: Settings
+    metadata:
+      name: default
+      namespace: gloo-system
+    spec:
+      gloo:
+        disableKubernetesDestinations: true
+        ...
+    ```
+
+    You can set this value helm overrides by setting
+    ```
+    settings:
+      disableKubernetesDestinations: true
+    ```
+
 ## Enable replacing invalid routes
 
 * **Configure invalidConfigPolicy**
