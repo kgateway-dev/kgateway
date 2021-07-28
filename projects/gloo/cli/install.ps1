@@ -89,7 +89,7 @@ if ($glooctlDownloaded -eq $true) {
     Write-Output "  glooctl install gateway     # install gloo's function gateway functionality into the 'gloo-system' namespace"
     Write-Output "  glooctl install ingress     # install very basic Kubernetes Ingress support with Gloo into namespace gloo-system"
     Write-Output "  glooctl install knative     # install Knative serving with Gloo configured as the default cluster ingress"
-    Write-Output "Please see visit the Gloo Installation guides for more:  https://gloo.solo.io/installation/"
+    Write-Output "Please see visit the Gloo Installation guides for more:  https://docs.solo.io/gloo-edge/latest/installation/"
     exit 0
 }
 else {
