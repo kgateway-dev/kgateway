@@ -7,25 +7,6 @@ Param(
 
 $currentLocation = $MyInvocation.MyCommand.Path
 
-$python_version = & { python3 -V } 2>&1
-
-if ($python_version -is [System.Management.Automation.ErrorRecord]) {
-
-    $python_version = & { python -V } 2>&1
-
-    if ($python_version -is [System.Management.Automation.ErrorRecord]) {
-        $python_version.Exception.Message
-        Write-Output "Python is required to install glooctl"
-        exit 1
-    }
-    else {
-        $python_version = "python"
-    }    
-}
-else {
-    $python_version = "python3"
-}
-
 $openssl_version = & { openssl version } 2>&1
 
 if ($openssl_version -is [System.Management.Automation.ErrorRecord]) {
@@ -35,20 +16,20 @@ if ($openssl_version -is [System.Management.Automation.ErrorRecord]) {
 }
 
 if ([string]::IsNullOrEmpty($GLOO_VERSION)) {
-    if ($python_version -eq "python") {
-        $GLOO_VERSIONS = $(curl -sH"Accept: application/vnd.github.v3+json" https://api.github.com/repos/solo-io/gloo/releases | python -c "import sys; from distutils.version import StrictVersion, LooseVersion; from json import loads as l; releases = l(sys.stdin.read()); releases = [release['tag_name'] for release in releases];  filtered_releases = list(filter(lambda release_string: len(release_string) > 0 and StrictVersion.version_re.match(release_string[1:]) != None, releases)); filtered_releases.sort(key=LooseVersion, reverse=True); print('\n'.join(filtered_releases))")
+
+    $GLOO_RELEASES = curl -sH"Accept: application/vnd.github.v3+json" https://api.github.com/repos/solo-io/gloo/releases | ConvertFrom-Json
+
+    $GLOO_VERSIONS = New-Object System.Collections.Generic.List[System.Object]
+    foreach ($release in $GLOO_RELEASES) {
+        if (-Not ($release.tag_name.Contains("-beta") -Or $release.tag_name.Contains("-patch"))) {
+            $GLOO_VERSIONS.Add($release.tag_name)
+        }
     }
-    elseif ($python_version -eq "python3") {
-        $GLOO_VERSIONS = $(curl -sH"Accept: application/vnd.github.v3+json" https://api.github.com/repos/solo-io/gloo/releases | python3 -c "import sys; from distutils.version import StrictVersion, LooseVersion; from json import loads as l; releases = l(sys.stdin.read()); releases = [release['tag_name'] for release in releases];  filtered_releases = list(filter(lambda release_string: len(release_string) > 0 and StrictVersion.version_re.match(release_string[1:]) != None, releases)); filtered_releases.sort(key=LooseVersion, reverse=True); print('\n'.join(filtered_releases))")
-    }
-    else {
-        Write-Output "Failed to run python"
-        exit 1
-    }
+    $GLOO_VERSIONS = $GLOO_VERSIONS | Sort-Object -Descending 
 }
 else {
-    if(!$GLOO_VERSION.ToLower().Contains("v")){
-        $GLOO_VERSION =  "v" + $GLOO_VERSION
+    if (!$GLOO_VERSION.ToLower().Contains("v")) {
+        $GLOO_VERSION = "v" + $GLOO_VERSION
     }
     $GLOO_VERSIONS = $GLOO_VERSION
 }
