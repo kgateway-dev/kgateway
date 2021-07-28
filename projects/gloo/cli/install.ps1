@@ -28,7 +28,7 @@ if ([string]::IsNullOrEmpty($GLOO_VERSION)) {
     $GLOO_VERSIONS = $GLOO_VERSIONS | Sort-Object -Descending 
 }
 else {
-    if (!$GLOO_VERSION.ToLower().Contains("v")) {
+    if (-Not $GLOO_VERSION.ToLower().Contains("v")) {
         $GLOO_VERSION = "v" + $GLOO_VERSION
     }
     $GLOO_VERSIONS = $GLOO_VERSION
