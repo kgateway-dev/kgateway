@@ -80,7 +80,7 @@ if ($glooctlDownloaded -eq $true) {
     
     Set-Location (Get-Item $currentLocation).DirectoryName
     
-    Write-Output "Gloo was successfully installed!"
+    Write-Output "Gloo Edge was successfully installed!"
     Write-Output `n
     Write-Output "Add the gloo CLI to your path with:"
     Write-Output '  $env:Path += ";$env:userprofile/.gloo/bin/"'
