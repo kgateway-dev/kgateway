@@ -19,13 +19,25 @@ You’ll use this CLI to interact with Gloo Edge, including installing it onto y
 
 To install the CLI, run:
 
+##### Linux/MacOS
+
 `curl -sL https://run.solo.io/gloo/install | sh`
+
+##### Windows
+
+`curl -sL https://run.solo.io/gloo/windows/install | pwsh`
 
 Alternatively, you can download the CLI directly via the github releases page. 
 
 Next, add Gloo Edge to your path with:
 
+##### Linux/MacOS
+
 `export PATH=$HOME/.gloo/bin:$PATH`
+
+##### Windows
+
+`$env:Path += ";$env:userprofile/.gloo/bin/"`
 
 Verify the CLI is installed and running correctly with:
 

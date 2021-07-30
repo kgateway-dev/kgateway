@@ -79,7 +79,7 @@ fi
 
 rm -r "$tmp"
 
-echo "Gloo was successfully installed 🎉"
+echo "Gloo Edge was successfully installed 🎉"
 echo ""
 echo "Add the gloo CLI to your path with:"
 echo "  export PATH=\$HOME/.gloo/bin:\$PATH"
@@ -88,7 +88,7 @@ echo "Now run:"
 echo "  glooctl install gateway     # install gloo's function gateway functionality into the 'gloo-system' namespace"
 echo "  glooctl install ingress     # install very basic Kubernetes Ingress support with Gloo into namespace gloo-system"
 echo "  glooctl install knative     # install Knative serving with Gloo configured as the default cluster ingress"
-echo "Please see visit the Gloo Installation guides for more:  https://gloo.solo.io/installation/"
+echo "Please see visit the Gloo Installation guides for more:  https://docs.solo.io/gloo-edge/latest/installation/"
 exit 0
 done
 

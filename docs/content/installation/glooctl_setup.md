@@ -15,6 +15,13 @@ The `glooctl` command line provides useful functions to install, configure, and 
   export PATH=$HOME/.gloo/bin:$PATH
   ```
 
+* To install on windows you can use this install script. Openssl is required for installation to execute properly.
+  
+  ```pwsh
+  curl -sL https://run.solo.io/gloo/windows/install | pwsh
+  $env:Path += ";$env:userprofile/.gloo/bin/"
+  ```
+
 * You can download `glooctl` directly via the [GitHub releases page](https://github.com/solo-io/gloo/releases). You will need to rename the executable to `glooctl` and add it to your system's `PATH` after downloading.
 
 You can verify the `glooctl` CLI is installed and running correctly by executing the command:
