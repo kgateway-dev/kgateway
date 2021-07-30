@@ -1401,7 +1401,8 @@ spec:
 							prepareMakefile(namespace, helmValues{
 								valuesArgs: []string{
 									"gatewayProxies.anotherGatewayProxy.specKey=testing",
-									"gatewayProxies.anotherGatewayProxy.gatewaySettings.options.socketOptions[0].description=enable keep-alive}",
+									"gatewayProxies.anotherGatewayProxy.gatewaySettings.options.socketOptions[0].description=enable keep-alive",
+									"gatewayProxies.anotherGatewayProxy.gatewaySettings.accessLoggingService.accessLog[0].fileSink.path=/dev/stdout",
 								},
 							})
 						})
