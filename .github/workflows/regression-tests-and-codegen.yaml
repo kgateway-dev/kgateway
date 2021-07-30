@@ -96,6 +96,7 @@ jobs:
       with:
         # We rely on the `deploy-to-kind-cluster` script to create a kind cluster
         skipClusterCreation: true
+        version: v0.11.1
     - uses: azure/setup-kubectl@v1
       id: kubectl
       with:
