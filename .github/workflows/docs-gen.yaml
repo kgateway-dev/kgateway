@@ -69,8 +69,8 @@ jobs:
         channelId: live
         entryPoint: ./docs/ci
     - name: Deploy to Firebase (preview)
-      if: ${{ github.event_name == 'pull_request' }}
-      if: ${{ !steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
+      # Generate live preview of docs for PRs to master
+      if: ${{ github.event_name == 'pull_request' && !steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
       uses: FirebaseExtended/action-hosting-deploy@v0
       with:
         repoToken: ${{ secrets.GITHUB_TOKEN }}
