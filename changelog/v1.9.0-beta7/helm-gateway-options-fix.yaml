@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Gateway options like socketOptions or perConnectionBufferLimitBytes are not well formatted
+    issueLink: https://github.com/solo-io/gloo/issues/5089
+    resolvesIssue: true
