@@ -25,7 +25,7 @@ To install the CLI, run:
 
 ##### Windows
 
-`curl -sL https://run.solo.io/gloo/windows/install | pwsh`
+`(New-Object System.Net.WebClient).DownloadString("https://run.solo.io/gloo/windows/install") | iex`
 
 Alternatively, you can download the CLI directly via the github releases page. 
 

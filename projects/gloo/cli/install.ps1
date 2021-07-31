@@ -1,18 +1,17 @@
 Param(
     [Parameter(Mandatory = $false,
         ParameterSetName = "GLOO_VERSION")]
-    [String[]]
+    [String]
     $GLOO_VERSION
 )
 
-$currentLocation = $MyInvocation.MyCommand.Path
+$currentLocation = (Resolve-Path .\).Path
 
 $openssl_version = & { openssl version } 2>&1
 
 if ($openssl_version -is [System.Management.Automation.ErrorRecord]) {
     $openssl_version.Exception.Message
     Write-Output "Openssl is required to install glooctl"
-    exit 1
 }
 
 if ([string]::IsNullOrEmpty($GLOO_VERSION)) {
@@ -64,7 +63,6 @@ Foreach ($gloo_version IN $GLOO_VERSIONS) {
     $checksum = $checksum.Substring($checksum.IndexOf(' '), ($checksum.Length - $checksum.IndexOf(' '))).TrimStart(" ")
     if ($checksum -ne $SHA) {
         Write-Output "Checksum validation failed."
-        exit 1
     }
 
     Write-Output "Checksum valid."
@@ -90,10 +88,8 @@ if ($glooctlDownloaded -eq $true) {
     Write-Output "  glooctl install ingress     # install very basic Kubernetes Ingress support with Gloo into namespace gloo-system"
     Write-Output "  glooctl install knative     # install Knative serving with Gloo configured as the default cluster ingress"
     Write-Output "Please see visit the Gloo Installation guides for more:  https://docs.solo.io/gloo-edge/latest/installation/"
-    exit 0
 }
 else {
     Set-Location (Get-Item $currentLocation).DirectoryName
     Write-Output "No versions of glooctl found."
-    exit 1
 }

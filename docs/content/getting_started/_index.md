@@ -14,7 +14,7 @@ curl -sL https://run.solo.io/gloo/install | sh
 export PATH=$HOME/.gloo/bin:$PATH
 
 ## Windows
-curl -sL https://run.solo.io/gloo/windows/install | pwsh
+(New-Object System.Net.WebClient).DownloadString("https://run.solo.io/gloo/windows/install") | iex
 $env:Path += ";$env:userprofile/.gloo/bin/"
 
 # Install Gloo Edge

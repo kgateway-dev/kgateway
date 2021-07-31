@@ -18,7 +18,7 @@ The `glooctl` command line provides useful functions to install, configure, and 
 * To install on windows you can use this install script. Openssl is required for installation to execute properly.
   
   ```pwsh
-  curl -sL https://run.solo.io/gloo/windows/install | pwsh
+  (New-Object System.Net.WebClient).DownloadString("https://run.solo.io/gloo/windows/install") | iex
   $env:Path += ";$env:userprofile/.gloo/bin/"
   ```
 
