@@ -78,7 +78,7 @@ func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, 
 
 	// Index clusters by name so we can look it up by the destination upstream
 	clusterMap := make(map[string]*envoy_config_route_v3.WeightedCluster_ClusterWeight)
-	for _, weightedCluster := range out.GetWeightedClusters().Clusters {
+	for _, weightedCluster := range out.GetWeightedClusters().GetClusters() {
 		clusterMap[weightedCluster.Name] = weightedCluster
 	}
 
