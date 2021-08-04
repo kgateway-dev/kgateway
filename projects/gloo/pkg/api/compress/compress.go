@@ -95,8 +95,14 @@ func uncompressSpec(s v1.Spec) (v1.Spec, error) {
 
 	var b bytes.Buffer
 	r, err := zlib.NewReader(bytes.NewBuffer(compressedData))
-	io.Copy(&b, r)
-	r.Close()
+	if err != nil {
+		return nil, eris.Wrap(err, "error creating buffer")
+	}
+	defer r.Close()
+	_, err = io.Copy(&b, r)
+	if err != nil {
+		return nil, eris.Wrap(err, "error copying buffer")
+	}
 
 	err = json.Unmarshal(b.Bytes(), &spec)
 	if err != nil {

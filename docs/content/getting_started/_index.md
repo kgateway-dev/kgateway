@@ -8,8 +8,14 @@ We know you want to jump right in and start hacking away with Gloo Edge. That's 
 {{< tabs >}}
 {{< tab name="glooctl" codelang="shell">}}
 # Install glooctl
+
+## Linux/MacOS
 curl -sL https://run.solo.io/gloo/install | sh
 export PATH=$HOME/.gloo/bin:$PATH
+
+## Windows
+(New-Object System.Net.WebClient).DownloadString("https://run.solo.io/gloo/windows/install") | iex
+$env:Path += ";$env:userprofile/.gloo/bin/"
 
 # Install Gloo Edge
 glooctl install gateway

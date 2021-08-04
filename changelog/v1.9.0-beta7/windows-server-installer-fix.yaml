@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5062
+    description: Fix windows installer to more consistently work on 64-bit windows server

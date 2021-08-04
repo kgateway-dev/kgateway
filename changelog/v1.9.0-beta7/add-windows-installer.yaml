@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5062
+    description: Add windows powershell script to install glooctl, update docs
