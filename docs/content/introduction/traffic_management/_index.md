@@ -65,7 +65,7 @@ spec:
             - origin
 ```
 
-Some of the advanced options include [enabling tracing]({{% versioned_link_path fromRoot="/guides/observability/tracing/" %}}), [access log configuration]({{% versioned_link_path fromRoot="/guides/security/access_logging//" %}}), disabling [gRPC Web transcoding]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" %}}), and fine-grained control over [Websockets]({{% versioned_link_path fromRoot="http://localhost:1313/guides/traffic_management/listener_configuration/websockets/" %}}). More detail on how to perform advanced listener configuration can be found in the [HTTP Connection Manager guide]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/http_connection_manager/" %}}).
+Some of the advanced options include [enabling tracing]({{% versioned_link_path fromRoot="/guides/observability/tracing/" %}}), [access log configuration]({{% versioned_link_path fromRoot="/guides/security/access_logging//" %}}), disabling [gRPC Web transcoding]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" %}}), and fine-grained control over [Websockets]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/websockets/" %}}). More detail on how to perform advanced listener configuration can be found in the [HTTP Connection Manager guide]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/http_connection_manager/" %}}).
 
 ---
 
