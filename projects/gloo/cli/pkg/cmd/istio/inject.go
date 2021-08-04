@@ -102,6 +102,9 @@ func istioInject(args []string, opts *options.Options) error {
 	// To get around this, we write the gateway_proxy_sds cluster into the configmap that
 	// gateway-proxy loads at bootstrap time.
 	configMaps, err := client.CoreV1().ConfigMaps(glooNS).List(opts.Top.Ctx, metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
 	for _, configMap := range configMaps.Items {
 		if configMap.Name == gatewayProxyConfigMap {
 			// Make sure we don't already have the gateway_proxy_sds cluster set up

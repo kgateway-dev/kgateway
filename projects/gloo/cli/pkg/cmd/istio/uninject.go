@@ -87,6 +87,9 @@ func istioUninject(args []string, opts *options.Options) error {
 
 	// Remove gateway_proxy_sds cluster from the gateway-proxy configmap
 	configMaps, err := client.CoreV1().ConfigMaps(glooNS).List(opts.Top.Ctx, metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
 	for _, configMap := range configMaps.Items {
 		if configMap.Name == gatewayProxyConfigMap {
 			// Make sure we don't already have the gateway_proxy_sds cluster set up
