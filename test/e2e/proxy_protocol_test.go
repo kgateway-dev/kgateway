@@ -9,13 +9,14 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/onsi/gomega/gstruct"
+	errors "github.com/rotisserie/eris"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -109,9 +110,20 @@ var _ = Describe("Proxy Protocol", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Wait for a proxy to be generated
-		gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			return testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-		})
+		Eventually(func() (core.Status, error) {
+			proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+			if err != nil {
+				return core.Status{}, errors.Wrapf(err, "failed to get resource")
+			}
+
+			if proxy.GetStatus() == nil {
+				return core.Status{}, errors.Wrapf(err, "waiting for %v status to be non-nil", proxy.GetMetadata().GetName())
+			}
+
+			return *proxy.GetStatus(), nil
+		}, "15s", "1s").Should(gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+			"State": Equal(core.Status_Accepted),
+		}))
 	})
 
 	AfterEach(func() {
