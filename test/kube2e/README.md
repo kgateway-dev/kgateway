@@ -41,8 +41,7 @@ Before running your tests, it's worthwhile to verify that a cluster was created,
 
 ```bash
 kubectl get nodes
-docker exec -ti <nodename> bash
-crictl images
+docker exec -ti <nodename> crictl images
 ```
 
 You should see the list of images in the cluster, including the ones you just uploaded
