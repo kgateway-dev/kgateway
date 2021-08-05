@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5116
+    resolvesIssue: false
+    description: >
+      Add PROXY protocol as listener filter, instead of relying on the deprecated
+      use_proxy_proto flag that Envoy exposes. We ensure the filter occurs before
+      the TLS inspector filter, to ensure that PROXY protocol and SNI can be used
+      together.
