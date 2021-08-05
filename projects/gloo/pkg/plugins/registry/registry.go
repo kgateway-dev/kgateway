@@ -28,6 +28,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/metadata"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pipe"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/protocoloptions"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/proxyprotocol"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/rest"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/shadowing"
@@ -61,6 +62,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 		rest.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		hcmPlugin,
 		als.NewPlugin(),
+		proxyprotocol.NewPlugin(),
 		tls_inspector.NewPlugin(),
 		pipe.NewPlugin(),
 		tcp.NewPlugin(utils.NewSslConfigTranslator()),
