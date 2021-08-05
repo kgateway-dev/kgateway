@@ -1,9 +1,9 @@
 #!/bin/bash -ex
 
 # This config is roughly based on: https://kind.sigs.k8s.io/docs/user/ingress/
-cat <<EOF | kind create cluster --name kind --config=-
+cat <<EOF | kind create cluster --image kindest/node:v1.17.17@sha256:66f1d0d91a88b8a001811e2f1054af60eef3b669a9a74f9b6db871f2f1eeed00 --name kind --config=-
 kind: Cluster
-apiVersion: kind.sigs.k8s.io/v1alpha3
+apiVersion: kind.sigs.k8s.io/v1alpha4
 kubeadmConfigPatches:
 - |
   apiVersion: kubeadm.k8s.io/v1beta2
