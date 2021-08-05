@@ -10,7 +10,6 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -151,8 +150,7 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(
 	// if no ssl config is provided, return a single insecure filter chain
 	if len(listener.SslConfigurations) == 0 {
 		return []*envoy_config_listener_v3.FilterChain{{
-			Filters:       listenerFilters,
-			UseProxyProto: listener.GetUseProxyProto(),
+			Filters: listenerFilters,
 		}}
 	}
 
@@ -166,7 +164,7 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(
 				validationapi.ListenerReport_Error_SSLConfigError, err.Error())
 			continue
 		}
-		filterChain := newSslFilterChain(downstreamConfig, sslConfig.SniDomains, listener.UseProxyProto, listenerFilters)
+		filterChain := newSslFilterChain(downstreamConfig, sslConfig.GetSniDomains(), listenerFilters)
 
 		secureFilterChains = append(secureFilterChains, filterChain)
 	}
@@ -245,7 +243,6 @@ func validateListenerPorts(proxy *v1.Proxy, listenerReport *validationapi.Listen
 func newSslFilterChain(
 	downstreamConfig *envoyauth.DownstreamTlsContext,
 	sniDomains []string,
-	useProxyProto *wrappers.BoolValue,
 	listenerFilters []*envoy_config_listener_v3.Filter,
 ) *envoy_config_listener_v3.FilterChain {
 
@@ -265,8 +262,6 @@ func newSslFilterChain(
 			Name:       wellknown.TransportSocketTls,
 			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(downstreamConfig)},
 		},
-
-		UseProxyProto: useProxyProto,
 	}
 }
 
