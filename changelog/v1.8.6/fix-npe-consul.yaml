@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5112
+    description: Fix a potential NPE with translation in multi destinations.
