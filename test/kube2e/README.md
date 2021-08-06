@@ -31,7 +31,7 @@ CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.17.17@sha256:66f1d0d91a88
 The CI install script executes a series of make targets.
 
 Create a kind cluster: `kind create cluster --name kind`\
-Build the helm chart: `VERSION=kind make build-test-chart`\
+Build the helm chart: `VERSION=0.0.0-kind make build-test-chart`\
 Build glooctl: `make glooctl`\
 Load the images into the cluster: `CLUSTER_NAME=kind VERSION=0.0.0-kind make push-kind-images`
 
