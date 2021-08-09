@@ -2402,7 +2402,8 @@ type PassThroughHttp struct {
 
 	// Required: URL of the passthrough http service, is a fully qualified domain name.
 	// Example: http://ext-auth-service.svc.local:9001. Path provided in the URL will be respected.
-	// To use https, provide the cert in the HTTPS_PASSTHROUGH_CA_CERT environment variable as a base64-encoded string
+	// To use https, provide the cert in the HTTPS_PASSTHROUGH_CA_CERT environment variable to the ext-auth-service
+	// pod as a base64-encoded string
 	Url      string                    `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	Request  *PassThroughHttp_Request  `protobuf:"bytes,3,opt,name=request,proto3" json:"request,omitempty"`
 	Response *PassThroughHttp_Response `protobuf:"bytes,4,opt,name=response,proto3" json:"response,omitempty"`
@@ -3652,6 +3653,9 @@ type PassThroughHttp_Request struct {
 	// Pseudo-headers such as `:Path`, and `:Method` can not be specified here.
 	HeadersToAdd map[string]string `protobuf:"bytes,2,rep,name=headers_to_add,json=headersToAdd,proto3" json:"headers_to_add,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Whether or not to include the ext-auth state object in the passthrough request body.
+	// If this is set to true, it is expected that the state is returned in the HTTP response from the
+	// passthrough service. The state received from the response will be the state that is shared with
+	// other ext-auth service methods.
 	// If pass_through_body, pass_through_filter_metadata and pass_through_state are false,
 	// the authorization request body will be empty. A non-empty body will increase latency times
 	// slightly, so this is set to false by default, and should only be set to to true if the
