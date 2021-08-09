@@ -20,10 +20,10 @@ func StartGlooInTest(customCtx context.Context) error {
 
 func startSetupLoop(ctx context.Context) error {
 	return setuputils.Main(setuputils.SetupOpts{
-		LoggerName:    "gloo",
-		Version:       version.Version,
-		SetupFunc:     setup.NewSetupFunc(),
-		ExitOnError:   true,
-		CustomCtx:     ctx,
+		LoggerName:  "gloo",
+		Version:     version.Version,
+		SetupFunc:   setup.NewSetupFunc(),
+		ExitOnError: true,
+		CustomCtx:   ctx,
 	})
 }

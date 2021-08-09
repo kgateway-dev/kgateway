@@ -26,4 +26,3 @@ func SetKubeConfigEnv(opts *options.Options, cmd *cobra.Command) error {
 	}
 	return nil
 }
-
