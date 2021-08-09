@@ -756,13 +756,13 @@ message PassThroughGrpc {
     google.protobuf.Duration connection_timeout = 2;
 }
 
-// Authorizes requests by making a POST request to a custom HTTP auth server
+// Authorizes requests by making a POST HTTP/1 request to a custom HTTP auth server
 // Assumes the request is authorized if the server returns a OK (200) status code,
 // else the request is unauthorized.
 message PassThroughHttp {
     // Required: URL of the passthrough http service, is a fully qualified domain name.
     // Example: http://ext-auth-service.svc.local:9001. Path provided in the URL will be respected.
-    // In order to use https, provide the cert in the HTTPS_PASSTHROUGH_CA_CERT environment variable
+    // To use https, provide the cert in the HTTPS_PASSTHROUGH_CA_CERT environment variable as a base64-encoded string
     string url = 1;
 
     message Request {

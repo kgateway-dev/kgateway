@@ -1045,7 +1045,7 @@ https://github.com/envoyproxy/envoy/blob/ae1ed1fa74f096dabe8dd5b19fc70333621b030
 ### PassThroughHttp
 
  
-Authorizes requests by making a POST request to a custom HTTP auth server
+Authorizes requests by making a POST HTTP/1 request to a custom HTTP auth server
 Assumes the request is authorized if the server returns a OK (200) status code,
 else the request is unauthorized.
 
@@ -1059,7 +1059,7 @@ else the request is unauthorized.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `url` | `string` | Required: URL of the passthrough http service, is a fully qualified domain name. Example: http://ext-auth-service.svc.local:9001. Path provided in the URL will be respected. In order to use https, provide the cert in the HTTPS_PASSTHROUGH_CA_CERT environment variable. |
+| `url` | `string` | Required: URL of the passthrough http service, is a fully qualified domain name. Example: http://ext-auth-service.svc.local:9001. Path provided in the URL will be respected. To use https, provide the cert in the HTTPS_PASSTHROUGH_CA_CERT environment variable as a base64-encoded string. |
 | `request` | [.enterprise.gloo.solo.io.PassThroughHttp.Request](../extauth.proto.sk/#request) |  |
 | `response` | [.enterprise.gloo.solo.io.PassThroughHttp.Response](../extauth.proto.sk/#response) |  |
 | `connectionTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the auth server to respond. Defaults to 5s. |
