@@ -1054,7 +1054,6 @@ else the request is unauthorized.
 "request": .enterprise.gloo.solo.io.PassThroughHttp.Request
 "response": .enterprise.gloo.solo.io.PassThroughHttp.Response
 "connectionTimeout": .google.protobuf.Duration
-"rootCAPathEnvVar": string
 
 ```
 
@@ -1064,7 +1063,6 @@ else the request is unauthorized.
 | `request` | [.enterprise.gloo.solo.io.PassThroughHttp.Request](../extauth.proto.sk/#request) |  |
 | `response` | [.enterprise.gloo.solo.io.PassThroughHttp.Response](../extauth.proto.sk/#response) |  |
 | `connectionTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the auth server to respond. Defaults to 5s. |
-| `rootCAPathEnvVar` | `string` |  |
 
 
 

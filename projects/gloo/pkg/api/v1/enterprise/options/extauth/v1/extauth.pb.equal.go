@@ -1633,10 +1633,6 @@ func (m *PassThroughHttp) Equal(that interface{}) bool {
 		}
 	}
 
-	if strings.Compare(m.GetRootCAPathEnvVar(), target.GetRootCAPathEnvVar()) != 0 {
-		return false
-	}
-
 	return true
 }
 

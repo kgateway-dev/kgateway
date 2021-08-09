@@ -814,8 +814,6 @@ message PassThroughHttp {
 
     // Timeout for the auth server to respond. Defaults to 5s
     google.protobuf.Duration connection_timeout = 8;
-
-    string RootCAPathEnvVar = 9;
 }
 
 /*
