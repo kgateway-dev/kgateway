@@ -761,8 +761,8 @@ message PassThroughGrpc {
 // else the request is unauthorized.
 message PassThroughHttp {
     // Required: URL of the passthrough http service, is a fully qualified domain name.
-    // Example: http://ext-auth-service.svc.local:9001.
-    // Path provided in the URL will be respected.
+    // Example: http://ext-auth-service.svc.local:9001. Path provided in the URL will be respected.
+    // In order to use https, provide the cert in the HTTPS_PASSTHROUGH_CA_CERT environment variable
     string url = 1;
 
     message Request {

@@ -2401,8 +2401,8 @@ type PassThroughHttp struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Required: URL of the passthrough http service, is a fully qualified domain name.
-	// Example: http://ext-auth-service.svc.local:9001.
-	// Path provided in the URL will be respected.
+	// Example: http://ext-auth-service.svc.local:9001. Path provided in the URL will be respected.
+	// In order to use https, provide the cert in the HTTPS_PASSTHROUGH_CA_CERT environment variable
 	Url      string                    `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	Request  *PassThroughHttp_Request  `protobuf:"bytes,3,opt,name=request,proto3" json:"request,omitempty"`
 	Response *PassThroughHttp_Response `protobuf:"bytes,4,opt,name=response,proto3" json:"response,omitempty"`
