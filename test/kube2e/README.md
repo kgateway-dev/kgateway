@@ -15,11 +15,11 @@ For these tests to run, we require the following conditions:
 `ci/deploy-to-kind-cluster.sh` (`https://github.com/solo-io/gloo/blob/master/ci/deploy-to-kind-cluster.sh`) gets run in CI to setup the test environment for the above requirements.
 It accepts a number of environment variables, to control the creation of a kind cluster and deployment of Gloo resources to that kind cluster.
 
-| Name                  | Default   | Description |
-| ---                   |   ---     |    ---      |
-| CLUSTER_NAME          | kind      | The name of the cluster that will be generated |
+| Name                  | Default    | Description |
+| ---                   |   ---      |    ---      |
+| CLUSTER_NAME          | kind       | The name of the cluster that will be generated |
 | CLUSTER_NODE_VERSION  | v1.17.17@sha256:66f1d0d91a88b8a001811e2f1054af60eef3b669a9a74f9b6db871f2f1eeed00   | The version of the Node Docker image to use for booting the cluster |
-| VERSION               | kind      | The version used to tag Gloo images that are deployed to the cluster |
+| VERSION               | 0.0.0-kind | The version used to tag Gloo images that are deployed to the cluster |
 
 Example:
 ```bash
@@ -31,9 +31,9 @@ CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.17.17@sha256:66f1d0d91a88
 The CI install script executes a series of make targets.
 
 Create a kind cluster: `kind create cluster --name kind`\
-Build the helm chart: `VERSION=kind make build-test-chart`\
+Build the helm chart: `VERSION=0.0.0-kind make build-test-chart`\
 Build glooctl: `make glooctl`\
-Load the images into the cluster: `CLUSTER_NAME=kind VERSION=kind make push-kind-images`
+Load the images into the cluster: `CLUSTER_NAME=kind VERSION=0.0.0-kind make push-kind-images`
 
 
 ## Verify Your Setup
@@ -41,8 +41,7 @@ Before running your tests, it's worthwhile to verify that a cluster was created,
 
 ```bash
 kubectl get nodes
-docker exec -ti <nodename> bash
-crictl images
+docker exec -ti <nodename> crictl images
 ```
 
 You should see the list of images in the cluster, including the ones you just uploaded
@@ -50,6 +49,8 @@ You should see the list of images in the cluster, including the ones you just up
 #### Common Setup Errors
 `Error: validation: chart.metadata.version "solo" is invalid`\
 In newer versions of helm (>3.5), the version used to build the helm chart (ie the VERSION env variable), needs to respect semantic versioning. This error implies that the version provided does not.
+
+Prepend a valid semver to avoid the error. (ie `kind` can become `0.0.0-kind`)
 
 ## Run Tests
 
