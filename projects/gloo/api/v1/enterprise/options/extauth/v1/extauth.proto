@@ -778,28 +778,35 @@ message PassThroughHttp {
 
         // Whether or not to include the ext-auth state object in the passthrough request body.
         // If pass_through_body, pass_through_filter_metadata and pass_through_state are false,
-        // the authorization request body will be empty.
+        // the authorization request body will be empty. A non-empty body will increase latency times
+        // slightly, so this is set to false by default, and should only be set to to true if the
+        // extauth state is needed in the auth request.
         bool pass_through_state = 3;
 
         // Whether or not to include the filter metadata in the passthrough request body.
         // If pass_through_body, pass_through_filter_metadata and pass_through_state are false,
-        // the authorization request body will be empty.
+        // the authorization request body will be empty. A non-empty body will increase latency times
+        // slightly, so this is set to false by default, and should only be set to to true if the
+        // filter metadata is needed in the auth request.
         bool pass_through_filter_metadata = 4;
 
         // Whether or not to include the body in the passthrough request body.
         // If pass_through_body, pass_through_filter_metadata and pass_through_state are false,
-        // the authorization request body will be empty.
+        // the authorization request body will be empty. A non-empty body will increase latency times
+        // slightly, so this is set to false by default, and should only be set to to true if the
+        // request body is needed in the auth request.
         bool pass_through_body = 5;
     }
     Request request = 3;
 
     message Response {
         // When this is set, authorization response headers that have a header in this list will be added to the original client request and sent to the upstream
-        // when the auth request is successful.
+        // when the auth request is successful. These will be appended to any request headers that already exist.
         // If this is empty, by default, no authorization response headers will be added to the upstream request.
         repeated string allowed_upstream_headers = 1;
 
         // When this is set, authorization response headers in this list will be added to the client's response when the auth request is denied.
+        // If the response header already exists, it will replace the response header.
         // If this is empty, by default, no authorization response headers will be added to the client response.
         repeated string allowed_client_headers_on_denied = 2;
     }
@@ -807,6 +814,8 @@ message PassThroughHttp {
 
     // Timeout for the auth server to respond. Defaults to 5s
     google.protobuf.Duration connection_timeout = 8;
+
+    string RootCAPathEnvVar = 9;
 }
 
 /*

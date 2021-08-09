@@ -1054,6 +1054,7 @@ else the request is unauthorized.
 "request": .enterprise.gloo.solo.io.PassThroughHttp.Request
 "response": .enterprise.gloo.solo.io.PassThroughHttp.Response
 "connectionTimeout": .google.protobuf.Duration
+"rootCAPathEnvVar": string
 
 ```
 
@@ -1063,6 +1064,7 @@ else the request is unauthorized.
 | `request` | [.enterprise.gloo.solo.io.PassThroughHttp.Request](../extauth.proto.sk/#request) |  |
 | `response` | [.enterprise.gloo.solo.io.PassThroughHttp.Response](../extauth.proto.sk/#response) |  |
 | `connectionTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the auth server to respond. Defaults to 5s. |
+| `rootCAPathEnvVar` | `string` |  |
 
 
 
@@ -1085,9 +1087,9 @@ else the request is unauthorized.
 | ----- | ---- | ----------- | 
 | `allowedHeaders` | `[]string` | These headers will be copied from the incoming request to the request going to the auth server. By default, no headers are copied from the incoming request. Pseudo-headers such as `:Path`, and `:Method` can not be specified here. |
 | `headersToAdd` | `map<string, string>` | These headers that will be included to the request to authorization service. Note that client request of the same key will be overridden. Pseudo-headers such as `:Path`, and `:Method` can not be specified here. |
-| `passThroughState` | `bool` | Whether or not to include the ext-auth state object in the passthrough request body. If pass_through_body, pass_through_filter_metadata and pass_through_state are false, the authorization request body will be empty. |
-| `passThroughFilterMetadata` | `bool` | Whether or not to include the filter metadata in the passthrough request body. If pass_through_body, pass_through_filter_metadata and pass_through_state are false, the authorization request body will be empty. |
-| `passThroughBody` | `bool` | Whether or not to include the body in the passthrough request body. If pass_through_body, pass_through_filter_metadata and pass_through_state are false, the authorization request body will be empty. |
+| `passThroughState` | `bool` | Whether or not to include the ext-auth state object in the passthrough request body. If pass_through_body, pass_through_filter_metadata and pass_through_state are false, the authorization request body will be empty. A non-empty body will increase latency times slightly, so this is set to false by default, and should only be set to to true if the extauth state is needed in the auth request. |
+| `passThroughFilterMetadata` | `bool` | Whether or not to include the filter metadata in the passthrough request body. If pass_through_body, pass_through_filter_metadata and pass_through_state are false, the authorization request body will be empty. A non-empty body will increase latency times slightly, so this is set to false by default, and should only be set to to true if the filter metadata is needed in the auth request. |
+| `passThroughBody` | `bool` | Whether or not to include the body in the passthrough request body. If pass_through_body, pass_through_filter_metadata and pass_through_state are false, the authorization request body will be empty. A non-empty body will increase latency times slightly, so this is set to false by default, and should only be set to to true if the request body is needed in the auth request. |
 
 
 
@@ -1105,8 +1107,8 @@ else the request is unauthorized.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `allowedUpstreamHeaders` | `[]string` | When this is set, authorization response headers that have a header in this list will be added to the original client request and sent to the upstream when the auth request is successful. If this is empty, by default, no authorization response headers will be added to the upstream request. |
-| `allowedClientHeadersOnDenied` | `[]string` | When this is set, authorization response headers in this list will be added to the client's response when the auth request is denied. If this is empty, by default, no authorization response headers will be added to the client response. |
+| `allowedUpstreamHeaders` | `[]string` | When this is set, authorization response headers that have a header in this list will be added to the original client request and sent to the upstream when the auth request is successful. These will be appended to any request headers that already exist. If this is empty, by default, no authorization response headers will be added to the upstream request. |
+| `allowedClientHeadersOnDenied` | `[]string` | When this is set, authorization response headers in this list will be added to the client's response when the auth request is denied. If the response header already exists, it will replace the response header. If this is empty, by default, no authorization response headers will be added to the client response. |
 
 
 

@@ -347,6 +347,8 @@ spec:
                         type: object
                       http:
                         properties:
+                          RootCAPathEnvVar:
+                            type: string
                           connectionTimeout:
                             type: string
                           request:
