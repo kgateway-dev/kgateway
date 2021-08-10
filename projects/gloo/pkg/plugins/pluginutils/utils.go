@@ -10,13 +10,13 @@ func getRouteActions(
 	in *v1.Route,
 	out *envoy_config_route_v3.Route,
 ) (*v1.RouteAction, *envoy_config_route_v3.RouteAction, error) {
-	inRouteAction, ok := in.Action.(*v1.Route_RouteAction)
+	inRouteAction, ok := in.GetAction().(*v1.Route_RouteAction)
 	if !ok {
 		return nil, nil, errors.Errorf("input action was not a RouteAction")
 	}
 	inAction := inRouteAction.RouteAction
 
-	outRouteAction, ok := out.Action.(*envoy_config_route_v3.Route_Route)
+	outRouteAction, ok := out.GetAction().(*envoy_config_route_v3.Route_Route)
 	if !ok {
 		return nil, nil, errors.Errorf("output action was not a RouteAction")
 	}

@@ -44,7 +44,7 @@ func (p *Plugin) RegisterHcmPlugins(allPlugins []plugins.Plugin) {
 // 1. apply the core HCM settings from the HCM plugin to the listener
 // 2. call each of the HCM plugins to make sure that they have a chance to apply their modifications to the listener
 func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *envoy_config_listener_v3.Listener) error {
-	hl, ok := in.ListenerType.(*v1.Listener_HttpListener)
+	hl, ok := in.GetListenerType().(*v1.Listener_HttpListener)
 	if !ok {
 		return nil
 	}
@@ -52,9 +52,9 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		return nil
 	}
 	hcmSettings := hl.HttpListener.GetOptions().GetHttpConnectionManagerSettings()
-	for _, fc := range out.FilterChains {
-		for i, filter := range fc.Filters {
-			if filter.Name == wellknown.HTTPConnectionManager {
+	for _, fc := range out.GetFilterChains() {
+		for i, filter := range fc.GetFilters() {
+			if filter.GetName() == wellknown.HTTPConnectionManager {
 				// get config
 				var cfg envoyhttp.HttpConnectionManager
 				err := translatorutil.ParseTypedConfig(filter, &cfg)
@@ -75,7 +75,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					}
 				}
 
-				fc.Filters[i], err = translatorutil.NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, &cfg)
+				fc.GetFilters()[i], err = translatorutil.NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, &cfg)
 				// this should never error
 				if err != nil {
 					return err
@@ -114,7 +114,7 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 		if cfg.GetHttpProtocolOptions() == nil {
 			cfg.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
 		}
-		cfg.HttpProtocolOptions.HeaderKeyFormat = &envoycore.Http1ProtocolOptions_HeaderKeyFormat{
+		cfg.GetHttpProtocolOptions().HeaderKeyFormat = &envoycore.Http1ProtocolOptions_HeaderKeyFormat{
 			HeaderFormat: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords_{
 				ProperCaseWords: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords{},
 			},
@@ -125,21 +125,21 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 		if cfg.GetCommonHttpProtocolOptions() == nil {
 			cfg.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
 		}
-		cfg.CommonHttpProtocolOptions.IdleTimeout = hcmSettings.GetIdleTimeout()
+		cfg.GetCommonHttpProtocolOptions().IdleTimeout = hcmSettings.GetIdleTimeout()
 	}
 
 	if hcmSettings.GetMaxConnectionDuration() != nil {
 		if cfg.GetCommonHttpProtocolOptions() == nil {
 			cfg.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
 		}
-		cfg.CommonHttpProtocolOptions.MaxConnectionDuration = hcmSettings.GetMaxConnectionDuration()
+		cfg.GetCommonHttpProtocolOptions().MaxConnectionDuration = hcmSettings.GetMaxConnectionDuration()
 	}
 
 	if hcmSettings.GetMaxStreamDuration() != nil {
 		if cfg.GetCommonHttpProtocolOptions() == nil {
 			cfg.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
 		}
-		cfg.CommonHttpProtocolOptions.MaxStreamDuration = hcmSettings.GetMaxStreamDuration()
+		cfg.GetCommonHttpProtocolOptions().MaxStreamDuration = hcmSettings.GetMaxStreamDuration()
 	}
 
 	// allowed upgrades
@@ -149,16 +149,16 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 
 	// try to catch
 	// https://github.com/solo-io/gloo/issues/1979
-	if len(cfg.UpgradeConfigs) != 0 {
-		contextutils.LoggerFrom(ctx).DPanic("upgrade configs is not empty", "upgrade_configs", cfg.UpgradeConfigs)
+	if len(cfg.GetUpgradeConfigs()) != 0 {
+		contextutils.LoggerFrom(ctx).DPanic("upgrade configs is not empty", "upgrade_configs", cfg.GetUpgradeConfigs())
 	}
 
 	cfg.UpgradeConfigs = make([]*envoyhttp.HttpConnectionManager_UpgradeConfig, len(protocolUpgrades))
 
 	for i, config := range protocolUpgrades {
-		switch upgradeType := config.UpgradeType.(type) {
+		switch upgradeType := config.GetUpgradeType().(type) {
 		case *protocol_upgrade.ProtocolUpgradeConfig_Websocket:
-			cfg.UpgradeConfigs[i] = &envoyhttp.HttpConnectionManager_UpgradeConfig{
+			cfg.GetUpgradeConfigs()[i] = &envoyhttp.HttpConnectionManager_UpgradeConfig{
 				UpgradeType: upgradeconfig.WebSocketUpgradeType,
 				Enabled:     config.GetWebsocket().GetEnabled(),
 			}
@@ -171,12 +171,12 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 
 	// enable websockets by default if no websocket upgrade was specified
 	if !webSocketUpgradeSpecified {
-		cfg.UpgradeConfigs = append(cfg.UpgradeConfigs, &envoyhttp.HttpConnectionManager_UpgradeConfig{
+		cfg.UpgradeConfigs = append(cfg.GetUpgradeConfigs(), &envoyhttp.HttpConnectionManager_UpgradeConfig{
 			UpgradeType: upgradeconfig.WebSocketUpgradeType,
 		})
 	}
 
-	if err := upgradeconfig.ValidateHCMUpgradeConfigs(cfg.UpgradeConfigs); err != nil {
+	if err := upgradeconfig.ValidateHCMUpgradeConfigs(cfg.GetUpgradeConfigs()); err != nil {
 		return err
 	}
 

@@ -39,7 +39,7 @@ func (c *readOnlyUpstreamBaseClient) Read(namespace, name string, opts clients.R
 
 // TODO(marco): this will not write reports but still log an info message. Find a way of avoiding it.
 func (c *readOnlyUpstreamBaseClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
-	if isRealUpstream(resource.GetMetadata().Name) {
+	if isRealUpstream(resource.GetMetadata().GetName()) {
 		return c.rc.Write(resource, opts)
 	}
 	return resources.Clone(resource), nil

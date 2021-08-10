@@ -98,7 +98,7 @@ func getDestinationInteractive(ctx context.Context, route *options.InputRoute) e
 			return err
 		}
 		for _, us := range usList {
-			ref := us.Metadata.Ref()
+			ref := us.GetMetadata().Ref()
 			ussByKey[ref.Key()] = us
 			usKeys = append(usKeys, ref.Key())
 		}
@@ -113,7 +113,7 @@ func getDestinationInteractive(ctx context.Context, route *options.InputRoute) e
 			return err
 		}
 		for _, ug := range ugList {
-			ref := ug.Metadata.Ref()
+			ref := ug.GetMetadata().Ref()
 			key := "upstream-group: " + ref.Key()
 			ugsByKey[key] = ug
 			usKeys = append(usKeys, key)
@@ -130,7 +130,7 @@ func getDestinationInteractive(ctx context.Context, route *options.InputRoute) e
 	}
 
 	if ug, ok := ugsByKey[usKey]; ok {
-		route.UpstreamGroup = *(ug.Metadata.Ref())
+		route.UpstreamGroup = *(ug.GetMetadata().Ref())
 		return nil
 	}
 
@@ -138,8 +138,8 @@ func getDestinationInteractive(ctx context.Context, route *options.InputRoute) e
 	if !ok {
 		return errors.Errorf("internal error: upstream map not populated")
 	}
-	dest.Upstream = *(us.Metadata.Ref())
-	switch ut := us.UpstreamType.(type) {
+	dest.Upstream = *(us.GetMetadata().Ref())
+	switch ut := us.GetUpstreamType().(type) {
 	case *v1.Upstream_Aws:
 		if err := getAwsDestinationSpecInteractive(&dest.DestinationSpec.Aws, ut.Aws); err != nil {
 			return err
@@ -149,7 +149,7 @@ func getDestinationInteractive(ctx context.Context, route *options.InputRoute) e
 		if svcSpec == nil {
 			return nil
 		}
-		switch svcType := svcSpec.PluginType.(type) {
+		switch svcType := svcSpec.GetPluginType().(type) {
 		case *plugins.ServiceSpec_Rest:
 			if err := getRestDestinationSpecInteractive(&dest.DestinationSpec.Rest, svcType.Rest); err != nil {
 				return err
@@ -183,8 +183,8 @@ func getPluginsInteractive(dest *options.RoutePlugins) error {
 
 func getAwsDestinationSpecInteractive(spec *options.AwsDestinationSpec, ut *aws.UpstreamSpec) error {
 	var fnNames []string
-	for _, fn := range ut.LambdaFunctions {
-		fnNames = append(fnNames, fn.LogicalName)
+	for _, fn := range ut.GetLambdaFunctions() {
+		fnNames = append(fnNames, fn.GetLogicalName())
 	}
 	// Add the option to skip providing a function
 	fnNames = append(fnNames, NoneOfTheAbove)
@@ -201,7 +201,7 @@ func getAwsDestinationSpecInteractive(spec *options.AwsDestinationSpec, ut *aws.
 
 func getRestDestinationSpecInteractive(spec *options.RestDestinationSpec, restSpec *rest.ServiceSpec) error {
 	var fnNames []string
-	for fn := range restSpec.Transformations {
+	for fn := range restSpec.GetTransformations() {
 		fnNames = append(fnNames, fn)
 	}
 	sort.Strings(fnNames)
@@ -237,7 +237,7 @@ func AddRouteFlagsInteractive(opts *options.Options) error {
 			return err
 		}
 		for _, vs := range vsList {
-			ref := vs.Metadata.Ref()
+			ref := vs.GetMetadata().Ref()
 			vsByKey[ref.Key()] = ref
 			vsKeys = append(vsKeys, ref.Key())
 		}
@@ -256,7 +256,7 @@ func AddRouteFlagsInteractive(opts *options.Options) error {
 	opts.Metadata.Name = vsByKey[vsKey].GetName()
 	opts.Metadata.Namespace = vsByKey[vsKey].GetNamespace()
 
-	if opts.Metadata.Name == "" || opts.Metadata.Namespace == "" {
+	if opts.Metadata.GetName() == "" || opts.Metadata.GetNamespace() == "" {
 		if err := cliutil.GetStringInput("name of the virtual service: ", &opts.Metadata.Name); err != nil {
 			return err
 		}
@@ -311,16 +311,16 @@ func SelectRouteInteractive(opts *options.Options, virtualServicePrompt, routePr
 
 func SelectRouteFromVirtualServiceInteractive(vs *gatewayv1.VirtualService, routePrompt string) (int, error) {
 
-	if vs.VirtualHost == nil {
-		return 0, errors.Errorf("invalid virtual service %v", vs.Metadata.Ref())
+	if vs.GetVirtualHost() == nil {
+		return 0, errors.Errorf("invalid virtual service %v", vs.GetMetadata().Ref())
 	}
-	if len(vs.VirtualHost.Routes) == 0 {
-		return 0, errors.Errorf("no routes defined for virtual service %v", vs.Metadata.Ref())
+	if len(vs.GetVirtualHost().GetRoutes()) == 0 {
+		return 0, errors.Errorf("no routes defined for virtual service %v", vs.GetMetadata().Ref())
 	}
 
 	var routes []string
-	for i, r := range vs.VirtualHost.Routes {
-		routes = append(routes, fmt.Sprintf("%v: %+v", i, matchersString(r.Matchers)))
+	for i, r := range vs.GetVirtualHost().GetRoutes() {
+		routes = append(routes, fmt.Sprintf("%v: %+v", i, matchersString(r.GetMatchers())))
 	}
 
 	var chosenRoute string
@@ -360,7 +360,7 @@ func SelectVirtualServiceInteractiveWithPrompt(opts *options.Options, prompt str
 			return nil, err
 		}
 		for _, vs := range vsList {
-			ref := vs.Metadata.Ref()
+			ref := vs.GetMetadata().Ref()
 			vsByKey[ref.Key()] = vs
 			vsKeys = append(vsKeys, ref.Key())
 		}
@@ -378,8 +378,8 @@ func SelectVirtualServiceInteractiveWithPrompt(opts *options.Options, prompt str
 	); err != nil {
 		return nil, err
 	}
-	opts.Metadata.Name = vsByKey[vsKey].Metadata.Name
-	opts.Metadata.Namespace = vsByKey[vsKey].Metadata.Namespace
+	opts.Metadata.Name = vsByKey[vsKey].GetMetadata().Name
+	opts.Metadata.Namespace = vsByKey[vsKey].GetMetadata().Namespace
 
 	return vsByKey[vsKey], nil
 }

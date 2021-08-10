@@ -66,26 +66,26 @@ func (c converter) convertVirtualClusters(
 	statsConfig *stats.Stats,
 ) ([]*envoy_config_route_v3.VirtualCluster, error) {
 	var result []*envoy_config_route_v3.VirtualCluster
-	for _, virtualCluster := range statsConfig.VirtualClusters {
+	for _, virtualCluster := range statsConfig.GetVirtualClusters() {
 
-		name, err := c.validateName(virtualCluster.Name)
+		name, err := c.validateName(virtualCluster.GetName())
 		if err != nil {
-			return nil, invalidVirtualClusterErr(err, virtualCluster.Name)
+			return nil, invalidVirtualClusterErr(err, virtualCluster.GetName())
 		}
 
-		if virtualCluster.Pattern == "" {
-			return nil, invalidVirtualClusterErr(missingPatternErr, virtualCluster.Name)
+		if virtualCluster.GetPattern() == "" {
+			return nil, invalidVirtualClusterErr(missingPatternErr, virtualCluster.GetName())
 		}
 
-		method, err := c.validateHttpMethod(virtualCluster.Method)
+		method, err := c.validateHttpMethod(virtualCluster.GetMethod())
 		if err != nil {
-			return nil, invalidVirtualClusterErr(err, virtualCluster.Name)
+			return nil, invalidVirtualClusterErr(err, virtualCluster.GetName())
 		}
 
 		headermatcher := []*envoy_config_route_v3.HeaderMatcher{{
 			Name: ":path",
 			HeaderMatchSpecifier: &envoy_config_route_v3.HeaderMatcher_SafeRegexMatch{
-				SafeRegexMatch: regexutils.NewRegex(params.Ctx, virtualCluster.Pattern),
+				SafeRegexMatch: regexutils.NewRegex(params.Ctx, virtualCluster.GetPattern()),
 			},
 		}}
 

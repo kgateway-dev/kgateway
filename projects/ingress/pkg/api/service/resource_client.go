@@ -72,15 +72,15 @@ func ToKube(resource resources.Resource) (*kubev1.Service, error) {
 	if !ok {
 		return nil, errors.Errorf("internal error: invalid resource %v passed to svc-only client", resources.Kind(resource))
 	}
-	if ingResource.KubeServiceSpec == nil {
+	if ingResource.GetKubeServiceSpec() == nil {
 		return nil, errors.Errorf("internal error: %v svc spec cannot be nil", ingResource.GetMetadata().Ref())
 	}
 	var svc kubev1.Service
-	if err := json.Unmarshal(ingResource.KubeServiceSpec.Value, &svc.Spec); err != nil {
+	if err := json.Unmarshal(ingResource.GetKubeServiceSpec().GetValue(), &svc.Spec); err != nil {
 		return nil, errors.Wrapf(err, "unmarshalling kube svc spec data")
 	}
-	if ingResource.KubeServiceStatus != nil {
-		if err := json.Unmarshal(ingResource.KubeServiceStatus.Value, &svc.Status); err != nil {
+	if ingResource.GetKubeServiceStatus() != nil {
+		if err := json.Unmarshal(ingResource.GetKubeServiceStatus().GetValue(), &svc.Status); err != nil {
 			return nil, errors.Wrapf(err, "unmarshalling kube svc status data")
 		}
 	}
@@ -137,7 +137,7 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	meta := resource.GetMetadata()
-	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
+	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.GetNamespace())
 
 	// mutate and return clone
 	clone := resources.Clone(resource)
@@ -147,15 +147,15 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 		return nil, err
 	}
 
-	original, err := rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{
+	original, err := rc.Read(meta.GetNamespace(), meta.GetName(), clients.ReadOpts{
 		Ctx: opts.Ctx,
 	})
 	if original != nil && err == nil {
 		if !opts.OverwriteExisting {
 			return nil, errors.NewExistErr(meta)
 		}
-		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
-			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
+		if meta.GetResourceVersion() != original.GetMetadata().GetResourceVersion() {
+			return nil, errors.NewResourceVersionErr(meta.GetNamespace(), meta.GetName(), meta.GetResourceVersion(), original.GetMetadata().GetResourceVersion())
 		}
 		if _, err := rc.kube.CoreV1().Services(svcObj.Namespace).Update(opts.Ctx, svcObj, metav1.UpdateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "updating kube svcObj %v", svcObj.Name)
@@ -207,7 +207,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	}
 
 	sort.SliceStable(resourceList, func(i, j int) bool {
-		return resourceList[i].GetMetadata().Name < resourceList[j].GetMetadata().Name
+		return resourceList[i].GetMetadata().GetName() < resourceList[j].GetMetadata().GetName()
 	})
 
 	return resourceList, nil

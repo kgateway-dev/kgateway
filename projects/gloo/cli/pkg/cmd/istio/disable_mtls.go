@@ -63,7 +63,7 @@ func disableMTLSOnUpstreamList(client v1.UpstreamClient, upstreamList v1.Upstrea
 }
 
 func disableMTLSOnUpstream(client v1.UpstreamClient, upstream *v1.Upstream) error {
-	if upstream.SslConfig == nil {
+	if upstream.GetSslConfig() == nil {
 		return eris.Wrapf(ErrMTLSAlreadyDisabled, "upstream does not have an sslConfig set")
 	}
 

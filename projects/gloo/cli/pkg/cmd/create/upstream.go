@@ -182,10 +182,10 @@ func upstreamFromOpts(opts *options.Options) (*v1.Upstream, error) {
 		if svcSpec != nil {
 			return nil, errors.Errorf("%v does not support service spec", input.UpstreamType)
 		}
-		if input.Aws.Secret.Namespace == "" {
+		if input.Aws.Secret.GetNamespace() == "" {
 			return nil, errors.Errorf("aws secret namespace must not be empty")
 		}
-		if input.Aws.Secret.Name == "" {
+		if input.Aws.Secret.GetName() == "" {
 			return nil, errors.Errorf("aws secret name must not be empty")
 		}
 		upstream.UpstreamType = &v1.Upstream_Aws{
@@ -206,11 +206,11 @@ func upstreamFromOpts(opts *options.Options) (*v1.Upstream, error) {
 		}
 		// a secret ref is optional for EC2 upstreams (will use environment defaults if not specified)
 		// however if any part of the spec is provided ensure that the full spec is provided
-		if input.AwsEc2.Secret.Namespace != "" || input.AwsEc2.Secret.Name != "" {
-			if input.AwsEc2.Secret.Namespace == "" {
+		if input.AwsEc2.Secret.GetNamespace() != "" || input.AwsEc2.Secret.GetName() != "" {
+			if input.AwsEc2.Secret.GetNamespace() == "" {
 				return nil, errors.Errorf("aws secret namespace must not be empty")
 			}
-			if input.AwsEc2.Secret.Name == "" {
+			if input.AwsEc2.Secret.GetName() == "" {
 				return nil, errors.Errorf("aws secret name must not be empty")
 			}
 			ec2Spec.SecretRef = &input.AwsEc2.Secret
@@ -242,10 +242,10 @@ func upstreamFromOpts(opts *options.Options) (*v1.Upstream, error) {
 		if svcSpec != nil {
 			return nil, errors.Errorf("%v does not support service spec", input.UpstreamType)
 		}
-		if input.Azure.Secret.Namespace == "" {
+		if input.Azure.Secret.GetNamespace() == "" {
 			return nil, errors.Errorf("azure secret namespace must not be empty")
 		}
-		if input.Azure.Secret.Name == "" {
+		if input.Azure.Secret.GetName() == "" {
 			return nil, errors.Errorf("azure secret name must not be empty")
 		}
 		upstream.UpstreamType = &v1.Upstream_Azure{

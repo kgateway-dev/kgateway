@@ -49,24 +49,24 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, _ *envoy_config_cluster_v3.Cluster) error {
-	if withServiceSpec, ok := in.UpstreamType.(UpstreamWithServiceSpec); ok {
+	if withServiceSpec, ok := in.GetUpstreamType().(UpstreamWithServiceSpec); ok {
 		serviceSpec := withServiceSpec.GetServiceSpec()
 		if serviceSpec == nil {
 			return nil
 		}
 
-		if serviceSpec.PluginType == nil {
+		if serviceSpec.GetPluginType() == nil {
 			return nil
 		}
 
-		restServiceSpec, ok := serviceSpec.PluginType.(*glooplugins.ServiceSpec_Rest)
+		restServiceSpec, ok := serviceSpec.GetPluginType().(*glooplugins.ServiceSpec_Rest)
 		if !ok {
 			return nil
 		}
 		if restServiceSpec.Rest == nil {
-			return errors.Errorf("%v has an empty rest service spec", in.Metadata.Ref())
+			return errors.Errorf("%v has an empty rest service spec", in.GetMetadata().Ref())
 		}
-		p.recordedUpstreams[translator.UpstreamToClusterName(in.Metadata.Ref())] = restServiceSpec
+		p.recordedUpstreams[translator.UpstreamToClusterName(in.GetMetadata().Ref())] = restServiceSpec
 	}
 	return nil
 }
@@ -75,10 +75,10 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName,
 		func(spec *v1.Destination) (proto.Message, error) {
 			// check if it's rest destination
-			if spec.DestinationSpec == nil {
+			if spec.GetDestinationSpec() == nil {
 				return nil, nil
 			}
-			restDestinationSpec, ok := spec.DestinationSpec.DestinationType.(*v1.DestinationSpec_Rest)
+			restDestinationSpec, ok := spec.GetDestinationSpec().GetDestinationType().(*v1.DestinationSpec_Rest)
 			if !ok {
 				return nil, nil
 			}
@@ -94,7 +94,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				return nil, errors.Errorf("%s does not have a rest service spec", upstreamRef)
 			}
 			funcname := restDestinationSpec.Rest.FunctionName
-			transformationorig := restServiceSpec.Rest.Transformations[funcname]
+			transformationorig := restServiceSpec.Rest.GetTransformations()[funcname]
 			if transformationorig == nil {
 				return nil, errors.Errorf("unknown function %v", funcname)
 			}
@@ -103,7 +103,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			transformation := *transformationorig
 
 			// add extensions from the destination spec
-			transformation.Extractors, err = transformutils.CreateRequestExtractors(params.Ctx, restDestinationSpec.Rest.Parameters)
+			transformation.Extractors, err = transformutils.CreateRequestExtractors(params.Ctx, restDestinationSpec.Rest.GetParameters())
 			if err != nil {
 				return nil, err
 			}
@@ -118,11 +118,11 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			}
 
 			*p.transformsAdded = true
-			if restDestinationSpec.Rest.ResponseTransformation != nil {
+			if restDestinationSpec.Rest.GetResponseTransformation() != nil {
 				// TODO(yuval-k): should we add \ support response parameters?
 				ret.ResponseTransformation = &transformapi.Transformation{
 					TransformationType: &transformapi.Transformation_TransformationTemplate{
-						TransformationTemplate: restDestinationSpec.Rest.ResponseTransformation,
+						TransformationTemplate: restDestinationSpec.Rest.GetResponseTransformation(),
 					},
 				}
 			}

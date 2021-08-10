@@ -68,7 +68,7 @@ func EnsureCommonResource(typeName string, menuDescription string, resRef *core.
 	}
 
 	// interactive mode
-	if resRef.Name == "" || resRef.Namespace == "" {
+	if resRef.GetName() == "" || resRef.GetNamespace() == "" {
 		chosenResRef, err := ChooseResource(typeName, menuDescription, nsrm)
 		if err != nil {
 			return err
@@ -92,16 +92,16 @@ func EnsureCommonResources(typeName string, menuDescription string, resRefs *[]*
 func validateResourceRefForStaticMode(typeName string, menuDescription string, resRef *core.ResourceRef, nsrm NsResourceMap, static bool) error {
 	if static {
 		// make sure we have a full resource ref
-		if resRef.Name == "" {
+		if resRef.GetName() == "" {
 			return fmt.Errorf("Please provide a %v name", menuDescription)
 		}
-		if resRef.Namespace == "" {
+		if resRef.GetNamespace() == "" {
 			return fmt.Errorf("Please provide a %v namespace", menuDescription)
 		}
 
 		// make sure they chose a valid namespace
-		if _, ok := nsrm[resRef.Namespace]; !ok {
-			return fmt.Errorf("Please specify a valid namespace. Namespace %v not found.", resRef.Namespace)
+		if _, ok := nsrm[resRef.GetNamespace()]; !ok {
+			return fmt.Errorf("Please specify a valid namespace. Namespace %v not found.", resRef.GetNamespace())
 		}
 
 		// make sure that the particular resource exists in the specified namespace
@@ -111,8 +111,8 @@ func validateResourceRefForStaticMode(typeName string, menuDescription string, r
 		// 		return fmt.Errorf("Please specify a valid %v name. %v not found in namespace %v.", resRef.Name, menuDescription, resRef.Namespace)
 		// 	}
 		case "upstream":
-			if !cliutil.Contains(nsrm[resRef.Namespace].Upstreams, resRef.Name) {
-				return fmt.Errorf("Please specify a valid %v name. %v not found in namespace %v.", resRef.Name, menuDescription, resRef.Namespace)
+			if !cliutil.Contains(nsrm[resRef.GetNamespace()].Upstreams, resRef.GetName()) {
+				return fmt.Errorf("Please specify a valid %v name. %v not found in namespace %v.", resRef.GetName(), menuDescription, resRef.GetNamespace())
 			}
 		default:
 			panic(fmt.Errorf("typename %v not recognized", typeName))

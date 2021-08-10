@@ -94,8 +94,8 @@ func (s *translatorSyncer) generatedDesiredProxies(ctx context.Context, snap *v1
 				compress.SetShouldCompressed(proxy)
 			}
 
-			logger.Infof("desired proxy %v", proxy.Metadata.Ref())
-			proxy.Metadata.Labels = s.managedProxyLabels
+			logger.Infof("desired proxy %v", proxy.GetMetadata().Ref())
+			proxy.GetMetadata().Labels = s.managedProxyLabels
 			desiredProxies[proxy] = reports
 		}
 	}
@@ -235,7 +235,7 @@ func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
 	s.mapLock.Lock()
 	defer s.mapLock.Unlock()
 	for _, proxy := range list {
-		ref := proxy.Metadata.Ref()
+		ref := proxy.GetMetadata().Ref()
 		refKey := gloo_translator.UpstreamToClusterName(ref)
 		status := proxy.Status
 		if current, ok := s.proxyToLastStatus[refKey]; ok {

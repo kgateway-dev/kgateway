@@ -38,7 +38,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoy_config_route_v3.VirtualHost) error {
-	if in.Options.GetRbac() != nil {
+	if in.GetOptions().GetRbac() != nil {
 		return eris.New(ErrEnterpriseOnly)
 	}
 
@@ -46,7 +46,7 @@ func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	if in.Options.GetRbac() != nil {
+	if in.GetOptions().GetRbac() != nil {
 		return eris.New(ErrEnterpriseOnly)
 	}
 

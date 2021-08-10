@@ -81,5 +81,5 @@ func (s *TestGRPCServer) TestMethod(_ context.Context, req *glootest.TestRequest
 	go func() {
 		s.C <- req
 	}()
-	return &glootest.TestResponse{Str: req.Str}, nil
+	return &glootest.TestResponse{Str: req.GetStr()}, nil
 }

@@ -83,7 +83,7 @@ func Run() {
 				logger := contextutils.LoggerFrom(ctx)
 				switch msg := message.GetLogEntries().(type) {
 				case *pb.StreamAccessLogsMessage_HttpLogs:
-					for _, v := range msg.HttpLogs.LogEntry {
+					for _, v := range msg.HttpLogs.GetLogEntry() {
 
 						meta := v.GetCommonProperties().GetMetadata().GetFilterMetadata()
 						// we could put any other kind of data into the transformation metadata, including more
@@ -154,7 +154,7 @@ func Run() {
 						).Info("received http request")
 					}
 				case *pb.StreamAccessLogsMessage_TcpLogs:
-					for _, v := range msg.TcpLogs.LogEntry {
+					for _, v := range msg.TcpLogs.GetLogEntry() {
 						logger.With(
 							zap.Any("upstream_cluster", v.GetCommonProperties().GetUpstreamCluster()),
 							zap.Any("route_name", v.GetCommonProperties().GetRouteName()),

@@ -33,7 +33,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	lbPlugin := in.Options.GetLbHash()
+	lbPlugin := in.GetOptions().GetLbHash()
 	if lbPlugin == nil {
 		return nil
 	}
@@ -41,7 +41,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return InvalidRouteTypeError(err)
 	}
 	outRa := out.GetRoute()
-	outRa.HashPolicy = getHashPoliciesFromSpec(lbPlugin.HashPolicies)
+	outRa.HashPolicy = getHashPoliciesFromSpec(lbPlugin.GetHashPolicies())
 	return nil
 }
 
@@ -49,9 +49,9 @@ func getHashPoliciesFromSpec(spec []*lbhash.HashPolicy) []*envoy_config_route_v3
 	var policies []*envoy_config_route_v3.RouteAction_HashPolicy
 	for _, s := range spec {
 		policy := &envoy_config_route_v3.RouteAction_HashPolicy{
-			Terminal: s.Terminal,
+			Terminal: s.GetTerminal(),
 		}
-		switch keyType := s.KeyType.(type) {
+		switch keyType := s.GetKeyType().(type) {
 		case *lbhash.HashPolicy_Header:
 			policy.PolicySpecifier = &envoy_config_route_v3.RouteAction_HashPolicy_Header_{
 				Header: &envoy_config_route_v3.RouteAction_HashPolicy_Header{
@@ -61,9 +61,9 @@ func getHashPoliciesFromSpec(spec []*lbhash.HashPolicy) []*envoy_config_route_v3
 		case *lbhash.HashPolicy_Cookie:
 			policy.PolicySpecifier = &envoy_config_route_v3.RouteAction_HashPolicy_Cookie_{
 				Cookie: &envoy_config_route_v3.RouteAction_HashPolicy_Cookie{
-					Name: keyType.Cookie.Name,
-					Ttl:  keyType.Cookie.Ttl,
-					Path: keyType.Cookie.Path,
+					Name: keyType.Cookie.GetName(),
+					Ttl:  keyType.Cookie.GetTtl(),
+					Path: keyType.Cookie.GetPath(),
 				},
 			}
 		case *lbhash.HashPolicy_SourceIp:
@@ -85,37 +85,37 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return nil
 	}
 
-	if cfg.HealthyPanicThreshold != nil || cfg.UpdateMergeWindow != nil || cfg.LocalityConfig != nil {
+	if cfg.GetHealthyPanicThreshold() != nil || cfg.GetUpdateMergeWindow() != nil || cfg.GetLocalityConfig() != nil {
 		out.CommonLbConfig = &envoy_config_cluster_v3.Cluster_CommonLbConfig{}
-		if cfg.HealthyPanicThreshold != nil {
-			out.CommonLbConfig.HealthyPanicThreshold = &envoy_type_v3.Percent{
-				Value: cfg.HealthyPanicThreshold.Value,
+		if cfg.GetHealthyPanicThreshold() != nil {
+			out.GetCommonLbConfig().HealthyPanicThreshold = &envoy_type_v3.Percent{
+				Value: cfg.GetHealthyPanicThreshold().GetValue(),
 			}
 		}
-		if cfg.UpdateMergeWindow != nil {
-			out.CommonLbConfig.UpdateMergeWindow = cfg.UpdateMergeWindow
+		if cfg.GetUpdateMergeWindow() != nil {
+			out.GetCommonLbConfig().UpdateMergeWindow = cfg.UpdateMergeWindow
 		}
-		if cfg.LocalityConfig != nil {
-			switch cfg.LocalityConfig.(type) {
+		if cfg.GetLocalityConfig() != nil {
+			switch cfg.GetLocalityConfig().(type) {
 			case *v1.LoadBalancerConfig_LocalityWeightedLbConfig:
-				out.CommonLbConfig.LocalityConfigSpecifier = &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
+				out.GetCommonLbConfig().LocalityConfigSpecifier = &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig_{
 					LocalityWeightedLbConfig: &envoy_config_cluster_v3.Cluster_CommonLbConfig_LocalityWeightedLbConfig{},
 				}
 			}
 		}
 	}
 
-	if cfg.Type != nil {
-		switch lbtype := cfg.Type.(type) {
+	if cfg.GetType() != nil {
+		switch lbtype := cfg.GetType().(type) {
 		case *v1.LoadBalancerConfig_RoundRobin_:
 			out.LbPolicy = envoy_config_cluster_v3.Cluster_ROUND_ROBIN
 		case *v1.LoadBalancerConfig_LeastRequest_:
 			out.LbPolicy = envoy_config_cluster_v3.Cluster_LEAST_REQUEST
-			if lbtype.LeastRequest.ChoiceCount != 0 {
+			if lbtype.LeastRequest.GetChoiceCount() != 0 {
 				out.LbConfig = &envoy_config_cluster_v3.Cluster_LeastRequestLbConfig_{
 					LeastRequestLbConfig: &envoy_config_cluster_v3.Cluster_LeastRequestLbConfig{
 						ChoiceCount: &wrappers.UInt32Value{
-							Value: lbtype.LeastRequest.ChoiceCount,
+							Value: lbtype.LeastRequest.GetChoiceCount(),
 						},
 					},
 				}
@@ -124,7 +124,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			out.LbPolicy = envoy_config_cluster_v3.Cluster_RANDOM
 		case *v1.LoadBalancerConfig_RingHash_:
 			out.LbPolicy = envoy_config_cluster_v3.Cluster_RING_HASH
-			setRingHashLbConfig(out, lbtype.RingHash.RingHashConfig)
+			setRingHashLbConfig(out, lbtype.RingHash.GetRingHashConfig())
 		case *v1.LoadBalancerConfig_Maglev_:
 			out.LbPolicy = envoy_config_cluster_v3.Cluster_MAGLEV
 		}
@@ -138,14 +138,14 @@ func setRingHashLbConfig(out *envoy_config_cluster_v3.Cluster, userConfig *v1.Lo
 		RingHashLbConfig: &envoy_config_cluster_v3.Cluster_RingHashLbConfig{},
 	}
 	if userConfig != nil {
-		if userConfig.MinimumRingSize != 0 {
+		if userConfig.GetMinimumRingSize() != 0 {
 			cfg.RingHashLbConfig.MinimumRingSize = &wrappers.UInt64Value{
-				Value: userConfig.MinimumRingSize,
+				Value: userConfig.GetMinimumRingSize(),
 			}
 		}
-		if userConfig.MaximumRingSize != 0 {
+		if userConfig.GetMaximumRingSize() != 0 {
 			cfg.RingHashLbConfig.MaximumRingSize = &wrappers.UInt64Value{
-				Value: userConfig.MaximumRingSize,
+				Value: userConfig.GetMaximumRingSize(),
 			}
 		}
 	}

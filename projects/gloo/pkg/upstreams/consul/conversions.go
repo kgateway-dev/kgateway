@@ -21,7 +21,7 @@ func IsConsulUpstream(upstreamName string) bool {
 func DestinationToUpstreamRef(consulDest *v1.ConsulServiceDestination) *core.ResourceRef {
 	return &core.ResourceRef{
 		Namespace: defaults.GlooSystem,
-		Name:      fakeUpstreamName(consulDest.ServiceName),
+		Name:      fakeUpstreamName(consulDest.GetServiceName()),
 	}
 }
 
@@ -35,7 +35,7 @@ func toUpstreamList(forNamespace string, services []*ServiceMeta, consulConfig *
 	for _, svc := range services {
 		upstreams := CreateUpstreamsFromService(svc, consulConfig)
 		for _, upstream := range upstreams {
-			if forNamespace != "" && upstream.Metadata.Namespace != forNamespace {
+			if forNamespace != "" && upstream.GetMetadata().GetNamespace() != forNamespace {
 				continue
 			}
 			results = append(results, upstream)

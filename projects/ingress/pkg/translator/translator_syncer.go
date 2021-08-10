@@ -64,8 +64,8 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 
 	var desiredResources gloov1.ProxyList
 	if proxy != nil {
-		logger.Infof("creating proxy %v", proxy.Metadata.Ref())
-		proxy.Metadata.Labels = labels
+		logger.Infof("creating proxy %v", proxy.GetMetadata().Ref())
+		proxy.GetMetadata().Labels = labels
 		desiredResources = gloov1.ProxyList{proxy}
 	}
 

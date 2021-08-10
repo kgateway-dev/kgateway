@@ -64,7 +64,7 @@ func translateProxy(ctx context.Context, namespace string, snap *v1.TranslatorSn
 			SslSecrets: &gloov1.SslConfig_SecretRef{
 				SecretRef: &svh.secret,
 			},
-			SniDomains: svh.vh.Domains,
+			SniDomains: svh.vh.GetDomains(),
 		})
 	}
 	var listeners []*gloov1.Listener
@@ -112,14 +112,14 @@ func upstreamForBackend(upstreams gloov1.UpstreamList, services []*kubev1.Servic
 	// longer selectors represent subsets of pods for a service
 	var matchingUpstream *gloov1.Upstream
 	for _, us := range upstreams {
-		switch spec := us.UpstreamType.(type) {
+		switch spec := us.GetUpstreamType().(type) {
 		case *gloov1.Upstream_Kube:
-			if spec.Kube.ServiceNamespace == ingressNamespace &&
-				spec.Kube.ServiceName == backend.ServiceName &&
-				spec.Kube.ServicePort == uint32(servicePort) {
+			if spec.Kube.GetServiceNamespace() == ingressNamespace &&
+				spec.Kube.GetServiceName() == backend.ServiceName &&
+				spec.Kube.GetServicePort() == uint32(servicePort) {
 				if matchingUpstream != nil {
-					originalSelectorLength := len(matchingUpstream.UpstreamType.(*gloov1.Upstream_Kube).Kube.Selector)
-					newSelectorLength := len(spec.Kube.Selector)
+					originalSelectorLength := len(matchingUpstream.GetUpstreamType().(*gloov1.Upstream_Kube).Kube.GetSelector())
+					newSelectorLength := len(spec.Kube.GetSelector())
 					if newSelectorLength > originalSelectorLength {
 						continue
 					}
@@ -182,7 +182,7 @@ func virtualHosts(ctx context.Context, ingresses []*v1beta1.Ingress, upstreams g
 			}
 			for _, host := range tls.Hosts {
 				if existing, alreadySet := secretsByHost[host]; alreadySet {
-					if existing.Name != ref.Name || existing.Namespace != ref.Namespace {
+					if existing.GetName() != ref.GetName() || existing.GetNamespace() != ref.GetNamespace() {
 						log.Warnf("a TLS secret for host %v was redefined in ingress %v, ignoring", ing.Name)
 						continue
 					}
@@ -223,7 +223,7 @@ func virtualHosts(ctx context.Context, ingresses []*v1beta1.Ingress, upstreams g
 							Destination: &gloov1.RouteAction_Single{
 								Single: &gloov1.Destination{
 									DestinationType: &gloov1.Destination_Upstream{
-										Upstream: upstream.Metadata.Ref(),
+										Upstream: upstream.GetMetadata().Ref(),
 									},
 								},
 							},
@@ -269,10 +269,10 @@ func virtualHosts(ctx context.Context, ingresses []*v1beta1.Ingress, upstreams g
 	}
 
 	sort.SliceStable(virtualHostsHttp, func(i, j int) bool {
-		return virtualHostsHttp[i].Name < virtualHostsHttp[j].Name
+		return virtualHostsHttp[i].GetName() < virtualHostsHttp[j].GetName()
 	})
 	sort.SliceStable(virtualHostsHttps, func(i, j int) bool {
-		return virtualHostsHttps[i].vh.Name < virtualHostsHttps[j].vh.Name
+		return virtualHostsHttps[i].vh.GetName() < virtualHostsHttps[j].vh.GetName()
 	})
 	return virtualHostsHttp, virtualHostsHttps
 }

@@ -140,7 +140,7 @@ func convertResponseHeaderValueOption(
 ) ([]*envoy_config_core_v3.HeaderValueOption, error) {
 	var out []*envoy_config_core_v3.HeaderValueOption
 	for _, h := range in {
-		if h.Header == nil {
+		if h.GetHeader() == nil {
 			return nil, MissingHeaderValueError
 		}
 		out = append(out, &envoy_config_core_v3.HeaderValueOption{

@@ -78,7 +78,7 @@ func addRoute(opts *options.Options) error {
 		Options:  plugins,
 	}
 
-	if opts.Add.Route.Destination.Delegate.Single.Name != "" {
+	if opts.Add.Route.Destination.Delegate.Single.GetName() != "" {
 		v1Route.Action = &gatewayv1.Route_DelegateAction{
 			DelegateAction: &gatewayv1.DelegateAction{
 				DelegationType: &gatewayv1.DelegateAction_Ref{
@@ -95,8 +95,8 @@ func addRoute(opts *options.Options) error {
 
 	if opts.Add.Route.AddToRouteTable {
 		rtRef := &core.ResourceRef{
-			Namespace: opts.Metadata.Namespace,
-			Name:      opts.Metadata.Name,
+			Namespace: opts.Metadata.GetNamespace(),
+			Name:      opts.Metadata.GetName(),
 		}
 		selector := selectionutils.NewRouteTableSelector(helpers.MustNamespacedRouteTableClient(opts.Top.Ctx, opts.Metadata.GetNamespace()), defaults.GlooSystem)
 		routeTable, err := selector.SelectOrBuildRouteTable(opts.Top.Ctx, rtRef)
@@ -105,9 +105,9 @@ func addRoute(opts *options.Options) error {
 		}
 
 		index := int(opts.Add.Route.InsertIndex)
-		routeTable.Routes = append(routeTable.Routes, nil)
-		copy(routeTable.Routes[index+1:], routeTable.Routes[index:])
-		routeTable.Routes[index] = v1Route
+		routeTable.Routes = append(routeTable.GetRoutes(), nil)
+		copy(routeTable.GetRoutes()[index+1:], routeTable.GetRoutes()[index:])
+		routeTable.GetRoutes()[index] = v1Route
 
 		if !opts.Add.DryRun {
 			routeTable, err = helpers.MustNamespacedRouteTableClient(opts.Top.Ctx, opts.Metadata.GetNamespace()).Write(routeTable, clients.WriteOpts{
@@ -125,8 +125,8 @@ func addRoute(opts *options.Options) error {
 	}
 
 	vsRef := &core.ResourceRef{
-		Namespace: opts.Metadata.Namespace,
-		Name:      opts.Metadata.Name,
+		Namespace: opts.Metadata.GetNamespace(),
+		Name:      opts.Metadata.GetName(),
 	}
 	vsClient := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	nsLister := helpers.NewProvidedNamespaceLister([]string{opts.Metadata.GetNamespace()})
@@ -141,9 +141,9 @@ func addRoute(opts *options.Options) error {
 	}
 
 	index := int(opts.Add.Route.InsertIndex)
-	virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, nil)
-	copy(virtualService.VirtualHost.Routes[index+1:], virtualService.VirtualHost.Routes[index:])
-	virtualService.VirtualHost.Routes[index] = v1Route
+	virtualService.GetVirtualHost().Routes = append(virtualService.GetVirtualHost().GetRoutes(), nil)
+	copy(virtualService.GetVirtualHost().GetRoutes()[index+1:], virtualService.GetVirtualHost().GetRoutes()[index:])
+	virtualService.GetVirtualHost().GetRoutes()[index] = v1Route
 
 	if !opts.Add.DryRun {
 		virtualService, err = vsClient.Write(virtualService, clients.WriteOpts{
@@ -156,7 +156,7 @@ func addRoute(opts *options.Options) error {
 		contextutils.LoggerFrom(opts.Top.Ctx).Infow("Created new default virtual service", zap.Any("virtualService", virtualService))
 	}
 
-	_ = printers.PrintVirtualServices(opts.Top.Ctx, gatewayv1.VirtualServiceList{virtualService}, opts.Top.Output, opts.Metadata.Namespace)
+	_ = printers.PrintVirtualServices(opts.Top.Ctx, gatewayv1.VirtualServiceList{virtualService}, opts.Top.Output, opts.Metadata.GetNamespace())
 	return nil
 }
 
@@ -188,27 +188,27 @@ func matcherFromInput(input options.RouteMatchers) (*matchers.Matcher, error) {
 		return nil, errors.Errorf("must provide path prefix, path exact, or path regex for route matcher")
 	}
 	for k, v := range input.QueryParameterMatcher.MustMap() {
-		m.QueryParameters = append(m.QueryParameters, &matchers.QueryParameterMatcher{
+		m.QueryParameters = append(m.GetQueryParameters(), &matchers.QueryParameterMatcher{
 			Name:  k,
 			Value: v,
 			Regex: true,
 		})
 	}
-	sort.SliceStable(m.QueryParameters, func(i, j int) bool {
-		return m.QueryParameters[i].Name < m.QueryParameters[j].Name
+	sort.SliceStable(m.GetQueryParameters(), func(i, j int) bool {
+		return m.GetQueryParameters()[i].GetName() < m.GetQueryParameters()[j].GetName()
 	})
 	if len(input.Methods) > 0 {
 		m.Methods = input.Methods
 	}
 	for k, v := range input.HeaderMatcher.MustMap() {
-		m.Headers = append(m.Headers, &matchers.HeaderMatcher{
+		m.Headers = append(m.GetHeaders(), &matchers.HeaderMatcher{
 			Name:  k,
 			Value: v,
 			Regex: true,
 		})
 	}
-	sort.SliceStable(m.Headers, func(i, j int) bool {
-		return m.Headers[i].Name < m.Headers[j].Name
+	sort.SliceStable(m.GetHeaders(), func(i, j int) bool {
+		return m.GetHeaders()[i].GetName() < m.GetHeaders()[j].GetName()
 	})
 	return m, nil
 }
@@ -218,8 +218,8 @@ func routeActionFromInput(input options.InputRoute) (*gatewayv1.Route_RouteActio
 		RouteAction: &v1.RouteAction{},
 	}
 
-	if input.UpstreamGroup.Name != "" {
-		if input.UpstreamGroup.Namespace == "" {
+	if input.UpstreamGroup.GetName() != "" {
+		if input.UpstreamGroup.GetNamespace() == "" {
 			input.UpstreamGroup.Namespace = defaults.GlooSystem
 		}
 
@@ -231,7 +231,7 @@ func routeActionFromInput(input options.InputRoute) (*gatewayv1.Route_RouteActio
 
 	// TODO: multi destination
 	dest := input.Destination
-	if dest.Upstream.Name == "" {
+	if dest.Upstream.GetName() == "" {
 		return nil, errors.Errorf("must provide destination name")
 	}
 	spec, err := destSpecFromInput(dest.DestinationSpec)

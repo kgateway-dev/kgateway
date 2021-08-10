@@ -76,12 +76,12 @@ type edsWatcher struct {
 func newEndpointsWatcher(kubeCoreCache corecache.KubeCoreCache, namespaces []string, kubeShareFactory KubePluginSharedFactory, upstreams v1.UpstreamList) *edsWatcher {
 	upstreamSpecs := make(map[*core.ResourceRef]*kubeplugin.UpstreamSpec)
 	for _, us := range upstreams {
-		kubeUpstream, ok := us.UpstreamType.(*v1.Upstream_Kube)
+		kubeUpstream, ok := us.GetUpstreamType().(*v1.Upstream_Kube)
 		// only care about kube upstreams
 		if !ok {
 			continue
 		}
-		upstreamSpecs[us.Metadata.Ref()] = kubeUpstream.Kube
+		upstreamSpecs[us.GetMetadata().Ref()] = kubeUpstream.Kube
 	}
 	return &edsWatcher{
 		upstreams:        upstreamSpecs,
@@ -230,30 +230,30 @@ func filterEndpoints(
 		var singlePortService bool
 	findServicePort:
 		for _, svc := range services {
-			if svc.Namespace != spec.ServiceNamespace || svc.Name != spec.ServiceName {
+			if svc.Namespace != spec.GetServiceNamespace() || svc.Name != spec.GetServiceName() {
 				continue
 			}
 			if len(svc.Spec.Ports) == 1 {
 				singlePortService = true
-				if spec.ServicePort == uint32(svc.Spec.Ports[0].Port) {
+				if spec.GetServicePort() == uint32(svc.Spec.Ports[0].Port) {
 					kubeServicePort = &svc.Spec.Ports[0]
 					break findServicePort
 				}
 			}
 			for _, port := range svc.Spec.Ports {
-				if spec.ServicePort == uint32(port.Port) {
+				if spec.GetServicePort() == uint32(port.Port) {
 					kubeServicePort = &port
 					break findServicePort
 				}
 			}
 		}
 		if kubeServicePort == nil {
-			errorsToLog = append(errorsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v", usRef.Key(), spec.ServicePort, spec.ServiceName))
+			errorsToLog = append(errorsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v", usRef.Key(), spec.GetServicePort(), spec.GetServiceName()))
 			continue
 		}
 		// find each matching endpoint
 		for _, eps := range kubeEndpoints {
-			if eps.Namespace != spec.ServiceNamespace || eps.Name != spec.ServiceName {
+			if eps.Namespace != spec.GetServiceNamespace() || eps.Name != spec.GetServiceName() {
 				continue
 			}
 			for _, subset := range eps.Subsets {
@@ -270,7 +270,7 @@ func filterEndpoints(
 					}
 				}
 				if port == 0 {
-					warnsToLog = append(warnsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v in endpoint %v", usRef.Key(), spec.ServicePort, spec.ServiceName, subset))
+					warnsToLog = append(warnsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v in endpoint %v", usRef.Key(), spec.GetServicePort(), spec.GetServiceName(), subset))
 					continue
 				}
 				for _, addr := range subset.Addresses {
@@ -282,15 +282,15 @@ func filterEndpoints(
 							podNamespace = targetRef.Namespace
 						}
 					}
-					if len(spec.Selector) != 0 {
+					if len(spec.GetSelector()) != 0 {
 						// determine whether labels for the owner of this ip (pod) matches the spec
 						podLabels, err := getPodLabelsForIp(addr.IP, podName, podNamespace, pods)
 						if err != nil {
 							// pod not found for IP? what's that about?
-							warnsToLog = append(warnsToLog, fmt.Sprintf("error for upstream %v service %v: %v", usRef.Key(), spec.ServiceName, err))
+							warnsToLog = append(warnsToLog, fmt.Sprintf("error for upstream %v service %v: %v", usRef.Key(), spec.GetServiceName(), err))
 							continue
 						}
-						if !labels.AreLabelsInWhiteList(spec.Selector, podLabels) {
+						if !labels.AreLabelsInWhiteList(spec.GetSelector(), podLabels) {
 							continue
 						}
 						// pod hasn't been assigned address yet
@@ -328,7 +328,9 @@ func filterEndpoints(
 	}
 
 	// sort refs for idempotency
-	sort.Slice(endpoints, func(i, j int) bool { return endpoints[i].Metadata.Name < endpoints[j].Metadata.Name })
+	sort.Slice(endpoints, func(i, j int) bool {
+		return endpoints[i].GetMetadata().GetName() < endpoints[j].GetMetadata().GetName()
+	})
 
 	return endpoints, warnsToLog, errorsToLog
 }
@@ -346,7 +348,7 @@ func createEndpoint(namespace, name string, upstreams []*core.ResourceRef, addre
 	}
 
 	if pod != nil {
-		ep.Metadata.Labels = pod.Labels
+		ep.GetMetadata().Labels = pod.Labels
 	}
 	return ep
 }

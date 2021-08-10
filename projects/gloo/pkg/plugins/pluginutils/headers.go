@@ -22,15 +22,15 @@ func MarkHeaders(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route, out *e
 	if err != nil {
 		return err
 	}
-	switch dest := inAction.Destination.(type) {
+	switch dest := inAction.GetDestination().(type) {
 	case *v1.RouteAction_UpstreamGroup:
-		upstreamGroup, err := snap.UpstreamGroups.Find(dest.UpstreamGroup.Namespace, dest.UpstreamGroup.Name)
+		upstreamGroup, err := snap.UpstreamGroups.Find(dest.UpstreamGroup.GetNamespace(), dest.UpstreamGroup.GetName())
 		if err != nil {
 			return NewUpstreamGroupNotFoundErr(*dest.UpstreamGroup)
 		}
-		return configureHeadersMultiDest(upstreamGroup.Destinations, outAction, headers)
+		return configureHeadersMultiDest(upstreamGroup.GetDestinations(), outAction, headers)
 	case *v1.RouteAction_Multi:
-		return configureHeadersMultiDest(dest.Multi.Destinations, outAction, headers)
+		return configureHeadersMultiDest(dest.Multi.GetDestinations(), outAction, headers)
 	case *v1.RouteAction_Single:
 		return configureHeadersSingleDest(dest.Single, &out.RequestHeadersToAdd, headers)
 	// Since destination is not known at runtime, headers can not be added using this function for a ClusterHeader destination
@@ -38,7 +38,7 @@ func MarkHeaders(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route, out *e
 		return nil
 	}
 
-	err = errors.Errorf("unexpected destination type %v", reflect.TypeOf(inAction.Destination).Name())
+	err = errors.Errorf("unexpected destination type %v", reflect.TypeOf(inAction.GetDestination()).Name())
 	logger := contextutils.LoggerFrom(ctx)
 	logger.DPanic("error: %v", err)
 	return err
@@ -50,17 +50,17 @@ func configureHeadersMultiDest(
 	headers HeadersToAddFunc,
 ) error {
 
-	multiClusterSpecifier, ok := outAction.ClusterSpecifier.(*envoy_config_route_v3.RouteAction_WeightedClusters)
+	multiClusterSpecifier, ok := outAction.GetClusterSpecifier().(*envoy_config_route_v3.RouteAction_WeightedClusters)
 	if !ok {
 		return errors.Errorf("input destination Multi but output destination was not")
 	}
 	out := multiClusterSpecifier.WeightedClusters
 
-	if len(in) != len(out.Clusters) {
+	if len(in) != len(out.GetClusters()) {
 		return errors.Errorf("number of input destinations did not match number of destination weighted clusters")
 	}
 	for i := range in {
-		err := configureHeadersSingleDest(in[i].Destination, &out.Clusters[i].RequestHeadersToAdd, headers)
+		err := configureHeadersSingleDest(in[i].GetDestination(), &out.GetClusters()[i].RequestHeadersToAdd, headers)
 		if err != nil {
 			return err
 		}

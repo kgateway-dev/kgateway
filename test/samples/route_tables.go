@@ -42,8 +42,8 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 		routeTables = append(routeTables, makeRt(i))
 
 		// set delegate of previous to what we appended
-		ref := routeTables[i].Metadata.Ref()
-		routeTables[i-1].Routes[0].Action = &v1.Route_DelegateAction{
+		ref := routeTables[i].GetMetadata().Ref()
+		routeTables[i-1].GetRoutes()[0].Action = &v1.Route_DelegateAction{
 			DelegateAction: &v1.DelegateAction{
 				DelegationType: &v1.DelegateAction_Ref{
 					Ref: ref,
@@ -67,9 +67,9 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 		},
 	}
 
-	leafRef := leaf.Metadata.Ref()
+	leafRef := leaf.GetMetadata().Ref()
 
-	routeTables[lengthOfChain-1].Routes[0].Action = &v1.Route_DelegateAction{
+	routeTables[lengthOfChain-1].GetRoutes()[0].Action = &v1.Route_DelegateAction{
 		DelegateAction: &v1.DelegateAction{
 			DelegationType: &v1.DelegateAction_Ref{
 				Ref: leafRef,
@@ -79,9 +79,9 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 
 	routeTables = append(routeTables, leaf)
 
-	ref := routeTables[0].Metadata.Ref()
+	ref := routeTables[0].GetMetadata().Ref()
 	vs := defaults.DefaultVirtualService(namespace, vsName)
-	vs.VirtualHost.Routes = []*v1.Route{{
+	vs.GetVirtualHost().Routes = []*v1.Route{{
 		Matchers: []*matchers.Matcher{{
 			PathSpecifier: &matchers.Matcher_Prefix{
 				Prefix: root,

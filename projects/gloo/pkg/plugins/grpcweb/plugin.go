@@ -43,7 +43,7 @@ func (p *Plugin) isDisabled(httplistener *v1.HttpListener) bool {
 	if grpcweb == nil {
 		return p.disabled
 	}
-	return grpcweb.Disable
+	return grpcweb.GetDisable()
 }
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {

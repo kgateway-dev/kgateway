@@ -51,13 +51,13 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
-	upstreamSpec, ok := in.UpstreamType.(*v1.Upstream_Azure)
+	upstreamSpec, ok := in.GetUpstreamType().(*v1.Upstream_Azure)
 	if !ok {
 		// not ours
 		return nil
 	}
 	azureUpstream := upstreamSpec.Azure
-	p.recordedUpstreams[translator.UpstreamToClusterName(in.Metadata.Ref())] = azureUpstream
+	p.recordedUpstreams[translator.UpstreamToClusterName(in.GetMetadata().Ref())] = azureUpstream
 
 	// configure Envoy cluster routing info
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
@@ -84,11 +84,11 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	if azureUpstream.GetSecretRef().GetName() != "" {
-		secrets, err := params.Snapshot.Secrets.Find(azureUpstream.SecretRef.Strings())
+		secrets, err := params.Snapshot.Secrets.Find(azureUpstream.GetSecretRef().Strings())
 		if err != nil {
-			return errors.Wrapf(err, "azure secrets for ref %v not found", azureUpstream.SecretRef)
+			return errors.Wrapf(err, "azure secrets for ref %v not found", azureUpstream.GetSecretRef())
 		}
-		azureSecrets, ok := secrets.Kind.(*v1.Secret_Azure)
+		azureSecrets, ok := secrets.GetKind().(*v1.Secret_Azure)
 		if !ok {
 			return errors.Errorf("secret %v is not an Azure secret", secrets.GetMetadata().Ref())
 		}
@@ -102,10 +102,10 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName,
 		func(spec *v1.Destination) (proto.Message, error) {
 			// check if it's azure upstream destination
-			if spec.DestinationSpec == nil {
+			if spec.GetDestinationSpec() == nil {
 				return nil, nil
 			}
-			azureDestinationSpec, ok := spec.DestinationSpec.DestinationType.(*v1.DestinationSpec_Azure)
+			azureDestinationSpec, ok := spec.GetDestinationSpec().GetDestinationType().(*v1.DestinationSpec_Azure)
 			if !ok {
 				return nil, nil
 			}
@@ -123,8 +123,8 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 			// get function
 			functionName := azureDestinationSpec.Azure.FunctionName
-			for _, functionSpec := range upstreamSpec.Functions {
-				if functionSpec.FunctionName == functionName {
+			for _, functionSpec := range upstreamSpec.GetFunctions() {
+				if functionSpec.GetFunctionName() == functionName {
 					path, err := getPath(functionSpec, p.apiKeys)
 					if err != nil {
 						return nil, err
@@ -175,14 +175,14 @@ func getPath(functionSpec *azure.UpstreamSpec_FunctionSpec, apiKeys map[string]s
 
 func getPathParameters(functionSpec *azure.UpstreamSpec_FunctionSpec, apiKeys map[string]string) (string, error) {
 	var keyNames []string
-	switch functionSpec.AuthLevel {
+	switch functionSpec.GetAuthLevel() {
 	case azure.UpstreamSpec_FunctionSpec_Anonymous:
 		return "", nil
 	case azure.UpstreamSpec_FunctionSpec_Function:
 		// TODO(talnordan): Consider whether using the "function" authentication level should require
 		// using a function key and not a master key. This is a product decision. From the technical
 		// point of view, a master key does satisfy the "function" authentication level.
-		keyNames = []string{functionSpec.FunctionName, masterKeyName}
+		keyNames = []string{functionSpec.GetFunctionName(), masterKeyName}
 	case azure.UpstreamSpec_FunctionSpec_Admin:
 		keyNames = []string{masterKeyName}
 	}

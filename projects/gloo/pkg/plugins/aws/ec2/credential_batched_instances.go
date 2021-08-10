@@ -106,18 +106,18 @@ func filterInstancesForUpstream(ctx context.Context, upstream *v1.Upstream, cred
 	// sweep through each filter map, if all the upstream's filters are matched, add the corresponding instance to the list
 	for i, fm := range credGroup.filterMaps {
 		candidateInstance := credGroup.instances[i]
-		logger.Debugw("considering instance for upstream", "upstream", upstream.Metadata.Ref().Key(), "instance-tags", candidateInstance.Tags, "instance-id", candidateInstance.InstanceId)
+		logger.Debugw("considering instance for upstream", "upstream", upstream.GetMetadata().Ref().Key(), "instance-tags", candidateInstance.Tags, "instance-id", candidateInstance.InstanceId)
 		matchesAll := true
 	ScanFilters: // label so that we can break out of the for loop rather than the switch
-		for _, filter := range upstream.GetAwsEc2().Filters {
-			switch filterSpec := filter.Spec.(type) {
+		for _, filter := range upstream.GetAwsEc2().GetFilters() {
+			switch filterSpec := filter.GetSpec().(type) {
 			case *glooec2.TagFilter_Key:
 				if _, ok := fm[awsKeyCase(filterSpec.Key)]; !ok {
 					matchesAll = false
 					break ScanFilters
 				}
 			case *glooec2.TagFilter_KvPair_:
-				if val, ok := fm[awsKeyCase(filterSpec.KvPair.Key)]; !ok || val != filterSpec.KvPair.Value {
+				if val, ok := fm[awsKeyCase(filterSpec.KvPair.GetKey())]; !ok || val != filterSpec.KvPair.GetValue() {
 					matchesAll = false
 					break ScanFilters
 				}
@@ -125,9 +125,9 @@ func filterInstancesForUpstream(ctx context.Context, upstream *v1.Upstream, cred
 		}
 		if matchesAll {
 			instances = append(instances, candidateInstance)
-			logger.Debugw("instance for upstream accepted", "upstream", upstream.Metadata.Ref().Key(), "instance-tags", candidateInstance.Tags, "instance-id", candidateInstance.InstanceId)
+			logger.Debugw("instance for upstream accepted", "upstream", upstream.GetMetadata().Ref().Key(), "instance-tags", candidateInstance.Tags, "instance-id", candidateInstance.InstanceId)
 		} else {
-			logger.Debugw("instance for upstream filtered out", "upstream", upstream.Metadata.Ref().Key(), "instance-tags", candidateInstance.Tags, "instance-id", candidateInstance.InstanceId)
+			logger.Debugw("instance for upstream filtered out", "upstream", upstream.GetMetadata().Ref().Key(), "instance-tags", candidateInstance.Tags, "instance-id", candidateInstance.InstanceId)
 		}
 	}
 	return instances
@@ -150,7 +150,7 @@ func upstreamInstanceToEndpoint(ctx context.Context, writeNamespace string, upst
 	if port == 0 {
 		port = DefaultPort
 	}
-	ref := upstream.Metadata.Ref()
+	ref := upstream.GetMetadata().Ref()
 	// for easier debugging, add the instance id to the xds output
 	instanceInfo := make(map[string]string)
 	instanceInfo[InstanceIdAnnotationKey] = aws.StringValue(instance.InstanceId)

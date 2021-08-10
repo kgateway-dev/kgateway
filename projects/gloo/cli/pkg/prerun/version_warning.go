@@ -66,7 +66,7 @@ func WarnOnMismatch(ctx context.Context, binaryName string, sv versioncmd.Server
 		return nil
 	}
 
-	glooctlVersionStr := "v" + clientServerVersions.Client.Version
+	glooctlVersionStr := "v" + clientServerVersions.GetClient().GetVersion()
 
 	// two common cases I ran into in dev that we don't care about warning on
 	if glooctlVersionStr == "vdev" || glooctlVersionStr == "vundefined" {
@@ -79,7 +79,7 @@ func WarnOnMismatch(ctx context.Context, binaryName string, sv versioncmd.Server
 		return nil
 	}
 
-	openSourceVersions, err := getOpenSourceVersions(clientServerVersions.Server)
+	openSourceVersions, err := getOpenSourceVersions(clientServerVersions.GetServer())
 	if err != nil {
 		warnOnError(err, logger)
 		return nil
@@ -143,10 +143,10 @@ type ContainerVersion struct {
 // this is determined by looking at all the versions of discovery that we can find
 func getOpenSourceVersions(podVersions []*versiondiscovery.ServerVersion) (versions []*versionutils.Version, err error) {
 	for _, podVersion := range podVersions {
-		switch podVersion.VersionType.(type) {
+		switch podVersion.GetVersionType().(type) {
 		case *versiondiscovery.ServerVersion_Kubernetes:
-			for _, container := range podVersion.GetKubernetes().Containers {
-				containerVersion, err := versionutils.ParseVersion("v" + container.Tag)
+			for _, container := range podVersion.GetKubernetes().GetContainers() {
+				containerVersion, err := versionutils.ParseVersion("v" + container.GetTag())
 				if err != nil {
 					// if the container version doesn't match our versioning scheme
 					// (ie, as of writing this the redis container is on version "5")
@@ -154,12 +154,12 @@ func getOpenSourceVersions(podVersions []*versiondiscovery.ServerVersion) (versi
 					continue
 				}
 
-				if container.Name == ContainerNameToCheck {
+				if container.GetName() == ContainerNameToCheck {
 					versions = append(versions, containerVersion)
 				}
 			}
 		default:
-			return nil, eris.Errorf("Unhandled server version type: %v", podVersion.VersionType)
+			return nil, eris.Errorf("Unhandled server version type: %v", podVersion.GetVersionType())
 		}
 	}
 

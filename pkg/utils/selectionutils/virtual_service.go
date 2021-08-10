@@ -85,11 +85,11 @@ func (s *virtualServiceSelector) build(ctx context.Context, ref *core.ResourceRe
 			Domains: []string{"*"},
 		},
 	}
-	if virtualService.GetMetadata().Namespace == "" {
-		virtualService.Metadata.Namespace = s.podNamespace
+	if virtualService.GetMetadata().GetNamespace() == "" {
+		virtualService.GetMetadata().Namespace = s.podNamespace
 	}
-	if virtualService.GetMetadata().Name == "" {
-		virtualService.Metadata.Name = "default"
+	if virtualService.GetMetadata().GetName() == "" {
+		virtualService.GetMetadata().Name = "default"
 	}
 
 	return virtualService, nil
