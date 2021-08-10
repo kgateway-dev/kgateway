@@ -44,9 +44,9 @@ Name|Version|License
 [go.opencensus.io](https://go.opencensus.io)|v0.22.6|Apache License 2.0
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.6.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.16.0|MIT License
-[x/mod](https://golang.org/x/mod)|v0.3.1-0.20200828183125-ce943fd02449|BSD 3-clause "New" or "Revised" License
+[x/mod](https://golang.org/x/mod)|v0.4.2|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.0.0-20210220032951-036812b2e83c|BSD 3-clause "New" or "Revised" License
-[x/tools](https://golang.org/x/tools)|v0.0.0-20210106214847-113979e3529a|BSD 3-clause "New" or "Revised" License
+[x/tools](https://golang.org/x/tools)|v0.1.5|BSD 3-clause "New" or "Revised" License
 [google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20210219173056-d891e3cb3b5b|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.36.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.25.0|BSD 3-clause "New" or "Revised" License
