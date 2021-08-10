@@ -1284,7 +1284,7 @@ spec:
   minAvailable: 2
   selector:
     matchLabels:
-      gloo: gateway-proxy
+      gateway-proxy-id: gateway-proxy
 `)
 
 						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-pdb").To(BeEquivalentTo(pdb))
@@ -1308,10 +1308,36 @@ spec:
   maxUnavailable: 2
   selector:
     matchLabels:
-      gloo: gateway-proxy
+      gateway-proxy-id: gateway-proxy
 `)
 
 						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-pdb").To(BeEquivalentTo(pdb))
+					})
+
+					It("can create gwp pdb for multiple gateways with unique selectors", func() {
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable=2",
+								"gatewayProxies.gatewayProxyTwo.podDisruptionBudget.maxUnavailable=2",
+							},
+						})
+
+						pdbFormat := `
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: %s-pdb
+  namespace: gloo-system
+spec:
+  maxUnavailable: 2
+  selector:
+    matchLabels:
+      gateway-proxy-id: %s
+`
+
+						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-pdb").To(BeEquivalentTo(makeUnstructured(fmt.Sprintf(pdbFormat, defaults.GatewayProxyName, defaults.GatewayProxyName))))
+						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-two-pdb").To(BeEquivalentTo(makeUnstructured(fmt.Sprintf(pdbFormat, defaults.GatewayProxyName+"-two", defaults.GatewayProxyName+"-two"))))
 					})
 
 					It("can render with custom listener yaml", func() {
