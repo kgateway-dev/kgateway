@@ -376,6 +376,8 @@ spec:
                                 items:
                                   type: string
                                 type: array
+                              readStateFromResponse:
+                                type: boolean
                             type: object
                           url:
                             type: string

@@ -2553,6 +2553,10 @@ func (m *PassThroughHttp_Response) Equal(that interface{}) bool {
 
 	}
 
+	if m.GetReadStateFromResponse() != target.GetReadStateFromResponse() {
+		return false
+	}
+
 	return true
 }
 

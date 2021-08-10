@@ -1070,7 +1070,21 @@ else the request is unauthorized.
 ---
 ### Request
 
-
+ 
+The passthrough http request can be configured to pass through the incoming request body,
+the ext-auth state (which is shared between different auth methods within one ext-auth instance), and
+the [filterMetadata](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/data_sharing_between_filters#metadata)
+The body of the passthrough auth request will be a JSON as follows:
+{
+"body" : string,
+"state": object (map[string]interface{}),
+"filterMetadata": object (map[string]protobuf.Struct),
+"config": object (protobuf.Struct),
+}
+`config` is the struct block specified under the passthrough auth configuration.
+If `passthrough_body`, `passthrough_state`, `passthrough_filter_metadata`, and `config` are all false/nil,
+the body of the auth request will remain empty. Setting any of these will increase latency slightly due to
+JSON marshalling.
 
 ```yaml
 "allowedHeaders": []string
@@ -1100,6 +1114,7 @@ else the request is unauthorized.
 ```yaml
 "allowedUpstreamHeaders": []string
 "allowedClientHeadersOnDenied": []string
+"readStateFromResponse": bool
 
 ```
 
@@ -1107,6 +1122,7 @@ else the request is unauthorized.
 | ----- | ---- | ----------- | 
 | `allowedUpstreamHeaders` | `[]string` | When this is set, authorization response headers that have a header in this list will be added to the original client request and sent to the upstream when the auth request is successful. These will be appended to any request headers that already exist. If this is empty, by default, no authorization response headers will be added to the upstream request. |
 | `allowedClientHeadersOnDenied` | `[]string` | When this is set, authorization response headers in this list will be added to the client's response when the auth request is denied. If the response header already exists, it will replace the response header. If this is empty, by default, no authorization response headers will be added to the client response. |
+| `readStateFromResponse` | `bool` | If this is set to true, the body of the response from the http passthrough auth server is expected to have shape { "state": object (map[string]interface{}) } The state will be marshalled from the response body and this is the state that will be passed on to other auth configs. Because of the marshalling from JSON to Go map, this will add some latency to the request. If the marshalling fails, the authorization check will fail and the request will be unauthorized after the ext-auth-service pod logs the marshal error. |
 
 
 
