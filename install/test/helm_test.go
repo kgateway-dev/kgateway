@@ -1323,7 +1323,7 @@ spec:
 							},
 						})
 
-						pdbFormat :=`
+						pdbFormat := `
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
@@ -1336,8 +1336,8 @@ spec:
       gateway-proxy-id: %s
 `
 
-						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-pdb").To(BeEquivalentTo(makeUnstructured(fmt.Sprintf(pdbFormat, defaults.GatewayProxyName,defaults.GatewayProxyName))))
-						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-two-pdb").To(BeEquivalentTo(makeUnstructured(fmt.Sprintf(pdbFormat, defaults.GatewayProxyName+"-two",defaults.GatewayProxyName+"-two"))))
+						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-pdb").To(BeEquivalentTo(makeUnstructured(fmt.Sprintf(pdbFormat, defaults.GatewayProxyName, defaults.GatewayProxyName))))
+						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-two-pdb").To(BeEquivalentTo(makeUnstructured(fmt.Sprintf(pdbFormat, defaults.GatewayProxyName+"-two", defaults.GatewayProxyName+"-two"))))
 					})
 
 					It("can render with custom listener yaml", func() {
