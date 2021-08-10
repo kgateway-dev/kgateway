@@ -77,7 +77,7 @@ func incrementMetric(ctx context.Context, resource string, ref *core.ResourceRef
 		ctx,
 		m,
 		tag.Insert(resourceTypeKey, resource),
-		tag.Insert(resourceRefKey, fmt.Sprintf("%v.%v", ref.Namespace, ref.Name)),
+		tag.Insert(resourceRefKey, fmt.Sprintf("%v.%v", ref.GetNamespace(), ref.GetName())),
 	)
 }
 
@@ -445,7 +445,7 @@ func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, rawJson
 	if err := protoutils.UnmarshalResource(rawJson, &gw); err != nil {
 		return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
 	}
-	if skipValidationCheck(gw.Metadata.Annotations) {
+	if skipValidationCheck(gw.GetMetadata().GetAnnotations()) {
 		return nil, nil
 	}
 	if proxyReports, err = wh.validator.ValidateGateway(ctx, &gw, dryRun); err != nil {
@@ -463,7 +463,7 @@ func (wh *gatewayValidationWebhook) validateVirtualService(ctx context.Context, 
 	if err := protoutils.UnmarshalResource(rawJson, &vs); err != nil {
 		return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
 	}
-	if skipValidationCheck(vs.Metadata.Annotations) {
+	if skipValidationCheck(vs.GetMetadata().GetAnnotations()) {
 		return nil, nil
 	}
 	if proxyReports, err = wh.validator.ValidateVirtualService(ctx, &vs, dryRun); err != nil {
@@ -481,7 +481,7 @@ func (wh *gatewayValidationWebhook) validateRouteTable(ctx context.Context, rawJ
 	if err := protoutils.UnmarshalResource(rawJson, &rt); err != nil {
 		return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
 	}
-	if skipValidationCheck(rt.Metadata.Annotations) {
+	if skipValidationCheck(rt.GetMetadata().GetAnnotations()) {
 		return nil, nil
 	}
 	if proxyReports, err = wh.validator.ValidateRouteTable(ctx, &rt, dryRun); err != nil {

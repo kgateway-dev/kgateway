@@ -27,7 +27,7 @@ func EnsureMetadataSurvey(ctx context.Context, metadata *core.Metadata) error {
 	if err := EnsureInteractiveNamespace(ctx, &metadata.Namespace); err != nil {
 		return err
 	}
-	if metadata.Name == "" {
+	if metadata.GetName() == "" {
 		if err := cliutil.GetStringInput(PromptInteractiveResourceName, &metadata.Name); err != nil {
 			return err
 		}

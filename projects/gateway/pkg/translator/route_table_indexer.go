@@ -24,11 +24,11 @@ func (i *indexer) IndexByWeight(routeTables v1.RouteTableList) (map[int32]v1.Rou
 	// Index by weight
 	byWeight := map[int32]v1.RouteTableList{}
 	for _, rt := range routeTables {
-		if rt.Weight == nil {
+		if rt.GetWeight() == nil {
 			// Just to be safe, handle nil weights
 			byWeight[defaultTableWeight] = append(byWeight[defaultTableWeight], rt)
 		} else {
-			byWeight[rt.Weight.Value] = append(byWeight[rt.Weight.Value], rt)
+			byWeight[rt.GetWeight().GetValue()] = append(byWeight[rt.GetWeight().GetValue()], rt)
 		}
 	}
 

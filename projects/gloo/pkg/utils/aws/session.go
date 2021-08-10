@@ -28,12 +28,12 @@ func GetAwsSession(secretRef *core.ResourceRef, secrets v1.SecretList, config *a
 		// no secret ref, return the default session
 		return session.NewSession(config)
 	}
-	awsSecrets, err := secrets.Find(secretRef.Namespace, secretRef.Name)
+	awsSecrets, err := secrets.Find(secretRef.GetNamespace(), secretRef.GetName())
 	if err != nil {
 		return nil, errors.Wrapf(err, "secrets not found for secret ref %s.%s", secretRef.GetName(), secretRef.GetNamespace())
 	}
 
-	awsSecret, ok := awsSecrets.Kind.(*v1.Secret_Aws)
+	awsSecret, ok := awsSecrets.GetKind().(*v1.Secret_Aws)
 	if !ok {
 		return nil, errors.Errorf("provided secret is not an aws secret")
 	}

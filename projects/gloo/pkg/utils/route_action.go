@@ -11,7 +11,7 @@ var (
 )
 
 func EnsureRouteAction(out *envoy_config_route_v3.Route) error {
-	if out.Action != nil && out.GetRoute() == nil {
+	if out.GetAction() != nil && out.GetRoute() == nil {
 		return InvalidRouteActionError
 	}
 	// we have already ensured that the output route action is either nil or of the proper type

@@ -72,10 +72,10 @@ func GogoMessageToAnyGoProto(msg proto.Message) (*pany.Any, error) {
 	anyGogo := MustMessageToAny(msg)
 
 	// create a typed struct so go proto can handle marshalling any types derived from gogo protos
-	ts := &udpa_type_v1.TypedStruct{Value: configStruct, TypeUrl: anyGogo.TypeUrl}
+	ts := &udpa_type_v1.TypedStruct{Value: configStruct, TypeUrl: anyGogo.GetTypeUrl()}
 	tsAnyGo := MustMessageToAny(ts)
 
-	anyGo := &pany.Any{Value: tsAnyGo.Value, TypeUrl: tsAnyGo.TypeUrl}
+	anyGo := &pany.Any{Value: tsAnyGo.GetValue(), TypeUrl: tsAnyGo.GetTypeUrl()}
 	return anyGo, nil
 }
 

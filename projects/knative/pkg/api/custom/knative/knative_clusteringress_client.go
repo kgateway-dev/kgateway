@@ -93,7 +93,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	}
 
 	sort.SliceStable(resourceList, func(i, j int) bool {
-		return resourceList[i].GetMetadata().Name < resourceList[j].GetMetadata().Name
+		return resourceList[i].GetMetadata().GetName() < resourceList[j].GetMetadata().GetName()
 	})
 
 	return resourceList, nil

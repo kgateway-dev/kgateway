@@ -118,8 +118,8 @@ func authFromOpts(ac *extauth.AuthConfig, input options.InputAuthConfig) error {
 		if oidc.CallbackPath == "" {
 			return errors.Errorf("invalid callback path specified: %v", oidc.CallbackPath)
 		}
-		if oidc.ClientSecretRef.Name == "" || oidc.ClientSecretRef.Namespace == "" {
-			return errors.Errorf("invalid client secret ref specified: %v.%v", oidc.ClientSecretRef.Namespace, oidc.ClientSecretRef.Name)
+		if oidc.ClientSecretRef.GetName() == "" || oidc.ClientSecretRef.GetNamespace() == "" {
+			return errors.Errorf("invalid client secret ref specified: %v.%v", oidc.ClientSecretRef.GetNamespace(), oidc.ClientSecretRef.GetName())
 		}
 
 		oauthConf := &extauth.AuthConfig_Config{
@@ -135,7 +135,7 @@ func authFromOpts(ac *extauth.AuthConfig, input options.InputAuthConfig) error {
 				},
 			},
 		}
-		ac.Configs = append(ac.Configs, oauthConf)
+		ac.Configs = append(ac.GetConfigs(), oauthConf)
 
 	}
 
@@ -168,7 +168,7 @@ func authFromOpts(ac *extauth.AuthConfig, input options.InputAuthConfig) error {
 				},
 			},
 		}
-		ac.Configs = append(ac.Configs, apiKeyAuthConfig)
+		ac.Configs = append(ac.GetConfigs(), apiKeyAuthConfig)
 	}
 
 	opaAuth := input.OpaAuth
@@ -200,7 +200,7 @@ func authFromOpts(ac *extauth.AuthConfig, input options.InputAuthConfig) error {
 				},
 			},
 		}
-		ac.Configs = append(ac.Configs, opaAuthConfig)
+		ac.Configs = append(ac.GetConfigs(), opaAuthConfig)
 	}
 
 	return nil

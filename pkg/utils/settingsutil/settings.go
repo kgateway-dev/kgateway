@@ -40,7 +40,7 @@ func IsAllNamespacesFromSettings(s *v1.Settings) bool {
 	if s == nil {
 		return false
 	}
-	return IsAllNamespaces(s.WatchNamespaces)
+	return IsAllNamespaces(s.GetWatchNamespaces())
 }
 
 func IsAllNamespaces(watchNs []string) bool {

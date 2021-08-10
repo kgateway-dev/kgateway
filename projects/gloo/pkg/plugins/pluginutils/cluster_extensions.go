@@ -13,11 +13,11 @@ func SetExtensionProtocolOptions(out *envoy_config_cluster_v3.Cluster, filterNam
 	if err != nil {
 		return errors.Wrapf(err, "converting extension "+filterName+" protocol options to struct")
 	}
-	if out.TypedExtensionProtocolOptions == nil {
+	if out.GetTypedExtensionProtocolOptions() == nil {
 		out.TypedExtensionProtocolOptions = make(map[string]*anypb.Any)
 	}
 
-	out.TypedExtensionProtocolOptions[filterName] = protoextAny
+	out.GetTypedExtensionProtocolOptions()[filterName] = protoextAny
 	return nil
 
 }

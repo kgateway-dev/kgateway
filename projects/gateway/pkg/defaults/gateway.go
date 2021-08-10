@@ -34,7 +34,7 @@ func DefaultGateway(writeNamespace string) *v1.Gateway {
 
 func DefaultSslGateway(writeNamespace string) *v1.Gateway {
 	defaultgw := DefaultGateway(writeNamespace)
-	defaultgw.Metadata.Name = defaultgw.Metadata.Name + "-ssl"
+	defaultgw.GetMetadata().Name = defaultgw.GetMetadata().GetName() + "-ssl"
 	defaultgw.BindPort = defaults.HttpsPort
 	defaultgw.Ssl = true
 
@@ -62,7 +62,7 @@ func DefaultTcpGateway(writeNamespace string) *v1.Gateway {
 
 func DefaultTcpSslGateway(writeNamespace string) *v1.Gateway {
 	defaultgw := DefaultTcpGateway(writeNamespace)
-	defaultgw.Metadata.Name = defaultgw.Metadata.Name + "-ssl"
+	defaultgw.GetMetadata().Name = defaultgw.GetMetadata().GetName() + "-ssl"
 	defaultgw.BindPort = defaults.HttpsPort
 	defaultgw.Ssl = true
 

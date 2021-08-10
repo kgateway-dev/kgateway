@@ -37,7 +37,7 @@ func dumpCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 func getEnvoyCfgDump(opts *options.Options) (string, error) {
 	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
-	portFwd := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.Namespace,
+	portFwd := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.GetNamespace(),
 		"deployment/"+opts.Proxy.Name, adminPort)
 	portFwd.Stdout = os.Stderr
 	portFwd.Stderr = os.Stderr
@@ -117,7 +117,7 @@ func statsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 
 func getEnvoyStatsDump(opts *options.Options) (string, error) {
 	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
-	portFwd := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.Namespace,
+	portFwd := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.GetNamespace(),
 		"deployment/"+opts.Proxy.Name, adminPort)
 	portFwd.Stdout = os.Stderr
 	portFwd.Stderr = os.Stderr

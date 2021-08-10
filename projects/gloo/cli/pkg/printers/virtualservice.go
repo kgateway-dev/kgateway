@@ -117,7 +117,7 @@ func getRouteTableStatus(vs *v1.RouteTable) string {
 	subResourceErrorMessages := []string{}
 	for k, v := range vs.GetStatus().GetSubresourceStatuses() {
 		if v.GetState() != core.Status_Accepted {
-			subResourceErrorMessages = append(subResourceErrorMessages, fmt.Sprintf("%v %v: %v", k, v.State.String(), v.Reason))
+			subResourceErrorMessages = append(subResourceErrorMessages, fmt.Sprintf("%v %v: %v", k, v.GetState().String(), v.GetReason()))
 		}
 	}
 
@@ -171,7 +171,7 @@ func getStatus(ctx context.Context, res resources.InputResource, namespace strin
 	subResourceErrorMessages := []string{}
 	for k, v := range subresourceStatuses {
 		if v.GetState() != core.Status_Accepted {
-			subResourceErrorMessages = append(subResourceErrorMessages, fmt.Sprintf("%v %v: %v", k, v.State.String(), v.Reason))
+			subResourceErrorMessages = append(subResourceErrorMessages, fmt.Sprintf("%v %v: %v", k, v.GetState().String(), v.GetReason()))
 		}
 	}
 
@@ -239,7 +239,7 @@ func matchersString(matchers []*matchers.Matcher) string {
 }
 
 func matcherString(matcher *matchers.Matcher) string {
-	switch ps := matcher.PathSpecifier.(type) {
+	switch ps := matcher.GetPathSpecifier().(type) {
 	case *matchers.Matcher_Exact:
 		return ps.Exact
 	case *matchers.Matcher_Prefix:
@@ -251,25 +251,25 @@ func matcherString(matcher *matchers.Matcher) string {
 }
 
 func destinationString(route *v1.Route) string {
-	switch action := route.Action.(type) {
+	switch action := route.GetAction().(type) {
 	case *v1.Route_RouteAction:
-		switch dest := action.RouteAction.Destination.(type) {
+		switch dest := action.RouteAction.GetDestination().(type) {
 		case *gloov1.RouteAction_Multi:
-			return fmt.Sprintf("%v destinations", len(dest.Multi.Destinations))
+			return fmt.Sprintf("%v destinations", len(dest.Multi.GetDestinations()))
 		case *gloov1.RouteAction_Single:
-			switch destType := dest.Single.DestinationType.(type) {
+			switch destType := dest.Single.GetDestinationType().(type) {
 			case *gloov1.Destination_Upstream:
 				return fmt.Sprintf("%s (upstream)", destType.Upstream.Key())
 			case *gloov1.Destination_Kube:
-				return fmt.Sprintf("%s (service)", destType.Kube.Ref.Key())
+				return fmt.Sprintf("%s (service)", destType.Kube.GetRef().Key())
 			}
 		case *gloov1.RouteAction_UpstreamGroup:
-			return fmt.Sprintf("upstream group: %s.%s", dest.UpstreamGroup.Name, dest.UpstreamGroup.Namespace)
+			return fmt.Sprintf("upstream group: %s.%s", dest.UpstreamGroup.GetName(), dest.UpstreamGroup.GetNamespace())
 		}
 	case *v1.Route_DirectResponseAction:
-		return strconv.Itoa(int(action.DirectResponseAction.Status))
+		return strconv.Itoa(int(action.DirectResponseAction.GetStatus()))
 	case *v1.Route_RedirectAction:
-		return action.RedirectAction.HostRedirect
+		return action.RedirectAction.GetHostRedirect()
 	case *v1.Route_DelegateAction:
 		if delegateSingle := action.DelegateAction.GetRef(); delegateSingle != nil {
 			return fmt.Sprintf("%s (route table)", delegateSingle.Key())
@@ -279,11 +279,11 @@ func destinationString(route *v1.Route) string {
 }
 
 func domains(v *v1.VirtualService) string {
-	if v.VirtualHost.Domains == nil || len(v.VirtualHost.Domains) == 0 {
+	if v.GetVirtualHost().GetDomains() == nil || len(v.GetVirtualHost().GetDomains()) == 0 {
 		return ""
 	}
 
-	return strings.Join(v.VirtualHost.Domains, ", ")
+	return strings.Join(v.GetVirtualHost().GetDomains(), ", ")
 }
 
 func sslConfig(v *v1.VirtualService) string {
@@ -291,7 +291,7 @@ func sslConfig(v *v1.VirtualService) string {
 		return "none"
 	}
 
-	switch v.GetSslConfig().SslSecrets.(type) {
+	switch v.GetSslConfig().GetSslSecrets().(type) {
 	case *gloov1.SslConfig_SecretRef:
 		return "secret_ref"
 	case *gloov1.SslConfig_SslFiles:

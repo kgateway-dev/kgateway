@@ -246,8 +246,8 @@ func ToGlooHealthCheck(check *envoy_config_core_v3.HealthCheck) (*envoycore_gloo
 	case *envoy_config_core_v3.HealthCheck_GrpcHealthCheck_:
 		hc.HealthChecker = &envoycore_gloo.HealthCheck_GrpcHealthCheck_{
 			GrpcHealthCheck: &envoycore_gloo.HealthCheck_GrpcHealthCheck{
-				ServiceName: typed.GrpcHealthCheck.ServiceName,
-				Authority:   typed.GrpcHealthCheck.Authority,
+				ServiceName: typed.GrpcHealthCheck.GetServiceName(),
+				Authority:   typed.GrpcHealthCheck.GetAuthority(),
 			},
 		}
 	case *envoy_config_core_v3.HealthCheck_CustomHealthCheck_:

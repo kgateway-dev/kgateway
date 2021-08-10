@@ -29,9 +29,9 @@ func AuthConfig(list extauthv1.AuthConfigList, w io.Writer) {
 	for _, authConfig := range list {
 		var authTypes []string
 		name := authConfig.GetMetadata().Name
-		for _, conf := range authConfig.Configs {
+		for _, conf := range authConfig.GetConfigs() {
 			var authType string
-			switch conf.AuthConfig.(type) {
+			switch conf.GetAuthConfig().(type) {
 			case *extauthv1.AuthConfig_Config_BasicAuth:
 				authType = "Basic Auth"
 			case *extauthv1.AuthConfig_Config_Oauth:

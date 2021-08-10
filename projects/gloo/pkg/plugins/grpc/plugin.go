@@ -65,7 +65,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
-	upstreamType, ok := in.UpstreamType.(v1.ServiceSpecGetter)
+	upstreamType, ok := in.GetUpstreamType().(v1.ServiceSpecGetter)
 	if !ok {
 		return nil
 	}
@@ -74,42 +74,42 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return nil
 	}
 
-	grpcWrapper, ok := upstreamType.GetServiceSpec().PluginType.(*glooplugins.ServiceSpec_Grpc)
+	grpcWrapper, ok := upstreamType.GetServiceSpec().GetPluginType().(*glooplugins.ServiceSpec_Grpc)
 	if !ok {
 		return nil
 	}
 	grpcSpec := grpcWrapper.Grpc
 
-	if out.Http2ProtocolOptions == nil {
+	if out.GetHttp2ProtocolOptions() == nil {
 		out.Http2ProtocolOptions = &envoy_config_core_v3.Http2ProtocolOptions{}
 	}
 
-	if grpcSpec == nil || len(grpcSpec.GrpcServices) == 0 {
+	if grpcSpec == nil || len(grpcSpec.GetGrpcServices()) == 0 {
 		// no services, this just marks the upstream as a grpc one.
 		return nil
 	}
-	descriptors, err := convertProto(grpcSpec.Descriptors)
+	descriptors, err := convertProto(grpcSpec.GetDescriptors())
 	if err != nil {
 		return errors.Wrapf(err, "parsing grpc spec as a proto descriptor set")
 	}
 
-	for _, svc := range grpcSpec.GrpcServices {
+	for _, svc := range grpcSpec.GetGrpcServices() {
 
 		// find the relevant service
 		err := addHttpRulesToProto(in, svc, descriptors)
 		if err != nil {
-			return errors.Wrapf(err, "failed to generate http rules for service %s in proto descriptors", svc.ServiceName)
+			return errors.Wrapf(err, "failed to generate http rules for service %s in proto descriptors", svc.GetServiceName())
 		}
 	}
 
 	addWellKnownProtos(descriptors)
 
-	p.recordedUpstreams[translator.UpstreamToClusterName(in.Metadata.Ref())] = in
+	p.recordedUpstreams[translator.UpstreamToClusterName(in.GetMetadata().Ref())] = in
 	p.upstreamServices = append(p.upstreamServices, ServicesAndDescriptor{
 		Descriptors: descriptors,
 		Spec:        grpcSpec,
 	})
-	contextutils.LoggerFrom(p.ctx).Debugf("in.Metadata.Namespace: %s, in.Metadata.Name: %s", in.Metadata.Namespace, in.Metadata.Name)
+	contextutils.LoggerFrom(p.ctx).Debugf("in.Metadata.Namespace: %s, in.Metadata.Name: %s", in.GetMetadata().GetNamespace(), in.GetMetadata().GetName())
 
 	return nil
 }
@@ -141,21 +141,21 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName,
 		func(spec *v1.Destination) (proto.Message, error) {
 			// check if it's grpc destination
-			if spec.DestinationSpec == nil {
+			if spec.GetDestinationSpec() == nil {
 				return nil, nil
 			}
-			grpcDestinationSpecWrapper, ok := spec.DestinationSpec.DestinationType.(*v1.DestinationSpec_Grpc)
+			grpcDestinationSpecWrapper, ok := spec.GetDestinationSpec().GetDestinationType().(*v1.DestinationSpec_Grpc)
 			if !ok {
 				return nil, nil
 			}
 			// copy as it might be modified
 			grpcDestinationSpec := *grpcDestinationSpecWrapper.Grpc
 
-			if grpcDestinationSpec.Parameters == nil {
-				if out.Match.PathSpecifier == nil {
+			if grpcDestinationSpec.GetParameters() == nil {
+				if out.GetMatch().GetPathSpecifier() == nil {
 					return nil, errors.New("missing path for grpc route")
 				}
-				path := utils.EnvoyPathAsString(out.Match) + "?{query_string}"
+				path := utils.EnvoyPathAsString(out.GetMatch()) + "?{query_string}"
 
 				grpcDestinationSpec.Parameters = &transformapi.Parameters{
 					Path: &wrappers.StringValue{Value: path},
@@ -163,7 +163,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			}
 
 			// get the package_name.service_name to generate the path that envoy wants
-			fullServiceName := genFullServiceName(grpcDestinationSpec.Package, grpcDestinationSpec.Service)
+			fullServiceName := genFullServiceName(grpcDestinationSpec.GetPackage(), grpcDestinationSpec.GetService())
 			methodName := grpcDestinationSpec.Function
 
 			upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
@@ -186,8 +186,8 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 			// Add param extractors back
 			var extractors map[string]*envoy_transform.Extraction
-			if grpcDestinationSpec.Parameters != nil {
-				extractors, err = transformutils.CreateRequestExtractors(params.Ctx, grpcDestinationSpec.Parameters)
+			if grpcDestinationSpec.GetParameters() != nil {
+				extractors, err = transformutils.CreateRequestExtractors(params.Ctx, grpcDestinationSpec.GetParameters())
 				if err != nil {
 					return nil, err
 				}
@@ -217,28 +217,28 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 // returns package name
 func addHttpRulesToProto(upstream *v1.Upstream, currentsvc *grpcapi.ServiceSpec_GrpcService, set *descriptor.FileDescriptorSet) error {
-	for _, file := range set.File {
-		if file.Package == nil || *file.Package != currentsvc.PackageName {
+	for _, file := range set.GetFile() {
+		if file.Package == nil || file.GetPackage() != currentsvc.GetPackageName() {
 			continue
 		}
-		for _, svc := range file.Service {
-			if svc.Name == nil || *svc.Name != currentsvc.ServiceName {
+		for _, svc := range file.GetService() {
+			if svc.Name == nil || svc.GetName() != currentsvc.GetServiceName() {
 				continue
 			}
-			for _, method := range svc.Method {
-				fullServiceName := genFullServiceName(currentsvc.PackageName, currentsvc.ServiceName)
-				if method.Options == nil {
+			for _, method := range svc.GetMethod() {
+				fullServiceName := genFullServiceName(currentsvc.GetPackageName(), currentsvc.GetServiceName())
+				if method.GetOptions() == nil {
 					method.Options = &descriptor.MethodOptions{}
 				}
-				if err := proto.SetExtension(method.Options, annotations.E_Http, &annotations.HttpRule{
+				if err := proto.SetExtension(method.GetOptions(), annotations.E_Http, &annotations.HttpRule{
 					Pattern: &annotations.HttpRule_Post{
-						Post: httpPath(upstream, fullServiceName, *method.Name),
+						Post: httpPath(upstream, fullServiceName, method.GetName()),
 					},
 					Body: "*",
 				}); err != nil {
 					return errors.Wrap(err, "setting http extensions for method.Options")
 				}
-				log.Debugf("method.options: %v", *method.Options)
+				log.Debugf("method.options: %v", *method.GetOptions())
 			}
 		}
 	}
@@ -248,17 +248,17 @@ func addHttpRulesToProto(upstream *v1.Upstream, currentsvc *grpcapi.ServiceSpec_
 
 func addWellKnownProtos(descriptors *descriptor.FileDescriptorSet) {
 	var googleApiHttpFound, googleApiAnnotationsFound, googleApiDescriptorFound bool
-	for _, file := range descriptors.File {
-		log.Debugf("inspecting descriptor for proto file %v...", *file.Name)
-		if *file.Name == "google/api/http.proto" {
+	for _, file := range descriptors.GetFile() {
+		log.Debugf("inspecting descriptor for proto file %v...", file.GetName())
+		if file.GetName() == "google/api/http.proto" {
 			googleApiHttpFound = true
 			continue
 		}
-		if *file.Name == "google/api/annotations.proto" {
+		if file.GetName() == "google/api/annotations.proto" {
 			googleApiAnnotationsFound = true
 			continue
 		}
-		if *file.Name == "google/protobuf/descriptor.proto" {
+		if file.GetName() == "google/protobuf/descriptor.proto" {
 			googleApiDescriptorFound = true
 			continue
 		}
@@ -279,8 +279,8 @@ func addWellKnownProtos(descriptors *descriptor.FileDescriptorSet) {
 
 func httpPath(upstream *v1.Upstream, serviceName, methodName string) string {
 	h := sha1.New()
-	h.Write([]byte(upstream.Metadata.Namespace + upstream.Metadata.Name + serviceName))
-	return "/" + fmt.Sprintf("%x", h.Sum(nil))[:8] + "/" + upstream.Metadata.Name + "/" + serviceName + "/" + methodName
+	h.Write([]byte(upstream.GetMetadata().GetNamespace() + upstream.GetMetadata().GetName() + serviceName))
+	return "/" + fmt.Sprintf("%x", h.Sum(nil))[:8] + "/" + upstream.GetMetadata().GetName() + "/" + serviceName + "/" + methodName
 }
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
@@ -297,8 +297,8 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 			return nil, errors.Wrapf(err, "marshaling proto descriptor")
 		}
 		var fullServiceNames []string
-		for _, grpcsvc := range serviceAndDescriptor.Spec.GrpcServices {
-			fullName := genFullServiceName(grpcsvc.PackageName, grpcsvc.ServiceName)
+		for _, grpcsvc := range serviceAndDescriptor.Spec.GetGrpcServices() {
+			fullName := genFullServiceName(grpcsvc.GetPackageName(), grpcsvc.GetServiceName())
 			fullServiceNames = append(fullServiceNames, fullName)
 		}
 		filterConfig := &envoytranscoder.GrpcJsonTranscoder{

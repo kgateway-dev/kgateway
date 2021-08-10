@@ -21,7 +21,7 @@ func (m *Artifact) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	// Instead using "data" (which might be expensive in case of large config maps), always look at the resource version
-	if _, err = hasher.Write([]byte(m.Metadata.ResourceVersion)); err != nil {
+	if _, err = hasher.Write([]byte(m.GetMetadata().GetResourceVersion())); err != nil {
 		return 0, err
 	}
 

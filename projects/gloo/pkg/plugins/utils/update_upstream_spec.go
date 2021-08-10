@@ -9,46 +9,46 @@ import v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 func UpdateUpstream(original, desired *v1.Upstream) {
 
 	// do not override ssl and subset config if none specified by discovery
-	if desired.SslConfig == nil {
+	if desired.GetSslConfig() == nil {
 		desired.SslConfig = original.SslConfig
 	}
-	if desired.CircuitBreakers == nil {
+	if desired.GetCircuitBreakers() == nil {
 		desired.CircuitBreakers = original.CircuitBreakers
 	}
-	if desired.LoadBalancerConfig == nil {
+	if desired.GetLoadBalancerConfig() == nil {
 		desired.LoadBalancerConfig = original.LoadBalancerConfig
 	}
-	if desired.ConnectionConfig == nil {
+	if desired.GetConnectionConfig() == nil {
 		desired.ConnectionConfig = original.ConnectionConfig
 	}
-	if desired.Failover == nil {
+	if desired.GetFailover() == nil {
 		desired.Failover = original.Failover
 	}
-	if len(desired.HealthChecks) == 0 {
+	if len(desired.GetHealthChecks()) == 0 {
 		desired.HealthChecks = original.HealthChecks
 	}
-	if desired.OutlierDetection == nil {
+	if desired.GetOutlierDetection() == nil {
 		desired.OutlierDetection = original.OutlierDetection
 	}
-	if desired.UseHttp2 == nil {
+	if desired.GetUseHttp2() == nil {
 		desired.UseHttp2 = original.UseHttp2
 	}
 
-	if desired.InitialConnectionWindowSize == nil {
+	if desired.GetInitialConnectionWindowSize() == nil {
 		desired.InitialConnectionWindowSize = original.InitialConnectionWindowSize
 	}
 
-	if desired.InitialStreamWindowSize == nil {
+	if desired.GetInitialStreamWindowSize() == nil {
 		desired.InitialStreamWindowSize = original.InitialStreamWindowSize
 	}
 
-	if desired.HttpProxyHostname == nil {
+	if desired.GetHttpProxyHostname() == nil {
 		desired.HttpProxyHostname = original.HttpProxyHostname
 	}
 
-	if desiredSubsetMutator, ok := desired.UpstreamType.(v1.SubsetSpecMutator); ok {
+	if desiredSubsetMutator, ok := desired.GetUpstreamType().(v1.SubsetSpecMutator); ok {
 		if desiredSubsetMutator.GetSubsetSpec() == nil {
-			desiredSubsetMutator.SetSubsetSpec(original.UpstreamType.(v1.SubsetSpecGetter).GetSubsetSpec())
+			desiredSubsetMutator.SetSubsetSpec(original.GetUpstreamType().(v1.SubsetSpecGetter).GetSubsetSpec())
 		}
 	}
 

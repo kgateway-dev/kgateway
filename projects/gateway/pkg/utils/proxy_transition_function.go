@@ -6,12 +6,12 @@ import (
 )
 
 func TransitionFunction(original, desired *v1.Proxy) (bool, error) {
-	if len(original.Listeners) != len(desired.Listeners) {
+	if len(original.GetListeners()) != len(desired.GetListeners()) {
 		updateDesiredStatus(original, desired)
 		return true, nil
 	}
-	for i := range original.Listeners {
-		if !original.Listeners[i].Equal(desired.Listeners[i]) {
+	for i := range original.GetListeners() {
+		if !original.GetListeners()[i].Equal(desired.GetListeners()[i]) {
 			updateDesiredStatus(original, desired)
 			return true, nil
 		}

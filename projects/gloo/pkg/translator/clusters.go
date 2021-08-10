@@ -60,7 +60,7 @@ func (t *translatorInstance) computeCluster(
 	upstreamRefKeyToEndpoints map[string][]*v1.Endpoint,
 	reports reporter.ResourceReports,
 ) *envoy_config_cluster_v3.Cluster {
-	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.Metadata.Name)
+	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.GetMetadata().GetName())
 	out := t.initializeCluster(upstream, upstreamRefKeyToEndpoints, reports, &params.Snapshot.Secrets)
 
 	for _, plug := range t.plugins {
@@ -97,9 +97,9 @@ func (t *translatorInstance) initializeCluster(
 
 	circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()
 	out := &envoy_config_cluster_v3.Cluster{
-		Name:             UpstreamToClusterName(upstream.Metadata.Ref()),
+		Name:             UpstreamToClusterName(upstream.GetMetadata().Ref()),
 		Metadata:         new(envoy_config_core_v3.Metadata),
-		CircuitBreakers:  getCircuitBreakers(upstream.CircuitBreakers, circuitBreakers),
+		CircuitBreakers:  getCircuitBreakers(upstream.GetCircuitBreakers(), circuitBreakers),
 		LbSubsetConfig:   createLbConfig(upstream),
 		HealthChecks:     hcConfig,
 		OutlierDetection: detectCfg,
@@ -122,7 +122,7 @@ func (t *translatorInstance) initializeCluster(
 	}
 
 	// set Type = EDS if we have endpoints for the upstream
-	if eps, ok := upstreamRefKeyToEndpoints[upstream.Metadata.Ref().Key()]; ok && len(eps) > 0 {
+	if eps, ok := upstreamRefKeyToEndpoints[upstream.GetMetadata().Ref().Key()]; ok && len(eps) > 0 {
 		xds.SetEdsOnCluster(out, t.settings)
 	}
 	return out
@@ -147,10 +147,10 @@ func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*
 	result := make([]*envoy_config_core_v3.HealthCheck, 0, len(upstream.GetHealthChecks()))
 	for i, hc := range upstream.GetHealthChecks() {
 		// These values are required by envoy, but not explicitly
-		if hc.HealthyThreshold == nil {
+		if hc.GetHealthyThreshold() == nil {
 			return nil, NilFieldError(fmt.Sprintf("HealthCheck[%d].HealthyThreshold", i))
 		}
-		if hc.UnhealthyThreshold == nil {
+		if hc.GetUnhealthyThreshold() == nil {
 			return nil, NilFieldError(fmt.Sprintf("HealthCheck[%d].UnhealthyThreshold", i))
 		}
 		if hc.GetHealthChecker() == nil {
@@ -179,8 +179,8 @@ func convertDefaultSubset(defaultSubset *v1_options.Subset) *_struct.Struct {
 	if defaultSubset == nil {
 		return nil
 	}
-	subsetVals := make(map[string]interface{}, len(defaultSubset.Values))
-	for k, v := range defaultSubset.Values {
+	subsetVals := make(map[string]interface{}, len(defaultSubset.GetValues()))
+	for k, v := range defaultSubset.GetValues() {
 		subsetVals[k] = v
 	}
 	converted, err := _structpb.NewStruct(subsetVals)
@@ -214,13 +214,13 @@ func createLbConfig(upstream *v1.Upstream) *envoy_config_cluster_v3.Cluster_LbSu
 
 	subsetConfig := &envoy_config_cluster_v3.Cluster_LbSubsetConfig{
 		// when omitted, fallback policy defaults to ANY_ENDPOINT
-		FallbackPolicy: convertFallbackPolicy(glooSubsetConfig.FallbackPolicy),
-		DefaultSubset:  convertDefaultSubset(glooSubsetConfig.DefaultSubset),
+		FallbackPolicy: convertFallbackPolicy(glooSubsetConfig.GetFallbackPolicy()),
+		DefaultSubset:  convertDefaultSubset(glooSubsetConfig.GetDefaultSubset()),
 	}
 	for _, selector := range glooSubsetConfig.GetSelectors() {
 		subsetConfig.SubsetSelectors = append(subsetConfig.GetSubsetSelectors(), &envoy_config_cluster_v3.Cluster_LbSubsetConfig_LbSubsetSelector{
 			Keys:                selector.GetKeys(),
-			SingleHostPerSubset: selector.SingleHostPerSubset,
+			SingleHostPerSubset: selector.GetSingleHostPerSubset(),
 		})
 	}
 
@@ -277,7 +277,7 @@ func validateUpstreamLambdaFunctions(proxy *v1.Proxy, upstreams v1.UpstreamList,
 	for _, upstream := range upstreams {
 		lambdaFuncs := upstream.GetAws().GetLambdaFunctions()
 		for _, lambda := range lambdaFuncs {
-			upstreamRef := UpstreamToClusterName(upstream.Metadata.Ref())
+			upstreamRef := UpstreamToClusterName(upstream.GetMetadata().Ref())
 			if upstreamLambdas[upstreamRef] == nil {
 				upstreamLambdas[upstreamRef] = make(map[string]bool)
 			}

@@ -49,21 +49,21 @@ func Route(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Co
 
 func removeRoute(opts *options.Options) error {
 	index := int(opts.Remove.Route.RemoveIndex)
-	if opts.Metadata.Name == "" {
+	if opts.Metadata.GetName() == "" {
 		return errors.Errorf("name of the target virtual service cannot be empty")
 	}
 
-	vs, err := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace()).Read(opts.Metadata.Namespace, opts.Metadata.Name,
+	vs, err := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace()).Read(opts.Metadata.GetNamespace(), opts.Metadata.GetName(),
 		clients.ReadOpts{Ctx: opts.Top.Ctx})
 	if err != nil {
 		return errors.Wrapf(err, "reading vs %v", opts.Metadata.Ref())
 	}
 
-	if routeCount := len(vs.VirtualHost.Routes); index >= routeCount {
-		return errors.Errorf("%v is greater than the number of routes on %v (%v)", index, vs.Metadata.Ref(), routeCount)
+	if routeCount := len(vs.GetVirtualHost().GetRoutes()); index >= routeCount {
+		return errors.Errorf("%v is greater than the number of routes on %v (%v)", index, vs.GetMetadata().Ref(), routeCount)
 	}
 
-	vs.VirtualHost.Routes = append(vs.VirtualHost.Routes[:index], vs.VirtualHost.Routes[index+1:]...)
+	vs.GetVirtualHost().Routes = append(vs.GetVirtualHost().GetRoutes()[:index], vs.GetVirtualHost().GetRoutes()[index+1:]...)
 
 	out, err := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace()).Write(vs, clients.WriteOpts{
 		Ctx:               opts.Top.Ctx,
@@ -73,6 +73,6 @@ func removeRoute(opts *options.Options) error {
 		return errors.Wrapf(err, "writing updated vs")
 	}
 
-	_ = printers.PrintVirtualServices(opts.Top.Ctx, gatewayv1.VirtualServiceList{out}, opts.Top.Output, opts.Metadata.Namespace)
+	_ = printers.PrintVirtualServices(opts.Top.Ctx, gatewayv1.VirtualServiceList{out}, opts.Top.Output, opts.Metadata.GetNamespace())
 	return nil
 }

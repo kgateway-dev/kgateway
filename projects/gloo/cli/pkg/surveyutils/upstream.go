@@ -32,10 +32,10 @@ func getAwsInteractive(ctx context.Context, aws *options.InputAwsSpec) error {
 			return err
 		}
 		for _, secret := range secretList {
-			if _, ok := secret.Kind.(*v1.Secret_Aws); !ok {
+			if _, ok := secret.GetKind().(*v1.Secret_Aws); !ok {
 				continue
 			}
-			ref := secret.Metadata.Ref()
+			ref := secret.GetMetadata().Ref()
 			secretsByKey[ref.Key()] = ref
 			secretKeys = append(secretKeys, ref.Key())
 		}
@@ -75,10 +75,10 @@ func getAzureInteractive(ctx context.Context, azure *options.InputAzureSpec) err
 			return err
 		}
 		for _, secret := range secretList {
-			if _, ok := secret.Kind.(*v1.Secret_Azure); !ok {
+			if _, ok := secret.GetKind().(*v1.Secret_Azure); !ok {
 				continue
 			}
-			ref := secret.Metadata.Ref()
+			ref := secret.GetMetadata().Ref()
 			secretsByKey[ref.Key()] = ref
 			secretKeys = append(secretKeys, ref.Key())
 		}

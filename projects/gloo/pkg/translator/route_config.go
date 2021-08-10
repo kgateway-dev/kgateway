@@ -74,7 +74,7 @@ func (t *translatorInstance) computeVirtualHosts(
 	listener *v1.Listener,
 	httpListenerReport *validationapi.HttpListenerReport,
 ) []*envoy_config_route_v3.VirtualHost {
-	httpListener, ok := listener.ListenerType.(*v1.Listener_HttpListener)
+	httpListener, ok := listener.GetListenerType().(*v1.Listener_HttpListener)
 	if !ok {
 		return nil
 	}
@@ -88,7 +88,7 @@ func (t *translatorInstance) computeVirtualHosts(
 			Listener: listener,
 			Proxy:    proxy,
 		}
-		vhostReport := httpListenerReport.VirtualHostReports[i]
+		vhostReport := httpListenerReport.GetVirtualHostReports()[i]
 		envoyVirtualHosts = append(envoyVirtualHosts, t.computeVirtualHost(vhostParams, virtualHost, requireTls, vhostReport))
 	}
 	return envoyVirtualHosts
@@ -103,16 +103,16 @@ func (t *translatorInstance) computeVirtualHost(
 
 	// Make copy to avoid modifying the snapshot
 	virtualHost = proto.Clone(virtualHost).(*v1.VirtualHost)
-	virtualHost.Name = utils.SanitizeForEnvoy(params.Ctx, virtualHost.Name, "virtual host")
+	virtualHost.Name = utils.SanitizeForEnvoy(params.Ctx, virtualHost.GetName(), "virtual host")
 
 	var envoyRoutes []*envoy_config_route_v3.Route
-	for i, route := range virtualHost.Routes {
+	for i, route := range virtualHost.GetRoutes() {
 		routeParams := plugins.RouteParams{
 			VirtualHostParams: params,
 			VirtualHost:       virtualHost,
 		}
-		routeReport := vhostReport.RouteReports[i]
-		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.Name, i)
+		routeReport := vhostReport.GetRouteReports()[i]
+		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.GetName(), i)
 		computedRoutes := t.envoyRoutes(routeParams, routeReport, route, generatedName)
 		envoyRoutes = append(envoyRoutes, computedRoutes...)
 	}
@@ -127,7 +127,7 @@ func (t *translatorInstance) computeVirtualHost(
 	}
 
 	out := &envoy_config_route_v3.VirtualHost{
-		Name:       virtualHost.Name,
+		Name:       virtualHost.GetName(),
 		Domains:    domains,
 		Routes:     envoyRoutes,
 		RequireTls: envoyRequireTls,
@@ -143,7 +143,7 @@ func (t *translatorInstance) computeVirtualHost(
 			validation.AppendVirtualHostError(
 				vhostReport,
 				validationapi.VirtualHostReport_Error_ProcessingError,
-				fmt.Sprintf("invalid virtual host [%s]: %v", virtualHost.Name, err.Error()),
+				fmt.Sprintf("invalid virtual host [%s]: %v", virtualHost.GetName(), err.Error()),
 			)
 		}
 	}
@@ -173,9 +173,9 @@ func initRoutes(
 	routeReport *validationapi.RouteReport,
 	generatedName string,
 ) []*envoy_config_route_v3.Route {
-	out := make([]*envoy_config_route_v3.Route, len(in.Matchers))
+	out := make([]*envoy_config_route_v3.Route, len(in.GetMatchers()))
 
-	if len(in.Matchers) == 0 {
+	if len(in.GetMatchers()) == 0 {
 		out = []*envoy_config_route_v3.Route{
 			{
 				Match: &envoy_config_route_v3.RouteMatch{
@@ -185,8 +185,8 @@ func initRoutes(
 		}
 	}
 
-	for i, matcher := range in.Matchers {
-		if matcher.PathSpecifier == nil {
+	for i, matcher := range in.GetMatchers() {
+		if matcher.GetPathSpecifier() == nil {
 			validation.AppendRouteError(routeReport,
 				validationapi.RouteReport_Error_InvalidMatcherError,
 				"no path specifier provided",
@@ -197,8 +197,8 @@ func initRoutes(
 		out[i] = &envoy_config_route_v3.Route{
 			Match: &match,
 		}
-		if in.Name != "" {
-			out[i].Name = fmt.Sprintf("%s-%s-matcher-%d", generatedName, in.Name, i)
+		if in.GetName() != "" {
+			out[i].Name = fmt.Sprintf("%s-%s-matcher-%d", generatedName, in.GetName(), i)
 		} else {
 			out[i].Name = fmt.Sprintf("%s-matcher-%d", generatedName, i)
 		}
@@ -214,10 +214,10 @@ func GlooMatcherToEnvoyMatcher(ctx context.Context, matcher *matchers.Matcher) e
 		QueryParameters: envoyQueryMatcher(ctx, matcher.GetQueryParameters()),
 	}
 	if len(matcher.GetMethods()) > 0 {
-		match.Headers = append(match.Headers, &envoy_config_route_v3.HeaderMatcher{
+		match.Headers = append(match.GetHeaders(), &envoy_config_route_v3.HeaderMatcher{
 			Name: ":method",
 			HeaderMatchSpecifier: &envoy_config_route_v3.HeaderMatcher_SafeRegexMatch{
-				SafeRegexMatch: regexutils.NewRegex(ctx, strings.Join(matcher.Methods, "|")),
+				SafeRegexMatch: regexutils.NewRegex(ctx, strings.Join(matcher.GetMethods(), "|")),
 			},
 		})
 	}
@@ -234,7 +234,7 @@ func (t *translatorInstance) setAction(
 	in *v1.Route,
 	out *envoy_config_route_v3.Route,
 ) {
-	switch action := in.Action.(type) {
+	switch action := in.GetAction().(type) {
 	case *v1.Route_RouteAction:
 		if err := ValidateRouteDestinations(params.Snapshot, action.RouteAction); err != nil {
 			validation.AppendRouteWarning(routeReport,
@@ -246,7 +246,7 @@ func (t *translatorInstance) setAction(
 		out.Action = &envoy_config_route_v3.Route_Route{
 			Route: &envoy_config_route_v3.RouteAction{},
 		}
-		if err := t.setRouteAction(params, action.RouteAction, out.Action.(*envoy_config_route_v3.Route_Route).Route, routeReport, out.Name); err != nil {
+		if err := t.setRouteAction(params, action.RouteAction, out.GetAction().(*envoy_config_route_v3.Route_Route).Route, routeReport, out.GetName()); err != nil {
 			if isWarningErr(err) {
 				validation.AppendRouteWarning(routeReport,
 					validationapi.RouteReport_Warning_InvalidDestinationWarning,
@@ -256,7 +256,7 @@ func (t *translatorInstance) setAction(
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
 					err.Error(),
-					out.Name,
+					out.GetName(),
 				)
 			}
 		}
@@ -277,7 +277,7 @@ func (t *translatorInstance) setAction(
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
 					fmt.Sprintf("%T: %v", routePlugin, err.Error()),
-					out.Name,
+					out.GetName(),
 				)
 			}
 		}
@@ -300,7 +300,7 @@ func (t *translatorInstance) setAction(
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
 					err.Error(),
-					out.Name,
+					out.GetName(),
 				)
 			}
 		}
@@ -308,8 +308,8 @@ func (t *translatorInstance) setAction(
 	case *v1.Route_DirectResponseAction:
 		out.Action = &envoy_config_route_v3.Route_DirectResponse{
 			DirectResponse: &envoy_config_route_v3.DirectResponseAction{
-				Status: action.DirectResponseAction.Status,
-				Body:   DataSourceFromString(action.DirectResponseAction.Body),
+				Status: action.DirectResponseAction.GetStatus(),
+				Body:   DataSourceFromString(action.DirectResponseAction.GetBody()),
 			},
 		}
 
@@ -327,7 +327,7 @@ func (t *translatorInstance) setAction(
 				validation.AppendRouteError(routeReport,
 					validationapi.RouteReport_Error_ProcessingError,
 					fmt.Sprintf("%T: %v", routePlugin, err.Error()),
-					out.Name,
+					out.GetName(),
 				)
 			}
 		}
@@ -335,20 +335,20 @@ func (t *translatorInstance) setAction(
 	case *v1.Route_RedirectAction:
 		out.Action = &envoy_config_route_v3.Route_Redirect{
 			Redirect: &envoy_config_route_v3.RedirectAction{
-				HostRedirect:           action.RedirectAction.HostRedirect,
-				ResponseCode:           envoy_config_route_v3.RedirectAction_RedirectResponseCode(action.RedirectAction.ResponseCode),
-				SchemeRewriteSpecifier: &envoy_config_route_v3.RedirectAction_HttpsRedirect{HttpsRedirect: action.RedirectAction.HttpsRedirect},
-				StripQuery:             action.RedirectAction.StripQuery,
+				HostRedirect:           action.RedirectAction.GetHostRedirect(),
+				ResponseCode:           envoy_config_route_v3.RedirectAction_RedirectResponseCode(action.RedirectAction.GetResponseCode()),
+				SchemeRewriteSpecifier: &envoy_config_route_v3.RedirectAction_HttpsRedirect{HttpsRedirect: action.RedirectAction.GetHttpsRedirect()},
+				StripQuery:             action.RedirectAction.GetStripQuery(),
 			},
 		}
 
-		switch pathRewrite := action.RedirectAction.PathRewriteSpecifier.(type) {
+		switch pathRewrite := action.RedirectAction.GetPathRewriteSpecifier().(type) {
 		case *v1.RedirectAction_PathRedirect:
-			out.Action.(*envoy_config_route_v3.Route_Redirect).Redirect.PathRewriteSpecifier = &envoy_config_route_v3.RedirectAction_PathRedirect{
+			out.GetAction().(*envoy_config_route_v3.Route_Redirect).Redirect.PathRewriteSpecifier = &envoy_config_route_v3.RedirectAction_PathRedirect{
 				PathRedirect: pathRewrite.PathRedirect,
 			}
 		case *v1.RedirectAction_PrefixRewrite:
-			out.Action.(*envoy_config_route_v3.Route_Redirect).Redirect.PathRewriteSpecifier = &envoy_config_route_v3.RedirectAction_PrefixRewrite{
+			out.GetAction().(*envoy_config_route_v3.Route_Redirect).Redirect.PathRewriteSpecifier = &envoy_config_route_v3.RedirectAction_PrefixRewrite{
 				PrefixRewrite: pathRewrite.PrefixRewrite,
 			}
 		}
@@ -356,7 +356,7 @@ func (t *translatorInstance) setAction(
 }
 
 func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.RouteAction, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport, routeName string) error {
-	switch dest := in.Destination.(type) {
+	switch dest := in.GetDestination().(type) {
 	case *v1.RouteAction_Single:
 		usRef, err := usconversion.DestinationToUpstreamRef(dest.Single)
 		if err != nil {
@@ -373,7 +373,7 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 		return t.setWeightedClusters(params, dest.Multi, out, routeReport, routeName)
 	case *v1.RouteAction_UpstreamGroup:
 		upstreamGroupRef := dest.UpstreamGroup
-		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
+		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.GetNamespace(), upstreamGroupRef.GetName())
 		if err != nil {
 			// the UpstreamGroup isn't found but set a bogus cluster so route replacement will still work
 			out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
@@ -382,7 +382,7 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 			return pluginutils.NewUpstreamGroupNotFoundErr(*upstreamGroupRef)
 		}
 		md := &v1.MultiDestination{
-			Destinations: upstreamGroup.Destinations,
+			Destinations: upstreamGroup.GetDestinations(),
 		}
 		return t.setWeightedClusters(params, md, out, routeReport, routeName)
 	case *v1.RouteAction_ClusterHeader:
@@ -396,7 +396,7 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 }
 
 func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, multiDest *v1.MultiDestination, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport, routeName string) error {
-	if len(multiDest.Destinations) == 0 {
+	if len(multiDest.GetDestinations()) == 0 {
 		return NoDestinationSpecifiedError
 	}
 
@@ -405,9 +405,9 @@ func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, mul
 	}
 
 	var totalWeight uint32
-	for _, weightedDest := range multiDest.Destinations {
+	for _, weightedDest := range multiDest.GetDestinations() {
 
-		usRef, err := usconversion.DestinationToUpstreamRef(weightedDest.Destination)
+		usRef, err := usconversion.DestinationToUpstreamRef(weightedDest.GetDestination())
 		if err != nil {
 			return err
 		}
@@ -416,8 +416,8 @@ func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, mul
 
 		weightedCluster := &envoy_config_route_v3.WeightedCluster_ClusterWeight{
 			Name:          UpstreamToClusterName(usRef),
-			Weight:        &wrappers.UInt32Value{Value: weightedDest.Weight},
-			MetadataMatch: getSubsetMatch(weightedDest.Destination),
+			Weight:        &wrappers.UInt32Value{Value: weightedDest.GetWeight()},
+			MetadataMatch: getSubsetMatch(weightedDest.GetDestination()),
 		}
 
 		// run the plugins for Weighted Destinations
@@ -435,9 +435,9 @@ func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, mul
 			}
 		}
 
-		clusterSpecifier.WeightedClusters.Clusters = append(clusterSpecifier.WeightedClusters.Clusters, weightedCluster)
+		clusterSpecifier.WeightedClusters.Clusters = append(clusterSpecifier.WeightedClusters.GetClusters(), weightedCluster)
 
-		if err = checkThatSubsetMatchesUpstream(params.Params, weightedDest.Destination); err != nil {
+		if err = checkThatSubsetMatchesUpstream(params.Params, weightedDest.GetDestination()); err != nil {
 			return err
 		}
 	}
@@ -454,8 +454,8 @@ func getSubsetMatch(destination *v1.Destination) *envoy_config_core_v3.Metadata 
 
 	// TODO(yuval-k): should we add validation that the route subset indeed exists in the upstream?
 	// First convert the subset information on the base destination, if present
-	if destination.Subset != nil {
-		routeMetadata = getLbMetadata(nil, destination.Subset.Values, "")
+	if destination.GetSubset() != nil {
+		routeMetadata = getLbMetadata(nil, destination.GetSubset().GetValues(), "")
 	}
 	return routeMetadata
 }
@@ -463,20 +463,20 @@ func getSubsetMatch(destination *v1.Destination) *envoy_config_core_v3.Metadata 
 func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination) error {
 
 	// make sure we have a subset config on the route
-	if dest.Subset == nil {
+	if dest.GetSubset() == nil {
 		return nil
 	}
-	if len(dest.Subset.Values) == 0 {
+	if len(dest.GetSubset().GetValues()) == 0 {
 		return nil
 	}
-	routeSubset := dest.Subset.Values
+	routeSubset := dest.GetSubset().Values
 
 	ref, err := usconversion.DestinationToUpstreamRef(dest)
 	if err != nil {
 		return err
 	}
 
-	upstream, err := params.Snapshot.Upstreams.Find(ref.Namespace, ref.Name)
+	upstream, err := params.Snapshot.Upstreams.Find(ref.GetNamespace(), ref.GetName())
 	if err != nil {
 		return pluginutils.NewUpstreamNotFoundErr(*ref)
 	}
@@ -491,7 +491,7 @@ func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination)
 	// make sure that the subset on the route will match a subset on the upstream.
 	found := false
 Outerloop:
-	for _, subset := range subsetConfig.Selectors {
+	for _, subset := range subsetConfig.GetSelectors() {
 		keys := subset.Keys
 		if len(keys) != len(routeSubset) {
 			continue
@@ -514,7 +514,7 @@ Outerloop:
 
 func getSubsets(upstream *v1.Upstream) *v1plugins.SubsetSpec {
 
-	specGetter, ok := upstream.UpstreamType.(v1.SubsetSpecGetter)
+	specGetter, ok := upstream.GetUpstreamType().(v1.SubsetSpecGetter)
 	if !ok {
 		return nil
 	}
@@ -553,13 +553,13 @@ func envoyHeaderMatcher(ctx context.Context, in []*matchers.HeaderMatcher) []*en
 				PresentMatch: true,
 			}
 		} else {
-			if matcher.Regex {
+			if matcher.GetRegex() {
 				envoyMatch.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_SafeRegexMatch{
-					SafeRegexMatch: regexutils.NewRegex(ctx, matcher.Value),
+					SafeRegexMatch: regexutils.NewRegex(ctx, matcher.GetValue()),
 				}
 			} else {
 				envoyMatch.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_ExactMatch{
-					ExactMatch: matcher.Value,
+					ExactMatch: matcher.GetValue(),
 				}
 			}
 		}
@@ -580,7 +580,7 @@ func envoyQueryMatcher(ctx context.Context, in []*matchers.QueryParameterMatcher
 			Name: matcher.GetName(),
 		}
 
-		if matcher.Value == "" {
+		if matcher.GetValue() == "" {
 			envoyMatch.QueryParameterMatchSpecifier = &envoy_config_route_v3.QueryParameterMatcher_PresentMatch{
 				PresentMatch: true,
 			}
@@ -589,7 +589,7 @@ func envoyQueryMatcher(ctx context.Context, in []*matchers.QueryParameterMatcher
 				envoyMatch.QueryParameterMatchSpecifier = &envoy_config_route_v3.QueryParameterMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher_v3.StringMatcher{
 						MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{
-							SafeRegex: regexutils.NewRegex(ctx, matcher.Value),
+							SafeRegex: regexutils.NewRegex(ctx, matcher.GetValue()),
 						},
 					},
 				}
@@ -597,7 +597,7 @@ func envoyQueryMatcher(ctx context.Context, in []*matchers.QueryParameterMatcher
 				envoyMatch.QueryParameterMatchSpecifier = &envoy_config_route_v3.QueryParameterMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher_v3.StringMatcher{
 						MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{
-							Exact: matcher.Value,
+							Exact: matcher.GetValue(),
 						},
 					},
 				}
@@ -615,17 +615,17 @@ func ValidateVirtualHostDomains(virtualHosts []*v1.VirtualHost, httpListenerRepo
 	// if len(domainsToVirtualHosts[domain]) > 1, it's an error
 	domainsToVirtualHosts := make(map[string][]int)
 	for i, vHost := range virtualHosts {
-		if len(vHost.Domains) == 0 {
+		if len(vHost.GetDomains()) == 0 {
 			// default virtualhost
 			domainsToVirtualHosts["*"] = append(domainsToVirtualHosts["*"], i)
 		}
-		for _, domain := range vHost.Domains {
+		for _, domain := range vHost.GetDomains() {
 			if domain == "" {
-				vhostReport := httpListenerReport.VirtualHostReports[i]
+				vhostReport := httpListenerReport.GetVirtualHostReports()[i]
 				validation.AppendVirtualHostError(
 					vhostReport,
 					validationapi.VirtualHostReport_Error_EmptyDomainError,
-					fmt.Sprintf("virtual host %s has an empty domain", vHost.Name),
+					fmt.Sprintf("virtual host %s has an empty domain", vHost.GetName()),
 				)
 			}
 			domainsToVirtualHosts[domain] = append(domainsToVirtualHosts[domain], i)
@@ -637,12 +637,12 @@ func ValidateVirtualHostDomains(virtualHosts []*v1.VirtualHost, httpListenerRepo
 			var vHostNames []string
 			// collect names of all vhosts with the domain
 			for _, vHost := range vHosts {
-				vHostNames = append(vHostNames, virtualHosts[vHost].Name)
+				vHostNames = append(vHostNames, virtualHosts[vHost].GetName())
 			}
 
 			// append errors for this vhost
 			for _, vHost := range vHosts {
-				vhostReport := httpListenerReport.VirtualHostReports[vHost]
+				vhostReport := httpListenerReport.GetVirtualHostReports()[vHost]
 				validation.AppendVirtualHostError(
 					vhostReport,
 					validationapi.VirtualHostReport_Error_DomainsNotUniqueError,
@@ -657,11 +657,11 @@ func ValidateVirtualHostDomains(virtualHosts []*v1.VirtualHost, httpListenerRepo
 func ValidateRouteDestinations(snap *v1.ApiSnapshot, action *v1.RouteAction) error {
 	upstreams := snap.Upstreams
 	// make sure the destination itself has the right structure
-	switch dest := action.Destination.(type) {
+	switch dest := action.GetDestination().(type) {
 	case *v1.RouteAction_Single:
 		return validateSingleDestination(upstreams, dest.Single)
 	case *v1.RouteAction_Multi:
-		return validateMultiDestination(upstreams, dest.Multi.Destinations)
+		return validateMultiDestination(upstreams, dest.Multi.GetDestinations())
 	case *v1.RouteAction_UpstreamGroup:
 		return validateUpstreamGroup(snap, dest.UpstreamGroup)
 	// Cluster Header can not be validated because the cluster name is not provided till runtime
@@ -674,11 +674,11 @@ func ValidateRouteDestinations(snap *v1.ApiSnapshot, action *v1.RouteAction) err
 func ValidateTcpRouteDestinations(snap *v1.ApiSnapshot, action *v1.TcpHost_TcpAction) error {
 	upstreams := snap.Upstreams
 	// make sure the destination itself has the right structure
-	switch dest := action.Destination.(type) {
+	switch dest := action.GetDestination().(type) {
 	case *v1.TcpHost_TcpAction_Single:
 		return validateSingleDestination(upstreams, dest.Single)
 	case *v1.TcpHost_TcpAction_Multi:
-		return validateMultiDestination(upstreams, dest.Multi.Destinations)
+		return validateMultiDestination(upstreams, dest.Multi.GetDestinations())
 	case *v1.TcpHost_TcpAction_UpstreamGroup:
 		return validateUpstreamGroup(snap, dest.UpstreamGroup)
 	case *v1.TcpHost_TcpAction_ForwardSniClusterName:
@@ -689,13 +689,13 @@ func ValidateTcpRouteDestinations(snap *v1.ApiSnapshot, action *v1.TcpHost_TcpAc
 
 func validateUpstreamGroup(snap *v1.ApiSnapshot, ref *core.ResourceRef) error {
 
-	upstreamGroup, err := snap.UpstreamGroups.Find(ref.Namespace, ref.Name)
+	upstreamGroup, err := snap.UpstreamGroups.Find(ref.GetNamespace(), ref.GetName())
 	if err != nil {
 		return pluginutils.NewUpstreamGroupNotFoundErr(*ref)
 	}
 	upstreams := snap.Upstreams
 
-	err = validateMultiDestination(upstreams, upstreamGroup.Destinations)
+	err = validateMultiDestination(upstreams, upstreamGroup.GetDestinations())
 	if err != nil {
 		return err
 	}
@@ -704,7 +704,7 @@ func validateUpstreamGroup(snap *v1.ApiSnapshot, ref *core.ResourceRef) error {
 
 func validateMultiDestination(upstreams []*v1.Upstream, destinations []*v1.WeightedDestination) error {
 	for _, dest := range destinations {
-		if err := validateSingleDestination(upstreams, dest.Destination); err != nil {
+		if err := validateSingleDestination(upstreams, dest.GetDestination()); err != nil {
 			return errors.Wrap(err, "invalid destination in weighted destination list")
 		}
 	}
@@ -735,7 +735,7 @@ func validateClusterHeader(header string) error {
 
 func validateListenerSslConfig(params plugins.Params, listener *v1.Listener) error {
 	sslCfgTranslator := utils.NewSslConfigTranslator()
-	for _, ssl := range listener.SslConfigurations {
+	for _, ssl := range listener.GetSslConfigurations() {
 		if _, err := sslCfgTranslator.ResolveDownstreamSslConfig(params.Snapshot.Secrets, ssl); err != nil {
 			return err
 		}

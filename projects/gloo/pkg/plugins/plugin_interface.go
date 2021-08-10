@@ -129,10 +129,10 @@ func (s StagedListenerFilterList) Less(i, j int) bool {
 	case 1:
 		return false
 	}
-	if s[i].ListenerFilter.Name < s[j].ListenerFilter.Name {
+	if s[i].ListenerFilter.GetName() < s[j].ListenerFilter.GetName() {
 		return true
 	}
-	if s[i].ListenerFilter.Name > s[j].ListenerFilter.Name {
+	if s[i].ListenerFilter.GetName() > s[j].ListenerFilter.GetName() {
 		return false
 	}
 	if s[i].ListenerFilter.String() < s[j].ListenerFilter.String() {
@@ -184,7 +184,7 @@ func (s StagedHttpFilterList) Less(i, j int) bool {
 		return compare < 0
 	}
 
-	if compare := strings.Compare(s[i].HttpFilter.Name, s[j].HttpFilter.Name); compare != 0 {
+	if compare := strings.Compare(s[i].HttpFilter.GetName(), s[j].HttpFilter.GetName()); compare != 0 {
 		return compare < 0
 	}
 

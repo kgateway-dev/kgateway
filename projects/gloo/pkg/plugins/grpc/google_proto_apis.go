@@ -27,18 +27,18 @@ func init() {
 }
 
 func addGoogleApisDescriptor(set *descriptor.FileDescriptorSet) {
-	set.File = append([]*descriptor.FileDescriptorProto{&descriptorsDescriptor}, set.File...)
+	set.File = append([]*descriptor.FileDescriptorProto{&descriptorsDescriptor}, set.GetFile()...)
 }
 
 func addGoogleApisHttp(set *descriptor.FileDescriptorSet) {
-	set.File = append([]*descriptor.FileDescriptorProto{&httpDescriptor}, set.File...)
+	set.File = append([]*descriptor.FileDescriptorProto{&httpDescriptor}, set.GetFile()...)
 }
 
 func addGoogleApisAnnotations(packageName string, set *descriptor.FileDescriptorSet) {
-	for _, file := range set.File {
-		if *file.Package == packageName {
-			file.Dependency = append(file.Dependency, "google/api/annotations.proto")
+	for _, file := range set.GetFile() {
+		if file.GetPackage() == packageName {
+			file.Dependency = append(file.GetDependency(), "google/api/annotations.proto")
 		}
 	}
-	set.File = append([]*descriptor.FileDescriptorProto{&annotationsDescriptor}, set.File...)
+	set.File = append([]*descriptor.FileDescriptorProto{&annotationsDescriptor}, set.GetFile()...)
 }

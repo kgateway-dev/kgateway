@@ -16,10 +16,10 @@ func ValidateHCMUpgradeConfigs(upgradeConfigs []*envoyhttp.HttpConnectionManager
 	var multiErr *multierror.Error
 
 	for _, config := range upgradeConfigs {
-		if _, ok := uniqConfigs[config.UpgradeType]; ok {
-			multiErr = multierror.Append(multiErr, errors.Errorf("upgrade config %s is not unique", config.UpgradeType))
+		if _, ok := uniqConfigs[config.GetUpgradeType()]; ok {
+			multiErr = multierror.Append(multiErr, errors.Errorf("upgrade config %s is not unique", config.GetUpgradeType()))
 		}
-		uniqConfigs[config.UpgradeType] = true
+		uniqConfigs[config.GetUpgradeType()] = true
 	}
 	return multiErr.ErrorOrNil()
 }
@@ -29,10 +29,10 @@ func ValidateRouteUpgradeConfigs(upgradeConfigs []*envoy_config_route_v3.RouteAc
 	var multiErr *multierror.Error
 
 	for _, config := range upgradeConfigs {
-		if _, ok := uniqConfigs[config.UpgradeType]; ok {
-			multiErr = multierror.Append(multiErr, errors.Errorf("upgrade config %s is not unique", config.UpgradeType))
+		if _, ok := uniqConfigs[config.GetUpgradeType()]; ok {
+			multiErr = multierror.Append(multiErr, errors.Errorf("upgrade config %s is not unique", config.GetUpgradeType()))
 		}
-		uniqConfigs[config.UpgradeType] = true
+		uniqConfigs[config.GetUpgradeType()] = true
 	}
 	return multiErr.ErrorOrNil()
 }

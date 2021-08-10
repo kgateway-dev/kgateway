@@ -8,7 +8,7 @@ import (
 
 func EnvoySingleEndpointLoadAssignment(out *envoy_config_cluster_v3.Cluster, address string, port uint32) {
 	out.LoadAssignment = &envoy_config_endpoint_v3.ClusterLoadAssignment{
-		ClusterName: out.Name,
+		ClusterName: out.GetName(),
 		Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
 			{
 				LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{

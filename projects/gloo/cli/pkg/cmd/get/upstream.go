@@ -22,7 +22,7 @@ func Upstream(opts *options.Options) *cobra.Command {
 			}
 			var xdsDump *xdsinspection.XdsDump
 			if opts.Top.Output == printers.WIDE {
-				xdsDump, err = xdsinspection.GetGlooXdsDump(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.Namespace, false)
+				xdsDump, err = xdsinspection.GetGlooXdsDump(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.GetNamespace(), false)
 				if err != nil {
 					return err
 				}

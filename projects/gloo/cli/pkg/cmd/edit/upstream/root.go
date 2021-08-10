@@ -72,13 +72,13 @@ func addEditUpstreamInteractiveFlags(opts *EditUpstream) error {
 
 func editUpstream(opts *options.EditOptions, optsExt *EditUpstream, args []string) error {
 	upClient := helpers.MustNamespacedUpstreamClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
-	up, err := upClient.Read(opts.Metadata.Namespace, opts.Metadata.Name, clients.ReadOpts{})
+	up, err := upClient.Read(opts.Metadata.GetNamespace(), opts.Metadata.GetName(), clients.ReadOpts{})
 	if err != nil {
 		return errors.Wrapf(err, "Error reading upstream")
 	}
 
 	if opts.ResourceVersion != "" {
-		if up.Metadata.ResourceVersion != opts.ResourceVersion {
+		if up.GetMetadata().GetResourceVersion() != opts.ResourceVersion {
 			return fmt.Errorf("conflict - resource version does not match")
 		}
 	}
@@ -86,22 +86,22 @@ func editUpstream(opts *options.EditOptions, optsExt *EditUpstream, args []strin
 	if optsExt.Remove {
 		up.SslConfig = nil
 	} else {
-		if up.SslConfig == nil {
+		if up.GetSslConfig() == nil {
 			up.SslConfig = &gloov1.UpstreamSslConfig{}
 		}
 
-		hasBoth := (optsExt.SslSecretRef.Name != "") && (optsExt.SslSecretRef.Namespace != "")
-		hasNone := (optsExt.SslSecretRef.Name == "") && (optsExt.SslSecretRef.Namespace == "")
+		hasBoth := (optsExt.SslSecretRef.GetName() != "") && (optsExt.SslSecretRef.GetNamespace() != "")
+		hasNone := (optsExt.SslSecretRef.GetName() == "") && (optsExt.SslSecretRef.GetNamespace() == "")
 
 		if hasBoth {
-			up.SslConfig.SslSecrets = &gloov1.UpstreamSslConfig_SecretRef{
+			up.GetSslConfig().SslSecrets = &gloov1.UpstreamSslConfig_SecretRef{
 				SecretRef: &optsExt.SslSecretRef,
 			}
 		} else if !hasNone {
 			return fmt.Errorf("both --ssl-secret-name and --ssl-secret-namespace must be provided")
 		}
 		if optsExt.Sni != "" {
-			up.SslConfig.Sni = optsExt.Sni
+			up.GetSslConfig().Sni = optsExt.Sni
 		}
 	}
 	_, err = upClient.Write(up, clients.WriteOpts{OverwriteExisting: true})
