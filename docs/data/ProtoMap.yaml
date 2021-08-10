@@ -167,6 +167,9 @@ apis:
   enterprise.gloo.solo.io.PassThroughGrpc:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#PassThroughGrpc
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.PassThroughHttp:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#PassThroughHttp
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.RedisOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#RedisOptions
     package: enterprise.gloo.solo.io

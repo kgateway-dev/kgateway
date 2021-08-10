@@ -52,6 +52,9 @@ weight: 5
 - [ConnectionPool](#connectionpool)
 - [PassThroughAuth](#passthroughauth)
 - [PassThroughGrpc](#passthroughgrpc)
+- [PassThroughHttp](#passthroughhttp)
+- [Request](#request)
+- [Response](#response)
 - [ExtAuthConfig](#extauthconfig)
 - [OAuthConfig](#oauthconfig)
 - [OidcAuthorizationCodeConfig](#oidcauthorizationcodeconfig)
@@ -261,8 +264,8 @@ Describes the transport protocol version to use when connecting to the ext auth 
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `allowedUpstreamHeaders` | `[]string` | When this is set, authorization response headers that have a will be added to the original client request and sent to the upstream. Note that coexistent headers will be overridden. |
-| `allowedClientHeaders` | `[]string` | When this. is set, authorization response headers that will be added to the client's response when auth request is denied. Note that when this list is *not* set, all the authorization response headers, except *Authority (Host)* will be in the response to the client. When a header is included in this list, *Path*, *Status*, *Content-Length*, *WWW-Authenticate* and *Location* are automatically added. |
+| `allowedUpstreamHeaders` | `[]string` | When this is set, authorization response headers that have a header in this list will be added to the original client request and sent to the upstream. Note that coexistent headers will be overridden. |
+| `allowedClientHeaders` | `[]string` | When this is set, authorization response headers in this list will be added to the client's response when the auth request is denied. Note that when this list is *not* set, all the authorization response headers, except *Authority (Host)* will be in the response to the client. When a header is included in this list, *Path*, *Status*, *Content-Length*, *WWW-Authenticate* and *Location* are automatically added. |
 
 
 
@@ -1002,13 +1005,15 @@ Authorizes requests by querying a custom extauth server.
 
 ```yaml
 "grpc": .enterprise.gloo.solo.io.PassThroughGrpc
+"http": .enterprise.gloo.solo.io.PassThroughHttp
 "config": .google.protobuf.Struct
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `grpc` | [.enterprise.gloo.solo.io.PassThroughGrpc](../extauth.proto.sk/#passthroughgrpc) |  |
+| `grpc` | [.enterprise.gloo.solo.io.PassThroughGrpc](../extauth.proto.sk/#passthroughgrpc) |  Only one of `grpc` or `http` can be set. |
+| `http` | [.enterprise.gloo.solo.io.PassThroughHttp](../extauth.proto.sk/#passthroughhttp) |  Only one of `http` or `grpc` can be set. |
 | `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Custom config to be passed per request to the passthrough auth service. |
 
 
@@ -1032,6 +1037,92 @@ https://github.com/envoyproxy/envoy/blob/ae1ed1fa74f096dabe8dd5b19fc70333621b030
 | ----- | ---- | ----------- | 
 | `address` | `string` | Address of the auth server to query. Should be in the form ADDRESS:PORT, e.g. `default.svc.cluster.local:389`. |
 | `connectionTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the auth server to respond. Defaults to 5s. |
+
+
+
+
+---
+### PassThroughHttp
+
+ 
+Authorizes requests by making a POST HTTP/1 request to a custom HTTP auth server
+Assumes the request is authorized if the server returns a OK (200) status code,
+else the request is unauthorized.
+
+```yaml
+"url": string
+"request": .enterprise.gloo.solo.io.PassThroughHttp.Request
+"response": .enterprise.gloo.solo.io.PassThroughHttp.Response
+"connectionTimeout": .google.protobuf.Duration
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `url` | `string` | Required: URL of the passthrough http service, is a fully qualified domain name. Example: http://ext-auth-service.svc.local:9001. Path provided in the URL will be respected. To use https, provide the cert in the HTTPS_PASSTHROUGH_CA_CERT environment variable to the ext-auth-service pod as a base64-encoded string. |
+| `request` | [.enterprise.gloo.solo.io.PassThroughHttp.Request](../extauth.proto.sk/#request) |  |
+| `response` | [.enterprise.gloo.solo.io.PassThroughHttp.Response](../extauth.proto.sk/#response) |  |
+| `connectionTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the auth server to respond. Defaults to 5s. |
+
+
+
+
+---
+### Request
+
+ 
+The passthrough http request can be configured to pass through the incoming request body,
+the ext-auth state (which is shared between different auth methods within one ext-auth instance), and
+the [filterMetadata](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/data_sharing_between_filters#metadata)
+The body of the passthrough auth request will be a JSON as follows:
+{
+"body" : string,
+"state": object (map[string]interface{}),
+"filterMetadata": object (map[string]protobuf.Struct),
+"config": object (protobuf.Struct),
+}
+`config` is the struct block specified under the passthrough auth configuration.
+If `passthrough_body`, `passthrough_state`, `passthrough_filter_metadata`, and `config` are all false/nil,
+the body of the auth request will remain empty. Setting any of these will increase latency slightly due to
+JSON marshalling.
+
+```yaml
+"allowedHeaders": []string
+"headersToAdd": map<string, string>
+"passThroughState": bool
+"passThroughFilterMetadata": bool
+"passThroughBody": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `allowedHeaders` | `[]string` | These headers will be copied from the incoming request to the request going to the auth server. By default, no headers are copied from the incoming request. Pseudo-headers such as `:Path`, and `:Method` can not be specified here. |
+| `headersToAdd` | `map<string, string>` | These headers that will be included to the request to authorization service. Note that client request of the same key will be overridden. Pseudo-headers such as `:Path`, and `:Method` can not be specified here. |
+| `passThroughState` | `bool` | Whether or not to include the ext-auth state object in the passthrough request body. If this is set to true, it is expected that the state is returned in the HTTP response from the passthrough service. The state received from the response will be the state that is shared with other ext-auth service methods. If pass_through_body, pass_through_filter_metadata and pass_through_state are false, the authorization request body will be empty. A non-empty body will increase latency times slightly, so this is set to false by default, and should only be set to to true if the extauth state is needed in the auth request. |
+| `passThroughFilterMetadata` | `bool` | Whether or not to include the filter metadata in the passthrough request body. If pass_through_body, pass_through_filter_metadata and pass_through_state are false, the authorization request body will be empty. A non-empty body will increase latency times slightly, so this is set to false by default, and should only be set to to true if the filter metadata is needed in the auth request. |
+| `passThroughBody` | `bool` | Whether or not to include the body in the passthrough request body. If pass_through_body, pass_through_filter_metadata and pass_through_state are false, the authorization request body will be empty. A non-empty body will increase latency times slightly, so this is set to false by default, and should only be set to to true if the request body is needed in the auth request. |
+
+
+
+
+---
+### Response
+
+
+
+```yaml
+"allowedUpstreamHeaders": []string
+"allowedClientHeadersOnDenied": []string
+"readStateFromResponse": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `allowedUpstreamHeaders` | `[]string` | When this is set, authorization response headers that have a header in this list will be added to the original client request and sent to the upstream when the auth request is successful. These will be appended to any request headers that already exist. If this is empty, by default, no authorization response headers will be added to the upstream request. |
+| `allowedClientHeadersOnDenied` | `[]string` | When this is set, authorization response headers in this list will be added to the client's response when the auth request is denied. If the response header already exists, it will replace the response header. If this is empty, by default, no authorization response headers will be added to the client response. |
+| `readStateFromResponse` | `bool` | If this is set to true, the body of the response from the http passthrough auth server is expected to have shape { "state": object (map[string]interface{}) } The state will be marshalled from the response body and this is the state that will be passed on to other auth configs. Because of the marshalling from JSON to Go map, this will add some latency to the request. If the marshalling fails, the authorization check will fail and the request will be unauthorized after the ext-auth-service pod logs the marshal error. |
 
 
 
