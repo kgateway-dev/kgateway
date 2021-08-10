@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	time "time"
 
 	enterprisegloosoloiov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/apis/enterprise.gloo.solo.io/v1"
@@ -61,13 +62,13 @@ func NewFilteredAuthConfigInformer(client versioned.Interface, namespace string,
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EnterpriseV1().AuthConfigs(namespace).List(options)
+				return client.EnterpriseV1().AuthConfigs(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EnterpriseV1().AuthConfigs(namespace).Watch(options)
+				return client.EnterpriseV1().AuthConfigs(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&enterprisegloosoloiov1.AuthConfig{},

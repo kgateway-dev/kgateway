@@ -44,11 +44,11 @@ func editRoute(opts *editRouteOptions.RouteEditInput) error {
 			return err
 		}
 		ratelimitRouteExtension = ratelimitRouteExtensionProto.(*ratelimitpb.RateLimitRouteExtension)
-		if route.Options == nil {
+		if route.GetOptions() == nil {
 			route.Options = &gloov1.RouteOptions{}
 		}
 
-		route.Options.RateLimitConfigType = &gloov1.RouteOptions_Ratelimit{Ratelimit: ratelimitRouteExtension}
+		route.GetOptions().RateLimitConfigType = &gloov1.RouteOptions_Ratelimit{Ratelimit: ratelimitRouteExtension}
 		return nil
 	})
 }

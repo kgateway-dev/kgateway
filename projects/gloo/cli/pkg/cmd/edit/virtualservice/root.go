@@ -74,13 +74,13 @@ func addEditVirtualServiceInteractiveFlags(opts *EditVirtualService) error {
 
 func editVirtualService(opts *options.EditOptions, optsExt *EditVirtualService, args []string) error {
 	vsClient := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
-	vs, err := vsClient.Read(opts.Metadata.Namespace, opts.Metadata.Name, clients.ReadOpts{})
+	vs, err := vsClient.Read(opts.Metadata.GetNamespace(), opts.Metadata.GetName(), clients.ReadOpts{})
 	if err != nil {
 		return errors.Wrapf(err, "Error reading virtual service")
 	}
 
 	if opts.ResourceVersion != "" {
-		if vs.Metadata.ResourceVersion != opts.ResourceVersion {
+		if vs.GetMetadata().GetResourceVersion() != opts.ResourceVersion {
 			return fmt.Errorf("conflict - resource version does not match")
 		}
 	}
@@ -88,22 +88,22 @@ func editVirtualService(opts *options.EditOptions, optsExt *EditVirtualService, 
 	if optsExt.Remove {
 		vs.SslConfig = nil
 	} else {
-		if vs.SslConfig == nil {
+		if vs.GetSslConfig() == nil {
 			vs.SslConfig = &gloov1.SslConfig{}
 		}
 
-		if optsExt.SslSecretRef.Name != "" {
-			vs.SslConfig.SslSecrets = &gloov1.SslConfig_SecretRef{
+		if optsExt.SslSecretRef.GetName() != "" {
+			vs.GetSslConfig().SslSecrets = &gloov1.SslConfig_SecretRef{
 				SecretRef: &optsExt.SslSecretRef,
 			}
-		} else if optsExt.SslSecretRef.Namespace != "" {
+		} else if optsExt.SslSecretRef.GetNamespace() != "" {
 			return fmt.Errorf("name must be provided")
 		}
 
 		if optsExt.SniDomains != nil {
-			vs.SslConfig.SniDomains = optsExt.SniDomains
+			vs.GetSslConfig().SniDomains = optsExt.SniDomains
 		}
-		if reflect.DeepEqual(*vs.SslConfig, gloov1.SslConfig{}) {
+		if reflect.DeepEqual(*vs.GetSslConfig(), gloov1.SslConfig{}) {
 			vs.SslConfig = nil
 		}
 	}

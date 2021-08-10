@@ -24,7 +24,7 @@ func EnvoyPathAsString(matcher *envoy_config_route_v3.RouteMatch) string {
 	case *envoy_config_route_v3.RouteMatch_Path:
 		return path.Path
 	case *envoy_config_route_v3.RouteMatch_SafeRegex:
-		return path.SafeRegex.Regex
+		return path.SafeRegex.GetRegex()
 	}
 	return ""
 }

@@ -18,22 +18,22 @@ type RouteEditInput struct {
 
 func UpdateRoute(opts *RouteEditInput, modify func(*gatewayv1.Route) error) error {
 	vsClient := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
-	vs, err := vsClient.Read(opts.Metadata.Namespace, opts.Metadata.Name, clients.ReadOpts{})
+	vs, err := vsClient.Read(opts.Metadata.GetNamespace(), opts.Metadata.GetName(), clients.ReadOpts{})
 	if err != nil {
 		return errors.Wrapf(err, "Error reading vhost")
 	}
 
 	if opts.ResourceVersion != "" {
-		if vs.Metadata.ResourceVersion != opts.ResourceVersion {
+		if vs.GetMetadata().GetResourceVersion() != opts.ResourceVersion {
 			return fmt.Errorf("conflict - resource version does not match")
 		}
 	}
 
-	if int(opts.Index) >= len(vs.VirtualHost.Routes) {
+	if int(opts.Index) >= len(vs.GetVirtualHost().GetRoutes()) {
 		return fmt.Errorf("invalid route index")
 	}
 
-	route := vs.VirtualHost.Routes[opts.Index]
+	route := vs.GetVirtualHost().GetRoutes()[opts.Index]
 
 	err = modify(route)
 	if err != nil {
@@ -47,7 +47,7 @@ func UpdateRoute(opts *RouteEditInput, modify func(*gatewayv1.Route) error) erro
 func EditRoutePreRunE(opts *RouteEditInput) error {
 	if opts.Top.Interactive {
 		vsclient := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
-		vsvc, err := vsclient.Read(opts.Metadata.Namespace, opts.Metadata.Name, clients.ReadOpts{})
+		vsvc, err := vsclient.Read(opts.Metadata.GetNamespace(), opts.Metadata.GetName(), clients.ReadOpts{})
 		if err != nil {
 			return err
 		}
@@ -56,7 +56,7 @@ func EditRoutePreRunE(opts *RouteEditInput) error {
 			return err
 		} else {
 			opts.Index = uint32(idx)
-			opts.ResourceVersion = vsvc.Metadata.ResourceVersion
+			opts.ResourceVersion = vsvc.GetMetadata().ResourceVersion
 		}
 	}
 	return nil

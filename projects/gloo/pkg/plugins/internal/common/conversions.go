@@ -17,5 +17,5 @@ func ToEnvoyPercentageWithDefault(percentage *wrappers.FloatValue, defaultValue 
 	if percentage == nil {
 		return ToEnvoyPercentage(defaultValue)
 	}
-	return ToEnvoyPercentage(percentage.Value)
+	return ToEnvoyPercentage(percentage.GetValue())
 }

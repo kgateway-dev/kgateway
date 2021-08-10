@@ -14,14 +14,14 @@ func GetVirtualServices(name string, opts *options.Options) (v1.VirtualServiceLi
 	var virtualServiceList v1.VirtualServiceList
 	virtualServiceClient := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if name == "" {
-		virtualServices, err := virtualServiceClient.List(opts.Metadata.Namespace,
+		virtualServices, err := virtualServiceClient.List(opts.Metadata.GetNamespace(),
 			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
 		if err != nil {
 			return nil, err
 		}
 		virtualServiceList = append(virtualServiceList, virtualServices...)
 	} else {
-		virtualService, err := virtualServiceClient.Read(opts.Metadata.Namespace, name, clients.ReadOpts{Ctx: opts.Top.Ctx})
+		virtualService, err := virtualServiceClient.Read(opts.Metadata.GetNamespace(), name, clients.ReadOpts{Ctx: opts.Top.Ctx})
 		if err != nil {
 			return nil, err
 		}
@@ -37,14 +37,14 @@ func GetRouteTables(name string, opts *options.Options) (v1.RouteTableList, erro
 
 	routeTableClient := helpers.MustNamespacedRouteTableClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if name == "" {
-		routeTables, err := routeTableClient.List(opts.Metadata.Namespace,
+		routeTables, err := routeTableClient.List(opts.Metadata.GetNamespace(),
 			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
 		if err != nil {
 			return nil, err
 		}
 		routeTableList = append(routeTableList, routeTables...)
 	} else {
-		routeTable, err := routeTableClient.Read(opts.Metadata.Namespace, name, clients.ReadOpts{Ctx: opts.Top.Ctx})
+		routeTable, err := routeTableClient.Read(opts.Metadata.GetNamespace(), name, clients.ReadOpts{Ctx: opts.Top.Ctx})
 		if err != nil {
 			return nil, err
 		}
@@ -60,14 +60,14 @@ func GetUpstreams(name string, opts *options.Options) (gloov1.UpstreamList, erro
 
 	usClient := helpers.MustNamespacedUpstreamClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if name == "" {
-		uss, err := usClient.List(opts.Metadata.Namespace,
+		uss, err := usClient.List(opts.Metadata.GetNamespace(),
 			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
 		if err != nil {
 			return nil, err
 		}
 		list = append(list, uss...)
 	} else {
-		us, err := usClient.Read(opts.Metadata.Namespace, name, clients.ReadOpts{Ctx: opts.Top.Ctx})
+		us, err := usClient.Read(opts.Metadata.GetNamespace(), name, clients.ReadOpts{Ctx: opts.Top.Ctx})
 		if err != nil {
 			return nil, err
 		}
@@ -83,14 +83,14 @@ func GetUpstreamGroups(name string, opts *options.Options) (gloov1.UpstreamGroup
 
 	ugsClient := helpers.MustNamespacedUpstreamGroupClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if name == "" {
-		ugs, err := ugsClient.List(opts.Metadata.Namespace,
+		ugs, err := ugsClient.List(opts.Metadata.GetNamespace(),
 			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
 		if err != nil {
 			return nil, err
 		}
 		list = append(list, ugs...)
 	} else {
-		ugs, err := ugsClient.Read(opts.Metadata.Namespace, name, clients.ReadOpts{Ctx: opts.Top.Ctx})
+		ugs, err := ugsClient.Read(opts.Metadata.GetNamespace(), name, clients.ReadOpts{Ctx: opts.Top.Ctx})
 		if err != nil {
 			return nil, err
 		}
@@ -106,14 +106,14 @@ func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 
 	pxClient := helpers.MustNamespacedProxyClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if name == "" {
-		uss, err := pxClient.List(opts.Metadata.Namespace,
+		uss, err := pxClient.List(opts.Metadata.GetNamespace(),
 			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
 		if err != nil {
 			return nil, err
 		}
 		list = append(list, uss...)
 	} else {
-		us, err := pxClient.Read(opts.Metadata.Namespace, name, clients.ReadOpts{Ctx: opts.Top.Ctx})
+		us, err := pxClient.Read(opts.Metadata.GetNamespace(), name, clients.ReadOpts{Ctx: opts.Top.Ctx})
 		if err != nil {
 			return nil, err
 		}
@@ -129,14 +129,14 @@ func GetAuthConfigs(name string, opts *options.Options) (extauthv1.AuthConfigLis
 
 	authConfigClient := helpers.MustNamespacedAuthConfigClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if name == "" {
-		authConfigs, err := authConfigClient.List(opts.Metadata.Namespace,
+		authConfigs, err := authConfigClient.List(opts.Metadata.GetNamespace(),
 			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
 		if err != nil {
 			return nil, err
 		}
 		authConfigList = append(authConfigList, authConfigs...)
 	} else {
-		authConfig, err := authConfigClient.Read(opts.Metadata.Namespace, name, clients.ReadOpts{Ctx: opts.Top.Ctx})
+		authConfig, err := authConfigClient.Read(opts.Metadata.GetNamespace(), name, clients.ReadOpts{Ctx: opts.Top.Ctx})
 		if err != nil {
 			return nil, err
 		}
@@ -152,14 +152,14 @@ func GetRateLimitConfigs(name string, opts *options.Options) (ratelimit.RateLimi
 
 	ratelimitConfigClient := helpers.MustNamespacedRateLimitConfigClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if name == "" {
-		ratelimitConfigs, err := ratelimitConfigClient.List(opts.Metadata.Namespace,
+		ratelimitConfigs, err := ratelimitConfigClient.List(opts.Metadata.GetNamespace(),
 			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
 		if err != nil {
 			return nil, err
 		}
 		ratelimitConfigList = append(ratelimitConfigList, ratelimitConfigs...)
 	} else {
-		ratelimitConfig, err := ratelimitConfigClient.Read(opts.Metadata.Namespace, name, clients.ReadOpts{Ctx: opts.Top.Ctx})
+		ratelimitConfig, err := ratelimitConfigClient.Read(opts.Metadata.GetNamespace(), name, clients.ReadOpts{Ctx: opts.Top.Ctx})
 		if err != nil {
 			return nil, err
 		}
@@ -174,5 +174,5 @@ func GetName(args []string, opts *options.Options) string {
 	if len(args) > 0 {
 		return args[0]
 	}
-	return opts.Metadata.Name
+	return opts.Metadata.GetName()
 }

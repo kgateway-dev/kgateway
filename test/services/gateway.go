@@ -137,11 +137,11 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	if glooOpts.Settings == nil {
 		glooOpts.Settings = &gloov1.Settings{}
 	}
-	if glooOpts.Settings.Gloo == nil {
+	if glooOpts.Settings.GetGloo() == nil {
 		glooOpts.Settings.Gloo = &gloov1.GlooOptions{}
 	}
-	if glooOpts.Settings.Gloo.RestXdsBindAddr == "" {
-		glooOpts.Settings.Gloo.RestXdsBindAddr = fmt.Sprintf("0.0.0.0:%v", int(runOptions.RestXdsPort))
+	if glooOpts.Settings.GetGloo().GetRestXdsBindAddr() == "" {
+		glooOpts.Settings.GetGloo().RestXdsBindAddr = fmt.Sprintf("0.0.0.0:%v", int(runOptions.RestXdsPort))
 	}
 
 	runOptions.Extensions.SyncerExtensions = []syncer.TranslatorSyncerExtensionFactory{
@@ -215,17 +215,17 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 	meta := runOptions.Settings.GetMetadata()
 
 	var validation *translator.ValidationOpts
-	if runOptions.Settings != nil && runOptions.Settings.Gateway != nil && runOptions.Settings.Gateway.Validation != nil {
+	if runOptions.Settings != nil && runOptions.Settings.GetGateway() != nil && runOptions.Settings.GetGateway().GetValidation() != nil {
 		validation = &translator.ValidationOpts{}
-		if runOptions.Settings.Gateway.Validation.ProxyValidationServerAddr != "" {
-			validation.ProxyValidationServerAddress = runOptions.Settings.Gateway.Validation.ProxyValidationServerAddr
+		if runOptions.Settings.GetGateway().GetValidation().GetProxyValidationServerAddr() != "" {
+			validation.ProxyValidationServerAddress = runOptions.Settings.GetGateway().GetValidation().ProxyValidationServerAddr
 		}
-		if runOptions.Settings.Gateway.Validation.AllowWarnings != nil {
-			validation.AllowWarnings = runOptions.Settings.Gateway.Validation.AllowWarnings.Value
+		if runOptions.Settings.GetGateway().GetValidation().GetAllowWarnings() != nil {
+			validation.AllowWarnings = runOptions.Settings.GetGateway().GetValidation().GetAllowWarnings().Value
 
 		}
-		if runOptions.Settings.Gateway.Validation.AlwaysAccept != nil {
-			validation.AlwaysAcceptResources = runOptions.Settings.Gateway.Validation.AlwaysAccept.Value
+		if runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept() != nil {
+			validation.AlwaysAcceptResources = runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept().Value
 		}
 
 	}

@@ -24,7 +24,7 @@ type SubsetSpecMutator interface {
 }
 
 func (us *Upstream_Kube) GetSubsetSpec() *plugins.SubsetSpec {
-	return us.Kube.SubsetSpec
+	return us.Kube.GetSubsetSpec()
 }
 
 func (us *Upstream_Kube) SetSubsetSpec(spec *plugins.SubsetSpec) {
@@ -37,12 +37,12 @@ func (us *Upstream_Consul) GetSubsetSpec() *plugins.SubsetSpec {
 	// Add a subset selector for data centers
 	// This will cause Envoy to partition the endpoints by their data center
 	var dataCenterMetadataKeys []string
-	for _, dc := range us.Consul.DataCenters {
+	for _, dc := range us.Consul.GetDataCenters() {
 		dataCenterMetadataKeys = append(dataCenterMetadataKeys, constants.ConsulDataCenterKeyPrefix+dc)
 	}
 	sort.Strings(dataCenterMetadataKeys)
 
-	subsets.Selectors = append(subsets.Selectors, &plugins.Selector{
+	subsets.Selectors = append(subsets.GetSelectors(), &plugins.Selector{
 		Keys: dataCenterMetadataKeys,
 	})
 
@@ -61,7 +61,7 @@ func (us *Upstream_Consul) GetSubsetSpec() *plugins.SubsetSpec {
 		}
 		sort.Strings(tagMetadataKeys)
 
-		subsets.Selectors = append(subsets.Selectors, &plugins.Selector{
+		subsets.Selectors = append(subsets.GetSelectors(), &plugins.Selector{
 			Keys: tagMetadataKeys,
 		})
 
@@ -70,7 +70,7 @@ func (us *Upstream_Consul) GetSubsetSpec() *plugins.SubsetSpec {
 		var allKeys []string
 		allKeys = append(allKeys, dataCenterMetadataKeys...)
 		allKeys = append(allKeys, tagMetadataKeys...)
-		subsets.Selectors = append(subsets.Selectors, &plugins.Selector{
+		subsets.Selectors = append(subsets.GetSelectors(), &plugins.Selector{
 			Keys: allKeys,
 		})
 	}

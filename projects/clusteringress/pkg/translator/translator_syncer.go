@@ -72,8 +72,8 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 
 	var desiredResources gloov1.ProxyList
 	if proxy != nil {
-		logger.Infof("creating proxy %v", proxy.Metadata.Ref())
-		proxy.Metadata.Labels = labels
+		logger.Infof("creating proxy %v", proxy.GetMetadata().Ref())
+		proxy.GetMetadata().Labels = labels
 		desiredResources = gloov1.ProxyList{proxy}
 	}
 
@@ -120,7 +120,7 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 				continue
 			case core.Status_Rejected:
 				contextutils.LoggerFrom(ctx).Errorf("proxy was rejected by gloo: %v",
-					updatedProxy.Status.Reason)
+					updatedProxy.GetStatus().GetReason())
 				return nil
 			case core.Status_Accepted:
 				return s.markClusterIngressesReady(ctx, clusterIngresses)

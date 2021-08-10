@@ -107,7 +107,7 @@ func upstreamGroupDestinationsFromOpts(ctx context.Context, input options.InputU
 			return nil, err
 		}
 		for _, us := range usList {
-			ref := us.Metadata.Ref()
+			ref := us.GetMetadata().Ref()
 			ussByKey[ref.Key()] = us
 			usKeys = append(usKeys, ref.Key())
 		}
@@ -135,7 +135,7 @@ func upstreamGroupDestinationsFromOpts(ctx context.Context, input options.InputU
 		wd := v1.WeightedDestination{
 			Destination: &v1.Destination{
 				DestinationType: &v1.Destination_Upstream{
-					Upstream: ussByKey[namespacedUpstream].Metadata.Ref(),
+					Upstream: ussByKey[namespacedUpstream].GetMetadata().Ref(),
 				},
 			},
 			Weight: weight,

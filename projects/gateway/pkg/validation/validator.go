@@ -146,14 +146,14 @@ func (v *validator) deleteFromLocalSnapshot(resource resources.Resource) {
 	switch resource.(type) {
 	case *v1.VirtualService:
 		for i, rt := range v.latestSnapshot.VirtualServices {
-			if rt.Metadata.Ref().Equal(ref) {
+			if rt.GetMetadata().Ref().Equal(ref) {
 				v.latestSnapshot.VirtualServices = append(v.latestSnapshot.VirtualServices[:i], v.latestSnapshot.VirtualServices[i+1:]...)
 				break
 			}
 		}
 	case *v1.RouteTable:
 		for i, rt := range v.latestSnapshot.RouteTables {
-			if rt.Metadata.Ref().Equal(ref) {
+			if rt.GetMetadata().Ref().Equal(ref) {
 				v.latestSnapshot.RouteTables = append(v.latestSnapshot.RouteTables[:i], v.latestSnapshot.RouteTables[i+1:]...)
 				break
 			}
@@ -252,11 +252,11 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		}
 
 		proxyReports[proxy] = proxyReport.ProxyReport
-		if err := validationutils.GetProxyError(proxyReport.ProxyReport); err != nil {
+		if err := validationutils.GetProxyError(proxyReport.GetProxyReport()); err != nil {
 			errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
 			continue
 		}
-		if warnings := validationutils.GetProxyWarning(proxyReport.ProxyReport); !v.allowWarnings && len(warnings) > 0 {
+		if warnings := validationutils.GetProxyWarning(proxyReport.GetProxyReport()); !v.allowWarnings && len(warnings) > 0 {
 			for _, warning := range warnings {
 				errs = multierr.Append(errs, errors.New(warning))
 			}
@@ -411,14 +411,14 @@ func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef *cor
 
 	var parentGateways []*core.ResourceRef
 	snap.Gateways.Each(func(element *v1.Gateway) {
-		http, ok := element.GatewayType.(*v1.Gateway_HttpGateway)
+		http, ok := element.GetGatewayType().(*v1.Gateway_HttpGateway)
 		if !ok {
 			return
 		}
 		for _, ref := range http.HttpGateway.GetVirtualServices() {
 			if ref.Equal(vsRef) {
 				// this gateway points at this virtual service
-				parentGateways = append(parentGateways, element.Metadata.Ref())
+				parentGateways = append(parentGateways, element.GetMetadata().Ref())
 
 				break
 			}
@@ -496,14 +496,14 @@ func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef *core.Re
 	var parentVirtualServices []*core.ResourceRef
 	snap.VirtualServices.Each(func(element *v1.VirtualService) {
 		if routesContainRefs(element.GetVirtualHost().GetRoutes(), refsToDelete) {
-			parentVirtualServices = append(parentVirtualServices, element.Metadata.Ref())
+			parentVirtualServices = append(parentVirtualServices, element.GetMetadata().Ref())
 		}
 	})
 
 	var parentRouteTables []*core.ResourceRef
 	snap.RouteTables.Each(func(element *v1.RouteTable) {
 		if routesContainRefs(element.GetRoutes(), refsToDelete) {
-			parentRouteTables = append(parentRouteTables, element.Metadata.Ref())
+			parentRouteTables = append(parentRouteTables, element.GetMetadata().Ref())
 		}
 	})
 
@@ -601,7 +601,7 @@ type refSet map[string]*core.ResourceRef
 
 func virtualServicesForRouteTable(rt *v1.RouteTable, allVirtualServices v1.VirtualServiceList, allRoutes v1.RouteTableList) v1.VirtualServiceList {
 	// this route table + its parents
-	refsContainingRouteTable := refSet{gloo_translator.UpstreamToClusterName(rt.Metadata.Ref()): rt.GetMetadata().Ref()}
+	refsContainingRouteTable := refSet{gloo_translator.UpstreamToClusterName(rt.GetMetadata().Ref()): rt.GetMetadata().Ref()}
 
 	// keep going until the ref list stops expanding
 	for countedRefs := 0; countedRefs != len(refsContainingRouteTable); {
@@ -634,10 +634,10 @@ func routesContainRefs(list []*v1.Route, refs refSet) bool {
 		var routeTableRef *core.ResourceRef
 		// handle deprecated route table resource reference format
 		// TODO(marco): remove when we remove the deprecated fields from the API
-		if delegate.Namespace != "" || delegate.Name != "" {
+		if delegate.GetNamespace() != "" || delegate.GetName() != "" {
 			routeTableRef = &core.ResourceRef{
-				Namespace: delegate.Namespace,
-				Name:      delegate.Name,
+				Namespace: delegate.GetNamespace(),
+				Name:      delegate.GetName(),
 			}
 		} else {
 			switch selectorType := delegate.GetDelegationType().(type) {

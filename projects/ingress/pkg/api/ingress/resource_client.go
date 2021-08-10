@@ -72,15 +72,15 @@ func ToKube(resource resources.Resource) (*v1beta1.Ingress, error) {
 	if !ok {
 		return nil, errors.Errorf("internal error: invalid resource %v passed to ingress-only client", resources.Kind(resource))
 	}
-	if ingResource.KubeIngressSpec == nil {
+	if ingResource.GetKubeIngressSpec() == nil {
 		return nil, errors.Errorf("internal error: %v ingress spec cannot be nil", ingResource.GetMetadata().Ref())
 	}
 	var ingress v1beta1.Ingress
-	if err := json.Unmarshal(ingResource.KubeIngressSpec.Value, &ingress.Spec); err != nil {
+	if err := json.Unmarshal(ingResource.GetKubeIngressSpec().GetValue(), &ingress.Spec); err != nil {
 		return nil, errors.Wrapf(err, "unmarshalling kube ingress spec data")
 	}
-	if ingResource.KubeIngressStatus != nil {
-		if err := json.Unmarshal(ingResource.KubeIngressStatus.Value, &ingress.Status); err != nil {
+	if ingResource.GetKubeIngressStatus() != nil {
+		if err := json.Unmarshal(ingResource.GetKubeIngressStatus().GetValue(), &ingress.Status); err != nil {
 			return nil, errors.Wrapf(err, "unmarshalling kube ingress status data")
 		}
 	}
@@ -148,7 +148,7 @@ func (rc *ResourceClient) write(resource resources.Resource, opts clients.WriteO
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	meta := resource.GetMetadata()
-	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
+	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.GetNamespace())
 
 	// mutate and return clone
 	clone := resources.Clone(resource)
@@ -158,15 +158,15 @@ func (rc *ResourceClient) write(resource resources.Resource, opts clients.WriteO
 		return nil, err
 	}
 
-	original, err := rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{
+	original, err := rc.Read(meta.GetNamespace(), meta.GetName(), clients.ReadOpts{
 		Ctx: opts.Ctx,
 	})
 	if original != nil && err == nil {
 		if !opts.OverwriteExisting {
 			return nil, errors.NewExistErr(meta)
 		}
-		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
-			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
+		if meta.GetResourceVersion() != original.GetMetadata().GetResourceVersion() {
+			return nil, errors.NewResourceVersionErr(meta.GetNamespace(), meta.GetName(), meta.GetResourceVersion(), original.GetMetadata().GetResourceVersion())
 		}
 		if _, err := rc.kube.ExtensionsV1beta1().Ingresses(ingressObj.Namespace).Update(opts.Ctx, ingressObj, metav1.UpdateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "updating kube ingressObj %v", ingressObj.Name)
@@ -187,7 +187,7 @@ func (rc *ResourceClient) writeStatus(resource resources.Resource, opts clients.
 		return nil, errors.Wrapf(err, "validation error")
 	}
 	meta := resource.GetMetadata()
-	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
+	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.GetNamespace())
 
 	// mutate and return clone
 	clone := resources.Clone(resource)
@@ -197,15 +197,15 @@ func (rc *ResourceClient) writeStatus(resource resources.Resource, opts clients.
 		return nil, err
 	}
 
-	original, err := rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{
+	original, err := rc.Read(meta.GetNamespace(), meta.GetName(), clients.ReadOpts{
 		Ctx: opts.Ctx,
 	})
 	if original != nil && err == nil {
 		if !opts.OverwriteExisting {
 			return nil, errors.NewExistErr(meta)
 		}
-		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
-			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
+		if meta.GetResourceVersion() != original.GetMetadata().GetResourceVersion() {
+			return nil, errors.NewResourceVersionErr(meta.GetNamespace(), meta.GetName(), meta.GetResourceVersion(), original.GetMetadata().GetResourceVersion())
 		}
 		if _, err := rc.kube.ExtensionsV1beta1().Ingresses(ingressObj.Namespace).UpdateStatus(opts.Ctx, ingressObj, metav1.UpdateOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "updating kube ingressObj status %v", ingressObj.Name)
@@ -257,7 +257,7 @@ func (rc *ResourceClient) List(namespace string, opts clients.ListOpts) (resourc
 	}
 
 	sort.SliceStable(resourceList, func(i, j int) bool {
-		return resourceList[i].GetMetadata().Name < resourceList[j].GetMetadata().Name
+		return resourceList[i].GetMetadata().GetName() < resourceList[j].GetMetadata().GetName()
 	})
 
 	return resourceList, nil

@@ -65,12 +65,12 @@ func (t *HeaderSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Re
 	if !ok {
 		return nil, nil
 	}
-	headerGlooSecret, ok := glooSecret.Kind.(*v1.Secret_Header)
+	headerGlooSecret, ok := glooSecret.GetKind().(*v1.Secret_Header)
 	if !ok {
 		return nil, nil
 	}
 
-	kubeMeta := kubeutils.ToKubeMeta(glooSecret.Metadata)
+	kubeMeta := kubeutils.ToKubeMeta(glooSecret.GetMetadata())
 
 	kubeSecret := &kubev1.Secret{
 		ObjectMeta: kubeMeta,

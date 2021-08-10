@@ -40,8 +40,8 @@ func StringifySnapshot(snapshot interface{}) string {
 				redactedSecret := fmt.Sprintf(
 					"%v{name: %s namespace: %s data: %s}",
 					reflect.TypeOf(s),
-					s.Metadata.Name,
-					s.Metadata.Namespace,
+					s.GetMetadata().GetName(),
+					s.GetMetadata().GetNamespace(),
 					Redacted,
 				)
 

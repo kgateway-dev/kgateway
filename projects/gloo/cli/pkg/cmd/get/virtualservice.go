@@ -21,7 +21,7 @@ func VirtualService(opts *options.Options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			_ = printers.PrintVirtualServices(opts.Top.Ctx, virtualServices, opts.Top.Output, opts.Metadata.Namespace)
+			_ = printers.PrintVirtualServices(opts.Top.Ctx, virtualServices, opts.Top.Output, opts.Metadata.GetNamespace())
 			return nil
 		},
 	}
@@ -47,11 +47,11 @@ func Routes(opts *options.Options) *cobra.Command {
 			if len(virtualServices.Names()) != 1 {
 				return eris.Errorf("no virtualservice id provided")
 			}
-			vs, err := virtualServices.Find(opts.Metadata.Namespace, opts.Metadata.Name)
+			vs, err := virtualServices.Find(opts.Metadata.GetNamespace(), opts.Metadata.GetName())
 			if err != nil {
 				return eris.Errorf("virtualservice id provided was incorrect")
 			}
-			_ = printers.PrintRoutes(vs.VirtualHost.Routes, opts.Top.Output)
+			_ = printers.PrintRoutes(vs.GetVirtualHost().GetRoutes(), opts.Top.Output)
 			return nil
 		},
 	}

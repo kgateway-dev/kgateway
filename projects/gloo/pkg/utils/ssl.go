@@ -59,7 +59,7 @@ func (s *sslConfigTranslator) ResolveUpstreamSslConfig(secrets v1.SecretList, uc
 	}
 	return &envoyauth.UpstreamTlsContext{
 		CommonTlsContext: common,
-		Sni:              uc.Sni,
+		Sni:              uc.GetSni(),
 	}, nil
 }
 func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error) {
@@ -68,11 +68,11 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 		return nil, err
 	}
 	var requireClientCert *wrappers.BoolValue
-	if common.ValidationContextType != nil {
+	if common.GetValidationContextType() != nil {
 		requireClientCert = &wrappers.BoolValue{Value: !dc.GetOneWayTls().GetValue()}
 	}
 	// default alpn for downstreams.
-	if len(common.AlpnProtocols) == 0 {
+	if len(common.GetAlpnProtocols()) == 0 {
 		common.AlpnProtocols = []string{"h2", "http/1.1"}
 	}
 	return &envoyauth.DownstreamTlsContext{
@@ -154,7 +154,7 @@ func buildDeprecatedSDS(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSec
 	any, _ := MessageToAny(config)
 
 	gRPCConfig := &envoycore.GrpcService_GoogleGrpc{
-		TargetUri:  sslSecrets.TargetUri,
+		TargetUri:  sslSecrets.GetTargetUri(),
 		StatPrefix: "sds",
 		ChannelCredentials: &envoycore.GrpcService_GoogleGrpc_ChannelCredentials{
 			CredentialSpecifier: &envoycore.GrpcService_GoogleGrpc_ChannelCredentials_LocalCredentials{
@@ -196,10 +196,10 @@ func buildDeprecatedSDS(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSec
 }
 
 func (s *sslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, matchSan []*envoymatcher.StringMatcher) (*envoyauth.CommonTlsContext, error) {
-	if sslSecrets.CertificatesSecretName == "" && sslSecrets.ValidationContextName == "" {
+	if sslSecrets.GetCertificatesSecretName() == "" && sslSecrets.GetValidationContextName() == "" {
 		return nil, eris.Errorf("at least one of certificates_secret_name or validation_context_name must be provided")
 	}
-	if len(matchSan) != 0 && sslSecrets.ValidationContextName == "" {
+	if len(matchSan) != 0 && sslSecrets.GetValidationContextName() == "" {
 		return nil, MissingValidationContextError
 	}
 	tlsContext := &envoyauth.CommonTlsContext{
@@ -207,20 +207,20 @@ func (s *sslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, matchSan []*en
 		TlsParams: &envoyauth.TlsParameters{},
 	}
 
-	if sslSecrets.CertificatesSecretName != "" {
-		tlsContext.TlsCertificateSdsSecretConfigs = []*envoyauth.SdsSecretConfig{buildSds(sslSecrets.CertificatesSecretName, sslSecrets)}
+	if sslSecrets.GetCertificatesSecretName() != "" {
+		tlsContext.TlsCertificateSdsSecretConfigs = []*envoyauth.SdsSecretConfig{buildSds(sslSecrets.GetCertificatesSecretName(), sslSecrets)}
 	}
 
-	if sslSecrets.ValidationContextName != "" {
+	if sslSecrets.GetValidationContextName() != "" {
 		if len(matchSan) == 0 {
 			tlsContext.ValidationContextType = &envoyauth.CommonTlsContext_ValidationContextSdsSecretConfig{
-				ValidationContextSdsSecretConfig: buildSds(sslSecrets.ValidationContextName, sslSecrets),
+				ValidationContextSdsSecretConfig: buildSds(sslSecrets.GetValidationContextName(), sslSecrets),
 			}
 		} else {
 			tlsContext.ValidationContextType = &envoyauth.CommonTlsContext_CombinedValidationContext{
 				CombinedValidationContext: &envoyauth.CommonTlsContext_CombinedCertificateValidationContext{
 					DefaultValidationContext:         &envoyauth.CertificateValidationContext{MatchSubjectAltNames: matchSan},
-					ValidationContextSdsSecretConfig: buildSds(sslSecrets.ValidationContextName, sslSecrets),
+					ValidationContextSdsSecretConfig: buildSds(sslSecrets.GetValidationContextName(), sslSecrets),
 				},
 			}
 		}
@@ -326,7 +326,7 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 		return "", "", "", SslSecretNotFoundError(err)
 	}
 
-	sslSecret, ok := secret.Kind.(*v1.Secret_Tls)
+	sslSecret, ok := secret.GetKind().(*v1.Secret_Tls)
 	if !ok {
 		return "", "", "", NotTlsSecretError(secret.GetMetadata().Ref())
 	}
@@ -342,18 +342,18 @@ func (s *sslConfigTranslator) ResolveSslParamsConfig(params *v1.SslParameters) (
 		return nil, nil
 	}
 
-	maxver, err := convertVersion(params.MaximumProtocolVersion)
+	maxver, err := convertVersion(params.GetMaximumProtocolVersion())
 	if err != nil {
 		return nil, err
 	}
-	minver, err := convertVersion(params.MinimumProtocolVersion)
+	minver, err := convertVersion(params.GetMinimumProtocolVersion())
 	if err != nil {
 		return nil, err
 	}
 
 	return &envoyauth.TlsParameters{
-		CipherSuites:              params.CipherSuites,
-		EcdhCurves:                params.EcdhCurves,
+		CipherSuites:              params.GetCipherSuites(),
+		EcdhCurves:                params.GetEcdhCurves(),
 		TlsMaximumProtocolVersion: maxver,
 		TlsMinimumProtocolVersion: minver,
 	}, nil

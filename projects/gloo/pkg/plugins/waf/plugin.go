@@ -40,7 +40,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 // Process virtual host plugin
 func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoy_config_route_v3.VirtualHost) error {
-	if in.Options.GetWaf() != nil {
+	if in.GetOptions().GetWaf() != nil {
 		return eris.New(ErrEnterpriseOnly)
 	}
 

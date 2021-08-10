@@ -27,7 +27,7 @@ func (t *translatorInstance) computeClusterEndpoints(
 
 	var clusterEndpointAssignments []*envoy_config_endpoint_v3.ClusterLoadAssignment
 	for _, upstream := range params.Snapshot.Upstreams {
-		clusterEndpoints := upstreamRefKeyToEndpoints[upstream.Metadata.Ref().Key()]
+		clusterEndpoints := upstreamRefKeyToEndpoints[upstream.GetMetadata().Ref().Key()]
 		// if there are any endpoints for this upstream, it's using eds and we need to create a load assignment for it
 		if len(clusterEndpoints) > 0 {
 			loadAssignment := loadAssignmentForUpstream(upstream, clusterEndpoints)
@@ -50,11 +50,11 @@ func loadAssignmentForUpstream(
 	upstream *v1.Upstream,
 	clusterEndpoints []*v1.Endpoint,
 ) *envoy_config_endpoint_v3.ClusterLoadAssignment {
-	clusterName := UpstreamToClusterName(upstream.Metadata.Ref())
+	clusterName := UpstreamToClusterName(upstream.GetMetadata().Ref())
 	var endpoints []*envoy_config_endpoint_v3.LbEndpoint
 	for _, addr := range clusterEndpoints {
-		metadata := getLbMetadata(upstream, addr.Metadata.Labels, "")
-		metadata = addAnnotations(metadata, addr.Metadata.Annotations)
+		metadata := getLbMetadata(upstream, addr.GetMetadata().GetLabels(), "")
+		metadata = addAnnotations(metadata, addr.GetMetadata().GetAnnotations())
 		var healthCheckConfig *envoy_config_endpoint_v3.Endpoint_HealthCheckConfig
 		if host := addr.GetHealthCheck().GetHostname(); host != "" {
 			healthCheckConfig = &envoy_config_endpoint_v3.Endpoint_HealthCheckConfig{
@@ -69,9 +69,9 @@ func loadAssignmentForUpstream(
 						Address: &envoy_config_core_v3.Address_SocketAddress{
 							SocketAddress: &envoy_config_core_v3.SocketAddress{
 								Protocol: envoy_config_core_v3.SocketAddress_TCP,
-								Address:  addr.Address,
+								Address:  addr.GetAddress(),
 								PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
-									PortValue: addr.Port,
+									PortValue: addr.GetPort(),
 								},
 							},
 						},
@@ -96,10 +96,10 @@ func createUpstreamToEndpointsMap(upstreams []*v1.Upstream, endpoints []*v1.Endp
 	upstreamRefKeyToEndpoints := map[string][]*v1.Endpoint{}
 	for _, us := range upstreams {
 		var eps []*v1.Endpoint
-		upstreamRefKeyToEndpoints[us.Metadata.Ref().Key()] = eps
+		upstreamRefKeyToEndpoints[us.GetMetadata().Ref().Key()] = eps
 	}
 	for _, ep := range endpoints {
-		for _, upstreamRef := range ep.Upstreams {
+		for _, upstreamRef := range ep.GetUpstreams() {
 			if eps, ok := upstreamRefKeyToEndpoints[upstreamRef.Key()]; ok {
 				eps = append(eps, ep)
 				upstreamRefKeyToEndpoints[upstreamRef.Key()] = eps
@@ -132,7 +132,7 @@ func addAnnotations(metadata *envoy_config_core_v3.Metadata, annotations map[str
 		}
 	}
 
-	metadata.FilterMetadata[SoloAnnotations] = &structpb.Struct{
+	metadata.GetFilterMetadata()[SoloAnnotations] = &structpb.Struct{
 		Fields: fields,
 	}
 	return metadata
@@ -168,16 +168,16 @@ func getLbMetadata(upstream *v1.Upstream, labels map[string]string, zeroValue st
 		}
 	}
 
-	if len(labelsStruct.Fields) == 0 {
+	if len(labelsStruct.GetFields()) == 0 {
 		return nil
 	}
 
-	meta.FilterMetadata[EnvoyLb] = labelsStruct
+	meta.GetFilterMetadata()[EnvoyLb] = labelsStruct
 	return meta
 }
 
 func allKeys(upstream *v1.Upstream) []string {
-	specGetter, ok := upstream.UpstreamType.(v1.SubsetSpecGetter)
+	specGetter, ok := upstream.GetUpstreamType().(v1.SubsetSpecGetter)
 	if !ok {
 		return nil
 	}
@@ -187,8 +187,8 @@ func allKeys(upstream *v1.Upstream) []string {
 	}
 	keysSet := map[string]bool{}
 
-	for _, keys := range glooSubsetConfig.Selectors {
-		for _, key := range keys.Keys {
+	for _, keys := range glooSubsetConfig.GetSelectors() {
+		for _, key := range keys.GetKeys() {
 			keysSet[key] = true
 		}
 	}

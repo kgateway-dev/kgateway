@@ -40,7 +40,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	markFilterConfigFunc := func(spec *v1.Destination) (proto.Message, error) {
-		if in.Options == nil {
+		if in.GetOptions() == nil {
 			return nil, nil
 		}
 		routeFaults := in.GetOptions().GetFaults()
@@ -61,9 +61,9 @@ func toEnvoyAbort(abort *fault.RouteAbort) *envoyhttpfault.FaultAbort {
 	if abort == nil {
 		return nil
 	}
-	percentage := common.ToEnvoyPercentage(abort.Percentage)
+	percentage := common.ToEnvoyPercentage(abort.GetPercentage())
 	errorType := &envoyhttpfault.FaultAbort_HttpStatus{
-		HttpStatus: uint32(abort.HttpStatus),
+		HttpStatus: uint32(abort.GetHttpStatus()),
 	}
 	return &envoyhttpfault.FaultAbort{
 		Percentage: percentage,
@@ -75,9 +75,9 @@ func toEnvoyDelay(delay *fault.RouteDelay) *envoyfault.FaultDelay {
 	if delay == nil {
 		return nil
 	}
-	percentage := common.ToEnvoyPercentage(delay.Percentage)
+	percentage := common.ToEnvoyPercentage(delay.GetPercentage())
 	delaySpec := &envoyfault.FaultDelay_FixedDelay{
-		FixedDelay: delay.FixedDelay,
+		FixedDelay: delay.GetFixedDelay(),
 	}
 	return &envoyfault.FaultDelay{
 		Percentage:         percentage,

@@ -218,7 +218,7 @@ func GenerateEnvoyConfigForFilter(settings *extauthv1.Settings, upstreams v1.Ups
 	}
 
 	// Make sure the server exists
-	_, err := upstreams.Find(extauthUpstreamRef.Namespace, extauthUpstreamRef.Name)
+	_, err := upstreams.Find(extauthUpstreamRef.GetNamespace(), extauthUpstreamRef.GetName())
 	if err != nil {
 		return nil, ServerNotFound(extauthUpstreamRef)
 	}
@@ -254,7 +254,7 @@ func GenerateEnvoyConfigForFilter(settings *extauthv1.Settings, upstreams v1.Ups
 				Cluster: translator.UpstreamToClusterName(extauthUpstreamRef),
 			},
 		}
-		if httpURI.Timeout == nil {
+		if httpURI.GetTimeout() == nil {
 			// Set to the default. This is required by envoy validation.
 			httpURI.Timeout = DefaultTimeout
 		}
@@ -263,19 +263,19 @@ func GenerateEnvoyConfigForFilter(settings *extauthv1.Settings, upstreams v1.Ups
 			HttpService: &envoyauth.HttpService{
 				ServerUri: httpURI,
 				// Trim suffix, as request path always starts with /, and we want to avoid a double /
-				PathPrefix:            strings.TrimSuffix(httpService.PathPrefix, "/"),
-				AuthorizationRequest:  translateRequest(httpService.Request),
-				AuthorizationResponse: translateResponse(httpService.Response),
+				PathPrefix:            strings.TrimSuffix(httpService.GetPathPrefix(), "/"),
+				AuthorizationRequest:  translateRequest(httpService.GetRequest()),
+				AuthorizationResponse: translateResponse(httpService.GetResponse()),
 			},
 		}
 	}
 
 	cfg.FailureModeAllow = settings.FailureModeAllow
-	cfg.WithRequestBody = translateRequestBody(settings.RequestBody)
+	cfg.WithRequestBody = translateRequestBody(settings.GetRequestBody())
 	cfg.ClearRouteCache = settings.ClearRouteCache
 	cfg.StatPrefix = settings.StatPrefix
 
-	statusOnError, err := translateStatusOnError(settings.StatusOnError)
+	statusOnError, err := translateStatusOnError(settings.GetStatusOnError())
 	if err != nil {
 		return nil, err
 	}
@@ -301,8 +301,8 @@ func translateRequest(in *extauthv1.HttpService_Request) *envoyauth.Authorizatio
 	}
 
 	return &envoyauth.AuthorizationRequest{
-		AllowedHeaders: translateListMatcher(in.AllowedHeaders),
-		HeadersToAdd:   convertHeadersToAdd(in.HeadersToAdd),
+		AllowedHeaders: translateListMatcher(in.GetAllowedHeaders()),
+		HeadersToAdd:   convertHeadersToAdd(in.GetHeadersToAdd()),
 	}
 }
 
@@ -312,8 +312,8 @@ func translateResponse(in *extauthv1.HttpService_Response) *envoyauth.Authorizat
 	}
 
 	return &envoyauth.AuthorizationResponse{
-		AllowedUpstreamHeaders: translateListMatcher(in.AllowedUpstreamHeaders),
-		AllowedClientHeaders:   translateListMatcher(in.AllowedClientHeaders),
+		AllowedUpstreamHeaders: translateListMatcher(in.GetAllowedUpstreamHeaders()),
+		AllowedClientHeaders:   translateListMatcher(in.GetAllowedClientHeaders()),
 	}
 }
 
@@ -326,9 +326,9 @@ func translateRequestBody(in *extauthv1.BufferSettings) *envoyauth.BufferSetting
 		maxBytes = 4 * 1024
 	}
 	return &envoyauth.BufferSettings{
-		AllowPartialMessage: in.AllowPartialMessage,
+		AllowPartialMessage: in.GetAllowPartialMessage(),
 		MaxRequestBytes:     maxBytes,
-		PackAsBytes:         in.PackAsBytes,
+		PackAsBytes:         in.GetPackAsBytes(),
 	}
 }
 
@@ -352,7 +352,7 @@ func translateListMatcher(in []string) *envoymatcher.ListStringMatcher {
 	var lsm envoymatcher.ListStringMatcher
 
 	for _, pattern := range in {
-		lsm.Patterns = append(lsm.Patterns, &envoymatcher.StringMatcher{
+		lsm.Patterns = append(lsm.GetPatterns(), &envoymatcher.StringMatcher{
 			MatchPattern: &envoymatcher.StringMatcher_Exact{
 				Exact: pattern,
 			},

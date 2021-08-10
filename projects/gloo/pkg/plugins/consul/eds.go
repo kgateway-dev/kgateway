@@ -35,7 +35,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	for _, us := range upstreamsToTrack {
 		if consulUsSpec := us.GetConsul(); consulUsSpec != nil {
 			// We generate one upstream for every Consul service name, so this should never happen.
-			trackedServiceToUpstreams[consulUsSpec.ServiceName] = append(trackedServiceToUpstreams[consulUsSpec.ServiceName], us)
+			trackedServiceToUpstreams[consulUsSpec.GetServiceName()] = append(trackedServiceToUpstreams[consulUsSpec.GetServiceName()], us)
 		}
 	}
 
@@ -205,7 +205,7 @@ func buildEndpointsFromSpecs(
 
 	// Sort by name in ascending order for idempotency
 	sort.SliceStable(endpoints, func(i, j int) bool {
-		return endpoints[i].Metadata.Name < endpoints[j].Metadata.Name
+		return endpoints[i].GetMetadata().GetName() < endpoints[j].GetMetadata().GetName()
 	})
 	return endpoints
 }
@@ -380,7 +380,7 @@ func toResourceRefs(upstreams []*v1.Upstream, endpointTags []string) (out []*cor
 	for _, us := range upstreams {
 		upstreamTags := us.GetConsul().GetInstanceTags()
 		if shouldAddToUpstream(endpointTags, upstreamTags) {
-			out = append(out, us.Metadata.Ref())
+			out = append(out, us.GetMetadata().Ref())
 		}
 	}
 	return
@@ -415,12 +415,12 @@ func shouldAddToUpstream(endpointTags, upstreamTags []string) bool {
 func getUniqueUpstreamTags(upstreams []*v1.Upstream) (tags []string) {
 	tagMap := make(map[string]bool)
 	for _, us := range upstreams {
-		if len(us.GetConsul().SubsetTags) != 0 {
-			for _, tag := range us.GetConsul().SubsetTags {
+		if len(us.GetConsul().GetSubsetTags()) != 0 {
+			for _, tag := range us.GetConsul().GetSubsetTags() {
 				tagMap[tag] = true
 			}
 		} else {
-			for _, tag := range us.GetConsul().ServiceTags {
+			for _, tag := range us.GetConsul().GetServiceTags() {
 				tagMap[tag] = true
 			}
 		}
@@ -434,7 +434,7 @@ func getUniqueUpstreamTags(upstreams []*v1.Upstream) (tags []string) {
 func getUniqueUpstreamDataCenters(upstreams []*v1.Upstream) (dataCenters []string) {
 	dcMap := make(map[string]bool)
 	for _, us := range upstreams {
-		for _, dc := range us.GetConsul().DataCenters {
+		for _, dc := range us.GetConsul().GetDataCenters() {
 			dcMap[dc] = true
 		}
 	}

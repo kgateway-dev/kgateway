@@ -37,7 +37,7 @@ func SimpleGlooSnapshot() *v1.ApiSnapshot {
 				Destination: &v1.RouteAction_Single{
 					Single: &v1.Destination{
 						DestinationType: &v1.Destination_Upstream{
-							Upstream: us.Metadata.Ref(),
+							Upstream: us.GetMetadata().Ref(),
 						},
 					},
 				},
@@ -208,7 +208,7 @@ func GatewaySnapshotWithDelegates(us *core.ResourceRef, namespace string) *gwv1.
 			Action: &gwv1.Route_DelegateAction{
 				DelegateAction: &gwv1.DelegateAction{
 					DelegationType: &gwv1.DelegateAction_Ref{
-						Ref: rt.Metadata.Ref(),
+						Ref: rt.GetMetadata().Ref(),
 					},
 				},
 			},
@@ -216,7 +216,7 @@ func GatewaySnapshotWithDelegates(us *core.ResourceRef, namespace string) *gwv1.
 	}
 	snap := SimpleGatewaySnapshot(us, namespace)
 	snap.VirtualServices.Each(func(element *gwv1.VirtualService) {
-		element.VirtualHost.Routes = append(element.VirtualHost.Routes, vsRoutes...)
+		element.GetVirtualHost().Routes = append(element.GetVirtualHost().GetRoutes(), vsRoutes...)
 	})
 	snap.RouteTables = []*gwv1.RouteTable{rt}
 	return snap
@@ -249,7 +249,7 @@ func GatewaySnapshotWithMultiDelegates(us *core.ResourceRef, namespace string) *
 			Action: &gwv1.Route_DelegateAction{
 				DelegateAction: &gwv1.DelegateAction{
 					DelegationType: &gwv1.DelegateAction_Ref{
-						Ref: rtLeaf.Metadata.Ref(),
+						Ref: rtLeaf.GetMetadata().Ref(),
 					},
 				},
 			},
@@ -266,7 +266,7 @@ func GatewaySnapshotWithMultiDelegates(us *core.ResourceRef, namespace string) *
 			Action: &gwv1.Route_DelegateAction{
 				DelegateAction: &gwv1.DelegateAction{
 					DelegationType: &gwv1.DelegateAction_Ref{
-						Ref: rt.Metadata.Ref(),
+						Ref: rt.GetMetadata().Ref(),
 					},
 				},
 			},
@@ -274,7 +274,7 @@ func GatewaySnapshotWithMultiDelegates(us *core.ResourceRef, namespace string) *
 	}
 	snap := SimpleGatewaySnapshot(us, namespace)
 	snap.VirtualServices.Each(func(element *gwv1.VirtualService) {
-		element.VirtualHost.Routes = append(element.VirtualHost.Routes, vsRoutes...)
+		element.GetVirtualHost().Routes = append(element.GetVirtualHost().GetRoutes(), vsRoutes...)
 	})
 	snap.RouteTables = []*gwv1.RouteTable{rt, rtLeaf}
 	return snap

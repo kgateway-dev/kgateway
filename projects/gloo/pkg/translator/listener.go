@@ -24,7 +24,7 @@ func (t *translatorInstance) computeListener(
 	listener *v1.Listener,
 	listenerReport *validationapi.ListenerReport,
 ) *envoy_config_listener_v3.Listener {
-	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_listener."+listener.Name)
+	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_listener."+listener.GetName())
 	validateListenerPorts(proxy, listenerReport)
 	var filterChains []*envoy_config_listener_v3.FilterChain
 	switch listener.GetListenerType().(type) {
@@ -56,14 +56,14 @@ func (t *translatorInstance) computeListener(
 	CheckForDuplicateFilterChainMatches(filterChains, listenerReport)
 
 	out := &envoy_config_listener_v3.Listener{
-		Name: listener.Name,
+		Name: listener.GetName(),
 		Address: &envoy_config_core_v3.Address{
 			Address: &envoy_config_core_v3.Address_SocketAddress{
 				SocketAddress: &envoy_config_core_v3.SocketAddress{
 					Protocol: envoy_config_core_v3.SocketAddress_TCP,
-					Address:  listener.BindAddress,
+					Address:  listener.GetBindAddress(),
 					PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
-						PortValue: listener.BindPort,
+						PortValue: listener.GetBindPort(),
 					},
 					Ipv4Compat: true,
 				},
@@ -108,8 +108,8 @@ func (t *translatorInstance) computeListenerFilters(params plugins.Params, liste
 	}
 
 	// return if listener type != http || no virtual hosts
-	httpListener, ok := listener.ListenerType.(*v1.Listener_HttpListener)
-	if !ok || len(httpListener.HttpListener.VirtualHosts) == 0 {
+	httpListener, ok := listener.GetListenerType().(*v1.Listener_HttpListener)
+	if !ok || len(httpListener.HttpListener.GetVirtualHosts()) == 0 {
 		return nil
 	}
 
@@ -123,7 +123,7 @@ func (t *translatorInstance) computeListenerFilters(params plugins.Params, liste
 		acRef := vHost.GetOptions().GetExtauth().GetConfigRef()
 		if acRef != nil {
 			if _, err := params.Snapshot.AuthConfigs.Find(acRef.GetNamespace(), acRef.GetName()); err != nil {
-				validation.AppendVirtualHostError(httpListenerReport.VirtualHostReports[i], validationapi.VirtualHostReport_Error_ProcessingError, "auth config not found: "+acRef.String())
+				validation.AppendVirtualHostError(httpListenerReport.GetVirtualHostReports()[i], validationapi.VirtualHostReport_Error_ProcessingError, "auth config not found: "+acRef.String())
 			}
 		}
 	}
@@ -148,7 +148,7 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(
 	listenerReport *validationapi.ListenerReport,
 ) []*envoy_config_listener_v3.FilterChain {
 	// if no ssl config is provided, return a single insecure filter chain
-	if len(listener.SslConfigurations) == 0 {
+	if len(listener.GetSslConfigurations()) == 0 {
 		return []*envoy_config_listener_v3.FilterChain{{
 			Filters: listenerFilters,
 		}}
@@ -156,7 +156,7 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(
 
 	var secureFilterChains []*envoy_config_listener_v3.FilterChain
 
-	for _, sslConfig := range mergeSslConfigs(listener.SslConfigurations) {
+	for _, sslConfig := range mergeSslConfigs(listener.GetSslConfigurations()) {
 		// get secrets
 		downstreamConfig, err := t.sslConfigTranslator.ResolveDownstreamSslConfig(snap.Secrets, sslConfig)
 		if err != nil {
@@ -190,11 +190,11 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 		key := fmt.Sprintf("%d", hash)
 
 		if matchingCfg, ok := mergedSslSecrets[key]; ok {
-			if len(matchingCfg.SniDomains) == 0 || len(sslConfig.SniDomains) == 0 {
+			if len(matchingCfg.GetSniDomains()) == 0 || len(sslConfig.GetSniDomains()) == 0 {
 				// if either of the configs match on everything; then match on everything
 				matchingCfg.SniDomains = nil
 			} else {
-				matchingCfg.SniDomains = merge(matchingCfg.SniDomains, sslConfig.SniDomains...)
+				matchingCfg.SniDomains = merge(matchingCfg.GetSniDomains(), sslConfig.GetSniDomains()...)
 			}
 		} else {
 			ptrToCopy := proto.Clone(sslConfig).(*v1.SslConfig)
@@ -222,8 +222,8 @@ func merge(values []string, newvalues ...string) []string {
 
 func validateListenerPorts(proxy *v1.Proxy, listenerReport *validationapi.ListenerReport) {
 	listenersByPort := make(map[uint32][]int)
-	for i, listener := range proxy.Listeners {
-		listenersByPort[listener.BindPort] = append(listenersByPort[listener.BindPort], i)
+	for i, listener := range proxy.GetListeners() {
+		listenersByPort[listener.GetBindPort()] = append(listenersByPort[listener.GetBindPort()], i)
 	}
 	for port, listeners := range listenersByPort {
 		if len(listeners) == 1 {
@@ -231,7 +231,7 @@ func validateListenerPorts(proxy *v1.Proxy, listenerReport *validationapi.Listen
 		}
 		var listenerNames []string
 		for _, idx := range listeners {
-			listenerNames = append(listenerNames, proxy.Listeners[idx].Name)
+			listenerNames = append(listenerNames, proxy.GetListeners()[idx].GetName())
 		}
 		validation.AppendListenerError(listenerReport,
 			validationapi.ListenerReport_Error_BindPortNotUniqueError,
@@ -289,10 +289,10 @@ func CheckForDuplicateFilterChainMatches(filterChains []*envoy_config_listener_v
 			if idx2 <= idx1 {
 				continue
 			}
-			if reflect.DeepEqual(filterChain.FilterChainMatch, otherFilterChain.FilterChainMatch) {
+			if reflect.DeepEqual(filterChain.GetFilterChainMatch(), otherFilterChain.GetFilterChainMatch()) {
 				validation.AppendListenerError(listenerReport,
 					validationapi.ListenerReport_Error_SSLConfigError, fmt.Sprintf("Tried to apply multiple filter chains "+
-						"with the same FilterChainMatch {%v}. This is usually caused by overlapping sniDomains or multiple empty sniDomains in virtual services", filterChain.FilterChainMatch))
+						"with the same FilterChainMatch {%v}. This is usually caused by overlapping sniDomains or multiple empty sniDomains in virtual services", filterChain.GetFilterChainMatch()))
 			}
 		}
 	}

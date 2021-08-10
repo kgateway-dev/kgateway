@@ -48,27 +48,27 @@ func (p *plugin) ProcessVirtualHost(
 	in *v1.VirtualHost,
 	out *envoy_config_route_v3.VirtualHost,
 ) error {
-	corsPlugin := in.Options.GetCors()
+	corsPlugin := in.GetOptions().GetCors()
 	if corsPlugin == nil {
 		return nil
 	}
-	if corsPlugin.DisableForRoute {
+	if corsPlugin.GetDisableForRoute() {
 		contextutils.LoggerFrom(params.Ctx).Warnw(
 			"invalid virtual host cors policy: DisableForRoute only pertains to cors policies on routes",
-			zap.Any("virtual host", in.Name),
+			zap.Any("virtual host", in.GetName()),
 		)
 	}
 	out.Cors = &envoy_config_route_v3.CorsPolicy{}
-	return p.translateCommonUserCorsConfig(params.Ctx, corsPlugin, out.Cors)
+	return p.translateCommonUserCorsConfig(params.Ctx, corsPlugin, out.GetCors())
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	corsPlugin := in.Options.GetCors()
+	corsPlugin := in.GetOptions().GetCors()
 	if corsPlugin == nil {
 		return nil
 	}
 	// the cors plugin should only be used on routes that are of type envoyroute.Route_Route
-	if out.Action != nil && out.GetRoute() == nil {
+	if out.GetAction() != nil && out.GetRoute() == nil {
 		return InvalidRouteActionError
 	}
 	// we have already ensured that the output route action is either nil or of the proper type
@@ -81,10 +81,10 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		outRa = out.GetRoute()
 	}
 	outRa.Cors = &envoy_config_route_v3.CorsPolicy{}
-	if err := p.translateCommonUserCorsConfig(params.Ctx, in.Options.Cors, outRa.Cors); err != nil {
+	if err := p.translateCommonUserCorsConfig(params.Ctx, in.GetOptions().GetCors(), outRa.GetCors()); err != nil {
 		return err
 	}
-	p.translateRouteSpecificCorsConfig(in.Options.Cors, outRa.Cors)
+	p.translateRouteSpecificCorsConfig(in.GetOptions().GetCors(), outRa.GetCors())
 	return nil
 }
 
@@ -93,25 +93,25 @@ func (p *plugin) translateCommonUserCorsConfig(
 	in *cors.CorsPolicy,
 	out *envoy_config_route_v3.CorsPolicy,
 ) error {
-	if len(in.AllowOrigin) == 0 && len(in.AllowOriginRegex) == 0 {
+	if len(in.GetAllowOrigin()) == 0 && len(in.GetAllowOriginRegex()) == 0 {
 		return fmt.Errorf("must provide at least one of AllowOrigin or AllowOriginRegex")
 	}
-	for _, ao := range in.AllowOrigin {
-		out.AllowOriginStringMatch = append(out.AllowOriginStringMatch, &envoy_type_matcher_v3.StringMatcher{
+	for _, ao := range in.GetAllowOrigin() {
+		out.AllowOriginStringMatch = append(out.GetAllowOriginStringMatch(), &envoy_type_matcher_v3.StringMatcher{
 			MatchPattern: &envoy_type_matcher_v3.StringMatcher_Exact{Exact: ao},
 		})
 	}
-	for _, ao := range in.AllowOriginRegex {
-		out.AllowOriginStringMatch = append(out.AllowOriginStringMatch, &envoy_type_matcher_v3.StringMatcher{
+	for _, ao := range in.GetAllowOriginRegex() {
+		out.AllowOriginStringMatch = append(out.GetAllowOriginStringMatch(), &envoy_type_matcher_v3.StringMatcher{
 			MatchPattern: &envoy_type_matcher_v3.StringMatcher_SafeRegex{SafeRegex: regexutils.NewRegex(ctx, ao)},
 		})
 	}
-	out.AllowMethods = strings.Join(in.AllowMethods, ",")
-	out.AllowHeaders = strings.Join(in.AllowHeaders, ",")
-	out.ExposeHeaders = strings.Join(in.ExposeHeaders, ",")
+	out.AllowMethods = strings.Join(in.GetAllowMethods(), ",")
+	out.AllowHeaders = strings.Join(in.GetAllowHeaders(), ",")
+	out.ExposeHeaders = strings.Join(in.GetExposeHeaders(), ",")
 	out.MaxAge = in.MaxAge
-	if in.AllowCredentials {
-		out.AllowCredentials = &wrappers.BoolValue{Value: in.AllowCredentials}
+	if in.GetAllowCredentials() {
+		out.AllowCredentials = &wrappers.BoolValue{Value: in.GetAllowCredentials()}
 	}
 	return nil
 }
@@ -120,7 +120,7 @@ func (p *plugin) translateCommonUserCorsConfig(
 const runtimeKey = "gloo.routeplugin.cors"
 
 func (p *plugin) translateRouteSpecificCorsConfig(in *cors.CorsPolicy, out *envoy_config_route_v3.CorsPolicy) {
-	if in.DisableForRoute {
+	if in.GetDisableForRoute() {
 		out.EnabledSpecifier = &envoy_config_route_v3.CorsPolicy_FilterEnabled{
 			FilterEnabled: &envoy_config_core_v3.RuntimeFractionalPercent{
 				DefaultValue: &envoy_type_v3.FractionalPercent{

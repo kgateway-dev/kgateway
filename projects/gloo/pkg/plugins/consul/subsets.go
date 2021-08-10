@@ -18,7 +18,7 @@ func (p *plugin) ProcessRouteAction(
 	inAction *v1.RouteAction,
 	out *envoy_config_route_v3.RouteAction,
 ) error {
-	switch dest := inAction.Destination.(type) {
+	switch dest := inAction.GetDestination().(type) {
 	case *v1.RouteAction_Single:
 
 		if dest.Single.GetConsul() == nil {
@@ -38,12 +38,12 @@ func (p *plugin) ProcessRouteAction(
 
 	case *v1.RouteAction_UpstreamGroup:
 		upstreamGroupRef := dest.UpstreamGroup
-		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
+		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.GetNamespace(), upstreamGroupRef.GetName())
 		if err != nil {
 			return pluginutils.NewUpstreamGroupNotFoundErr(*upstreamGroupRef)
 		}
 		md := &v1.MultiDestination{
-			Destinations: upstreamGroup.Destinations,
+			Destinations: upstreamGroup.GetDestinations(),
 		}
 		return setWeightedClusters(params.Params, md, out)
 
@@ -66,7 +66,7 @@ func getMetadataMatch(
 		return nil, nil, err
 	}
 
-	upstream, err := allUpstreams.Find(usRef.Namespace, usRef.Name)
+	upstream, err := allUpstreams.Find(usRef.GetNamespace(), usRef.GetName())
 	if err != nil {
 		return nil, nil, pluginutils.NewUpstreamNotFoundErr(*usRef) // should never happen, as we already validated the destination
 	}
@@ -79,16 +79,16 @@ func setWeightedClusters(params plugins.Params, multiDest *v1.MultiDestination, 
 	// Index clusters by name so we can look it up by the destination upstream
 	clusterMap := make(map[string]*envoy_config_route_v3.WeightedCluster_ClusterWeight)
 	for _, weightedCluster := range out.GetWeightedClusters().GetClusters() {
-		clusterMap[weightedCluster.Name] = weightedCluster
+		clusterMap[weightedCluster.GetName()] = weightedCluster
 	}
 
-	for _, weightedDest := range multiDest.Destinations {
+	for _, weightedDest := range multiDest.GetDestinations() {
 
-		if weightedDest.Destination.GetConsul() == nil {
+		if weightedDest.GetDestination().GetConsul() == nil {
 			continue
 		}
 
-		metadataMatch, usRef, err := getMetadataMatch(weightedDest.Destination, params.Snapshot.Upstreams)
+		metadataMatch, usRef, err := getMetadataMatch(weightedDest.GetDestination(), params.Snapshot.Upstreams)
 		if err != nil {
 			return err
 		}
@@ -120,14 +120,14 @@ func consulMetadataMatch(dest *v1.ConsulServiceDestination, upstream *v1.Upstrea
 
 	// If tag filter is provided, set the correspondent metadata.
 	// Otherwise don't set them (will match endpoints regardless of tags).
-	if len(dest.Tags) > 0 {
-		labels = BuildTagMetadata(dest.Tags, v1.UpstreamList{upstream})
+	if len(dest.GetTags()) > 0 {
+		labels = BuildTagMetadata(dest.GetTags(), v1.UpstreamList{upstream})
 	}
 
 	// If data center filter is provided, set the correspondent metadata.
 	// Otherwise don't set them (will match endpoints in any data center).
-	if len(dest.DataCenters) > 0 {
-		dcLabels := BuildDataCenterMetadata(dest.DataCenters, v1.UpstreamList{upstream})
+	if len(dest.GetDataCenters()) > 0 {
+		dcLabels := BuildDataCenterMetadata(dest.GetDataCenters(), v1.UpstreamList{upstream})
 		for k, v := range dcLabels {
 			labels[k] = v
 		}
@@ -142,7 +142,7 @@ func consulMetadataMatch(dest *v1.ConsulServiceDestination, upstream *v1.Upstrea
 	}
 
 	for k, v := range labels {
-		labelsStruct.Fields[k] = &structpb.Value{
+		labelsStruct.GetFields()[k] = &structpb.Value{
 			Kind: &structpb.Value_StringValue{
 				StringValue: v,
 			},

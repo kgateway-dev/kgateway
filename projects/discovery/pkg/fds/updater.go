@@ -141,7 +141,7 @@ func (u *Updater) UpstreamRemoved(upstream *v1.Upstream) {
 
 func (u *updaterUpdater) saveUpstream(mutator UpstreamMutator) error {
 	logger := contextutils.LoggerFrom(u.ctx)
-	logger.Debugw("Updating upstream with functions", "upstream", u.upstream.Metadata.Name)
+	logger.Debugw("Updating upstream with functions", "upstream", u.upstream.GetMetadata().GetName())
 	newupstream := proto.Clone(u.upstream).(*v1.Upstream)
 	err := mutator(newupstream)
 	if err != nil {
@@ -160,10 +160,10 @@ func (u *updaterUpdater) saveUpstream(mutator UpstreamMutator) error {
 	/* upstream, err = */
 	newupstream, err = u.parent.upstreamWriter.Write(newupstream, wo)
 	if err != nil {
-		logger.Warnw("error updating upstream on first try", "upstream", u.upstream.Metadata.Name, "error", err)
-		newupstream, err = u.parent.upstreamWriter.Read(u.upstream.Metadata.Namespace, u.upstream.Metadata.Name, clients.ReadOpts{Ctx: u.ctx})
+		logger.Warnw("error updating upstream on first try", "upstream", u.upstream.GetMetadata().GetName(), "error", err)
+		newupstream, err = u.parent.upstreamWriter.Read(u.upstream.GetMetadata().GetNamespace(), u.upstream.GetMetadata().GetName(), clients.ReadOpts{Ctx: u.ctx})
 		if err != nil {
-			logger.Warnw("can't read updated upstream for second try", "upstream", u.upstream.Metadata.Name, "error", err)
+			logger.Warnw("can't read updated upstream for second try", "upstream", u.upstream.GetMetadata().GetName(), "error", err)
 			return err
 		}
 	} else {
@@ -182,7 +182,7 @@ func (u *updaterUpdater) saveUpstream(mutator UpstreamMutator) error {
 
 	newupstream, err = u.parent.upstreamWriter.Write(newupstream, wo)
 	if err != nil {
-		logger.Warnw("error updating upstream on second try", "upstream", u.upstream.Metadata.Name, "error", err)
+		logger.Warnw("error updating upstream on second try", "upstream", u.upstream.GetMetadata().GetName(), "error", err)
 	} else {
 		u.upstream = newupstream
 	}
@@ -276,7 +276,7 @@ func (u *updaterUpdater) Run() error {
 
 	if discoveryForUpstream == nil {
 		// TODO: this is probably not going to work unless the upstream type will also have the method required
-		_, ok := u.upstream.UpstreamType.(v1.ServiceSpecSetter)
+		_, ok := u.upstream.GetUpstreamType().(v1.ServiceSpecSetter)
 		if !ok {
 			// can't set a service spec - which is required from this point on, as heuristic detection requires spec
 			return errors.New("discovery not possible for upstream")
@@ -297,7 +297,7 @@ func (u *updaterUpdater) Run() error {
 		}
 		discoveryForUpstream = res.fp
 		upstreamSave(func(upstream *v1.Upstream) error {
-			servicespecupstream, ok := upstream.UpstreamType.(v1.ServiceSpecSetter)
+			servicespecupstream, ok := upstream.GetUpstreamType().(v1.ServiceSpecSetter)
 			if !ok {
 				return errors.New("can't set spec")
 			}

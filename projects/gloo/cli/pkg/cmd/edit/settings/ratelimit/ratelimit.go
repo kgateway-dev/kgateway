@@ -51,7 +51,7 @@ func RateLimitConfig(opts *editOptions.EditOptions, optionsFunc ...cliutils.Opti
 
 func editSettings(opts *editOptions.EditOptions, optsExt *RateLimitSettings, args []string) error {
 	settingsClient := helpers.MustNamespacedSettingsClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
-	settings, err := settingsClient.Read(opts.Metadata.Namespace, opts.Metadata.Name, clients.ReadOpts{})
+	settings, err := settingsClient.Read(opts.Metadata.GetNamespace(), opts.Metadata.GetName(), clients.ReadOpts{})
 	if err != nil {
 		return errors.Wrapf(err, "Error reading settings")
 	}
@@ -61,14 +61,14 @@ func editSettings(opts *editOptions.EditOptions, optsExt *RateLimitSettings, arg
 		rlSettings = *rls
 	}
 
-	if rlSettings.RatelimitServerRef == nil {
+	if rlSettings.GetRatelimitServerRef() == nil {
 		rlSettings.RatelimitServerRef = new(core.ResourceRef)
 	}
-	if optsExt.RateLimitServerUpstreamRef.Name != "" {
-		rlSettings.RatelimitServerRef.Name = optsExt.RateLimitServerUpstreamRef.Name
+	if optsExt.RateLimitServerUpstreamRef.GetName() != "" {
+		rlSettings.GetRatelimitServerRef().Name = optsExt.RateLimitServerUpstreamRef.Name
 	}
-	if optsExt.RateLimitServerUpstreamRef.Namespace != "" {
-		rlSettings.RatelimitServerRef.Namespace = optsExt.RateLimitServerUpstreamRef.Namespace
+	if optsExt.RateLimitServerUpstreamRef.GetNamespace() != "" {
+		rlSettings.GetRatelimitServerRef().Namespace = optsExt.RateLimitServerUpstreamRef.Namespace
 	}
 
 	var zeroDuration time.Duration

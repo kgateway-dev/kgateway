@@ -42,13 +42,13 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			opts.Top.Output = versionOutput
 
-			if opts.Metadata.Namespace == "" {
+			if opts.Metadata.GetNamespace() == "" {
 				return NoNamespaceAllError
 			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return printVersion(NewKube(opts.Metadata.Namespace), os.Stdout, opts)
+			return printVersion(NewKube(opts.Metadata.GetNamespace()), os.Stdout, opts)
 		},
 	}
 
@@ -109,7 +109,7 @@ func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 			fmt.Fprintf(w, "%s\n", serverVersionStr)
 		}
 	default:
-		fmt.Fprintf(w, "Client: version: %s\n", vrs.GetClient().Version)
+		fmt.Fprintf(w, "Client: version: %s\n", vrs.GetClient().GetVersion())
 		if vrs.GetServer() == nil {
 			fmt.Fprintln(w, undefinedServer)
 			return nil

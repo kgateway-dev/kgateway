@@ -57,18 +57,18 @@ func ExtAuthConfig(opts *editRouteOptions.RouteEditInput, optionsFunc ...cliutil
 
 func editRoute(opts *editRouteOptions.RouteEditInput, input *authEditInput, args []string) error {
 	return editRouteOptions.UpdateRoute(opts, func(route *gatewayv1.Route) error {
-		if route.Options == nil {
+		if route.GetOptions() == nil {
 			route.Options = &gloov1.RouteOptions{}
 		}
-		if route.Options.Extauth == nil {
-			route.Options.Extauth = &extauthpb.ExtAuthExtension{}
+		if route.GetOptions().GetExtauth() == nil {
+			route.GetOptions().Extauth = &extauthpb.ExtAuthExtension{}
 		}
-		switch spec := route.Options.Extauth.Spec.(type) {
+		switch spec := route.GetOptions().GetExtauth().GetSpec().(type) {
 		case *extauthpb.ExtAuthExtension_Disable:
-			route.Options.Extauth.Spec = spec
+			route.GetOptions().GetExtauth().Spec = spec
 		default:
 			if input.Disable {
-				route.Options.Extauth.Spec = &extauthpb.ExtAuthExtension_Disable{Disable: true}
+				route.GetOptions().GetExtauth().Spec = &extauthpb.ExtAuthExtension_Disable{Disable: true}
 			}
 		}
 		return nil
