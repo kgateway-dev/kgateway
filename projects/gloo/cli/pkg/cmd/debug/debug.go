@@ -108,7 +108,7 @@ func DebugLogs(opts *options.Options, w io.Writer) error {
 }
 
 func DebugYaml(opts *options.Options, w io.Writer) error {
-	return DumpYaml(opts.Top.File, opts.Metadata.Namespace, &install.CmdKubectl{})
+	return DumpYaml(opts.Top.File, opts.Metadata.GetNamespace(), &install.CmdKubectl{})
 }
 
 // visible for testing
@@ -161,7 +161,7 @@ func displayLogs(w io.Writer, logs strings.Builder) error {
 }
 
 func setup(opts *options.Options) ([]*debugutils.LogsResponse, error) {
-	pods, err := helpers.MustKubeClient().CoreV1().Pods(opts.Metadata.Namespace).List(opts.Top.Ctx, metav1.ListOptions{
+	pods, err := helpers.MustKubeClient().CoreV1().Pods(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{
 		LabelSelector: "gloo",
 	})
 	if err != nil {

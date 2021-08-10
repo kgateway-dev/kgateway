@@ -22,11 +22,11 @@ func toEnvoyRateLimits(
 ) []*envoy_config_route_v3.RateLimit {
 	var ret []*envoy_config_route_v3.RateLimit
 	for _, action := range actions {
-		if len(action.Actions) != 0 {
+		if len(action.GetActions()) != 0 {
 			rl := &envoy_config_route_v3.RateLimit{
 				Stage: &wrappers.UInt32Value{Value: CustomStage},
 			}
-			rl.Actions = ConvertActions(ctx, action.Actions)
+			rl.Actions = ConvertActions(ctx, action.GetActions())
 			ret = append(ret, rl)
 		}
 	}
@@ -60,7 +60,7 @@ func ConvertActions(ctx context.Context, actions []*solo_rl.Action) []*envoy_con
 func convertAction(ctx context.Context, action *solo_rl.Action) *envoy_config_route_v3.RateLimit_Action {
 	var retAction envoy_config_route_v3.RateLimit_Action
 
-	switch specificAction := action.ActionSpecifier.(type) {
+	switch specificAction := action.GetActionSpecifier().(type) {
 	case *solo_rl.Action_SourceCluster_:
 		retAction.ActionSpecifier = &envoy_config_route_v3.RateLimit_Action_SourceCluster_{
 			SourceCluster: &envoy_config_route_v3.RateLimit_Action_SourceCluster{},
@@ -117,7 +117,7 @@ func convertAction(ctx context.Context, action *solo_rl.Action) *envoy_config_ro
 					Key:  specificAction.Metadata.GetMetadataKey().GetKey(),
 					Path: envoyPathSegments,
 				},
-				DefaultValue: specificAction.Metadata.DefaultValue,
+				DefaultValue: specificAction.Metadata.GetDefaultValue(),
 				Source:       envoy_config_route_v3.RateLimit_Action_MetaData_Source(specificAction.Metadata.GetSource()),
 			},
 		}
@@ -136,10 +136,10 @@ func convertHeaders(ctx context.Context, headers []*solo_rl.Action_HeaderValueMa
 
 func convertHeader(ctx context.Context, header *solo_rl.Action_HeaderValueMatch_HeaderMatcher) *envoy_config_route_v3.HeaderMatcher {
 	ret := &envoy_config_route_v3.HeaderMatcher{
-		InvertMatch: header.InvertMatch,
-		Name:        header.Name,
+		InvertMatch: header.GetInvertMatch(),
+		Name:        header.GetName(),
 	}
-	switch specificHeaderSpecifier := header.HeaderMatchSpecifier.(type) {
+	switch specificHeaderSpecifier := header.GetHeaderMatchSpecifier().(type) {
 	case *solo_rl.Action_HeaderValueMatch_HeaderMatcher_ExactMatch:
 		ret.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_ExactMatch{
 			ExactMatch: specificHeaderSpecifier.ExactMatch,
@@ -151,8 +151,8 @@ func convertHeader(ctx context.Context, header *solo_rl.Action_HeaderValueMatch_
 	case *solo_rl.Action_HeaderValueMatch_HeaderMatcher_RangeMatch:
 		ret.HeaderMatchSpecifier = &envoy_config_route_v3.HeaderMatcher_RangeMatch{
 			RangeMatch: &envoy_type_v3.Int64Range{
-				Start: specificHeaderSpecifier.RangeMatch.Start,
-				End:   specificHeaderSpecifier.RangeMatch.End,
+				Start: specificHeaderSpecifier.RangeMatch.GetStart(),
+				End:   specificHeaderSpecifier.RangeMatch.GetEnd(),
 			},
 		}
 	case *solo_rl.Action_HeaderValueMatch_HeaderMatcher_PresentMatch:

@@ -56,7 +56,7 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 	}
 	var filterChains []*envoy_config_listener_v3.FilterChain
 	multiErr := multierror.Error{}
-	for _, tcpHost := range tcpListener.TcpHosts {
+	for _, tcpHost := range tcpListener.GetTcpHosts() {
 
 		var listenerFilters []*envoy_config_listener_v3.Filter
 		statPrefix := tcpListener.GetStatPrefix()
@@ -123,7 +123,7 @@ func (p *Plugin) tcpProxyFilters(
 		}
 	case *v1.TcpHost_TcpAction_UpstreamGroup:
 		upstreamGroupRef := dest.UpstreamGroup
-		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
+		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.GetNamespace(), upstreamGroupRef.GetName())
 		if err != nil {
 			return nil, pluginutils.NewUpstreamGroupNotFoundErr(*upstreamGroupRef)
 		}
@@ -161,7 +161,7 @@ func (p *Plugin) tcpProxyFilters(
 }
 
 func (p *Plugin) convertToWeightedCluster(multiDest *v1.MultiDestination) (*envoytcp.TcpProxy_WeightedCluster, error) {
-	if len(multiDest.Destinations) == 0 {
+	if len(multiDest.GetDestinations()) == 0 {
 		return nil, translatorutil.NoDestinationSpecifiedError
 	}
 

@@ -20,16 +20,16 @@ import (
 // 2. lexicographically greater path string < lexicographically smaller path string
 func SortRoutesByPath(routes []*v1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
-		smallest1 := getSmallestOrDefaultMatcher(routes[i].Matchers)
-		smallest2 := getSmallestOrDefaultMatcher(routes[j].Matchers)
+		smallest1 := getSmallestOrDefaultMatcher(routes[i].GetMatchers())
+		smallest2 := getSmallestOrDefaultMatcher(routes[j].GetMatchers())
 		return lessMatcher(smallest1, smallest2)
 	})
 }
 
 func SortGatewayRoutesByPath(routes []*gatewayv1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
-		smallest1 := getSmallestOrDefaultMatcher(routes[i].Matchers)
-		smallest2 := getSmallestOrDefaultMatcher(routes[j].Matchers)
+		smallest1 := getSmallestOrDefaultMatcher(routes[i].GetMatchers())
+		smallest2 := getSmallestOrDefaultMatcher(routes[j].GetMatchers())
 		return lessMatcher(smallest1, smallest2)
 	})
 }
@@ -48,8 +48,8 @@ func getSmallestOrDefaultMatcher(matchers []*matchers.Matcher) *matchers.Matcher
 }
 
 func lessMatcher(m1, m2 *matchers.Matcher) bool {
-	if len(m1.Methods) != len(m2.Methods) {
-		return len(m1.Methods) > len(m2.Methods)
+	if len(m1.GetMethods()) != len(m2.GetMethods()) {
+		return len(m1.GetMethods()) > len(m2.GetMethods())
 	}
 	if pathTypePriority(m1) != pathTypePriority(m2) {
 		return pathTypePriority(m1) < pathTypePriority(m2)
@@ -67,7 +67,7 @@ const (
 )
 
 func pathTypePriority(m *matchers.Matcher) int {
-	switch m.PathSpecifier.(type) {
+	switch m.GetPathSpecifier().(type) {
 	case *matchers.Matcher_Exact:
 		return pathPriorityExact
 	case *matchers.Matcher_Regex:

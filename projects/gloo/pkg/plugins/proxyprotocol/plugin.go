@@ -44,6 +44,6 @@ func (p *plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		},
 	}
 
-	out.ListenerFilters = append(out.ListenerFilters, listenerFilter)
+	out.ListenerFilters = append(out.GetListenerFilters(), listenerFilter)
 	return nil
 }

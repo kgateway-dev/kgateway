@@ -105,15 +105,15 @@ func (t *translatorInstance) Translate(
 
 	reports := make(reporter.ResourceReports)
 
-	logger.Debugf("verifying upstream groups: %v", proxy.Metadata.Name)
+	logger.Debugf("verifying upstream groups: %v", proxy.GetMetadata().GetName())
 	t.verifyUpstreamGroups(params, reports)
 
 	upstreamRefKeyToEndpoints := createUpstreamToEndpointsMap(params.Snapshot.Upstreams, params.Snapshot.Endpoints)
 
 	// endpoints and listeners are shared between listeners
-	logger.Debugf("computing envoy clusters for proxy: %v", proxy.Metadata.Name)
+	logger.Debugf("computing envoy clusters for proxy: %v", proxy.GetMetadata().GetName())
 	clusters, clusterToUpstreamMap := t.computeClusters(params, reports, upstreamRefKeyToEndpoints, proxy)
-	logger.Debugf("computing envoy endpoints for proxy: %v", proxy.Metadata.Name)
+	logger.Debugf("computing envoy endpoints for proxy: %v", proxy.GetMetadata().GetName())
 
 	endpoints := t.computeClusterEndpoints(params, upstreamRefKeyToEndpoints, reports)
 
@@ -126,15 +126,15 @@ ClusterLoop:
 		}
 		// get upstream that generated this cluster
 		upstream := clusterToUpstreamMap[c]
-		endpointClusterName, err := getEndpointClusterName(c.Name, upstream)
+		endpointClusterName, err := getEndpointClusterName(c.GetName(), upstream)
 		if err != nil {
 			reports.AddError(upstream, errors.Wrapf(err, "could not marshal upstream to JSON"))
 		}
 		// Workaround for envoy bug: https://github.com/envoyproxy/envoy/issues/13009
 		// Change the cluster eds config, forcing envoy to re-request latest EDS config
-		c.EdsClusterConfig.ServiceName = endpointClusterName
+		c.GetEdsClusterConfig().ServiceName = endpointClusterName
 		for _, ep := range endpoints {
-			if ep.ClusterName == c.Name {
+			if ep.GetClusterName() == c.GetName() {
 
 				// the endpoint ClusterName needs to match the cluster's EdsClusterConfig ServiceName
 				ep.ClusterName = endpointClusterName
@@ -147,9 +147,9 @@ ClusterLoop:
 		// make sure to call EndpointPlugin with empty endpoint
 		for _, upstream := range params.Snapshot.Upstreams {
 			if UpstreamToClusterName(&core.ResourceRef{
-				Name:      upstream.Metadata.Name,
-				Namespace: upstream.Metadata.Namespace,
-			}) == c.Name {
+				Name:      upstream.GetMetadata().GetName(),
+				Namespace: upstream.GetMetadata().GetNamespace(),
+			}) == c.GetName() {
 				for _, plugin := range t.plugins {
 					ep, ok := plugin.(plugins.EndpointPlugin)
 					if ok {
@@ -171,10 +171,10 @@ ClusterLoop:
 
 	proxyRpt := validation.MakeReport(proxy)
 
-	for i, listener := range proxy.Listeners {
-		listenerReport := proxyRpt.ListenerReports[i]
+	for i, listener := range proxy.GetListeners() {
+		listenerReport := proxyRpt.GetListenerReports()[i]
 
-		logger.Infof("computing envoy resources for listener: %v", listener.Name)
+		logger.Infof("computing envoy resources for listener: %v", listener.GetName())
 
 		envoyResources := t.computeListenerResources(params, proxy, listener, listenerReport)
 		if envoyResources != nil {
@@ -267,7 +267,7 @@ func (t *translatorInstance) generateXDSSnapshot(
 	}
 	for _, listener := range listeners {
 		// don't add empty listeners, envoy will complain
-		if len(listener.FilterChains) < 1 {
+		if len(listener.GetFilterChains()) < 1 {
 			continue
 		}
 		listenersProto = append(listenersProto, resource.NewEnvoyResource(proto.Clone(listener)))
@@ -326,7 +326,7 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 
 	for _, routeCfg := range routeConfigs {
 		// don't add empty route configs, envoy will complain
-		if len(routeCfg.VirtualHosts) < 1 {
+		if len(routeCfg.GetVirtualHosts()) < 1 {
 			continue
 		}
 		routesProto = append(routesProto, resource.NewEnvoyResource(proto.Clone(routeCfg)))

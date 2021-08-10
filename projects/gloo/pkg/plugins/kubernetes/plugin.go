@@ -31,12 +31,12 @@ type plugin struct {
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
-	kubeSpec, ok := u.UpstreamType.(*v1.Upstream_Kube)
+	kubeSpec, ok := u.GetUpstreamType().(*v1.Upstream_Kube)
 	if !ok {
 		return nil, nil
 	}
 
-	return url.Parse(fmt.Sprintf("tcp://%v.%v.svc.cluster.local:%v", kubeSpec.Kube.ServiceName, kubeSpec.Kube.ServiceNamespace, kubeSpec.Kube.ServicePort))
+	return url.Parse(fmt.Sprintf("tcp://%v.%v.svc.cluster.local:%v", kubeSpec.Kube.GetServiceName(), kubeSpec.Kube.GetServiceNamespace(), kubeSpec.Kube.GetServicePort()))
 }
 
 func NewPlugin(kube kubernetes.Interface, kubeCoreCache corecache.KubeCoreCache) plugins.Plugin {
@@ -54,7 +54,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 	// not ours
-	kube, ok := in.UpstreamType.(*v1.Upstream_Kube)
+	kube, ok := in.GetUpstreamType().(*v1.Upstream_Kube)
 	if !ok {
 		return nil
 	}
@@ -64,10 +64,10 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	upstreamRef := in.GetMetadata().Ref()
 
 	// Lister functions obfuscate the typical (val, ok) pair returned values of maps, so we have to do a nil check instead.
-	lister := p.kubeCoreCache.NamespacedServiceLister(kube.Kube.ServiceNamespace)
+	lister := p.kubeCoreCache.NamespacedServiceLister(kube.Kube.GetServiceNamespace())
 	if lister == nil {
 		return errors.Errorf("Upstream %s references the service \"%s\" which has an invalid ServiceNamespace \"%s\".",
-			upstreamRef.String(), kube.Kube.ServiceName, kube.Kube.ServiceNamespace)
+			upstreamRef.String(), kube.Kube.GetServiceName(), kube.Kube.GetServiceNamespace())
 	}
 
 	svcs, err := lister.List(labels.NewSelector())
@@ -75,12 +75,12 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return err
 	}
 	for _, s := range svcs {
-		if s.Name == kube.Kube.ServiceName {
+		if s.Name == kube.Kube.GetServiceName() {
 			return nil
 		}
 	}
 
 	return errors.Errorf("Upstream %s references the service \"%s\" which does not exist in namespace \"%s\"",
-		upstreamRef.String(), kube.Kube.ServiceName, kube.Kube.ServiceNamespace)
+		upstreamRef.String(), kube.Kube.GetServiceName(), kube.Kube.GetServiceNamespace())
 
 }

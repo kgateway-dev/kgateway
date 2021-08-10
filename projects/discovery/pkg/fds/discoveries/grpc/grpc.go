@@ -22,7 +22,7 @@ import (
 )
 
 func getgrpcspec(u *v1.Upstream) *grpc_plugins.ServiceSpec {
-	upstreamType, ok := u.UpstreamType.(v1.ServiceSpecGetter)
+	upstreamType, ok := u.GetUpstreamType().(v1.ServiceSpecGetter)
 	if !ok {
 		return nil
 	}
@@ -31,7 +31,7 @@ func getgrpcspec(u *v1.Upstream) *grpc_plugins.ServiceSpec {
 		return nil
 	}
 
-	grpcwrapper, ok := upstreamType.GetServiceSpec().PluginType.(*plugins.ServiceSpec_Grpc)
+	grpcwrapper, ok := upstreamType.GetServiceSpec().GetPluginType().(*plugins.ServiceSpec_Grpc)
 	if !ok {
 		return nil
 	}
@@ -65,7 +65,7 @@ func (f *UpstreamFunctionDiscovery) IsFunctional() bool {
 
 func (f *UpstreamFunctionDiscovery) DetectType(ctx context.Context, url *url.URL) (*plugins.ServiceSpec, error) {
 	log := contextutils.LoggerFrom(ctx)
-	log.Debugf("attempting to detect GRPC for %s", f.upstream.Metadata.Name)
+	log.Debugf("attempting to detect GRPC for %s", f.upstream.GetMetadata().GetName())
 
 	refClient, closeConn, err := getclient(ctx, url)
 	if err != nil {
@@ -141,7 +141,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 		}
 		files := getDepTree(root)
 
-		descriptors.File = append(descriptors.File, files...)
+		descriptors.File = append(descriptors.GetFile(), files...)
 
 		parts := strings.Split(s, ".")
 		serviceName := parts[len(parts)-1]
@@ -156,7 +156,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 				methods := svc.GetMethods()
 				for _, method := range methods {
 					methodname := method.GetName()
-					grpcservice.FunctionNames = append(grpcservice.FunctionNames, methodname)
+					grpcservice.FunctionNames = append(grpcservice.GetFunctionNames(), methodname)
 				}
 			}
 		}

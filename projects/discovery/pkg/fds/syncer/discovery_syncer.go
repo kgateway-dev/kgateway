@@ -75,12 +75,12 @@ func selectUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, u
 
 func isBlacklistedUpstream(us *v1.Upstream) bool {
 	// Fall back to Metadata labels to support legacy Upstreams if needed
-	return isBlacklisted(us.GetDiscoveryMetadata().GetLabels()) || isBlacklisted(us.Metadata.Labels)
+	return isBlacklisted(us.GetDiscoveryMetadata().GetLabels()) || isBlacklisted(us.GetMetadata().GetLabels())
 }
 
 func isWhitelistedUpstream(us *v1.Upstream) bool {
 	// Fall back to Metadata labels to support legacy Upstreams if needed
-	return isWhitelisted(us.GetDiscoveryMetadata().GetLabels()) || isWhitelisted(us.Metadata.Labels)
+	return isWhitelisted(us.GetDiscoveryMetadata().GetLabels()) || isWhitelisted(us.GetMetadata().GetLabels())
 }
 
 func isBlacklisted(labels map[string]string) bool {
@@ -147,7 +147,7 @@ func selectUpstreamsWhitelist(upstreams v1.UpstreamList, whitelistedNamespaces, 
 // TODO: The way we resolve namespace is a bit confusing -- using the service namespace if the upstream is a kube service, or the upstream namespace otherwise
 func getUpstreamNamespace(us *v1.Upstream) string {
 	if kubeSpec := us.GetKube(); kubeSpec != nil {
-		return kubeSpec.ServiceNamespace
+		return kubeSpec.GetServiceNamespace()
 	}
-	return us.Metadata.Namespace
+	return us.GetMetadata().GetNamespace()
 }

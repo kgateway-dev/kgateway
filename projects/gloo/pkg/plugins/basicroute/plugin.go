@@ -33,14 +33,14 @@ func (p *Plugin) ProcessVirtualHost(
 	in *v1.VirtualHost,
 	out *envoy_config_route_v3.VirtualHost,
 ) error {
-	if in.Options == nil {
+	if in.GetOptions() == nil {
 		return nil
 	}
 	return applyRetriesVhost(in, out)
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	if in.Options == nil {
+	if in.GetOptions() == nil {
 		return nil
 	}
 	if err := applyPrefixRewrite(in, out); err != nil {
@@ -66,66 +66,66 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 }
 
 func applyPrefixRewrite(in *v1.Route, out *envoy_config_route_v3.Route) error {
-	if in.Options.PrefixRewrite == nil {
+	if in.GetOptions().GetPrefixRewrite() == nil {
 		return nil
 	}
-	routeAction, ok := out.Action.(*envoy_config_route_v3.Route_Route)
+	routeAction, ok := out.GetAction().(*envoy_config_route_v3.Route_Route)
 	if !ok {
 		return errors.Errorf("prefix rewrite is only available for Route Actions")
 	}
 	if routeAction.Route == nil {
 		return errors.Errorf("internal error: route %v specified a prefix, but output Envoy object "+
-			"had nil route", in.Action)
+			"had nil route", in.GetAction())
 	}
-	routeAction.Route.PrefixRewrite = in.Options.PrefixRewrite.Value
+	routeAction.Route.PrefixRewrite = in.GetOptions().GetPrefixRewrite().Value
 	return nil
 }
 
 func applyRegexRewrite(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	if in.Options.RegexRewrite == nil {
+	if in.GetOptions().GetRegexRewrite() == nil {
 		return nil
 	}
-	routeAction, ok := out.Action.(*envoy_config_route_v3.Route_Route)
+	routeAction, ok := out.GetAction().(*envoy_config_route_v3.Route_Route)
 	if !ok {
 		return errors.Errorf("regex rewrite is only available for Route Actions")
 	}
 	if routeAction.Route == nil {
 		return errors.Errorf("internal error: route %v specified a regex, but output Envoy object "+
-			"had nil route", in.Action)
+			"had nil route", in.GetAction())
 	}
-	routeAction.Route.RegexRewrite = convertRegexMatchAndSubstitute(params, in.Options.RegexRewrite)
+	routeAction.Route.RegexRewrite = convertRegexMatchAndSubstitute(params, in.GetOptions().GetRegexRewrite())
 	return nil
 }
 
 func applyTimeout(in *v1.Route, out *envoy_config_route_v3.Route) error {
-	if in.Options.Timeout == nil {
+	if in.GetOptions().GetTimeout() == nil {
 		return nil
 	}
-	routeAction, ok := out.Action.(*envoy_config_route_v3.Route_Route)
+	routeAction, ok := out.GetAction().(*envoy_config_route_v3.Route_Route)
 	if !ok {
 		return errors.Errorf("timeout is only available for Route Actions")
 	}
 	if routeAction.Route == nil {
 		return errors.Errorf("internal error: route %v specified a prefix, but output Envoy object "+
-			"had nil route", in.Action)
+			"had nil route", in.GetAction())
 	}
 
-	routeAction.Route.Timeout = in.Options.Timeout
+	routeAction.Route.Timeout = in.GetOptions().Timeout
 	return nil
 }
 
 func applyRetries(in *v1.Route, out *envoy_config_route_v3.Route) error {
-	policy := in.Options.Retries
+	policy := in.GetOptions().Retries
 	if policy == nil {
 		return nil
 	}
-	routeAction, ok := out.Action.(*envoy_config_route_v3.Route_Route)
+	routeAction, ok := out.GetAction().(*envoy_config_route_v3.Route_Route)
 	if !ok {
 		return errors.Errorf("retries is only available for Route Actions")
 	}
 	if routeAction.Route == nil {
 		return errors.Errorf("internal error: route %v specified a prefix, but output Envoy object "+
-			"had nil route", in.Action)
+			"had nil route", in.GetAction())
 	}
 
 	routeAction.Route.RetryPolicy = convertPolicy(policy)
@@ -137,13 +137,13 @@ func applyHostRewrite(in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if hostRewriteType == nil {
 		return nil
 	}
-	routeAction, ok := out.Action.(*envoy_config_route_v3.Route_Route)
+	routeAction, ok := out.GetAction().(*envoy_config_route_v3.Route_Route)
 	if !ok {
 		return errors.Errorf("hostRewrite is only available for Route Actions")
 	}
 	if routeAction.Route == nil {
 		return errors.Errorf("internal error: route %v specified a prefix, but output Envoy object "+
-			"had nil route", in.Action)
+			"had nil route", in.GetAction())
 	}
 	switch rewriteType := hostRewriteType.(type) {
 	case *v1.RouteOptions_HostRewrite:
@@ -167,14 +167,14 @@ func applyUpgrades(in *v1.Route, out *envoy_config_route_v3.Route) error {
 		return nil
 	}
 
-	routeAction, ok := out.Action.(*envoy_config_route_v3.Route_Route)
+	routeAction, ok := out.GetAction().(*envoy_config_route_v3.Route_Route)
 	if !ok {
 		return errors.Errorf("upgrades are only available for Route Actions")
 	}
 
 	if routeAction.Route == nil {
 		return errors.Errorf("internal error: route %v specified a prefix, but output Envoy object "+
-			"had nil route", in.Action)
+			"had nil route", in.GetAction())
 	}
 
 	routeAction.Route.UpgradeConfigs = make([]*envoy_config_route_v3.RouteAction_UpgradeConfig, len(upgrades))
@@ -182,7 +182,7 @@ func applyUpgrades(in *v1.Route, out *envoy_config_route_v3.Route) error {
 	for i, config := range upgrades {
 		switch upgradeType := config.GetUpgradeType().(type) {
 		case *protocol_upgrade.ProtocolUpgradeConfig_Websocket:
-			routeAction.Route.UpgradeConfigs[i] = &envoy_config_route_v3.RouteAction_UpgradeConfig{
+			routeAction.Route.GetUpgradeConfigs()[i] = &envoy_config_route_v3.RouteAction_UpgradeConfig{
 				UpgradeType: upgradeconfig.WebSocketUpgradeType,
 				Enabled:     config.GetWebsocket().GetEnabled(),
 			}
@@ -191,11 +191,11 @@ func applyUpgrades(in *v1.Route, out *envoy_config_route_v3.Route) error {
 		}
 	}
 
-	return upgradeconfig.ValidateRouteUpgradeConfigs(routeAction.Route.UpgradeConfigs)
+	return upgradeconfig.ValidateRouteUpgradeConfigs(routeAction.Route.GetUpgradeConfigs())
 }
 
 func applyRetriesVhost(in *v1.VirtualHost, out *envoy_config_route_v3.VirtualHost) error {
-	out.RetryPolicy = convertPolicy(in.Options.Retries)
+	out.RetryPolicy = convertPolicy(in.GetOptions().GetRetries())
 	return nil
 }
 
@@ -222,14 +222,14 @@ func convertRegexMatchAndSubstitute(params plugins.RouteParams, in *v32.RegexMat
 	}
 
 	out := &envoy_type_matcher_v3.RegexMatchAndSubstitute{
-		Pattern:      regexutils.NewRegex(params.Ctx, in.Pattern.Regex),
-		Substitution: in.Substitution,
+		Pattern:      regexutils.NewRegex(params.Ctx, in.GetPattern().GetRegex()),
+		Substitution: in.GetSubstitution(),
 	}
-	switch inET := in.Pattern.EngineType.(type) {
+	switch inET := in.GetPattern().GetEngineType().(type) {
 	case *v32.RegexMatcher_GoogleRe2:
-		outET := out.Pattern.EngineType.(*envoy_type_matcher_v3.RegexMatcher_GoogleRe2)
-		if inET.GoogleRe2.MaxProgramSize != nil && (outET.GoogleRe2.MaxProgramSize == nil || inET.GoogleRe2.MaxProgramSize.Value < outET.GoogleRe2.MaxProgramSize.Value) {
-			out.Pattern = regexutils.NewRegexWithProgramSize(in.Pattern.Regex, &inET.GoogleRe2.MaxProgramSize.Value)
+		outET := out.GetPattern().GetEngineType().(*envoy_type_matcher_v3.RegexMatcher_GoogleRe2)
+		if inET.GoogleRe2.GetMaxProgramSize() != nil && (outET.GoogleRe2.GetMaxProgramSize() == nil || inET.GoogleRe2.GetMaxProgramSize().GetValue() < outET.GoogleRe2.GetMaxProgramSize().GetValue()) {
+			out.Pattern = regexutils.NewRegexWithProgramSize(in.GetPattern().GetRegex(), &inET.GoogleRe2.GetMaxProgramSize().Value)
 		}
 	}
 

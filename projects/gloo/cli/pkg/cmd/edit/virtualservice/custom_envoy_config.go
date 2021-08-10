@@ -37,19 +37,19 @@ func RateLimitCustomConfig(opts *editOptions.EditOptions, optionsFunc ...cliutil
 func editVhost(opts *editOptions.EditOptions) error {
 
 	vsClient := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
-	vs, err := vsClient.Read(opts.Metadata.Namespace, opts.Metadata.Name, clients.ReadOpts{})
+	vs, err := vsClient.Read(opts.Metadata.GetNamespace(), opts.Metadata.GetName(), clients.ReadOpts{})
 	if err != nil {
 		return errors.Wrapf(err, "Error reading virtual service")
 	}
 
 	if opts.ResourceVersion != "" {
-		if vs.Metadata.ResourceVersion != opts.ResourceVersion {
+		if vs.GetMetadata().GetResourceVersion() != opts.ResourceVersion {
 			return fmt.Errorf("conflict - resource version does not match")
 		}
 	}
 
 	ratelimitExtension := new(ratelimitpb.RateLimitVhostExtension)
-	if rlExt := vs.VirtualHost.GetOptions().GetRatelimit(); rlExt != nil {
+	if rlExt := vs.GetVirtualHost().GetOptions().GetRatelimit(); rlExt != nil {
 		ratelimitExtension = rlExt
 	}
 
@@ -59,11 +59,11 @@ func editVhost(opts *editOptions.EditOptions) error {
 		return err
 	}
 	ratelimitExtension = ratelimitExtensionProto.(*ratelimitpb.RateLimitVhostExtension)
-	if vs.VirtualHost.Options == nil {
-		vs.VirtualHost.Options = &gloov1.VirtualHostOptions{}
+	if vs.GetVirtualHost().GetOptions() == nil {
+		vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{}
 	}
 
-	vs.VirtualHost.Options.RateLimitConfigType = &gloov1.VirtualHostOptions_Ratelimit{Ratelimit: ratelimitExtension}
+	vs.GetVirtualHost().GetOptions().RateLimitConfigType = &gloov1.VirtualHostOptions_Ratelimit{Ratelimit: ratelimitExtension}
 	_, err = vsClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
 	return err
 }

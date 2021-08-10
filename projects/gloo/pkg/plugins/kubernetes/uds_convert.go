@@ -109,13 +109,13 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 }
 
 func UpdateUpstream(original, desired *v1.Upstream) (didChange bool, err error) {
-	originalSpec, ok := original.UpstreamType.(*v1.Upstream_Kube)
+	originalSpec, ok := original.GetUpstreamType().(*v1.Upstream_Kube)
 	if !ok {
-		return false, errors.Errorf("internal error: expected *v1.Upstream_Kube, got %v", reflect.TypeOf(original.UpstreamType).Name())
+		return false, errors.Errorf("internal error: expected *v1.Upstream_Kube, got %v", reflect.TypeOf(original.GetUpstreamType()).Name())
 	}
-	desiredSpec, ok := desired.UpstreamType.(*v1.Upstream_Kube)
+	desiredSpec, ok := desired.GetUpstreamType().(*v1.Upstream_Kube)
 	if !ok {
-		return false, errors.Errorf("internal error: expected *v1.Upstream_Kube, got %v", reflect.TypeOf(original.UpstreamType).Name())
+		return false, errors.Errorf("internal error: expected *v1.Upstream_Kube, got %v", reflect.TypeOf(original.GetUpstreamType()).Name())
 	}
 	// copy service spec, we don't want to overwrite that
 	desiredSpec.Kube.ServiceSpec = originalSpec.Kube.ServiceSpec

@@ -39,14 +39,14 @@ func (p *plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 
 	// automatically add tls inspector when ssl is enabled
 	if in.GetSslConfigurations() != nil {
-		out.ListenerFilters = append(out.ListenerFilters, tlsInspector)
+		out.ListenerFilters = append(out.GetListenerFilters(), tlsInspector)
 	} else {
 		// check if ssl config is set on tcp host
 		switch in.GetListenerType().(type) {
 		case *v1.Listener_TcpListener:
 			for _, host := range in.GetTcpListener().GetTcpHosts() {
 				if host.GetSslConfig() != nil || host.GetDestination().GetForwardSniClusterName() != nil {
-					out.ListenerFilters = append(out.ListenerFilters, tlsInspector)
+					out.ListenerFilters = append(out.GetListenerFilters(), tlsInspector)
 					break
 				}
 			}

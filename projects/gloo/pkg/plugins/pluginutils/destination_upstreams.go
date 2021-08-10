@@ -10,7 +10,7 @@ import (
 )
 
 func DestinationUpstreams(snap *v1.ApiSnapshot, in *v1.RouteAction) ([]core.ResourceRef, error) {
-	switch dest := in.Destination.(type) {
+	switch dest := in.GetDestination().(type) {
 	case *v1.RouteAction_Single:
 		upstream, err := usconversions.DestinationToUpstreamRef(dest.Single)
 		if err != nil {
@@ -19,15 +19,15 @@ func DestinationUpstreams(snap *v1.ApiSnapshot, in *v1.RouteAction) ([]core.Reso
 		return []core.ResourceRef{*upstream}, nil
 
 	case *v1.RouteAction_Multi:
-		return destinationsToRefs(dest.Multi.Destinations)
+		return destinationsToRefs(dest.Multi.GetDestinations())
 
 	case *v1.RouteAction_UpstreamGroup:
 
-		upstreamGroup, err := snap.UpstreamGroups.Find(dest.UpstreamGroup.Namespace, dest.UpstreamGroup.Name)
+		upstreamGroup, err := snap.UpstreamGroups.Find(dest.UpstreamGroup.GetNamespace(), dest.UpstreamGroup.GetName())
 		if err != nil {
 			return nil, NewUpstreamGroupNotFoundErr(*dest.UpstreamGroup)
 		}
-		return destinationsToRefs(upstreamGroup.Destinations)
+		return destinationsToRefs(upstreamGroup.GetDestinations())
 	}
 	panic("invalid route")
 }
@@ -35,7 +35,7 @@ func DestinationUpstreams(snap *v1.ApiSnapshot, in *v1.RouteAction) ([]core.Reso
 func destinationsToRefs(destinations []*v1.WeightedDestination) ([]core.ResourceRef, error) {
 	var upstreams []core.ResourceRef
 	for _, dest := range destinations {
-		upstream, err := usconversions.DestinationToUpstreamRef(dest.Destination)
+		upstream, err := usconversions.DestinationToUpstreamRef(dest.GetDestination())
 		if err != nil {
 			return nil, err
 		}

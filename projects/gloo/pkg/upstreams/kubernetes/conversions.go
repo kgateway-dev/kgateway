@@ -18,8 +18,8 @@ func IsKubeUpstream(upstreamName string) bool {
 
 func DestinationToUpstreamRef(svcDest *v1.KubernetesServiceDestination) *core.ResourceRef {
 	return &core.ResourceRef{
-		Namespace: svcDest.Ref.Namespace,
-		Name:      fakeUpstreamName(svcDest.Ref.Name, svcDest.Ref.Namespace, int32(svcDest.Port)),
+		Namespace: svcDest.GetRef().GetNamespace(),
+		Name:      fakeUpstreamName(svcDest.GetRef().GetName(), svcDest.GetRef().GetNamespace(), int32(svcDest.GetPort())),
 	}
 }
 
@@ -43,9 +43,9 @@ func KubeServicesToUpstreams(ctx context.Context, services skkube.ServiceList) v
 func serviceToUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort) *gloov1.Upstream {
 	us := kubeplugin.DefaultUpstreamConverter().CreateUpstream(ctx, svc, port)
 
-	us.Metadata.Name = fakeUpstreamName(svc.Name, svc.Namespace, port.Port)
-	us.Metadata.Namespace = svc.Namespace
-	us.Metadata.ResourceVersion = ""
+	us.GetMetadata().Name = fakeUpstreamName(svc.Name, svc.Namespace, port.Port)
+	us.GetMetadata().Namespace = svc.Namespace
+	us.GetMetadata().ResourceVersion = ""
 
 	return us
 }

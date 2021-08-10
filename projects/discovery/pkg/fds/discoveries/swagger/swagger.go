@@ -58,7 +58,7 @@ type SwaggerFunctionDiscovery struct {
 }
 
 func getswagspec(u *v1.Upstream) *rest_plugins.ServiceSpec_SwaggerInfo {
-	spec, ok := u.UpstreamType.(v1.ServiceSpecGetter)
+	spec, ok := u.GetUpstreamType().(v1.ServiceSpecGetter)
 	if !ok {
 		return nil
 	}
@@ -66,12 +66,12 @@ func getswagspec(u *v1.Upstream) *rest_plugins.ServiceSpec_SwaggerInfo {
 	if serviceSpec == nil {
 		return nil
 	}
-	restwrapper, ok := serviceSpec.PluginType.(*plugins.ServiceSpec_Rest)
+	restwrapper, ok := serviceSpec.GetPluginType().(*plugins.ServiceSpec_Rest)
 	if !ok {
 		return nil
 	}
 	rest := restwrapper.Rest
-	return rest.SwaggerInfo
+	return rest.GetSwaggerInfo()
 }
 
 func (f *SwaggerFunctionDiscovery) IsFunctional() bool {
@@ -164,11 +164,11 @@ func (f *SwaggerFunctionDiscovery) detectUpstreamTypeOnce(ctx context.Context, b
 func (f *SwaggerFunctionDiscovery) DetectFunctions(ctx context.Context, url *url.URL, _ func() fds.Dependencies, updatecb func(fds.UpstreamMutator) error) error {
 	in := f.upstream
 	spec := getswagspec(in)
-	if spec == nil || spec.SwaggerSpec == nil {
+	if spec == nil || spec.GetSwaggerSpec() == nil {
 		// TODO: make this a fatal error that avoids restarts?
 		return errors.New("upstream doesn't have a swagger spec")
 	}
-	switch document := spec.SwaggerSpec.(type) {
+	switch document := spec.GetSwaggerSpec().(type) {
 	case *rest_plugins.ServiceSpec_SwaggerInfo_Url:
 		return f.detectFunctionsFromUrl(ctx, document.Url, in, updatecb)
 	case *rest_plugins.ServiceSpec_SwaggerInfo_Inline:
@@ -242,7 +242,7 @@ func (f *SwaggerFunctionDiscovery) detectFunctionsFromSpec(ctx context.Context, 
 	}
 
 	return updatecb(func(u *v1.Upstream) error {
-		upstreamSpec, ok := u.UpstreamType.(v1.ServiceSpecMutator)
+		upstreamSpec, ok := u.GetUpstreamType().(v1.ServiceSpecMutator)
 		if !ok {
 			return errors.New("not a valid upstream")
 		}
@@ -250,7 +250,7 @@ func (f *SwaggerFunctionDiscovery) detectFunctionsFromSpec(ctx context.Context, 
 		if spec == nil {
 			spec = &plugins.ServiceSpec{}
 		}
-		restspec, ok := spec.PluginType.(*plugins.ServiceSpec_Rest)
+		restspec, ok := spec.GetPluginType().(*plugins.ServiceSpec_Rest)
 		if !ok {
 			restspec = &plugins.ServiceSpec_Rest{
 				Rest: &rest_plugins.ServiceSpec{},

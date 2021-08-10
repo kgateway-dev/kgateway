@@ -16,11 +16,11 @@ func (xd *XdsDump) GetEc2InstancesForUpstream(upstream *core.ResourceRef) []stri
 	clusterName := translator.UpstreamToClusterName(upstream)
 	endpointCount := 0
 	for _, clusterEndpoints := range xd.Endpoints {
-		if clusterEndpoints.ClusterName == clusterName {
-			for _, lEp := range clusterEndpoints.Endpoints {
-				for _, ep := range lEp.LbEndpoints {
-					if k, ok := ep.Metadata.FilterMetadata[translator.SoloAnnotations]; ok {
-						v, ok := k.Fields[ec2.InstanceIdAnnotationKey]
+		if clusterEndpoints.GetClusterName() == clusterName {
+			for _, lEp := range clusterEndpoints.GetEndpoints() {
+				for _, ep := range lEp.GetLbEndpoints() {
+					if k, ok := ep.GetMetadata().GetFilterMetadata()[translator.SoloAnnotations]; ok {
+						v, ok := k.GetFields()[ec2.InstanceIdAnnotationKey]
 						if ok {
 							endpointCount++
 							out = append(out, v.GetStringValue())

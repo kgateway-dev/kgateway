@@ -139,11 +139,11 @@ func getXdsDump(ctx context.Context, xdsPort, proxyName, proxyNamespace string) 
 	// dig through hcms in listeners to find routes
 	var hcms []envoyhttp.HttpConnectionManager
 	for _, l := range xdsDump.Listeners {
-		for _, fc := range l.FilterChains {
-			for _, filter := range fc.Filters {
-				if filter.Name == "envoy.http_connection_manager" {
+		for _, fc := range l.GetFilterChains() {
+			for _, filter := range fc.GetFilters() {
+				if filter.GetName() == "envoy.http_connection_manager" {
 					var hcm envoyhttp.HttpConnectionManager
-					switch config := filter.ConfigType.(type) {
+					switch config := filter.GetConfigType().(type) {
 					case *envoylistener.Filter_TypedConfig:
 						if err = ptypes.UnmarshalAny(config.TypedConfig, &hcm); err == nil {
 							hcms = append(hcms, hcm)
@@ -160,7 +160,7 @@ func getXdsDump(ctx context.Context, xdsPort, proxyName, proxyNamespace string) 
 
 	var routes []string
 	for _, hcm := range hcms {
-		routes = append(routes, hcm.RouteSpecifier.(*envoyhttp.HttpConnectionManager_Rds).Rds.RouteConfigName)
+		routes = append(routes, hcm.GetRouteSpecifier().(*envoyhttp.HttpConnectionManager_Rds).Rds.GetRouteConfigName())
 	}
 
 	xdsDump.Routes, err = listRoutes(ctx, conn, dr, routes)
@@ -180,7 +180,7 @@ func listClusters(ctx context.Context, dr *discovery_v3.DiscoveryRequest, conn *
 		return nil, err
 	}
 	var clusters []envoycluster.Cluster
-	for _, anyCluster := range dresp.Resources {
+	for _, anyCluster := range dresp.GetResources() {
 
 		var cluster envoycluster.Cluster
 		if err := ptypes.UnmarshalAny(anyCluster, &cluster); err != nil {
@@ -199,7 +199,7 @@ func listEndpoints(ctx context.Context, dr *discovery_v3.DiscoveryRequest, conn 
 	}
 	var class []envoyendpoint.ClusterLoadAssignment
 
-	for _, anyCla := range dresp.Resources {
+	for _, anyCla := range dresp.GetResources() {
 
 		var cla envoyendpoint.ClusterLoadAssignment
 		if err := ptypes.UnmarshalAny(anyCla, &cla); err != nil {
@@ -220,7 +220,7 @@ func listListeners(ctx context.Context, dr *discovery_v3.DiscoveryRequest, conn 
 	}
 	var listeners []envoylistener.Listener
 
-	for _, anylistener := range dresp.Resources {
+	for _, anylistener := range dresp.GetResources() {
 		var listener envoylistener.Listener
 		if err := ptypes.UnmarshalAny(anylistener, &listener); err != nil {
 			return nil, err
@@ -243,7 +243,7 @@ func listRoutes(ctx context.Context, conn *grpc.ClientConn, dr *discovery_v3.Dis
 	}
 	var routes []envoy_config_route_v3.RouteConfiguration
 
-	for _, anyRoute := range dresp.Resources {
+	for _, anyRoute := range dresp.GetResources() {
 		var route envoy_config_route_v3.RouteConfiguration
 		if err := ptypes.UnmarshalAny(anyRoute, &route); err != nil {
 			return nil, err

@@ -53,18 +53,18 @@ func MarkPerFilterConfig(
 		return err
 	}
 
-	switch dest := inAction.Destination.(type) {
+	switch dest := inAction.GetDestination().(type) {
 	case *v1.RouteAction_UpstreamGroup:
 
-		upstreamGroup, err := snap.UpstreamGroups.Find(dest.UpstreamGroup.Namespace, dest.UpstreamGroup.Name)
+		upstreamGroup, err := snap.UpstreamGroups.Find(dest.UpstreamGroup.GetNamespace(), dest.UpstreamGroup.GetName())
 		if err != nil {
 			return NewUpstreamGroupNotFoundErr(*dest.UpstreamGroup)
 		}
 
-		return configureMultiDest(upstreamGroup.Destinations, outAction, filterName, perFilterConfig)
+		return configureMultiDest(upstreamGroup.GetDestinations(), outAction, filterName, perFilterConfig)
 	case *v1.RouteAction_Multi:
 
-		return configureMultiDest(dest.Multi.Destinations, outAction, filterName, perFilterConfig)
+		return configureMultiDest(dest.Multi.GetDestinations(), outAction, filterName, perFilterConfig)
 	case *v1.RouteAction_Single:
 		if out.GetTypedPerFilterConfig() == nil {
 			out.TypedPerFilterConfig = make(map[string]*any.Any)
@@ -88,20 +88,20 @@ func configureMultiDest(
 	perFilterConfig PerFilterConfigFunc,
 ) error {
 
-	multiClusterSpecifier, ok := outAction.ClusterSpecifier.(*envoy_config_route_v3.RouteAction_WeightedClusters)
+	multiClusterSpecifier, ok := outAction.GetClusterSpecifier().(*envoy_config_route_v3.RouteAction_WeightedClusters)
 	if !ok {
 		return errors.Errorf("input destination Multi but output destination was not")
 	}
 	out := multiClusterSpecifier.WeightedClusters
 
-	if len(in) != len(out.Clusters) {
+	if len(in) != len(out.GetClusters()) {
 		return errors.Errorf("number of input destinations did not match number of destination weighted clusters")
 	}
 	for i := range in {
 		if out.GetClusters()[i].GetTypedPerFilterConfig() == nil {
 			out.GetClusters()[i].TypedPerFilterConfig = make(map[string]*any.Any)
 		}
-		err := configureSingleDest(in[i].Destination, out.Clusters[i].GetTypedPerFilterConfig(), filterName, perFilterConfig)
+		err := configureSingleDest(in[i].GetDestination(), out.GetClusters()[i].GetTypedPerFilterConfig(), filterName, perFilterConfig)
 		if err != nil {
 			return err
 		}

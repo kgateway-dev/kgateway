@@ -22,7 +22,7 @@ func VirtualService(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) 
 		Long:    "usage: glooctl delete virtualservice [NAME] [--namespace=namespace]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := common.GetName(args, opts)
-			if err := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace()).Delete(opts.Metadata.Namespace, name,
+			if err := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace()).Delete(opts.Metadata.GetNamespace(), name,
 				clients.DeleteOpts{Ctx: opts.Top.Ctx}); err != nil {
 				return err
 			}
