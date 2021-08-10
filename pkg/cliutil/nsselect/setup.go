@@ -54,7 +54,7 @@ func GatherResources(ctx context.Context, namespaces []string) (NsResourceMap, e
 		}
 		var upstreams = []string{}
 		for _, m := range upstreamList {
-			upstreams = append(upstreams, m.Metadata.Name)
+			upstreams = append(upstreams, m.GetMetadata().GetName())
 		}
 
 		nsResources[ns] = &NsResource{

@@ -72,7 +72,7 @@ func oauthSecretArgsInteractive(ctx context.Context, meta *core.Metadata, input 
 }
 
 func createOauthSecret(ctx context.Context, meta *core.Metadata, input extauth.OauthSecret, dryRun bool, outputType printers.OutputType) error {
-	if input.ClientSecret == "" {
+	if input.GetClientSecret() == "" {
 		return fmt.Errorf("client-secret not provided")
 	}
 

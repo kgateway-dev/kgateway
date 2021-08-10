@@ -58,7 +58,7 @@ func (p *Plugin) translateBufferFilter(buf *buffer.Buffer) *envoybuffer.Buffer {
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	bufPerRoute := in.Options.GetBufferPerRoute()
+	bufPerRoute := in.GetOptions().GetBufferPerRoute()
 	if bufPerRoute == nil {
 		return nil
 	}

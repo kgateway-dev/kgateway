@@ -86,7 +86,7 @@ func createVirtualService(opts *options.Options, args []string) error {
 		}
 	}
 
-	printers.PrintVirtualServices(opts.Top.Ctx, v1.VirtualServiceList{vs}, opts.Top.Output, opts.Metadata.Namespace)
+	printers.PrintVirtualServices(opts.Top.Ctx, v1.VirtualServiceList{vs}, opts.Top.Output, opts.Metadata.GetNamespace())
 
 	return nil
 }
@@ -108,8 +108,8 @@ func virtualServiceFromOpts(meta *core.Metadata, input options.InputVirtualServi
 	}
 	rl := input.RateLimit
 	if rl.Enable {
-		if vs.VirtualHost.Options == nil {
-			vs.VirtualHost.Options = &gloov1.VirtualHostOptions{}
+		if vs.GetVirtualHost().GetOptions() == nil {
+			vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{}
 		}
 		timeUnit, ok := rltypes.RateLimit_Unit_value[rl.TimeUnit]
 		if !ok {
@@ -121,7 +121,7 @@ func virtualServiceFromOpts(meta *core.Metadata, input options.InputVirtualServi
 				RequestsPerUnit: rl.RequestsPerTimeUnit,
 			},
 		}
-		vs.VirtualHost.Options.RatelimitBasic = ingressRateLimit
+		vs.GetVirtualHost().GetOptions().RatelimitBasic = ingressRateLimit
 	}
 
 	return vs, authFromOpts(vs, input)
@@ -136,12 +136,12 @@ func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) erro
 		Name:      input.AuthConfig.Name,
 		Namespace: input.AuthConfig.Namespace,
 	}
-	if vs.VirtualHost.Options == nil {
-		vs.VirtualHost.Options = &gloov1.VirtualHostOptions{}
+	if vs.GetVirtualHost().GetOptions() == nil {
+		vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{}
 	}
-	if vs.VirtualHost.Options.Extauth == nil {
-		vs.VirtualHost.Options.Extauth = &extauthv1.ExtAuthExtension{}
+	if vs.GetVirtualHost().GetOptions().GetExtauth() == nil {
+		vs.GetVirtualHost().GetOptions().Extauth = &extauthv1.ExtAuthExtension{}
 	}
-	vs.VirtualHost.Options.Extauth.Spec = &extauthv1.ExtAuthExtension_ConfigRef{ConfigRef: acRef}
+	vs.GetVirtualHost().GetOptions().GetExtauth().Spec = &extauthv1.ExtAuthExtension_ConfigRef{ConfigRef: acRef}
 	return nil
 }

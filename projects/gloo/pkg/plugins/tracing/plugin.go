@@ -88,7 +88,7 @@ func (p *Plugin) ProcessHcmSettings(
 func customTags(tracingSettings *tracing.ListenerTracingSettings) []*envoytracing.CustomTag {
 	var customTags []*envoytracing.CustomTag
 
-	for _, requestHeaderTag := range tracingSettings.RequestHeadersForTags {
+	for _, requestHeaderTag := range tracingSettings.GetRequestHeadersForTags() {
 		tag := &envoytracing.CustomTag{
 			Tag: requestHeaderTag,
 			Type: &envoytracing.CustomTag_RequestHeader{
@@ -99,24 +99,24 @@ func customTags(tracingSettings *tracing.ListenerTracingSettings) []*envoytracin
 		}
 		customTags = append(customTags, tag)
 	}
-	for _, envVarTag := range tracingSettings.EnvironmentVariablesForTags {
+	for _, envVarTag := range tracingSettings.GetEnvironmentVariablesForTags() {
 		tag := &envoytracing.CustomTag{
-			Tag: envVarTag.Tag,
+			Tag: envVarTag.GetTag(),
 			Type: &envoytracing.CustomTag_Environment_{
 				Environment: &envoytracing.CustomTag_Environment{
-					Name:         envVarTag.Name,
-					DefaultValue: envVarTag.DefaultValue,
+					Name:         envVarTag.GetName(),
+					DefaultValue: envVarTag.GetDefaultValue(),
 				},
 			},
 		}
 		customTags = append(customTags, tag)
 	}
-	for _, literalTag := range tracingSettings.LiteralsForTags {
+	for _, literalTag := range tracingSettings.GetLiteralsForTags() {
 		tag := &envoytracing.CustomTag{
-			Tag: literalTag.Tag,
+			Tag: literalTag.GetTag(),
 			Type: &envoytracing.CustomTag_Literal_{
 				Literal: &envoytracing.CustomTag_Literal{
-					Value: literalTag.Value,
+					Value: literalTag.GetValue(),
 				},
 			},
 		}
@@ -247,11 +247,11 @@ func envoySimplePercentWithDefault(numerator *wrappers.FloatValue, defaultValue 
 	if numerator == nil {
 		return envoySimplePercent(defaultValue)
 	}
-	return envoySimplePercent(numerator.Value)
+	return envoySimplePercent(numerator.GetValue())
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	if in.Options == nil || in.Options.Tracing == nil {
+	if in.GetOptions() == nil || in.GetOptions().GetTracing() == nil {
 		return nil
 	}
 	if percentages := in.GetOptions().GetTracing().TracePercentages; percentages != nil {
@@ -267,11 +267,11 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			OverallSampling: common.ToEnvoyPercentage(oneHundredPercent),
 		}
 	}
-	descriptor := in.Options.Tracing.RouteDescriptor
+	descriptor := in.GetOptions().GetTracing().RouteDescriptor
 	if descriptor != "" {
 		out.Decorator = &envoy_config_route_v3.Decorator{
 			Operation: descriptor,
-			Propagate: in.Options.Tracing.GetPropagate(),
+			Propagate: in.GetOptions().GetTracing().GetPropagate(),
 		}
 	}
 	return nil

@@ -45,11 +45,11 @@ func Sort(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Com
 }
 
 func sortRoutes(opts *options.Options) error {
-	if opts.Metadata.Name == "" {
+	if opts.Metadata.GetName() == "" {
 		return errors.Errorf("name of the target virtual service cannot be empty")
 	}
 
-	vs, err := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace()).Read(opts.Metadata.Namespace, opts.Metadata.Name,
+	vs, err := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace()).Read(opts.Metadata.GetNamespace(), opts.Metadata.GetName(),
 		clients.ReadOpts{Ctx: opts.Top.Ctx})
 	if err != nil {
 		return errors.Wrapf(err, "reading vs %v", opts.Metadata.Ref())
@@ -58,8 +58,8 @@ func sortRoutes(opts *options.Options) error {
 	fmt.Printf("sorting %v routes by:\n"+
 		"- exact < regex < prefix \n"+
 		"- longest path first \n"+
-		"...\n", len(vs.VirtualHost.Routes))
-	utils.SortGatewayRoutesByPath(vs.VirtualHost.Routes)
+		"...\n", len(vs.GetVirtualHost().GetRoutes()))
+	utils.SortGatewayRoutesByPath(vs.GetVirtualHost().GetRoutes())
 
 	out, err := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, opts.Metadata.GetNamespace()).Write(vs, clients.WriteOpts{
 		Ctx:               opts.Top.Ctx,
@@ -69,6 +69,6 @@ func sortRoutes(opts *options.Options) error {
 		return errors.Wrapf(err, "writing updated vs")
 	}
 
-	_ = printers.PrintVirtualServices(opts.Top.Ctx, gatewayv1.VirtualServiceList{out}, opts.Top.Output, opts.Metadata.Namespace)
+	_ = printers.PrintVirtualServices(opts.Top.Ctx, gatewayv1.VirtualServiceList{out}, opts.Top.Output, opts.Metadata.GetNamespace())
 	return nil
 }

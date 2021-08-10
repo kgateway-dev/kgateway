@@ -277,11 +277,11 @@ func addSdsCluster(configMap *corev1.ConfigMap) error {
 		return err
 	}
 
-	clusters := bootstrapConfig.StaticResources.Clusters
+	clusters := bootstrapConfig.GetStaticResources().Clusters
 
 	gatewayProxySds := genGatewayProxyCluster()
 
-	bootstrapConfig.StaticResources.Clusters = append(clusters, gatewayProxySds)
+	bootstrapConfig.GetStaticResources().Clusters = append(clusters, gatewayProxySds)
 
 	// Marshall bootstrapConfig into JSON
 	var bootStrapJSON bytes.Buffer

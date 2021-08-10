@@ -179,11 +179,11 @@ func (p *Plugin) convertTransformation(
 	if t != nil && stagedTransformations.GetRegular() == nil {
 		// keep deprecated config until we are sure we don't need it.
 		// on newer envoys it will be ignored.
-		requestTransform, err := p.TranslateTransformation(t.RequestTransformation)
+		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation())
 		if err != nil {
 			return nil, err
 		}
-		responseTransform, err := p.TranslateTransformation(t.ResponseTransformation)
+		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation())
 		if err != nil {
 			return nil, err
 		}
@@ -192,12 +192,12 @@ func (p *Plugin) convertTransformation(
 		ret.ResponseTransformation = responseTransform
 		// new config:
 		// we have to have it too, as if any new config is defined the deprecated config is ignored.
-		ret.Transformations = append(ret.Transformations, &envoytransformation.RouteTransformations_RouteTransformation{
+		ret.Transformations = append(ret.GetTransformations(), &envoytransformation.RouteTransformations_RouteTransformation{
 			Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
 				RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
 					Match:                  nil,
 					RequestTransformation:  requestTransform,
-					ClearRouteCache:        t.ClearRouteCache,
+					ClearRouteCache:        t.GetClearRouteCache(),
 					ResponseTransformation: responseTransform,
 				},
 			},
@@ -210,14 +210,14 @@ func (p *Plugin) convertTransformation(
 		if err != nil {
 			return nil, err
 		}
-		ret.Transformations = append(ret.Transformations, transformations...)
+		ret.Transformations = append(ret.GetTransformations(), transformations...)
 	}
 	if regular := stagedTransformations.GetRegular(); regular != nil {
 		transformations, err := p.getTransformations(ctx, 0, regular)
 		if err != nil {
 			return nil, err
 		}
-		ret.Transformations = append(ret.Transformations, transformations...)
+		ret.Transformations = append(ret.GetTransformations(), transformations...)
 	}
 	return ret, nil
 }
@@ -266,7 +266,7 @@ func (p *Plugin) validateTransformation(ctx context.Context, transformations *en
 func (p *Plugin) getTransformations(ctx context.Context, stage uint32, transformations *transformation.RequestResponseTransformations) ([]*envoytransformation.RouteTransformations_RouteTransformation, error) {
 	var outTransformations []*envoytransformation.RouteTransformations_RouteTransformation
 	for _, transformation := range transformations.GetResponseTransforms() {
-		responseTransform, err := p.TranslateTransformation(transformation.ResponseTransformation)
+		responseTransform, err := p.TranslateTransformation(transformation.GetResponseTransformation())
 		if err != nil {
 			return nil, err
 		}
@@ -282,11 +282,11 @@ func (p *Plugin) getTransformations(ctx context.Context, stage uint32, transform
 	}
 
 	for _, transformation := range transformations.GetRequestTransforms() {
-		requestTransform, err := p.TranslateTransformation(transformation.RequestTransformation)
+		requestTransform, err := p.TranslateTransformation(transformation.GetRequestTransformation())
 		if err != nil {
 			return nil, err
 		}
-		responseTransform, err := p.TranslateTransformation(transformation.ResponseTransformation)
+		responseTransform, err := p.TranslateTransformation(transformation.GetResponseTransformation())
 		if err != nil {
 			return nil, err
 		}
@@ -296,7 +296,7 @@ func (p *Plugin) getTransformations(ctx context.Context, stage uint32, transform
 				RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
 					Match:                  getRequestMatcher(ctx, transformation.GetMatcher()),
 					RequestTransformation:  requestTransform,
-					ClearRouteCache:        transformation.ClearRouteCache,
+					ClearRouteCache:        transformation.GetClearRouteCache(),
 					ResponseTransformation: responseTransform,
 				},
 			},
@@ -311,9 +311,9 @@ func getResponseMatcher(ctx context.Context, m *transformation.ResponseMatch) *e
 	matcher := &envoytransformation.ResponseMatcher{
 		Headers: envoyHeaderMatcher(ctx, m.GetMatchers()),
 	}
-	if m.ResponseCodeDetails != "" {
+	if m.GetResponseCodeDetails() != "" {
 		matcher.ResponseCodeDetails = &v3.StringMatcher{
-			MatchPattern: &v3.StringMatcher_Exact{Exact: m.ResponseCodeDetails},
+			MatchPattern: &v3.StringMatcher_Exact{Exact: m.GetResponseCodeDetails()},
 		}
 	}
 	return matcher
@@ -328,10 +328,10 @@ func getRequestMatcher(ctx context.Context, matcher *matchers.Matcher) *envoyrou
 		QueryParameters: envoyQueryMatcher(ctx, matcher.GetQueryParameters()),
 	}
 	if len(matcher.GetMethods()) > 0 {
-		match.Headers = append(match.Headers, &envoyroutev3.HeaderMatcher{
+		match.Headers = append(match.GetHeaders(), &envoyroutev3.HeaderMatcher{
 			Name: ":method",
 			HeaderMatchSpecifier: &envoyroutev3.HeaderMatcher_SafeRegexMatch{
-				SafeRegexMatch: convertRegex(regexutils.NewRegex(ctx, strings.Join(matcher.Methods, "|"))),
+				SafeRegexMatch: convertRegex(regexutils.NewRegex(ctx, strings.Join(matcher.GetMethods(), "|"))),
 			},
 		})
 	}
@@ -362,19 +362,19 @@ func envoyQueryMatcher(ctx context.Context, in []*matchers.QueryParameterMatcher
 	var out []*envoyroutev3.QueryParameterMatcher
 	for _, matcher := range in {
 		envoyMatch := &envoyroutev3.QueryParameterMatcher{
-			Name: matcher.Name,
+			Name: matcher.GetName(),
 		}
 
-		if matcher.Value == "" {
+		if matcher.GetValue() == "" {
 			envoyMatch.QueryParameterMatchSpecifier = &envoyroutev3.QueryParameterMatcher_PresentMatch{
 				PresentMatch: true,
 			}
 		} else {
-			if matcher.Regex {
+			if matcher.GetRegex() {
 				envoyMatch.QueryParameterMatchSpecifier = &envoyroutev3.QueryParameterMatcher_StringMatch{
 					StringMatch: &v3.StringMatcher{
 						MatchPattern: &v3.StringMatcher_SafeRegex{
-							SafeRegex: convertRegex(regexutils.NewRegex(ctx, matcher.Value)),
+							SafeRegex: convertRegex(regexutils.NewRegex(ctx, matcher.GetValue())),
 						},
 					},
 				}
@@ -382,7 +382,7 @@ func envoyQueryMatcher(ctx context.Context, in []*matchers.QueryParameterMatcher
 				envoyMatch.QueryParameterMatchSpecifier = &envoyroutev3.QueryParameterMatcher_StringMatch{
 					StringMatch: &v3.StringMatcher{
 						MatchPattern: &v3.StringMatcher_Exact{
-							Exact: matcher.Value,
+							Exact: matcher.GetValue(),
 						},
 					},
 				}
@@ -397,26 +397,26 @@ func envoyHeaderMatcher(ctx context.Context, in []*matchers.HeaderMatcher) []*en
 	var out []*envoyroutev3.HeaderMatcher
 	for _, matcher := range in {
 		envoyMatch := &envoyroutev3.HeaderMatcher{
-			Name: matcher.Name,
+			Name: matcher.GetName(),
 		}
-		if matcher.Value == "" {
+		if matcher.GetValue() == "" {
 			envoyMatch.HeaderMatchSpecifier = &envoyroutev3.HeaderMatcher_PresentMatch{
 				PresentMatch: true,
 			}
 		} else {
-			if matcher.Regex {
-				regex := regexutils.NewRegex(ctx, matcher.Value)
+			if matcher.GetRegex() {
+				regex := regexutils.NewRegex(ctx, matcher.GetValue())
 				envoyMatch.HeaderMatchSpecifier = &envoyroutev3.HeaderMatcher_SafeRegexMatch{
 					SafeRegexMatch: convertRegex(regex),
 				}
 			} else {
 				envoyMatch.HeaderMatchSpecifier = &envoyroutev3.HeaderMatcher_ExactMatch{
-					ExactMatch: matcher.Value,
+					ExactMatch: matcher.GetValue(),
 				}
 			}
 		}
 
-		if matcher.InvertMatch {
+		if matcher.GetInvertMatch() {
 			envoyMatch.InvertMatch = true
 		}
 		out = append(out, envoyMatch)

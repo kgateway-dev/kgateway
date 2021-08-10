@@ -19,6 +19,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	enterprisegloosoloiov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1/kube/apis/enterprise.gloo.solo.io/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -39,7 +41,7 @@ var authconfigsResource = schema.GroupVersionResource{Group: "enterprise.gloo.so
 var authconfigsKind = schema.GroupVersionKind{Group: "enterprise.gloo.solo.io", Version: "v1", Kind: "AuthConfig"}
 
 // Get takes name of the authConfig, and returns the corresponding authConfig object, and an error if there is any.
-func (c *FakeAuthConfigs) Get(name string, options v1.GetOptions) (result *enterprisegloosoloiov1.AuthConfig, err error) {
+func (c *FakeAuthConfigs) Get(ctx context.Context, name string, options v1.GetOptions) (result *enterprisegloosoloiov1.AuthConfig, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(authconfigsResource, c.ns, name), &enterprisegloosoloiov1.AuthConfig{})
 
@@ -50,7 +52,7 @@ func (c *FakeAuthConfigs) Get(name string, options v1.GetOptions) (result *enter
 }
 
 // List takes label and field selectors, and returns the list of AuthConfigs that match those selectors.
-func (c *FakeAuthConfigs) List(opts v1.ListOptions) (result *enterprisegloosoloiov1.AuthConfigList, err error) {
+func (c *FakeAuthConfigs) List(ctx context.Context, opts v1.ListOptions) (result *enterprisegloosoloiov1.AuthConfigList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(authconfigsResource, authconfigsKind, c.ns, opts), &enterprisegloosoloiov1.AuthConfigList{})
 
@@ -72,14 +74,14 @@ func (c *FakeAuthConfigs) List(opts v1.ListOptions) (result *enterprisegloosoloi
 }
 
 // Watch returns a watch.Interface that watches the requested authConfigs.
-func (c *FakeAuthConfigs) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeAuthConfigs) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(authconfigsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a authConfig and creates it.  Returns the server's representation of the authConfig, and an error, if there is any.
-func (c *FakeAuthConfigs) Create(authConfig *enterprisegloosoloiov1.AuthConfig) (result *enterprisegloosoloiov1.AuthConfig, err error) {
+func (c *FakeAuthConfigs) Create(ctx context.Context, authConfig *enterprisegloosoloiov1.AuthConfig, opts v1.CreateOptions) (result *enterprisegloosoloiov1.AuthConfig, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(authconfigsResource, c.ns, authConfig), &enterprisegloosoloiov1.AuthConfig{})
 
@@ -90,7 +92,7 @@ func (c *FakeAuthConfigs) Create(authConfig *enterprisegloosoloiov1.AuthConfig) 
 }
 
 // Update takes the representation of a authConfig and updates it. Returns the server's representation of the authConfig, and an error, if there is any.
-func (c *FakeAuthConfigs) Update(authConfig *enterprisegloosoloiov1.AuthConfig) (result *enterprisegloosoloiov1.AuthConfig, err error) {
+func (c *FakeAuthConfigs) Update(ctx context.Context, authConfig *enterprisegloosoloiov1.AuthConfig, opts v1.UpdateOptions) (result *enterprisegloosoloiov1.AuthConfig, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(authconfigsResource, c.ns, authConfig), &enterprisegloosoloiov1.AuthConfig{})
 
@@ -102,7 +104,7 @@ func (c *FakeAuthConfigs) Update(authConfig *enterprisegloosoloiov1.AuthConfig) 
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeAuthConfigs) UpdateStatus(authConfig *enterprisegloosoloiov1.AuthConfig) (*enterprisegloosoloiov1.AuthConfig, error) {
+func (c *FakeAuthConfigs) UpdateStatus(ctx context.Context, authConfig *enterprisegloosoloiov1.AuthConfig, opts v1.UpdateOptions) (*enterprisegloosoloiov1.AuthConfig, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(authconfigsResource, "status", c.ns, authConfig), &enterprisegloosoloiov1.AuthConfig{})
 
@@ -113,7 +115,7 @@ func (c *FakeAuthConfigs) UpdateStatus(authConfig *enterprisegloosoloiov1.AuthCo
 }
 
 // Delete takes name of the authConfig and deletes it. Returns an error if one occurs.
-func (c *FakeAuthConfigs) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeAuthConfigs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(authconfigsResource, c.ns, name), &enterprisegloosoloiov1.AuthConfig{})
 
@@ -121,15 +123,15 @@ func (c *FakeAuthConfigs) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeAuthConfigs) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(authconfigsResource, c.ns, listOptions)
+func (c *FakeAuthConfigs) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(authconfigsResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &enterprisegloosoloiov1.AuthConfigList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched authConfig.
-func (c *FakeAuthConfigs) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *enterprisegloosoloiov1.AuthConfig, err error) {
+func (c *FakeAuthConfigs) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *enterprisegloosoloiov1.AuthConfig, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(authconfigsResource, c.ns, name, pt, data, subresources...), &enterprisegloosoloiov1.AuthConfig{})
 

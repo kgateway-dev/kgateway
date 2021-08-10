@@ -33,12 +33,12 @@ func CreateRequestExtractors(ctx context.Context, params *transformapi.Parameter
 	}
 	// headers we support submatching on
 	// custom as well as the path and authority/host header
-	if params.Path != nil {
-		if err := addHeaderExtractorFromParam(ctx, ":path", params.Path.Value, extractors); err != nil {
+	if params.GetPath() != nil {
+		if err := addHeaderExtractorFromParam(ctx, ":path", params.GetPath().GetValue(), extractors); err != nil {
 			return nil, errors.Wrapf(err, "error processing parameter")
 		}
 	}
-	for headerName, headerValue := range params.Headers {
+	for headerName, headerValue := range params.GetHeaders() {
 		if err := addHeaderExtractorFromParam(ctx, headerName, headerValue, extractors); err != nil {
 			return nil, errors.Wrapf(err, "error processing parameter")
 		}

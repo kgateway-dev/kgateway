@@ -50,7 +50,7 @@ func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 			if key == APIKeyDataKey {
 				continue
 			}
-			apiKeySecret.Metadata[key] = string(value)
+			apiKeySecret.GetMetadata()[key] = string(value)
 		}
 
 		glooSecret := &v1.Secret{
@@ -71,12 +71,12 @@ func (c *APIKeySecretConverter) ToKubeSecret(_ context.Context, rc *kubesecret.R
 	if !ok {
 		return nil, nil
 	}
-	apiKeyGlooSecret, ok := glooSecret.Kind.(*v1.Secret_ApiKey)
+	apiKeyGlooSecret, ok := glooSecret.GetKind().(*v1.Secret_ApiKey)
 	if !ok {
 		return nil, nil
 	}
 
-	kubeMeta := kubeutils.ToKubeMeta(glooSecret.Metadata)
+	kubeMeta := kubeutils.ToKubeMeta(glooSecret.GetMetadata())
 
 	// If the secret we have in memory is a plain solo-kit secret (i.e. it was written to storage before
 	// this converter was added), we take the chance to convert it to the new format.

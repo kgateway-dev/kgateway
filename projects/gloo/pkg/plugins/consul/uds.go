@@ -57,17 +57,17 @@ func (p *plugin) DiscoverUpstreams(_ []string, writeNamespace string, opts clien
 // set namespace and name to be valid for writing to storage
 func setRealName(list v1.UpstreamList, writeNamespace string) v1.UpstreamList {
 	list.Each(func(element *v1.Upstream) {
-		element.Metadata.Name = strings.TrimPrefix(element.Metadata.Name, consul.UpstreamNamePrefix)
-		element.Metadata.Namespace = writeNamespace
+		element.GetMetadata().Name = strings.TrimPrefix(element.GetMetadata().GetName(), consul.UpstreamNamePrefix)
+		element.GetMetadata().Namespace = writeNamespace
 	})
 	return list
 }
 func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
-	originalSpec, ok := original.UpstreamType.(*v1.Upstream_Consul)
+	originalSpec, ok := original.GetUpstreamType().(*v1.Upstream_Consul)
 	if !ok {
 		return false, InvalidSpecTypeError(original, "original")
 	}
-	desiredSpec, ok := desired.UpstreamType.(*v1.Upstream_Consul)
+	desiredSpec, ok := desired.GetUpstreamType().(*v1.Upstream_Consul)
 	if !ok {
 		return false, InvalidSpecTypeError(desired, "desired")
 	}

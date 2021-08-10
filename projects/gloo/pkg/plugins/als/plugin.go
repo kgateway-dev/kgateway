@@ -39,7 +39,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		return nil
 	}
 	alSettings := in.GetOptions()
-	if alSettings.AccessLoggingService == nil {
+	if alSettings.GetAccessLoggingService() == nil {
 		return nil
 	}
 	switch listenerType := in.GetListenerType().(type) {
@@ -49,7 +49,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		}
 		for _, f := range out.GetFilterChains() {
 			for i, filter := range f.GetFilters() {
-				if filter.Name == wellknown.HTTPConnectionManager {
+				if filter.GetName() == wellknown.HTTPConnectionManager {
 					// get config
 					var hcmCfg envoyhttp.HttpConnectionManager
 					err := translatorutil.ParseTypedConfig(filter, &hcmCfg)
@@ -64,7 +64,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 						return err
 					}
 
-					f.Filters[i], err = translatorutil.NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, &hcmCfg)
+					f.GetFilters()[i], err = translatorutil.NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, &hcmCfg)
 					// this should never error
 					if err != nil {
 						return err
@@ -78,7 +78,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		}
 		for _, f := range out.GetFilterChains() {
 			for i, filter := range f.GetFilters() {
-				if filter.Name == wellknown.TCPProxy {
+				if filter.GetName() == wellknown.TCPProxy {
 					// get config
 					var tcpCfg envoytcp.TcpProxy
 					err := translatorutil.ParseTypedConfig(filter, &tcpCfg)
@@ -93,7 +93,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 						return err
 					}
 
-					f.Filters[i], err = translatorutil.NewFilterWithTypedConfig(wellknown.TCPProxy, &tcpCfg)
+					f.GetFilters()[i], err = translatorutil.NewFilterWithTypedConfig(wellknown.TCPProxy, &tcpCfg)
 					// this should never error
 					if err != nil {
 						return err
@@ -151,7 +151,7 @@ func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, alsSettings *als.A
 	cfg.AdditionalResponseHeadersToLog = alsSettings.GrpcService.AdditionalResponseHeadersToLog
 	cfg.AdditionalResponseTrailersToLog = alsSettings.GrpcService.AdditionalResponseTrailersToLog
 	cfg.CommonConfig = &envoygrpc.CommonGrpcAccessLogConfig{
-		LogName:             alsSettings.GrpcService.LogName,
+		LogName:             alsSettings.GrpcService.GetLogName(),
 		GrpcService:         svc,
 		TransportApiVersion: envoycore.ApiVersion_V3,
 	}

@@ -64,8 +64,8 @@ func (s *TranslatorSyncerExtension) Sync(
 	}
 
 	for _, proxy := range snap.Proxies {
-		for _, listener := range proxy.Listeners {
-			httpListener, ok := listener.ListenerType.(*gloov1.Listener_HttpListener)
+		for _, listener := range proxy.GetListeners() {
+			httpListener, ok := listener.GetListenerType().(*gloov1.Listener_HttpListener)
 			if !ok {
 				// not an http listener - skip it as currently ext auth is only supported for http
 				continue
@@ -82,7 +82,7 @@ func (s *TranslatorSyncerExtension) Sync(
 					return getEnterpriseOnlyErr()
 				}
 
-				for _, route := range virtualHost.Routes {
+				for _, route := range virtualHost.GetRoutes() {
 					if route.GetOptions().GetExtauth().GetConfigRef() != nil {
 						return getEnterpriseOnlyErr()
 					}

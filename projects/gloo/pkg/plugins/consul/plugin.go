@@ -45,7 +45,7 @@ type plugin struct {
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
-	consulSpec, ok := u.UpstreamType.(*v1.Upstream_Consul)
+	consulSpec, ok := u.GetUpstreamType().(*v1.Upstream_Consul)
 	if !ok {
 		return nil, nil
 	}
@@ -54,17 +54,17 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 
 	// default to first datacenter
 	var dc string
-	if len(spec.DataCenters) > 0 {
-		dc = spec.DataCenters[0]
+	if len(spec.GetDataCenters()) > 0 {
+		dc = spec.GetDataCenters()[0]
 	}
 
-	instances, _, err := p.client.Service(spec.ServiceName, "", &api.QueryOptions{Datacenter: dc, RequireConsistent: true})
+	instances, _, err := p.client.Service(spec.GetServiceName(), "", &api.QueryOptions{Datacenter: dc, RequireConsistent: true})
 	if err != nil {
 		return nil, eris.Wrapf(err, "getting service from catalog")
 	}
 
 	scheme := "http"
-	if u.SslConfig != nil {
+	if u.GetSslConfig() != nil {
 		scheme = "https"
 	}
 
@@ -83,8 +83,8 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	// service. If a serviceInstance has the tags to match into multiple upstreams, then it'll be associated with
 	// multiple upstreams. This isn't always bad par se, but is not ideal when only some upstreams are secure.
 	for _, inst := range instances {
-		instanceMatch := len(spec.InstanceTags) == 0 || matchTags(spec.InstanceTags, inst.ServiceTags)
-		antiInstanceMatch := len(spec.InstanceBlacklistTags) == 0 || mutuallyExclusiveTags(spec.InstanceBlacklistTags, inst.ServiceTags)
+		instanceMatch := len(spec.GetInstanceTags()) == 0 || matchTags(spec.GetInstanceTags(), inst.ServiceTags)
+		antiInstanceMatch := len(spec.GetInstanceBlacklistTags()) == 0 || mutuallyExclusiveTags(spec.GetInstanceBlacklistTags(), inst.ServiceTags)
 
 		if instanceMatch && antiInstanceMatch {
 			ipAddresses, err := getIpAddresses(context.TODO(), inst.ServiceAddress, p.resolver)
@@ -100,7 +100,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 		}
 	}
 
-	return nil, eris.Errorf("service with name %s and tags %v not found", spec.ServiceName, spec.InstanceTags)
+	return nil, eris.Errorf("service with name %s and tags %v not found", spec.GetServiceName(), spec.GetInstanceTags())
 }
 
 func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInterval *time.Duration) *plugin {
@@ -121,7 +121,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	// if automatic TLS discovery is enabled for consul services, make sure we have a specified tag
 	// and a resource location for the validation context's root CA.
 	// The tag has a default value, but the resource name/namespace must be set manually.
-	if p.consulUpstreamDiscoverySettings.UseTlsTagging {
+	if p.consulUpstreamDiscoverySettings.GetUseTlsTagging() {
 		rootCa := p.consulUpstreamDiscoverySettings.GetRootCa()
 		if rootCa.GetNamespace() == "" || rootCa.GetName() == "" {
 			return ConsulTlsInputError(rootCa.String())
@@ -136,7 +136,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
-	_, ok := in.UpstreamType.(*v1.Upstream_Consul)
+	_, ok := in.GetUpstreamType().(*v1.Upstream_Consul)
 	if !ok {
 		return nil
 	}

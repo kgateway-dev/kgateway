@@ -26,8 +26,10 @@ import (
 )
 
 // AuthConfigLister helps list AuthConfigs.
+// All objects returned here must be treated as read-only.
 type AuthConfigLister interface {
 	// List lists all AuthConfigs in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.AuthConfig, err error)
 	// AuthConfigs returns an object that can list and get AuthConfigs.
 	AuthConfigs(namespace string) AuthConfigNamespaceLister
@@ -58,10 +60,13 @@ func (s *authConfigLister) AuthConfigs(namespace string) AuthConfigNamespaceList
 }
 
 // AuthConfigNamespaceLister helps list and get AuthConfigs.
+// All objects returned here must be treated as read-only.
 type AuthConfigNamespaceLister interface {
 	// List lists all AuthConfigs in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.AuthConfig, err error)
 	// Get retrieves the AuthConfig from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.AuthConfig, error)
 	AuthConfigNamespaceListerExpansion
 }

@@ -64,13 +64,13 @@ func (s *statusSyncer) Sync(ctx context.Context, snap *v1.StatusSnapshot) error 
 			return errors.Wrapf(err, "internal error: converting back to proto ingress from kube ingress")
 		}
 
-		if proto.Equal(updatedIngress.KubeIngressStatus, ing.KubeIngressStatus) {
+		if proto.Equal(updatedIngress.GetKubeIngressStatus(), ing.GetKubeIngressStatus()) {
 			continue
 		}
 		if _, err := s.ingressClient.Write(updatedIngress, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true}); err != nil {
 			return errors.Wrapf(err, "writing updated status to kubernetes")
 		}
-		logger.Infof("updated ingress %v with status %v", ing.Metadata.Ref(), lbStatus)
+		logger.Infof("updated ingress %v with status %v", ing.GetMetadata().Ref(), lbStatus)
 	}
 
 	return nil
@@ -86,7 +86,7 @@ func getLbStatus(services v1.KubeServiceList) ([]kubev1.LoadBalancerIngress, err
 			return nil, errors.Wrapf(err, "internal error: converting proto svc to kube service")
 		}
 
-		kubeSvcRef := services[0].Metadata.Ref()
+		kubeSvcRef := services[0].GetMetadata().Ref()
 		kubeSvcAddrs, err := serviceAddrs(kubeSvc, kubeSvcRef)
 		if err != nil {
 			return nil, errors.Wrapf(err, "internal err: extracting service addrs from kube service")
@@ -97,7 +97,7 @@ func getLbStatus(services v1.KubeServiceList) ([]kubev1.LoadBalancerIngress, err
 	return nil, errors.Errorf("failed to get lb status: expected 1 ingress service, found %v", func() []*core.ResourceRef {
 		var refs []*core.ResourceRef
 		for _, svc := range services {
-			refs = append(refs, svc.Metadata.Ref())
+			refs = append(refs, svc.GetMetadata().Ref())
 		}
 		return refs
 	}())

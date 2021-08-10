@@ -20,7 +20,7 @@ type ServiceSpecMutator interface {
 	describing the service represented by the upstream
 */
 func (us *Upstream_Kube) GetServiceSpec() *plugins.ServiceSpec {
-	return us.Kube.ServiceSpec
+	return us.Kube.GetServiceSpec()
 }
 
 func (us *Upstream_Kube) SetServiceSpec(spec *plugins.ServiceSpec) {
@@ -28,7 +28,7 @@ func (us *Upstream_Kube) SetServiceSpec(spec *plugins.ServiceSpec) {
 }
 
 func (us *Upstream_Static) GetServiceSpec() *plugins.ServiceSpec {
-	return us.Static.ServiceSpec
+	return us.Static.GetServiceSpec()
 }
 
 func (us *Upstream_Static) SetServiceSpec(spec *plugins.ServiceSpec) {
@@ -36,7 +36,7 @@ func (us *Upstream_Static) SetServiceSpec(spec *plugins.ServiceSpec) {
 }
 
 func (us *Upstream_Pipe) GetServiceSpec() *plugins.ServiceSpec {
-	return us.Pipe.ServiceSpec
+	return us.Pipe.GetServiceSpec()
 }
 
 func (us *Upstream_Pipe) SetServiceSpec(spec *plugins.ServiceSpec) {
@@ -44,7 +44,7 @@ func (us *Upstream_Pipe) SetServiceSpec(spec *plugins.ServiceSpec) {
 }
 
 func (us *Upstream_Consul) GetServiceSpec() *plugins.ServiceSpec {
-	return us.Consul.ServiceSpec
+	return us.Consul.GetServiceSpec()
 }
 
 func (us *Upstream_Consul) SetServiceSpec(spec *plugins.ServiceSpec) {
