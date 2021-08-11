@@ -23,7 +23,6 @@ import (
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	"github.com/solo-io/k8s-utils/manifesttestutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
-	"github.com/solo-io/reporting-client/pkg/client"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
@@ -3232,19 +3231,6 @@ metadata:
 						})
 						uid := int64(10102)
 						glooDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
-						testManifest.ExpectDeploymentAppsV1(glooDeployment)
-					})
-
-					It("should disable usage stats collection when appropriate", func() {
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"gloo.deployment.disableUsageStatistics=true"},
-						})
-
-						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(glooDeployment.Spec.Template.Spec.Containers[0].Env, v1.EnvVar{
-							Name:  client.DisableUsageVar,
-							Value: "true",
-						})
-
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
 
