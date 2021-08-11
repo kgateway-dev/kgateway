@@ -122,7 +122,6 @@ func GlooCli() *cobra.Command {
 		// should make sure to read the config file first
 		ReadConfigFile,
 		prerun.SetKubeConfigEnv,
-		prerun.ReportUsage,
 		prerun.VersionMismatchWarning,
 	}
 
