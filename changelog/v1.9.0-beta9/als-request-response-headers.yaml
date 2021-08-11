@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: |
+      Include request_headers, response_headers, and response_trailers in gloo access-logger.
+      These can be configured in the ALS plugin and therefore we should include them in the logs.
