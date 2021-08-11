@@ -207,16 +207,15 @@ type Gloo struct {
 }
 
 type GlooDeployment struct {
-	Image                  *Image            `json:"image,omitempty"`
-	XdsPort                *int              `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
-	RestXdsPort            *uint32           `json:"restXdsPort,omitempty" desc:"port where gloo serves REST xDS API to Envoy"`
-	ValidationPort         *int              `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway"`
-	Stats                  *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
-	FloatingUserId         *bool             `json:"floatingUserId,omitempty" desc:"set to true to allow the cluster to dynamically assign a user ID"`
-	RunAsUser              *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
-	ExternalTrafficPolicy  *string           `json:"externalTrafficPolicy,omitempty" desc:"Set the external traffic policy on the gloo service"`
-	DisableUsageStatistics *bool             `json:"disableUsageStatistics,omitempty" desc:"Disable the collection of gloo usage statistics"`
-	ExtraGlooLabels        map[string]string `json:"extraGlooLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment."`
+	Image                 *Image            `json:"image,omitempty"`
+	XdsPort               *int              `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
+	RestXdsPort           *uint32           `json:"restXdsPort,omitempty" desc:"port where gloo serves REST xDS API to Envoy"`
+	ValidationPort        *int              `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway"`
+	Stats                 *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
+	FloatingUserId        *bool             `json:"floatingUserId,omitempty" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser             *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	ExternalTrafficPolicy *string           `json:"externalTrafficPolicy,omitempty" desc:"Set the external traffic policy on the gloo service"`
+	ExtraGlooLabels       map[string]string `json:"extraGlooLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment."`
 	*DeploymentSpec
 }
 

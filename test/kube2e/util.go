@@ -71,9 +71,6 @@ settings:
   singleNamespace: true
   create: true
   replaceInvalidRoutes: true
-gloo:
-  deployment:
-    disableUsageStatistics: true
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0

@@ -6,13 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/usage"
-	"github.com/solo-io/gloo/pkg/version"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/k8s-utils/kubeutils"
-	"github.com/solo-io/reporting-client/pkg/client"
-	"github.com/solo-io/reporting-client/pkg/signature"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
@@ -35,7 +31,6 @@ type SetupOpts struct {
 	// optional - if present, report usage with the payload this discovers
 	// should really only provide it in very intentional places- in the gloo pod, and in glooctl
 	// otherwise, we'll provide redundant copies of the usage data
-	UsageReporter client.UsagePayloadReader
 }
 
 var once sync.Once
@@ -54,16 +49,6 @@ func Main(opts SetupOpts) error {
 	ctx = contextutils.WithLogger(ctx, opts.LoggerName)
 	loggingContext := append([]interface{}{"version", opts.Version}, opts.LoggingPrefixVals...)
 	ctx = contextutils.WithLoggerValues(ctx, loggingContext...)
-
-	if opts.UsageReporter != nil {
-		go func() {
-			signatureManager := signature.NewSignatureManager()
-			errs := StartReportingUsage(opts.CustomCtx, opts.UsageReporter, opts.LoggerName, signatureManager)
-			for err := range errs {
-				contextutils.LoggerFrom(ctx).Warnw("Error while reporting usage", zap.Error(err))
-			}
-		}()
-	}
 
 	settingsClient, err := kubeOrFileSettingsClient(ctx, setupNamespace, setupDir)
 	if err != nil {
@@ -109,15 +94,4 @@ func kubeOrFileSettingsClient(ctx context.Context, setupNamespace, settingsDir s
 		SharedCache:        kube.NewKubeCache(ctx),
 		NamespaceWhitelist: []string{setupNamespace},
 	})
-}
-
-// does not block the current goroutine
-func StartReportingUsage(ctx context.Context, usagePayloadReader client.UsagePayloadReader, product string, signatureManager signature.SignatureManager) <-chan error {
-	usageClient := client.NewUsageClient(
-		usage.ReportingServiceUrl,
-		usagePayloadReader,
-		usage.BuildProductMetadata(product, version.Version),
-		signatureManager)
-
-	return usageClient.StartReportingUsage(ctx, usage.ReportingPeriod)
 }
