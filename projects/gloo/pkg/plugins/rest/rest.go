@@ -93,7 +93,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			if !ok {
 				return nil, errors.Errorf("%s does not have a rest service spec", upstreamRef)
 			}
-			funcname := restDestinationSpec.Rest.FunctionName
+			funcname := restDestinationSpec.Rest.GetFunctionName()
 			transformationorig := restServiceSpec.Rest.GetTransformations()[funcname]
 			if transformationorig == nil {
 				return nil, errors.Errorf("unknown function %v", funcname)

@@ -93,7 +93,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			}
 		}
 		if cfg.GetUpdateMergeWindow() != nil {
-			out.GetCommonLbConfig().UpdateMergeWindow = cfg.UpdateMergeWindow
+			out.GetCommonLbConfig().UpdateMergeWindow = cfg.GetUpdateMergeWindow()
 		}
 		if cfg.GetLocalityConfig() != nil {
 			switch cfg.GetLocalityConfig().(type) {

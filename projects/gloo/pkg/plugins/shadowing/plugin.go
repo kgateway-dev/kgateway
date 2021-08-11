@@ -42,7 +42,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if out.GetAction() != nil && out.GetRoute() == nil {
 		return InvalidRouteActionError
 	}
-	shadowSpec := in.GetOptions().Shadowing
+	shadowSpec := in.GetOptions().GetShadowing()
 	// we have already ensured that the output route action is either nil or of the proper type
 	// if it is nil, we initialize it prior to transforming it
 	outRa := out.GetRoute()

@@ -29,10 +29,10 @@ func (p *Plugin) ProcessVirtualHost(
 	// Both these values default to false if unset, so there's need to set anything if input is nil.
 	// (Input is a google.protobuf.BoolValue, so it can be true, false, or nil)
 	if irac := in.GetOptions().GetIncludeRequestAttemptCount(); irac != nil {
-		out.IncludeRequestAttemptCount = irac.Value
+		out.IncludeRequestAttemptCount = irac.GetValue()
 	}
 	if iacir := in.GetOptions().GetIncludeAttemptCountInResponse(); iacir != nil {
-		out.IncludeAttemptCountInResponse = iacir.Value
+		out.IncludeAttemptCountInResponse = iacir.GetValue()
 	}
 	return nil
 }

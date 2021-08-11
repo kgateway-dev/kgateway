@@ -56,7 +56,7 @@ func EditRoutePreRunE(opts *RouteEditInput) error {
 			return err
 		} else {
 			opts.Index = uint32(idx)
-			opts.ResourceVersion = vsvc.GetMetadata().ResourceVersion
+			opts.ResourceVersion = vsvc.GetMetadata().GetResourceVersion()
 		}
 	}
 	return nil

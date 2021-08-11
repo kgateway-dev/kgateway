@@ -87,7 +87,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		return err
 	}
 
-	writeNamespace := settings.DiscoveryNamespace
+	writeNamespace := settings.GetDiscoveryNamespace()
 	if writeNamespace == "" {
 		writeNamespace = gloodefaults.GlooSystem
 	}
@@ -106,17 +106,17 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 
 	clusterIngressProxyAddress := defaultClusterIngressProxyAddress
 	if settings.GetKnative() != nil && settings.GetKnative().GetClusterIngressProxyAddress() != "" {
-		clusterIngressProxyAddress = settings.GetKnative().ClusterIngressProxyAddress
+		clusterIngressProxyAddress = settings.GetKnative().GetClusterIngressProxyAddress()
 	}
 
 	knativeExternalProxyAddress := defaultKnativeExternalProxyAddress
 	if settings.GetKnative() != nil && settings.GetKnative().GetKnativeExternalProxyAddress() != "" {
-		knativeExternalProxyAddress = settings.GetKnative().KnativeExternalProxyAddress
+		knativeExternalProxyAddress = settings.GetKnative().GetKnativeExternalProxyAddress()
 	}
 
 	knativeInternalProxyAddress := defaultKnativeInternalProxyAddress
 	if settings.GetKnative() != nil && settings.GetKnative().GetKnativeInternalProxyAddress() != "" {
-		knativeInternalProxyAddress = settings.GetKnative().KnativeInternalProxyAddress
+		knativeInternalProxyAddress = settings.GetKnative().GetKnativeInternalProxyAddress()
 	}
 
 	if len(ingressProxyLabel) == 0 {

@@ -65,10 +65,10 @@ func editSettings(opts *editOptions.EditOptions, optsExt *RateLimitSettings, arg
 		rlSettings.RatelimitServerRef = new(core.ResourceRef)
 	}
 	if optsExt.RateLimitServerUpstreamRef.GetName() != "" {
-		rlSettings.GetRatelimitServerRef().Name = optsExt.RateLimitServerUpstreamRef.Name
+		rlSettings.GetRatelimitServerRef().Name = optsExt.RateLimitServerUpstreamRef.GetName()
 	}
 	if optsExt.RateLimitServerUpstreamRef.GetNamespace() != "" {
-		rlSettings.GetRatelimitServerRef().Namespace = optsExt.RateLimitServerUpstreamRef.Namespace
+		rlSettings.GetRatelimitServerRef().Namespace = optsExt.RateLimitServerUpstreamRef.GetNamespace()
 	}
 
 	var zeroDuration time.Duration

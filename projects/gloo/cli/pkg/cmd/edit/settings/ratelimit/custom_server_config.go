@@ -49,7 +49,7 @@ func edit(opts *editOptions.EditOptions) error {
 		})
 	}
 	var rlSettings ratelimitpb.ServiceSettings
-	if rls := settings.Ratelimit; rls != nil {
+	if rls := settings.GetRatelimit(); rls != nil {
 		rlSettings = *rls
 	}
 	rlSettingsProto, err := editor.EditConfig(&rlSettings)

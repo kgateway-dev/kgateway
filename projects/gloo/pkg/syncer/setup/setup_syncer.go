@@ -196,7 +196,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		refreshRate = prototime.DurationFromProto(settings.GetRefreshRate())
 	}
 
-	writeNamespace := settings.DiscoveryNamespace
+	writeNamespace := settings.GetDiscoveryNamespace()
 	if writeNamespace == "" {
 		writeNamespace = defaults.GlooSystem
 	}
@@ -282,7 +282,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	opts.ValidationServer = s.validationServer
 	// if nil, kube plugin disabled
 	opts.KubeClient = clientset
-	opts.DevMode = settings.DevMode
+	opts.DevMode = settings.GetDevMode()
 	opts.Settings = settings
 
 	opts.Consul.DnsServer = settings.GetConsul().GetDnsAddress()

@@ -147,7 +147,7 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 			secretNamespace := tls.SecretNamespace
 			if secretNamespace == "" {
 				// default to namespace shared with ingress
-				secretNamespace = ing.Namespace
+				secretNamespace = ing.GetNamespace()
 			}
 
 			sslConfigs = append(sslConfigs, &gloov1.SslConfig{

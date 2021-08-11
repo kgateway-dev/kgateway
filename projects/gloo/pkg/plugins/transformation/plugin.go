@@ -188,7 +188,7 @@ func (p *Plugin) convertTransformation(
 			return nil, err
 		}
 		ret.RequestTransformation = requestTransform
-		ret.ClearRouteCache = t.ClearRouteCache
+		ret.ClearRouteCache = t.GetClearRouteCache()
 		ret.ResponseTransformation = responseTransform
 		// new config:
 		// we have to have it too, as if any new config is defined the deprecated config is ignored.

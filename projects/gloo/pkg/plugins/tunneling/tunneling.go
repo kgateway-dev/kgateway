@@ -75,7 +75,7 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 					var originalTransportSocket *envoy_config_core_v3.TransportSocket
 					for _, inCluster := range inClusters {
 						if inCluster.GetName() == cluster {
-							originalTransportSocket = inCluster.TransportSocket
+							originalTransportSocket = inCluster.GetTransportSocket()
 							// we copy the transport socket to the generated cluster.
 							// the generated cluster will use upstream TLS context to leverage TLS origination;
 							// when we encapsulate in HTTP Connect the tcp data being proxied will

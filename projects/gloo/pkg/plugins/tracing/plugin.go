@@ -51,7 +51,7 @@ func (p *Plugin) ProcessHcmSettings(
 		return nil
 	}
 
-	tracingSettings := hcmSettings.Tracing
+	tracingSettings := hcmSettings.GetTracing()
 	if tracingSettings == nil {
 		return nil
 	}
@@ -61,7 +61,7 @@ func (p *Plugin) ProcessHcmSettings(
 
 	customTags := customTags(tracingSettings)
 	trCfg.CustomTags = customTags
-	trCfg.Verbose = tracingSettings.Verbose
+	trCfg.Verbose = tracingSettings.GetVerbose()
 
 	tracingProvider, err := processEnvoyTracingProvider(snapshot, tracingSettings)
 	if err != nil {
@@ -254,7 +254,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if in.GetOptions() == nil || in.GetOptions().GetTracing() == nil {
 		return nil
 	}
-	if percentages := in.GetOptions().GetTracing().TracePercentages; percentages != nil {
+	if percentages := in.GetOptions().GetTracing().GetTracePercentages(); percentages != nil {
 		out.Tracing = &envoy_config_route_v3.Tracing{
 			ClientSampling:  common.ToEnvoyPercentageWithDefault(percentages.GetClientSamplePercentage(), oneHundredPercent),
 			RandomSampling:  common.ToEnvoyPercentageWithDefault(percentages.GetRandomSamplePercentage(), oneHundredPercent),
@@ -267,7 +267,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			OverallSampling: common.ToEnvoyPercentage(oneHundredPercent),
 		}
 	}
-	descriptor := in.GetOptions().GetTracing().RouteDescriptor
+	descriptor := in.GetOptions().GetTracing().GetRouteDescriptor()
 	if descriptor != "" {
 		out.Decorator = &envoy_config_route_v3.Decorator{
 			Operation: descriptor,

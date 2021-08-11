@@ -192,7 +192,7 @@ func GatewayContainsVirtualService(gateway *v1.Gateway, virtualService *v1.Virtu
 			httpGateway.GetVirtualServiceNamespaces()), nil
 	}
 	// use individual refs to collect virtual services
-	virtualServiceRefs := httpGateway.VirtualServices
+	virtualServiceRefs := httpGateway.GetVirtualServices()
 
 	if len(virtualServiceRefs) == 0 {
 		return virtualServiceNamespaceValidForGateway(httpGateway.GetVirtualServiceNamespaces(), virtualService), nil
@@ -290,7 +290,7 @@ func (t *HttpTranslator) desiredListenerForHttp(gateway *v1.Gateway, proxyName s
 
 	var httpPlugins *gloov1.HttpListenerOptions
 	if httpGateway := gateway.GetHttpGateway(); httpGateway != nil {
-		httpPlugins = httpGateway.Options
+		httpPlugins = httpGateway.GetOptions()
 	}
 	listener := makeListener(gateway)
 	listener.ListenerType = &gloov1.Listener_HttpListener{

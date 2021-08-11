@@ -237,7 +237,7 @@ func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
 	for _, proxy := range list {
 		ref := proxy.GetMetadata().Ref()
 		refKey := gloo_translator.UpstreamToClusterName(ref)
-		status := proxy.Status
+		status := proxy.GetStatus()
 		if current, ok := s.proxyToLastStatus[refKey]; ok {
 			current.Status = status
 			s.proxyToLastStatus[refKey] = current

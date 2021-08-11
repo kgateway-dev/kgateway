@@ -109,7 +109,7 @@ func (p *plugin) translateCommonUserCorsConfig(
 	out.AllowMethods = strings.Join(in.GetAllowMethods(), ",")
 	out.AllowHeaders = strings.Join(in.GetAllowHeaders(), ",")
 	out.ExposeHeaders = strings.Join(in.GetExposeHeaders(), ",")
-	out.MaxAge = in.MaxAge
+	out.MaxAge = in.GetMaxAge()
 	if in.GetAllowCredentials() {
 		out.AllowCredentials = &wrappers.BoolValue{Value: in.GetAllowCredentials()}
 	}

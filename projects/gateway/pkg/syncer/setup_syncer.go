@@ -89,7 +89,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 
 	refreshRate := prototime.DurationFromProto(settings.GetRefreshRate())
 
-	writeNamespace := settings.DiscoveryNamespace
+	writeNamespace := settings.GetDiscoveryNamespace()
 	if writeNamespace == "" {
 		writeNamespace = gloodefaults.GlooSystem
 	}
@@ -100,13 +100,13 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	if validationCfg != nil {
 		alwaysAcceptResources := AcceptAllResourcesByDefault
 
-		if alwaysAccept := validationCfg.AlwaysAccept; alwaysAccept != nil {
+		if alwaysAccept := validationCfg.GetAlwaysAccept(); alwaysAccept != nil {
 			alwaysAcceptResources = alwaysAccept.GetValue()
 		}
 
 		allowWarnings := AllowWarnings
 
-		if allowWarning := validationCfg.AllowWarnings; allowWarning != nil {
+		if allowWarning := validationCfg.GetAllowWarnings(); allowWarning != nil {
 			allowWarnings = allowWarning.GetValue()
 		}
 
