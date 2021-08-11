@@ -90,7 +90,7 @@ spec:
       allowWarnings: {{ .Values.gateway.validation.allowWarnings }}
       disableTransformationValidation: {{ .Values.gateway.validation.disableTransformationValidation }}
       warnRouteShortCircuiting: {{ .Values.gateway.validation.warnRouteShortCircuiting }}
-      validationServerGrpcMaxSize: {{ .Values.gateway.validation.validationServerGrpcMaxSize | quote }}
+      validationServerGrpcMaxSize: {{ .Values.gateway.validation.validationServerGrpcMaxSize }}
 {{- end }}
 
 {{- if ne .Values.discovery.fdsMode "" }}
