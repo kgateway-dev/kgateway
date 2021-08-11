@@ -20,7 +20,7 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      gloo: gateway-proxy
+      gateway-proxy-id: {{ $name | kebabcase }}
 {{- end }}
 {{- end }}
 {{- end }} {{/* with */}}
