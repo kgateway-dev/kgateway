@@ -17,7 +17,7 @@ spec:
      disableTransformationValidation: false
      warnRouteShortCircuiting: false
      proxyValidationServerAddr: gloo:9988
-     validationServerGrpcMaxSize: 4000
+     validationServerGrpcMaxSize: 4000000
  gloo:
    enableRestEds: false
    xdsBindAddr: 0.0.0.0:9977
