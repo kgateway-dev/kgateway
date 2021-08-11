@@ -174,10 +174,6 @@ spec:
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
-        {{- if .Values.gloo.deployment.disableUsageStatistics }}
-          - name: DISABLE_USAGE_REPORTING
-            value: "true"
-        {{- end}}
         {{- if .Values.gloo.logLevel }}
           - name: LOG_LEVEL
             value: {{ .Values.gloo.logLevel }}
