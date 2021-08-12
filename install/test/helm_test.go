@@ -1890,6 +1890,7 @@ spec:
 						testManifest.Expect("Deployment", namespace, deploymentName).NotTo(BeNil())
 						testManifest.Expect("Deployment", namespace, "gateway-proxy").NotTo(BeNil())
 					})
+
 					It("supports deploying the fips envoy image", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
@@ -1897,9 +1898,10 @@ spec:
 							},
 						})
 						// deployment exists for for second declaration of gateway proxy
-						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = "\"quay.io/solo-io/gloo-envoy-wrapper-fips:\"" + version
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = "quay.io/solo-io/gloo-envoy-wrapper-fips:" + version
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
+
 					It("supports extra args to envoy", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
@@ -4246,6 +4248,14 @@ metadata:
 							Template: v1.PodTemplateSpec{
 								ObjectMeta: metav1.ObjectMeta{
 									Labels: ingressPodLabels,
+								},
+								Spec: v1.PodSpec{
+									SecurityContext: &v1.PodSecurityContext{
+										RunAsUser:    pointer.Int64Ptr(10101),
+										RunAsNonRoot: pointer.BoolPtr(true),
+									},
+									Containers: []v1.Container{
+										{
 											Name: "ingress",
 											// Note: this WAS overwritten
 											Image: "docker.io/ilackarms/ingress:test-ilackarms",
@@ -4282,16 +4292,6 @@ metadata:
 					prepareMakefileFromValuesFile("merge_ingress_values.yaml")
 					testManifest.ExpectDeploymentAppsV1(glooDeploymentPostMerge)
 					testManifest.ExpectDeploymentAppsV1(ingressDeploymentPostMerge)
-				})
-				//ingress deployment
-				It("uses fips envoy image", func() {
-					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{
-							"ingress.enabled=true",
-							"global.image.fips=true",
-						},
-					})
-
 				})
 			})
 
