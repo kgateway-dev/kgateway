@@ -23,6 +23,13 @@ Expand the name of a container image
 {{ .registry }}/{{ .repository }}:{{ .tag }}{{ ternary "-extended" "" (default false .extended) }}
 {{- end -}}
 
+{{/*
+Expand the name of a container image, adding -fips to the name of the repo if configured.
+*/}}
+{{- define "gloo.fipsimage" -}}
+{{ .registry }}/{{ .repository }}{{ ternary "-fips" "" (default false .fips) }}:{{ .tag }}{{ ternary "-extended" "" (default false .extended) }}
+{{- end -}}
+
 {{- define "gloo.pullSecret" -}}
 {{- if .pullSecret -}}
 imagePullSecrets:
