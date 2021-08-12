@@ -71,7 +71,7 @@ gateway:
     allowWarnings: true
     disableTransformationValidation: false
     warnRouteShortCircuiting: false
-    validationServerGrpcMaxSize: 4000000
+    validationServerGrpcMaxSize: 4000
     webhook:
       enabled: true
       disableHelmHook: false
