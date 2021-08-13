@@ -44,6 +44,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 "parameters": .gloo.solo.io.SslParameters
 "alpnProtocols": []string
 "oneWayTls": .google.protobuf.BoolValue
+"disableTlsSessionResumption": .google.protobuf.BoolValue
 
 ```
 
@@ -57,6 +58,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 | `parameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk/#sslparameters) |  |
 | `alpnProtocols` | `[]string` | Set Application Level Protocol Negotiation If empty, defaults to ["h2", "http/1.1"]. |
 | `oneWayTls` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default. Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA. If unset, defaults to false. |
+| `disableTlsSessionResumption` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If set to true, the TLS session resumption will be deactivated, note that it deactivates only the tickets based tls session resumption (not the cache). |
 
 
 
