@@ -75,10 +75,15 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 	if len(common.GetAlpnProtocols()) == 0 {
 		common.AlpnProtocols = []string{"h2", "http/1.1"}
 	}
-	return &envoyauth.DownstreamTlsContext{
+
+	out := &envoyauth.DownstreamTlsContext{
 		CommonTlsContext:         common,
 		RequireClientCertificate: requireClientCert,
-	}, nil
+	}
+	if dc.GetDisableTlsSessionResumption().GetValue() {
+		out.SessionTicketKeysType = &envoyauth.DownstreamTlsContext_DisableStatelessSessionResumption{DisableStatelessSessionResumption: true}
+	}
+	return out, nil
 }
 
 type CertSource interface {
