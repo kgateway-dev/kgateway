@@ -120,7 +120,7 @@ Let's see the claims for `svc-a`, the service account we just created:
 ```shell
 # Execute a command inside the pod to copy the payload of the JWT to the CLAIMS shell variable.
 # The three parts of a JWT are separated by dots: header.payload.signature
-CLAIMS=$(kubectl exec test-pod cat /var/run/secrets/kubernetes.io/serviceaccount/token | cut -d. -f2)
+CLAIMS=$(kubectl exec test-pod -- cat /var/run/secrets/kubernetes.io/serviceaccount/token | cut -d. -f2)
 
 # Pad the CLAIMS string to ensure that we can display valid JSON
 PADDING_LEN=$(( 4 - ( ${#CLAIMS} % 4 ) ))
