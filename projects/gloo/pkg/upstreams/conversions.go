@@ -16,7 +16,7 @@ func isRealUpstream(upstreamName string) bool {
 
 func DestinationToUpstreamRef(dest *v1.Destination) (*core.ResourceRef, error) {
 	var ref *core.ResourceRef
-	switch d := dest.DestinationType.(type) {
+	switch d := dest.GetDestinationType().(type) {
 	case *v1.Destination_Upstream:
 		ref = d.Upstream
 	case *v1.Destination_Kube:

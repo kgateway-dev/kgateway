@@ -60,7 +60,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			return err
 		}
 
-		us, err := upstreams.Find(upstreamRef.Namespace, upstreamRef.Name)
+		us, err := upstreams.Find(upstreamRef.GetNamespace(), upstreamRef.GetName())
 		if err != nil {
 			return nil
 		}
@@ -81,11 +81,11 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			return err
 		}
 	case *v1.RouteAction_UpstreamGroup:
-		usg, err := upstreamGroups.Find(destType.UpstreamGroup.Namespace, destType.UpstreamGroup.Name)
+		usg, err := upstreamGroups.Find(destType.UpstreamGroup.GetNamespace(), destType.UpstreamGroup.GetName())
 		if err != nil {
 			return pluginutils.NewUpstreamGroupNotFoundErr(*destType.UpstreamGroup)
 		}
-		err = configForMultiDestination(usg.Destinations, upstreams, out)
+		err = configForMultiDestination(usg.GetDestinations(), upstreams, out)
 		if err != nil {
 			return err
 		}
@@ -114,12 +114,12 @@ func configForMultiDestination(
 
 	for _, dest := range destinations {
 
-		upstreamRef, err := usconversions.DestinationToUpstreamRef(dest.Destination)
+		upstreamRef, err := usconversions.DestinationToUpstreamRef(dest.GetDestination())
 		if err != nil {
 			return err
 		}
 
-		us, err := upstreams.Find(upstreamRef.Namespace, upstreamRef.Name)
+		us, err := upstreams.Find(upstreamRef.GetNamespace(), upstreamRef.GetName())
 		if err != nil {
 			continue
 		}
@@ -129,12 +129,12 @@ func configForMultiDestination(
 		}
 		header := createHeaderForUpstream(kubeUs)
 		clusterName := translator.UpstreamToClusterName(us.GetMetadata().Ref())
-		clusters := findClustersForName(clusterName, weightedCluster.Clusters)
+		clusters := findClustersForName(clusterName, weightedCluster.GetClusters())
 		for _, cluster := range clusters {
-			if _, ok := processedClusters[cluster.Name]; ok {
+			if _, ok := processedClusters[cluster.GetName()]; ok {
 				continue
 			}
-			processedClusters[cluster.Name] = true
+			processedClusters[cluster.GetName()] = true
 			headers := out.GetRequestHeadersToAdd()
 			headers = append(headers, header)
 			cluster.RequestHeadersToAdd = headers
@@ -150,7 +150,7 @@ func findClustersForName(
 ) []*envoy_config_route_v3.WeightedCluster_ClusterWeight {
 	var result []*envoy_config_route_v3.WeightedCluster_ClusterWeight
 	for _, v := range weightedCluster {
-		if v.Name == clusterName {
+		if v.GetName() == clusterName {
 			result = append(result, v)
 		}
 	}
@@ -159,7 +159,7 @@ func findClustersForName(
 
 func createHeaderForUpstream(us *kubernetes.UpstreamSpec) *envoy_config_core_v3.HeaderValueOption {
 	destination := fmt.Sprintf("%s.%s.svc.cluster.local:%v",
-		us.ServiceName, us.ServiceNamespace, us.ServicePort)
+		us.GetServiceName(), us.GetServiceNamespace(), us.GetServicePort())
 	header := &envoy_config_core_v3.HeaderValueOption{
 		Append: &wrappers.BoolValue{
 			Value: false,

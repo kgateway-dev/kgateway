@@ -53,7 +53,7 @@ func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstre
 				// TODO(yuval-k): consider removing support for cross namespace secret refs. we can use code below
 				// instead:
 				// nsSet[upstream.GetMetadata().Namespace] = true
-				nsSet[secretRef.Namespace] = true
+				nsSet[secretRef.GetNamespace()] = true
 			}
 		}
 		for ns := range nsSet {

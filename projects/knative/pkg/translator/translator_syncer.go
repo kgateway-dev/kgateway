@@ -117,14 +117,14 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 
 	var desiredResources gloov1.ProxyList
 	if externalProxy != nil {
-		logger.Infof("creating external proxy %v", externalProxy.Metadata.Ref())
-		externalProxy.Metadata.Labels = labels
+		logger.Infof("creating external proxy %v", externalProxy.GetMetadata().Ref())
+		externalProxy.GetMetadata().Labels = labels
 		desiredResources = append(desiredResources, externalProxy)
 	}
 
 	if internalProxy != nil {
-		logger.Infof("creating internal proxy %v", internalProxy.Metadata.Ref())
-		internalProxy.Metadata.Labels = labels
+		logger.Infof("creating internal proxy %v", internalProxy.GetMetadata().Ref())
+		internalProxy.GetMetadata().Labels = labels
 		desiredResources = append(desiredResources, internalProxy)
 	}
 
@@ -166,16 +166,16 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 			return nil
 		case <-ticker:
 			// poll the proxy for an accepted or rejected status
-			updatedProxy, err := s.proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+			updatedProxy, err := s.proxyClient.Read(proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return err
 			}
-			switch updatedProxy.Status.State {
+			switch updatedProxy.GetStatus().GetState() {
 			case core.Status_Pending:
 				continue
 			case core.Status_Rejected:
 				contextutils.LoggerFrom(ctx).Errorf("proxy was rejected by gloo: %v",
-					updatedProxy.Status.Reason)
+					updatedProxy.GetStatus().GetReason())
 				continue
 			case core.Status_Accepted:
 				return s.markIngressesReady(ctx, ingresses)

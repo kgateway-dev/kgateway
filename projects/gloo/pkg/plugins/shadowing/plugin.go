@@ -34,15 +34,15 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	if in.Options == nil || in.Options.Shadowing == nil {
+	if in.GetOptions() == nil || in.GetOptions().GetShadowing() == nil {
 		return nil
 	}
 	// the shadow plugin should only be used on routes that are of type envoyroute.Route_Route
 	// (this is because shadowing is not defined on redirect or direct response route actions)
-	if out.Action != nil && out.GetRoute() == nil {
+	if out.GetAction() != nil && out.GetRoute() == nil {
 		return InvalidRouteActionError
 	}
-	shadowSpec := in.Options.Shadowing
+	shadowSpec := in.GetOptions().Shadowing
 	// we have already ensured that the output route action is either nil or of the proper type
 	// if it is nil, we initialize it prior to transforming it
 	outRa := out.GetRoute()
@@ -56,16 +56,16 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 }
 
 func applyShadowSpec(out *envoy_config_route_v3.RouteAction, spec *shadowing.RouteShadowing) error {
-	if spec.Upstream == nil {
+	if spec.GetUpstream() == nil {
 		return UnspecifiedUpstreamError
 	}
-	if spec.Percentage < 0 || spec.Percentage > 100 {
-		return InvalidNumeratorError(spec.Percentage)
+	if spec.GetPercentage() < 0 || spec.GetPercentage() > 100 {
+		return InvalidNumeratorError(spec.GetPercentage())
 	}
 	out.RequestMirrorPolicies = []*envoy_config_route_v3.RouteAction_RequestMirrorPolicy{
 		{
-			Cluster:         translator.UpstreamToClusterName(spec.Upstream),
-			RuntimeFraction: getFractionalPercent(spec.Percentage),
+			Cluster:         translator.UpstreamToClusterName(spec.GetUpstream()),
+			RuntimeFraction: getFractionalPercent(spec.GetPercentage()),
 		},
 	}
 	return nil

@@ -67,7 +67,7 @@ func (resolvers Resolvers) Resolve(us *v1.Upstream) (*url.URL, error) {
 			return u, nil
 		}
 	}
-	return nil, errors.Errorf("no resolver found for upstream %v", us.Metadata.Name)
+	return nil, errors.Errorf("no resolver found for upstream %v", us.GetMetadata().GetName())
 }
 
 // STEP ONE, for generic upstream, detect

@@ -183,17 +183,17 @@ func removeSdsCluster(configMap *corev1.ConfigMap) error {
 		return err
 	}
 
-	clusters := bootstrapConfig.StaticResources.Clusters
+	clusters := bootstrapConfig.GetStaticResources().Clusters
 
 	for i, cluster := range clusters {
-		if cluster.Name == sdsClusterName {
+		if cluster.GetName() == sdsClusterName {
 			// Remove the SDS cluster
 			copy(clusters[i:], clusters[i+1:])
 			clusters = clusters[:len(clusters)-1]
 		}
 	}
 
-	bootstrapConfig.StaticResources.Clusters = clusters
+	bootstrapConfig.GetStaticResources().Clusters = clusters
 
 	// Marshall bootstrapConfig into JSON
 	var bootStrapJSON bytes.Buffer

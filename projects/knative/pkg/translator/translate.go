@@ -166,7 +166,7 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 		// use tls if spec contains tls, or user sets with annotations
 		useTls := len(spec.TLS) > 0
 
-		if customSsl := sslConfigFromAnnotations(ing.Annotations, ing.Namespace); customSsl != nil {
+		if customSsl := sslConfigFromAnnotations(ing.GetAnnotations(), ing.GetNamespace()); customSsl != nil {
 			useTls = true
 			sslConfigs = append(sslConfigs, customSsl)
 		}
@@ -174,7 +174,7 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 		for i, rule := range spec.Rules {
 			var routes []*gloov1.Route
 			if rule.HTTP == nil {
-				log.Warnf("rule %v in knative ingress %v is missing HTTP field", i, ing.Name)
+				log.Warnf("rule %v in knative ingress %v is missing HTTP field", i, ing.GetName())
 				continue
 			}
 			for _, route := range rule.HTTP.Paths {
@@ -248,10 +248,10 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 	}
 
 	sort.SliceStable(virtualHostsHttp, func(i, j int) bool {
-		return virtualHostsHttp[i].Name < virtualHostsHttp[j].Name
+		return virtualHostsHttp[i].GetName() < virtualHostsHttp[j].GetName()
 	})
 	sort.SliceStable(virtualHostsHttps, func(i, j int) bool {
-		return virtualHostsHttps[i].Name < virtualHostsHttps[j].Name
+		return virtualHostsHttps[i].GetName() < virtualHostsHttps[j].GetName()
 	})
 	return virtualHostsHttp, virtualHostsHttps, sslConfigs, nil
 }

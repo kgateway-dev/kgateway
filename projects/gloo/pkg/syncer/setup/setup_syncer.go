@@ -200,7 +200,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	if writeNamespace == "" {
 		writeNamespace = defaults.GlooSystem
 	}
-	watchNamespaces := utils.ProcessWatchNamespaces(settings.WatchNamespaces, writeNamespace)
+	watchNamespaces := utils.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
 
 	emptyControlPlane := bootstrap.ControlPlane{}
 	emptyValidationServer := bootstrap.ValidationServer{}
@@ -488,7 +488,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 			Seconds: 5 * 60,
 		}
 	}
-	if warmTimeout.Seconds != 0 || warmTimeout.Nanos != 0 {
+	if warmTimeout.GetSeconds() != 0 || warmTimeout.GetNanos() != 0 {
 		warmTimeoutDuration := prototime.DurationFromProto(warmTimeout)
 		ctx := opts.WatchOpts.Ctx
 		err = channelutils.WaitForReady(ctx, warmTimeoutDuration, edsEventLoop.Ready(), disc.Ready())

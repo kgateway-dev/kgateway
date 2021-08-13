@@ -79,10 +79,9 @@ require (
 	github.com/sirupsen/logrus v1.8.0 // indirect
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/solo-io/go-list-licenses v0.1.0
-	github.com/solo-io/go-utils v0.21.14
+	github.com/solo-io/go-utils v0.21.16
 	github.com/solo-io/k8s-utils v0.0.8
 	github.com/solo-io/protoc-gen-ext v0.0.15
-	github.com/solo-io/reporting-client v0.2.0
 	github.com/solo-io/skv2 v0.17.2
 	// Pinned to the `rate-limiter-v0.1.8` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10
@@ -95,9 +94,10 @@ require (
 	go.opencensus.io v0.22.6
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
-	golang.org/x/mod v0.3.1-0.20200828183125-ce943fd02449
+	golang.org/x/mod v0.4.2
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/tools v0.0.0-20210106214847-113979e3529a
+	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	golang.org/x/tools v0.1.5
 	google.golang.org/genproto v0.0.0-20210219173056-d891e3cb3b5b
 	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.25.0

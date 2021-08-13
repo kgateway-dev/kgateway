@@ -298,7 +298,7 @@ metadata:
 spec:
   configs:
   - ldap:
-      address: "ldap.default.svc.cluster.local:389" # Substitute your namespace for `default` here
+      address: "ldap://ldap.default.svc.cluster.local:389" # Substitute your namespace for `default` here
       userDnTemplate: "uid=%s,ou=people,dc=solo,dc=io"
       allowedGroups:
       - "cn=managers,ou=groups,dc=solo,dc=io"

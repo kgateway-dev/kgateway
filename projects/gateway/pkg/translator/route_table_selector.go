@@ -14,7 +14,7 @@ const allNamespaceRouteTableSelector = "*"
 
 var (
 	RouteTableMissingWarning = func(ref core.ResourceRef) error {
-		return errors.Errorf("route table %v.%v missing", ref.Namespace, ref.Name)
+		return errors.Errorf("route table %v.%v missing", ref.GetNamespace(), ref.GetName())
 	}
 	NoMatchingRouteTablesWarning = errors.New("no route table matches the given selector")
 	MissingRefAndSelectorWarning = errors.New("cannot determine delegation target: you must specify a route table " +
@@ -93,31 +93,31 @@ func RouteTablesForSelector(routeTables gatewayv1.RouteTableList, selector *gate
 	)
 
 	nsSelector := owner
-	if len(selector.Namespaces) > 0 {
+	if len(selector.GetNamespaces()) > 0 {
 		nsSelector = list
 	}
-	for _, ns := range selector.Namespaces {
+	for _, ns := range selector.GetNamespaces() {
 		if ns == allNamespaceRouteTableSelector {
 			nsSelector = all
 		}
 	}
 
 	var labelSelector labels.Selector
-	if len(selector.Labels) > 0 {
+	if len(selector.GetLabels()) > 0 {
 		// expressions and labels cannot be both specified at the same time
-		if len(selector.Expressions) > 0 {
+		if len(selector.GetExpressions()) > 0 {
 			return nil, RouteTableSelectorExpressionsAndLabelsWarning
 		}
-		labelSelector = labels.SelectorFromSet(selector.Labels)
+		labelSelector = labels.SelectorFromSet(selector.GetLabels())
 	}
 
 	var requirements labels.Requirements
-	if len(selector.Expressions) > 0 {
-		for _, expression := range selector.Expressions {
+	if len(selector.GetExpressions()) > 0 {
+		for _, expression := range selector.GetExpressions() {
 			r, err := labels.NewRequirement(
-				expression.Key,
-				RouteTableExpressionOperatorValues[expression.Operator],
-				expression.Values)
+				expression.GetKey(),
+				RouteTableExpressionOperatorValues[expression.GetOperator()],
+				expression.GetValues())
 			if err != nil {
 				return nil, errors.Wrap(RouteTableSelectorInvalidExpressionWarning, err.Error())
 			}
@@ -128,7 +128,7 @@ func RouteTablesForSelector(routeTables gatewayv1.RouteTableList, selector *gate
 	var matchingRouteTables gatewayv1.RouteTableList
 
 	for _, candidate := range routeTables {
-		rtLabels := labels.Set(candidate.Metadata.Labels)
+		rtLabels := labels.Set(candidate.GetMetadata().GetLabels())
 
 		// Check whether labels match (strict equality)
 		if labelSelector != nil {
@@ -150,10 +150,10 @@ func RouteTablesForSelector(routeTables gatewayv1.RouteTableList, selector *gate
 		case all:
 			nsMatches = true
 		case owner:
-			nsMatches = candidate.Metadata.Namespace == ownerNamespace
+			nsMatches = candidate.GetMetadata().GetNamespace() == ownerNamespace
 		case list:
-			for _, ns := range selector.Namespaces {
-				if ns == candidate.Metadata.Namespace {
+			for _, ns := range selector.GetNamespaces() {
+				if ns == candidate.GetMetadata().GetNamespace() {
 					nsMatches = true
 				}
 			}

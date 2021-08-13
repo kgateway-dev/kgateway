@@ -61,11 +61,11 @@ func (s *routeTableSelector) build(ctx context.Context, ref *core.ResourceRef) (
 			Name:      ref.GetName(),
 		},
 	}
-	if routeTable.GetMetadata().Namespace == "" {
-		routeTable.Metadata.Namespace = s.podNamespace
+	if routeTable.GetMetadata().GetNamespace() == "" {
+		routeTable.GetMetadata().Namespace = s.podNamespace
 	}
-	if routeTable.GetMetadata().Name == "" {
-		routeTable.Metadata.Name = "default"
+	if routeTable.GetMetadata().GetName() == "" {
+		routeTable.GetMetadata().Name = "default"
 	}
 
 	return routeTable, nil

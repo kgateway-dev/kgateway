@@ -62,7 +62,7 @@ func (m *QuoteUnquoteMesh) getSelfListener(svcIndex int) *gloov1.Listener {
 								Destination: &gloov1.RouteAction_Single{
 									Single: &gloov1.Destination{
 										DestinationType: &gloov1.Destination_Upstream{
-											Upstream: m.upstreams[svcIndex].Metadata.Ref(),
+											Upstream: m.upstreams[svcIndex].GetMetadata().Ref(),
 										},
 									},
 								},
@@ -79,7 +79,7 @@ func (m *QuoteUnquoteMesh) AddFault(svcIndex int, percent float32) {
 	// the first listener is the self listener
 	l := m.getSelfListener(svcIndex)
 
-	route := l.ListenerType.(*gloov1.Listener_HttpListener).HttpListener.VirtualHosts[0].Routes[0]
+	route := l.GetListenerType().(*gloov1.Listener_HttpListener).HttpListener.GetVirtualHosts()[0].GetRoutes()[0]
 	route.Options = &gloov1.RouteOptions{
 		Faults: &faultinjection.RouteFaults{
 			Abort: &faultinjection.RouteAbort{
@@ -103,10 +103,10 @@ func (m *QuoteUnquoteMesh) UpdateSelfListener(svcIndex int, l *gloov1.Listener) 
 	var ropts clients.ReadOpts
 	proxy := m.proxies[svcIndex]
 
-	existingproxy, err := m.clients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, ropts)
+	existingproxy, err := m.clients.ProxyClient.Read(proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName(), ropts)
 	Expect(err).NotTo(HaveOccurred())
 
-	existingproxy.Listeners[0] = l
+	existingproxy.GetListeners()[0] = l
 	var opts clients.WriteOpts
 	opts.OverwriteExisting = true
 	_, err = m.clients.ProxyClient.Write(existingproxy, opts)
@@ -182,7 +182,7 @@ func (m *QuoteUnquoteMesh) Start(ef *EnvoyFactory, testClients TestClients, serv
 				continue
 			}
 
-			proxy.Listeners = append(proxy.Listeners, &gloov1.Listener{
+			proxy.Listeners = append(proxy.GetListeners(), &gloov1.Listener{
 				Name:        fmt.Sprintf("listener-%d-to-%d", i, j),
 				BindAddress: "127.0.0.1",
 				BindPort:    m.portfor(i, j),
@@ -197,7 +197,7 @@ func (m *QuoteUnquoteMesh) Start(ef *EnvoyFactory, testClients TestClients, serv
 										Destination: &gloov1.RouteAction_Single{
 											Single: &gloov1.Destination{
 												DestinationType: &gloov1.Destination_Upstream{
-													Upstream: m.meshupstreams[j].Metadata.Ref(),
+													Upstream: m.meshupstreams[j].GetMetadata().Ref(),
 												},
 											},
 										},
@@ -237,7 +237,7 @@ func (m *QuoteUnquoteMesh) Start(ef *EnvoyFactory, testClients TestClients, serv
 		ei, err := ef.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 
-		ei.RunWithRole(p.Metadata.Namespace+"~"+p.Metadata.Name, m.clients.GlooPort)
+		ei.RunWithRole(p.GetMetadata().GetNamespace()+"~"+p.GetMetadata().GetName(), m.clients.GlooPort)
 		m.Envoys = append(m.Envoys, ei)
 	}
 

@@ -61,8 +61,6 @@ func ReadConfigFile(opts *options.Options, cmd *cobra.Command) error {
 		return err
 	}
 
-	opts.Top.DisableUsageStatistics = viper.GetBool(disableUsageReporting)
-
 	return err
 }
 

@@ -23,7 +23,6 @@ import (
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	"github.com/solo-io/k8s-utils/manifesttestutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
-	"github.com/solo-io/reporting-client/pkg/client"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
@@ -1284,7 +1283,7 @@ spec:
   minAvailable: 2
   selector:
     matchLabels:
-      gloo: gateway-proxy
+      gateway-proxy-id: gateway-proxy
 `)
 
 						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-pdb").To(BeEquivalentTo(pdb))
@@ -1308,10 +1307,36 @@ spec:
   maxUnavailable: 2
   selector:
     matchLabels:
-      gloo: gateway-proxy
+      gateway-proxy-id: gateway-proxy
 `)
 
 						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-pdb").To(BeEquivalentTo(pdb))
+					})
+
+					It("can create gwp pdb for multiple gateways with unique selectors", func() {
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable=2",
+								"gatewayProxies.gatewayProxyTwo.podDisruptionBudget.maxUnavailable=2",
+							},
+						})
+
+						pdbFormat := `
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: %s-pdb
+  namespace: gloo-system
+spec:
+  maxUnavailable: 2
+  selector:
+    matchLabels:
+      gateway-proxy-id: %s
+`
+
+						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-pdb").To(BeEquivalentTo(makeUnstructured(fmt.Sprintf(pdbFormat, defaults.GatewayProxyName, defaults.GatewayProxyName))))
+						testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, defaults.GatewayProxyName+"-two-pdb").To(BeEquivalentTo(makeUnstructured(fmt.Sprintf(pdbFormat, defaults.GatewayProxyName+"-two", defaults.GatewayProxyName+"-two"))))
 					})
 
 					It("can render with custom listener yaml", func() {
@@ -1864,6 +1889,17 @@ spec:
 						// deployment exists for for second declaration of gateway proxy
 						testManifest.Expect("Deployment", namespace, deploymentName).NotTo(BeNil())
 						testManifest.Expect("Deployment", namespace, "gateway-proxy").NotTo(BeNil())
+					})
+
+					It("supports deploying the fips envoy image", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.image.fips=true",
+								"gatewayProxies.gatewayProxy.podTemplate.image.repository=gloo-ee-envoy-wrapper",
+							},
+						})
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = "quay.io/solo-io/gloo-ee-envoy-wrapper-fips:" + version
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
 					It("supports extra args to envoy", func() {
@@ -3206,19 +3242,6 @@ metadata:
 						})
 						uid := int64(10102)
 						glooDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
-						testManifest.ExpectDeploymentAppsV1(glooDeployment)
-					})
-
-					It("should disable usage stats collection when appropriate", func() {
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"gloo.deployment.disableUsageStatistics=true"},
-						})
-
-						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(glooDeployment.Spec.Template.Spec.Containers[0].Env, v1.EnvVar{
-							Name:  client.DisableUsageVar,
-							Value: "true",
-						})
-
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
 

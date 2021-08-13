@@ -26,8 +26,8 @@ func ToGlooInt64RangeList(int64Range []*envoy_type_v3.Int64Range) []*envoytype_g
 
 func ToGlooInt64Range(int64Range *envoy_type_v3.Int64Range) *envoytype_gloo.Int64Range {
 	return &envoytype_gloo.Int64Range{
-		Start: int64Range.Start,
-		End:   int64Range.End,
+		Start: int64Range.GetStart(),
+		End:   int64Range.GetEnd(),
 	}
 }
 
@@ -41,8 +41,8 @@ func ToEnvoyInt64RangeList(int64Range []*envoytype_gloo.Int64Range) []*envoy_typ
 
 func ToEnvoyInt64Range(int64Range *envoytype_gloo.Int64Range) *envoy_type_v3.Int64Range {
 	return &envoy_type_v3.Int64Range{
-		Start: int64Range.Start,
-		End:   int64Range.End,
+		Start: int64Range.GetStart(),
+		End:   int64Range.GetEnd(),
 	}
 }
 
@@ -61,7 +61,7 @@ func ToEnvoyHeaderValueOptionList(option []*envoycore_sk.HeaderValueOption, secr
 }
 
 func ToEnvoyHeaderValueOptions(option *envoycore_sk.HeaderValueOption, secrets *v1.SecretList) ([]*envoy_config_core_v3.HeaderValueOption, error) {
-	switch typedOption := option.HeaderOption.(type) {
+	switch typedOption := option.GetHeaderOption().(type) {
 	case *envoycore_sk.HeaderValueOption_Header:
 		return []*envoy_config_core_v3.HeaderValueOption{
 			{
@@ -78,7 +78,7 @@ func ToEnvoyHeaderValueOptions(option *envoycore_sk.HeaderValueOption, secrets *
 			return nil, err
 		}
 
-		headerSecrets, ok := secret.Kind.(*v1.Secret_Header)
+		headerSecrets, ok := secret.GetKind().(*v1.Secret_Header)
 		if !ok {
 			return nil, errors.Errorf("Secret %v.%v was not a Header secret", typedOption.HeaderSecretRef.GetNamespace(), typedOption.HeaderSecretRef.GetName())
 		}

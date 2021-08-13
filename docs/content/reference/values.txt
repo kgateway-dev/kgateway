@@ -115,7 +115,6 @@
 |gloo.deployment.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |gloo.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gloo.deployment.externalTrafficPolicy|string||Set the external traffic policy on the gloo service|
-|gloo.deployment.disableUsageStatistics|bool||Disable the collection of gloo usage statistics|
 |gloo.deployment.extraGlooLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment.|
 |gloo.deployment.replicas|int|1|number of instances to deploy|
 |gloo.deployment.customEnv[].name|string|||

@@ -113,7 +113,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot, 
 
 	for _, proxy := range snap.Proxies {
 		proxyCtx := ctx
-		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, proxy.Metadata.Ref().Key())); err == nil {
+		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, proxy.GetMetadata().Ref().Key())); err == nil {
 			proxyCtx = ctxWithTags
 		}
 
@@ -130,7 +130,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot, 
 		}
 
 		if validateErr := reports.ValidateStrict(); validateErr != nil {
-			logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.Metadata.Ref()), zap.Error(validateErr))
+			logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
 		}
 
 		key := xds.SnapshotKey(proxy)
@@ -138,17 +138,17 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot, 
 		sanitizedSnapshot, err := s.sanitizer.SanitizeSnapshot(ctx, snap, xdsSnapshot, reports)
 		if err != nil {
 			logger.Warnf("proxy %v was rejected due to invalid config: %v\n"+
-				"Attempting to update only EDS information", proxy.Metadata.Ref().Key(), err)
+				"Attempting to update only EDS information", proxy.GetMetadata().Ref().Key(), err)
 
 			// If the snapshot is invalid, attempt at least to update the EDS information. This is important because
 			// endpoints are relatively ephemeral entities and the previous snapshot Envoy got might be stale by now.
 			sanitizedSnapshot, err = s.updateEndpointsOnly(key, xdsSnapshot)
 			if err != nil {
 				logger.Warnf("endpoint update failed. xDS snapshot for proxy %v will not be updated. "+
-					"Error is: %s", proxy.Metadata.Ref().Key(), err)
+					"Error is: %s", proxy.GetMetadata().Ref().Key(), err)
 				continue
 			}
-			logger.Infof("successfully updated EDS information for proxy %v", proxy.Metadata.Ref().Key())
+			logger.Infof("successfully updated EDS information for proxy %v", proxy.GetMetadata().Ref().Key())
 		}
 
 		// Merge reports after sanitization to capture changes made by the sanitizers
@@ -177,7 +177,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot, 
 			"routes", routesLen,
 			"endpoints", endpointsLen)
 
-		logger.Debugf("Full snapshot for proxy %v: %+v", proxy.Metadata.Name, xdsSnapshot)
+		logger.Debugf("Full snapshot for proxy %v: %+v", proxy.GetMetadata().GetName(), xdsSnapshot)
 	}
 
 	logger.Debugf("gloo reports to be written: %v", allReports)

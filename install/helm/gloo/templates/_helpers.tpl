@@ -17,10 +17,10 @@ ClusterRole
 {{- end -}}
 
 {{/*
-Expand the name of a container image
+Expand the name of a container image, adding -fips to the name of the repo if configured.
 */}}
 {{- define "gloo.image" -}}
-{{ .registry }}/{{ .repository }}:{{ .tag }}{{ ternary "-extended" "" (default false .extended) }}
+{{ .registry }}/{{ .repository }}{{ ternary "-fips" "" ( and (has .repository (list "gloo-ee" "ext-auth-ee" "gloo-ee-envoy-wrapper" "rate-limit-ee" )) (default false .fips)) }}:{{ .tag }}{{ ternary "-extended" "" (default false .extended) }}
 {{- end -}}
 
 {{- define "gloo.pullSecret" -}}

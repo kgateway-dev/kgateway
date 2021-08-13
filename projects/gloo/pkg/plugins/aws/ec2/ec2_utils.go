@@ -59,13 +59,13 @@ func validInstance(instance *ec2.Instance) bool {
 // not currently used since we are batching API calls by credentials, without filters
 func convertFiltersFromSpec(upstreamSpec *glooec2.UpstreamSpec) []*ec2.Filter {
 	var filters []*ec2.Filter
-	for _, filterSpec := range upstreamSpec.Filters {
+	for _, filterSpec := range upstreamSpec.GetFilters() {
 		var currentFilter *ec2.Filter
-		switch x := filterSpec.Spec.(type) {
+		switch x := filterSpec.GetSpec().(type) {
 		case *glooec2.TagFilter_Key:
 			currentFilter = tagFiltersKey(x.Key)
 		case *glooec2.TagFilter_KvPair_:
-			currentFilter = tagFiltersKeyValue(x.KvPair.Key, x.KvPair.Value)
+			currentFilter = tagFiltersKeyValue(x.KvPair.GetKey(), x.KvPair.GetValue())
 		}
 		filters = append(filters, currentFilter)
 	}

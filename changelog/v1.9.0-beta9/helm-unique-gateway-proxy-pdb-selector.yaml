@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: |
+      PodDisruptionBudgets generated for Gateways use `gateway-proxy-id` label instead of `gloo`.
+      This ensures that each is associated only with its own GatewayProxy and not all GatewayProxies.
+    issueLink: https://github.com/solo-io/gloo/issues/4949

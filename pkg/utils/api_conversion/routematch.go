@@ -98,7 +98,7 @@ func ToGlooHeader(header *envoy_config_route_v3.HeaderMatcher) *envoyroute_gloo.
 		HeaderMatchSpecifier: nil, // gets set later in function
 		InvertMatch:          header.GetInvertMatch(),
 	}
-	switch specificHeaderSpecifier := header.HeaderMatchSpecifier.(type) {
+	switch specificHeaderSpecifier := header.GetHeaderMatchSpecifier().(type) {
 	case *envoy_config_route_v3.HeaderMatcher_ExactMatch:
 		h.HeaderMatchSpecifier = &envoyroute_gloo.HeaderMatcher_ExactMatch{
 			ExactMatch: specificHeaderSpecifier.ExactMatch,
@@ -110,8 +110,8 @@ func ToGlooHeader(header *envoy_config_route_v3.HeaderMatcher) *envoyroute_gloo.
 	case *envoy_config_route_v3.HeaderMatcher_RangeMatch:
 		h.HeaderMatchSpecifier = &envoyroute_gloo.HeaderMatcher_RangeMatch{
 			RangeMatch: &envoytype_gloo.Int64Range{
-				Start: specificHeaderSpecifier.RangeMatch.Start,
-				End:   specificHeaderSpecifier.RangeMatch.End,
+				Start: specificHeaderSpecifier.RangeMatch.GetStart(),
+				End:   specificHeaderSpecifier.RangeMatch.GetEnd(),
 			},
 		}
 	case *envoy_config_route_v3.HeaderMatcher_PresentMatch:

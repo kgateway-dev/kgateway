@@ -87,13 +87,13 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		return err
 	}
 
-	refreshRate := prototime.DurationFromProto(settings.RefreshRate)
+	refreshRate := prototime.DurationFromProto(settings.GetRefreshRate())
 
 	writeNamespace := settings.DiscoveryNamespace
 	if writeNamespace == "" {
 		writeNamespace = gloodefaults.GlooSystem
 	}
-	watchNamespaces := utils.ProcessWatchNamespaces(settings.WatchNamespaces, writeNamespace)
+	watchNamespaces := utils.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
 
 	var validation *translator.ValidationOpts
 	validationCfg := settings.GetGateway().GetValidation()
@@ -140,7 +140,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	}
 
 	opts := translator.Opts{
-		GlooNamespace:      settings.Metadata.Namespace,
+		GlooNamespace:      settings.GetMetadata().GetNamespace(),
 		WriteNamespace:     writeNamespace,
 		WatchNamespaces:    watchNamespaces,
 		Gateways:           gatewayFactory,

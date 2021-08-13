@@ -33,28 +33,28 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return nil
 	}
 
-	if cfg.MaxRequestsPerConnection > 0 {
+	if cfg.GetMaxRequestsPerConnection() > 0 {
 		out.MaxRequestsPerConnection = &wrappers.UInt32Value{
-			Value: cfg.MaxRequestsPerConnection,
+			Value: cfg.GetMaxRequestsPerConnection(),
 		}
 	}
 
-	if cfg.ConnectTimeout != nil {
+	if cfg.GetConnectTimeout() != nil {
 		out.ConnectTimeout = cfg.ConnectTimeout
 	}
 
-	if cfg.TcpKeepalive != nil {
+	if cfg.GetTcpKeepalive() != nil {
 		out.UpstreamConnectionOptions = &envoy_config_cluster_v3.UpstreamConnectionOptions{
-			TcpKeepalive: convertTcpKeepAlive(cfg.TcpKeepalive),
+			TcpKeepalive: convertTcpKeepAlive(cfg.GetTcpKeepalive()),
 		}
 	}
 
-	if cfg.PerConnectionBufferLimitBytes != nil {
+	if cfg.GetPerConnectionBufferLimitBytes() != nil {
 		out.PerConnectionBufferLimitBytes = cfg.PerConnectionBufferLimitBytes
 	}
 
-	if cfg.CommonHttpProtocolOptions != nil {
-		commonHttpProtocolOptions, err := convertHttpProtocolOptions(cfg.CommonHttpProtocolOptions)
+	if cfg.GetCommonHttpProtocolOptions() != nil {
+		commonHttpProtocolOptions, err := convertHttpProtocolOptions(cfg.GetCommonHttpProtocolOptions())
 		if err != nil {
 			return err
 		}
@@ -66,14 +66,14 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 func convertTcpKeepAlive(tcp *v1.ConnectionConfig_TcpKeepAlive) *envoy_config_core_v3.TcpKeepalive {
 	var probes *wrappers.UInt32Value
-	if tcp.KeepaliveProbes > 0 {
+	if tcp.GetKeepaliveProbes() > 0 {
 		probes = &wrappers.UInt32Value{
-			Value: tcp.KeepaliveProbes,
+			Value: tcp.GetKeepaliveProbes(),
 		}
 	}
 	return &envoy_config_core_v3.TcpKeepalive{
-		KeepaliveInterval: roundToSecond(tcp.KeepaliveInterval),
-		KeepaliveTime:     roundToSecond(tcp.KeepaliveTime),
+		KeepaliveInterval: roundToSecond(tcp.GetKeepaliveInterval()),
+		KeepaliveTime:     roundToSecond(tcp.GetKeepaliveTime()),
 		KeepaliveProbes:   probes,
 	}
 }
@@ -81,19 +81,19 @@ func convertTcpKeepAlive(tcp *v1.ConnectionConfig_TcpKeepAlive) *envoy_config_co
 func convertHttpProtocolOptions(hpo *v1.ConnectionConfig_HttpProtocolOptions) (*envoy_config_core_v3.HttpProtocolOptions, error) {
 	out := &envoy_config_core_v3.HttpProtocolOptions{}
 
-	if hpo.IdleTimeout != nil {
+	if hpo.GetIdleTimeout() != nil {
 		out.IdleTimeout = hpo.IdleTimeout
 	}
 
-	if hpo.MaxHeadersCount > 0 { // Envoy requires this to be >= 1
-		out.MaxHeadersCount = &wrappers.UInt32Value{Value: hpo.MaxHeadersCount}
+	if hpo.GetMaxHeadersCount() > 0 { // Envoy requires this to be >= 1
+		out.MaxHeadersCount = &wrappers.UInt32Value{Value: hpo.GetMaxHeadersCount()}
 	}
 
-	if hpo.MaxStreamDuration != nil {
+	if hpo.GetMaxStreamDuration() != nil {
 		out.MaxStreamDuration = hpo.MaxStreamDuration
 	}
 
-	switch hpo.HeadersWithUnderscoresAction {
+	switch hpo.GetHeadersWithUnderscoresAction() {
 	case v1.ConnectionConfig_HttpProtocolOptions_ALLOW:
 		out.HeadersWithUnderscoresAction = envoy_config_core_v3.HttpProtocolOptions_ALLOW
 	case v1.ConnectionConfig_HttpProtocolOptions_REJECT_REQUEST:
@@ -102,7 +102,7 @@ func convertHttpProtocolOptions(hpo *v1.ConnectionConfig_HttpProtocolOptions) (*
 		out.HeadersWithUnderscoresAction = envoy_config_core_v3.HttpProtocolOptions_DROP_HEADER
 	default:
 		return &envoy_config_core_v3.HttpProtocolOptions{},
-			eris.Errorf("invalid HeadersWithUnderscoresAction %v in CommonHttpProtocolOptions", hpo.HeadersWithUnderscoresAction)
+			eris.Errorf("invalid HeadersWithUnderscoresAction %v in CommonHttpProtocolOptions", hpo.GetHeadersWithUnderscoresAction())
 	}
 
 	return out, nil

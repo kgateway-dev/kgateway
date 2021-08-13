@@ -83,7 +83,7 @@ func Run() {
 				logger := contextutils.LoggerFrom(ctx)
 				switch msg := message.GetLogEntries().(type) {
 				case *pb.StreamAccessLogsMessage_HttpLogs:
-					for _, v := range msg.HttpLogs.LogEntry {
+					for _, v := range msg.HttpLogs.GetLogEntry() {
 
 						meta := v.GetCommonProperties().GetMetadata().GetFilterMetadata()
 						// we could put any other kind of data into the transformation metadata, including more
@@ -142,7 +142,10 @@ func Run() {
 							zap.Any("request_path", v.GetRequest().GetPath()),
 							zap.Any("request_original_path", v.GetRequest().GetOriginalPath()),
 							zap.Any("request_method", v.GetRequest().GetRequestMethod().String()),
+							zap.Any("request_headers", v.GetRequest().GetRequestHeaders()),
 							zap.Any("response_code", v.GetResponse().GetResponseCode().String()),
+							zap.Any("response_headers", v.GetResponse().GetResponseHeaders()),
+							zap.Any("response_trailers", v.GetResponse().GetResponseTrailers()),
 							zap.Any("cluster", v.GetCommonProperties().GetUpstreamCluster()),
 							zap.Any("upstream_remote_address", v.GetCommonProperties().GetUpstreamRemoteAddress()),
 							zap.Any("issuer", issuer),                                     // requires jwt set up and jwt with 'iss' claim to be non-empty
@@ -154,7 +157,7 @@ func Run() {
 						).Info("received http request")
 					}
 				case *pb.StreamAccessLogsMessage_TcpLogs:
-					for _, v := range msg.TcpLogs.LogEntry {
+					for _, v := range msg.TcpLogs.GetLogEntry() {
 						logger.With(
 							zap.Any("upstream_cluster", v.GetCommonProperties().GetUpstreamCluster()),
 							zap.Any("route_name", v.GetCommonProperties().GetRouteName()),

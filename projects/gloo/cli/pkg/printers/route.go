@@ -79,9 +79,9 @@ func routeDefaultTable(w io.Writer, customHeaders []string) *tablewriter.Table {
 }
 
 func routeDefaultTableRow(r *v1.Route, index int, customItems []string) []string {
-	matcher, rType, verb, headers := Matchers(r.Matchers)
+	matcher, rType, verb, headers := Matchers(r.GetMatchers())
 	act := Action(r)
-	defaultRow := []string{strconv.Itoa(index + 1), r.Name, matcher, rType, verb, headers, act}
+	defaultRow := []string{strconv.Itoa(index + 1), r.GetName(), matcher, rType, verb, headers, act}
 	return append(defaultRow, customItems...)
 }
 
@@ -102,7 +102,7 @@ func Matchers(ms []*matchers.Matcher) (string, string, string, string) {
 func Matcher(m *matchers.Matcher) (string, string, string, string) {
 	var path string
 	var rType string
-	switch p := m.PathSpecifier.(type) {
+	switch p := m.GetPathSpecifier().(type) {
 	case *matchers.Matcher_Exact:
 		path = p.Exact
 		rType = "Exact Path"
@@ -117,17 +117,17 @@ func Matcher(m *matchers.Matcher) (string, string, string, string) {
 		rType = "Unknown"
 	}
 	verb := "*"
-	if m.Methods != nil {
-		verb = strings.Join(m.Methods, " ")
+	if m.GetMethods() != nil {
+		verb = strings.Join(m.GetMethods(), " ")
 	}
 	headers := ""
-	if m.Headers != nil {
+	if m.GetHeaders() != nil {
 		builder := bytes.Buffer{}
-		for _, v := range m.Headers {
+		for _, v := range m.GetHeaders() {
 			header := *v
-			builder.WriteString(string(header.Name))
+			builder.WriteString(string(header.GetName()))
 			builder.WriteString(":")
-			builder.WriteString(string(header.Value))
+			builder.WriteString(string(header.GetValue()))
 			builder.WriteString("; ")
 		}
 		headers = builder.String()
@@ -137,7 +137,7 @@ func Matcher(m *matchers.Matcher) (string, string, string, string) {
 
 // helper function to parse destinations
 func Destinations(d *gloov1.Destination) string {
-	switch d.DestinationSpec.DestinationType.(type) {
+	switch d.GetDestinationSpec().GetDestinationType().(type) {
 	case *gloov1.DestinationSpec_Aws:
 		return "aws"
 	case *gloov1.DestinationSpec_Azure:
@@ -153,7 +153,7 @@ func Destinations(d *gloov1.Destination) string {
 
 // Action extracts the action in a given route
 func Action(r *v1.Route) string {
-	switch r.Action.(type) {
+	switch r.GetAction().(type) {
 	case *v1.Route_RouteAction:
 		return "route action"
 	case *v1.Route_DirectResponseAction:
@@ -168,7 +168,7 @@ func Action(r *v1.Route) string {
 func splitByAction(routes []*v1.Route) map[string][]*v1.Route {
 	actionMap := make(map[string][]*v1.Route)
 	for _, r := range routes {
-		switch r.Action.(type) {
+		switch r.GetAction().(type) {
 		case *v1.Route_RouteAction:
 			actionMap[routeActionType.routeAction] = append(actionMap[routeActionType.routeAction], r)
 		case *v1.Route_DirectResponseAction:
@@ -201,8 +201,8 @@ func redirectActionTable(r *v1.Route, index int) []string {
 }
 
 func directActionTable(r *v1.Route, index int) []string {
-	if action, ok := r.Action.(*v1.Route_DirectResponseAction); ok {
-		return routeDefaultTableRow(r, index, []string{strconv.FormatUint(uint64(action.DirectResponseAction.Status), 10), action.DirectResponseAction.Body})
+	if action, ok := r.GetAction().(*v1.Route_DirectResponseAction); ok {
+		return routeDefaultTableRow(r, index, []string{strconv.FormatUint(uint64(action.DirectResponseAction.GetStatus()), 10), action.DirectResponseAction.GetBody()})
 	}
 	return routeDefaultTableRow(r, index, []string{"unknown", "unknown"})
 }
@@ -212,7 +212,7 @@ func emptyActionTable(r *v1.Route, index int) []string {
 }
 
 func prettyPrint(v *pbgostruct.Value) string {
-	switch t := v.Kind.(type) {
+	switch t := v.GetKind().(type) {
 	case *pbgostruct.Value_NullValue:
 		return ""
 	case *pbgostruct.Value_NumberValue:
@@ -231,18 +231,18 @@ func prettyPrint(v *pbgostruct.Value) string {
 }
 
 func prettyPrintList(lv *pbgostruct.Value_ListValue) string {
-	if lv == nil || lv.ListValue == nil || lv.ListValue.Values == nil {
+	if lv == nil || lv.ListValue == nil || lv.ListValue.GetValues() == nil {
 		return ""
 	}
-	s := make([]string, len(lv.ListValue.Values))
-	for i, v := range lv.ListValue.Values {
+	s := make([]string, len(lv.ListValue.GetValues()))
+	for i, v := range lv.ListValue.GetValues() {
 		s[i] = prettyPrint(v)
 	}
 	return fmt.Sprintf("[%s]", strings.Join(s, ", "))
 }
 
 func prettyPrintStruct(sv *pbgostruct.Value_StructValue) string {
-	if sv == nil || sv.StructValue == nil || sv.StructValue.Fields == nil {
+	if sv == nil || sv.StructValue == nil || sv.StructValue.GetFields() == nil {
 		return ""
 	}
 
