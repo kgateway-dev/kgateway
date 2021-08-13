@@ -566,7 +566,7 @@ message GatewayOptions {
         // Setting this value sets the gRPC max message size in bytes for the gloo validation server. This should
         // only be changed if necessary.
         // If not included, the gRPC max message size will be the default of 4 MB.
-        int32 validation_server_grpc_max_size = 10;
+        google.protobuf.Int32Value validation_server_grpc_max_size = 10;
     }
 
     // If provided, the Gateway will perform [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
