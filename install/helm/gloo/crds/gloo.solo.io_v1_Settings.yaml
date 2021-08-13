@@ -211,12 +211,8 @@ spec:
                     proxyValidationServerAddr:
                       type: string
                     validationServerGrpcMaxSize:
-                      properties:
-                        value:
-                          format: int64
-                          type: integer
-                          x-kubernetes-int-or-string: true
-                      type: object
+                      format: int32
+                      type: integer
                     validationWebhookTlsCert:
                       type: string
                     validationWebhookTlsKey:

@@ -267,7 +267,7 @@ type GatewayValidation struct {
 	SecretName                      *string  `json:"secretName,omitempty" desc:"Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled."`
 	FailurePolicy                   *string  `json:"failurePolicy,omitempty" desc:"failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore "`
 	Webhook                         *Webhook `json:"webhook,omitempty" desc:"webhook specific configuration"`
-	ValidationServerGrpcMaxSize     *int64   `json:"validationServerGrpcMaxSize,omitempty" desc:"gRPC max message size in bytes for the gloo validation server"`
+	ValidationServerGrpcMaxSize     *int     `json:"validationServerGrpcMaxSize,omitempty" desc:"gRPC max message size in bytes for the gloo validation server"`
 }
 
 type Webhook struct {
