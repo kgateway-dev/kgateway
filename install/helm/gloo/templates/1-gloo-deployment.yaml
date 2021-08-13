@@ -68,7 +68,7 @@ spec:
         - name: ENVOY_SIDECAR
           value: "true"
         name: envoy-sidecar
-        image: {{ template "gloo.fipsimage" $envoyImage }}
+        image: {{ template "gloo.image" $envoyImage }}
         imagePullPolicy: {{ $envoyImage.pullPolicy }}
         securityContext:
           runAsNonRoot: true

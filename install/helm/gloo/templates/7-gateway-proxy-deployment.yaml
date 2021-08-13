@@ -148,7 +148,7 @@ spec:
         - name: LOG_LEVEL
           value: {{ $spec.logLevel }}
       {{- end}}
-        image: {{ template "gloo.fipsimage" $image }}
+        image: {{ template "gloo.image" $image }}
         imagePullPolicy: {{ $image.pullPolicy }}
         {{- if $spec.podTemplate.gracefulShutdown }}
         {{- if $spec.podTemplate.gracefulShutdown.enabled }}

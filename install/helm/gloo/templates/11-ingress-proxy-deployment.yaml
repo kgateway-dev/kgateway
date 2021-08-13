@@ -55,7 +55,7 @@ spec:
               fieldPath: metadata.name
         - name: INGRESS_PROXY_LABEL
           value: {{ .Values.ingressProxy.label }}
-        image: {{template "gloo.fipsimage" $image}}
+        image: {{template "gloo.image" $image}}
         imagePullPolicy: {{ $image.pullPolicy }}
         name: ingress-proxy
 {{- if .Values.ingressProxy.deployment.resources }}

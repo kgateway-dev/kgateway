@@ -1895,10 +1895,10 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.image.fips=true",
+								"gatewayProxies.gatewayProxy.podTemplate.image.repository=gloo-ee-envoy-wrapper",
 							},
 						})
-						// deployment exists for for second declaration of gateway proxy
-						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = "quay.io/solo-io/gloo-envoy-wrapper-fips:" + version
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = "quay.io/solo-io/gloo-ee-envoy-wrapper-fips:" + version
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
