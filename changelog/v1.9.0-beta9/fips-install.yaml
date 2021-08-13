@@ -1,0 +1,5 @@
+changelog:
+- type: HELM
+  issueLink: https://github.com/solo-io/solo-projects/issues/2420
+  resolvesIssue: false
+  description: Add support for installing fips-compliant versions of Envoy (Enterprise only)
