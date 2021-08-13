@@ -54,6 +54,7 @@ type Image struct {
 	PullPolicy *string `json:"pullPolicy,omitempty"  desc:"image pull policy for the container"`
 	PullSecret *string `json:"pullSecret,omitempty" desc:"image pull policy for the container "`
 	Extended   *bool   `json:"extended,omitempty" desc:"if true, deploy an extended version of the container with additional debug tools"`
+	Fips       *bool   `json:"extended,omitempty" desc:"if true, deploy a version of the container built with FIPS-compliant crypto libraries"`
 }
 
 type ResourceAllocation struct {
