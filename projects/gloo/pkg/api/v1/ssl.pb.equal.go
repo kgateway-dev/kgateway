@@ -99,6 +99,16 @@ func (m *SslConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetDisableTlsSessionResumption()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDisableTlsSessionResumption()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDisableTlsSessionResumption(), target.GetDisableTlsSessionResumption()) {
+			return false
+		}
+	}
+
 	switch m.SslSecrets.(type) {
 
 	case *SslConfig_SecretRef:

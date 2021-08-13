@@ -5256,6 +5256,9 @@ spec:
                           items:
                             type: string
                           type: array
+                        disableTlsSessionResumption:
+                          nullable: true
+                          type: boolean
                         oneWayTls:
                           nullable: true
                           type: boolean
@@ -6692,6 +6695,9 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                disableTlsSessionResumption:
+                                  nullable: true
+                                  type: boolean
                                 oneWayTls:
                                   nullable: true
                                   type: boolean

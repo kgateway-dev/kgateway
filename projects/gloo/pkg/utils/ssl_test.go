@@ -166,6 +166,13 @@ var _ = Describe("Ssl", func() {
 			Entry("downstreamCfg", func() CertSource { return downstreamCfg }),
 		)
 
+		It("should disable tls session if disableStatelessTlsSessionResumption is true", func() {
+			downstreamCfg.DisableTlsSessionResumption = &wrappers.BoolValue{Value: true}
+			cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfg.GetDisableStatelessSessionResumption()).To(BeTrue())
+		})
+
 		It("should set require client cert for downstream config", func() {
 			cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
 			Expect(err).NotTo(HaveOccurred())

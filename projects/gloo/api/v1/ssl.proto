@@ -38,6 +38,9 @@ message SslConfig {
     // Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA.
     // If unset, defaults to false.
     google.protobuf.BoolValue one_way_tls = 8;
+
+    // If set to true, the TLS session resumption will be deactivated, note that it deactivates only the tickets based tls session resumption (not the cache).
+    google.protobuf.BoolValue disable_tls_session_resumption = 9;
 }
 
 // SSLFiles reference paths to certificates which can be read by the proxy off of its local filesystem
