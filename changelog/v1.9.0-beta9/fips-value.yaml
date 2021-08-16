@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/solo-projects/issues/2420
+  resolvesIssue: false
+  description: Add entry in values.go for `fips` option in images.
