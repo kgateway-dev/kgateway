@@ -2773,6 +2773,7 @@ spec:
       allowWarnings: true
       disableTransformationValidation: false
       warnRouteShortCircuiting: false
+      validationServerGrpcMaxSizeBytes: 4000000
   discovery:
     fdsMode: WHITELIST
   extauth:

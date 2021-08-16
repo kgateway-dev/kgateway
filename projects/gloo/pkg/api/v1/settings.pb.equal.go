@@ -1430,12 +1430,12 @@ func (m *GatewayOptions_ValidationOptions) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetValidationServerGrpcMaxSize()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetValidationServerGrpcMaxSize()) {
+	if h, ok := interface{}(m.GetValidationServerGrpcMaxSizeBytes()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetValidationServerGrpcMaxSizeBytes()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetValidationServerGrpcMaxSize(), target.GetValidationServerGrpcMaxSize()) {
+		if !proto.Equal(m.GetValidationServerGrpcMaxSizeBytes(), target.GetValidationServerGrpcMaxSizeBytes()) {
 			return false
 		}
 	}
