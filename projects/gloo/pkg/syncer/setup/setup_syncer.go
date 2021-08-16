@@ -240,6 +240,10 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		ctx, cancel := context.WithCancel(context.Background())
 		var validationGrpcServerOpts []grpc.ServerOption
 		if maxGrpcMsgSize := settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes(); maxGrpcMsgSize != nil {
+			if maxGrpcMsgSize.GetValue() < 0 {
+				cancel()
+				return errors.Errorf("validationServerGrpcMaxSizeBytes in settings CRD must be positive, current value: %v", maxGrpcMsgSize.GetValue())
+			}
 			validationGrpcServerOpts = append(validationGrpcServerOpts, grpc.MaxRecvMsgSize(int(maxGrpcMsgSize.GetValue())))
 		}
 		s.validationServer = NewValidationServer(ctx, s.makeGrpcServer(ctx, validationGrpcServerOpts...), validationTcpAddress, true)
