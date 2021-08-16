@@ -1961,6 +1961,7 @@ spec:
       alwaysAccept: true
       allowWarnings: true
       disableTransformationValidation: false
+      validationServerGrpcMaxSizeBytes: 4000000
   discovery:
     fdsMode: WHITELIST
   extauth:

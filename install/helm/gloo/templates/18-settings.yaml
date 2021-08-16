@@ -80,6 +80,7 @@ spec:
       alwaysAccept: {{ .Values.gateway.validation.alwaysAcceptResources }}
       allowWarnings: {{ .Values.gateway.validation.allowWarnings }}
       disableTransformationValidation: {{ .Values.gateway.validation.disableTransformationValidation }}
+      validationServerGrpcMaxSizeBytes: {{ .Values.gateway.validation.validationServerGrpcMaxSizeBytes }}
 {{- end }}
 
 {{- if ne .Values.discovery.fdsMode "" }}

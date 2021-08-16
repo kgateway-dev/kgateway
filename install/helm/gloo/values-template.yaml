@@ -72,6 +72,7 @@ gateway:
     alwaysAcceptResources: true
     allowWarnings: true
     disableTransformationValidation: false
+    validationServerGrpcMaxSizeBytes: 4000000
     webhook:
       enabled: true
       disableHelmHook: false
