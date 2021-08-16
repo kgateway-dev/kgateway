@@ -1,8 +1,8 @@
 {
-  "latest": "1.8.6",
+  "latest": "1.8.7",
   "versions": [
     "master",
-    "1.8.6"
+    "1.8.7"
   ],
   "oldVersions": [
     "1.7.17",
