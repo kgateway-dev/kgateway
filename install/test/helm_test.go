@@ -2782,7 +2782,7 @@ spec:
       allowWarnings: true
       disableTransformationValidation: false
       warnRouteShortCircuiting: false
-      validationServerGrpcMaxSize: 4000000
+      validationServerGrpcMaxSizeBytes: 4000000
   discovery:
     fdsMode: WHITELIST
   extauth:
