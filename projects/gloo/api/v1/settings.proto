@@ -544,6 +544,14 @@ message GatewayOptions {
         //   - regex routes that make later routes unreachable
         //   - duplicate matchers
         google.protobuf.BoolValue warn_route_short_circuiting = 8;
+
+        reserved 9, 10;
+
+        // By default, gRPC validation messages between gateway and gloo pods have a max message size of 4 MB.
+        // Setting this value sets the gRPC max message size in bytes for the gloo validation server. This should
+        // only be changed if necessary.
+        // If not included, the gRPC max message size will be the default of 4 MB.
+        google.protobuf.Int32Value validation_server_grpc_max_size_bytes = 11;
     }
 
     // If provided, the Gateway will perform [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)

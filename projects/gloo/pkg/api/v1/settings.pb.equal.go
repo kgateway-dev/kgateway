@@ -1366,5 +1366,15 @@ func (m *GatewayOptions_ValidationOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetValidationServerGrpcMaxSizeBytes()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetValidationServerGrpcMaxSizeBytes()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetValidationServerGrpcMaxSizeBytes(), target.GetValidationServerGrpcMaxSizeBytes()) {
+			return false
+		}
+	}
+
 	return true
 }

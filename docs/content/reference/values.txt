@@ -173,6 +173,7 @@
 |gateway.validation.secretName|string|gateway-validation-certs|Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled.|
 |gateway.validation.failurePolicy|string|Ignore|failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore |
 |gateway.validation.webhook.enabled|bool|true|enable validation webhook (default true)|
+|gateway.validation.validationServerGrpcMaxSizeBytes|int|4000000|gRPC max message size in bytes for the gloo validation server|
 |gateway.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gateway.deployment.image.repository|string|gateway|image name (repository) for the container.|
 |gateway.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -328,6 +329,7 @@
 |gatewayProxies.NAME.gatewaySettings.options.validation.always_accept.value|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.validation.allow_warnings.value|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.validation.warn_route_short_circuiting.value|bool|||
+|gatewayProxies.NAME.gatewaySettings.options.validation.validation_server_grpc_max_size_bytes.value|int32|||
 |gatewayProxies.NAME.gatewaySettings.options.read_gateways_from_all_namespaces|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.always_sort_route_table_routes|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.compressed_proxy_spec|bool|||
@@ -452,6 +454,7 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.always_accept.value|bool|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.allow_warnings.value|bool|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.warn_route_short_circuiting.value|bool|||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.validation_server_grpc_max_size_bytes.value|int32|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.read_gateways_from_all_namespaces|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.always_sort_route_table_routes|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.compressed_proxy_spec|bool|false||

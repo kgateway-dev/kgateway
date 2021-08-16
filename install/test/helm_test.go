@@ -1878,6 +1878,7 @@ spec:
       proxyValidationServerAddr: gloo:9988
       alwaysAccept: true
       allowWarnings: true
+      validationServerGrpcMaxSizeBytes: 4000000
   discovery:
     fdsMode: WHITELIST
   extauth:
