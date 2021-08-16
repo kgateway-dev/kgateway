@@ -11,6 +11,7 @@
 |settings.integrations.knative.proxy.image.pullPolicy|string||image pull policy for the container|
 |settings.integrations.knative.proxy.image.pullSecret|string||image pull policy for the container |
 |settings.integrations.knative.proxy.image.extended|bool||if true, deploy an extended version of the container with additional debug tools|
+|settings.integrations.knative.proxy.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |settings.integrations.knative.proxy.httpPort|int|8080|HTTP port for the proxy|
 |settings.integrations.knative.proxy.httpsPort|int|8443|HTTPS port for the proxy|
 |settings.integrations.knative.proxy.tracing|string||tracing configuration|
@@ -107,6 +108,7 @@
 |gloo.deployment.image.pullPolicy|string||image pull policy for the container|
 |gloo.deployment.image.pullSecret|string||image pull policy for the container |
 |gloo.deployment.image.extended|bool||if true, deploy an extended version of the container with additional debug tools|
+|gloo.deployment.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |gloo.deployment.xdsPort|int|9977|port where gloo serves xDS API to Envoy|
 |gloo.deployment.restXdsPort|uint32|9976|port where gloo serves REST xDS API to Envoy|
 |gloo.deployment.validationPort|int|9988|port where gloo serves gRPC Proxy Validation to Gateway|
@@ -162,6 +164,7 @@
 |discovery.deployment.image.pullPolicy|string||image pull policy for the container|
 |discovery.deployment.image.pullSecret|string||image pull policy for the container |
 |discovery.deployment.image.extended|bool||if true, deploy an extended version of the container with additional debug tools|
+|discovery.deployment.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |discovery.deployment.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |discovery.deployment.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
 |discovery.deployment.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
@@ -228,6 +231,7 @@
 |gateway.deployment.image.pullPolicy|string||image pull policy for the container|
 |gateway.deployment.image.pullSecret|string||image pull policy for the container |
 |gateway.deployment.image.extended|bool||if true, deploy an extended version of the container with additional debug tools|
+|gateway.deployment.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |gateway.deployment.stats.enabled|bool||Controls whether or not envoy stats are enabled|
 |gateway.deployment.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
 |gateway.deployment.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
@@ -274,6 +278,7 @@
 |gateway.certGenJob.image.pullPolicy|string||image pull policy for the container|
 |gateway.certGenJob.image.pullSecret|string||image pull policy for the container |
 |gateway.certGenJob.image.extended|bool||if true, deploy an extended version of the container with additional debug tools|
+|gateway.certGenJob.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |gateway.certGenJob.restartPolicy|string|OnFailure|restart policy to use when the pod exits|
 |gateway.certGenJob.nodeName|string||name of node to run on|
 |gateway.certGenJob.nodeSelector.NAME|string||label selector for nodes|
@@ -345,6 +350,7 @@
 |gatewayProxies.NAME.podTemplate.image.pullPolicy|string||image pull policy for the container|
 |gatewayProxies.NAME.podTemplate.image.pullSecret|string||image pull policy for the container |
 |gatewayProxies.NAME.podTemplate.image.extended|bool||if true, deploy an extended version of the container with additional debug tools|
+|gatewayProxies.NAME.podTemplate.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |gatewayProxies.NAME.podTemplate.httpPort|int||HTTP port for the gateway service target port|
 |gatewayProxies.NAME.podTemplate.httpsPort|int||HTTPS port for the gateway service target port|
 |gatewayProxies.NAME.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
@@ -508,6 +514,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.image.pullPolicy|string||image pull policy for the container|
 |gatewayProxies.gatewayProxy.podTemplate.image.pullSecret|string||image pull policy for the container |
 |gatewayProxies.gatewayProxy.podTemplate.image.extended|bool||if true, deploy an extended version of the container with additional debug tools|
+|gatewayProxies.gatewayProxy.podTemplate.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |gatewayProxies.gatewayProxy.podTemplate.httpPort|int|8080|HTTP port for the gateway service target port|
 |gatewayProxies.gatewayProxy.podTemplate.httpsPort|int|8443|HTTPS port for the gateway service target port|
 |gatewayProxies.gatewayProxy.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
@@ -639,6 +646,7 @@
 |ingress.deployment.image.pullPolicy|string||image pull policy for the container|
 |ingress.deployment.image.pullSecret|string||image pull policy for the container |
 |ingress.deployment.image.extended|bool||if true, deploy an extended version of the container with additional debug tools|
+|ingress.deployment.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |ingress.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |ingress.deployment.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |ingress.deployment.extraIngressLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress deployment.|
@@ -685,6 +693,7 @@
 |ingressProxy.deployment.image.pullPolicy|string||image pull policy for the container|
 |ingressProxy.deployment.image.pullSecret|string||image pull policy for the container |
 |ingressProxy.deployment.image.extended|bool||if true, deploy an extended version of the container with additional debug tools|
+|ingressProxy.deployment.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |ingressProxy.deployment.httpPort|int|8080|HTTP port for the ingress container|
 |ingressProxy.deployment.httpsPort|int|8443|HTTPS port for the ingress container|
 |ingressProxy.deployment.extraPorts[]|interface|||
@@ -745,6 +754,7 @@
 |accessLogger.image.pullPolicy|string||image pull policy for the container|
 |accessLogger.image.pullSecret|string||image pull policy for the container |
 |accessLogger.image.extended|bool||if true, deploy an extended version of the container with additional debug tools|
+|accessLogger.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |accessLogger.port|uint|8083||
 |accessLogger.serviceName|string|AccessLog||
 |accessLogger.enabled|bool|false||
@@ -795,6 +805,7 @@
 |global.image.pullPolicy|string|IfNotPresent|image pull policy for the container|
 |global.image.pullSecret|string||image pull policy for the container |
 |global.image.extended|bool|false|if true, deploy an extended version of the container with additional debug tools|
+|global.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |global.extensions|interface|||
 |global.glooRbac.create|bool|true|create rbac rules for the gloo-system service account|
 |global.glooRbac.namespaced|bool|false|use Roles instead of ClusterRoles|
@@ -808,12 +819,14 @@
 |global.glooMtls.sds.image.pullPolicy|string||image pull policy for the container|
 |global.glooMtls.sds.image.pullSecret|string||image pull policy for the container |
 |global.glooMtls.sds.image.extended|bool||if true, deploy an extended version of the container with additional debug tools|
+|global.glooMtls.sds.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |global.glooMtls.envoy.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |global.glooMtls.envoy.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
 |global.glooMtls.envoy.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |global.glooMtls.envoy.image.pullPolicy|string||image pull policy for the container|
 |global.glooMtls.envoy.image.pullSecret|string||image pull policy for the container |
 |global.glooMtls.envoy.image.extended|bool||if true, deploy an extended version of the container with additional debug tools|
+|global.glooMtls.envoy.image.fips|bool||if true, deploy a version of the container (for data-plane containers) built with FIPS-compliant crypto libraries (enterprise only)|
 |global.glooMtls.envoySidecarResources.limits.memory|string||amount of memory|
 |global.glooMtls.envoySidecarResources.limits.cpu|string||amount of CPUs|
 |global.glooMtls.envoySidecarResources.requests.memory|string||amount of memory|
