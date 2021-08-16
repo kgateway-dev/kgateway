@@ -211,6 +211,13 @@ spec:
                     proxyValidationServerAddr:
                       type: string
                     validationServerGrpcMaxSize:
+                      properties:
+                        value:
+                          format: int64
+                          type: integer
+                          x-kubernetes-int-or-string: true
+                      type: object
+                    validationServerGrpcMaxSizeBytes:
                       maximum: 2147483647
                       minimum: -2147483648
                       nullable: true
