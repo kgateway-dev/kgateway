@@ -2,6 +2,6 @@ changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/5085
     description: >
-      Deprecate `validationServerGrpcMaxSize`. Instead use `validationServerGrpcMaxSizeBytes`,
+      Remove `validationServerGrpcMaxSize`. Instead use `validationServerGrpcMaxSizeBytes`,
       which is a replacement for `validationServerGrpcMaxSize`. `validationServerGrpcMaxSizeBytes`
       is now an int32, which fixes the int64 version's broken functionality.
