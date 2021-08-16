@@ -16,6 +16,7 @@ spec:
      allowWarnings: true
      disableTransformationValidation: true
      proxyValidationServerAddr: gloo:9988
+     validationServerGrpcMaxSizeBytes: 4000000
  gloo:
    enableRestEds: true
    xdsBindAddr: 0.0.0.0:9977

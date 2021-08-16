@@ -15,17 +15,19 @@ spec:
      alwaysAccept: true
      allowWarnings: true
      disableTransformationValidation: false
+     warnRouteShortCircuiting: false
      proxyValidationServerAddr: gloo:9988
      validationServerGrpcMaxSizeBytes: 4000000
  gloo:
-   enableRestEds: true
-   xdsBindAddr: 0.0.0.0:9977
-   restXdsBindAddr: 0.0.0.0:9976
+   enableRestEds: false
+   xdsBindAddr: "127.0.0.1:9999"
+   restXdsBindAddr: "127.0.0.1:9998"
    disableKubernetesDestinations: false
-   disableProxyGarbageCollection: true
+   disableProxyGarbageCollection: false
    invalidConfigPolicy:
      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.
-     invalidRouteResponseCode: 404  
+     invalidRouteResponseCode: 404
+     replaceInvalidRoutes: false
  kubernetesArtifactSource: {}
  kubernetesConfigSource: {}
  kubernetesSecretSource: {}
