@@ -1,0 +1,12 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5085
+    description: >
+      Remove `validationServerGrpcMaxSize`. Instead use `validationServerGrpcMaxSizeBytes`,
+      which is a replacement for `validationServerGrpcMaxSize`. `validationServerGrpcMaxSizeBytes`
+      is now an int32, which fixes the int64 version's broken functionality.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5160
+    description: >
+      Adding the `validationServerGrpcMaxSize` caused all pods to crash when using the
+      settings CRD, this will no longer happen with `validationServerGrpcMaxSizeBytes`.
