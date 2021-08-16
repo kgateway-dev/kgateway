@@ -1,6 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: >
-      Adds an option to disable the tls session resumption (only ticket based) in the virtual service.
-    issueLink: https://github.com/solo-io/gloo/issues/5131
-    resolvesIssue: false
