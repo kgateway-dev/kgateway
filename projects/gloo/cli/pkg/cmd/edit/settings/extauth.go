@@ -52,7 +52,7 @@ func editSettings(opts *editOptions.EditOptions, optsExt *options.OIDCSettings, 
 		return errors.Wrapf(err, "Error reading settings")
 	}
 
-	extAuthSettings := settings.Extauth
+	extAuthSettings := settings.GetExtauth()
 	if extAuthSettings == nil {
 		extAuthSettings = new(extauthpb.Settings)
 	}
@@ -60,10 +60,10 @@ func editSettings(opts *editOptions.EditOptions, optsExt *options.OIDCSettings, 
 		extAuthSettings.ExtauthzServerRef = new(core.ResourceRef)
 	}
 	if optsExt.ExtAuthServerUpstreamRef.GetName() != "" {
-		extAuthSettings.GetExtauthzServerRef().Name = optsExt.ExtAuthServerUpstreamRef.Name
+		extAuthSettings.GetExtauthzServerRef().Name = optsExt.ExtAuthServerUpstreamRef.GetName()
 	}
 	if optsExt.ExtAuthServerUpstreamRef.GetNamespace() != "" {
-		extAuthSettings.GetExtauthzServerRef().Namespace = optsExt.ExtAuthServerUpstreamRef.Namespace
+		extAuthSettings.GetExtauthzServerRef().Namespace = optsExt.ExtAuthServerUpstreamRef.GetNamespace()
 	}
 
 	if settings.GetExtauth() == nil {

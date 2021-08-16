@@ -84,7 +84,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			// can't parse ip so this is a dns hostname.
 			// save the first hostname for use with sni
 			if hostname == "" {
-				hostname = host.Addr
+				hostname = host.GetAddr()
 			}
 		}
 

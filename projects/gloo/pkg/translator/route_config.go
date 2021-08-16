@@ -116,7 +116,7 @@ func (t *translatorInstance) computeVirtualHost(
 		computedRoutes := t.envoyRoutes(routeParams, routeReport, route, generatedName)
 		envoyRoutes = append(envoyRoutes, computedRoutes...)
 	}
-	domains := virtualHost.Domains
+	domains := virtualHost.GetDomains()
 	if len(domains) == 0 || (len(domains) == 1 && domains[0] == "") {
 		domains = []string{"*"}
 	}
@@ -412,7 +412,7 @@ func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, mul
 			return err
 		}
 
-		totalWeight += weightedDest.Weight
+		totalWeight += weightedDest.GetWeight()
 
 		weightedCluster := &envoy_config_route_v3.WeightedCluster_ClusterWeight{
 			Name:          UpstreamToClusterName(usRef),
@@ -469,7 +469,7 @@ func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination)
 	if len(dest.GetSubset().GetValues()) == 0 {
 		return nil
 	}
-	routeSubset := dest.GetSubset().Values
+	routeSubset := dest.GetSubset().GetValues()
 
 	ref, err := usconversion.DestinationToUpstreamRef(dest)
 	if err != nil {
@@ -492,7 +492,7 @@ func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination)
 	found := false
 Outerloop:
 	for _, subset := range subsetConfig.GetSelectors() {
-		keys := subset.Keys
+		keys := subset.GetKeys()
 		if len(keys) != len(routeSubset) {
 			continue
 		}

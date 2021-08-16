@@ -138,6 +138,7 @@ install-go-tools: mod-download
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/gomock
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
 	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
+	GOBIN=$(DEPSGOBIN) go get github.com/saiskee/gettercheck
 
 # command to run regression tests with guaranteed access to $(DEPSGOBIN)/ginkgo
 # requires the environment variable KUBE2E_TESTS to be set to the test type you wish to run
@@ -190,6 +191,7 @@ $(OUTPUT_DIR)/.generated-code:
 	PATH=$(DEPSGOBIN):$$PATH rm docs/content/reference/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
 	PATH=$(DEPSGOBIN):$$PATH gofmt -w $(SUBDIRS)
 	PATH=$(DEPSGOBIN):$$PATH goimports -w $(SUBDIRS)
+	PATH=$(DEPSGOBIN):$$PATH gettercheck -ignoretests -ignoregenerated -write ./...
 	mkdir -p $(OUTPUT_DIR)
 	touch $@
 

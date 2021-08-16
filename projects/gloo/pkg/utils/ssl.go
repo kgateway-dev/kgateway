@@ -250,7 +250,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 			return nil, err
 		}
 	} else if sslSecrets := cs.GetSslFiles(); sslSecrets != nil {
-		certChain, privateKey, rootCa = sslSecrets.TlsCert, sslSecrets.TlsKey, sslSecrets.RootCa
+		certChain, privateKey, rootCa = sslSecrets.GetTlsCert(), sslSecrets.GetTlsKey(), sslSecrets.GetRootCa()
 	} else if sslSecrets := cs.GetSds(); sslSecrets != nil {
 		tlsContext, err := s.handleSds(sslSecrets, verifySanListToMatchSanList(cs.GetVerifySubjectAltName()))
 		if err != nil {
@@ -336,9 +336,9 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 		return "", "", "", NotTlsSecretError(secret.GetMetadata().Ref())
 	}
 
-	certChain := sslSecret.Tls.CertChain
-	privateKey := sslSecret.Tls.PrivateKey
-	rootCa := sslSecret.Tls.RootCa
+	certChain := sslSecret.Tls.GetCertChain()
+	privateKey := sslSecret.Tls.GetPrivateKey()
+	rootCa := sslSecret.Tls.GetRootCa()
 	return certChain, privateKey, rootCa, nil
 }
 

@@ -95,7 +95,7 @@ func virtualServiceFromOpts(meta *core.Metadata, input options.InputVirtualServi
 	if len(input.Domains) == 0 {
 		input.Domains = defaultDomains
 	}
-	displayName := meta.Name
+	displayName := meta.GetName()
 	if input.DisplayName != "" {
 		displayName = input.DisplayName
 	}

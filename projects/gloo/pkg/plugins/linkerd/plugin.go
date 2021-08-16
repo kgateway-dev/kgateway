@@ -35,7 +35,7 @@ func NewPlugin() *Plugin {
 
 func (p *Plugin) Init(params plugins.InitParams) error {
 	if settings := params.Settings; settings != nil {
-		p.enabled = params.Settings.Linkerd
+		p.enabled = params.Settings.GetLinkerd()
 	}
 	return nil
 }
@@ -75,7 +75,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		out.RequestHeadersToAdd = headers
 
 	case *v1.RouteAction_Multi:
-		destinations := destType.Multi.Destinations
+		destinations := destType.Multi.GetDestinations()
 		err := configForMultiDestination(destinations, upstreams, out)
 		if err != nil {
 			return err

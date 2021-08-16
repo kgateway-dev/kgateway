@@ -269,7 +269,7 @@ func (s *RouteReplacingSanitizer) replaceRoutes(
 					if isInvalid(action.Cluster, route.GetName()) {
 						debugW("replacing route in virtual host with invalid cluster",
 							zap.Any("cluster", action.Cluster), zap.Any("route", j), zap.Any("virtualhost", i))
-						action.Cluster = s.fallbackCluster.Name
+						action.Cluster = s.fallbackCluster.GetName()
 						replaced++
 						anyRoutesReplaced = true
 					}
@@ -279,7 +279,7 @@ func (s *RouteReplacingSanitizer) replaceRoutes(
 							debugW("replacing route in virtual host with invalid weighted cluster",
 								zap.Any("cluster", weightedCluster.GetName()), zap.Any("route", j), zap.Any("virtualhost", i))
 
-							weightedCluster.Name = s.fallbackCluster.Name
+							weightedCluster.Name = s.fallbackCluster.GetName()
 							replaced++
 							anyRoutesReplaced = true
 						}

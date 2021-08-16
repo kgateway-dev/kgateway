@@ -37,7 +37,7 @@ func SecretTable(list v1.SecretList, w io.Writer) {
 
 	for _, secret := range list {
 		var secretType string
-		name := secret.GetMetadata().Name
+		name := secret.GetMetadata().GetName()
 		switch secret.GetKind().(type) {
 		case *v1.Secret_Aws:
 			secretType = "AWS"
