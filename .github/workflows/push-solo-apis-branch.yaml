@@ -29,22 +29,22 @@ jobs:
       # The prefix used to differentiate LTS branches in solo-apis
       solo-apis-prefix: 'gloo'
     steps:
-      - id: release-tag-name
-        run: |
-          RELEASE_TAG_NAME=${{ github.event.inputs.release-tag-name }}
-          RELEASE_TAG_NAME='v1.8.4'
-          if [[ ${{ github.event_name == 'release' }} ]]; then
-            RELEASE_TAG_NAME=${{ github.event.release.tag_name }}
-          fi
-          echo "::set-output name=value::$(echo $RELEASE_TAG_NAME)"
-      - id: release-branch
-        run: |
-          RELEASE_BRANCH=${{ github.event.inputs.release-branch }}
-          RELEASE_BRANCH='v1.8.x'
-          if [[ ${{ github.event_name == 'release' }} ]]; then
-            RELEASE_BRANCH=${{ github.event.release.target_commitish }}
-          fi
-          echo "::set-output name=value::$(echo $RELEASE_BRANCH)"
+    - id: release-tag-name
+      run: |
+        RELEASE_TAG_NAME=${{ github.event.inputs.release-tag-name }}
+        if [[ ${{ github.event_name == 'release' }} ]]; then
+          RELEASE_TAG_NAME=${{ github.event.release.tag_name }}
+        fi
+        RELEASE_TAG_NAME='v1.8.4'
+        echo "::set-output name=value::$(echo $RELEASE_TAG_NAME)"
+    - id: release-branch
+      run: |
+        RELEASE_BRANCH=${{ github.event.inputs.release-branch }}
+        if [[ ${{ github.event_name == 'release' }} ]]; then
+          RELEASE_BRANCH=${{ github.event.release.target_commitish }}
+        fi
+        RELEASE_BRANCH='v1.8.x'
+        echo "::set-output name=value::$(echo $RELEASE_BRANCH)"
   push-to-solo-apis-branch:
     needs: prepare-env
     env:
