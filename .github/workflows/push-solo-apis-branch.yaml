@@ -9,11 +9,11 @@ on:
       release-tag-name:
         description: 'Release Tag Name'
         required: true
-        default: 'v1.8.4' #testing
+        default: ''
       release-branch:
         description: 'Release Branch'
         required: true
-        default: 'v1.8.x' # testing
+        default: ''
   pull_request: {} # testing
 jobs:
   prepare-env:
@@ -32,6 +32,7 @@ jobs:
       - id: release-tag-name
         run: |
           RELEASE_TAG_NAME=${{ github.event.inputs.release-tag-name }}
+          RELEASE_TAG_NAME='v1.8.4'
           if [[ ${{ github.event_name == 'release' }} ]]; then
             RELEASE_TAG_NAME=${{ github.event.release.tag_name }}
           fi
@@ -39,6 +40,7 @@ jobs:
       - id: release-branch
         run: |
           RELEASE_BRANCH=${{ github.event.inputs.release-branch }}
+          RELEASE_BRANCH='v1.8.x'
           if [[ ${{ github.event_name == 'release' }} ]]; then
             RELEASE_BRANCH=${{ github.event.release.target_commitish }}
           fi
