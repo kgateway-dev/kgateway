@@ -33,7 +33,7 @@ jobs:
       run: |
         RELEASE_TAG_NAME=${{ github.event.inputs.release-tag-name }}
         RELEASE_TAG_NAME='v1.8.4'
-        if [[ ${{ github.event_name == 'release' }} ]]; then
+        if [[ ${{ github.event_name == 'release' }} = true ]]; then
           RELEASE_TAG_NAME=${{ github.event.release.tag_name }}
         fi
         echo "::set-output name=value::$(echo $RELEASE_TAG_NAME)"
@@ -41,7 +41,7 @@ jobs:
       run: |
         RELEASE_BRANCH=${{ github.event.inputs.release-branch }}
         RELEASE_BRANCH='v1.8.x'
-        if [[ ${{ github.event_name == 'release' }} ]]; then
+        if [[ ${{ github.event_name == 'release' }} = true ]]; then
           RELEASE_BRANCH=${{ github.event.release.target_commitish }}
         fi
         echo "::set-output name=value::$(echo $RELEASE_BRANCH)"
