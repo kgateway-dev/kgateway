@@ -10,7 +10,7 @@ This feature was introduced in version 1.3.6 of Gloo Edge and version 1.3.0-beta
 
 Gloo Edge and Envoy communicate through the [xDS protocol](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#streaming-grpc-subscriptions). Since the Envoy configuration can contain secret data, plaintext communication between Gloo Edge and Envoy may be too insecure. This is especially true if your setup has the Gloo Edge control plane and Envoy instances running in separate clusters.
 
-Mutual TLS authentication (mTLS) ensures that both the client and server in a session are presenting valid certificates to each other.Turning on mTLS will encrypt the xDS communication between Gloo Edge and Envoy and validate the identity of both parties in the session.
+Mutual TLS authentication (mTLS) ensures that both the client and server in a session are presenting valid certificates to each other. Turning on mTLS will encrypt the xDS communication between Gloo Edge and Envoy and validate the identity of both parties in the session.
 
 ---
 
