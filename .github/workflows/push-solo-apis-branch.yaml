@@ -1,16 +1,53 @@
 name: Push API Changes to solo-apis
 on:
   release:
-    types: [created]
+    types: [released]
+  # This job has flaked on releases. We enable manually triggering the workflow
+  # so that developers do not need to run this step manually when a flake occurs
+  workflow_dispatch:
+    inputs:
+      release-tag-name:
+        description: 'Release Tag Name'
+        required: true
+        default: ''
+      release-branch:
+        description: 'Release Branch'
+        required: true
+        default: ''
 jobs:
-  push-to-solo-apis-branch:
-    env:
+  prepare-env:
+    name: Prepare Environment Variables
+    runs-on: ubuntu-18.04
+    outputs:
       # The tag for the release commit (ie v1.8.0)
-      RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
+      release-tag-name: ${{ steps.release-tag-name.outputs.value }}
+
       # The LTS branch that was released (ie v1.8.x)
-      RELEASE_BRANCH: ${{ github.event.release.target_commitish }}
+      release-branch: ${{ steps.release-branch.outputs.value }}
+
       # The prefix used to differentiate LTS branches in solo-apis
-      SOLO_APIS_PREFIX: 'gloo'
+      solo-apis-prefix: 'gloo'
+    steps:
+    - id: release-tag-name
+      run: |
+        RELEASE_TAG_NAME=${{ github.event.inputs.release-tag-name }}
+        if [[ ${{ github.event_name == 'release' }} = true ]]; then
+          RELEASE_TAG_NAME=${{ github.event.release.tag_name }}
+        fi
+        echo "::set-output name=value::$(echo $RELEASE_TAG_NAME)"
+    - id: release-branch
+      run: |
+        RELEASE_BRANCH=${{ github.event.inputs.release-branch }}
+        if [[ ${{ github.event_name == 'release' }} = true ]]; then
+          RELEASE_BRANCH=${{ github.event.release.target_commitish }}
+        fi
+        echo "::set-output name=value::$(echo $RELEASE_BRANCH)"
+  push-to-solo-apis-branch:
+    needs: prepare-env
+    env:
+      RELEASE_TAG_NAME: ${{ needs.prepare-env.outputs.release-tag-name }}
+      RELEASE_BRANCH: ${{ needs.prepare-env.outputs.release-branch }}
+      SOLO_APIS_PREFIX: ${{ needs.prepare-env.outputs.solo-apis-prefix }}
     name: Publish Gloo APIs
     runs-on: ubuntu-18.04
     steps:
@@ -54,15 +91,15 @@ jobs:
         with:
           repository: solo-io/gloo
           path: gloo
+          ref: ${{ env.RELEASE_TAG_NAME }}
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
         with:
           repository: solo-io/solo-apis
           path: solo-apis
-          # We intentionally do not set the ref option
-          # On new minor releases, the solo-apis branch will not exist initially
-          # If we try to checkout the ref using this step, the job will fail
-          # Instead we do it later, with the -B flag, to ensure that we create the solo-apis LTS branch if it does not exist
+          # Checkout the solo-apis LTS branch that tracks the Gloo LTS branch
+          # NOTE: This will fail if the solo-apis LTS branch does not exist.
+          ref: '${{env.SOLO_APIS_PREFIX}}-${{ env.RELEASE_BRANCH }}'
       - name: Update solo-apis
         env:
           # The LTS branch in solo-apis that will hold the published apis (ie gloo-v1.8.x)
@@ -78,7 +115,6 @@ jobs:
           GIT_USER_EMAIL: soloio-bot@github.com
         run: |
           cd solo-apis
-          git checkout -B $SOLO_APIS_DESTINATION_BRANCH
           make mod-download update-deps; ./hack/sync-gloo-apis.sh; make generate
           git config --local user.name $GIT_USER_NAME
           git config --local user.email $GIT_USER_EMAIL
