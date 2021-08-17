@@ -9,11 +9,12 @@ on:
       release-tag-name:
         description: 'Release Tag Name'
         required: true
-        default: ''
+        default: 'v1.8.4' #testing
       release-branch:
         description: 'Release Branch'
         required: true
-        default: ''
+        default: 'v1.8.x' # testing
+  pull_request: {} # testing
 jobs:
   prepare-env:
     name: Prepare Environment Variables
