@@ -24,7 +24,7 @@ jobs:
       release-tag-name: ${{ steps.release-tag-name.outputs.value }}
 
       # The LTS branch that was released (ie v1.8.x)
-      release-brach: ${{ steps.release-branch.outputs.value }}
+      release-branch: ${{ steps.release-branch.outputs.value }}
 
       # The prefix used to differentiate LTS branches in solo-apis
       solo-apis-prefix: 'gloo'
