@@ -218,14 +218,14 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 	if runOptions.Settings != nil && runOptions.Settings.GetGateway() != nil && runOptions.Settings.GetGateway().GetValidation() != nil {
 		validation = &translator.ValidationOpts{}
 		if runOptions.Settings.GetGateway().GetValidation().GetProxyValidationServerAddr() != "" {
-			validation.ProxyValidationServerAddress = runOptions.Settings.GetGateway().GetValidation().ProxyValidationServerAddr
+			validation.ProxyValidationServerAddress = runOptions.Settings.GetGateway().GetValidation().GetProxyValidationServerAddr()
 		}
 		if runOptions.Settings.GetGateway().GetValidation().GetAllowWarnings() != nil {
-			validation.AllowWarnings = runOptions.Settings.GetGateway().GetValidation().GetAllowWarnings().Value
+			validation.AllowWarnings = runOptions.Settings.GetGateway().GetValidation().GetAllowWarnings().GetValue()
 
 		}
 		if runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept() != nil {
-			validation.AlwaysAcceptResources = runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept().Value
+			validation.AlwaysAcceptResources = runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept().GetValue()
 		}
 
 	}

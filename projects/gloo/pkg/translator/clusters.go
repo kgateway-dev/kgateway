@@ -108,7 +108,7 @@ func (t *translatorInstance) initializeCluster(
 		Http2ProtocolOptions: getHttp2options(upstream),
 	}
 
-	if sslConfig := upstream.SslConfig; sslConfig != nil {
+	if sslConfig := upstream.GetSslConfig(); sslConfig != nil {
 		applyDefaultsToUpstreamSslConfig(sslConfig, t.settings.GetUpstreamOptions())
 		cfg, err := utils.NewSslConfigTranslator().ResolveUpstreamSslConfig(*secrets, sslConfig)
 		if err != nil {

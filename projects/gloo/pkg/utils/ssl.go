@@ -75,10 +75,15 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 	if len(common.GetAlpnProtocols()) == 0 {
 		common.AlpnProtocols = []string{"h2", "http/1.1"}
 	}
-	return &envoyauth.DownstreamTlsContext{
+
+	out := &envoyauth.DownstreamTlsContext{
 		CommonTlsContext:         common,
 		RequireClientCertificate: requireClientCert,
-	}, nil
+	}
+	if dc.GetDisableTlsSessionResumption().GetValue() {
+		out.SessionTicketKeysType = &envoyauth.DownstreamTlsContext_DisableStatelessSessionResumption{DisableStatelessSessionResumption: true}
+	}
+	return out, nil
 }
 
 type CertSource interface {
@@ -245,7 +250,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 			return nil, err
 		}
 	} else if sslSecrets := cs.GetSslFiles(); sslSecrets != nil {
-		certChain, privateKey, rootCa = sslSecrets.TlsCert, sslSecrets.TlsKey, sslSecrets.RootCa
+		certChain, privateKey, rootCa = sslSecrets.GetTlsCert(), sslSecrets.GetTlsKey(), sslSecrets.GetRootCa()
 	} else if sslSecrets := cs.GetSds(); sslSecrets != nil {
 		tlsContext, err := s.handleSds(sslSecrets, verifySanListToMatchSanList(cs.GetVerifySubjectAltName()))
 		if err != nil {
@@ -331,9 +336,9 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 		return "", "", "", NotTlsSecretError(secret.GetMetadata().Ref())
 	}
 
-	certChain := sslSecret.Tls.CertChain
-	privateKey := sslSecret.Tls.PrivateKey
-	rootCa := sslSecret.Tls.RootCa
+	certChain := sslSecret.Tls.GetCertChain()
+	privateKey := sslSecret.Tls.GetPrivateKey()
+	rootCa := sslSecret.Tls.GetRootCa()
 	return certChain, privateKey, rootCa, nil
 }
 

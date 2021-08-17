@@ -111,6 +111,35 @@ var _ = Describe("Kube2e: helm", func() {
 		kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 	})
 
+	It("uses helm to update the validationServerGrpcMaxSizeBytes without errors", func() {
+
+		By("should start with the gateway.validation.validationServerGrpcMaxSizeBytes=4000000 (4MB)")
+		client := helpers.MustSettingsClient(ctx)
+		settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
+		Expect(err).To(BeNil())
+		Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(4000000)))
+
+		// following logic handles chartUri for focused test
+		// update the settings with `helm upgrade` (without updating the gloo version)
+		if chartUri == "" { // hasn't yet upgraded to the chart being tested- use regular gloo/gloo chart
+			runAndCleanCommand("helm", "upgrade", "gloo", "gloo/gloo",
+				"-n", testHelper.InstallNamespace,
+				"--set", "gateway.validation.validationServerGrpcMaxSizeBytes=5000000",
+				"--version", GetGlooServerVersion(ctx, testHelper.InstallNamespace))
+		} else { // has already upgraded to the chart being tested- use it
+			runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
+				"-n", testHelper.InstallNamespace,
+				"--set", "gateway.validation.validationServerGrpcMaxSizeBytes=5000000")
+		}
+
+		By("should have updated to gateway.validation.validationServerGrpcMaxSizeBytes=5000000 (5MB)")
+		settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
+		Expect(err).To(BeNil())
+		Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(5000000)))
+
+		kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+	})
+
 	Context("applies all CRD manifests without an error", func() {
 
 		var crdsByFileName = map[string]v1beta12.CustomResourceDefinition{}

@@ -46,9 +46,9 @@ func (us *Upstream_Consul) GetSubsetSpec() *plugins.SubsetSpec {
 		Keys: dataCenterMetadataKeys,
 	})
 
-	tags := us.Consul.SubsetTags
+	tags := us.Consul.GetSubsetTags()
 	if len(tags) == 0 {
-		tags = us.Consul.ServiceTags
+		tags = us.Consul.GetServiceTags()
 	}
 
 	if len(tags) > 0 {

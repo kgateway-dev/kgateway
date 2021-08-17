@@ -95,7 +95,7 @@ func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (
 
 			if kubeSettingsConfig := settings.GetKubernetes(); kubeSettingsConfig != nil {
 				if rl := kubeSettingsConfig.GetRateLimits(); rl != nil {
-					c.QPS = rl.QPS
+					c.QPS = rl.GetQPS()
 					c.Burst = int(rl.GetBurst())
 				}
 			}

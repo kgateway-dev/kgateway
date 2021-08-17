@@ -270,10 +270,10 @@ func GenerateEnvoyConfigForFilter(settings *extauthv1.Settings, upstreams v1.Ups
 		}
 	}
 
-	cfg.FailureModeAllow = settings.FailureModeAllow
+	cfg.FailureModeAllow = settings.GetFailureModeAllow()
 	cfg.WithRequestBody = translateRequestBody(settings.GetRequestBody())
-	cfg.ClearRouteCache = settings.ClearRouteCache
-	cfg.StatPrefix = settings.StatPrefix
+	cfg.ClearRouteCache = settings.GetClearRouteCache()
+	cfg.StatPrefix = settings.GetStatPrefix()
 
 	statusOnError, err := translateStatusOnError(settings.GetStatusOnError())
 	if err != nil {
@@ -321,7 +321,7 @@ func translateRequestBody(in *extauthv1.BufferSettings) *envoyauth.BufferSetting
 	if in == nil {
 		return nil
 	}
-	maxBytes := in.MaxRequestBytes
+	maxBytes := in.GetMaxRequestBytes()
 	if maxBytes <= 0 {
 		maxBytes = 4 * 1024
 	}

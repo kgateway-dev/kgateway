@@ -114,7 +114,7 @@ func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInte
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.settings = params.Settings
-	p.consulUpstreamDiscoverySettings = params.Settings.ConsulDiscovery
+	p.consulUpstreamDiscoverySettings = params.Settings.GetConsulDiscovery()
 	if p.consulUpstreamDiscoverySettings == nil {
 		p.consulUpstreamDiscoverySettings = &v1.Settings_ConsulUpstreamDiscoveryConfiguration{UseTlsTagging: false}
 	}

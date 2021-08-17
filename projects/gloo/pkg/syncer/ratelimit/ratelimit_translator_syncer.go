@@ -58,7 +58,7 @@ func (s *TranslatorSyncerExtension) Sync(
 				continue
 			}
 
-			virtualHosts := httpListener.HttpListener.VirtualHosts
+			virtualHosts := httpListener.HttpListener.GetVirtualHosts()
 
 			for _, virtualHost := range virtualHosts {
 

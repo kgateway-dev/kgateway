@@ -45,7 +45,7 @@ func diff(one, two v1.UpstreamList) v1.UpstreamList {
 	newlist := make([]*v1.Upstream, 0, len(one))
 
 	for _, up := range one {
-		meta := up.Metadata
+		meta := up.GetMetadata()
 		if _, err := two.Find(meta.GetNamespace(), meta.GetName()); err != nil {
 			// upstream from two is not present in one. add it to result list
 			newlist = append(newlist, up)

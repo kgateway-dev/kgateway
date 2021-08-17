@@ -28,7 +28,7 @@ func AuthConfig(list extauthv1.AuthConfigList, w io.Writer) {
 
 	for _, authConfig := range list {
 		var authTypes []string
-		name := authConfig.GetMetadata().Name
+		name := authConfig.GetMetadata().GetName()
 		for _, conf := range authConfig.GetConfigs() {
 			var authType string
 			switch conf.GetAuthConfig().(type) {

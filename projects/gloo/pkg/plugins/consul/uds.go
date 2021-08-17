@@ -73,7 +73,7 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	}
 
 	// copy service spec, we don't want to overwrite that
-	desiredSpec.Consul.ServiceSpec = originalSpec.Consul.ServiceSpec
+	desiredSpec.Consul.ServiceSpec = originalSpec.Consul.GetServiceSpec()
 
 	utils.UpdateUpstream(original, desired)
 

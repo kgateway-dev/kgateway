@@ -147,9 +147,9 @@ func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, alsSettings *als.A
 			},
 		},
 	}
-	cfg.AdditionalRequestHeadersToLog = alsSettings.GrpcService.AdditionalRequestHeadersToLog
-	cfg.AdditionalResponseHeadersToLog = alsSettings.GrpcService.AdditionalResponseHeadersToLog
-	cfg.AdditionalResponseTrailersToLog = alsSettings.GrpcService.AdditionalResponseTrailersToLog
+	cfg.AdditionalRequestHeadersToLog = alsSettings.GrpcService.GetAdditionalRequestHeadersToLog()
+	cfg.AdditionalResponseHeadersToLog = alsSettings.GrpcService.GetAdditionalResponseHeadersToLog()
+	cfg.AdditionalResponseTrailersToLog = alsSettings.GrpcService.GetAdditionalResponseTrailersToLog()
 	cfg.CommonConfig = &envoygrpc.CommonGrpcAccessLogConfig{
 		LogName:             alsSettings.GrpcService.GetLogName(),
 		GrpcService:         svc,
@@ -159,7 +159,7 @@ func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, alsSettings *als.A
 }
 
 func copyFileSettings(cfg *envoyalfile.FileAccessLog, alsSettings *als.AccessLog_FileSink) error {
-	cfg.Path = alsSettings.FileSink.Path
+	cfg.Path = alsSettings.FileSink.GetPath()
 	switch fileSinkType := alsSettings.FileSink.GetOutputFormat().(type) {
 	case *als.FileSink_StringFormat:
 		if fileSinkType.StringFormat != "" {

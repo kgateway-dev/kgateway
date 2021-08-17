@@ -40,7 +40,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	if cfg.GetConnectTimeout() != nil {
-		out.ConnectTimeout = cfg.ConnectTimeout
+		out.ConnectTimeout = cfg.GetConnectTimeout()
 	}
 
 	if cfg.GetTcpKeepalive() != nil {
@@ -50,7 +50,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	if cfg.GetPerConnectionBufferLimitBytes() != nil {
-		out.PerConnectionBufferLimitBytes = cfg.PerConnectionBufferLimitBytes
+		out.PerConnectionBufferLimitBytes = cfg.GetPerConnectionBufferLimitBytes()
 	}
 
 	if cfg.GetCommonHttpProtocolOptions() != nil {
@@ -82,7 +82,7 @@ func convertHttpProtocolOptions(hpo *v1.ConnectionConfig_HttpProtocolOptions) (*
 	out := &envoy_config_core_v3.HttpProtocolOptions{}
 
 	if hpo.GetIdleTimeout() != nil {
-		out.IdleTimeout = hpo.IdleTimeout
+		out.IdleTimeout = hpo.GetIdleTimeout()
 	}
 
 	if hpo.GetMaxHeadersCount() > 0 { // Envoy requires this to be >= 1
@@ -90,7 +90,7 @@ func convertHttpProtocolOptions(hpo *v1.ConnectionConfig_HttpProtocolOptions) (*
 	}
 
 	if hpo.GetMaxStreamDuration() != nil {
-		out.MaxStreamDuration = hpo.MaxStreamDuration
+		out.MaxStreamDuration = hpo.GetMaxStreamDuration()
 	}
 
 	switch hpo.GetHeadersWithUnderscoresAction() {

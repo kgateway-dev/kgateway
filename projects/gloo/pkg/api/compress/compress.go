@@ -29,7 +29,7 @@ func isCompressed(in v1.Spec) bool {
 }
 
 func shouldCompress(in resources.Resource) bool {
-	annotations := in.GetMetadata().Annotations
+	annotations := in.GetMetadata().GetAnnotations()
 	if annotations == nil {
 		return false
 	}
@@ -42,7 +42,7 @@ func SetShouldCompressed(in resources.Resource) {
 	if in.GetMetadata() != nil {
 		metadata = in.GetMetadata()
 	}
-	annotations := metadata.Annotations
+	annotations := metadata.GetAnnotations()
 	if annotations == nil {
 		annotations = make(map[string]string)
 	}

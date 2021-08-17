@@ -77,7 +77,7 @@ func applyPrefixRewrite(in *v1.Route, out *envoy_config_route_v3.Route) error {
 		return errors.Errorf("internal error: route %v specified a prefix, but output Envoy object "+
 			"had nil route", in.GetAction())
 	}
-	routeAction.Route.PrefixRewrite = in.GetOptions().GetPrefixRewrite().Value
+	routeAction.Route.PrefixRewrite = in.GetOptions().GetPrefixRewrite().GetValue()
 	return nil
 }
 
@@ -110,12 +110,12 @@ func applyTimeout(in *v1.Route, out *envoy_config_route_v3.Route) error {
 			"had nil route", in.GetAction())
 	}
 
-	routeAction.Route.Timeout = in.GetOptions().Timeout
+	routeAction.Route.Timeout = in.GetOptions().GetTimeout()
 	return nil
 }
 
 func applyRetries(in *v1.Route, out *envoy_config_route_v3.Route) error {
-	policy := in.GetOptions().Retries
+	policy := in.GetOptions().GetRetries()
 	if policy == nil {
 		return nil
 	}
@@ -204,7 +204,7 @@ func convertPolicy(policy *retries.RetryPolicy) *envoy_config_route_v3.RetryPoli
 		return nil
 	}
 
-	numRetries := policy.NumRetries
+	numRetries := policy.GetNumRetries()
 	if numRetries == 0 {
 		numRetries = 1
 	}
