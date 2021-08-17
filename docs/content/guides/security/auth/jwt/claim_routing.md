@@ -230,6 +230,9 @@ At this point we can use normal header matching to do the routing:
 
 For convenience, we added the `tokenSource` settings so we can pass the token as a query parameter named `token`.
 
+{{% notice warning %}} In order for JWT claim-based routing to work, there **must** be a fallback "catch all" route, such as the primary route above. {{% /notice %}}
+
+
 ### Testing our configuration
 Send a request as a solo.io team member:
 ```
