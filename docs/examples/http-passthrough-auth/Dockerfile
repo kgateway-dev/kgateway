@@ -5,5 +5,5 @@ WORKDIR /app
 COPY . .
 
 FROM alpine
-RUN ls
+COPY ./server ./server
 CMD ["./server"]

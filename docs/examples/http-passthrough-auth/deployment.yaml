@@ -13,8 +13,8 @@ spec:
         app: http-extauth
     spec:
       containers:
-        - name: grpc-extauth
+        - name: http-extauth
           image: gcr.io/solo-public/passthrough-http-service-example
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - containerPort: 9001
