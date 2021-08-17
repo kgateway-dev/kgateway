@@ -1,0 +1,5 @@
+changelog:
+ - type: NON_USER_FACING
+   description: Fixes a typo ext-auth -> extauth in the fips install helper.
+   issueLink: https://github.com/solo-io/solo-projects/issues/2420
+   resolvesIssue: false
