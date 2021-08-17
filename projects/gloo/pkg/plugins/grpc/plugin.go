@@ -164,7 +164,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 			// get the package_name.service_name to generate the path that envoy wants
 			fullServiceName := genFullServiceName(grpcDestinationSpec.GetPackage(), grpcDestinationSpec.GetService())
-			methodName := grpcDestinationSpec.Function
+			methodName := grpcDestinationSpec.GetFunction()
 
 			upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
 			if err != nil {

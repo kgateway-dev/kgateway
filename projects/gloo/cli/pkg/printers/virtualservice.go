@@ -50,7 +50,7 @@ func VirtualServiceTable(ctx context.Context, list []*v1.VirtualService, w io.Wr
 	table.SetHeader([]string{"Virtual Service", "Display Name", "Domains", "SSL", "Status", "ListenerPlugins", "Routes"})
 
 	for _, v := range list {
-		name := v.GetMetadata().Name
+		name := v.GetMetadata().GetName()
 		displayName := v.GetDisplayName()
 		domains := domains(v)
 		ssl := sslConfig(v)
@@ -81,7 +81,7 @@ func RouteTableTable(list []*v1.RouteTable, w io.Writer) {
 	table.SetHeader([]string{"Route Table", "Routes", "Status"})
 
 	for _, rt := range list {
-		name := rt.GetMetadata().Name
+		name := rt.GetMetadata().GetName()
 		routes := routeList(rt.GetRoutes())
 		status := getRouteTableStatus(rt)
 

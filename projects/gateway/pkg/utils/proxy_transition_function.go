@@ -29,6 +29,6 @@ func updateDesiredStatus(original, desired *v1.Proxy) {
 	// until we make the full move.
 	equal, ok := hashutils.HashableEqual(original, desired)
 	if ok && equal {
-		desired.Status = original.Status
+		desired.Status = original.GetStatus()
 	}
 }

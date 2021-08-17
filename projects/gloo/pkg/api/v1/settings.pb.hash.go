@@ -1734,18 +1734,18 @@ func (m *GatewayOptions_ValidationOptions) Hash(hasher hash.Hash64) (uint64, err
 		}
 	}
 
-	if h, ok := interface{}(m.GetValidationServerGrpcMaxSize()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ValidationServerGrpcMaxSize")); err != nil {
+	if h, ok := interface{}(m.GetValidationServerGrpcMaxSizeBytes()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("ValidationServerGrpcMaxSizeBytes")); err != nil {
 			return 0, err
 		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetValidationServerGrpcMaxSize(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetValidationServerGrpcMaxSizeBytes(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("ValidationServerGrpcMaxSize")); err != nil {
+			if _, err = hasher.Write([]byte("ValidationServerGrpcMaxSizeBytes")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

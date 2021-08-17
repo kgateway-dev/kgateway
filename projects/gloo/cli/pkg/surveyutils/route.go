@@ -378,8 +378,8 @@ func SelectVirtualServiceInteractiveWithPrompt(opts *options.Options, prompt str
 	); err != nil {
 		return nil, err
 	}
-	opts.Metadata.Name = vsByKey[vsKey].GetMetadata().Name
-	opts.Metadata.Namespace = vsByKey[vsKey].GetMetadata().Namespace
+	opts.Metadata.Name = vsByKey[vsKey].GetMetadata().GetName()
+	opts.Metadata.Namespace = vsByKey[vsKey].GetMetadata().GetNamespace()
 
 	return vsByKey[vsKey], nil
 }

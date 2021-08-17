@@ -27,7 +27,7 @@ func UpstreamGroupTable(upstreamGroups []*v1.UpstreamGroup, w io.Writer) {
 	table.SetHeader([]string{"Upstream Group", "status", "total weight", "details"})
 
 	for i, ug := range upstreamGroups {
-		name := ug.GetMetadata().Name
+		name := ug.GetMetadata().GetName()
 		status := ug.GetStatus().GetState().String()
 
 		weight := fmt.Sprint(totalWeight(ug))
@@ -56,7 +56,7 @@ func UpstreamGroupTable(upstreamGroups []*v1.UpstreamGroup, w io.Writer) {
 func totalWeight(ug *v1.UpstreamGroup) uint32 {
 	weight := uint32(0)
 	for _, us := range ug.GetDestinations() {
-		weight += us.Weight
+		weight += us.GetWeight()
 	}
 	return weight
 }

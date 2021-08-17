@@ -28,7 +28,7 @@ func RateLimitConfig(list ratelimit.RateLimitConfigList, w io.Writer) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"RateLimitConfig", "Descriptors", "Actions"})
 	for _, ratelimitConfig := range list {
-		name := ratelimitConfig.GetMetadata().Name
+		name := ratelimitConfig.GetMetadata().GetName()
 		actions := printActions(ratelimitConfig.Spec.GetRaw().GetRateLimits())
 		maxNumLines := len(actions)
 		descriptors := printDescriptors(ratelimitConfig.Spec.GetRaw().GetDescriptors())
@@ -64,7 +64,7 @@ func SetRateLimitConfig(list ratelimit.RateLimitConfigList, w io.Writer) {
 	table.SetHeader([]string{"Set-style RateLimitConfig", "Set Descriptors", "Set Actions"})
 
 	for _, ratelimitConfig := range list {
-		name := ratelimitConfig.GetMetadata().Name
+		name := ratelimitConfig.GetMetadata().GetName()
 		setActions := printSetActions(ratelimitConfig.Spec.GetRaw().GetRateLimits())
 		maxNumLines := len(setActions)
 		setDescriptors := printSetDescriptors(ratelimitConfig.Spec.GetRaw().GetSetDescriptors())

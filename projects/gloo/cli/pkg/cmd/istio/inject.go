@@ -76,7 +76,7 @@ func Inject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 
 // Add SDS & istio-proxy sidecars
 func istioInject(args []string, opts *options.Options) error {
-	glooNS := opts.Metadata.Namespace
+	glooNS := opts.Metadata.GetNamespace()
 	istioNS := opts.Istio.Namespace
 	istioMetaMeshID := getIstioMetaMeshID(opts.Istio.IstioMetaMeshId)
 	istioMetaClusterID := getIstioMetaClusterID(opts.Istio.IstioMetaClusterId)
@@ -277,7 +277,7 @@ func addSdsCluster(configMap *corev1.ConfigMap) error {
 		return err
 	}
 
-	clusters := bootstrapConfig.GetStaticResources().Clusters
+	clusters := bootstrapConfig.GetStaticResources().GetClusters()
 
 	gatewayProxySds := genGatewayProxyCluster()
 

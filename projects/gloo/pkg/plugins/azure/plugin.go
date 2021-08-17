@@ -92,7 +92,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		if !ok {
 			return errors.Errorf("secret %v is not an Azure secret", secrets.GetMetadata().Ref())
 		}
-		p.apiKeys = azureSecrets.Azure.ApiKeys
+		p.apiKeys = azureSecrets.Azure.GetApiKeys()
 	}
 
 	return nil
@@ -122,7 +122,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			}
 
 			// get function
-			functionName := azureDestinationSpec.Azure.FunctionName
+			functionName := azureDestinationSpec.Azure.GetFunctionName()
 			for _, functionSpec := range upstreamSpec.GetFunctions() {
 				if functionSpec.GetFunctionName() == functionName {
 					path, err := getPath(functionSpec, p.apiKeys)
@@ -163,7 +163,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 }
 
 func getPath(functionSpec *azure.UpstreamSpec_FunctionSpec, apiKeys map[string]string) (string, error) {
-	functionName := functionSpec.FunctionName
+	functionName := functionSpec.GetFunctionName()
 
 	pathParameters, err := getPathParameters(functionSpec, apiKeys)
 	if err != nil {

@@ -352,7 +352,11 @@ Now you're all set to install Gloo Edge, simply follow the Gloo Edge installatio
 
 ## Amazon Elastic Container Service for Kubernetes (EKS)
 
-Amazon Elastic Kubernetes Service is Amazon's managed Kubernetes service. EKS can run both development and production workloads depending on its size and configuration. You can find more details on EKS [here](https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html).
+Amazon Elastic Kubernetes Service is Amazon's managed Kubernetes service. EKS can run both development and production workloads depending on its size and configuration. You can find more details on EKS below:
+
+- [Getting Started](https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html)
+- [Pricing](https://aws.amazon.com/eks/pricing/)
+- [IAM Management](https://docs.aws.amazon.com/eks/latest/userguide/security-iam.html)
 
 You will need to deploy an EKS cluster. We suggest using the `eksctl` tool from <https://eksctl.io/> as it complements the `aws` command line tool, and makes it super simple to create and manage an EKS cluster from the command line. To run the following commands, you will need both the AWS CLI and the `eksctl` tool installed on your local machine.
 

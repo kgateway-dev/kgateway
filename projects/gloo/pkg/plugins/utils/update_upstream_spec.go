@@ -10,40 +10,40 @@ func UpdateUpstream(original, desired *v1.Upstream) {
 
 	// do not override ssl and subset config if none specified by discovery
 	if desired.GetSslConfig() == nil {
-		desired.SslConfig = original.SslConfig
+		desired.SslConfig = original.GetSslConfig()
 	}
 	if desired.GetCircuitBreakers() == nil {
-		desired.CircuitBreakers = original.CircuitBreakers
+		desired.CircuitBreakers = original.GetCircuitBreakers()
 	}
 	if desired.GetLoadBalancerConfig() == nil {
-		desired.LoadBalancerConfig = original.LoadBalancerConfig
+		desired.LoadBalancerConfig = original.GetLoadBalancerConfig()
 	}
 	if desired.GetConnectionConfig() == nil {
-		desired.ConnectionConfig = original.ConnectionConfig
+		desired.ConnectionConfig = original.GetConnectionConfig()
 	}
 	if desired.GetFailover() == nil {
-		desired.Failover = original.Failover
+		desired.Failover = original.GetFailover()
 	}
 	if len(desired.GetHealthChecks()) == 0 {
-		desired.HealthChecks = original.HealthChecks
+		desired.HealthChecks = original.GetHealthChecks()
 	}
 	if desired.GetOutlierDetection() == nil {
-		desired.OutlierDetection = original.OutlierDetection
+		desired.OutlierDetection = original.GetOutlierDetection()
 	}
 	if desired.GetUseHttp2() == nil {
-		desired.UseHttp2 = original.UseHttp2
+		desired.UseHttp2 = original.GetUseHttp2()
 	}
 
 	if desired.GetInitialConnectionWindowSize() == nil {
-		desired.InitialConnectionWindowSize = original.InitialConnectionWindowSize
+		desired.InitialConnectionWindowSize = original.GetInitialConnectionWindowSize()
 	}
 
 	if desired.GetInitialStreamWindowSize() == nil {
-		desired.InitialStreamWindowSize = original.InitialStreamWindowSize
+		desired.InitialStreamWindowSize = original.GetInitialStreamWindowSize()
 	}
 
 	if desired.GetHttpProxyHostname() == nil {
-		desired.HttpProxyHostname = original.HttpProxyHostname
+		desired.HttpProxyHostname = original.GetHttpProxyHostname()
 	}
 
 	if desiredSubsetMutator, ok := desired.GetUpstreamType().(v1.SubsetSpecMutator); ok {

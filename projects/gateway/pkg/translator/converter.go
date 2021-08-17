@@ -315,7 +315,7 @@ func (rv *routeVisitor) visit(
 
 			// if this is a routeAction pointing to an upstream without specifying the namespace, set the namespace to that of the parent resource
 			if action, ok := routeClone.GetAction().(*gatewayv1.Route_RouteAction); ok {
-				parentNamespace := resource.InputResource().GetMetadata().Namespace
+				parentNamespace := resource.InputResource().GetMetadata().GetNamespace()
 				if upstream := action.RouteAction.GetSingle().GetUpstream(); upstream != nil && upstream.GetNamespace() == "" {
 					upstream.Namespace = parentNamespace
 				}
@@ -377,7 +377,7 @@ func routeName(resource resources.InputResource, gateway *gatewayv1.Gateway, pro
 	nameBuilder.WriteString("_route:")
 
 	var isRouteNamed bool
-	routeDisplayName := route.Name
+	routeDisplayName := route.GetName()
 	if routeDisplayName == "" {
 		routeDisplayName = UnnamedRoute(index)
 	} else {
@@ -475,8 +475,8 @@ func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*ga
 	// inherit route table config from parent
 	if child.GetInheritablePathMatchers().GetValue() {
 		for _, childMatch := range child.GetMatchers() {
-			childMatch.PathSpecifier = parent.matcher.PathSpecifier
-			childMatch.CaseSensitive = parent.matcher.CaseSensitive
+			childMatch.PathSpecifier = parent.matcher.GetPathSpecifier()
+			childMatch.CaseSensitive = parent.matcher.GetCaseSensitive()
 		}
 		if len(child.GetMatchers()) == 0 {
 			child.Matchers = []*matchersv1.Matcher{{

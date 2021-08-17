@@ -182,7 +182,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			// should be aws upstream
 
 			// get function
-			logicalName := awsDestinationSpec.Aws.LogicalName
+			logicalName := awsDestinationSpec.Aws.GetLogicalName()
 			for _, lambdaFunc := range lambdaSpec.GetLambdaFunctions() {
 				if lambdaFunc.GetLogicalName() == logicalName {
 
@@ -215,7 +215,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				return nil, nil
 			}
 
-			repsonsetransform := awsDestinationSpec.Aws.ResponseTransformation
+			repsonsetransform := awsDestinationSpec.Aws.GetResponseTransformation()
 			if !repsonsetransform {
 				return nil, nil
 			}

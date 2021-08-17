@@ -58,7 +58,7 @@ func Uninject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 // istioUninject removes SDS & istio-proxy sidecars,
 // as well as updating the gateway-proxy ConfigMap
 func istioUninject(args []string, opts *options.Options) error {
-	glooNS := opts.Metadata.Namespace
+	glooNS := opts.Metadata.GetNamespace()
 
 	client := helpers.MustKubeClient()
 	_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, glooNS, metav1.GetOptions{})
@@ -183,7 +183,7 @@ func removeSdsCluster(configMap *corev1.ConfigMap) error {
 		return err
 	}
 
-	clusters := bootstrapConfig.GetStaticResources().Clusters
+	clusters := bootstrapConfig.GetStaticResources().GetClusters()
 
 	for i, cluster := range clusters {
 		if cluster.GetName() == sdsClusterName {
