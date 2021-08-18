@@ -1165,9 +1165,14 @@ spec:
                     type: integer
                 type: object
               type: array
-            status:
+            namespacedStatuses:
+              properties:
+                statuses:
+                  additionalProperties:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  type: object
               type: object
-              x-kubernetes-preserve-unknown-fields: true
           type: object
         status:
           type: object

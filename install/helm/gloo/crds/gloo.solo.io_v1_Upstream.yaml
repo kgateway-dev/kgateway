@@ -796,6 +796,14 @@ spec:
                 updateMergeWindow:
                   type: string
               type: object
+            namespacedStatuses:
+              properties:
+                statuses:
+                  additionalProperties:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  type: object
+              type: object
             outlierDetection:
               properties:
                 baseEjectionTime:
@@ -1185,9 +1193,6 @@ spec:
                 useTls:
                   type: boolean
               type: object
-            status:
-              type: object
-              x-kubernetes-preserve-unknown-fields: true
             useHttp2:
               nullable: true
               type: boolean

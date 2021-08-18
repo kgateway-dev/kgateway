@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/serviceconverter"
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -133,7 +135,9 @@ func upstreamsEqual(original, desired *v1.Upstream) bool {
 	copyDesired := *desired
 
 	copyOriginal.Metadata = copyDesired.GetMetadata()
-	copyOriginal.Status = copyDesired.GetStatus()
+	if err := resources.CopyStatusForNamespace(&copyOriginal, &copyDesired); err != nil {
+		return false
+	}
 
 	return copyOriginal.Equal(copyDesired)
 }

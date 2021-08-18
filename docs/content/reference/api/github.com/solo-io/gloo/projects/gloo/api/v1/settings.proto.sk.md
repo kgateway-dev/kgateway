@@ -80,7 +80,7 @@ Represents global settings for all the Gloo components.
 "extauth": .enterprise.gloo.solo.io.Settings
 "namedExtauth": map<string, .enterprise.gloo.solo.io.Settings>
 "metadata": .core.solo.io.Metadata
-"status": .core.solo.io.Status
+"namespacedStatuses": .core.solo.io.NamespacedStatuses
 "observabilityOptions": .gloo.solo.io.Settings.ObservabilityOptions
 "upstreamOptions": .gloo.solo.io.UpstreamOptions
 
@@ -116,7 +116,7 @@ Represents global settings for all the Gloo components.
 | `extauth` | [.enterprise.gloo.solo.io.Settings](../enterprise/options/extauth/v1/extauth.proto.sk/#settings) | Enterprise-only: External auth related settings. |
 | `namedExtauth` | `map<string, .enterprise.gloo.solo.io.Settings>` | Enterprise-only: External auth related settings for additional auth servers This should only be used in the case where separate servers are needed to authorize separate routes. With multiple auth servers configured in Settings, multiple filters will be configured on the filter chain, but only 1 will be executed on a route. The name of the auth server (ie the key in the map) will be used to apply the configuration on the route. If an auth server name is not supplied on a route, the default auth server will be applied. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
-| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |
+| `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gloo during validation. |
 | `observabilityOptions` | [.gloo.solo.io.Settings.ObservabilityOptions](../settings.proto.sk/#observabilityoptions) | Provides settings related to the observability deployment (enterprise only). |
 | `upstreamOptions` | [.gloo.solo.io.UpstreamOptions](../settings.proto.sk/#upstreamoptions) | Default configuration to use for upstreams, when not provided by specific upstream When these properties are defined on an upstream, this configuration will be ignored. |
 

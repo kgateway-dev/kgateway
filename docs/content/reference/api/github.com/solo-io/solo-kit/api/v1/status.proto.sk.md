@@ -11,6 +11,7 @@ weight: 5
 #### Types:
 
 
+- [NamespacedStatuses](#namespacedstatuses)
 - [Status](#status)
 - [State](#state)
   
@@ -19,6 +20,30 @@ weight: 5
 
 ##### Source File: [github.com/solo-io/solo-kit/api/v1/status.proto](https://github.com/solo-io/solo-kit/blob/master/api/v1/status.proto)
 
+
+
+
+
+---
+### NamespacedStatuses
+
+ 
+*
+NamespacedStatuses indicates the Status of a resource according to each controller.
+
+Note: NamespacedStatuses is intended to replace Status in resources. Resources may need both fields
+in order to handle reading from older versions that do not yet use NamespacedStatuses; in this case
+it is recommended and safe to move the existing Status and a new NamespacedStatuses into a oneof:
+https://developers.google.com/protocol-buffers/docs/proto3#updating.
+
+```yaml
+"statuses": map<string, .core.solo.io.Status>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `statuses` | `map<string, .core.solo.io.Status>` | Mapping from namespace to the Status written by the controller running in that namespace. |
 
 
 

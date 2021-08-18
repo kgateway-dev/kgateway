@@ -55,8 +55,18 @@ func (r *RateLimitConfig) MarshalStatus() (skres.Status, error) {
 	return protoutils.MarshalMapFromProto(&r.Status)
 }
 
+// Deprecated
 func (r *RateLimitConfig) GetStatus() *core.Status {
+	s, _ := r.GetStatusForNamespace()
+	return s
+}
 
+// Deprecated
+func (r *RateLimitConfig) SetStatus(status *core.Status) {
+	_ = r.SetStatusForNamespace(status)
+}
+
+func (r *RateLimitConfig) GetStatusForNamespace() (*core.Status, error) {
 	var outputState core.Status_State
 
 	switch r.Status.GetState() {
@@ -71,11 +81,10 @@ func (r *RateLimitConfig) GetStatus() *core.Status {
 	return &core.Status{
 		State:  outputState,
 		Reason: r.Status.GetMessage(),
-	}
+	}, nil
 }
 
-func (r *RateLimitConfig) SetStatus(status *core.Status) {
-
+func (r *RateLimitConfig) SetStatusForNamespace(status *core.Status) error {
 	var outputState types.RateLimitConfigStatus_State
 
 	switch status.GetState() {
@@ -93,4 +102,13 @@ func (r *RateLimitConfig) SetStatus(status *core.Status) {
 	r.Status.State = outputState
 	r.Status.Message = status.GetReason()
 	r.Status.ObservedGeneration = r.Generation
+	return nil
+}
+
+func (r *RateLimitConfig) GetNamespacedStatuses() *core.NamespacedStatuses {
+	panic("implement me")
+}
+
+func (r *RateLimitConfig) SetNamespacedStatuses(status *core.NamespacedStatuses) {
+	panic("implement me")
 }
