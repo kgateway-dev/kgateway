@@ -137,6 +137,7 @@ replace (
 	github.com/opencontainers/go-digest => github.com/opencontainers/go-digest v1.0.0-rc1
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
+	github.com/solo-io/solo-kit => /Users/samheilbron/go/src/github.com/solo-io/solo-kit
 
 	// kube 0.19: redirects needed for most k8s.io dependencies because
 	// k8s.io/kubernetes tries to import v0.0.0 of everything.

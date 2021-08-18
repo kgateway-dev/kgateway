@@ -1338,7 +1338,6 @@ github.com/solo-io/go-utils v0.21.16/go.mod h1:sFc5iQvmmb2ttuL9cyrjDqvHZQIYSQJXP
 github.com/solo-io/k8s-utils v0.0.1/go.mod h1:53N9+9Gl2MwqIZJ7/ocA9gKvWt+6z7MPD2qKQix7oFE=
 github.com/solo-io/k8s-utils v0.0.8 h1:GJ+DLBFfR8WRg2WofGQ3o3DVPByDEYgANX9kQYhprow=
 github.com/solo-io/k8s-utils v0.0.8/go.mod h1:Cg2ymG0xhLdyS3NJ0D98yxiSWjAKYPNopzPTwVDl7e4=
-github.com/solo-io/protoc-gen-ext v0.0.12/go.mod h1:/U/jMDtVI7R6N323sfaUXK9Mmo54D7SY3pP7JtI/kMo=
 github.com/solo-io/protoc-gen-ext v0.0.13/go.mod h1:/U/jMDtVI7R6N323sfaUXK9Mmo54D7SY3pP7JtI/kMo=
 github.com/solo-io/protoc-gen-ext v0.0.15 h1:OVPo1essSt2hx5crEfnRxYlA5mwsGvrIWynNQDR/4xo=
 github.com/solo-io/protoc-gen-ext v0.0.15/go.mod h1:ch1ZUyVtN45zxAVwpuZUW+F1IR7aG0rCVAp2JrWKDCc=
@@ -1347,9 +1346,6 @@ github.com/solo-io/skv2 v0.17.2 h1:wHQ/e77UlxTciDebXeEjy1G7U9SKUDGqxG0Ce5zfjUI=
 github.com/solo-io/skv2 v0.17.2/go.mod h1:8Mo/EqmRGTu3UWb6ldnbN/9QyzI788MyG3SSpP2NaBc=
 github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10 h1:Qbq966MqBQ2hlvrg0RuoB2rWXJOwSJq+kT5z4P3Nk50=
 github.com/solo-io/solo-apis v0.0.0-20210122162349-0e170e74af10/go.mod h1:pAKKsh7pWK1nkzSfSV67RlmiynYzZlu+IWAylvEqkUI=
-github.com/solo-io/solo-kit v0.16.0/go.mod h1:zf+vof9HAavbFKRgL80jJ24SeE9PvoB8ooQ7DACtK8I=
-github.com/solo-io/solo-kit v0.21.1 h1:aaT/tEAsC4c+BanI/WoCRJ40I/aSgOm2k2pvJwn2M8I=
-github.com/solo-io/solo-kit v0.21.1/go.mod h1:PF7Ne0d86GaM+3z3UdUd+Mmt/9J20Gol45UnenyEFE8=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3 h1:Am1RMaWH7jOug0ys4gUeBCgwR/94NSfZqu90j9u8eTA=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3/go.mod h1:3lckq1wF8I6I2a1Jx5IsEG+PQArE57Jp3wBE2rQnKmw=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
