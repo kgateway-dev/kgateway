@@ -156,11 +156,11 @@ spec:
     - name: pet-virtual-service
       namespace: gloo-system
 status:
-  reported_by: gateway
+  reportedBy: gateway
   state: 1
-  subresource_statuses:
+  subresourceStatuses:
     '*v1.Proxy gloo-system gateway-proxy':
-      reported_by: gloo
+      reportedBy: gloo
       state: 1
 {{< /highlight >}}
 
@@ -434,10 +434,10 @@ spec:
   - name: pet-virtual-service
     namespace: gloo-system
 status:
-  reported_by: gateway
+  reportedBy: gateway
   state: 1
-  subresource_statuses:
+  subresourceStatuses:
     '*v1.Proxy gloo-system gateway-proxy':
-      reported_by: gloo
+      reportedBy: gloo
       state: 1
 {{< /highlight >}}

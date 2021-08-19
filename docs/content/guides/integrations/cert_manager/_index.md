@@ -160,13 +160,13 @@ spec:
     routes:
     - matchers:
        - prefix: /
-      route_action:
+      routeAction:
         single:
           upstream:
               name: default-petclinic-80
               namespace: gloo-system
-  ssl_config:
-    secret_ref:
+  sslConfig:
+    secretRef:
       name: test-123456789.solo.io
       namespace: gloo-system
 EOF
