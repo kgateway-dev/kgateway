@@ -574,7 +574,7 @@ spec:
             issuer: solo.io
             jwks:
               remote:
-                upstream_ref:
+                upstreamRef:
                   name: gloo-system-jwks-server-80
                   namespace: gloo-system
                 url: http://jwks-server/jwks.json

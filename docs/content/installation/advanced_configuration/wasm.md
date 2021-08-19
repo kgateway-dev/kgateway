@@ -271,7 +271,7 @@ spec:
             value: "my test config"
           filePath: /wasm-filters/filter.wasm
           name: myfilter
-          root_id: add_header_root_id
+          rootId: add_header_root_id
   proxyNames:
   - gateway-proxy
   ssl: false
