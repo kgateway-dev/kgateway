@@ -1,11 +1,14 @@
 syntax = "proto3";
+
 package rbac.options.gloo.solo.io;
+
+import "extproto/ext.proto";
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac";
 
-import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
+
 // TODO: should we add standard claims to the jwt principal?
 
 // Global RBAC settings
@@ -28,6 +31,11 @@ message Policy {
     repeated Principal principals = 1;
     // Permissions granted to the principals.
     Permissions permissions = 2;
+    // The delimiter to use when specifying nested claim names within principals.
+    // Default is an empty string, which disables nested claim functionality.
+    // This is commonly set to `.`, allowing for nested claim names of the form
+    // `parent.child.grandchild`
+    string nested_claim_delimiter = 3;
 }
 
 // An RBAC principal - the identity entity (usually a user or a service account).
