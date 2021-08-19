@@ -73,6 +73,7 @@ RBAC settings for Virtual Hosts and Routes
 ```yaml
 "principals": []rbac.options.gloo.solo.io.Principal
 "permissions": .rbac.options.gloo.solo.io.Permissions
+"nestedClaimDelimiter": string
 
 ```
 
@@ -80,6 +81,7 @@ RBAC settings for Virtual Hosts and Routes
 | ----- | ---- | ----------- | 
 | `principals` | [[]rbac.options.gloo.solo.io.Principal](../rbac.proto.sk/#principal) | Principals in this policy. |
 | `permissions` | [.rbac.options.gloo.solo.io.Permissions](../rbac.proto.sk/#permissions) | Permissions granted to the principals. |
+| `nestedClaimDelimiter` | `string` | The delimiter to use when specifying nested claim names within principals. Default is an empty string, which disables nested claim functionality. This is commonly set to `.`, allowing for nested claim names of the form `parent.child.grandchild`. |
 
 
 
