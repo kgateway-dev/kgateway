@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5112
+    resolvesIssue: false
+    description: >
+      Fix potential NPEs by replacing all instances of protobuf-generated accessors with the getters for those structs.
