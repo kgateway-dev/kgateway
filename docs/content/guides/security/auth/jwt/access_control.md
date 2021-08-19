@@ -286,6 +286,7 @@ The above configuration defines an RBAC policy named `viewer` which only allows 
 - the request URI starts with `/api/pets`
 - the request contains a verifiable JWT
 - the JWT has a `sub` claim with value `system:serviceaccount:default:svc-a`
+  - **Note**: It is also possible to match against nested claims (claims that are not at the top-level of the JWT, but instead are a child of another claim) by specifying the claim name as a path, for example: `parent.child.foo`
 
 {{% notice note %}}
 To see all the attributes supported by the RBAC API, be sure to check out the correspondent <b>{{< protobuf display="API docs" name="rbac.options.gloo.solo.io.ExtensionSettings">}}</b>.

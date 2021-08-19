@@ -247,7 +247,7 @@ type JWTPrincipal struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used.
-	// all claims must be present on the JWT.
+	// Nested claims, such as 'metadata.foo', may also be used. All claims must be present on the JWT.
 	Claims map[string]string `protobuf:"bytes,1,rep,name=claims,proto3" json:"claims,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Verify that the JWT came from a specific provider. This usually can be left empty
 	// and a provider will be chosen automatically.
