@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"io"
 
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
@@ -135,7 +137,7 @@ func MarshalSpec(in resources.Resource) (v1.Spec, error) {
 	}
 
 	delete(data, "metadata")
-	delete(data, "status")
+	delete(data, "namespacedStatuses")
 	// save this as usual:
 	var spec v1.Spec
 	spec = data
@@ -149,22 +151,30 @@ func MarshalSpec(in resources.Resource) (v1.Spec, error) {
 }
 
 func UnmarshalStatus(in resources.InputResource, status v1.Status) error {
-	typedStatus := core.Status{}
-	if err := protoutils.UnmarshalMapToProto(status, &typedStatus); err != nil {
-		return err
+	namespacedStatuses := core.NamespacedStatuses{}
+	if namespacedStatusesErr := protoutils.UnmarshalMapToProto(status, &namespacedStatuses); namespacedStatusesErr != nil {
+
+		singleStatus := core.Status{}
+		if statusErr := protoutils.UnmarshalMapToProto(status, &singleStatus); statusErr != nil {
+			var multiErr *multierror.Error
+			multiErr = multierror.Append(multiErr, namespacedStatusesErr)
+			multiErr = multierror.Append(multiErr, statusErr)
+			return multiErr
+		}
+		return in.SetStatusForNamespace(&singleStatus)
 	}
-	in.SetStatus(&typedStatus)
+	in.SetNamespacedStatuses(&namespacedStatuses)
 	return nil
 }
 
 func MarshalStatus(in resources.InputResource) (v1.Status, error) {
-	statusProto := in.GetStatus()
-	if statusProto == nil {
+	namespacedStatuses := in.GetNamespacedStatuses()
+	if namespacedStatuses == nil {
 		return v1.Status{}, nil
 	}
-	statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(statusProto)
+	namespacedStatusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(namespacedStatuses)
 	if err != nil {
 		return nil, crd.MarshalErr(err, "resource status to map")
 	}
-	return statusMap, nil
+	return namespacedStatusMap, nil
 }

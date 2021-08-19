@@ -37,7 +37,7 @@ func (o *Gateway) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "namespaced_statuses")
+	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
@@ -63,7 +63,7 @@ func (o *Gateway) UnmarshalJSON(data []byte) error {
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
 	}
-	if spec.NamespacedStatuses != nil {
+	if spec.GetNamespacedStatuses() != nil {
 		o.Status = *spec.NamespacedStatuses
 		o.Spec.NamespacedStatuses = nil
 	}
@@ -100,7 +100,7 @@ func (o *RouteOption) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "namespaced_statuses")
+	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
@@ -126,7 +126,7 @@ func (o *RouteOption) UnmarshalJSON(data []byte) error {
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
 	}
-	if spec.NamespacedStatuses != nil {
+	if spec.GetNamespacedStatuses() != nil {
 		o.Status = *spec.NamespacedStatuses
 		o.Spec.NamespacedStatuses = nil
 	}
@@ -163,7 +163,7 @@ func (o *RouteTable) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "namespaced_statuses")
+	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
@@ -189,7 +189,7 @@ func (o *RouteTable) UnmarshalJSON(data []byte) error {
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
 	}
-	if spec.NamespacedStatuses != nil {
+	if spec.GetNamespacedStatuses() != nil {
 		o.Status = *spec.NamespacedStatuses
 		o.Spec.NamespacedStatuses = nil
 	}
@@ -226,7 +226,7 @@ func (o *VirtualHostOption) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "namespaced_statuses")
+	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
@@ -252,7 +252,7 @@ func (o *VirtualHostOption) UnmarshalJSON(data []byte) error {
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
 	}
-	if spec.NamespacedStatuses != nil {
+	if spec.GetNamespacedStatuses() != nil {
 		o.Status = *spec.NamespacedStatuses
 		o.Spec.NamespacedStatuses = nil
 	}
@@ -289,7 +289,7 @@ func (o *VirtualService) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "namespaced_statuses")
+	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
@@ -315,7 +315,7 @@ func (o *VirtualService) UnmarshalJSON(data []byte) error {
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
 	}
-	if spec.NamespacedStatuses != nil {
+	if spec.GetNamespacedStatuses() != nil {
 		o.Status = *spec.NamespacedStatuses
 		o.Spec.NamespacedStatuses = nil
 	}

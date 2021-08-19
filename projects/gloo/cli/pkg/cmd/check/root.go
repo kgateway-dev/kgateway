@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -72,6 +73,18 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 func CheckResources(opts *options.Options) error {
 	var multiErr *multierror.Error
+
+	// TEMP - allow glooctl to check resources
+	fmt.Printf("Setting pod namespace env variable... ")
+	_ = os.Setenv("POD_NAMESPACE", opts.Metadata.GetNamespace())
+	/**
+	unset := func() {
+		_ = os.Unsetenv("POD_NAMESPACE")
+	}
+	defer unset()
+
+	DON"T UNSET -- TEMP
+	*/
 
 	err := checkConnection(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if err != nil {

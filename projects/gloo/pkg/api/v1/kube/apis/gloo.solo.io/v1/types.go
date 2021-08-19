@@ -151,7 +151,7 @@ func (o *Proxy) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "namespaced_statuses")
+	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
@@ -177,7 +177,7 @@ func (o *Proxy) UnmarshalJSON(data []byte) error {
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
 	}
-	if spec.NamespacedStatuses != nil {
+	if spec.GetNamespacedStatuses() != nil {
 		o.Status = *spec.NamespacedStatuses
 		o.Spec.NamespacedStatuses = nil
 	}
@@ -271,7 +271,7 @@ func (o *Settings) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "namespaced_statuses")
+	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
@@ -297,7 +297,7 @@ func (o *Settings) UnmarshalJSON(data []byte) error {
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
 	}
-	if spec.NamespacedStatuses != nil {
+	if spec.GetNamespacedStatuses() != nil {
 		o.Status = *spec.NamespacedStatuses
 		o.Spec.NamespacedStatuses = nil
 	}
@@ -334,7 +334,7 @@ func (o *Upstream) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "namespaced_statuses")
+	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
@@ -360,7 +360,7 @@ func (o *Upstream) UnmarshalJSON(data []byte) error {
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
 	}
-	if spec.NamespacedStatuses != nil {
+	if spec.GetNamespacedStatuses() != nil {
 		o.Status = *spec.NamespacedStatuses
 		o.Spec.NamespacedStatuses = nil
 	}
@@ -397,7 +397,7 @@ func (o *UpstreamGroup) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "namespaced_statuses")
+	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
@@ -423,7 +423,7 @@ func (o *UpstreamGroup) UnmarshalJSON(data []byte) error {
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
 	}
-	if spec.NamespacedStatuses != nil {
+	if spec.GetNamespacedStatuses() != nil {
 		o.Status = *spec.NamespacedStatuses
 		o.Spec.NamespacedStatuses = nil
 	}

@@ -99,37 +99,41 @@ var _ = Describe("Root", func() {
 
 			// Creates rejected upstream in the gloo-system namespace
 
-			helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(&v1.Upstream{
+			us := &v1.Upstream{
 				Metadata: &core.Metadata{
 					Name:      "some-warning-upstream",
 					Namespace: "gloo-system",
 				},
-				Status: &core.Status{
-					State:  core.Status_Warning,
-					Reason: "I am an upstream with a warning",
-				},
-			}, clients.WriteOpts{})
+			}
+			err := us.SetStatusForNamespace(&core.Status{
+				State:  core.Status_Warning,
+				Reason: "I am an upstream with a warning",
+			})
+			Expect(err).NotTo(HaveOccurred())
+			helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(us, clients.WriteOpts{})
 
-			helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(&v1.Upstream{
+			us = &v1.Upstream{
 				Metadata: &core.Metadata{
 					Name:      "some-rejected-upstream",
 					Namespace: "gloo-system",
 				},
-				Status: &core.Status{
-					State:  core.Status_Rejected,
-					Reason: "I am a rejected upstream",
-				},
-			}, clients.WriteOpts{})
+			}
+			err = us.SetStatusForNamespace(&core.Status{
+				State:  core.Status_Rejected,
+				Reason: "I am a rejected upstream",
+			})
+			Expect(err).NotTo(HaveOccurred())
+			helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(us, clients.WriteOpts{})
 
-			helpers.MustNamespacedVirtualServiceClient(ctx, "gloo-system").Write(
-				&v12.VirtualService{
-					Metadata: &core.Metadata{Name: "some-bad-vs", Namespace: "gloo-system"},
-					Status: &core.Status{
-						State:  core.Status_Rejected,
-						Reason: "I am a rejected vs",
-					},
-				}, clients.WriteOpts{},
-			)
+			vs := &v12.VirtualService{
+				Metadata: &core.Metadata{Name: "some-bad-vs", Namespace: "gloo-system"},
+			}
+			err = vs.SetStatusForNamespace(&core.Status{
+				State:  core.Status_Rejected,
+				Reason: "I am a rejected vs",
+			})
+			Expect(err).NotTo(HaveOccurred())
+			helpers.MustNamespacedVirtualServiceClient(ctx, "gloo-system").Write(vs, clients.WriteOpts{})
 			testutils.Glooctl("check -x xds-metrics")
 
 			output, err := testutils.GlooctlOut("check -x xds-metrics")

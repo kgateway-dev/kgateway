@@ -226,7 +226,9 @@ func (s *statusSyncer) watchProxiesFromChannel(ctx context.Context, proxies <-ch
 func hashStatuses(proxyList gloov1.ProxyList) (uint64, error) {
 	statuses := make([]interface{}, 0, len(proxyList))
 	for _, proxy := range proxyList {
-		statuses = append(statuses, proxy.GetStatus())
+		if proxyStatus, statusErr := proxy.GetStatusForNamespace(); statusErr == nil {
+			statuses = append(statuses, proxyStatus)
+		}
 	}
 	return hashutils.HashAllSafe(nil, statuses...)
 }
@@ -237,7 +239,12 @@ func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
 	for _, proxy := range list {
 		ref := proxy.GetMetadata().Ref()
 		refKey := gloo_translator.UpstreamToClusterName(ref)
-		status := proxy.GetStatus()
+
+		var status *core.Status
+		var err error
+		if status, err = proxy.GetStatusForNamespace(); err != nil {
+			continue
+		}
 		if current, ok := s.proxyToLastStatus[refKey]; ok {
 			current.Status = status
 			s.proxyToLastStatus[refKey] = current
