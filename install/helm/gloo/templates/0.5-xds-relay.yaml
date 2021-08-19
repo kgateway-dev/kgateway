@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: xds-relay
+  name: xds-relay
+  namespace: gloo-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: xds-relay
+  template:
+    metadata:
+      labels:
+        app: xds-relay
+    spec:
+      containers:
+        - image: docker.io/kdorosh/xds-relay:0.0.1
+          imagePullPolicy: IfNotPresent
+          name: xds-relay
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: xds-relay
+  name: xds-relay
+  namespace: gloo-system
+spec:
+  ports:
+    - port: 9991
+      protocol: TCP
+      targetPort: 9991
+  selector:
+    app: xds-relay
+  type: ClusterIP

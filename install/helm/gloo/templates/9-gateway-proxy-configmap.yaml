@@ -143,8 +143,8 @@ data:
             - endpoint:
                 address:
                   socket_address:
-                    address: gloo.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}
-                    port_value: {{ .Values.gloo.deployment.xdsPort }}
+                    address: xds-relay.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}
+                    port_value: 9991
         http2_protocol_options: {}
         upstream_connection_options:
           tcp_keepalive: {}
@@ -201,8 +201,8 @@ data:
             - endpoint:
                 address:
                   socket_address:
-                    address: gloo.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}
-                    port_value: {{ .Values.gloo.deployment.restXdsPort }}
+                    address: xds-relay.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}
+                    port_value: 9991
         upstream_connection_options:
           tcp_keepalive: {}
         type: STRICT_DNS
@@ -243,8 +243,8 @@ data:
             - endpoint:
                 address:
                   socket_address:
-                    address: gloo.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}
-                    port_value: 9979
+                    address: xds-relay.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}
+                    port_value: 9991
         upstream_connection_options:
           tcp_keepalive: {}
         type: STRICT_DNS
