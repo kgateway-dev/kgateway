@@ -218,11 +218,11 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 // returns package name
 func addHttpRulesToProto(upstream *v1.Upstream, currentsvc *grpcapi.ServiceSpec_GrpcService, set *descriptor.FileDescriptorSet) error {
 	for _, file := range set.GetFile() {
-		if file.Package == nil || *file.GetPackage() != currentsvc.GetPackageName() {
+		if file.Package == nil || file.GetPackage() != currentsvc.GetPackageName() {
 			continue
 		}
 		for _, svc := range file.GetService() {
-			if svc.Name == nil || *svc.GetName() != currentsvc.GetServiceName() {
+			if svc.Name == nil || svc.GetName() != currentsvc.GetServiceName() {
 				continue
 			}
 			for _, method := range svc.GetMethod() {
@@ -232,7 +232,7 @@ func addHttpRulesToProto(upstream *v1.Upstream, currentsvc *grpcapi.ServiceSpec_
 				}
 				if err := proto.SetExtension(method.GetOptions(), annotations.E_Http, &annotations.HttpRule{
 					Pattern: &annotations.HttpRule_Post{
-						Post: httpPath(upstream, fullServiceName, *method.GetName()),
+						Post: httpPath(upstream, fullServiceName, method.GetName()),
 					},
 					Body: "*",
 				}); err != nil {
@@ -249,16 +249,16 @@ func addHttpRulesToProto(upstream *v1.Upstream, currentsvc *grpcapi.ServiceSpec_
 func addWellKnownProtos(descriptors *descriptor.FileDescriptorSet) {
 	var googleApiHttpFound, googleApiAnnotationsFound, googleApiDescriptorFound bool
 	for _, file := range descriptors.GetFile() {
-		log.Debugf("inspecting descriptor for proto file %v...", *file.GetName())
-		if *file.GetName() == "google/api/http.proto" {
+		log.Debugf("inspecting descriptor for proto file %v...", file.GetName())
+		if file.GetName() == "google/api/http.proto" {
 			googleApiHttpFound = true
 			continue
 		}
-		if *file.GetName() == "google/api/annotations.proto" {
+		if file.GetName() == "google/api/annotations.proto" {
 			googleApiAnnotationsFound = true
 			continue
 		}
-		if *file.GetName() == "google/protobuf/descriptor.proto" {
+		if file.GetName() == "google/protobuf/descriptor.proto" {
 			googleApiDescriptorFound = true
 			continue
 		}

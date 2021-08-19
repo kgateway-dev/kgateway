@@ -36,7 +36,7 @@ func addGoogleApisHttp(set *descriptor.FileDescriptorSet) {
 
 func addGoogleApisAnnotations(packageName string, set *descriptor.FileDescriptorSet) {
 	for _, file := range set.GetFile() {
-		if *file.GetPackage() == packageName {
+		if file.GetPackage() == packageName {
 			file.Dependency = append(file.GetDependency(), "google/api/annotations.proto")
 		}
 	}
