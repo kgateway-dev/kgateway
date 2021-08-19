@@ -69,6 +69,8 @@ curl http://localhost:31500/all-pets
 ```
 </details>
 
+**Video with example output**
+
 <video controls loop>
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/glooctl-gateway-install.mp4" type="video/mp4">
 </video>

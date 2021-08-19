@@ -74,11 +74,11 @@ spec:
             name: default-petstore-8080
             namespace: gloo-system
 status:
-  reported_by: gateway
+  reportedBy: gateway
   state: 1
-  subresource_statuses:
+  subresourceStatuses:
     '*v1.Proxy.gloo-system.gateway-proxy':
-      reported_by: gloo
+      reportedBy: gloo
       state: 1
 ```
 
@@ -156,11 +156,11 @@ spec:
             name: default-petstore-8080
             namespace: gloo-system
 status:
-  reported_by: gateway
+  reportedBy: gateway
   state: 1
-  subresource_statuses:
+  subresourceStatuses:
     '*v1.Proxy.gloo-system.gateway-proxy':
-      reported_by: gloo
+      reportedBy: gloo
       state: 1
 {{< /highlight >}}
 
@@ -245,11 +245,11 @@ spec:
             name: default-petstore-8080
             namespace: gloo-system
 status:
-  reported_by: gateway
+  reportedBy: gateway
   state: 1
-  subresource_statuses:
+  subresourceStatuses:
     '*v1.Proxy.gloo-system.gateway-proxy':
-      reported_by: gloo
+      reportedBy: gloo
       state: 1
 {{< /highlight >}}
 
@@ -378,11 +378,11 @@ spec:
             name: default-petstore-8080
             namespace: gloo-system
 status:
-  reported_by: gateway
+  reportedBy: gateway
   state: 1
-  subresource_statuses:
+  subresourceStatuses:
     '*v1.Proxy.gloo-system.gateway-proxy':
-      reported_by: gloo
+      reportedBy: gloo
       state: 1
 {{< /highlight >}}     
 
@@ -498,7 +498,7 @@ spec:
         namespace: gloo-system
     useProxyProto: false
 status:
-  reported_by: gloo
+  reportedBy: gloo
   state: 1
 {{< /highlight >}}
 

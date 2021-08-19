@@ -163,7 +163,7 @@ spec:
               content-type: {}
               transfer-encoding: {}
 status:
-  reported_by: gloo
+  reportedBy: gloo
   state: 1
 ```
 
