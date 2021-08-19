@@ -351,9 +351,9 @@ The value of an Attribute.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `stringValue` | [.opencensus.proto.trace.TruncatableString](../trace.proto.sk/#truncatablestring) | A string up to 256 bytes long. Only one of `stringValue`, or `boolValue` can be set. |
-| `intValue` | `int` | A 64-bit signed integer. Only one of `intValue`, or `boolValue` can be set. |
-| `boolValue` | `bool` | A Boolean value represented by `true` or `false`. Only one of `boolValue`, or `intValue` can be set. |
+| `stringValue` | [.opencensus.proto.trace.TruncatableString](../trace.proto.sk/#truncatablestring) | A string up to 256 bytes long. Only one of `stringValue`, `intValue`, or `boolValue` can be set. |
+| `intValue` | `int` | A 64-bit signed integer. Only one of `intValue`, `stringValue`, or `boolValue` can be set. |
+| `boolValue` | `bool` | A Boolean value represented by `true` or `false`. Only one of `boolValue`, `stringValue`, or `intValue` can be set. |
 
 
 

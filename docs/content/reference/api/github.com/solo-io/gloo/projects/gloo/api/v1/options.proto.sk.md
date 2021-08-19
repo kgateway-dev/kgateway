@@ -289,10 +289,10 @@ Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec 
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `aws` | [.aws.options.gloo.solo.io.DestinationSpec](../options/aws/aws.proto.sk/#destinationspec) |  Only one of `aws`, `azure`, or `grpc` can be set. |
-| `azure` | [.azure.options.gloo.solo.io.DestinationSpec](../options/azure/azure.proto.sk/#destinationspec) |  Only one of `azure`, `aws`, or `grpc` can be set. |
-| `rest` | [.rest.options.gloo.solo.io.DestinationSpec](../options/rest/rest.proto.sk/#destinationspec) |  Only one of `rest`, `aws`, or `grpc` can be set. |
-| `grpc` | [.grpc.options.gloo.solo.io.DestinationSpec](../options/grpc/grpc.proto.sk/#destinationspec) |  Only one of `grpc`, `aws`, or `rest` can be set. |
+| `aws` | [.aws.options.gloo.solo.io.DestinationSpec](../options/aws/aws.proto.sk/#destinationspec) |  Only one of `aws`, `azure`, `rest`, or `grpc` can be set. |
+| `azure` | [.azure.options.gloo.solo.io.DestinationSpec](../options/azure/azure.proto.sk/#destinationspec) |  Only one of `azure`, `aws`, `rest`, or `grpc` can be set. |
+| `rest` | [.rest.options.gloo.solo.io.DestinationSpec](../options/rest/rest.proto.sk/#destinationspec) |  Only one of `rest`, `aws`, `azure`, or `grpc` can be set. |
+| `grpc` | [.grpc.options.gloo.solo.io.DestinationSpec](../options/grpc/grpc.proto.sk/#destinationspec) |  Only one of `grpc`, `aws`, `azure`, or `rest` can be set. |
 
 
 

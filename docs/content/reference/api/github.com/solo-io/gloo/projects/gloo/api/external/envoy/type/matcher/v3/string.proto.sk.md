@@ -41,10 +41,10 @@ Specifies the way to match a string.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `exact` | `string` | The input string must match exactly the string specified here. Examples: * *abc* only matches the value *abc*. Only one of `exact`, `prefix`, or `safeRegex` can be set. |
-| `prefix` | `string` | The input string must have the prefix specified here. Note: empty prefix is not allowed, please use regex instead. Examples: * *abc* matches the value *abc.xyz*. Only one of `prefix`, `exact`, or `safeRegex` can be set. |
-| `suffix` | `string` | The input string must have the suffix specified here. Note: empty prefix is not allowed, please use regex instead. Examples: * *abc* matches the value *xyz.abc*. Only one of `suffix`, `exact`, or `safeRegex` can be set. |
-| `safeRegex` | [.solo.io.envoy.type.matcher.v3.RegexMatcher](../regex.proto.sk/#regexmatcher) | The input string must match the regular expression specified here. Only one of `safeRegex`, `exact`, or `suffix` can be set. |
+| `exact` | `string` | The input string must match exactly the string specified here. Examples: * *abc* only matches the value *abc*. Only one of `exact`, `prefix`, `suffix`, or `safeRegex` can be set. |
+| `prefix` | `string` | The input string must have the prefix specified here. Note: empty prefix is not allowed, please use regex instead. Examples: * *abc* matches the value *abc.xyz*. Only one of `prefix`, `exact`, `suffix`, or `safeRegex` can be set. |
+| `suffix` | `string` | The input string must have the suffix specified here. Note: empty prefix is not allowed, please use regex instead. Examples: * *abc* matches the value *xyz.abc*. Only one of `suffix`, `exact`, `prefix`, or `safeRegex` can be set. |
+| `safeRegex` | [.solo.io.envoy.type.matcher.v3.RegexMatcher](../regex.proto.sk/#regexmatcher) | The input string must match the regular expression specified here. Only one of `safeRegex`, `exact`, `prefix`, or `suffix` can be set. |
 | `ignoreCase` | `bool` | If true, indicates the exact/prefix/suffix matching should be case insensitive. This has no effect for the safe_regex match. For example, the matcher *data* will match both input string *Data* and *data* if set to true. |
 
 
