@@ -83,16 +83,16 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 func makeListener(gateway *v1.Gateway) *gloov1.Listener {
 	return &gloov1.Listener{
 		Name:          ListenerName(gateway),
-		BindAddress:   gateway.BindAddress,
-		BindPort:      gateway.BindPort,
-		Options:       gateway.Options,
-		UseProxyProto: gateway.UseProxyProto,
-		RouteOptions:  gateway.RouteOptions,
+		BindAddress:   gateway.GetBindAddress(),
+		BindPort:      gateway.GetBindPort(),
+		Options:       gateway.GetOptions(),
+		UseProxyProto: gateway.GetUseProxyProto(),
+		RouteOptions:  gateway.GetRouteOptions(),
 	}
 }
 
 func ListenerName(gateway *v1.Gateway) string {
-	return fmt.Sprintf("listener-%s-%d", gateway.BindAddress, gateway.BindPort)
+	return fmt.Sprintf("listener-%s-%d", gateway.GetBindAddress(), gateway.GetBindPort())
 }
 
 func validateGateways(gateways v1.GatewayList, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports) {
@@ -100,11 +100,11 @@ func validateGateways(gateways v1.GatewayList, virtualServices v1.VirtualService
 	// if two gateway (=listener) that belong to the same proxy share the same bind address,
 	// they are invalid.
 	for _, gw := range gateways {
-		bindAddress := fmt.Sprintf("%s:%d", gw.BindAddress, gw.BindPort)
+		bindAddress := fmt.Sprintf("%s:%d", gw.GetBindAddress(), gw.GetBindPort())
 		bindAddresses[bindAddress] = append(bindAddresses[bindAddress], gw)
 
 		if httpGw := gw.GetHttpGateway(); httpGw != nil {
-			for _, vs := range httpGw.VirtualServices {
+			for _, vs := range httpGw.GetVirtualServices() {
 				if _, err := virtualServices.Find(vs.Strings()); err != nil {
 					reports.AddError(gw, fmt.Errorf("invalid virtual service ref %v", vs))
 				}
@@ -124,7 +124,7 @@ func validateGateways(gateways v1.GatewayList, virtualServices v1.VirtualService
 func gatewaysRefsToString(gateways v1.GatewayList) []string {
 	var ret []string
 	for _, gw := range gateways {
-		ret = append(ret, gw.Metadata.Ref().Key())
+		ret = append(ret, gw.GetMetadata().Ref().Key())
 	}
 	return ret
 }
@@ -136,7 +136,7 @@ func (t *translator) filterGateways(gateways v1.GatewayList, namespace string) v
 		// Normally, Gloo should only pay attention to Gateways it creates, i.e. in its write
 		// namespace, to support handling multiple gloo installations. However, we may want to
 		// configure the controller to read all the Gateway CRDs it can find.
-		if t.opts.ReadGatewaysFromAllNamespaces || gateway.Metadata.Namespace == namespace {
+		if t.opts.ReadGatewaysFromAllNamespaces || gateway.GetMetadata().GetNamespace() == namespace {
 			filteredGateways = append(filteredGateways, gateway)
 		}
 	}

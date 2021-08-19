@@ -28,7 +28,7 @@ func servedConfigCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc)
 }
 
 func printGlooXdsDump(opts *options.Options) (string, error) {
-	dump, err := xdsinspection.GetGlooXdsDump(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.Namespace, true)
+	dump, err := xdsinspection.GetGlooXdsDump(opts.Top.Ctx, opts.Proxy.Name, opts.Metadata.GetNamespace(), true)
 	if err != nil {
 		return "", err
 	}

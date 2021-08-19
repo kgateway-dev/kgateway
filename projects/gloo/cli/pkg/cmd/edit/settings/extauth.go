@@ -47,26 +47,26 @@ func ExtAuthConfig(opts *editOptions.EditOptions, optionsFunc ...cliutils.Option
 
 func editSettings(opts *editOptions.EditOptions, optsExt *options.OIDCSettings, args []string) error {
 	settingsClient := helpers.MustNamespacedSettingsClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
-	settings, err := settingsClient.Read(opts.Metadata.Namespace, opts.Metadata.Name, clients.ReadOpts{})
+	settings, err := settingsClient.Read(opts.Metadata.GetNamespace(), opts.Metadata.GetName(), clients.ReadOpts{})
 	if err != nil {
 		return errors.Wrapf(err, "Error reading settings")
 	}
 
-	extAuthSettings := settings.Extauth
+	extAuthSettings := settings.GetExtauth()
 	if extAuthSettings == nil {
 		extAuthSettings = new(extauthpb.Settings)
 	}
-	if extAuthSettings.ExtauthzServerRef == nil {
+	if extAuthSettings.GetExtauthzServerRef() == nil {
 		extAuthSettings.ExtauthzServerRef = new(core.ResourceRef)
 	}
-	if optsExt.ExtAuthServerUpstreamRef.Name != "" {
-		extAuthSettings.ExtauthzServerRef.Name = optsExt.ExtAuthServerUpstreamRef.Name
+	if optsExt.ExtAuthServerUpstreamRef.GetName() != "" {
+		extAuthSettings.GetExtauthzServerRef().Name = optsExt.ExtAuthServerUpstreamRef.GetName()
 	}
-	if optsExt.ExtAuthServerUpstreamRef.Namespace != "" {
-		extAuthSettings.ExtauthzServerRef.Namespace = optsExt.ExtAuthServerUpstreamRef.Namespace
+	if optsExt.ExtAuthServerUpstreamRef.GetNamespace() != "" {
+		extAuthSettings.GetExtauthzServerRef().Namespace = optsExt.ExtAuthServerUpstreamRef.GetNamespace()
 	}
 
-	if settings.Extauth == nil {
+	if settings.GetExtauth() == nil {
 		settings.Extauth = extAuthSettings
 	}
 

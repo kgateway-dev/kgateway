@@ -266,20 +266,20 @@ func (s *RouteReplacingSanitizer) replaceRoutes(
 				}
 				switch action := routeAction.GetClusterSpecifier().(type) {
 				case *envoy_config_route_v3.RouteAction_Cluster:
-					if isInvalid(action.Cluster, route.Name) {
+					if isInvalid(action.Cluster, route.GetName()) {
 						debugW("replacing route in virtual host with invalid cluster",
 							zap.Any("cluster", action.Cluster), zap.Any("route", j), zap.Any("virtualhost", i))
-						action.Cluster = s.fallbackCluster.Name
+						action.Cluster = s.fallbackCluster.GetName()
 						replaced++
 						anyRoutesReplaced = true
 					}
 				case *envoy_config_route_v3.RouteAction_WeightedClusters:
 					for _, weightedCluster := range action.WeightedClusters.GetClusters() {
-						if isInvalid(weightedCluster.GetName(), route.Name) {
+						if isInvalid(weightedCluster.GetName(), route.GetName()) {
 							debugW("replacing route in virtual host with invalid weighted cluster",
 								zap.Any("cluster", weightedCluster.GetName()), zap.Any("route", j), zap.Any("virtualhost", i))
 
-							weightedCluster.Name = s.fallbackCluster.Name
+							weightedCluster.Name = s.fallbackCluster.GetName()
 							replaced++
 							anyRoutesReplaced = true
 						}
@@ -287,9 +287,9 @@ func (s *RouteReplacingSanitizer) replaceRoutes(
 				default:
 					continue
 				}
-				vh.Routes[j] = route
+				vh.GetRoutes()[j] = route
 			}
-			sanitizedRouteConfig.VirtualHosts[i] = vh
+			sanitizedRouteConfig.GetVirtualHosts()[i] = vh
 		}
 
 		utils.Measure(ctx, mRoutesReplaced, replaced, tag.Insert(routeConfigKey, sanitizedRouteConfig.GetName()))

@@ -9,46 +9,46 @@ import v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 func UpdateUpstream(original, desired *v1.Upstream) {
 
 	// do not override ssl and subset config if none specified by discovery
-	if desired.SslConfig == nil {
-		desired.SslConfig = original.SslConfig
+	if desired.GetSslConfig() == nil {
+		desired.SslConfig = original.GetSslConfig()
 	}
-	if desired.CircuitBreakers == nil {
-		desired.CircuitBreakers = original.CircuitBreakers
+	if desired.GetCircuitBreakers() == nil {
+		desired.CircuitBreakers = original.GetCircuitBreakers()
 	}
-	if desired.LoadBalancerConfig == nil {
-		desired.LoadBalancerConfig = original.LoadBalancerConfig
+	if desired.GetLoadBalancerConfig() == nil {
+		desired.LoadBalancerConfig = original.GetLoadBalancerConfig()
 	}
-	if desired.ConnectionConfig == nil {
-		desired.ConnectionConfig = original.ConnectionConfig
+	if desired.GetConnectionConfig() == nil {
+		desired.ConnectionConfig = original.GetConnectionConfig()
 	}
-	if desired.Failover == nil {
-		desired.Failover = original.Failover
+	if desired.GetFailover() == nil {
+		desired.Failover = original.GetFailover()
 	}
-	if len(desired.HealthChecks) == 0 {
-		desired.HealthChecks = original.HealthChecks
+	if len(desired.GetHealthChecks()) == 0 {
+		desired.HealthChecks = original.GetHealthChecks()
 	}
-	if desired.OutlierDetection == nil {
-		desired.OutlierDetection = original.OutlierDetection
+	if desired.GetOutlierDetection() == nil {
+		desired.OutlierDetection = original.GetOutlierDetection()
 	}
-	if desired.UseHttp2 == nil {
-		desired.UseHttp2 = original.UseHttp2
-	}
-
-	if desired.InitialConnectionWindowSize == nil {
-		desired.InitialConnectionWindowSize = original.InitialConnectionWindowSize
+	if desired.GetUseHttp2() == nil {
+		desired.UseHttp2 = original.GetUseHttp2()
 	}
 
-	if desired.InitialStreamWindowSize == nil {
-		desired.InitialStreamWindowSize = original.InitialStreamWindowSize
+	if desired.GetInitialConnectionWindowSize() == nil {
+		desired.InitialConnectionWindowSize = original.GetInitialConnectionWindowSize()
 	}
 
-	if desired.HttpProxyHostname == nil {
-		desired.HttpProxyHostname = original.HttpProxyHostname
+	if desired.GetInitialStreamWindowSize() == nil {
+		desired.InitialStreamWindowSize = original.GetInitialStreamWindowSize()
 	}
 
-	if desiredSubsetMutator, ok := desired.UpstreamType.(v1.SubsetSpecMutator); ok {
+	if desired.GetHttpProxyHostname() == nil {
+		desired.HttpProxyHostname = original.GetHttpProxyHostname()
+	}
+
+	if desiredSubsetMutator, ok := desired.GetUpstreamType().(v1.SubsetSpecMutator); ok {
 		if desiredSubsetMutator.GetSubsetSpec() == nil {
-			desiredSubsetMutator.SetSubsetSpec(original.UpstreamType.(v1.SubsetSpecGetter).GetSubsetSpec())
+			desiredSubsetMutator.SetSubsetSpec(original.GetUpstreamType().(v1.SubsetSpecGetter).GetSubsetSpec())
 		}
 	}
 

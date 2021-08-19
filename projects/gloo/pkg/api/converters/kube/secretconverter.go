@@ -79,10 +79,10 @@ func (t *TLSSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 			},
 			Metadata: kubeutils.FromKubeMeta(secret.ObjectMeta),
 		}
-		if glooSecret.Metadata.Annotations == nil {
-			glooSecret.Metadata.Annotations = make(map[string]string)
+		if glooSecret.GetMetadata().GetAnnotations() == nil {
+			glooSecret.GetMetadata().Annotations = make(map[string]string)
 		}
-		glooSecret.Metadata.Annotations[annotationKey] = annotationValue
+		glooSecret.GetMetadata().GetAnnotations()[annotationKey] = annotationValue
 		return glooSecret, nil
 	}
 	// any unmatched secrets will be handled by subsequent converters
@@ -91,10 +91,10 @@ func (t *TLSSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 
 func (t *TLSSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
 	if glooSecret, ok := resource.(*v1.Secret); ok {
-		if tlsGlooSecret, ok := glooSecret.Kind.(*v1.Secret_Tls); ok {
-			if glooSecret.Metadata.Annotations != nil {
-				if glooSecret.Metadata.Annotations[annotationKey] == annotationValue {
-					objectMeta := kubeutils.ToKubeMeta(glooSecret.Metadata)
+		if tlsGlooSecret, ok := glooSecret.GetKind().(*v1.Secret_Tls); ok {
+			if glooSecret.GetMetadata().GetAnnotations() != nil {
+				if glooSecret.GetMetadata().GetAnnotations()[annotationKey] == annotationValue {
+					objectMeta := kubeutils.ToKubeMeta(glooSecret.GetMetadata())
 					delete(objectMeta.Annotations, annotationKey)
 					if len(objectMeta.Annotations) == 0 {
 						objectMeta.Annotations = nil
@@ -103,13 +103,13 @@ func (t *TLSSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Resou
 						ObjectMeta: objectMeta,
 						Type:       kubev1.SecretTypeTLS,
 						Data: map[string][]byte{
-							kubev1.TLSPrivateKeyKey: []byte(tlsGlooSecret.Tls.PrivateKey),
-							kubev1.TLSCertKey:       []byte(tlsGlooSecret.Tls.CertChain),
+							kubev1.TLSPrivateKeyKey: []byte(tlsGlooSecret.Tls.GetPrivateKey()),
+							kubev1.TLSCertKey:       []byte(tlsGlooSecret.Tls.GetCertChain()),
 						},
 					}
 
-					if tlsGlooSecret.Tls.RootCa != "" {
-						kubeSecret.Data[kubev1.ServiceAccountRootCAKey] = []byte(tlsGlooSecret.Tls.RootCa)
+					if tlsGlooSecret.Tls.GetRootCa() != "" {
+						kubeSecret.Data[kubev1.ServiceAccountRootCAKey] = []byte(tlsGlooSecret.Tls.GetRootCa())
 					}
 
 					return kubeSecret, nil
@@ -170,11 +170,11 @@ func (t *AwsSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Resou
 	if !ok {
 		return nil, nil
 	}
-	awsGlooSecret, ok := glooSecret.Kind.(*v1.Secret_Aws)
+	awsGlooSecret, ok := glooSecret.GetKind().(*v1.Secret_Aws)
 	if !ok {
 		return nil, nil
 	}
-	objectMeta := kubeutils.ToKubeMeta(glooSecret.Metadata)
+	objectMeta := kubeutils.ToKubeMeta(glooSecret.GetMetadata())
 	delete(objectMeta.Annotations, annotationKey)
 	if len(objectMeta.Annotations) == 0 {
 		objectMeta.Annotations = nil
@@ -192,8 +192,8 @@ func (t *AwsSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Resou
 		ObjectMeta: objectMeta,
 		Type:       kubev1.SecretTypeOpaque,
 		Data: map[string][]byte{
-			AwsAccessKeyName: []byte(awsGlooSecret.Aws.AccessKey),
-			AwsSecretKeyName: []byte(awsGlooSecret.Aws.SecretKey),
+			AwsAccessKeyName: []byte(awsGlooSecret.Aws.GetAccessKey()),
+			AwsSecretKeyName: []byte(awsGlooSecret.Aws.GetSecretKey()),
 		},
 	}
 

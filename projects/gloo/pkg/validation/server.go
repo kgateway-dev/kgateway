@@ -221,7 +221,7 @@ func routeErrorToWarnings(resourceReport reporter.ResourceReports, validationRep
 								Type:   validation.RouteReport_Warning_Type(rError.GetType()),
 								Reason: rError.GetReason(),
 							}
-							routeReport.Warnings = append(routeReport.Warnings, warning)
+							routeReport.Warnings = append(routeReport.GetWarnings(), warning)
 						}
 					} else {
 						modifiedErrors = append(modifiedErrors, rError)

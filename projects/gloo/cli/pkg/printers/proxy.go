@@ -33,12 +33,12 @@ func ProxyTable(list v1.ProxyList, w io.Writer) {
 			vhCount   int
 		)
 		for _, listener := range proxy.GetListeners() {
-			listeners = append(listeners, fmt.Sprintf("%v:%v", listener.BindAddress, listener.BindPort))
-			http, ok := listener.ListenerType.(*v1.Listener_HttpListener)
+			listeners = append(listeners, fmt.Sprintf("%v:%v", listener.GetBindAddress(), listener.GetBindPort()))
+			http, ok := listener.GetListenerType().(*v1.Listener_HttpListener)
 			if !ok {
 				continue
 			}
-			vhCount += len(http.HttpListener.VirtualHosts)
+			vhCount += len(http.HttpListener.GetVirtualHosts())
 		}
 		name := proxy.GetMetadata().GetName()
 

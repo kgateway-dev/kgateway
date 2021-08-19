@@ -49,7 +49,7 @@ func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite G
 	}
 
 	sort.SliceStable(allProxies, func(i, j int) bool {
-		return allProxies[i].Metadata.Less(allProxies[j].Metadata)
+		return allProxies[i].GetMetadata().Less(allProxies[j].GetMetadata())
 	})
 
 	if err := s.baseReconciler.Reconcile(writeNamespace, allProxies, transitionFunc(proxiesToWrite), clients.ListOpts{
@@ -63,7 +63,7 @@ func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite G
 }
 
 func forEachListener(proxy *gloov1.Proxy, reports reporter.ResourceReports, fn func(*gloov1.Listener, bool)) error {
-	for _, lis := range proxy.Listeners {
+	for _, lis := range proxy.GetListeners() {
 		accepted, err := reporting.AllSourcesAccepted(reports, lis)
 		if err != nil {
 			return err
@@ -75,7 +75,7 @@ func forEachListener(proxy *gloov1.Proxy, reports reporter.ResourceReports, fn f
 }
 
 func forEachVhost(lis *gloov1.Listener, reports reporter.ResourceReports, fn func(*gloov1.VirtualHost, bool)) error {
-	if httpListenerType, ok := lis.ListenerType.(*gloov1.Listener_HttpListener); ok {
+	if httpListenerType, ok := lis.GetListenerType().(*gloov1.Listener_HttpListener); ok {
 
 		for _, vhost := range httpListenerType.HttpListener.GetVirtualHosts() {
 			accepted, err := reporting.AllSourcesAccepted(reports, vhost)
@@ -110,7 +110,7 @@ func (s *proxyReconciler) addProxyValidationResults(ctx context.Context, proxies
 		}
 
 		if validateErr := reports.ValidateStrict(); validateErr != nil {
-			logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.Metadata.Ref()), zap.Error(validateErr))
+			logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
 		}
 
 		// add the proxy validation result to the existing resource reports
@@ -142,29 +142,29 @@ func stripInvalidListenersAndVirtualHosts(ctx context.Context, proxiesToWrite Ge
 			if accepted {
 				validListeners = append(validListeners, listener)
 			} else {
-				logger.Warnw("stripping invalid listener from proxy", zap.Any("proxy", proxy.Metadata.Ref()), zap.String("listener", listener.Name))
+				logger.Warnw("stripping invalid listener from proxy", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.String("listener", listener.GetName()))
 			}
 		}); err != nil {
 			return nil, err
 		}
 
-		for _, lis := range proxy.Listeners {
+		for _, lis := range proxy.GetListeners() {
 
-			if httpListenerType, ok := lis.ListenerType.(*gloov1.Listener_HttpListener); ok {
+			if httpListenerType, ok := lis.GetListenerType().(*gloov1.Listener_HttpListener); ok {
 				var validVhosts []*gloov1.VirtualHost
 
 				if err := forEachVhost(lis, reports, func(vhost *gloov1.VirtualHost, accepted bool) {
 					if accepted {
 						validVhosts = append(validVhosts, vhost)
 					} else {
-						logger.Warnw("stripping invalid virtualhost from proxy", zap.Any("proxy", proxy.Metadata.Ref()), zap.String("listener", lis.Name), zap.String("virtual host", vhost.Name))
+						logger.Warnw("stripping invalid virtualhost from proxy", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.String("listener", lis.GetName()), zap.String("virtual host", vhost.GetName()))
 					}
 				}); err != nil {
 					return nil, err
 				}
 
 				sort.SliceStable(validVhosts, func(i, j int) bool {
-					return validVhosts[i].Name < validVhosts[j].Name
+					return validVhosts[i].GetName() < validVhosts[j].GetName()
 				})
 
 				httpListenerType.HttpListener.VirtualHosts = validVhosts
@@ -172,7 +172,7 @@ func stripInvalidListenersAndVirtualHosts(ctx context.Context, proxiesToWrite Ge
 		}
 
 		sort.SliceStable(validListeners, func(i, j int) bool {
-			return validListeners[i].Name < validListeners[j].Name
+			return validListeners[i].GetName() < validListeners[j].GetName()
 		})
 
 		proxy.Listeners = validListeners
@@ -206,7 +206,7 @@ func transitionFunc(proxiesToWrite GeneratedProxies) gloov1.TransitionProxyFunc 
 		// invalid listeners.
 
 		// preserve previous vhosts if new vservice was errored
-		for _, desiredListener := range desired.Listeners {
+		for _, desiredListener := range desired.GetListeners() {
 
 			desiredHttpListener := desiredListener.GetHttpListener()
 			if desiredHttpListener == nil {
@@ -216,8 +216,8 @@ func transitionFunc(proxiesToWrite GeneratedProxies) gloov1.TransitionProxyFunc 
 			// find the original listener by its name
 			// if it does not exist in the original, skip
 			var originalListener *gloov1.Listener
-			for _, origLis := range original.Listeners {
-				if origLis.Name == desiredListener.Name {
+			for _, origLis := range original.GetListeners() {
+				if origLis.GetName() == desiredListener.GetName() {
 					originalListener = origLis
 					break
 				}
@@ -230,15 +230,15 @@ func transitionFunc(proxiesToWrite GeneratedProxies) gloov1.TransitionProxyFunc 
 			if err := forEachVhost(originalListener, proxiesToWrite[desired], func(vhost *gloov1.VirtualHost, accepted bool) {
 				// old vhost was rejected, preserve it on the desired proxy
 				if !accepted {
-					desiredHttpListener.VirtualHosts = append(desiredHttpListener.VirtualHosts, vhost)
+					desiredHttpListener.VirtualHosts = append(desiredHttpListener.GetVirtualHosts(), vhost)
 				}
 			}); err != nil {
 				// should never happen
 				return false, err
 			}
 
-			sort.SliceStable(desiredHttpListener.VirtualHosts, func(i, j int) bool {
-				return desiredHttpListener.VirtualHosts[i].Name < desiredHttpListener.VirtualHosts[j].Name
+			sort.SliceStable(desiredHttpListener.GetVirtualHosts(), func(i, j int) bool {
+				return desiredHttpListener.GetVirtualHosts()[i].GetName() < desiredHttpListener.GetVirtualHosts()[j].GetName()
 			})
 
 		}
@@ -247,15 +247,15 @@ func transitionFunc(proxiesToWrite GeneratedProxies) gloov1.TransitionProxyFunc 
 		if err := forEachListener(original, proxiesToWrite[desired], func(listener *gloov1.Listener, accepted bool) {
 			// old listener was rejected, preserve it on the desired proxy
 			if !accepted {
-				desired.Listeners = append(desired.Listeners, listener)
+				desired.Listeners = append(desired.GetListeners(), listener)
 			}
 		}); err != nil {
 			// should never happen
 			return false, err
 		}
 
-		sort.SliceStable(desired.Listeners, func(i, j int) bool {
-			return desired.Listeners[i].Name < desired.Listeners[j].Name
+		sort.SliceStable(desired.GetListeners(), func(i, j int) bool {
+			return desired.GetListeners()[i].GetName() < desired.GetListeners()[j].GetName()
 		})
 
 		return utils.TransitionFunction(original, desired)

@@ -41,8 +41,8 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 
 	// find all the route config that points to upstreams with tunneling
 	for _, rtConfig := range inRouteConfigurations {
-		for _, vh := range rtConfig.VirtualHosts {
-			for _, rt := range vh.Routes {
+		for _, vh := range rtConfig.GetVirtualHosts() {
+			for _, rt := range vh.GetRoutes() {
 				rtAction := rt.GetRoute()
 				// we do not handle the weighted cluster or cluster header cases
 				if cluster := rtAction.GetCluster(); cluster != "" {
@@ -74,8 +74,8 @@ func (p *Plugin) GeneratedResources(params plugins.Params,
 
 					var originalTransportSocket *envoy_config_core_v3.TransportSocket
 					for _, inCluster := range inClusters {
-						if inCluster.Name == cluster {
-							originalTransportSocket = inCluster.TransportSocket
+						if inCluster.GetName() == cluster {
+							originalTransportSocket = inCluster.GetTransportSocket()
 							// we copy the transport socket to the generated cluster.
 							// the generated cluster will use upstream TLS context to leverage TLS origination;
 							// when we encapsulate in HTTP Connect the tcp data being proxied will

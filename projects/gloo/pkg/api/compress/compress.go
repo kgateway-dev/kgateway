@@ -29,7 +29,7 @@ func isCompressed(in v1.Spec) bool {
 }
 
 func shouldCompress(in resources.Resource) bool {
-	annotations := in.GetMetadata().Annotations
+	annotations := in.GetMetadata().GetAnnotations()
 	if annotations == nil {
 		return false
 	}
@@ -42,7 +42,7 @@ func SetShouldCompressed(in resources.Resource) {
 	if in.GetMetadata() != nil {
 		metadata = in.GetMetadata()
 	}
-	annotations := metadata.Annotations
+	annotations := metadata.GetAnnotations()
 	if annotations == nil {
 		annotations = make(map[string]string)
 	}
@@ -110,13 +110,13 @@ func UnmarshalSpec(in resources.Resource, spec v1.Spec) error {
 		var err error
 		spec, err = uncompressSpec(spec)
 		if err != nil {
-			return eris.Wrapf(err, "reading unmarshalling spec on resource %v in namespace %v into %T", in.GetMetadata().Name, in.GetMetadata().Namespace, in)
+			return eris.Wrapf(err, "reading unmarshalling spec on resource %v in namespace %v into %T", in.GetMetadata().GetName(), in.GetMetadata().GetNamespace(), in)
 		}
 		// if we have a compressed spec, make sure the resource is marked for compression
 		SetShouldCompressed(in)
 	}
 	if err := protoutils.UnmarshalMap(spec, in); err != nil {
-		return eris.Wrapf(err, "reading crd spec on resource %v in namespace %v into %T", in.GetMetadata().Name, in.GetMetadata().Namespace, in)
+		return eris.Wrapf(err, "reading crd spec on resource %v in namespace %v into %T", in.GetMetadata().GetName(), in.GetMetadata().GetNamespace(), in)
 	}
 	return nil
 }
@@ -136,7 +136,7 @@ func MarshalSpec(in resources.Resource) (v1.Spec, error) {
 	if shouldCompress(in) {
 		spec, err = compressSpec(spec)
 		if err != nil {
-			return nil, eris.Wrapf(err, "reading marshalling spec on resource %v in namespace %v into %T", in.GetMetadata().Name, in.GetMetadata().Namespace, in)
+			return nil, eris.Wrapf(err, "reading marshalling spec on resource %v in namespace %v into %T", in.GetMetadata().GetName(), in.GetMetadata().GetNamespace(), in)
 		}
 	}
 	return spec, nil

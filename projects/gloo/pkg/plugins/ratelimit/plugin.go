@@ -53,10 +53,10 @@ func NewPlugin() *Plugin {
 
 func (p *Plugin) Init(params plugins.InitParams) error {
 	if rlServer := params.Settings.GetRatelimitServer(); rlServer != nil {
-		p.upstreamRef = rlServer.RatelimitServerRef
-		p.timeout = rlServer.RequestTimeout
-		p.denyOnFail = rlServer.DenyOnFail
-		p.rateLimitBeforeAuth = rlServer.RateLimitBeforeAuth
+		p.upstreamRef = rlServer.GetRatelimitServerRef()
+		p.timeout = rlServer.GetRequestTimeout()
+		p.denyOnFail = rlServer.GetDenyOnFail()
+		p.rateLimitBeforeAuth = rlServer.GetRateLimitBeforeAuth()
 	}
 
 	return nil
@@ -92,10 +92,10 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 	var rateLimitBeforeAuth bool
 
 	if rlServer := listener.GetOptions().GetRatelimitServer(); rlServer != nil {
-		upstreamRef = rlServer.RatelimitServerRef
-		timeout = rlServer.RequestTimeout
-		denyOnFail = rlServer.DenyOnFail
-		rateLimitBeforeAuth = rlServer.RateLimitBeforeAuth
+		upstreamRef = rlServer.GetRatelimitServerRef()
+		timeout = rlServer.GetRequestTimeout()
+		denyOnFail = rlServer.GetDenyOnFail()
+		rateLimitBeforeAuth = rlServer.GetRateLimitBeforeAuth()
 	} else {
 		upstreamRef = p.upstreamRef
 		timeout = p.timeout

@@ -22,7 +22,7 @@ func Proxy(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Co
 		Long:    "usage: glooctl delete proxy [NAME] [--namespace=namespace]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := common.GetName(args, opts)
-			if err := helpers.MustNamespacedProxyClient(opts.Top.Ctx, opts.Metadata.GetNamespace()).Delete(opts.Metadata.Namespace, name,
+			if err := helpers.MustNamespacedProxyClient(opts.Top.Ctx, opts.Metadata.GetNamespace()).Delete(opts.Metadata.GetNamespace(), name,
 				clients.DeleteOpts{Ctx: opts.Top.Ctx}); err != nil {
 				return err
 			}

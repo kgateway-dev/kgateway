@@ -95,7 +95,7 @@ func (p *plugin) ConvertServices(ctx context.Context, watchNamespaces []string, 
 
 		upstreamsToCreate := p.UpstreamConverter.UpstreamsForService(ctx, svc)
 		for _, u := range upstreamsToCreate {
-			u.Metadata.Namespace = writeNamespace
+			u.GetMetadata().Namespace = writeNamespace
 		}
 
 		upstreams = append(upstreams, upstreamsToCreate...)

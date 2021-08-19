@@ -7,5 +7,5 @@ import (
 )
 
 func GetHostname(s *azure.UpstreamSpec) string {
-	return fmt.Sprintf("%s.azurewebsites.net", s.FunctionAppName)
+	return fmt.Sprintf("%s.azurewebsites.net", s.GetFunctionAppName())
 }

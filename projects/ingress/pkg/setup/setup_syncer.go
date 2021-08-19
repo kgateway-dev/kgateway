@@ -82,16 +82,16 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		return err
 	}
 
-	refreshRate, err := ptypes.Duration(settings.RefreshRate)
+	refreshRate, err := ptypes.Duration(settings.GetRefreshRate())
 	if err != nil {
 		return err
 	}
 
-	writeNamespace := settings.DiscoveryNamespace
+	writeNamespace := settings.GetDiscoveryNamespace()
 	if writeNamespace == "" {
 		writeNamespace = gloodefaults.GlooSystem
 	}
-	watchNamespaces := utils.ProcessWatchNamespaces(settings.WatchNamespaces, writeNamespace)
+	watchNamespaces := utils.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
 
 	envTrue := func(name string) bool {
 		return os.Getenv(name) == "true" || os.Getenv(name) == "1"
@@ -105,18 +105,18 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	ingressProxyLabel := os.Getenv("INGRESS_PROXY_LABEL")
 
 	clusterIngressProxyAddress := defaultClusterIngressProxyAddress
-	if settings.Knative != nil && settings.Knative.ClusterIngressProxyAddress != "" {
-		clusterIngressProxyAddress = settings.Knative.ClusterIngressProxyAddress
+	if settings.GetKnative() != nil && settings.GetKnative().GetClusterIngressProxyAddress() != "" {
+		clusterIngressProxyAddress = settings.GetKnative().GetClusterIngressProxyAddress()
 	}
 
 	knativeExternalProxyAddress := defaultKnativeExternalProxyAddress
-	if settings.Knative != nil && settings.Knative.KnativeExternalProxyAddress != "" {
-		knativeExternalProxyAddress = settings.Knative.KnativeExternalProxyAddress
+	if settings.GetKnative() != nil && settings.GetKnative().GetKnativeExternalProxyAddress() != "" {
+		knativeExternalProxyAddress = settings.GetKnative().GetKnativeExternalProxyAddress()
 	}
 
 	knativeInternalProxyAddress := defaultKnativeInternalProxyAddress
-	if settings.Knative != nil && settings.Knative.KnativeInternalProxyAddress != "" {
-		knativeInternalProxyAddress = settings.Knative.KnativeInternalProxyAddress
+	if settings.GetKnative() != nil && settings.GetKnative().GetKnativeInternalProxyAddress() != "" {
+		knativeInternalProxyAddress = settings.GetKnative().GetKnativeInternalProxyAddress()
 	}
 
 	if len(ingressProxyLabel) == 0 {

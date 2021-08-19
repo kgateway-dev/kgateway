@@ -43,7 +43,7 @@ type AWSLambdaFunctionDiscovery struct {
 }
 
 func (f *AWSLambdaFunctionDiscovery) IsFunctional() bool {
-	_, ok := f.upstream.UpstreamType.(*v1.Upstream_Aws)
+	_, ok := f.upstream.GetUpstreamType().(*v1.Upstream_Aws)
 	return ok
 }
 
@@ -65,7 +65,7 @@ func (f *AWSLambdaFunctionDiscovery) DetectFunctions(ctx context.Context, url *u
 
 			// sort for idempotency
 			sort.Slice(newfunctions, func(i, j int) bool {
-				return newfunctions[i].LogicalName < newfunctions[j].LogicalName
+				return newfunctions[i].GetLogicalName() < newfunctions[j].GetLogicalName()
 			})
 
 			// TODO(yuval-k): only update functions if newfunctions != oldfunctions
@@ -77,11 +77,11 @@ func (f *AWSLambdaFunctionDiscovery) DetectFunctions(ctx context.Context, url *u
 					return errors.New("nil upstream")
 				}
 
-				if out.UpstreamType == nil {
+				if out.GetUpstreamType() == nil {
 					return errors.New("nil upstream type")
 				}
 
-				awsspec, ok := out.UpstreamType.(*v1.Upstream_Aws)
+				awsspec, ok := out.GetUpstreamType().(*v1.Upstream_Aws)
 				if !ok {
 					return errors.New("not aws upstream")
 				}
@@ -111,7 +111,7 @@ func (f *AWSLambdaFunctionDiscovery) DetectFunctions(ctx context.Context, url *u
 
 func (f *AWSLambdaFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, secrets v1.SecretList) ([]*glooaws.LambdaFunctionSpec, error) {
 	in := f.upstream
-	awsspec, ok := in.UpstreamType.(*v1.Upstream_Aws)
+	awsspec, ok := in.GetUpstreamType().(*v1.Upstream_Aws)
 
 	if !ok {
 		return nil, errors.New("not a lambda upstream spec")
@@ -121,7 +121,7 @@ func (f *AWSLambdaFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, se
 	if awsRegion == "" {
 		awsRegion = os.Getenv(AWS_REGION)
 	}
-	sess, err := awsutils.GetAwsSession(lambdaSpec.SecretRef, secrets, &aws.Config{Region: aws.String(lambdaSpec.Region)})
+	sess, err := awsutils.GetAwsSession(lambdaSpec.GetSecretRef(), secrets, &aws.Config{Region: aws.String(lambdaSpec.GetRegion())})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create AWS session")
 	}

@@ -24,12 +24,12 @@ var (
 // - the proxy report does not match the proxy
 func AddProxyValidationResult(resourceReports reporter.ResourceReports, proxy *gloov1.Proxy, proxyReport *validation.ProxyReport) error {
 	listenerReports := proxyReport.GetListenerReports()
-	if len(listenerReports) != len(proxy.Listeners) {
+	if len(listenerReports) != len(proxy.GetListeners()) {
 		return invalidReportsListenersErr
 	}
 
 	for i, listenerReport := range listenerReports {
-		listener := proxy.Listeners[i]
+		listener := proxy.GetListeners()[i]
 
 		if err := addListenerResult(resourceReports, listener, listenerReport); err != nil {
 			return err
@@ -87,7 +87,7 @@ func addVirtualHostResult(resourceReports reporter.ResourceReports, virtualHost 
 func getListenerLevelErrors(listenerReport *validation.ListenerReport) []error {
 	listenerErrs := validationutils.GetListenerErr(listenerReport)
 
-	switch listenerType := listenerReport.ListenerTypeReport.(type) {
+	switch listenerType := listenerReport.GetListenerTypeReport().(type) {
 	case *validation.ListenerReport_HttpListenerReport:
 		httpListener := listenerType.HttpListenerReport
 		listenerErrs = append(listenerErrs, validationutils.GetHttpListenerErr(httpListener)...)

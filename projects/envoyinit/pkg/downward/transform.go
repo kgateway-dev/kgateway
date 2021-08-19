@@ -63,18 +63,18 @@ func TransformConfigTemplatesWithApi(node *envoy_config_core_v3.Node, api Downwa
 		return err
 	}
 
-	transformStruct(interpolate, node.Metadata)
+	transformStruct(interpolate, node.GetMetadata())
 
 	return nil
 }
 func transformValue(interpolate func(*string) error, v *structpb.Value) error {
-	switch v := v.Kind.(type) {
+	switch v := v.GetKind().(type) {
 	case (*structpb.Value_StringValue):
 		return interpolate(&v.StringValue)
 	case (*structpb.Value_StructValue):
 		return transformStruct(interpolate, v.StructValue)
 	case (*structpb.Value_ListValue):
-		for _, val := range v.ListValue.Values {
+		for _, val := range v.ListValue.GetValues() {
 			if err := transformValue(interpolate, val); err != nil {
 				return err
 			}
@@ -88,7 +88,7 @@ func transformStruct(interpolate func(*string) error, s *structpb.Struct) error 
 		return nil
 	}
 
-	for _, v := range s.Fields {
+	for _, v := range s.GetFields() {
 		if err := transformValue(interpolate, v); err != nil {
 			return err
 		}

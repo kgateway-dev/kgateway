@@ -25,7 +25,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 
 func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 	// not ours
-	pipeSpec, ok := in.UpstreamType.(*v1.Upstream_Pipe)
+	pipeSpec, ok := in.GetUpstreamType().(*v1.Upstream_Pipe)
 	if !ok {
 		return nil
 	}
@@ -34,23 +34,23 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	out.ClusterDiscoveryType = &envoy_config_cluster_v3.Cluster_Type{
 		Type: envoy_config_cluster_v3.Cluster_STATIC,
 	}
-	if spec.Path == "" {
+	if spec.GetPath() == "" {
 		return errors.New("no path provided")
 	}
 
 	out.LoadAssignment = &envoy_config_endpoint_v3.ClusterLoadAssignment{
-		ClusterName: out.Name,
+		ClusterName: out.GetName(),
 		Endpoints:   []*envoy_config_endpoint_v3.LocalityLbEndpoints{{}},
 	}
 
-	out.LoadAssignment.Endpoints[0].LbEndpoints = append(out.LoadAssignment.Endpoints[0].LbEndpoints,
+	out.GetLoadAssignment().GetEndpoints()[0].LbEndpoints = append(out.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints(),
 		&envoy_config_endpoint_v3.LbEndpoint{
 			HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
 				Endpoint: &envoy_config_endpoint_v3.Endpoint{
 					Address: &envoy_config_core_v3.Address{
 						Address: &envoy_config_core_v3.Address_Pipe{
 							Pipe: &envoy_config_core_v3.Pipe{
-								Path: spec.Path,
+								Path: spec.GetPath(),
 							},
 						},
 					},

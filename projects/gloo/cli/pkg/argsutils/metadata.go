@@ -10,7 +10,7 @@ const NameError = "name must be specified in flag (--name) or via first arg"
 
 func MetadataArgsParse(opts *options.Options, args []string) error {
 	// even if we are in interactive mode, we first want to check the flags and args for metadata and use those values if given
-	if opts.Metadata.Name == "" && len(args) > 0 {
+	if opts.Metadata.GetName() == "" && len(args) > 0 {
 		// name is a special parameter that can be provided in the command list
 		opts.Metadata.Name = args[0]
 	}
@@ -21,7 +21,7 @@ func MetadataArgsParse(opts *options.Options, args []string) error {
 	}
 
 	// if not interactive mode, ensure that the required fields were provided
-	if opts.Metadata.Name == "" {
+	if opts.Metadata.GetName() == "" {
 		return errors.Errorf(NameError)
 	}
 	// don't need to check namespace as is passed by a flag with a default value

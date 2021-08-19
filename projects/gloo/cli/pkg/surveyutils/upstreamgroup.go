@@ -23,7 +23,7 @@ func AddUpstreamGroupFlagsInteractive(ctx context.Context, upstreamGroup *option
 			return err
 		}
 		for _, us := range usList {
-			ref := us.Metadata.Ref()
+			ref := us.GetMetadata().Ref()
 			ussByKey[ref.Key()] = us
 			usKeys = append(usKeys, ref.Key())
 		}
