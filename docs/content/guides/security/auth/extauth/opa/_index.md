@@ -17,28 +17,15 @@ As of **Gloo Edge Enterprise** release 1.5.0-beta1, you can see Gloo Edge's vers
 {{% /notice %}}
 
 ## Table of Contents
-- [Setup](#setup)
-- [OPA policy overview](#opa-policy-overview)
-    - [OPA input structure](#opa-input-structure)
-- [Validate requests attributes with Open Policy Agent](#validate-requests-attributes-with-open-policy-agent)
-    - [Deploy sample application](#deploy-a-sample-application)
-    - [Creating a Virtual Service](#creating-a-virtual-service)
-    - [Secure the Virtual Service](#securing-the-virtual-service)
-        - [Define an OPA policy](#define-an-opa-policy)
-        - [Create an OPA AuthConfig CRD](#create-an-opa-authconfig-crd)
-        - [Update the Virtual Service](#updating-the-virtual-service)
-    - [Testing our configuration](#testing-the-configuration)
-- [Validate JWTs with Open Policy Agent](#validate-jwts-with-open-policy-agent)
-    - [Deploy sample application](#deploy-sample-application)
-    - [Create a Virtual Service](#create-a-virtual-service)
-    - [Secure the Virtual Service](#secure-the-virtual-service)
-        - [Install Dex](#install-dex)
-        - [Make the client secret accessible to Gloo Edge](#make-the-client-secret-accessible-to-gloo-edge)
-        - [Create a Policy](#create-a-policy)
-        - [Create a multi-step AuthConfig](#create-a-multi-step-authconfig)
-        - [Update the Virtual Service](#update-the-virtual-service)
+- [The value is a base64 encoding of the following YAML:](#the-value-is-a-base64-encoding-of-the-following-yaml)
+- [client_secret: secretvalue](#client_secret-secretvalue)
+- [Gloo Edge expected OAuth client secrets in this format.](#gloo-edge-expected-oauth-client-secrets-in-this-format)
+      - [Create a Policy](#create-a-policy)
+      - [Create a multi-step AuthConfig](#create-a-multi-step-authconfig)
+      - [Update the Virtual Service](#update-the-virtual-service)
     - [Testing our configuration](#testing-our-configuration)
-- [Troubleshooting OPA](#troubleshooting-opa)
+    - [Cleanup](#cleanup-1)
+  - [Troubleshooting OPA](#troubleshooting-opa)
 
 ## Setup
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
@@ -154,7 +141,7 @@ metadata:
   namespace: gloo-system
 spec:
   configs:
-  - opa_auth:
+  - opaAuth:
       modules:
       - name: allow-get-users
         namespace: gloo-system
@@ -442,19 +429,19 @@ spec:
   configs:
   - oauth2:
       oidcAuthorizationCode:
-        app_url: http://localhost:8080
-        callback_path: /callback
-        client_id: gloo
-        client_secret_ref:
+        appUrl: http://localhost:8080
+        callbackPath: /callback
+        clientId: gloo
+        clientSecretRef:
           name: oauth
           namespace: gloo-system
-        issuer_url: http://dex.gloo-system.svc.cluster.local:32000/
+        issuerUrl: http://dex.gloo-system.svc.cluster.local:32000/
         session:
           cookieOptions:
             notSecure: true
         scopes:
         - email
-  - opa_auth:
+  - opaAuth:
       modules:
       - name: allow-jwt
         namespace: gloo-system

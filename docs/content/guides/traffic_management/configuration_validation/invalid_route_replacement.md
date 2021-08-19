@@ -61,7 +61,7 @@ kind: VirtualService
 status:
   reason: "warning: \n  Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream
     {kube-svc:anywhere-does-not-exist-1234 anywhere} not found"
-  reported_by: gateway
+  reportedBy: gateway
   state: 3
 ```
 

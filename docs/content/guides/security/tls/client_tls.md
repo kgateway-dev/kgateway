@@ -228,7 +228,7 @@ spec:
       name: upstream-tls
       namespace: default
 status:
-  reported_by: gloo
+  reportedBy: gloo
   state: 1
 {{< /highlight >}}
 

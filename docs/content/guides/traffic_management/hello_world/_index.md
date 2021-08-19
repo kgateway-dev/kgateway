@@ -161,7 +161,7 @@ spec:
     serviceNamespace: default
     servicePort: 8080
 status:
-  reported_by: gloo
+  reportedBy: gloo
   state: 1
 ```
 
@@ -263,7 +263,7 @@ spec:
               content-type: {}
               transfer-encoding: {}
 status:
-  reported_by: gloo
+  reportedBy: gloo
   state: 1
 ```
 
