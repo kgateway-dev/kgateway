@@ -804,6 +804,12 @@ spec:
                                           additionalProperties:
                                             type: string
                                           type: object
+                                        matcher:
+                                          enum:
+                                          - EXACT_STRING
+                                          - BOOLEAN
+                                          - LIST_CONTAINS
+                                          type: string
                                         provider:
                                           type: string
                                       type: object
@@ -2368,6 +2374,12 @@ spec:
                                                 additionalProperties:
                                                   type: string
                                                 type: object
+                                              matcher:
+                                                enum:
+                                                - EXACT_STRING
+                                                - BOOLEAN
+                                                - LIST_CONTAINS
+                                                type: string
                                               provider:
                                                 type: string
                                             type: object
