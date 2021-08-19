@@ -45,10 +45,10 @@ Describes custom tags for the active span.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `tag` | `string` | Used to populate the tag name. |
-| `literal` | [.solo.io.envoy.type.tracing.v3.CustomTag.Literal](../custom_tag.proto.sk/#literal) | A literal custom tag. Only one of `literal`, `environment`, or `metadata` can be set. |
-| `environment` | [.solo.io.envoy.type.tracing.v3.CustomTag.Environment](../custom_tag.proto.sk/#environment) | An environment custom tag. Only one of `environment`, `literal`, or `metadata` can be set. |
-| `requestHeader` | [.solo.io.envoy.type.tracing.v3.CustomTag.Header](../custom_tag.proto.sk/#header) | A request header custom tag. Only one of `requestHeader`, `literal`, or `metadata` can be set. |
-| `metadata` | [.solo.io.envoy.type.tracing.v3.CustomTag.Metadata](../custom_tag.proto.sk/#metadata) | A custom tag to obtain tag value from the metadata. Only one of `metadata`, `literal`, or `requestHeader` can be set. |
+| `literal` | [.solo.io.envoy.type.tracing.v3.CustomTag.Literal](../custom_tag.proto.sk/#literal) | A literal custom tag. Only one of `literal`, `environment`, `requestHeader`, or `metadata` can be set. |
+| `environment` | [.solo.io.envoy.type.tracing.v3.CustomTag.Environment](../custom_tag.proto.sk/#environment) | An environment custom tag. Only one of `environment`, `literal`, `requestHeader`, or `metadata` can be set. |
+| `requestHeader` | [.solo.io.envoy.type.tracing.v3.CustomTag.Header](../custom_tag.proto.sk/#header) | A request header custom tag. Only one of `requestHeader`, `literal`, `environment`, or `metadata` can be set. |
+| `metadata` | [.solo.io.envoy.type.tracing.v3.CustomTag.Metadata](../custom_tag.proto.sk/#metadata) | A custom tag to obtain tag value from the metadata. Only one of `metadata`, `literal`, `environment`, or `requestHeader` can be set. |
 
 
 
