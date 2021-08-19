@@ -1,0 +1,13 @@
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: passthrough-auth
+  namespace: gloo-system
+spec:
+  configs:
+  - passThroughAuth:
+      http:
+        # Address of the http auth server to query
+        url: http://example-http-auth-service.default.svc.cluster.local:9001
+        # Set a connection timeout to external service, default is 5 seconds
+        connectionTimeout: 3s
