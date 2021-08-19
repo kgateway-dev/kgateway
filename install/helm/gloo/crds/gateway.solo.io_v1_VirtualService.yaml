@@ -784,6 +784,8 @@ spec:
                         policies:
                           additionalProperties:
                             properties:
+                              nestedClaimDelimiter:
+                                type: string
                               permissions:
                                 properties:
                                   methods:
@@ -2346,6 +2348,8 @@ spec:
                               policies:
                                 additionalProperties:
                                   properties:
+                                    nestedClaimDelimiter:
+                                      type: string
                                     permissions:
                                       properties:
                                         methods:
