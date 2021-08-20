@@ -224,7 +224,7 @@ spec:
     serviceNamespace: default
     servicePort: 9080
 status:
-  reported_by: gloo
+  reportedBy: gloo
   state: 1
 {{< /highlight >}}
 
@@ -341,7 +341,7 @@ spec:
       targetUri: unix:/var/run/sds/uds_path
       validationContextName: ROOTCA
 status:
-  reported_by: gloo
+  reportedBy: gloo
   state: 1
 {{< /highlight >}}
 
@@ -670,7 +670,7 @@ spec:
     serviceNamespace: default
     servicePort: 9080
   sslConfig:
-    alpn_protocols:
+    alpnProtocols:
     - istio
     sds:
       targetUri: 127.0.0.1:8234
@@ -919,7 +919,7 @@ spec:
     serviceNamespace: default
     servicePort: 9080
   sslConfig:
-    alpn_protocols:
+    alpnProtocols:
     - istio
     sds:
       targetUri: 127.0.0.1:8234
