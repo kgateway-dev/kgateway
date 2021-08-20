@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-http-auth-service
+  labels:
+      app: http-extauth
+spec:
+  ports:
+  - port: 9001
+    protocol: TCP
+  selector:
+      app: http-extauth

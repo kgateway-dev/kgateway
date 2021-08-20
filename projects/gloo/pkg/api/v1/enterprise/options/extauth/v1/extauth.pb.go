@@ -3683,6 +3683,8 @@ type PassThroughHttp_Request struct {
 	// filter metadata is needed in the auth request.
 	PassThroughFilterMetadata bool `protobuf:"varint,4,opt,name=pass_through_filter_metadata,json=passThroughFilterMetadata,proto3" json:"pass_through_filter_metadata,omitempty"`
 	// Whether or not to include the body in the passthrough request body.
+	// In order for this to work, the settings.extauth.requestBody must be set in the Gloo Edge Settings CRD so that
+	// the request body is buffered and sent to the ext-auth service.
 	// If pass_through_body, pass_through_filter_metadata and pass_through_state are false,
 	// the authorization request body will be empty. A non-empty body will increase latency times
 	// slightly, so this is set to false by default, and should only be set to to true if the

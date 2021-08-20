@@ -688,6 +688,8 @@ spec:
                     policies:
                       additionalProperties:
                         properties:
+                          nestedClaimDelimiter:
+                            type: string
                           permissions:
                             properties:
                               methods:
@@ -706,6 +708,12 @@ spec:
                                       additionalProperties:
                                         type: string
                                       type: object
+                                    matcher:
+                                      enum:
+                                      - EXACT_STRING
+                                      - BOOLEAN
+                                      - LIST_CONTAINS
+                                      type: string
                                     provider:
                                       type: string
                                   type: object

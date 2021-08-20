@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extauth-httpservice
+spec:
+  selector:
+    matchLabels:
+      app: http-extauth
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: http-extauth
+    spec:
+      containers:
+        - name: http-extauth
+          image: gcr.io/solo-public/passthrough-http-service-example
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9001

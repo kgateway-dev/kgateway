@@ -521,8 +521,8 @@ spec:
   configs:
   - pluginAuth:
       name: my-plugin
-      plugin_file_name: MyPlugin.so
-      exported_symbol_name: Plugin
+      pluginFileName: MyPlugin.so
+      exportedSymbolName: Plugin
       config:
         some_key: value-1
         some_struct:

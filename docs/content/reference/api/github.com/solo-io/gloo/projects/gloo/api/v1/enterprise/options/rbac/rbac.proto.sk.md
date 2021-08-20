@@ -16,6 +16,7 @@ weight: 5
 - [Policy](#policy)
 - [Principal](#principal)
 - [JWTPrincipal](#jwtprincipal)
+- [ClaimMatcher](#claimmatcher)
 - [Permissions](#permissions)
   
 
@@ -73,6 +74,7 @@ RBAC settings for Virtual Hosts and Routes
 ```yaml
 "principals": []rbac.options.gloo.solo.io.Principal
 "permissions": .rbac.options.gloo.solo.io.Permissions
+"nestedClaimDelimiter": string
 
 ```
 
@@ -80,6 +82,7 @@ RBAC settings for Virtual Hosts and Routes
 | ----- | ---- | ----------- | 
 | `principals` | [[]rbac.options.gloo.solo.io.Principal](../rbac.proto.sk/#principal) | Principals in this policy. |
 | `permissions` | [.rbac.options.gloo.solo.io.Permissions](../rbac.proto.sk/#permissions) | Permissions granted to the principals. |
+| `nestedClaimDelimiter` | `string` | The delimiter to use when specifying nested claim names within principals. Default is an empty string, which disables nested claim functionality. This is commonly set to `.`, allowing for nested claim names of the form `parent.child.grandchild`. |
 
 
 
@@ -111,6 +114,7 @@ A JWT principal. To use this, JWT option MUST be enabled.
 ```yaml
 "claims": map<string, string>
 "provider": string
+"matcher": .rbac.options.gloo.solo.io.JWTPrincipal.ClaimMatcher
 
 ```
 
@@ -118,6 +122,22 @@ A JWT principal. To use this, JWT option MUST be enabled.
 | ----- | ---- | ----------- | 
 | `claims` | `map<string, string>` | Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used. all claims must be present on the JWT. |
 | `provider` | `string` | Verify that the JWT came from a specific provider. This usually can be left empty and a provider will be chosen automatically. |
+| `matcher` | [.rbac.options.gloo.solo.io.JWTPrincipal.ClaimMatcher](../rbac.proto.sk/#claimmatcher) | The matcher to use when evaluating this principal. By default, exact string comparison (EXACT_STRING) is used. |
+
+
+
+
+---
+### ClaimMatcher
+
+ 
+Used to specify how claims should be matched to the value.
+
+| Name | Description |
+| ----- | ----------- | 
+| `EXACT_STRING` | The JWT claim value is a string that exactly matches the value. |
+| `BOOLEAN` | The JWT claim value is a boolean that matches the value. |
+| `LIST_CONTAINS` | The JWT claim value is a list that contains a string that exactly matches the value. |
 
 
 

@@ -146,6 +146,10 @@ func (m *Policy) Equal(that interface{}) bool {
 		}
 	}
 
+	if strings.Compare(m.GetNestedClaimDelimiter(), target.GetNestedClaimDelimiter()) != 0 {
+		return false
+	}
+
 	return true
 }
 
@@ -216,6 +220,10 @@ func (m *JWTPrincipal) Equal(that interface{}) bool {
 	}
 
 	if strings.Compare(m.GetProvider(), target.GetProvider()) != 0 {
+		return false
+	}
+
+	if m.GetMatcher() != target.GetMatcher() {
 		return false
 	}
 

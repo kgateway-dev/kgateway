@@ -6,5 +6,5 @@ COPY . .
 
 FROM alpine
 RUN ls
-COPY ./server ./server
+COPY ./server /server
 CMD ["./server"]

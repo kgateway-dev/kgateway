@@ -104,10 +104,10 @@ Describes what kind of metadata.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `request` | [.solo.io.envoy.type.metadata.v3.MetadataKind.Request](../metadata.proto.sk/#request) | Request kind of metadata. Only one of `request`, `route`, or `host` can be set. |
-| `route` | [.solo.io.envoy.type.metadata.v3.MetadataKind.Route](../metadata.proto.sk/#route) | Route kind of metadata. Only one of `route`, `request`, or `host` can be set. |
-| `cluster` | [.solo.io.envoy.type.metadata.v3.MetadataKind.Cluster](../metadata.proto.sk/#cluster) | Cluster kind of metadata. Only one of `cluster`, `request`, or `host` can be set. |
-| `host` | [.solo.io.envoy.type.metadata.v3.MetadataKind.Host](../metadata.proto.sk/#host) | Host kind of metadata. Only one of `host`, `request`, or `cluster` can be set. |
+| `request` | [.solo.io.envoy.type.metadata.v3.MetadataKind.Request](../metadata.proto.sk/#request) | Request kind of metadata. Only one of `request`, `route`, `cluster`, or `host` can be set. |
+| `route` | [.solo.io.envoy.type.metadata.v3.MetadataKind.Route](../metadata.proto.sk/#route) | Route kind of metadata. Only one of `route`, `request`, `cluster`, or `host` can be set. |
+| `cluster` | [.solo.io.envoy.type.metadata.v3.MetadataKind.Cluster](../metadata.proto.sk/#cluster) | Cluster kind of metadata. Only one of `cluster`, `request`, `route`, or `host` can be set. |
+| `host` | [.solo.io.envoy.type.metadata.v3.MetadataKind.Host](../metadata.proto.sk/#host) | Host kind of metadata. Only one of `host`, `request`, `route`, or `cluster` can be set. |
 
 
 

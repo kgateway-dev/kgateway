@@ -85,9 +85,9 @@ Specifies an element of Envoy's hashing policy for hashing load balancers
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `header` | `string` | Use a given header's value as a component of the hashing load balancer's hash key. Only one of `header`, or `sourceIp` can be set. |
-| `cookie` | [.lbhash.options.gloo.solo.io.Cookie](../lbhash.proto.sk/#cookie) | Use a given cookie as a component of the hashing load balancer's hash key. Only one of `cookie`, or `sourceIp` can be set. |
-| `sourceIp` | `bool` | Use the request's source IP address as a component of the hashing load balancer's hash key. Only one of `sourceIp`, or `cookie` can be set. |
+| `header` | `string` | Use a given header's value as a component of the hashing load balancer's hash key. Only one of `header`, `cookie`, or `sourceIp` can be set. |
+| `cookie` | [.lbhash.options.gloo.solo.io.Cookie](../lbhash.proto.sk/#cookie) | Use a given cookie as a component of the hashing load balancer's hash key. Only one of `cookie`, `header`, or `sourceIp` can be set. |
+| `sourceIp` | `bool` | Use the request's source IP address as a component of the hashing load balancer's hash key. Only one of `sourceIp`, `header`, or `cookie` can be set. |
 | `terminal` | `bool` | If set, and a hash key is available after evaluating this policy, Envoy will skip the subsequent policies and use the key as it is. This is useful for defining "fallback" policies and limiting the time Envoy spends generating hash keys. |
 
 

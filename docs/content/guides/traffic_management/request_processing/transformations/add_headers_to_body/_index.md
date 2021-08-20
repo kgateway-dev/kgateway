@@ -119,7 +119,7 @@ spec:
         requestTransformation:
           transformationTemplate:
             # Merge the specified extractors to the request body
-            merge_extractors_to_body: {}
+            mergeExtractorsToBody: {}
             extractors:
               # The name of this attribute determines where the value will be nested in the body (using dots)
               root:

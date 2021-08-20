@@ -39,13 +39,13 @@ spec:
   configs:
   - oauth2:
       oidcAuthorizationCode:
-        issuer_url: theissuer.com
-        app_url: https://myapp.com
-        auth_endpoint_query_params:
+        issuerUrl: theissuer.com
+        appUrl: https://myapp.com
+        authEndpoint_query_params:
           paramKey: paramValue
-        callback_path: /my/callback/path/
-        client_id: myclientid
-        client_secret_ref:
+        callbackPath: /my/callback/path/
+        clientId: myclientid
+        clientSecretRef:
           name: my-oauth-secret
           namespace: gloo-system
         scopes:
@@ -223,7 +223,7 @@ spec:
         scopes:
         - email
         headers:
-          id_token_header: "x-token"
+          idTokenHeader: "x-token"
 {{< /highlight >}}
 
 ## Examples
