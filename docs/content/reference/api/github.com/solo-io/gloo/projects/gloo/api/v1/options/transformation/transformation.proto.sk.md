@@ -147,9 +147,9 @@ User-facing API for transformation.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `transformationTemplate` | [.envoy.api.v2.filter.http.TransformationTemplate](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformationtemplate) | Apply transformation templates. Only one of `transformationTemplate`, or `xsltTransformation` can be set. |
-| `headerBodyTransform` | [.envoy.api.v2.filter.http.HeaderBodyTransform](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#headerbodytransform) | This type of transformation will make all the headers available in the response body. The resulting JSON body will consist of two attributes: 'headers', containing the headers, and 'body', containing the original body. Only one of `headerBodyTransform`, or `xsltTransformation` can be set. |
-| `xsltTransformation` | [.envoy.config.transformer.xslt.v2.XsltTransformation](../../../../external/envoy/extensions/transformers/xslt/xslt_transformer.proto.sk/#xslttransformation) | (Enterprise Only): Xslt Transformation. Only one of `xsltTransformation`, or `headerBodyTransform` can be set. |
+| `transformationTemplate` | [.envoy.api.v2.filter.http.TransformationTemplate](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformationtemplate) | Apply transformation templates. Only one of `transformationTemplate`, `headerBodyTransform`, or `xsltTransformation` can be set. |
+| `headerBodyTransform` | [.envoy.api.v2.filter.http.HeaderBodyTransform](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#headerbodytransform) | This type of transformation will make all the headers available in the response body. The resulting JSON body will consist of two attributes: 'headers', containing the headers, and 'body', containing the original body. Only one of `headerBodyTransform`, `transformationTemplate`, or `xsltTransformation` can be set. |
+| `xsltTransformation` | [.envoy.config.transformer.xslt.v2.XsltTransformation](../../../../external/envoy/extensions/transformers/xslt/xslt_transformer.proto.sk/#xslttransformation) | (Enterprise Only): Xslt Transformation. Only one of `xsltTransformation`, `transformationTemplate`, or `headerBodyTransform` can be set. |
 
 
 

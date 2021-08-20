@@ -133,15 +133,18 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			if err != nil {
 				return core.Status_Pending, err
 			}
-			subresouce := newvs.GetStatus().GetSubresourceStatuses()
-			if subresouce == nil {
+
+			newvsStatus, err := newvs.GetStatusForNamespace()
+			Expect(err).NotTo(HaveOccurred())
+			subresource := newvsStatus.GetSubresourceStatuses()
+			if subresource == nil {
 				return core.Status_Pending, fmt.Errorf("no status")
 			}
-			proxyState := subresouce["*v1.Proxy.gloo-system.gateway-proxy"]
+			proxyState := subresource["*v1.Proxy.gloo-system.gateway-proxy"]
 			if proxyState == nil {
 				return core.Status_Pending, fmt.Errorf("no state")
 			}
-			return proxyState.State, nil
+			return proxyState.GetState(), nil
 		})
 	}
 	EventuallyProxyStatus := func() gomega.AsyncAssertion {
@@ -150,14 +153,19 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			if err != nil {
 				return core.Status_Pending, err
 			}
-			return proxy.GetStatus().GetState(), nil
+			proxyStatus, err := proxy.GetStatusForNamespace()
+			Expect(err).NotTo(HaveOccurred())
+			return proxyStatus.GetState(), nil
 		})
 	}
 
 	AcceptProxy := func() {
 		proxy, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		proxy.Status = &core.Status{State: core.Status_Accepted}
+
+		err = proxy.SetStatusForNamespace(&core.Status{State: core.Status_Accepted})
+		Expect(err).NotTo(HaveOccurred())
+
 		_, err = proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
 	}

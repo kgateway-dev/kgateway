@@ -27,6 +27,10 @@ func EventuallyResourceWarning(getter InputResourceGetter, intervals ...interfac
 	EventuallyResourceStatusMatchesState(1, getter, core.Status_Warning, intervals...)
 }
 
+func EventuallyResourceRejected(getter InputResourceGetter, intervals ...interface{}) {
+	EventuallyResourceStatusMatchesState(1, getter, core.Status_Rejected, intervals...)
+}
+
 func EventuallyResourceStatusMatchesState(offset int, getter InputResourceGetter, desiredStatusState core.Status_State, intervals ...interface{}) {
 	statusStateMatcher := gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
 		"State": gomega.Equal(desiredStatusState),

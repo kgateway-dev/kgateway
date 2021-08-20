@@ -168,10 +168,10 @@ Note: the destination spec and subsets are not supported in this context and wil
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `single` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) | Use SingleDestination to route to a single upstream. Only one of `single`, `multi`, or `forwardSniClusterName` can be set. |
-| `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk/#multidestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight). Only one of `multi`, `single`, or `forwardSniClusterName` can be set. |
-| `upstreamGroup` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Use a reference to an upstream group for routing. Only one of `upstreamGroup`, `single`, or `forwardSniClusterName` can be set. |
-| `forwardSniClusterName` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Forwards the request to a cluster name matching the TLS SNI name https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/network/sni_cluster/empty/sni_cluster Note: This filter will only work properly with TLS connections in which the upstream SNI domain is specified. Only one of `forwardSniClusterName`, `single`, or `upstreamGroup` can be set. |
+| `single` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) | Use SingleDestination to route to a single upstream. Only one of `single`, `multi`, `upstreamGroup`, or `forwardSniClusterName` can be set. |
+| `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk/#multidestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight). Only one of `multi`, `single`, `upstreamGroup`, or `forwardSniClusterName` can be set. |
+| `upstreamGroup` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Use a reference to an upstream group for routing. Only one of `upstreamGroup`, `single`, `multi`, or `forwardSniClusterName` can be set. |
+| `forwardSniClusterName` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Forwards the request to a cluster name matching the TLS SNI name https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/network/sni_cluster/empty/sni_cluster Note: This filter will only work properly with TLS connections in which the upstream SNI domain is specified. Only one of `forwardSniClusterName`, `single`, `multi`, or `upstreamGroup` can be set. |
 
 
 
@@ -250,9 +250,9 @@ Routes declare the entry points on virtual hosts and the action to take for matc
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `matchers` | [[]matchers.core.gloo.solo.io.Matcher](../core/matchers/matchers.proto.sk/#matcher) | Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.) If empty, the route will match all requests (i.e, a single "/" path prefix matcher). |
-| `routeAction` | [.gloo.solo.io.RouteAction](../proxy.proto.sk/#routeaction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. Only one of `routeAction`, or `directResponseAction` can be set. |
-| `redirectAction` | [.gloo.solo.io.RedirectAction](../proxy.proto.sk/#redirectaction) | Redirect actions tell the proxy to return a redirect response to the downstream client. Only one of `redirectAction`, or `directResponseAction` can be set. |
-| `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../proxy.proto.sk/#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. Only one of `directResponseAction`, or `redirectAction` can be set. |
+| `routeAction` | [.gloo.solo.io.RouteAction](../proxy.proto.sk/#routeaction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. Only one of `routeAction`, `redirectAction`, or `directResponseAction` can be set. |
+| `redirectAction` | [.gloo.solo.io.RedirectAction](../proxy.proto.sk/#redirectaction) | Redirect actions tell the proxy to return a redirect response to the downstream client. Only one of `redirectAction`, `routeAction`, or `directResponseAction` can be set. |
+| `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../proxy.proto.sk/#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. Only one of `directResponseAction`, `routeAction`, or `redirectAction` can be set. |
 | `options` | [.gloo.solo.io.RouteOptions](../options.proto.sk/#routeoptions) | Route Options extend the behavior of routes. Route options include configuration such as retries, rate limiting, and request/response transformation. |
 | `metadata` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Metadata for the individual route This data is opaque to Gloo, used by controllers to track ownership of routes within a proxy as they are typically generated by a controller (such as the gateway). |
 | `name` | `string` | The name provides a convenience for users to be able to refer to a route by name. It includes names of vs, route, and route table ancestors of the route. |
@@ -276,10 +276,10 @@ RouteActions are used to route matched requests to upstreams.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `single` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) | Use SingleDestination to route to a single upstream. Only one of `single`, `multi`, or `clusterHeader` can be set. |
-| `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk/#multidestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight). Only one of `multi`, `single`, or `clusterHeader` can be set. |
-| `upstreamGroup` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Use a reference to an upstream group for routing. Only one of `upstreamGroup`, `single`, or `clusterHeader` can be set. |
-| `clusterHeader` | `string` | Envoy will determine the cluster to route to by reading the value of the HTTP header named by cluster_header from the request headers. If the header is not found or the referenced cluster does not exist, Envoy will return a 404 response. Avoid using this whenever possible, it does not allow for custom filter configuration based on Virtual Host. Only one of `clusterHeader`, `single`, or `upstreamGroup` can be set. |
+| `single` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) | Use SingleDestination to route to a single upstream. Only one of `single`, `multi`, `upstreamGroup`, or `clusterHeader` can be set. |
+| `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk/#multidestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight). Only one of `multi`, `single`, `upstreamGroup`, or `clusterHeader` can be set. |
+| `upstreamGroup` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Use a reference to an upstream group for routing. Only one of `upstreamGroup`, `single`, `multi`, or `clusterHeader` can be set. |
+| `clusterHeader` | `string` | Envoy will determine the cluster to route to by reading the value of the HTTP header named by cluster_header from the request headers. If the header is not found or the referenced cluster does not exist, Envoy will return a 404 response. Avoid using this whenever possible, it does not allow for custom filter configuration based on Virtual Host. Only one of `clusterHeader`, `single`, `multi`, or `upstreamGroup` can be set. |
 
 
 
@@ -301,9 +301,9 @@ Destinations define routable destinations for proxied requests.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `upstream` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Route requests to a Gloo upstream. Only one of `upstream`, or `consul` can be set. |
-| `kube` | [.gloo.solo.io.KubernetesServiceDestination](../proxy.proto.sk/#kubernetesservicedestination) | Route requests to a kubernetes service. Only one of `kube`, or `consul` can be set. |
-| `consul` | [.gloo.solo.io.ConsulServiceDestination](../proxy.proto.sk/#consulservicedestination) | Route requests to a consul service. Only one of `consul`, or `kube` can be set. |
+| `upstream` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Route requests to a Gloo upstream. Only one of `upstream`, `kube`, or `consul` can be set. |
+| `kube` | [.gloo.solo.io.KubernetesServiceDestination](../proxy.proto.sk/#kubernetesservicedestination) | Route requests to a kubernetes service. Only one of `kube`, `upstream`, or `consul` can be set. |
+| `consul` | [.gloo.solo.io.ConsulServiceDestination](../proxy.proto.sk/#consulservicedestination) | Route requests to a consul service. Only one of `consul`, `upstream`, or `kube` can be set. |
 | `destinationSpec` | [.gloo.solo.io.DestinationSpec](../options.proto.sk/#destinationspec) | Some upstreams utilize options which require or permit additional configuration on routes targeting them. gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the destination config. If the destination config is required for the upstream and not provided by the user, Gloo will invalidate the destination and its parent resources. |
 | `subset` | [.gloo.solo.io.Subset](../subset.proto.sk/#subset) | If specified, traffic will only be routed to a subset of the upstream. If upstream doesn't contain the specified subset, we will fallback to normal upstream routing. |
 

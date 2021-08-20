@@ -59,10 +59,10 @@ func (r *Gateway) SetStatusForNamespace(status *core.Status) error {
 	if r.GetNamespacedStatuses() == nil {
 		r.SetNamespacedStatuses(&core.NamespacedStatuses{})
 	}
-	if r.GetNamespacedStatuses().Statuses == nil {
+	if r.GetNamespacedStatuses().GetStatuses() == nil {
 		r.GetNamespacedStatuses().Statuses = make(map[string]*core.Status)
 	}
-	r.GetNamespacedStatuses().Statuses[podNamespace] = status
+	r.GetNamespacedStatuses().GetStatuses()[podNamespace] = status
 	return nil
 }
 
@@ -79,10 +79,10 @@ func (r *Gateway) GetStatusForNamespace() (*core.Status, error) {
 	if r.GetNamespacedStatuses() == nil {
 		return nil, nil
 	}
-	if r.GetNamespacedStatuses().Statuses == nil {
+	if r.GetNamespacedStatuses().GetStatuses() == nil {
 		return nil, nil
 	}
-	return r.GetNamespacedStatuses().Statuses[podNamespace], nil
+	return r.GetNamespacedStatuses().GetStatuses()[podNamespace], nil
 }
 
 func (r *Gateway) MustHash() uint64 {

@@ -22,6 +22,7 @@ import (
 )
 
 var _ = Describe("TranslatorSyncer", func() {
+
 	var (
 		fakeWatcher  = &fakeWatcher{}
 		mockReporter *fakeReporter
@@ -45,8 +46,10 @@ var _ = Describe("TranslatorSyncer", func() {
 	It("should set status correctly", func() {
 		acceptedProxy := &gloov1.Proxy{
 			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
-			Status:   &core.Status{State: core.Status_Accepted},
 		}
+		err := acceptedProxy.SetStatusForNamespace(&core.Status{State: core.Status_Accepted})
+		Expect(err).NotTo(HaveOccurred())
+
 		vs := &gatewayv1.VirtualService{
 			Metadata: &core.Metadata{
 				Name:      "vs",
@@ -61,9 +64,9 @@ var _ = Describe("TranslatorSyncer", func() {
 		}
 
 		syncer.setCurrentProxies(desiredProxies)
-		syncer.setStatuses(gloov1.ProxyList{acceptedProxy})
+		syncer.setStatuses(context.Background(), gloov1.ProxyList{acceptedProxy})
 
-		err := syncer.syncStatus(context.Background())
+		err = syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
 		Expect(reportedKey).To(Equal(translator.UpstreamToClusterName(vs.GetMetadata().Ref())))
@@ -77,12 +80,16 @@ var _ = Describe("TranslatorSyncer", func() {
 	It("should set status correctly when resources are in both proxies", func() {
 		acceptedProxy1 := &gloov1.Proxy{
 			Metadata: &core.Metadata{Name: "test1", Namespace: "gloo-system"},
-			Status:   &core.Status{State: core.Status_Accepted},
 		}
+		err := acceptedProxy1.SetStatusForNamespace(&core.Status{State: core.Status_Accepted})
+		Expect(err).NotTo(HaveOccurred())
+
 		acceptedProxy2 := &gloov1.Proxy{
 			Metadata: &core.Metadata{Name: "test2", Namespace: "gloo-system"},
-			Status:   &core.Status{State: core.Status_Accepted},
 		}
+		err = acceptedProxy2.SetStatusForNamespace(&core.Status{State: core.Status_Accepted})
+		Expect(err).NotTo(HaveOccurred())
+
 		errs1 := reporter.ResourceReports{}
 		errs2 := reporter.ResourceReports{}
 		expectedErr := reporter.ResourceReports{}
@@ -104,9 +111,9 @@ var _ = Describe("TranslatorSyncer", func() {
 		}
 
 		syncer.setCurrentProxies(desiredProxies)
-		syncer.setStatuses(gloov1.ProxyList{acceptedProxy1, acceptedProxy2})
+		syncer.setStatuses(context.Background(), gloov1.ProxyList{acceptedProxy1, acceptedProxy2})
 
-		err := syncer.syncStatus(context.Background())
+		err = syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
 
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
@@ -126,12 +133,16 @@ var _ = Describe("TranslatorSyncer", func() {
 		}
 		pendingProxy := &gloov1.Proxy{
 			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
-			Status:   &core.Status{State: core.Status_Pending},
 		}
+		err := pendingProxy.SetStatusForNamespace(&core.Status{State: core.Status_Pending})
+		Expect(err).NotTo(HaveOccurred())
+
 		acceptedProxy := &gloov1.Proxy{
 			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
-			Status:   &core.Status{State: core.Status_Accepted},
 		}
+		err = acceptedProxy.SetStatusForNamespace(&core.Status{State: core.Status_Accepted})
+		Expect(err).NotTo(HaveOccurred())
+
 		vs := &gatewayv1.VirtualService{}
 		errs := reporter.ResourceReports{}
 		errs.Accept(vs)
@@ -165,8 +176,10 @@ var _ = Describe("TranslatorSyncer", func() {
 		}
 		acceptedProxy := &gloov1.Proxy{
 			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
-			Status:   &core.Status{State: core.Status_Accepted},
 		}
+		err := acceptedProxy.SetStatusForNamespace(&core.Status{State: core.Status_Accepted})
+		Expect(err).NotTo(HaveOccurred())
+
 		mockReporter.Err = fmt.Errorf("error")
 		vs := &gatewayv1.VirtualService{}
 		errs := reporter.ResourceReports{}
@@ -197,12 +210,16 @@ var _ = Describe("TranslatorSyncer", func() {
 	It("should set status correctly when one proxy errors", func() {
 		acceptedProxy := &gloov1.Proxy{
 			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
-			Status:   &core.Status{State: core.Status_Accepted},
 		}
+		err := acceptedProxy.SetStatusForNamespace(&core.Status{State: core.Status_Accepted})
+		Expect(err).NotTo(HaveOccurred())
+
 		rejectedProxy := &gloov1.Proxy{
 			Metadata: &core.Metadata{Name: "test2", Namespace: "gloo-system"},
-			Status:   &core.Status{State: core.Status_Rejected},
 		}
+		err = rejectedProxy.SetStatusForNamespace(&core.Status{State: core.Status_Rejected})
+		Expect(err).NotTo(HaveOccurred())
+
 		vs := &gatewayv1.VirtualService{}
 		errs := reporter.ResourceReports{}
 		errs.Accept(vs)
@@ -213,9 +230,9 @@ var _ = Describe("TranslatorSyncer", func() {
 		}
 
 		syncer.setCurrentProxies(desiredProxies)
-		syncer.setStatuses(gloov1.ProxyList{acceptedProxy, rejectedProxy})
+		syncer.setStatuses(context.Background(), gloov1.ProxyList{acceptedProxy, rejectedProxy})
 
-		err := syncer.syncStatus(context.Background())
+		err = syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
 
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
@@ -232,12 +249,16 @@ var _ = Describe("TranslatorSyncer", func() {
 	It("should set status correctly when one proxy errors but is irrelevant", func() {
 		acceptedProxy := &gloov1.Proxy{
 			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
-			Status:   &core.Status{State: core.Status_Accepted},
 		}
+		err := acceptedProxy.SetStatusForNamespace(&core.Status{State: core.Status_Accepted})
+		Expect(err).NotTo(HaveOccurred())
+
 		rejectedProxy := &gloov1.Proxy{
 			Metadata: &core.Metadata{Name: "test2", Namespace: "gloo-system"},
-			Status:   &core.Status{State: core.Status_Rejected},
 		}
+		err = rejectedProxy.SetStatusForNamespace(&core.Status{State: core.Status_Rejected})
+		Expect(err).NotTo(HaveOccurred())
+
 		vs := &gatewayv1.VirtualService{}
 		errs := reporter.ResourceReports{}
 		errs.Accept(vs)
@@ -248,9 +269,9 @@ var _ = Describe("TranslatorSyncer", func() {
 		}
 
 		syncer.setCurrentProxies(desiredProxies)
-		syncer.setStatuses(gloov1.ProxyList{acceptedProxy, rejectedProxy})
+		syncer.setStatuses(context.Background(), gloov1.ProxyList{acceptedProxy, rejectedProxy})
 
-		err := syncer.syncStatus(context.Background())
+		err = syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
 
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
@@ -266,12 +287,16 @@ var _ = Describe("TranslatorSyncer", func() {
 	It("should set status correctly when one proxy errors", func() {
 		rejectedProxy1 := &gloov1.Proxy{
 			Metadata: &core.Metadata{Name: "test", Namespace: "gloo-system"},
-			Status:   &core.Status{State: core.Status_Rejected},
 		}
+		err := rejectedProxy1.SetStatusForNamespace(&core.Status{State: core.Status_Rejected})
+		Expect(err).NotTo(HaveOccurred())
+
 		rejectedProxy2 := &gloov1.Proxy{
 			Metadata: &core.Metadata{Name: "test2", Namespace: "gloo-system"},
-			Status:   &core.Status{State: core.Status_Rejected},
 		}
+		err = rejectedProxy2.SetStatusForNamespace(&core.Status{State: core.Status_Rejected})
+		Expect(err).NotTo(HaveOccurred())
+
 		vs := &gatewayv1.VirtualService{}
 		errsProxy1 := reporter.ResourceReports{}
 		errsProxy1.Accept(vs)
@@ -285,9 +310,9 @@ var _ = Describe("TranslatorSyncer", func() {
 		}
 
 		syncer.setCurrentProxies(desiredProxies)
-		syncer.setStatuses(gloov1.ProxyList{rejectedProxy1, rejectedProxy2})
+		syncer.setStatuses(context.Background(), gloov1.ProxyList{rejectedProxy1, rejectedProxy2})
 
-		err := syncer.syncStatus(context.Background())
+		err = syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
 
 		mergedErrs := reporter.ResourceReports{}

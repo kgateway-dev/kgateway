@@ -90,15 +90,15 @@ Represents global settings for all the Gloo components.
 | ----- | ---- | ----------- | 
 | `discoveryNamespace` | `string` | This is the namespace to which Gloo controllers will write their own resources, e.g. discovered Upstreams or default Gateways. If empty, this will default to "gloo-system". |
 | `watchNamespaces` | `[]string` | Use this setting to restrict the namespaces that Gloo controllers take into consideration when watching for resources.In a usual production scenario, RBAC policies will limit the namespaces that Gloo has access to. If `watch_namespaces` contains namespaces outside of this whitelist, Gloo will fail to start. If not set, this defaults to all available namespaces. Please note that, the `discovery_namespace` will always be included in this list. |
-| `kubernetesConfigSource` | [.gloo.solo.io.Settings.KubernetesCrds](../settings.proto.sk/#kubernetescrds) |  Only one of `kubernetesConfigSource`, or `consulKvSource` can be set. |
-| `directoryConfigSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryConfigSource`, or `consulKvSource` can be set. |
-| `consulKvSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvSource`, or `directoryConfigSource` can be set. |
-| `kubernetesSecretSource` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk/#kubernetessecrets) |  Only one of `kubernetesSecretSource`, or `directorySecretSource` can be set. |
-| `vaultSecretSource` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk/#vaultsecrets) |  Only one of `vaultSecretSource`, or `directorySecretSource` can be set. |
-| `directorySecretSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directorySecretSource`, or `vaultSecretSource` can be set. |
-| `kubernetesArtifactSource` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk/#kubernetesconfigmaps) |  Only one of `kubernetesArtifactSource`, or `consulKvArtifactSource` can be set. |
-| `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryArtifactSource`, or `consulKvArtifactSource` can be set. |
-| `consulKvArtifactSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvArtifactSource`, or `directoryArtifactSource` can be set. |
+| `kubernetesConfigSource` | [.gloo.solo.io.Settings.KubernetesCrds](../settings.proto.sk/#kubernetescrds) |  Only one of `kubernetesConfigSource`, `directoryConfigSource`, or `consulKvSource` can be set. |
+| `directoryConfigSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryConfigSource`, `kubernetesConfigSource`, or `consulKvSource` can be set. |
+| `consulKvSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvSource`, `kubernetesConfigSource`, or `directoryConfigSource` can be set. |
+| `kubernetesSecretSource` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk/#kubernetessecrets) |  Only one of `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` can be set. |
+| `vaultSecretSource` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk/#vaultsecrets) |  Only one of `vaultSecretSource`, `kubernetesSecretSource`, or `directorySecretSource` can be set. |
+| `directorySecretSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directorySecretSource`, `kubernetesSecretSource`, or `vaultSecretSource` can be set. |
+| `kubernetesArtifactSource` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk/#kubernetesconfigmaps) |  Only one of `kubernetesArtifactSource`, `directoryArtifactSource`, or `consulKvArtifactSource` can be set. |
+| `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryArtifactSource`, `kubernetesArtifactSource`, or `consulKvArtifactSource` can be set. |
+| `consulKvArtifactSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvArtifactSource`, `kubernetesArtifactSource`, or `directoryArtifactSource` can be set. |
 | `refreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | How frequently to resync watches, etc. |
 | `devMode` | `bool` | Enable serving debug data on port 9090. |
 | `linkerd` | `bool` | Enable automatic linkerd upstream header addition for easier routing to linkerd services. |

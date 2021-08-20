@@ -216,7 +216,7 @@ func (s *statusSyncer) watchProxiesFromChannel(ctx context.Context, proxies <-ch
 			if currentHash != previousHash {
 				logger.Debugw("proxy list updated", "len(proxyList)", len(proxyList), "currentHash", currentHash, "previousHash", previousHash)
 				previousHash = currentHash
-				s.setStatuses(proxyList)
+				s.setStatuses(ctx, proxyList)
 				s.forceSync()
 			}
 		}
@@ -233,7 +233,7 @@ func hashStatuses(proxyList gloov1.ProxyList) (uint64, error) {
 	return hashutils.HashAllSafe(nil, statuses...)
 }
 
-func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
+func (s *statusSyncer) setStatuses(ctx context.Context, list gloov1.ProxyList) {
 	s.mapLock.Lock()
 	defer s.mapLock.Unlock()
 	for _, proxy := range list {
@@ -243,8 +243,10 @@ func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
 		var status *core.Status
 		var err error
 		if status, err = proxy.GetStatusForNamespace(); err != nil {
+			contextutils.LoggerFrom(ctx).Errorf("Error getting NamespacedStatus: %v", err)
 			continue
 		}
+
 		if current, ok := s.proxyToLastStatus[refKey]; ok {
 			current.Status = status
 			s.proxyToLastStatus[refKey] = current
@@ -343,7 +345,9 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		// this may be different than the status on the snapshot, as the snapshot doesn't get updated
 		// on status changes.
 		if status, ok := localInputResourceLastStatus[inputResource]; ok {
-			clonedInputResource.SetStatus(status)
+			if err := clonedInputResource.SetStatusForNamespace(status); err != nil {
+				errs = multierror.Append(errs, err)
+			}
 		}
 		if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
 			errs = multierror.Append(errs, err)

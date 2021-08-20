@@ -170,12 +170,16 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 			if err != nil {
 				return err
 			}
-			switch updatedProxy.GetStatus().GetState() {
+			updatedProxyStatus, err := updatedProxy.GetStatusForNamespace()
+			if err != nil {
+				return err
+			}
+
+			switch updatedProxyStatus.GetState() {
 			case core.Status_Pending:
 				continue
 			case core.Status_Rejected:
-				contextutils.LoggerFrom(ctx).Errorf("proxy was rejected by gloo: %v",
-					updatedProxy.GetStatus().GetReason())
+				contextutils.LoggerFrom(ctx).Errorf("proxy was rejected by gloo: %v", updatedProxyStatus.GetReason())
 				continue
 			case core.Status_Accepted:
 				return s.markIngressesReady(ctx, ingresses)

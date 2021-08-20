@@ -2,6 +2,9 @@ package printers
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/ghodss/yaml"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -39,4 +42,22 @@ func PrintKubeCrdList(in resources.InputResourceList, resourceCrd crd.Crd) error
 		}
 	}
 	return nil
+}
+
+// AggregateNamespacedStatuses Formats a NamespacedStatuses into a string, using the statusProcessor function to
+// format each individual controller's status
+func AggregateNamespacedStatuses(NamespacedStatuses *core.NamespacedStatuses, statusProcessor func(*core.Status) string) string {
+	var sb strings.Builder
+	var index = 0
+	for controller, status := range NamespacedStatuses.GetStatuses() {
+		sb.WriteString(controller)
+		sb.WriteString(": ")
+		sb.WriteString(statusProcessor(status))
+		index += 1
+		// Don't write newline after last status in the map
+		if index != len(NamespacedStatuses.GetStatuses()) {
+			sb.WriteString("\n")
+		}
+	}
+	return sb.String()
 }

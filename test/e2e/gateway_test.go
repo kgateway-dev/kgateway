@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -168,13 +170,11 @@ var _ = Describe("Gateway", func() {
 
 				// Wait for proxy to be accepted
 				var proxy *gloov1.Proxy
-				Eventually(func() bool {
+				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+					var err error
 					proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-					if err != nil {
-						return false
-					}
-					return proxy.GetStatus().GetState() == core.Status_Accepted
-				}, "100s", "0.1s").Should(BeTrue())
+					return proxy, err
+				})
 
 				// Verify that the proxy has the expected route
 				Expect(proxy.Listeners).To(HaveLen(2))
@@ -221,13 +221,10 @@ var _ = Describe("Gateway", func() {
 
 				// Wait for proxy to be accepted
 				var proxy *gloov1.Proxy
-				Eventually(func() bool {
+				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 					proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-					if err != nil {
-						return false
-					}
-					return proxy.GetStatus().GetState() == core.Status_Accepted
-				}, "60s", "2s").Should(BeTrue(), "first virtualservice should be accepted")
+					return proxy, err
+				})
 
 				// Create a second vs with a bad authconfig
 				vs2 := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta).Ref(), uint32(svc.Spec.Ports[0].Port))
@@ -249,22 +246,13 @@ var _ = Describe("Gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Check that virtualservice is reporting an error because of missing authconfig:
-				Eventually(func() bool {
-					vs, err := testClients.VirtualServiceClient.Read(writeNamespace, "vs2", clients.ReadOpts{})
-					if err != nil {
-						return false
-					}
+				gloohelpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
+					return testClients.VirtualServiceClient.Read(writeNamespace, "vs2", clients.ReadOpts{})
+				})
 
-					return vs.GetStatus().GetState() == core.Status_Rejected
-				}, "30s", "1s").Should(BeTrue(), fmt.Sprintf("second virtualservice should be rejected due to missing authconfig"))
-
-				Consistently(func() bool {
-					gateway, err := testClients.GatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-					if err != nil {
-						return false
-					}
-					return gateway.GetStatus().GetState() == core.Status_Accepted
-				}, "10s", "0.1s").Should(BeTrue(), "gateway should not have any errors from a bad VS")
+				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+					return testClients.GatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				})
 
 				Eventually(func() bool {
 					proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})

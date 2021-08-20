@@ -152,7 +152,18 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				// simulate gloo accepting the proxy resource
 				liveProxy, err := proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
-				liveProxy.GetStatus().State = core.Status_Accepted
+
+				liveProxyStatus, err := liveProxy.GetStatusForNamespace()
+				Expect(err).NotTo(HaveOccurred())
+
+				if liveProxyStatus == nil {
+					liveProxyStatus = &core.Status{State: core.Status_Accepted, ReportedBy: "gateway"}
+					err := liveProxy.SetStatusForNamespace(liveProxyStatus)
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					liveProxyStatus.State = core.Status_Accepted
+				}
+
 				liveProxy, err = proxyClient.Write(liveProxy, clients.WriteOpts{OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 
