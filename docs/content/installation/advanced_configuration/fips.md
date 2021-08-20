@@ -12,7 +12,7 @@ global:
   image:
     fips: true
 ```
-and use it to override the default values in teh Gloo Edge chart with Helm 3
+and use it to override the default values in the Gloo Edge chart with Helm 3
 ```bash
 helm install gloo glooe/gloo-ee --namespace gloo-system \
   -f value-overrides.yaml --create-namespace --set-string license_key=YOUR_LICENSE_KEY
