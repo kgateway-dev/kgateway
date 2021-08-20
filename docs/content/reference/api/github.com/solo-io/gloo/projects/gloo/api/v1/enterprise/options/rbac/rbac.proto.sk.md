@@ -118,7 +118,7 @@ A JWT principal. To use this, JWT option MUST be enabled.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `claims` | `map<string, string>` | Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used. Nested claims, such as 'metadata.foo', may also be used. All claims must be present on the JWT. |
+| `claims` | `map<string, string>` | Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used. All claims must be present on the JWT. Nested claims, such as 'parent.child.foo', may also be used; however, the Policy must have a non-empty string value set for `nested_claim_delimiter`. |
 | `provider` | `string` | Verify that the JWT came from a specific provider. This usually can be left empty and a provider will be chosen automatically. |
 
 
