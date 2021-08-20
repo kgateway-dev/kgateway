@@ -223,6 +223,10 @@ func (m *JWTPrincipal) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetMatcher() != target.GetMatcher() {
+		return false
+	}
+
 	return true
 }
 
