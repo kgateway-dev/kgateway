@@ -6,19 +6,19 @@ description: Using EKS ServiceAccounts with Gloo Edge for AWS Lambda
 
 # How to use EKS ServiceAccounts to authenticate AWS Lambda requests with Gloo Edge
 
-Recently, AWS added the ability to associate Kubernetes ServiceAccounts with IAM roles.
+AWS offers the ability to associate Kubernetes ServiceAccounts with IAM roles.
 This [blog post](https://aws.amazon.com/blogs/opensource/introducing-fine-grained-iam-roles-service-accounts/) 
 explains the feature in more detail.
 
-Gloo Edge Api Gateway now supports discovering, and authenticating AWS Lambdas in kubernetes using 
-these projected ServiceAccounts
+Gloo Edge Api Gateway now supports discovering and authenticating AWS Lambdas in kubernetes using 
+these projected ServiceAccounts.
 
 ## Configuring EKS cluster to use IAM ServiceAccount roles
 
 The first step to enabling this IAM ServiceAccount roles with Gloo Edge is creating/configuring an EKS
 cluster to use this feature.
 
-A full tutorial can be found [in AWS' docs](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html).
+A full tutorial can be found [in AWS docs](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html).
 Once the cluster exists and is configured properly, return here for the rest of the tutorial. The service account 
 webhook is available by default in all EKS clusters, even if the workload does not explicitly show up.
 
@@ -42,15 +42,8 @@ For more info on ARNs see: https://docs.aws.amazon.com/general/latest/gr/aws-arn
 
 ## Deploying Gloo Edge
 
-As this feature is brand new, it is currently only available on a beta branch of gloo. The following 
-are the version requirements for closed source and open source Gloo Edge.
-
-    Closed Source: v1.5.0-beta8
-    
-    Open Source: v1.5.0-beta22
-
-For the purpose of this tutorial we will be installing open source Gloo Edge, but closed source Gloo Edge 
-will work exactly the same, with slightly different helm values specified below.
+For the purpose of this tutorial we will be installing open source Gloo Edge, but Gloo Edge Enterpise
+will work exactly the same, with slightly different helm values as specified below.
 
 {{< tabs >}}
 {{< tab name="Open Source" codelang="shell">}}
@@ -142,7 +135,7 @@ status:
   state: 1
 ```
 
-Once the Upstream has been accepted we can go ahead and create our Virtual Service
+Once the Upstream has been accepted we can go ahead and create our Virtual Service:
 ```shell script
 kubectl apply -f - <<EOF
 apiVersion: gateway.solo.io/v1
