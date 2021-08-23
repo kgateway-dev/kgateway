@@ -130,6 +130,9 @@ func KubeClient() (kubernetes.Interface, error) {
 			return nil, errors.Wrapf(err, "getting kube config")
 		}
 		client, err := kubernetes.NewForConfig(cfg)
+		if err != nil {
+			return nil, errors.Wrapf(err, "creating client")
+		}
 		clientset = client
 	}
 
