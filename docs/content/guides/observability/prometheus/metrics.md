@@ -43,9 +43,10 @@ glooctl install gateway --values stats-values.yaml
 {{< /tab >}}
 {{< tab name="Helm 3" codelang="shell">}}
 helm install gloo gloo/gloo --namespace gloo-system -f stats-values.yaml
+{{< /tab >}}
 {{< /tabs >}}
 
-{{% notice warning %}}
+{{% notice warning %}} 
 Using Helm 2 is not supported in Gloo Edge v1.8.0.
 {{% /notice %}}
 
