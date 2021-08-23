@@ -286,6 +286,9 @@ The above configuration defines an RBAC policy named `viewer` which only allows 
 - the request URI starts with `/api/pets`
 - the request contains a verifiable JWT
 - the JWT has a `sub` claim with value `system:serviceaccount:default:svc-a`
+  - **Note**: Matching is supported for top-level claims of the JWT and for nested claims, or claims that are children of top-level claims.
+    To enable matching against nested claims, you must first specify a `nestedClaimsDelimiter`, such as `.`, in a [Policy]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#policy" %}})
+    and specify the claim name as a path, such as `parent.child.foo`, in the `claims` field of the [JWTPrincipal]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#jwtprincipal" %}}).
 
 {{% notice note %}}
 To see all the attributes supported by the RBAC API, be sure to check out the correspondent <b>{{< protobuf display="API docs" name="rbac.options.gloo.solo.io.ExtensionSettings">}}</b>.

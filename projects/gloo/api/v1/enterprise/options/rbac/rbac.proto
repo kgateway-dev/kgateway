@@ -46,7 +46,8 @@ message Principal {
 // A JWT principal. To use this, JWT option MUST be enabled.
 message JWTPrincipal {
     // Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used.
-    // all claims must be present on the JWT.
+    // If you specify the path for a nested claim, such as 'parent.child.foo', you must also specify
+    // a non-empty string value for the `nested_claim_delimiter` field in the Policy.
     map<string, string> claims = 1;
     // Verify that the JWT came from a specific provider. This usually can be left empty
     // and a provider will be chosen automatically.

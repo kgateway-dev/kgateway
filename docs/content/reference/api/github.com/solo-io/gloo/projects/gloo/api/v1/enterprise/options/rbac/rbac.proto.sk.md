@@ -120,7 +120,7 @@ A JWT principal. To use this, JWT option MUST be enabled.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `claims` | `map<string, string>` | Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used. all claims must be present on the JWT. |
+| `claims` | `map<string, string>` | Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used. If you specify the path for a nested claim, such as 'parent.child.foo', you must also specify a non-empty string value for the `nested_claim_delimiter` field in the Policy. |
 | `provider` | `string` | Verify that the JWT came from a specific provider. This usually can be left empty and a provider will be chosen automatically. |
 | `matcher` | [.rbac.options.gloo.solo.io.JWTPrincipal.ClaimMatcher](../rbac.proto.sk/#claimmatcher) | The matcher to use when evaluating this principal. By default, exact string comparison (EXACT_STRING) is used. |
 
