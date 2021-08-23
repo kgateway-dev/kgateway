@@ -46,6 +46,7 @@ helm install gloo gloo/gloo --namespace gloo-system -f stats-values.yaml
 {{< /tab >}}
 {{< /tabs >}}
 
+
 {{% notice warning %}}
 Using Helm 2 is not supported in Gloo Edge v1.8.0.
 {{% /notice %}}
