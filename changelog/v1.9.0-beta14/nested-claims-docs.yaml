@@ -1,4 +1,4 @@
 changelog:
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/2744
-    description: Add documentation for nested claims (rather than just top-level claims) in JWT RBAC.
+    description: Adds documentation for nested claim support in RBAC policies for JSON Web Tokens (JWT).
