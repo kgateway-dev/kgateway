@@ -35,7 +35,7 @@ echo "discovery:
 " > stats-values.yaml
 ```
 
-Then install using one of the following methods. Note that using Helm 2 is not supported in Gloo Edge v1.8.0.
+Then install using one of the following methods. Note that using Helm 2 is not supported in Gloo Edge v1.8.0. 
 
 {{< tabs >}}
 {{< tab name="glooctl" codelang="shell" >}}
