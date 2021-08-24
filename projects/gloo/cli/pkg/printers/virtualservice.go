@@ -137,8 +137,13 @@ func getRouteTableStatus(vs *v1.RouteTable) string {
 func getStatus(ctx context.Context, res resources.InputResource, namespace string) string {
 
 	// If the virtual service is still pending and may yet be accepted, don't clutter the status with other errors.
-	resourceStatus := res.GetStatus().GetState()
-	if resourceStatus == core.Status_Pending {
+	resourceStatus, err := res.GetStatusForNamespace()
+	if err != nil {
+		return "" // TODO
+	}
+
+	resourceStatusState := resourceStatus.GetState()
+	if resourceStatusState == core.Status_Pending {
 		return resourceStatus.String()
 	}
 
@@ -149,7 +154,7 @@ func getStatus(ctx context.Context, res resources.InputResource, namespace strin
 	subresourceStatuses := res.GetStatus().GetSubresourceStatuses()
 
 	// If the virtual service was accepted, don't include confusing errors on subresources but note if there's another resource potentially blocking config updates.
-	if resourceStatus == core.Status_Accepted {
+	if resourceStatusState == core.Status_Accepted {
 		// if route replacement is turned on, don't say that updates to this resource may be blocked
 		settingsClient, err := helpers.SettingsClient(ctx, []string{namespace})
 		// if we get any errors, ignore and default to more verbose error message

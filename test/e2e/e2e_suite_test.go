@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -18,6 +19,8 @@ import (
 var (
 	envoyFactory  *services.EnvoyFactory
 	consulFactory *services.ConsulFactory
+
+	namespace = "e2e-test-ns"
 )
 
 var _ = BeforeSuite(func() {
@@ -27,11 +30,17 @@ var _ = BeforeSuite(func() {
 	consulFactory, err = services.NewConsulFactory()
 	Expect(err).NotTo(HaveOccurred())
 
+	err = os.Setenv("POD_NAMESPACE", namespace)
+	Expect(err).NotTo(HaveOccurred())
+
 })
 
 var _ = AfterSuite(func() {
 	_ = envoyFactory.Clean()
 	_ = consulFactory.Clean()
+
+	err := os.Unsetenv("POD_NAMESPACE")
+	Expect(err).NotTo(HaveOccurred())
 })
 
 func TestE2e(t *testing.T) {

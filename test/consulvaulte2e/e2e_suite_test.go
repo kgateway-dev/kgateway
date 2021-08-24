@@ -18,6 +18,8 @@ var (
 	envoyFactory  *services.EnvoyFactory
 	consulFactory *services.ConsulFactory
 	vaultFactory  *services.VaultFactory
+
+	namespace = "consul-vault-e2e-test-ns"
 )
 
 var _ = BeforeSuite(func() {
@@ -29,12 +31,17 @@ var _ = BeforeSuite(func() {
 	vaultFactory, err = services.NewVaultFactory()
 	Expect(err).NotTo(HaveOccurred())
 
+	err = os.Setenv("POD_NAMESPACE", namespace)
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {
 	_ = envoyFactory.Clean()
 	_ = consulFactory.Clean()
 	_ = vaultFactory.Clean()
+
+	err := os.Unsetenv("POD_NAMESPACE")
+	Expect(err).NotTo(HaveOccurred())
 })
 
 func TestE2e(t *testing.T) {

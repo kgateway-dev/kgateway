@@ -35,12 +35,16 @@ func TestGateway(t *testing.T) {
 
 var testHelper *helper.SoloTestHelper
 var ctx, cancel = context.WithCancel(context.Background())
+var namespace = "gateway-test-ns"
 
 var _ = BeforeSuite(StartTestHelper)
 var _ = AfterSuite(TearDownTestHelper)
 
 func StartTestHelper() {
 	cwd, err := os.Getwd()
+	Expect(err).NotTo(HaveOccurred())
+
+	err = os.Setenv("POD_NAMESPACE", namespace)
 	Expect(err).NotTo(HaveOccurred())
 
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
@@ -76,6 +80,9 @@ func StartTestHelper() {
 }
 
 func TearDownTestHelper() {
+	err := os.Unsetenv("POD_NAMESPACE")
+	Expect(err).NotTo(HaveOccurred())
+
 	if os.Getenv("TEAR_DOWN") == "true" {
 		Expect(testHelper).ToNot(BeNil())
 		err := testHelper.UninstallGloo()

@@ -74,17 +74,11 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 func CheckResources(opts *options.Options) error {
 	var multiErr *multierror.Error
 
-	// TEMP - allow glooctl to check resources
-	fmt.Printf("Setting pod namespace env variable... ")
 	_ = os.Setenv("POD_NAMESPACE", opts.Metadata.GetNamespace())
-	/**
-	unset := func() {
+	unsetPodNamespaceEnv := func() {
 		_ = os.Unsetenv("POD_NAMESPACE")
 	}
-	defer unset()
-
-	DON"T UNSET -- TEMP
-	*/
+	defer unsetPodNamespaceEnv()
 
 	err := checkConnection(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if err != nil {
