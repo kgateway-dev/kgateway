@@ -31,8 +31,8 @@ func SetKubeConfigEnv(opts *options.Options, cmd *cobra.Command) error {
 
 func SetPodNamespaceEnv(opts *options.Options, cmd *cobra.Command) error {
 	podNamespace := defaults.GlooSystem
-	if opts.Metadata.Namespace != "" {
-		podNamespace = opts.Metadata.Namespace
+	if opts.Metadata.GetNamespace() != "" {
+		podNamespace = opts.Metadata.GetNamespace()
 	}
 	return os.Setenv("POD_NAMESPACE", podNamespace)
 }
