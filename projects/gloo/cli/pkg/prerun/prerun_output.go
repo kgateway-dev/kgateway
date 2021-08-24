@@ -3,6 +3,8 @@ package prerun
 import (
 	"os"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
@@ -25,4 +27,12 @@ func SetKubeConfigEnv(opts *options.Options, cmd *cobra.Command) error {
 		return os.Setenv("KUBECONFIG", opts.Top.KubeConfig)
 	}
 	return nil
+}
+
+func SetPodNamespaceEnv(opts *options.Options, cmd *cobra.Command) error {
+	podNamespace := defaults.GlooSystem
+	if opts.Metadata.Namespace != "" {
+		podNamespace = opts.Metadata.Namespace
+	}
+	return os.Setenv("POD_NAMESPACE", podNamespace)
 }

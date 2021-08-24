@@ -1,6 +1,7 @@
 package kube_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/avast/retry-go"
@@ -18,14 +19,22 @@ func TestKube(t *testing.T) {
 }
 
 var locker *clusterlock.TestClusterLocker
+var namespace = "kube-test-ns"
 
 var _ = BeforeSuite(func() {
 	var err error
 	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), clusterlock.Options{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(locker.AcquireLock(retry.Attempts(40))).NotTo(HaveOccurred())
+
+	err = os.Setenv("POD_NAMESPACE", namespace)
+	Expect(err).NotTo(HaveOccurred())
+
 })
 
 var _ = AfterSuite(func() {
 	locker.ReleaseLock()
+
+	err := os.Unsetenv("POD_NAMESPACE")
+	Expect(err).NotTo(HaveOccurred())
 })

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -73,12 +72,6 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 func CheckResources(opts *options.Options) error {
 	var multiErr *multierror.Error
-
-	_ = os.Setenv("POD_NAMESPACE", opts.Metadata.GetNamespace())
-	unsetPodNamespaceEnv := func() {
-		_ = os.Unsetenv("POD_NAMESPACE")
-	}
-	defer unsetPodNamespaceEnv()
 
 	err := checkConnection(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if err != nil {
