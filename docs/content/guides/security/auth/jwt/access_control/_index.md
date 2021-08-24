@@ -286,12 +286,8 @@ The above configuration defines an RBAC policy named `viewer` which only allows 
 - the request URI starts with `/api/pets`
 - the request contains a verifiable JWT
 - the JWT has a `sub` claim with value `system:serviceaccount:default:svc-a`
-  - **Note**: Matching is supported for top-level claims of the JWT and for nested claims, or claims that are children of top-level claims.
-    To enable matching against nested claims, you must first specify a `nestedClaimDelimiter`, such as `.`, in a [Policy]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#policy" %}})
-    and specify the claim name as a path, such as `parent.child.foo`, in the `claims` field of the [JWTPrincipal]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#jwtprincipal" %}}).
-  - **Note**: By default claims will be matched against values by exact string comparison; however, this can be changed by specifying a [ClaimMatcher]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#claimmatcher" %}})
-    in the `matcher` field of the [JWTPrincipal]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#jwtprincipal" %}}).
-
+  - **Note**: Matching is supported for top-level claims of the JWT and for nested claims, or claims that are children of top-level claims. See [Matching against nested JWT claims](./access_control_examples/#matching-against-nested-jwt-claims) for more information.
+  - **Note**: By default claims will be matched against values by exact string comparison; however, this can be changed to match against non-string types. See [Matching against non-string JWT claim values](./access_control_examples/#matching-against-non-string-jwt-claims) for more information.
 {{% notice note %}}
 To see all the attributes supported by the RBAC API, be sure to check out the correspondent <b>{{< protobuf display="API docs" name="rbac.options.gloo.solo.io.ExtensionSettings">}}</b>.
 {{% /notice %}}
