@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: >-
+      Update envoy-gloo to 1.19.0-patch2 for CVE-2021-32777, CVE-2021-32779, CVE-2021-32781, CVE-2021-32778, and
+      CVE-2021-32780.
+    issueLink: https://github.com/solo-io/gloo/issues/5228
+    resolvesIssue: false
