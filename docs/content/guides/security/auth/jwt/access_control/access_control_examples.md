@@ -33,6 +33,7 @@ and specify the claim name as a path, such as `parent.child.foo`, in the `claims
 ### Sample JWT (nested claims)
 
 Suppose you had a JWT with the following claims:
+
 ```json
 {
   "iss": "kubernetes/serviceaccount",
