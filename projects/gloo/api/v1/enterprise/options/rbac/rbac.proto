@@ -46,11 +46,23 @@ message Principal {
 // A JWT principal. To use this, JWT option MUST be enabled.
 message JWTPrincipal {
     // Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used.
-    // all claims must be present on the JWT.
+    // If you specify the path for a nested claim, such as 'parent.child.foo', you must also specify
+    // a non-empty string value for the `nested_claim_delimiter` field in the Policy.
     map<string, string> claims = 1;
     // Verify that the JWT came from a specific provider. This usually can be left empty
     // and a provider will be chosen automatically.
     string provider = 2;
+    // Used to specify how claims should be matched to the value.
+    enum ClaimMatcher {
+        // The JWT claim value is a string that exactly matches the value.
+        EXACT_STRING = 0;
+        // The JWT claim value is a boolean that matches the value.
+        BOOLEAN = 1;
+        // The JWT claim value is a list that contains a string that exactly matches the value.
+        LIST_CONTAINS = 2;
+    }
+    // The matcher to use when evaluating this principal. By default, exact string comparison (EXACT_STRING) is used.
+    ClaimMatcher matcher = 3;
 }
 
 // What permissions should be granted. An empty field means allow-all.

@@ -94,7 +94,7 @@ spec:
           packageName: solo.examples.v1
           serviceName: StoreService
 status:
-  reported_by: gloo
+  reportedBy: gloo
   state: 1
 ```
 

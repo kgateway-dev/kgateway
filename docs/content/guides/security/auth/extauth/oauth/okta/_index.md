@@ -281,13 +281,13 @@ spec:
   configs:
   - oauth2:
       oidcAuthorizationCode:
-        app_url: https://glootest.com
-        callback_path: /callback
-        client_id: <insert-your-app-client-id-here>
-        client_secret_ref:
+        appUrl: https://glootest.com
+        callbackPath: /callback
+        clientId: <insert-your-app-client-id-here>
+        clientSecretRef:
           name: okta-client-secret
           namespace: gloo-system
-        issuer_url: https://dev-2933640.okta.com/oauth2/default
+        issuerUrl: https://dev-2933640.okta.com/oauth2/default
         scopes:
         - email
 ```
@@ -628,13 +628,13 @@ spec:
   configs:
   - oauth2:
       oidcAuthorizationCode:
-        app_url: https://glootest.com
-        callback_path: /callback
-        client_id: <insert-your-app-client-id-here>
-        client_secret_ref:
+        appUrl: https://glootest.com
+        callbackPath: /callback
+        clientId: <insert-your-app-client-id-here>
+        clientSecretRef:
           name: okta-client-secret
           namespace: gloo-system
-        issuer_url: https://dev-2933640.okta.com/oauth2/default
+        issuerUrl: https://dev-2933640.okta.com/oauth2/default
         scopes:
         - email
         session:
@@ -698,13 +698,13 @@ spec:
   configs:
   - oauth2:
       oidcAuthorizationCode:
-        app_url: https://glootest.com
-        callback_path: /callback
-        client_id: <insert-your-app-client-id-here>
-        client_secret_ref:
+        appUrl: https://glootest.com
+        callbackPath: /callback
+        clientId: <insert-your-app-client-id-here>
+        clientSecretRef:
           name: okta-client-secret
           namespace: gloo-system
-        issuer_url: https://dev-2933640.okta.com/oauth2/default
+        issuerUrl: https://dev-2933640.okta.com/oauth2/default
         scopes:
         - email
         session:
@@ -714,7 +714,7 @@ spec:
             options:
               host: redis.gloo-system.svc.cluster.local:6379
         headers:
-          id_token_header: "jwt"
+          idTokenHeader: "jwt"
 {{< /highlight >}}
 
 After applying that AuthConfig change, note that the `Jwt` header re-appears in the list of headers returned from `httpbin`.
@@ -800,13 +800,13 @@ spec:
   configs:
   - oauth2:
       oidcAuthorizationCode:
-        app_url: https://glootest.com
-        callback_path: /callback
-        client_id: <insert-your-app-client-id-here>
-        client_secret_ref:
+        appUrl: https://glootest.com
+        callbackPath: /callback
+        clientId: <insert-your-app-client-id-here>
+        clientSecretRef:
           name: okta-client-secret
           namespace: gloo-system
-        issuer_url: https://dev-2933640.okta.com/oauth2/default
+        issuerUrl: https://dev-2933640.okta.com/oauth2/default
         scopes:
         - email
         session:
@@ -816,6 +816,6 @@ spec:
             options:
               host: redis.gloo-system.svc.cluster.local:6379
         headers:
-          id_token_header: "jwt"
+          idTokenHeader: "jwt"
         logoutPath: /logout
 {{< /highlight >}}

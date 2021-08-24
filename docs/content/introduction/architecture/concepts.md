@@ -172,7 +172,7 @@ spec:
     serviceNamespace: gloo-system
     servicePort: 6379
 status:
-  reported_by: gloo
+  reportedBy: gloo
   state: 1 # Accepted
 ```
 

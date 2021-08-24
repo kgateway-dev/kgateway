@@ -6,23 +6,26 @@ weight: 10
 
 ## Table of Contents
 
+- [Table of Contents](#table-of-contents)
 - [Overview](#overview)
-    - [Descriptors](#descriptors)
-    - [Actions](#actions)
+  - [Descriptors](#descriptors)
+  - [Actions](#actions)
 - [Simple Examples](#simple-examples)
-    - [Generic Key](#generic-key)
-    - [Header Values](#header-values)
-    - [Remote Address](#remote-address)
+  - [Generic Key](#generic-key)
+  - [Header Values](#header-values)
+  - [Remote Address](#remote-address)
 - [Advanced Concepts](#advanced-concepts)
-    - [Defining limits for tuples of key-value pairs](#defining-limits-for-tuples-of-key-value-pairs)
-    - [Nested Limits](#nested-limits)
-    - [Rule Priority and Weights](#rule-priority-and-weights)
-    - [Customizing Routes](#customizing-routes)
+  - [Defining limits for tuples of key-value pairs](#defining-limits-for-tuples-of-key-value-pairs)
+  - [Nested Limits](#nested-limits)
+  - [Rule Priority and Weights](#rule-priority-and-weights)
+  - [Customizing Routes](#customizing-routes)
 - [Advanced Use Cases](#advanced-use-cases)
+  - [Rate limiting by client IP](#rate-limiting-by-client-ip)
+    - [Configuring Gloo Edge to properly forward the client address](#configuring-gloo-edge-to-properly-forward-the-client-address)
     - [Configuring multiple limits per remote address](#configuring-multiple-limits-per-remote-address)
-    - [Traffic prioritization based on HTTP method](#traffic-prioritization-based-on-http-method)
-    - [Securing rate limit actions with JWTs](#securing-rate-limit-actions-with-jwts)
-    - [Improving security further with WAF and authorization](#improving-security-further-with-waf-and-authorization)
+  - [Traffic prioritization based on HTTP method](#traffic-prioritization-based-on-http-method)
+  - [Securing rate limit actions with JWTs](#securing-rate-limit-actions-with-jwts)
+  - [Improving security further with WAF and authorization](#improving-security-further-with-waf-and-authorization)
 
 ## Overview
 
@@ -870,7 +873,7 @@ metadata:
   namespace: gloo-system
 spec:
   configs:
-    - opa_auth:
+    - opaAuth:
         modules:
           - name: allow-jwt
             namespace: gloo-system
