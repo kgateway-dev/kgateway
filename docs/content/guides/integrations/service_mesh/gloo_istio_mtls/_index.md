@@ -9,7 +9,7 @@ Serving as the Ingress for an Istio cluster -- without compromising on security 
 
 ### Istio versions
 
-This guide was tested with Istio 1.6.6, 1.7.2, 1.8.1, 1.9.5 and 1.10.0. For older versions of Istio, see [here]({{% versioned_link_path fromRoot="/guides/integrations/service_mesh/gloo_istio_mtls/older_istio_versions/" %}}).
+This guide was tested with Istio 1.6.6, 1.7.2, 1.8.1, 1.9.5, 1.10.0 and 1.11.1. For older versions of Istio, see [here]({{% versioned_link_path fromRoot="/guides/integrations/service_mesh/gloo_istio_mtls/older_istio_versions/" %}}).
 
 ### Gloo Edge versions
 
