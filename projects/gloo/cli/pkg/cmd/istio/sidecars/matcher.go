@@ -2,8 +2,8 @@ package sidecars
 
 import (
 	"errors"
-	"strings"
 	"regexp"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 )
