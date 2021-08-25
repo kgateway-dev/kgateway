@@ -50,7 +50,7 @@ Consider an example JWT with the following claims:
 
 ### Virtual Service (nested claims)
 
-To require that GET requests to the `/api/pets` endpoint are only permitted to those that have a JWT with the "role"
+To ensure that GET requests to the `/api/pets` endpoint are permitted only to users that have a JWT with the `role`
 claim set to `user`, configure the Virtual Service with the following RBAC policy:  
 
 {{< highlight shell "hl_lines=40 48" >}}
@@ -125,7 +125,7 @@ Consider an example JWT with the following claims:
 
 #### Virtual Service (boolean)
 
-To require that GET requests to the `/api/pets` endpoint are only permitted to those that have a JWT with the "email_verified"
+To ensure that GET requests to the `/api/pets` endpoint are permitted only to users that have a JWT with the `email_verified`
 claim set to `true`, configure the Virtual Service with the following RBAC policy: 
 
 {{< highlight shell "hl_lines=47-49" >}}
@@ -200,7 +200,7 @@ Consider an example JWT with the following claims:
 
 #### Virtual Service (list)
 
-To require that GET requests to the `/api/pets` endpoint are only permitted to those that have a JWT with the "roles"
+To ensure that GET requests to the `/api/pets` endpoint are permitted only to users that have a JWT with the `roles`
 claim that contains `super_user` within its list, configure the Virtual Service with the following RBAC policy:
 
 {{< highlight shell "hl_lines=47-49" >}}
