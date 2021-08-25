@@ -28,7 +28,7 @@ Before you begin, set up basic JWT authorization and configure a Virtual Service
 
 By default, matching is supported for only top-level claims of the JWT.
 To additionally enable matching against nested claims, or claims that are children of top-level claims, you must specify a `nestedClaimDelimiter`, such as `.`, in the RBAC [policy]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#policy" %}}),
-and specify the claim name as a path, such as `parent.child.foo`, in the `claims` field of the [JWTPrincipal]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#jwtprincipal" %}}).
+and specify the claim name as a path, such as `parent.child.foo: user`, in the `claims` field of the [`jwtPrincipal`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#jwtprincipal" %}}).
 
 ### Sample JWT (nested claims)
 
