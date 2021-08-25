@@ -22,17 +22,17 @@ The JWT feature was introduced with **Gloo Edge Enterprise**, release 0.13.16. I
     - [Virtual Service](#virtual-service-list)
 
 ## Setup
-See the [JWT and Access Control]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control/" %}}) guide for setup steps.
+Before you begin, set up basic JWT authorization and configure a Virtual Service to verify JWTs by following the steps in JWT and Access Control]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control/" %}}).
 
-## Matching Against Nested JWT Claims
+## Matching against nested JWT claims
 
-Matching is supported for top-level claims of the JWT and for nested claims, or claims that are children of top-level claims.
-To enable matching against nested claims, you must first specify a `nestedClaimDelimiter`, such as `.`, in a [Policy]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#policy" %}})
+By default, matching is supported for only top-level claims of the JWT.
+To additionally enable matching against nested claims, or claims that are children of top-level claims, you must specify a `nestedClaimDelimiter`, such as `.`, in the RBAC [policy]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#policy" %}}),
 and specify the claim name as a path, such as `parent.child.foo`, in the `claims` field of the [JWTPrincipal]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#jwtprincipal" %}}).
 
 ### Sample JWT (nested claims)
 
-Suppose you had a JWT with the following claims:
+Consider an example JWT with the following claims:
 
 ```json
 {
@@ -51,7 +51,7 @@ Suppose you had a JWT with the following claims:
 ### Virtual Service (nested claims)
 
 To require that GET requests to the `/api/pets` endpoint are only permitted to those that have a JWT with the "role"
-claim set to "user", the virtual service would be configured with the following policy:  
+claim set to `user`, configure the Virtual Service with the following RBAC policy:  
 
 {{< highlight shell "hl_lines=40 48" >}}
 apiVersion: gateway.solo.io/v1
@@ -104,16 +104,16 @@ spec:
                   metadata.auth.role: user
 {{< /highlight >}}
 
-## Matching Against non-String JWT Claims
+## Matching against non-string JWT claim values
 
-By default, claims will be matched against values by exact string comparison; however, this can be changed by specifying a [ClaimMatcher]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#claimmatcher" %}})
-in the `matcher` field of the [JWTPrincipal]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#jwtprincipal" %}}).
+By default, claims are matched against values by using exact string comparison. To instead match claims against non-string values, you must specify a [ClaimMatcher]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#claimmatcher" %}})
+in the `matcher` field of the [`jwtPrincipal`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#jwtprincipal" %}}).
 
 ### Matching boolean values
 
 #### Sample JWT (boolean)
 
-Suppose you had a JWT with the following claims:
+Consider an example JWT with the following claims:
 ```json
 {
   "iss": "kubernetes/serviceaccount",
@@ -126,7 +126,7 @@ Suppose you had a JWT with the following claims:
 #### Virtual Service (boolean)
 
 To require that GET requests to the `/api/pets` endpoint are only permitted to those that have a JWT with the "email_verified"
-claim set to true, the virtual service would be configured with the following policy:  
+claim set to `true`, configure the Virtual Service with the following RBAC policy: 
 
 {{< highlight shell "hl_lines=47-49" >}}
 apiVersion: gateway.solo.io/v1
@@ -183,7 +183,7 @@ spec:
 
 #### Sample JWT (list)
 
-Suppose you had a JWT with the following claims:
+Consider an example JWT with the following claims:
 ```json
 {
   "iss": "kubernetes/serviceaccount",
@@ -201,7 +201,7 @@ Suppose you had a JWT with the following claims:
 #### Virtual Service (list)
 
 To require that GET requests to the `/api/pets` endpoint are only permitted to those that have a JWT with the "roles"
-claim containing "super_user" within the list, the virtual service would be configured with the following policy:  
+claim that contains `super_user` within its list, configure the Virtual Service with the following RBAC policy:
 
 {{< highlight shell "hl_lines=47-49" >}}
 apiVersion: gateway.solo.io/v1
