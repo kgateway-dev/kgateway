@@ -2,37 +2,29 @@ package k8sadmisssion
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httputil"
-	"time"
-
-	"github.com/hashicorp/go-multierror"
-
-	"github.com/ghodss/yaml"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
-
-	"github.com/solo-io/gloo/pkg/utils"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 
+	"github.com/ghodss/yaml"
+	"github.com/hashicorp/go-multierror"
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/webhookutils"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/validation"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -42,6 +34,7 @@ const (
 	ValidationPath      = "/validation"
 	SkipValidationKey   = "gateway.solo.io/skip_validation"
 	SkipValidationValue = "true"
+	validatorName       = "gateway"
 )
 
 var (
@@ -88,7 +81,7 @@ func skipValidationCheck(annotations map[string]string) bool {
 	return annotations[SkipValidationKey] == SkipValidationValue
 }
 
-type WebhookConfig struct {
+type GatewayWebhookConfig struct {
 	ctx                           context.Context
 	validator                     validation.Validator
 	watchNamespaces               []string
@@ -99,8 +92,18 @@ type WebhookConfig struct {
 	webhookNamespace              string
 }
 
-func NewWebhookConfig(ctx context.Context, validator validation.Validator, watchNamespaces []string, port int, serverCertPath, serverKeyPath string, alwaysAccept, readGatewaysFromAllNamespaces bool, webhookNamespace string) WebhookConfig {
-	return WebhookConfig{
+func NewGatewayWebhookConfig(
+	ctx context.Context,
+	validator validation.Validator,
+	watchNamespaces []string,
+	port int,
+	serverCertPath string,
+	serverKeyPath string,
+	alwaysAccept bool,
+	readGatewaysFromAllNamespaces bool,
+	webhookNamespace string,
+) *GatewayWebhookConfig {
+	return &GatewayWebhookConfig{
 		ctx:                           ctx,
 		validator:                     validator,
 		watchNamespaces:               watchNamespaces,
@@ -112,48 +115,27 @@ func NewWebhookConfig(ctx context.Context, validator validation.Validator, watch
 		webhookNamespace:              webhookNamespace}
 }
 
-func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
-	ctx := cfg.ctx
-	validator := cfg.validator
-	watchNamespaces := cfg.watchNamespaces
-	port := cfg.port
-	serverCertPath := cfg.serverCertPath
-	serverKeyPath := cfg.serverKeyPath
-	alwaysAccept := cfg.alwaysAccept
-	readGatewaysFromAllNamespaces := cfg.readGatewaysFromAllNamespaces
-	webhookNamespace := cfg.webhookNamespace
-
-	certProvider, err := NewCertificateProvider(serverCertPath, serverKeyPath, log.New(&debugLogger{ctx: ctx}, "validation-webhook-certificate-watcher", log.LstdFlags), ctx, 10*time.Second)
-	if err != nil {
-		return nil, errors.Wrapf(err, "loading TLS certificate provider")
-	}
-
+func NewGatewayValidatingWebhook(cfg *GatewayWebhookConfig) (*http.Server, error) {
 	handler := NewGatewayValidationHandler(
-		contextutils.WithLogger(ctx, "gateway-validation-webhook"),
-		validator,
-		watchNamespaces,
-		alwaysAccept,
-		readGatewaysFromAllNamespaces,
-		webhookNamespace,
+		contextutils.WithLogger(cfg.ctx, "gateway-validation-webhook"),
+		cfg.validator,
+		cfg.watchNamespaces,
+		cfg.alwaysAccept,
+		cfg.readGatewaysFromAllNamespaces,
+		cfg.webhookNamespace,
 	)
 
-	mux := http.NewServeMux()
-	mux.Handle(ValidationPath, handler)
-
-	return &http.Server{
-		Addr:      fmt.Sprintf(":%v", port),
-		TLSConfig: &tls.Config{GetCertificate: certProvider.GetCertificateFunc()},
-		Handler:   mux,
-		ErrorLog:  log.New(&debugLogger{ctx: ctx}, "validation-webhook-server", log.LstdFlags),
-	}, nil
-
-}
-
-type debugLogger struct{ ctx context.Context }
-
-func (l *debugLogger) Write(p []byte) (n int, err error) {
-	contextutils.LoggerFrom(l.ctx).Debug(string(p))
-	return len(p), nil
+	return webhookutils.NewWebhook(
+		&webhookutils.WebhookConfig{
+			Ctx:            cfg.ctx,
+			Port:           cfg.port,
+			ValidatorName:  validatorName,
+			ValidationPath: ValidationPath,
+			ServerCertPath: cfg.serverCertPath,
+			ServerKeyPath:  cfg.serverKeyPath,
+			Handler:        &handler,
+		},
+	)
 }
 
 type gatewayValidationWebhook struct {
@@ -181,7 +163,14 @@ type AdmissionResponseWithProxies struct {
 	Proxies []*gloov1.Proxy `json:"proxies,omitempty"`
 }
 
-func NewGatewayValidationHandler(ctx context.Context, validator validation.Validator, watchNamespaces []string, alwaysAccept bool, readGatewaysFromAllNamespaces bool, webhookNamespace string) *gatewayValidationWebhook {
+func NewGatewayValidationHandler(
+	ctx context.Context,
+	validator validation.Validator,
+	watchNamespaces []string,
+	alwaysAccept bool,
+	readGatewaysFromAllNamespaces bool,
+	webhookNamespace string,
+) http.Handler {
 	return &gatewayValidationWebhook{ctx: ctx,
 		validator:                     validator,
 		watchNamespaces:               watchNamespaces,

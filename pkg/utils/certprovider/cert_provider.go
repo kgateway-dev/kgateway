@@ -1,4 +1,4 @@
-package k8sadmisssion
+package certprovider
 
 import (
 	"context"
@@ -14,19 +14,19 @@ import (
 	"go.opencensus.io/tag"
 )
 
-type certificateProvider struct {
+type CertificateProvider struct {
 	ctx       context.Context
 	logger    *log.Logger
-	cert      unsafe.Pointer //of type *tls.Certificate
+	cert      unsafe.Pointer // of type *tls.Certificate
 	certPath  string
 	keyPath   string
 	certMtime time.Time
 	keyMtime  time.Time
 }
 
-func NewCertificateProvider(certPath, keyPath string, logger *log.Logger, ctx context.Context, interval time.Duration) (*certificateProvider, error) {
-	mReloadSuccess := utils.MakeSumCounter("validation.gateway.solo.io/certificate_reload_success", "Number of successful certificate reloads")
-	mReloadFailed := utils.MakeSumCounter("validation.gateway.solo.io/certificate_reload_failed", "Number of failed certificate reloads")
+func NewCertificateProvider(validatorName string, certPath, keyPath string, logger *log.Logger, ctx context.Context, interval time.Duration) (*CertificateProvider, error) {
+	mReloadSuccess := utils.MakeSumCounter(fmt.Sprintf("validation.%s.solo.io/certificate_reload_success", validatorName), "Number of successful certificate reloads")
+	mReloadFailed := utils.MakeSumCounter(fmt.Sprintf("validation.%s.solo.io/certificate_reload_failed", validatorName), "Number of failed certificate reloads")
 	tagKey, err := tag.NewKey("error")
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func NewCertificateProvider(certPath, keyPath string, logger *log.Logger, ctx co
 		return nil, err
 	}
 	utils.MeasureOne(ctx, mReloadSuccess)
-	result := &certificateProvider{
+	result := &CertificateProvider{
 		ctx:       ctx,
 		logger:    logger,
 		cert:      unsafe.Pointer(&cert),
@@ -54,7 +54,7 @@ func NewCertificateProvider(certPath, keyPath string, logger *log.Logger, ctx co
 		keyMtime:  keyFileInfo.ModTime(),
 	}
 	go func() {
-		result.logger.Println("start validating admission webhook certificate change watcher goroutine")
+		result.logger.Printf("start %s validating admission webhook certificate change watcher goroutine", validatorName)
 		for ctx.Err() == nil {
 			// Kublet caches Secrets and therefore has some delay until it realizes
 			// that a Secret has changed and applies the update to the mounted secret files.
@@ -67,13 +67,13 @@ func NewCertificateProvider(certPath, keyPath string, logger *log.Logger, ctx co
 			}
 			certFileInfo, err := os.Stat(certPath)
 			if err != nil {
-				result.logger.Printf("Error while checking if validating admission webhook certificate file changed %s", err)
+				result.logger.Printf("Error while checking if %s validating admission webhook certificate file changed %s", validatorName, err)
 				utils.MeasureOne(ctx, mReloadFailed, tag.Insert(tagKey, fmt.Sprintf("%s", err)))
 				continue
 			}
 			keyFileInfo, err := os.Stat(keyPath)
 			if err != nil {
-				result.logger.Printf("Error while checking if validating admission webhook private key file changed %s", err)
+				result.logger.Printf("Error while checking if %s validating admission webhook private key file changed %s", validatorName, err)
 				utils.MeasureOne(ctx, mReloadFailed, tag.Insert(tagKey, fmt.Sprintf("%s", err)))
 				continue
 			}
@@ -82,22 +82,22 @@ func NewCertificateProvider(certPath, keyPath string, logger *log.Logger, ctx co
 			if result.keyMtime != km || result.certMtime != cm {
 				err := result.reload()
 				if err == nil {
-					result.logger.Println("Reloaded validating admission webhook certificate")
+					result.logger.Printf("Reloaded %s validating admission webhook certificate", validatorName)
 					result.keyMtime = km
 					result.certMtime = cm
 					utils.MeasureOne(ctx, mReloadSuccess)
 				} else {
-					result.logger.Printf("Error while reloading validating admission webhook certificate %s, will keep using the old certificate", err)
+					result.logger.Printf("Error while reloading %s validating admission webhook certificate %s, will keep using the old certificate", validatorName, err)
 					utils.MeasureOne(ctx, mReloadFailed, tag.Insert(tagKey, fmt.Sprintf("%s", err)))
 				}
 			}
 		}
-		result.logger.Println("terminate validating admission webhook certificate change watcher goroutine")
+		result.logger.Printf("terminate %s validating admission webhook certificate change watcher goroutine", validatorName)
 	}()
 	return result, nil
 }
 
-func (p *certificateProvider) reload() error {
+func (p *CertificateProvider) reload() error {
 	newCert, err := tls.LoadX509KeyPair(p.certPath, p.keyPath)
 	if err != nil {
 		return err
@@ -106,7 +106,7 @@ func (p *certificateProvider) reload() error {
 	return nil
 }
 
-func (p *certificateProvider) GetCertificateFunc() func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+func (p *CertificateProvider) GetCertificateFunc() func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
 	return func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 		return (*tls.Certificate)(atomic.LoadPointer(&p.cert)), nil
 	}

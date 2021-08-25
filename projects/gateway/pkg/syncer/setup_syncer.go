@@ -321,7 +321,7 @@ func RunGateway(opts translator.Opts) error {
 		}
 
 		validationWebhook, err := k8sadmisssion.NewGatewayValidatingWebhook(
-			k8sadmisssion.NewWebhookConfig(
+			k8sadmisssion.NewGatewayWebhookConfig(
 				ctx,
 				validationSyncer,
 				opts.WatchNamespaces,
