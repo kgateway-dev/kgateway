@@ -1,4 +1,4 @@
-package certprovider
+package k8sadmisssion
 
 import (
 	"bytes"
@@ -22,9 +22,6 @@ import (
 
 var _ = Describe("certificateProvider", func() {
 
-	const (
-		validatorName = "test"
-	)
 	var (
 		certPath string
 		keyPath  string
@@ -53,7 +50,7 @@ var _ = Describe("certificateProvider", func() {
 
 	It("reloads certificates upon changes", func() {
 		logger := log.New(os.Stderr, "cert-provider-test", log.LstdFlags)
-		provider, err := NewCertificateProvider(validatorName, certPath, keyPath, logger, ctx, 1*time.Second)
+		provider, err := NewCertificateProvider(certPath, keyPath, logger, ctx, 1*time.Second)
 		if err != nil {
 			Fail(fmt.Sprintf("%s", err))
 		}
@@ -80,7 +77,7 @@ var _ = Describe("certificateProvider", func() {
 
 	It("keeps same certificates if it has not changed", func() {
 		logger := log.New(os.Stderr, "cert-provider-test", log.LstdFlags)
-		provider, err := NewCertificateProvider(validatorName, certPath, keyPath, logger, ctx, 1*time.Second)
+		provider, err := NewCertificateProvider(certPath, keyPath, logger, ctx, 1*time.Second)
 		if err != nil {
 			Fail(fmt.Sprintf("%s", err))
 		}
@@ -103,7 +100,7 @@ var _ = Describe("certificateProvider", func() {
 
 	It("keeps old certificates on reload error", func() {
 		logger := log.New(os.Stderr, "cert-provider-test", log.LstdFlags)
-		provider, err := NewCertificateProvider(validatorName, certPath, keyPath, logger, ctx, 1*time.Second)
+		provider, err := NewCertificateProvider(certPath, keyPath, logger, ctx, 1*time.Second)
 		if err != nil {
 			Fail(fmt.Sprintf("%s", err))
 		}
