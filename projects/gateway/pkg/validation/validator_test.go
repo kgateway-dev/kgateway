@@ -129,7 +129,7 @@ var _ = Describe("Validator", func() {
 
 					proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0], false)
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("failed to communicate with Gloo Proxy validation server"))
+					Expect(err.Error()).To(ContainSubstring("failed to communicate with Gloo validation server"))
 					Expect(proxyReports).To(BeEmpty())
 				})
 			})
