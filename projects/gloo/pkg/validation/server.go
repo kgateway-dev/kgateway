@@ -201,10 +201,7 @@ func (s *validator) validateProxy(params plugins.Params, snapCopy v1.ApiSnapshot
 	}
 
 	// Sanitize routes before sending report to gateway
-	_, err = s.xdsSanitizer.SanitizeSnapshot(params.Ctx, &snapCopy, xdsSnapshot, resourceReports)
-	if err != nil {
-		return nil, err
-	}
+	s.xdsSanitizer.SanitizeSnapshot(params.Ctx, &snapCopy, xdsSnapshot, resourceReports)
 	routeErrorToWarnings(resourceReports, report)
 
 	logger.Infof("proxy validation report result: %v", report.String())
