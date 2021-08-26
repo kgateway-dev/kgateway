@@ -521,9 +521,9 @@ message GatewayOptions {
 
     // options for configuring admission control / validation
     message ValidationOptions {
-        // Address of the `gloo` proxy validation grpc server. Defaults to `gloo:9988`.
+        // Address of the `gloo` validation grpc server. Defaults to `gloo:9988`.
         // This field is required in order to enable fine-grained admission control.
-        string proxy_validation_server_addr = 2;
+        string gloo_validation_server_addr = 2;
 
         // Path to TLS Certificate for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.crt`.
         string validation_webhook_tls_cert = 3;

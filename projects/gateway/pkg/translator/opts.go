@@ -23,7 +23,7 @@ type Opts struct {
 }
 
 type ValidationOpts struct {
-	ProxyValidationServerAddress string
+	GlooValidationServerAddress  string
 	ValidatingWebhookPort        int
 	ValidatingWebhookCertPath    string
 	ValidatingWebhookKeyPath     string

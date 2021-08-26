@@ -68,7 +68,7 @@ var _ = Describe("Gateway", func() {
 				Settings: &gloov1.Settings{
 					Gateway: &gloov1.GatewayOptions{
 						Validation: &gloov1.GatewayOptions_ValidationOptions{
-							ProxyValidationServerAddr: fmt.Sprintf("127.0.0.1:%v", validationPort),
+							GlooValidationServerAddr: fmt.Sprintf("127.0.0.1:%v", validationPort),
 						},
 					},
 				},

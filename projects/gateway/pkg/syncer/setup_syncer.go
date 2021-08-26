@@ -111,7 +111,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		}
 
 		validation = &translator.ValidationOpts{
-			ProxyValidationServerAddress: validationCfg.GetProxyValidationServerAddr(),
+			GlooValidationServerAddress:  validationCfg.GetGlooValidationServerAddr(),
 			ValidatingWebhookPort:        defaults.ValidationWebhookBindPort,
 			ValidatingWebhookCertPath:    validationCfg.GetValidationWebhookTlsCert(),
 			ValidatingWebhookKeyPath:     validationCfg.GetValidationWebhookTlsKey(),
@@ -120,11 +120,11 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			AllowWarnings:                allowWarnings,
 			WarnOnRouteShortCircuiting:   validationCfg.GetWarnRouteShortCircuiting().GetValue(),
 		}
-		if validation.ProxyValidationServerAddress == "" {
-			validation.ProxyValidationServerAddress = defaults.GlooProxyValidationServerAddr
+		if validation.GlooValidationServerAddress == "" {
+			validation.GlooValidationServerAddress = defaults.GlooValidationServerAddr
 		}
 		if overrideAddr := os.Getenv("PROXY_VALIDATION_ADDR"); overrideAddr != "" {
-			validation.ProxyValidationServerAddress = overrideAddr
+			validation.GlooValidationServerAddress = overrideAddr
 		}
 		if validation.ValidatingWebhookCertPath == "" {
 			validation.ValidatingWebhookCertPath = defaults.ValidationWebhookTlsCertPath
@@ -228,7 +228,7 @@ func RunGateway(opts translator.Opts) error {
 
 	var (
 		// this constructor should be called within a lock
-		validationClient             validation.ProxyValidationServiceClient
+		validationClient             validation.GlooValidationServiceClient
 		ignoreProxyValidationFailure bool
 		allowWarnings                bool
 	)
@@ -240,7 +240,7 @@ func RunGateway(opts translator.Opts) error {
 
 	if opts.Validation != nil {
 		validationClient, err = gatewayvalidation.NewConnectionRefreshingValidationClient(
-			gatewayvalidation.RetryOnUnavailableClientConstructor(ctx, opts.Validation.ProxyValidationServerAddress),
+			gatewayvalidation.RetryOnUnavailableClientConstructor(ctx, opts.Validation.GlooValidationServerAddress),
 		)
 		if err != nil {
 			return errors.Wrapf(err, "failed to initialize grpc connection to validation server.")

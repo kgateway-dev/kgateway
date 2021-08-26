@@ -206,10 +206,10 @@ spec:
                     disableTransformationValidation:
                       nullable: true
                       type: boolean
+                    glooValidationServerAddr:
+                      type: string
                     ignoreGlooValidationFailure:
                       type: boolean
-                    proxyValidationServerAddr:
-                      type: string
                     validationServerGrpcMaxSizeBytes:
                       maximum: 2147483647
                       minimum: -2147483648

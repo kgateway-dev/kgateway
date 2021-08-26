@@ -115,7 +115,7 @@ spec:
   gateway:
     validation:
       alwaysAccept: true
-      proxyValidationServerAddr: gloo:9988
+      glooValidationServerAddr: gloo:9988
   gloo:
     invalidConfigPolicy:
       invalidRouteResponseBody: Gloo Edge has invalid configuration. Administrators
