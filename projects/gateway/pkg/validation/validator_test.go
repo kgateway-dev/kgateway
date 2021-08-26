@@ -876,7 +876,7 @@ func (c *mockValidationClient) NotifyOnResync(ctx context.Context, in *validatio
 }
 
 func (c *mockValidationClient) Validate(ctx context.Context, in *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error) {
-	if c.Validate == nil {
+	if c.validate == nil {
 		Fail("Validate was called unexpectedly")
 	}
 	return c.validate(ctx, in, opts...)
