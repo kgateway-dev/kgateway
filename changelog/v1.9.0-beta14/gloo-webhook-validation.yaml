@@ -1,6 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/5173
-    description: >
-      Add implementation of validating admission webhook for gloo resources. No
-      actual validation is happening yet, and it is not currently being deployed.
