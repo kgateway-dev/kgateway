@@ -73,7 +73,7 @@ type validator struct {
 	latestSnapshot               *v1.ApiSnapshot
 	latestSnapshotErr            error
 	translator                   translator.Translator
-	validationClient             validation.ProxyValidationServiceClient
+	validationClient             validation.GlooValidationServiceClient
 	ignoreProxyValidationFailure bool
 	allowWarnings                bool
 	writeNamespace               string
@@ -81,13 +81,13 @@ type validator struct {
 
 type ValidatorConfig struct {
 	translator                   translator.Translator
-	validationClient             validation.ProxyValidationServiceClient
+	validationClient             validation.GlooValidationServiceClient
 	writeNamespace               string
 	ignoreProxyValidationFailure bool
 	allowWarnings                bool
 }
 
-func NewValidatorConfig(translator translator.Translator, validationClient validation.ProxyValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool) ValidatorConfig {
+func NewValidatorConfig(translator translator.Translator, validationClient validation.GlooValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool) ValidatorConfig {
 	return ValidatorConfig{
 		translator:                   translator,
 		validationClient:             validationClient,
@@ -220,8 +220,8 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		}
 
 		if v.validationClient == nil {
-			contextutils.LoggerFrom(ctx).Warnf("skipping proxy validation check as the " +
-				"Proxy validation client has not been initialized. check to ensure that the gateway and gloo processes " +
+			contextutils.LoggerFrom(ctx).Warnf("skipping gloo validation checks as the " +
+				"Gloo validation client has not been initialized. check to ensure that the gateway and gloo processes " +
 				"are configured to communicate.")
 			continue
 		}
@@ -232,9 +232,9 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		}
 
 		// validate the proxy with gloo
-		var proxyReport *validation.ProxyValidationServiceResponse
+		var proxyReport *validation.GlooValidationServiceResponse
 		err := retry.Do(func() error {
-			rpt, err := v.validationClient.ValidateProxy(ctx, &validation.ProxyValidationServiceRequest{Proxy: proxy})
+			rpt, err := v.validationClient.Validate(ctx, &validation.GlooValidationServiceRequest{Proxy: proxy})
 			proxyReport = rpt
 			return err
 		},
@@ -242,7 +242,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 			retry.Delay(250*time.Millisecond),
 		)
 		if err != nil {
-			err = errors.Wrapf(err, "failed to communicate with Gloo Proxy validation server")
+			err = errors.Wrapf(err, "failed to communicate with Gloo validation server")
 			if v.ignoreProxyValidationFailure {
 				contextutils.LoggerFrom(ctx).Error(err)
 			} else {
