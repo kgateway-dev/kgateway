@@ -14,17 +14,17 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var res = &validation.ProxyValidationServiceResponse{}
+var res = &validation.GlooValidationServiceResponse{}
 
 type mockValidationService struct {
 	err error
 }
 
-func (s *mockValidationService) ValidateProxy(context.Context, *validation.ProxyValidationServiceRequest) (*validation.ProxyValidationServiceResponse, error) {
+func (s *mockValidationService) Validate(context.Context, *validation.GlooValidationServiceRequest) (*validation.GlooValidationServiceResponse, error) {
 	return res, s.err
 }
 
-func (s *mockValidationService) NotifyOnResync(*validation.NotifyOnResyncRequest, validation.ProxyValidationService_NotifyOnResyncServer) error {
+func (s *mockValidationService) NotifyOnResync(*validation.NotifyOnResyncRequest, validation.GlooValidationService_NotifyOnResyncServer) error {
 	panic("implement me")
 }
 
@@ -35,7 +35,7 @@ func makeListener(errToReturn error, addr string) (string, func()) {
 	lis, err := net.Listen("tcp", addr)
 	Expect(err).NotTo(HaveOccurred())
 
-	validation.RegisterProxyValidationServiceServer(grpcServer, &mockValidationService{err: errToReturn})
+	validation.RegisterGlooValidationServiceServer(grpcServer, &mockValidationService{err: errToReturn})
 
 	go func() {
 		fmt.Println("starting")
@@ -61,14 +61,14 @@ var _ = Describe("RetryOnUnavailableClientConstructor", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// sanity check
-		resp, err := client.ValidateProxy(rootCtx, &validation.ProxyValidationServiceRequest{})
+		resp, err := client.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp).To(Equal(res))
 
 		// shut down the server
 		cancel()
 
-		resp, err = client.ValidateProxy(rootCtx, &validation.ProxyValidationServiceRequest{})
+		resp, err = client.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
 		Expect(err).To(HaveOccurred())
 		Expect(status.Code(err)).To(Equal(codes.Unavailable))
 
@@ -78,7 +78,7 @@ var _ = Describe("RetryOnUnavailableClientConstructor", func() {
 		grpcAddr, cancel = makeListener(nil, grpcAddr)
 
 		// conn should still be refused
-		resp, err = client.ValidateProxy(rootCtx, &validation.ProxyValidationServiceRequest{})
+		resp, err = client.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
 		Expect(err).To(HaveOccurred())
 		Expect(status.Code(err)).To(Equal(codes.Unavailable))
 
@@ -86,7 +86,7 @@ var _ = Describe("RetryOnUnavailableClientConstructor", func() {
 		client, err = constructor()
 		Expect(err).NotTo(HaveOccurred())
 
-		resp, err = client.ValidateProxy(rootCtx, &validation.ProxyValidationServiceRequest{})
+		resp, err = client.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(resp).To(Equal(res))
@@ -99,24 +99,24 @@ type mockWrappedValidationClient struct {
 	err  error
 }
 
-func (c *mockWrappedValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotifyOnResyncRequest, opts ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
+func (c *mockWrappedValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotifyOnResyncRequest, opts ...grpc.CallOption) (validation.GlooValidationService_NotifyOnResyncClient, error) {
 	return nil, nil
 }
 
-func (c *mockWrappedValidationClient) ValidateProxy(ctx context.Context, in *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
+func (c *mockWrappedValidationClient) Validate(ctx context.Context, in *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error) {
 	return res, c.err
 }
 
 var _ = Describe("RobustClient", func() {
 	It("swaps out the client when it returns a connection error", func() {
 		original := &mockWrappedValidationClient{name: "original"}
-		robustClient, _ := NewConnectionRefreshingValidationClient(func() (client validation.ProxyValidationServiceClient, e error) {
+		robustClient, _ := NewConnectionRefreshingValidationClient(func() (client validation.GlooValidationServiceClient, e error) {
 			return original, nil
 		})
 
 		rootCtx := context.Background()
 
-		resp, err := robustClient.ValidateProxy(rootCtx, &validation.ProxyValidationServiceRequest{})
+		resp, err := robustClient.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp).To(Equal(res))
 
@@ -124,12 +124,12 @@ var _ = Describe("RobustClient", func() {
 		original.err = status.Error(codes.Unavailable, "oh no, an error")
 		// update the constructor func with a new client
 		replacement := &mockWrappedValidationClient{name: "replacement"}
-		robustClient.constructValidationClient = func() (client validation.ProxyValidationServiceClient, e error) {
+		robustClient.constructValidationClient = func() (client validation.GlooValidationServiceClient, e error) {
 			return replacement, nil
 		}
 
 		// robust client should replace with the working client
-		resp, err = robustClient.ValidateProxy(rootCtx, &validation.ProxyValidationServiceRequest{})
+		resp, err = robustClient.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp).To(Equal(res))
 

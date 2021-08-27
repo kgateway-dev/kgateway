@@ -425,6 +425,12 @@ apis:
   gloo.solo.io.GlooOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#GlooOptions
     package: gloo.solo.io
+  gloo.solo.io.GlooValidationServiceRequest:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#GlooValidationServiceRequest
+    package: gloo.solo.io
+  gloo.solo.io.GlooValidationServiceResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#GlooValidationServiceResponse
+    package: gloo.solo.io
   gloo.solo.io.HeaderSecret:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#HeaderSecret
     package: gloo.solo.io
@@ -438,7 +444,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#HttpListenerOptions
     package: gloo.solo.io
   gloo.solo.io.HttpListenerReport:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#HttpListenerReport
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#HttpListenerReport
     package: gloo.solo.io
   gloo.solo.io.Kubernetes:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/version/version.proto.sk/#Kubernetes
@@ -456,7 +462,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#ListenerOptions
     package: gloo.solo.io
   gloo.solo.io.ListenerReport:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#ListenerReport
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#ListenerReport
     package: gloo.solo.io
   gloo.solo.io.LoadBalancerConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/load_balancer.proto.sk/#LoadBalancerConfig
@@ -471,22 +477,16 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#MultiDestination
     package: gloo.solo.io
   gloo.solo.io.NotifyOnResyncRequest:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#NotifyOnResyncRequest
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#NotifyOnResyncRequest
     package: gloo.solo.io
   gloo.solo.io.NotifyOnResyncResponse:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#NotifyOnResyncResponse
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#NotifyOnResyncResponse
     package: gloo.solo.io
   gloo.solo.io.Proxy:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Proxy
     package: gloo.solo.io
   gloo.solo.io.ProxyReport:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#ProxyReport
-    package: gloo.solo.io
-  gloo.solo.io.ProxyValidationServiceRequest:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#ProxyValidationServiceRequest
-    package: gloo.solo.io
-  gloo.solo.io.ProxyValidationServiceResponse:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#ProxyValidationServiceResponse
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#ProxyReport
     package: gloo.solo.io
   gloo.solo.io.RedirectAction:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#RedirectAction
@@ -504,7 +504,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#RouteOptions
     package: gloo.solo.io
   gloo.solo.io.RouteReport:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#RouteReport
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#RouteReport
     package: gloo.solo.io
   gloo.solo.io.SDSConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#SDSConfig
@@ -534,7 +534,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#TcpHost
     package: gloo.solo.io
   gloo.solo.io.TcpHostReport:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#TcpHostReport
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#TcpHostReport
     package: gloo.solo.io
   gloo.solo.io.TcpListener:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#TcpListener
@@ -543,7 +543,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#TcpListenerOptions
     package: gloo.solo.io
   gloo.solo.io.TcpListenerReport:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#TcpListenerReport
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#TcpListenerReport
     package: gloo.solo.io
   gloo.solo.io.TlsSecret:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#TlsSecret
@@ -570,7 +570,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#VirtualHostOptions
     package: gloo.solo.io
   gloo.solo.io.VirtualHostReport:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#VirtualHostReport
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#VirtualHostReport
     package: gloo.solo.io
   gloo.solo.io.VirtualServiceOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#VirtualServiceOptions
