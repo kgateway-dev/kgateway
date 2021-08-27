@@ -1335,6 +1335,8 @@ github.com/solo-io/go-utils v0.20.2/go.mod h1:6e8K1spnMWwlnJRSNp/J84GEyJbrcK4Gm7
 github.com/solo-io/go-utils v0.21.6/go.mod h1:N6jeYnrAKq5uGv6m/hBkJ+g6i3AwgkyfVoaDlQ/z64o=
 github.com/solo-io/go-utils v0.21.17-0.20210827122216-9431d963e0d7 h1:9thqqRL5K2qovUzG62FPQc+QqmDgFYl7ADOSmVhARz8=
 github.com/solo-io/go-utils v0.21.17-0.20210827122216-9431d963e0d7/go.mod h1:sFc5iQvmmb2ttuL9cyrjDqvHZQIYSQJXPfYYkZvb35Q=
+github.com/solo-io/go-utils v0.21.17-0.20210827122707-90dab79c22cb h1:OdlhXrINxGaSXrm4IiCd3MpwQtgGW6JC8KSsj+wq4y8=
+github.com/solo-io/go-utils v0.21.17-0.20210827122707-90dab79c22cb/go.mod h1:sFc5iQvmmb2ttuL9cyrjDqvHZQIYSQJXPfYYkZvb35Q=
 github.com/solo-io/k8s-utils v0.0.1/go.mod h1:53N9+9Gl2MwqIZJ7/ocA9gKvWt+6z7MPD2qKQix7oFE=
 github.com/solo-io/k8s-utils v0.0.8 h1:GJ+DLBFfR8WRg2WofGQ3o3DVPByDEYgANX9kQYhprow=
 github.com/solo-io/k8s-utils v0.0.8/go.mod h1:Cg2ymG0xhLdyS3NJ0D98yxiSWjAKYPNopzPTwVDl7e4=
