@@ -2777,7 +2777,7 @@ spec:
   gateway:
     readGatewaysFromAllNamespaces: false
     validation:
-      glooValidationServerAddr: gloo:9988
+      proxyValidationServerAddr: gloo:9988
       alwaysAccept: true
       allowWarnings: true
       disableTransformationValidation: false

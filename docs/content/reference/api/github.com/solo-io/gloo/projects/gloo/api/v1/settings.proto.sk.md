@@ -620,7 +620,7 @@ Settings specific to the Gateway controller
 options for configuring admission control / validation
 
 ```yaml
-"glooValidationServerAddr": string
+"proxyValidationServerAddr": string
 "validationWebhookTlsCert": string
 "validationWebhookTlsKey": string
 "ignoreGlooValidationFailure": bool
@@ -634,7 +634,7 @@ options for configuring admission control / validation
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `glooValidationServerAddr` | `string` | Address of the `gloo` validation grpc server. Defaults to `gloo:9988`. This field is required in order to enable fine-grained admission control. |
+| `proxyValidationServerAddr` | `string` | Address of the `gloo` proxy validation grpc server. Defaults to `gloo:9988`. This field is required in order to enable fine-grained admission control. |
 | `validationWebhookTlsCert` | `string` | Path to TLS Certificate for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.crt`. |
 | `validationWebhookTlsKey` | `string` | Path to TLS Private Key for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.key`. |
 | `ignoreGlooValidationFailure` | `bool` | When Gateway cannot communicate with Gloo (e.g. Gloo is offline) resources will be rejected by default. Enable the `ignoreGlooValidationFailure` to prevent the Validation server from rejecting resources due to network errors. |

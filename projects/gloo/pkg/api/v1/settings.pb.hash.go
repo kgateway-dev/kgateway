@@ -1637,7 +1637,7 @@ func (m *GatewayOptions_ValidationOptions) Hash(hasher hash.Hash64) (uint64, err
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetGlooValidationServerAddr())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetProxyValidationServerAddr())); err != nil {
 		return 0, err
 	}
 

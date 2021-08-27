@@ -1,10 +1,8 @@
 syntax = "proto3";
-
 package gloo.solo.io;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
-
-option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation";
 
 // The gloo validation service validates gloo resources for clients against current snapshot resources
 service GlooValidationService {

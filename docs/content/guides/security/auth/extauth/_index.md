@@ -70,7 +70,7 @@ spec:
   gateway:
     validation:
       alwaysAccept: true
-      glooValidationServerAddr: gloo:9988
+      proxyValidationServerAddr: gloo:9988
   gloo:
     xdsBindAddr: 0.0.0.0:9977
   kubernetesArtifactSource: {}

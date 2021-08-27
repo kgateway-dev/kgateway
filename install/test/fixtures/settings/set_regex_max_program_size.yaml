@@ -16,7 +16,7 @@ spec:
       allowWarnings: true
       disableTransformationValidation: false
       warnRouteShortCircuiting: false
-      glooValidationServerAddr: gloo:9988
+      proxyValidationServerAddr: gloo:9988
       validationServerGrpcMaxSizeBytes: 4000000
   gloo:
     enableRestEds: false

@@ -107,7 +107,7 @@ func (s *validator) pushNotifications() {
 
 // the gloo snapshot has changed.
 // update the local snapshot, notify subscribers
-func (s *validator) Sync(_ context.Context, snap *v1.ApiSnapshot) error {
+func (s *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	snapCopy := snap.Clone()
 	s.lock.Lock()
 	if s.shouldNotify(snap) {
@@ -165,47 +165,30 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 	// we may receive a Validate call before a Sync has occurred
 	if s.latestSnapshot == nil {
 		s.lock.RUnlock()
-		return nil, eris.New("gloo validation called before the validation server received its first sync of resources")
+		return nil, eris.New("proxy validation called before the validation server received its first sync of resources")
 	}
 	snapCopy := s.latestSnapshot.Clone()
 	s.lock.RUnlock()
 
-	ctx = contextutils.WithLogger(ctx, "gloo-validator")
+	ctx = contextutils.WithLogger(ctx, "proxy-validator")
 
 	params := plugins.Params{Ctx: ctx, Snapshot: &snapCopy}
+
 	logger := contextutils.LoggerFrom(ctx)
 
-	logger.Infof("received validation request")
-	var response = &validation.GlooValidationServiceResponse{}
-
-	// Proxy Validation
-	if req.GetProxy() != nil {
-		report, err := s.validateProxy(params, snapCopy, req.GetProxy())
-		if err != nil {
-			return nil, err
-		}
-		response.ProxyReport = report
-	}
-	// TODO: Additional gloo resource validation
-	return response, nil
-}
-
-func (s *validator) validateProxy(params plugins.Params, snapCopy v1.ApiSnapshot, proxy *v1.Proxy) (*validation.ProxyReport, error) {
-	logger := contextutils.LoggerFrom(params.Ctx)
-	logger.Infof("validating proxy")
-
-	xdsSnapshot, resourceReports, report, err := s.translator.Translate(params, proxy)
+	logger.Infof("received proxy validation request")
+	xdsSnapshot, resourceReports, report, err := s.translator.Translate(params, req.GetProxy())
 	if err != nil {
 		logger.Errorw("failed to validate proxy", zap.Error(err))
 		return nil, err
 	}
 
 	// Sanitize routes before sending report to gateway
-	s.xdsSanitizer.SanitizeSnapshot(params.Ctx, &snapCopy, xdsSnapshot, resourceReports)
+	s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
 	routeErrorToWarnings(resourceReports, report)
 
 	logger.Infof("proxy validation report result: %v", report.String())
-	return report, nil
+	return &validation.GlooValidationServiceResponse{ProxyReport: report}, nil
 }
 
 // Update the validation report so that route errors that were changed into warnings during sanitization

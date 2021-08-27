@@ -111,7 +111,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		}
 
 		validation = &translator.ValidationOpts{
-			GlooValidationServerAddress:  validationCfg.GetGlooValidationServerAddr(),
+			ProxyValidationServerAddress: validationCfg.GetProxyValidationServerAddr(),
 			ValidatingWebhookPort:        defaults.ValidationWebhookBindPort,
 			ValidatingWebhookCertPath:    validationCfg.GetValidationWebhookTlsCert(),
 			ValidatingWebhookKeyPath:     validationCfg.GetValidationWebhookTlsKey(),
@@ -120,11 +120,11 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			AllowWarnings:                allowWarnings,
 			WarnOnRouteShortCircuiting:   validationCfg.GetWarnRouteShortCircuiting().GetValue(),
 		}
-		if validation.GlooValidationServerAddress == "" {
-			validation.GlooValidationServerAddress = defaults.GlooValidationServerAddr
+		if validation.ProxyValidationServerAddress == "" {
+			validation.ProxyValidationServerAddress = defaults.GlooProxyValidationServerAddr
 		}
 		if overrideAddr := os.Getenv("PROXY_VALIDATION_ADDR"); overrideAddr != "" {
-			validation.GlooValidationServerAddress = overrideAddr
+			validation.ProxyValidationServerAddress = overrideAddr
 		}
 		if validation.ValidatingWebhookCertPath == "" {
 			validation.ValidatingWebhookCertPath = defaults.ValidationWebhookTlsCertPath
@@ -240,7 +240,7 @@ func RunGateway(opts translator.Opts) error {
 
 	if opts.Validation != nil {
 		validationClient, err = gatewayvalidation.NewConnectionRefreshingValidationClient(
-			gatewayvalidation.RetryOnUnavailableClientConstructor(ctx, opts.Validation.GlooValidationServerAddress),
+			gatewayvalidation.RetryOnUnavailableClientConstructor(ctx, opts.Validation.ProxyValidationServerAddress),
 		)
 		if err != nil {
 			return errors.Wrapf(err, "failed to initialize grpc connection to validation server.")

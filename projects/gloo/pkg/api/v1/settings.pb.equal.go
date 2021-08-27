@@ -1374,7 +1374,7 @@ func (m *GatewayOptions_ValidationOptions) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetGlooValidationServerAddr(), target.GetGlooValidationServerAddr()) != 0 {
+	if strings.Compare(m.GetProxyValidationServerAddr(), target.GetProxyValidationServerAddr()) != 0 {
 		return false
 	}
 
