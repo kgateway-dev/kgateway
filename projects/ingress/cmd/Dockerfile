@@ -2,6 +2,8 @@ FROM alpine:3.13.5
 
 ARG GOARCH=amd64
 
+RUN apk -U upgrade
+
 COPY ingress-linux-$GOARCH /usr/local/bin/ingress
 
 USER 10101
