@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/solo-io/gloo/test/helpers"
@@ -302,11 +303,21 @@ var _ = Describe("Robustness tests", func() {
 			Eventually(func() bool {
 				clusters := testutils.CurlWithEphemeralPod(ctx, ioutil.Discard, "", testHelper.InstallNamespace, gatewayProxyPodName, envoyClustersPath)
 
+				fmt.Println(fmt.Sprintf("initial endpoint ips %+v", initialEndpointIPs))
+
 				testOldClusterEndpoints := regexp.MustCompile(initialEndpointIPs[0] + ":")
 				oldEndpointMatches := testOldClusterEndpoints.FindAllStringIndex(clusters, -1)
 				fmt.Println(fmt.Sprintf("Number of cluster stats for old endpoint on clusters page: %d", len(oldEndpointMatches)))
 
+				fmt.Println(fmt.Sprintf("new endpoint ips %+v", newEndpointIPs))
+
 				testNewClusterEndpoints := regexp.MustCompile(newEndpointIPs[0] + ":")
+
+				if strings.Contains(clusters, "Error from server") {
+					// make error clear in logs. e.g., running locally and ephemeral containers haven't been enabled
+					fmt.Println(fmt.Sprintf("clusters: %+v", clusters))
+				}
+
 				newEndpointMatches := testNewClusterEndpoints.FindAllStringIndex(clusters, -1)
 				fmt.Println(fmt.Sprintf("Number of cluster stats for new endpoint on clusters page: %d", len(newEndpointMatches)))
 
