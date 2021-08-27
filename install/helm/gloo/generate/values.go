@@ -203,7 +203,7 @@ type InvalidConfigPolicy struct {
 type Gloo struct {
 	Deployment     *GlooDeployment `json:"deployment,omitempty"`
 	ServiceAccount `json:"serviceAccount,omitempty" `
-	SplitLogOutput *string               `json:"splitLogOutput,omitempty" desc:"Set to 'split' to send debug/info/warning logs to stdout, error/fatal/panic to stderr. Set to any other value to send all logs to stdout"`
+	SplitLogOutput *bool                 `json:"splitLogOutput,omitempty" desc:"Set to true to send debug/info/warning logs to stdout, error/fatal/panic to stderr. Set to any other value to send all logs to stdout"`
 	GlooService    *KubeResourceOverride `json:"service,omitempty"`
 	LogLevel       *string               `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
 }

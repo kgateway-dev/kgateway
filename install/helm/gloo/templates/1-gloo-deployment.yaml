@@ -172,7 +172,7 @@ spec:
                 fieldPath: metadata.namespace
         {{- if .Values.gloo.splitLogOutput }}
           - name: SPLIT_LOG_OUTPUT
-            value: {{ .Values.gloo.splitLogOutput }}
+            value: "true"
         {{- end}}
         {{- if $statsConfig.enabled }}
           - name: START_STATS_SERVER
