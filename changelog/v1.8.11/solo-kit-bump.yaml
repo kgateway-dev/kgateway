@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5200
+    resolvesIssue: false
+    description: Allow enum fields in resources to be specified with int values
+  - type: FIX
+    description: Fix `oneof` docs gen issue where not all one of fields are included in markdown descriptions.
+    resolvesIssue: false
+    issueLink: https://github.com/solo-io/gloo/issues/5193
