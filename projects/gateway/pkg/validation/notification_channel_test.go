@@ -54,7 +54,7 @@ func (m *mockValidationClient) set(response *validation.NotifyOnResyncResponse) 
 	m.l.Unlock()
 }
 
-func (m *mockValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotifyOnResyncRequest, opts ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
+func (m *mockValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotifyOnResyncRequest, opts ...grpc.CallOption) (validation.GlooValidationService_NotifyOnResyncClient, error) {
 	m.l.Lock()
 	m.streamStartedTimes++
 	m.l.Unlock()
@@ -97,6 +97,6 @@ func (m *mockValidationClient) RecvMsg(v interface{}) error {
 	panic("implement me")
 }
 
-func (m *mockValidationClient) ValidateProxy(ctx context.Context, in *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
+func (m *mockValidationClient) Validate(ctx context.Context, in *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error) {
 	panic("implement me")
 }

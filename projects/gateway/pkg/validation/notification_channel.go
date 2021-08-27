@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func MakeNotificationChannel(ctx context.Context, client validation.ProxyValidationServiceClient) (<-chan struct{}, error) {
+func MakeNotificationChannel(ctx context.Context, client validation.GlooValidationServiceClient) (<-chan struct{}, error) {
 	notifications := make(chan struct{}, 1)
 
 	logger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "validation-resync-notifications"))
@@ -65,7 +65,7 @@ func MakeNotificationChannel(ctx context.Context, client validation.ProxyValidat
 	return notifications, nil
 }
 
-func startNotificationStream(ctx context.Context, client validation.ProxyValidationServiceClient, logger *zap.SugaredLogger) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
+func startNotificationStream(ctx context.Context, client validation.GlooValidationServiceClient, logger *zap.SugaredLogger) (validation.GlooValidationService_NotifyOnResyncClient, error) {
 	// fail if we cannot establish notifications from gloo
 	stream, err := client.NotifyOnResync(ctx, &validation.NotifyOnResyncRequest{})
 	if err != nil {

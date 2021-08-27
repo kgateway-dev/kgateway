@@ -228,7 +228,7 @@ func RunGateway(opts translator.Opts) error {
 
 	var (
 		// this constructor should be called within a lock
-		validationClient             validation.ProxyValidationServiceClient
+		validationClient             validation.GlooValidationServiceClient
 		ignoreProxyValidationFailure bool
 		allowWarnings                bool
 	)
