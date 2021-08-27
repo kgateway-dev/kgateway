@@ -14,24 +14,24 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type ClientConstructor func() (client validation.ProxyValidationServiceClient, e error)
+type ClientConstructor func() (client validation.GlooValidationServiceClient, e error)
 
-// connectionRefreshingValidationClient wraps a validation.ProxyValidationServiceClient (grpc Connection)
+// connectionRefreshingValidationClient wraps a validation.GlooValidationServiceClient (grpc Connection)
 // if a connection error occurs during an api call, the connectionRefreshingValidationClient
 // attempts to reestablish the connection & retry the call before returning the error
 type connectionRefreshingValidationClient struct {
 	lock                      sync.RWMutex
-	validationClient          validation.ProxyValidationServiceClient
+	validationClient          validation.GlooValidationServiceClient
 	constructValidationClient ClientConstructor
 }
 
 // the constructor returned here is not threadsafe; call from a lock
 func RetryOnUnavailableClientConstructor(ctx context.Context, serverAddress string) ClientConstructor {
 	var cancel = func() {}
-	return func() (client validation.ProxyValidationServiceClient, e error) {
+	return func() (client validation.GlooValidationServiceClient, e error) {
 		// cancel the previous client if it exists
 		cancel()
-		contextutils.LoggerFrom(ctx).Infow("starting proxy validation client... this may take a moment",
+		contextutils.LoggerFrom(ctx).Infow("starting gloo validation client... this may take a moment",
 			zap.String("validation_server", serverAddress))
 		var clientCtx context.Context
 		clientCtx, cancel = context.WithCancel(ctx)
@@ -41,11 +41,11 @@ func RetryOnUnavailableClientConstructor(ctx context.Context, serverAddress stri
 			return nil, eris.Wrapf(err, "failed to initialize grpc connection to validation server.")
 		}
 
-		return validation.NewProxyValidationServiceClient(cc), nil
+		return validation.NewGlooValidationServiceClient(cc), nil
 	}
 }
 
-func NewConnectionRefreshingValidationClient(constructValidationClient func() (validation.ProxyValidationServiceClient, error)) (*connectionRefreshingValidationClient, error) {
+func NewConnectionRefreshingValidationClient(constructValidationClient func() (validation.GlooValidationServiceClient, error)) (*connectionRefreshingValidationClient, error) {
 	vc, err := constructValidationClient()
 	if err != nil {
 		return nil, err
@@ -56,30 +56,30 @@ func NewConnectionRefreshingValidationClient(constructValidationClient func() (v
 	}, nil
 }
 
-func (c *connectionRefreshingValidationClient) ValidateProxy(ctx context.Context, proxy *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
+func (c *connectionRefreshingValidationClient) Validate(ctx context.Context, proxy *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error) {
 	ctx = contextutils.WithLogger(ctx, "retrying-validation-client")
 
-	var proxyReport *validation.ProxyValidationServiceResponse
+	var proxyReport *validation.GlooValidationServiceResponse
 
-	return proxyReport, c.retryWithNewClient(ctx, func(validationClient validation.ProxyValidationServiceClient) error {
+	return proxyReport, c.retryWithNewClient(ctx, func(validationClient validation.GlooValidationServiceClient) error {
 		var err error
-		proxyReport, err = validationClient.ValidateProxy(ctx, proxy, opts...)
+		proxyReport, err = validationClient.Validate(ctx, proxy, opts...)
 		return err
 	})
 }
 
-func (c *connectionRefreshingValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotifyOnResyncRequest, opts ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
-	var notifier validation.ProxyValidationService_NotifyOnResyncClient
+func (c *connectionRefreshingValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotifyOnResyncRequest, opts ...grpc.CallOption) (validation.GlooValidationService_NotifyOnResyncClient, error) {
+	var notifier validation.GlooValidationService_NotifyOnResyncClient
 
-	return notifier, c.retryWithNewClient(ctx, func(validationClient validation.ProxyValidationServiceClient) error {
+	return notifier, c.retryWithNewClient(ctx, func(validationClient validation.GlooValidationServiceClient) error {
 		var err error
 		notifier, err = validationClient.NotifyOnResync(ctx, in, opts...)
 		return err
 	})
 }
 
-func (c *connectionRefreshingValidationClient) retryWithNewClient(ctx context.Context, fn func(validationClient validation.ProxyValidationServiceClient) error) error {
-	var validationClient validation.ProxyValidationServiceClient
+func (c *connectionRefreshingValidationClient) retryWithNewClient(ctx context.Context, fn func(validationClient validation.GlooValidationServiceClient) error) error {
+	var validationClient validation.GlooValidationServiceClient
 	var reinstantiateClientErr error
 	return retry.Do(func() error {
 		c.lock.RLock()

@@ -4,21 +4,21 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validati
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 
-// the proxy validation service validates proxies for clients against current snapshot resources
-service ProxyValidationService {
-    // Notify the client whenever the Proxy Validation Service resyncs
-    rpc NotifyOnResync (NotifyOnResyncRequest) returns (stream NotifyOnResyncResponse) {
+// The gloo validation service validates gloo resources for clients against current snapshot resources
+service GlooValidationService {
+    // Notify the client whenever the Gloo Validation Service resyncs
+    rpc NotifyOnResync(NotifyOnResyncRequest) returns (stream NotifyOnResyncResponse) {
     }
-    // Submit a proxy for validation
-    rpc ValidateProxy (ProxyValidationServiceRequest) returns (ProxyValidationServiceResponse) {
+    // Submit gloo resources for validation
+    rpc Validate(GlooValidationServiceRequest) returns (GlooValidationServiceResponse) {
     }
 }
 
-message ProxyValidationServiceRequest {
+message GlooValidationServiceRequest {
     gloo.solo.io.Proxy proxy = 1;
 }
 
-message ProxyValidationServiceResponse {
+message GlooValidationServiceResponse {
     ProxyReport proxy_report = 1;
 }
 
@@ -108,7 +108,6 @@ message VirtualHostReport {
 
     repeated RouteReport route_reports = 2;
 }
-
 
 message RouteReport {
     // error types for the given route config
