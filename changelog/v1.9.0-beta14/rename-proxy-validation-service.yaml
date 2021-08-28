@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5173
+    resolvesIssue: false
+    description: >
+      Rename ProxyValidationService -> GlooValidationService in preparation for
+      expanding the service to validate other gloo resources.

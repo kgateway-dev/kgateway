@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5211
+    description: >
+      Add qualifier to the aws lambda function name for display with glooctl get upstreams

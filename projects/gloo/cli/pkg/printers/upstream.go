@@ -91,7 +91,8 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 	case *v1.Upstream_Aws:
 		var functions []string
 		for _, fn := range usType.Aws.GetLambdaFunctions() {
-			functions = append(functions, fn.GetLambdaFunctionName())
+
+			functions = append(functions, fn.GetLambdaFunctionName()+" ("+fn.GetQualifier()+")")
 		}
 		add(
 			fmt.Sprintf("region: %v", usType.Aws.GetRegion()),
