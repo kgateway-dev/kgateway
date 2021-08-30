@@ -1,0 +1,9 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/4833
+    description: >
+      Adds support for a gloo.splitLogOutput helm value, which can be used to set SPLIT_LOG_OUTPUT in the gloo pod
+      When the SPLIT_LOG_OUTPUT environment variable is specified, a global logger is created with the following characteristics:
+      debug/info/warning are written to stdout, error/fatal/panic are written to stderr
+      Configuration is otherwise identical to the default logger
+      When SPLIT_LOG_OUTPUT is unspecified, logging configuration is unchanged

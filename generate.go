@@ -51,6 +51,7 @@ func main() {
 			CrdDirectory:                 "install/helm/gloo/crds",
 			JsonSchemaTool:               "protoc",
 			RemoveDescriptionsFromSchema: true,
+			EnumAsIntOrString:            true,
 		},
 	}
 	if err := cmd.Generate(generateOptions); err != nil {

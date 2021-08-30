@@ -44,10 +44,8 @@ spec:
                           aws:
                             properties:
                               invocationStyle:
-                                enum:
-                                - SYNC
-                                - ASYNC
                                 type: string
+                                x-kubernetes-int-or-string: true
                               logicalName:
                                 type: string
                               responseTransformation:
@@ -153,10 +151,8 @@ spec:
                                   mergeExtractorsToBody:
                                     type: object
                                   parseBodyBehavior:
-                                    enum:
-                                    - ParseAsJson
-                                    - DontParse
                                     type: string
+                                    x-kubernetes-int-or-string: true
                                   passthrough:
                                     type: object
                                 type: object
@@ -238,11 +234,8 @@ spec:
                               defaultValue:
                                 properties:
                                   denominator:
-                                    enum:
-                                    - HUNDRED
-                                    - TEN_THOUSAND
-                                    - MILLION
                                     type: string
+                                    x-kubernetes-int-or-string: true
                                   numerator:
                                     format: int32
                                     type: integer
@@ -255,11 +248,8 @@ spec:
                               defaultValue:
                                 properties:
                                   denominator:
-                                    enum:
-                                    - HUNDRED
-                                    - TEN_THOUSAND
-                                    - MILLION
                                     type: string
+                                    x-kubernetes-int-or-string: true
                                   numerator:
                                     format: int32
                                     type: integer
@@ -460,10 +450,8 @@ spec:
                                             mergeExtractorsToBody:
                                               type: object
                                             parseBodyBehavior:
-                                              enum:
-                                              - ParseAsJson
-                                              - DontParse
                                               type: string
+                                              x-kubernetes-int-or-string: true
                                             passthrough:
                                               type: object
                                           type: object
@@ -543,10 +531,8 @@ spec:
                                             mergeExtractorsToBody:
                                               type: object
                                             parseBodyBehavior:
-                                              enum:
-                                              - ParseAsJson
-                                              - DontParse
                                               type: string
+                                              x-kubernetes-int-or-string: true
                                             passthrough:
                                               type: object
                                           type: object
@@ -646,10 +632,8 @@ spec:
                                             mergeExtractorsToBody:
                                               type: object
                                             parseBodyBehavior:
-                                              enum:
-                                              - ParseAsJson
-                                              - DontParse
                                               type: string
+                                              x-kubernetes-int-or-string: true
                                             passthrough:
                                               type: object
                                           type: object
@@ -781,10 +765,8 @@ spec:
                                             mergeExtractorsToBody:
                                               type: object
                                             parseBodyBehavior:
-                                              enum:
-                                              - ParseAsJson
-                                              - DontParse
                                               type: string
+                                              x-kubernetes-int-or-string: true
                                             passthrough:
                                               type: object
                                           type: object
@@ -864,10 +846,8 @@ spec:
                                             mergeExtractorsToBody:
                                               type: object
                                             parseBodyBehavior:
-                                              enum:
-                                              - ParseAsJson
-                                              - DontParse
                                               type: string
+                                              x-kubernetes-int-or-string: true
                                             passthrough:
                                               type: object
                                           type: object
@@ -967,10 +947,8 @@ spec:
                                             mergeExtractorsToBody:
                                               type: object
                                             parseBodyBehavior:
-                                              enum:
-                                              - ParseAsJson
-                                              - DontParse
                                               type: string
+                                              x-kubernetes-int-or-string: true
                                             passthrough:
                                               type: object
                                           type: object
@@ -1058,10 +1036,8 @@ spec:
                                   mergeExtractorsToBody:
                                     type: object
                                   parseBodyBehavior:
-                                    enum:
-                                    - ParseAsJson
-                                    - DontParse
                                     type: string
+                                    x-kubernetes-int-or-string: true
                                   passthrough:
                                     type: object
                                 type: object
@@ -1141,10 +1117,8 @@ spec:
                                   mergeExtractorsToBody:
                                     type: object
                                   parseBodyBehavior:
-                                    enum:
-                                    - ParseAsJson
-                                    - DontParse
                                     type: string
+                                    x-kubernetes-int-or-string: true
                                   passthrough:
                                     type: object
                                 type: object

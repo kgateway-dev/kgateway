@@ -105,7 +105,7 @@ func applyGlobalVirtualServiceSettings(ctx context.Context, virtualServices v1.V
 	// If oneWayTls is not defined on virtual service, use default value from global settings if defined there
 	if val := settingsutil.MaybeFromContext(ctx).GetGateway().GetVirtualServiceOptions().GetOneWayTls(); val != nil {
 		for _, vs := range virtualServices {
-			if vs.GetSslConfig().GetOneWayTls() == nil {
+			if vs.GetSslConfig() != nil && vs.GetSslConfig().GetOneWayTls() == nil {
 				vs.GetSslConfig().OneWayTls = &wrappers.BoolValue{Value: val.GetValue()}
 			}
 		}
