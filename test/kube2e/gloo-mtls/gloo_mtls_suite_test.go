@@ -53,6 +53,9 @@ var _ = BeforeSuite(func() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 
+	err = os.Setenv("POD_NAMESPACE", installNamespace)
+	Expect(err).NotTo(HaveOccurred())
+
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
@@ -95,6 +98,8 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+	err := os.Unsetenv("POD_NAMESPACE")
+	Expect(err).NotTo(HaveOccurred())
 	if os.Getenv("TEAR_DOWN") == "true" {
 		err := testHelper.UninstallGloo()
 		Expect(err).NotTo(HaveOccurred())
