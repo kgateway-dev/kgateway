@@ -73,7 +73,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 func CheckResources(opts *options.Options) error {
 	var multiErr *multierror.Error
 
-	err := checkConnection(opts.Top.Ctx, opts.Metadata.Namespace)
+	err := checkConnection(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 		return multiErr
@@ -158,7 +158,7 @@ func CheckResources(opts *options.Options) error {
 
 	includeProxy := doesNotContain(opts.Top.CheckName, "proxies")
 	if includeProxy {
-		err := checkProxies(opts.Top.Ctx, namespaces, opts.Metadata.Namespace, deployments)
+		err := checkProxies(opts.Top.Ctx, namespaces, opts.Metadata.GetNamespace(), deployments)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
@@ -166,7 +166,7 @@ func CheckResources(opts *options.Options) error {
 
 	includePrometheusStatsCheck := doesNotContain(opts.Top.CheckName, "xds-metrics")
 	if includePrometheusStatsCheck {
-		err = checkXdsMetrics(opts.Top.Ctx, opts.Metadata.Namespace, deployments)
+		err = checkXdsMetrics(opts.Top.Ctx, opts.Metadata.GetNamespace(), deployments)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
@@ -177,13 +177,13 @@ func CheckResources(opts *options.Options) error {
 func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, error) {
 	fmt.Printf("Checking deployments... ")
 	client := helpers.MustKubeClient()
-	_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, opts.Metadata.Namespace, metav1.GetOptions{})
+	_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, opts.Metadata.GetNamespace(), metav1.GetOptions{})
 	if err != nil {
 		errMessage := "Gloo namespace does not exist"
 		fmt.Println(errMessage)
 		return nil, fmt.Errorf(errMessage)
 	}
-	deployments, err := client.AppsV1().Deployments(opts.Metadata.Namespace).List(opts.Top.Ctx, metav1.ListOptions{})
+	deployments, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +249,7 @@ func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, erro
 func checkPods(opts *options.Options) error {
 	fmt.Printf("Checking pods... ")
 	client := helpers.MustKubeClient()
-	pods, err := client.CoreV1().Pods(opts.Metadata.Namespace).List(opts.Top.Ctx, metav1.ListOptions{})
+	pods, err := client.CoreV1().Pods(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -307,12 +307,12 @@ func checkPods(opts *options.Options) error {
 
 func getSettings(opts *options.Options) (*v1.Settings, error) {
 	client := helpers.MustNamespacedSettingsClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
-	return client.Read(opts.Metadata.Namespace, defaults.SettingsName, clients.ReadOpts{})
+	return client.Read(opts.Metadata.GetNamespace(), defaults.SettingsName, clients.ReadOpts{})
 }
 
 func getNamespaces(ctx context.Context, settings *v1.Settings) ([]string, error) {
-	if settings.WatchNamespaces != nil {
-		return settings.WatchNamespaces, nil
+	if settings.GetWatchNamespaces() != nil {
+		return settings.GetWatchNamespaces(), nil
 	}
 
 	return helpers.GetNamespaces(ctx)
@@ -334,11 +334,11 @@ func checkUpstreams(ctx context.Context, namespaces []string) ([]string, error) 
 					switch status.GetState() {
 					case core.Status_Rejected:
 						errMessage := fmt.Sprintf("Found rejected upstream by '%s': %s ", reporter, renderMetadata(upstream.GetMetadata()))
-						errMessage += fmt.Sprintf("(Reason: %s)", status.Reason)
+						errMessage += fmt.Sprintf("(Reason: %s)", status.GetReason())
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					case core.Status_Warning:
 						errMessage := fmt.Sprintf("Found upstream with warnings by '%s': %s ", reporter, renderMetadata(upstream.GetMetadata()))
-						errMessage += fmt.Sprintf("(Reason: %s)", status.Reason)
+						errMessage += fmt.Sprintf("(Reason: %s)", status.GetReason())
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
@@ -369,11 +369,11 @@ func checkUpstreamGroups(ctx context.Context, namespaces []string) error {
 					switch status.GetState() {
 					case core.Status_Rejected:
 						errMessage := fmt.Sprintf("Found rejected upstream group by '%s': %s ", reporter, renderMetadata(upstreamGroup.GetMetadata()))
-						errMessage += fmt.Sprintf("(Reason: %s)", status.Reason)
+						errMessage += fmt.Sprintf("(Reason: %s)", status.GetReason())
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					case core.Status_Warning:
 						errMessage := fmt.Sprintf("Found upstream group with warnings by '%s': %s ", reporter, renderMetadata(upstreamGroup.GetMetadata()))
-						errMessage += fmt.Sprintf("(Reason: %s)", status.Reason)
+						errMessage += fmt.Sprintf("(Reason: %s)", status.GetReason())
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
@@ -404,11 +404,11 @@ func checkAuthConfigs(ctx context.Context, namespaces []string) ([]string, error
 					switch status.GetState() {
 					case core.Status_Rejected:
 						errMessage := fmt.Sprintf("Found rejected auth config by '%s': %s ", reporter, renderMetadata(authConfig.GetMetadata()))
-						errMessage += fmt.Sprintf("(Reason: %s)", status.Reason)
+						errMessage += fmt.Sprintf("(Reason: %s)", status.GetReason())
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					case core.Status_Warning:
 						errMessage := fmt.Sprintf("Found auth config with warnings by '%s': %s ", reporter, renderMetadata(authConfig.GetMetadata()))
-						errMessage += fmt.Sprintf("(Reason: %s)", status.Reason)
+						errMessage += fmt.Sprintf("(Reason: %s)", status.GetReason())
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
@@ -447,7 +447,7 @@ func checkRateLimitConfigs(ctx context.Context, namespaces []string) ([]string, 
 		for _, config := range configs {
 			if config.Status.GetState() == v1alpha1.RateLimitConfigStatus_REJECTED {
 				errMessage := fmt.Sprintf("Found rejected rate limit config: %s ", renderMetadata(config.GetMetadata()))
-				errMessage += fmt.Sprintf("(Reason: %s)", config.Status.Message)
+				errMessage += fmt.Sprintf("(Reason: %s)", config.Status.GetMessage())
 				multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
 			}
 			knownConfigs = append(knownConfigs, renderMetadata(config.GetMetadata()))
@@ -488,11 +488,11 @@ func checkVirtualHostOptions(ctx context.Context, namespaces []string) ([]string
 					switch status.GetState() {
 					case core.Status_Rejected:
 						errMessage := fmt.Sprintf("Found rejected VirtualHostOption by '%s': %s ", reporter, renderMetadata(vhOpt.GetMetadata()))
-						errMessage += fmt.Sprintf("(Reason: %s)", status.Reason)
+						errMessage += fmt.Sprintf("(Reason: %s)", status.GetReason())
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					case core.Status_Warning:
 						errMessage := fmt.Sprintf("Found VirtualHostOption with warnings by '%s': %s ", reporter, renderMetadata(vhOpt.GetMetadata()))
-						errMessage += fmt.Sprintf("(Reason: %s)", status.Reason)
+						errMessage += fmt.Sprintf("(Reason: %s)", status.GetReason())
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
@@ -533,11 +533,11 @@ func checkRouteOptions(ctx context.Context, namespaces []string) ([]string, erro
 					switch status.GetState() {
 					case core.Status_Rejected:
 						errMessage := fmt.Sprintf("Found rejected RouteOption by '%s': %s ", reporter, renderMetadata(routeOpt.GetMetadata()))
-						errMessage += fmt.Sprintf("(Reason: %s)", status.Reason)
+						errMessage += fmt.Sprintf("(Reason: %s)", status.GetReason())
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					case core.Status_Warning:
 						errMessage := fmt.Sprintf("Found RouteOption with warnings by '%s': %s ", reporter, renderMetadata(routeOpt.GetMetadata()))
-						errMessage += fmt.Sprintf("(Reason: %s)", status.Reason)
+						errMessage += fmt.Sprintf("(Reason: %s)", status.GetReason())
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
@@ -648,8 +648,8 @@ func checkVirtualServices(ctx context.Context, namespaces, knownUpstreams, known
 			// Check references to rate limit configs
 			isRateLimitConfigRefValid := func(knownConfigs []string, ref *rlopts.RateLimitConfigRef) error {
 				resourceRef := &core.ResourceRef{
-					Name:      ref.Name,
-					Namespace: ref.Namespace,
+					Name:      ref.GetName(),
+					Namespace: ref.GetNamespace(),
 				}
 				if !cliutils.Contains(knownConfigs, renderRef(resourceRef)) {
 					//TODO: check if references rate limit config with error or warning
@@ -700,11 +700,11 @@ func checkGateways(ctx context.Context, namespaces []string) error {
 					switch status.GetState() {
 					case core.Status_Rejected:
 						errMessage := fmt.Sprintf("Found rejected gateway by '%s': %s\n", reporter, renderMetadata(gateway.GetMetadata()))
-						errMessage += fmt.Sprintf("Reason: %s\n", status.Reason)
+						errMessage += fmt.Sprintf("Reason: %s\n", status.GetReason())
 						multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
 					case core.Status_Warning:
 						errMessage := fmt.Sprintf("Found gateway with warnings by '%s': %s\n", reporter, renderMetadata(gateway.GetMetadata()))
-						errMessage += fmt.Sprintf("Reason: %s\n", status.Reason)
+						errMessage += fmt.Sprintf("Reason: %s\n", status.GetReason())
 						multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
 					}
 				}
@@ -740,11 +740,11 @@ func checkProxies(ctx context.Context, namespaces []string, glooNamespace string
 					switch status.GetState() {
 					case core.Status_Rejected:
 						errMessage := fmt.Sprintf("Found rejected proxy by '%s': %s\n", reporter, renderMetadata(proxy.GetMetadata()))
-						errMessage += fmt.Sprintf("Reason: %s\n", status.Reason)
+						errMessage += fmt.Sprintf("Reason: %s\n", status.GetReason())
 						multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
 					case core.Status_Warning:
 						errMessage := fmt.Sprintf("Found proxy with warnings by '%s': %s\n", reporter, renderMetadata(proxy.GetMetadata()))
-						errMessage += fmt.Sprintf("Reason: %s\n", status.Reason)
+						errMessage += fmt.Sprintf("Reason: %s\n", status.GetReason())
 						multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
 					}
 				}
@@ -785,11 +785,11 @@ func checkSecrets(ctx context.Context, namespaces []string) error {
 }
 
 func renderMetadata(metadata *core.Metadata) string {
-	return renderNamespaceName(metadata.Namespace, metadata.Name)
+	return renderNamespaceName(metadata.GetNamespace(), metadata.GetName())
 }
 
 func renderRef(ref *core.ResourceRef) string {
-	return renderNamespaceName(ref.Namespace, ref.Name)
+	return renderNamespaceName(ref.GetNamespace(), ref.GetName())
 }
 
 func renderNamespaceName(namespace, name string) string {
