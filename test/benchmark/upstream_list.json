@@ -4785,9 +4785,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2050"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "helloworld-1-xvgfm",
@@ -4820,9 +4822,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2018"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -4863,9 +4867,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1895"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -4906,9 +4912,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1880"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+      "gloo-system":{
+        "reportedBy": "gloo",
+        "state": "Accepted"
+      }
     },
     "kube": {
       "selector": {
@@ -4944,9 +4952,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1986"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+      "gloo-system":{
+        "reportedBy": "gloo",
+        "state": "Accepted"
+      }
     },
     "kube": {
       "selector": {
@@ -4981,9 +4991,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1614"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+      "gloo-system": {
+        "reportedBy": "gloo",
+        "state": "Accepted"
+      }
     },
     "kube": {
       "selector": {
@@ -5023,10 +5035,12 @@
       "namespace": "gloo-system",
       "resourceVersion": "1674"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
-    },
+    "namespacedStatuses": {
+    "gloo-system": {
+        "reportedBy": "gloo",
+        "state": "Accepted"
+    }
+},
     "kube": {
       "selector": {
         "serving.knative.dev/revisionUID": "f4438b19-be86-11e9-bb8b-42010a8400f0"
@@ -5060,10 +5074,12 @@
       "namespace": "gloo-system",
       "resourceVersion": "2116"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
-    },
+    "namespacedStatuses": {
+    "gloo-system": {
+        "reportedBy": "gloo",
+        "state": "Accepted"
+    }
+},
     "kube": {
       "selector": {
         "app": "helloworld-10-8f62n",
@@ -5102,9 +5118,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1988"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5139,9 +5157,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1773"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "helloworld-10-8f62n",
@@ -5174,9 +5194,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1785"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5217,9 +5239,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1782"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5260,9 +5284,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1729"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5298,9 +5324,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1775"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5335,9 +5363,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1829"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "helloworld-11-7ng9c",
@@ -5370,9 +5400,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1927"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5413,9 +5445,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1917"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5456,9 +5490,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1849"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5494,9 +5530,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1854"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5531,9 +5569,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1796"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5573,9 +5613,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1794"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5610,9 +5652,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1969"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "helloworld-12-qvs97",
@@ -5644,9 +5688,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1841"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5686,9 +5732,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1839"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5724,9 +5772,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1845"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5767,9 +5817,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1831"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5810,9 +5862,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1801"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5848,9 +5902,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1807"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5885,9 +5941,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1975"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "helloworld-13-b8q5n",
@@ -5919,9 +5977,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1952"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5961,9 +6021,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1978"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -5999,9 +6061,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1821"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6042,9 +6106,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1814"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6085,9 +6151,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1789"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6123,9 +6191,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1809"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6160,9 +6230,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1824"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6202,9 +6274,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1819"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6239,9 +6313,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1833"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "helloworld-14-fj4jm",
@@ -6274,9 +6350,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2299"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6317,9 +6395,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2372"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6360,9 +6440,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2304"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6398,9 +6480,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2367"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6435,9 +6519,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2061"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "helloworld-15-kksks",
@@ -6469,9 +6555,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2137"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6511,9 +6599,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1990"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6549,9 +6639,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2389"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6592,9 +6684,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2376"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6635,9 +6729,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2381"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6673,9 +6769,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2373"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6710,9 +6808,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2341"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "helloworld-2-gkc45",
@@ -6744,9 +6844,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2358"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6786,9 +6888,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2297"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6824,9 +6928,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2425"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6867,9 +6973,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2404"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6910,9 +7018,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2413"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6948,9 +7058,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2415"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -6985,9 +7097,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2363"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "helloworld-3-278pq",
@@ -7020,9 +7134,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2418"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7063,9 +7179,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2409"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7106,9 +7224,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2405"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7144,9 +7264,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2423"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7181,9 +7303,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2401"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7223,9 +7347,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2393"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7261,9 +7387,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2491"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7304,9 +7432,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2469"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7347,9 +7477,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2449"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7385,9 +7517,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2461"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7422,9 +7556,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2041"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "helloworld-4-s4xq2",
@@ -7456,9 +7592,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2440"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7498,9 +7636,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2427"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7535,9 +7675,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2189"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "helloworld-5-95x2b",
@@ -7569,9 +7711,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2387"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7611,9 +7755,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2383"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7649,9 +7795,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2192"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7692,9 +7840,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2365"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7735,9 +7885,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2283"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7773,9 +7925,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2274"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7810,9 +7964,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2318"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "helloworld-6-mcvmp",
@@ -7844,9 +8000,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2091"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7886,9 +8044,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2012"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7924,9 +8084,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2437"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -7967,9 +8129,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2435"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8010,9 +8174,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2433"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8048,9 +8214,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2445"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8086,9 +8254,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2500"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8129,9 +8299,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2502"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8172,9 +8344,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2489"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8210,9 +8384,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2496"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8247,9 +8423,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2468"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "helloworld-7-nb449",
@@ -8281,9 +8459,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2218"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8323,9 +8503,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2288"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8360,9 +8542,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2452"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "helloworld-8-w8hrn",
@@ -8395,9 +8579,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2497"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8438,9 +8624,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2506"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8481,9 +8669,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2507"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8519,9 +8709,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2509"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8556,9 +8748,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2457"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8598,9 +8792,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2459"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8635,9 +8831,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2285"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "helloworld-9-km6sb",
@@ -8669,9 +8867,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2277"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8711,9 +8911,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2293"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8749,9 +8951,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2478"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8792,9 +8996,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2483"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8835,9 +9041,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2488"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8873,9 +9081,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "2471"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -8898,9 +9108,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1061"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "serviceName": "kubernetes",
@@ -8922,9 +9134,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18286"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9016,9 +9230,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18704"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9040,9 +9256,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18849"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9064,9 +9282,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19677"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9088,9 +9308,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19633"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9112,9 +9334,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19682"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9136,9 +9360,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19711"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9160,9 +9386,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19763"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9184,9 +9412,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19713"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9208,9 +9438,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19737"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9232,9 +9464,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19690"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9256,9 +9490,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19696"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9280,9 +9516,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19675"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9304,9 +9542,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18824"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9328,9 +9568,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19755"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9352,9 +9594,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19725"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9376,9 +9620,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19635"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9400,9 +9646,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19676"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9424,9 +9672,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19750"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9448,9 +9698,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19836"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9472,9 +9724,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19901"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9496,9 +9750,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19907"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9520,9 +9776,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19936"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9544,9 +9802,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19842"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9568,9 +9828,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18836"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9592,9 +9854,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19838"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9616,9 +9880,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19837"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9640,9 +9906,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19937"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9664,9 +9932,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19859"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9688,9 +9958,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19935"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9712,9 +9984,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19862"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9736,9 +10010,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19860"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9760,9 +10036,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19905"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9784,9 +10062,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19839"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9808,9 +10088,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20149"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9832,9 +10114,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18856"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9856,9 +10140,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20084"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9880,9 +10166,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20155"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9904,9 +10192,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20049"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9928,9 +10218,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20080"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9952,9 +10244,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20078"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -9976,9 +10270,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20151"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10000,9 +10296,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20023"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10024,9 +10322,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20098"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10048,9 +10348,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20099"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10072,9 +10374,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20088"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10096,9 +10400,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18867"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10120,9 +10426,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19991"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10144,9 +10452,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20169"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10168,9 +10478,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20150"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10192,9 +10504,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20108"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10216,9 +10530,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20068"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10240,9 +10556,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20157"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10264,9 +10582,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20067"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10288,9 +10608,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20164"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10312,9 +10634,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20092"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10336,9 +10660,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20103"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10360,9 +10686,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18908"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10384,9 +10712,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20124"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10408,9 +10738,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20069"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10432,9 +10764,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20116"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10456,9 +10790,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20148"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10480,9 +10816,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20066"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10504,9 +10842,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20133"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10528,9 +10868,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20141"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10552,9 +10894,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20047"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10576,9 +10920,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20073"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10600,9 +10946,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20224"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10624,9 +10972,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18930"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10648,9 +10998,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20266"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10672,9 +11024,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20245"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10696,9 +11050,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20262"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10720,9 +11076,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20260"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10744,9 +11102,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20223"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10768,9 +11128,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20215"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10792,9 +11154,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20244"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10816,9 +11180,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20214"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10840,9 +11206,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20196"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10864,9 +11232,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20263"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10888,9 +11258,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18937"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10912,9 +11284,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20247"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10936,9 +11310,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20243"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10960,9 +11336,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20225"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -10984,9 +11362,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20235"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11008,9 +11388,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20189"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11032,9 +11414,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20204"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11056,9 +11440,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20222"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11080,9 +11466,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20261"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11104,9 +11492,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20237"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11128,9 +11518,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20250"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11152,9 +11544,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18897"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11176,9 +11570,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20301"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11200,9 +11596,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20305"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11224,9 +11622,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20325"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11248,9 +11648,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20319"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11272,9 +11674,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20353"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11296,9 +11700,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20288"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11320,9 +11726,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20321"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11344,9 +11752,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20338"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11368,9 +11778,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20349"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11392,9 +11804,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20294"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11416,9 +11830,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18921"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11440,9 +11856,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20287"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11464,9 +11882,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20351"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11488,9 +11908,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20322"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11512,9 +11934,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20365"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11536,9 +11960,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20333"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11560,9 +11986,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20320"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11584,9 +12012,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20332"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11608,9 +12038,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20348"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11632,9 +12064,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20350"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11656,9 +12090,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20290"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11680,9 +12116,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18725"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11704,9 +12142,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18936"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11728,9 +12168,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "20289"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11752,9 +12194,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18895"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11776,9 +12220,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18894"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11800,9 +12246,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18965"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11824,9 +12272,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18971"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11848,9 +12298,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19029"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11872,9 +12324,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18987"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11896,9 +12350,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18978"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11920,9 +12376,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18993"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11944,9 +12402,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19028"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11968,9 +12428,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18733"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -11992,9 +12454,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18967"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12016,9 +12480,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18982"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12040,9 +12506,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19014"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12064,9 +12532,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18966"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12088,9 +12558,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18984"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12112,9 +12584,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19006"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12136,9 +12610,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19035"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12160,9 +12636,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19063"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12184,9 +12662,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19042"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12208,9 +12688,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19078"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12232,9 +12714,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18739"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12256,9 +12740,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19064"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12280,9 +12766,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19071"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12304,9 +12792,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19105"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12328,9 +12818,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19072"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12352,9 +12844,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19112"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12376,9 +12870,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19140"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12400,9 +12896,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19141"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12424,9 +12922,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19139"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12448,9 +12948,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19117"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12472,9 +12974,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19177"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12496,9 +13000,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18753"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12520,9 +13026,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19171"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12544,9 +13052,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19206"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12568,9 +13078,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19185"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12592,9 +13104,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19207"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12616,9 +13130,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19172"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12640,9 +13156,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19244"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12664,9 +13182,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19268"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12688,9 +13208,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19236"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12712,9 +13234,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19217"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12736,9 +13260,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19235"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12760,9 +13286,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18738"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12784,9 +13312,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19267"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12808,9 +13338,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19334"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12832,9 +13364,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19389"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12856,9 +13390,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19443"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12880,9 +13416,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19357"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12904,9 +13442,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19368"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12928,9 +13468,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19333"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12952,9 +13494,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19343"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -12976,9 +13520,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19375"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13000,9 +13546,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19487"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13024,9 +13572,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18779"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13048,9 +13598,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19423"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13072,9 +13624,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19431"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13096,9 +13650,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19474"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13120,9 +13676,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19449"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13144,9 +13702,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19417"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13168,9 +13728,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19418"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13192,9 +13754,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19465"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13216,9 +13780,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19466"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13240,9 +13806,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19437"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13264,9 +13832,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19464"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13288,9 +13858,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18801"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13312,9 +13884,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19416"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13336,9 +13910,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19600"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13360,9 +13936,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19586"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13384,9 +13962,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19522"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13408,9 +13988,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19569"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13432,9 +14014,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19558"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13456,9 +14040,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19552"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13480,9 +14066,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19594"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13504,9 +14092,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19514"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13528,9 +14118,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19513"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13552,9 +14144,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18825"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13576,9 +14170,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19613"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13600,9 +14196,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19607"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13624,9 +14222,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19568"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13648,9 +14248,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19592"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13672,9 +14274,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19550"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13696,9 +14300,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19515"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13720,9 +14326,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19535"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13744,9 +14352,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19577"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13768,9 +14378,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19781"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13792,9 +14404,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "19743"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13819,9 +14433,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "18735"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13917,9 +14533,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1082"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13946,9 +14564,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1086"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -13974,9 +14594,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1078"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14002,9 +14624,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1098"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14030,9 +14654,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1072"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14058,9 +14684,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1172"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14086,9 +14714,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1094"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14115,9 +14745,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1096"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14143,9 +14775,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1221"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14173,9 +14807,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1106"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14204,9 +14840,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1416"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14234,9 +14872,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1441"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14262,9 +14902,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1383"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14290,9 +14932,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1517"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14318,9 +14962,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1756"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14347,9 +14993,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1471"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14376,9 +15024,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1321"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14405,9 +15055,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1059"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14433,9 +15085,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1066"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14462,9 +15116,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1088"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14490,9 +15146,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1269"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14617,9 +15275,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1060"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14646,9 +15306,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1076"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14677,9 +15339,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1137"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14706,9 +15370,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1771"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
@@ -14735,9 +15401,11 @@
       "namespace": "gloo-system",
       "resourceVersion": "1593"
     },
-    "status": {
-      "reportedBy": "gloo",
-      "state": "Accepted"
+    "namespacedStatuses": {
+        "gloo-system": {
+            "reportedBy": "gloo",
+            "state": "Accepted"
+        }
     },
     "kube": {
       "selector": {
