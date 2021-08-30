@@ -2,6 +2,7 @@ package kube2e
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -9,6 +10,8 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/onsi/ginkgo"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
@@ -31,6 +34,13 @@ func MustKubeClient() kubernetes.Interface {
 	kubeClient, err := kubernetes.NewForConfig(restConfig)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	return kubeClient
+}
+
+func GetRandomNamespace(prefix string) string {
+	randomNumber := time.Now().Unix() % 10000
+	suffix := fmt.Sprintf("%d-%d", randomNumber, ginkgo.GinkgoParallelNode())
+
+	return fmt.Sprintf("%s-test-%s", prefix, suffix)
 }
 
 // Check that everything is OK by running `glooctl check`
