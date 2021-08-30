@@ -156,7 +156,7 @@ These annotations can also be added declaratively via helm, for example if using
 If you upgrade the cluster using Helm version 3, these annotations should stay in place. Helm 3 uses a three-way merge when performing an update. Helm version 2 will also attempt a merge, but may have issues with changes made using kubectl edit. You should update the values used by Helm to include these annotations. Note that Helm 2 is not supported in Gloo Edge v1.8.0 and later.
 {{< /notice >}}
 
-More information on Helm three-way merges is available [here](https://helm.sh/docs/faq/changes_since_helm2/#improved-upgrade-strategy-3-way-strategic-merge-patches).
+For more information about merging strategies, see the [Helm documentation](https://helm.sh/docs/faq/changes_since_helm2/#improved-upgrade-strategy-3-way-strategic-merge-patches).
 
 You can verify that the annotations have been successfully updated by running the following command:
 
