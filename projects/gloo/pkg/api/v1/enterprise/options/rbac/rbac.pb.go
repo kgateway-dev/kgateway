@@ -312,7 +312,8 @@ type JWTPrincipal struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used.
-	// all claims must be present on the JWT.
+	// If you specify the path for a nested claim, such as 'parent.child.foo', you must also specify
+	// a non-empty string value for the `nested_claim_delimiter` field in the Policy.
 	Claims map[string]string `protobuf:"bytes,1,rep,name=claims,proto3" json:"claims,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Verify that the JWT came from a specific provider. This usually can be left empty
 	// and a provider will be chosen automatically.

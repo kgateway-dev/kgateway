@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5224
+    description: Adds support for `glooctl istio inject` in Istio 1.11.x.

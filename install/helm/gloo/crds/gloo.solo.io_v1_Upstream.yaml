@@ -87,11 +87,8 @@ spec:
                   items:
                     properties:
                       authLevel:
-                        enum:
-                        - Anonymous
-                        - Function
-                        - Admin
                         type: string
+                        x-kubernetes-int-or-string: true
                       functionName:
                         type: string
                     type: object
@@ -132,11 +129,8 @@ spec:
                 commonHttpProtocolOptions:
                   properties:
                     headersWithUnderscoresAction:
-                      enum:
-                      - ALLOW
-                      - REJECT_REQUEST
-                      - DROP_HEADER
                       type: string
+                      x-kubernetes-int-or-string: true
                     idleTimeout:
                       type: string
                     maxHeadersCount:
@@ -277,10 +271,8 @@ spec:
                               mergeExtractorsToBody:
                                 type: object
                               parseBodyBehavior:
-                                enum:
-                                - ParseAsJson
-                                - DontParse
                                 type: string
+                                x-kubernetes-int-or-string: true
                               passthrough:
                                 type: object
                             type: object
@@ -353,21 +345,11 @@ spec:
                                               type: string
                                             type: array
                                           maximumProtocolVersion:
-                                            enum:
-                                            - TLS_AUTO
-                                            - TLSv1_0
-                                            - TLSv1_1
-                                            - TLSv1_2
-                                            - TLSv1_3
                                             type: string
+                                            x-kubernetes-int-or-string: true
                                           minimumProtocolVersion:
-                                            enum:
-                                            - TLS_AUTO
-                                            - TLSv1_0
-                                            - TLSv1_1
-                                            - TLSv1_2
-                                            - TLSv1_3
                                             type: string
+                                            x-kubernetes-int-or-string: true
                                         type: object
                                       sds:
                                         properties:
@@ -514,22 +496,14 @@ spec:
                       responseAssertions:
                         properties:
                           noMatchHealth:
-                            enum:
-                            - default
-                            - healthy
-                            - degraded
-                            - unhealthy
                             type: string
+                            x-kubernetes-int-or-string: true
                           responseMatchers:
                             items:
                               properties:
                                 matchHealth:
-                                  enum:
-                                  - default
-                                  - healthy
-                                  - degraded
-                                  - unhealthy
                                   type: string
+                                  x-kubernetes-int-or-string: true
                                 responseMatch:
                                   properties:
                                     body:
@@ -721,10 +695,8 @@ spec:
                               mergeExtractorsToBody:
                                 type: object
                               parseBodyBehavior:
-                                enum:
-                                - ParseAsJson
-                                - DontParse
                                 type: string
+                                x-kubernetes-int-or-string: true
                               passthrough:
                                 type: object
                             type: object
@@ -741,11 +713,8 @@ spec:
                           type: object
                       type: object
                     fallbackPolicy:
-                      enum:
-                      - ANY_ENDPOINT
-                      - DEFAULT_SUBSET
-                      - NO_FALLBACK
                       type: string
+                      x-kubernetes-int-or-string: true
                     selectors:
                       items:
                         properties:
@@ -962,10 +931,8 @@ spec:
                               mergeExtractorsToBody:
                                 type: object
                               parseBodyBehavior:
-                                enum:
-                                - ParseAsJson
-                                - DontParse
                                 type: string
+                                x-kubernetes-int-or-string: true
                               passthrough:
                                 type: object
                             type: object
@@ -990,21 +957,11 @@ spec:
                         type: string
                       type: array
                     maximumProtocolVersion:
-                      enum:
-                      - TLS_AUTO
-                      - TLSv1_0
-                      - TLSv1_1
-                      - TLSv1_2
-                      - TLSv1_3
                       type: string
+                      x-kubernetes-int-or-string: true
                     minimumProtocolVersion:
-                      enum:
-                      - TLS_AUTO
-                      - TLSv1_0
-                      - TLSv1_1
-                      - TLSv1_2
-                      - TLSv1_3
                       type: string
+                      x-kubernetes-int-or-string: true
                   type: object
                 sds:
                   properties:
@@ -1172,10 +1129,8 @@ spec:
                               mergeExtractorsToBody:
                                 type: object
                               parseBodyBehavior:
-                                enum:
-                                - ParseAsJson
-                                - DontParse
                                 type: string
+                                x-kubernetes-int-or-string: true
                               passthrough:
                                 type: object
                             type: object

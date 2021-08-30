@@ -1,7 +1,7 @@
 name: Push API Changes to solo-apis
 on:
   release:
-    types: [released]
+    types: [published]
   # This job has flaked on releases. We enable manually triggering the workflow
   # so that developers do not need to run this step manually when a flake occurs
   workflow_dispatch:
