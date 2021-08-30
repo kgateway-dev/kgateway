@@ -16,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	rlopts "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
@@ -51,46 +52,72 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	cmd := &cobra.Command{
 		Use:   constants.CHECK_COMMAND.Use,
 		Short: constants.CHECK_COMMAND.Short,
+		Long:  "usage: glooctl check [-o FORMAT]",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := CheckResources(opts)
-			if err != nil {
-				// Not returning error here because this shouldn't propagate as a standard CLI error, which prints usage.
-				return err
+
+			if opts.Top.Output.IsTable() || opts.Top.Output.IsJSON() {
+
+				checkResponse, err := CheckResources(opts)
+
+				if opts.Top.Output.IsTable() {
+
+					if err != nil {
+						// Not returning error here because this shouldn't propagate as a standard CLI error, which prints usage.
+						return err
+					} else {
+						fmt.Printf("No problems detected.\n")
+					}
+				} else {
+					printers.PrintChecks(checkResponse, opts.Top.Output)
+				}
+
+				CheckMulticlusterResources(opts)
 			} else {
-				fmt.Printf("No problems detected.\n")
+				fmt.Printf("Error: Invalid Output Type - Only TABLE (DEFAULT) and JSON Supported!")
 			}
-			CheckMulticlusterResources(opts)
 			return nil
 		},
 	}
 	pflags := cmd.PersistentFlags()
+	flagutils.AddOutputFlag(pflags, &opts.Top.Output)
 	flagutils.AddNamespaceFlag(pflags, &opts.Metadata.Namespace)
 	flagutils.AddExcludecheckFlag(pflags, &opts.Top.CheckName)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
 
-func CheckResources(opts *options.Options) error {
+func CheckResources(opts *options.Options) (printers.CheckResponse, error) {
+	var checkResponse printers.CheckResponse
 	var multiErr *multierror.Error
 
 	err := checkConnection(opts.Top.Ctx, opts.Metadata.GetNamespace())
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
-		return multiErr
+		return checkResponse, multiErr
 	}
 
-	deployments, err := getAndCheckDeployments(opts)
+	var deploymentsStatus = printers.CheckStatus{Name: "deployments"}
+	deployments, err, errCount := getAndCheckDeployments(opts)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
+		deploymentsStatus.Status = fmt.Sprint(errCount) + " Errors!"
+	} else {
+		deploymentsStatus.Status = "OK"
 	}
+	checkResponse.Resource = append(checkResponse.Resource, deploymentsStatus)
 
+	var podsStatus = printers.CheckStatus{Name: "pods"}
 	includePods := doesNotContain(opts.Top.CheckName, "pods")
 	if includePods {
-		err := checkPods(opts)
+		err, errCount := checkPods(opts)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
+			podsStatus.Status = fmt.Sprint(errCount) + " Errors!"
+		} else {
+			podsStatus.Status = "OK"
 		}
 	}
+	checkResponse.Resource = append(checkResponse.Resource, podsStatus)
 
 	settings, err := getSettings(opts)
 	if err != nil {
@@ -102,66 +129,116 @@ func CheckResources(opts *options.Options) error {
 		multiErr = multierror.Append(multiErr, err)
 	}
 
-	knownUpstreams, err := checkUpstreams(opts.Top.Ctx, namespaces)
+	var upstreamsStatus = printers.CheckStatus{Name: "upstreams"}
+	knownUpstreams, err, errCount := checkUpstreams(opts, namespaces)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
+		upstreamsStatus.Status = fmt.Sprint(errCount) + " Errors!"
+	} else {
+		upstreamsStatus.Status = "OK"
 	}
+	checkResponse.Resource = append(checkResponse.Resource, upstreamsStatus)
 
+	var upstreamGroupsStatus = printers.CheckStatus{Name: "upstream groups"}
 	includeUpstreamGroup := doesNotContain(opts.Top.CheckName, "upstreamgroup")
 	if includeUpstreamGroup {
-		err := checkUpstreamGroups(opts.Top.Ctx, namespaces)
+		err, errCount := checkUpstreamGroups(opts, namespaces)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
+			upstreamGroupsStatus.Status = fmt.Sprint(errCount) + " Errors!"
+		} else {
+			upstreamGroupsStatus.Status = "OK"
 		}
+		checkResponse.Resource = append(checkResponse.Resource, upstreamGroupsStatus)
 	}
 
-	knownAuthConfigs, err := checkAuthConfigs(opts.Top.Ctx, namespaces)
+	var authConfigsStatus = printers.CheckStatus{Name: "auth configs"}
+	knownAuthConfigs, err, errCount := checkAuthConfigs(opts, namespaces)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
+		authConfigsStatus.Status = fmt.Sprint(errCount) + " Errors!"
+	} else {
+		authConfigsStatus.Status = "OK"
 	}
+	checkResponse.Resource = append(checkResponse.Resource, authConfigsStatus)
 
-	knownRateLimitConfigs, err := checkRateLimitConfigs(opts.Top.Ctx, namespaces)
+	var rateLimitConfigsStatus = printers.CheckStatus{Name: "rate limit configs"}
+	knownRateLimitConfigs, err, errCount := checkRateLimitConfigs(opts, namespaces)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
+		rateLimitConfigsStatus.Status = fmt.Sprint(errCount) + " Errors!"
+	} else {
+		rateLimitConfigsStatus.Status = "OK"
 	}
+	checkResponse.Resource = append(checkResponse.Resource, rateLimitConfigsStatus)
 
-	knownVirtualHostOptions, err := checkVirtualHostOptions(opts.Top.Ctx, namespaces)
+	var virtualHostOptionsStatus = printers.CheckStatus{Name: "VirtualHostOptions"}
+	knownVirtualHostOptions, err, errCount := checkVirtualHostOptions(opts, namespaces)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
+		virtualHostOptionsStatus.Status = fmt.Sprint(errCount) + " Errors!"
+	} else {
+		virtualHostOptionsStatus.Status = "OK"
 	}
+	checkResponse.Resource = append(checkResponse.Resource, virtualHostOptionsStatus)
 
-	knownRouteOptions, err := checkRouteOptions(opts.Top.Ctx, namespaces)
+	var routeOptionsStatus = printers.CheckStatus{Name: "RouteOptions"}
+	knownRouteOptions, err, errCount := checkRouteOptions(opts, namespaces)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
+		routeOptionsStatus.Status = fmt.Sprint(errCount) + " Errors!"
+	} else {
+		routeOptionsStatus.Status = "OK"
 	}
+	checkResponse.Resource = append(checkResponse.Resource, routeOptionsStatus)
 
 	includeSecrets := doesNotContain(opts.Top.CheckName, "secrets")
 	if includeSecrets {
-		err := checkSecrets(opts.Top.Ctx, namespaces)
+		var secretsStatus = printers.CheckStatus{Name: "secrets"}
+		err, errCount := checkSecrets(opts, namespaces)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
+			secretsStatus.Status = fmt.Sprint(errCount) + " Errors!"
+		} else {
+			secretsStatus.Status = "OK"
 		}
+		checkResponse.Resource = append(checkResponse.Resource, secretsStatus)
 	}
 
-	err = checkVirtualServices(opts.Top.Ctx, namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs, knownVirtualHostOptions, knownRouteOptions)
+	var virtualServicesStatus = printers.CheckStatus{Name: "virtual services"}
+	err, errCount = checkVirtualServices(opts, namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs, knownVirtualHostOptions, knownRouteOptions)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
+		virtualServicesStatus.Status = fmt.Sprint(errCount) + " Errors!"
+	} else {
+		virtualServicesStatus.Status = "OK"
 	}
+	checkResponse.Resource = append(checkResponse.Resource, virtualServicesStatus)
 
 	includeGateway := doesNotContain(opts.Top.CheckName, "gateways")
 	if includeGateway {
-		err := checkGateways(opts.Top.Ctx, namespaces)
+		var gatewaysStatus = printers.CheckStatus{Name: "gateways"}
+		err, errCount := checkGateways(opts, namespaces)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
+			gatewaysStatus.Status = fmt.Sprint(errCount) + " Errors!"
+		} else {
+			gatewaysStatus.Status = "OK"
 		}
+		checkResponse.Resource = append(checkResponse.Resource, gatewaysStatus)
 	}
 
 	includeProxy := doesNotContain(opts.Top.CheckName, "proxies")
 	if includeProxy {
-		err := checkProxies(opts.Top.Ctx, namespaces, opts.Metadata.GetNamespace(), deployments)
+		var proxiesStatus = printers.CheckStatus{Name: "proxies"}
+		err, errCount := checkProxies(opts, namespaces, opts.Metadata.GetNamespace(), deployments)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
+			proxiesStatus.Status = fmt.Sprint(errCount) + " Errors!"
+		} else {
+			proxiesStatus.Status = "OK"
 		}
+		checkResponse.Resource = append(checkResponse.Resource, proxiesStatus)
 	}
 
 	includePrometheusStatsCheck := doesNotContain(opts.Top.CheckName, "xds-metrics")
@@ -171,26 +248,34 @@ func CheckResources(opts *options.Options) error {
 			multiErr = multierror.Append(multiErr, err)
 		}
 	}
-	return multiErr.ErrorOrNil()
+
+	for _, e := range multiErr.Errors {
+		checkResponse.Errors = append(checkResponse.Errors, fmt.Sprint(e))
+	}
+
+	return checkResponse, multiErr.ErrorOrNil()
 }
 
-func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, error) {
-	fmt.Printf("Checking deployments... ")
+func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, error, int) {
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("Checking deployments... ")
+	}
+
 	client := helpers.MustKubeClient()
 	_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, opts.Metadata.GetNamespace(), metav1.GetOptions{})
 	if err != nil {
 		errMessage := "Gloo namespace does not exist"
 		fmt.Println(errMessage)
-		return nil, fmt.Errorf(errMessage)
+		return nil, fmt.Errorf(errMessage), 0
 	}
 	deployments, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, err, 0
 	}
 	if len(deployments.Items) == 0 {
 		errMessage := "Gloo is not installed"
 		fmt.Println(errMessage)
-		return nil, fmt.Errorf(errMessage)
+		return nil, fmt.Errorf(errMessage), 0
 	}
 	var multiErr *multierror.Error
 	var message string
@@ -240,18 +325,25 @@ func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, erro
 	}
 	if multiErr != nil {
 		fmt.Printf("%v Errors!\n", multiErr.Len())
-		return nil, multiErr
+		return nil, multiErr, multiErr.Len()
 	}
-	fmt.Printf("OK\n")
-	return deployments, nil
+
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("OK\n")
+	}
+
+	return deployments, nil, 0
 }
 
-func checkPods(opts *options.Options) error {
-	fmt.Printf("Checking pods... ")
+func checkPods(opts *options.Options) (error, int) {
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("Checking pods... ")
+	}
+
 	client := helpers.MustKubeClient()
 	pods, err := client.CoreV1().Pods(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{})
 	if err != nil {
-		return err
+		return err, 1
 	}
 	var multiErr *multierror.Error
 	for _, pod := range pods.Items {
@@ -299,10 +391,14 @@ func checkPods(opts *options.Options) error {
 	}
 	if multiErr != nil {
 		fmt.Printf("%v Errors!\n", multiErr.Len())
-		return multiErr
+		return multiErr, multiErr.Len()
 	}
-	fmt.Printf("OK\n")
-	return nil
+
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("OK\n")
+	}
+
+	return nil, 0
 }
 
 func getSettings(opts *options.Options) (*v1.Settings, error) {
@@ -318,14 +414,17 @@ func getNamespaces(ctx context.Context, settings *v1.Settings) ([]string, error)
 	return helpers.GetNamespaces(ctx)
 }
 
-func checkUpstreams(ctx context.Context, namespaces []string) ([]string, error) {
-	fmt.Printf("Checking upstreams... ")
+func checkUpstreams(opts *options.Options, namespaces []string) ([]string, error, int) {
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("Checking upstreams... ")
+	}
+
 	var knownUpstreams []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		upstreams, err := helpers.MustNamespacedUpstreamClient(ctx, ns).List(ns, clients.ListOpts{})
+		upstreams, err := helpers.MustNamespacedUpstreamClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{})
 		if err != nil {
-			return nil, err
+			return nil, err, 1
 		}
 		for _, upstream := range upstreams {
 			if upstream.GetStatus().GetState() == core.Status_Rejected {
@@ -343,19 +442,25 @@ func checkUpstreams(ctx context.Context, namespaces []string) ([]string, error) 
 	}
 	if multiErr != nil {
 		fmt.Printf("%v Errors!\n", multiErr.Len())
-		return nil, multiErr
+		return nil, multiErr, multiErr.Len()
 	}
-	fmt.Printf("OK\n")
-	return knownUpstreams, nil
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("OK\n")
+	}
+
+	return knownUpstreams, nil, 0
 }
 
-func checkUpstreamGroups(ctx context.Context, namespaces []string) error {
-	fmt.Printf("Checking upstream groups... ")
+func checkUpstreamGroups(opts *options.Options, namespaces []string) (error, int) {
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("Checking upstream groups... ")
+	}
+
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		upstreamGroups, err := helpers.MustNamespacedUpstreamGroupClient(ctx, ns).List(ns, clients.ListOpts{})
+		upstreamGroups, err := helpers.MustNamespacedUpstreamGroupClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{})
 		if err != nil {
-			return err
+			return err, 1
 		}
 		for _, upstreamGroup := range upstreamGroups {
 			if upstreamGroup.GetStatus().GetState() == core.Status_Rejected {
@@ -372,20 +477,27 @@ func checkUpstreamGroups(ctx context.Context, namespaces []string) error {
 	}
 	if multiErr != nil {
 		fmt.Printf("%v Errors!\n", multiErr.Len())
-		return multiErr
+		return multiErr, multiErr.Len()
 	}
-	fmt.Printf("OK\n")
-	return nil
+
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("OK\n")
+	}
+
+	return nil, 0
 }
 
-func checkAuthConfigs(ctx context.Context, namespaces []string) ([]string, error) {
-	fmt.Printf("Checking auth configs... ")
+func checkAuthConfigs(opts *options.Options, namespaces []string) ([]string, error, int) {
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("Checking auth configs... ")
+	}
+
 	var knownAuthConfigs []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		authConfigs, err := helpers.MustNamespacedAuthConfigClient(ctx, ns).List(ns, clients.ListOpts{})
+		authConfigs, err := helpers.MustNamespacedAuthConfigClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{})
 		if err != nil {
-			return nil, err
+			return nil, err, 1
 		}
 		for _, authConfig := range authConfigs {
 			if authConfig.GetStatus().GetState() == core.Status_Rejected {
@@ -402,31 +514,38 @@ func checkAuthConfigs(ctx context.Context, namespaces []string) ([]string, error
 	}
 	if multiErr != nil {
 		fmt.Printf("%v Errors!\n", multiErr.Len())
-		return nil, multiErr
+		return nil, multiErr, multiErr.Len()
 	}
-	fmt.Printf("OK\n")
-	return knownAuthConfigs, nil
+
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("OK\n")
+	}
+
+	return knownAuthConfigs, nil, 0
 }
 
-func checkRateLimitConfigs(ctx context.Context, namespaces []string) ([]string, error) {
-	fmt.Printf("Checking rate limit configs... ")
+func checkRateLimitConfigs(opts *options.Options, namespaces []string) ([]string, error, int) {
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("Checking rate limit configs... ")
+	}
+
 	var knownConfigs []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
 
-		rlcClient, err := helpers.RateLimitConfigClient(ctx, []string{ns})
+		rlcClient, err := helpers.RateLimitConfigClient(opts.Top.Ctx, []string{ns})
 		if err != nil {
 			if isCrdNotFoundErr(ratelimit.RateLimitConfigCrd, err) {
 				// Just warn. If the CRD is required, the check would have failed on the crashing gloo/gloo-ee pod.
 				fmt.Printf("WARN: %s\n", CrdNotFoundErr(ratelimit.RateLimitConfigCrd.KindName).Error())
-				return nil, nil
+				return nil, nil, 0
 			}
-			return nil, err
+			return nil, err, 1
 		}
 
 		configs, err := rlcClient.List(ns, clients.ListOpts{})
 		if err != nil {
-			return nil, err
+			return nil, err, 1
 		}
 		for _, config := range configs {
 			if config.Status.GetState() == v1alpha1.RateLimitConfigStatus_REJECTED {
@@ -440,30 +559,36 @@ func checkRateLimitConfigs(ctx context.Context, namespaces []string) ([]string, 
 
 	if multiErr != nil {
 		fmt.Printf("%v Errors!\n", multiErr.Len())
-		return nil, multiErr
+		return nil, multiErr, multiErr.Len()
 	}
 
-	fmt.Printf("OK\n")
-	return knownConfigs, nil
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("OK\n")
+	}
+
+	return knownConfigs, nil, 0
 }
 
-func checkVirtualHostOptions(ctx context.Context, namespaces []string) ([]string, error) {
-	fmt.Printf("Checking VirtualHostOptions... ")
+func checkVirtualHostOptions(opts *options.Options, namespaces []string) ([]string, error, int) {
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("Checking VirtualHostOptions... ")
+	}
+
 	var knownVhOpts []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		vhoptClient, err := helpers.VirtualHostOptionClient(ctx, []string{ns})
+		vhoptClient, err := helpers.VirtualHostOptionClient(opts.Top.Ctx, []string{ns})
 		if err != nil {
 			if isCrdNotFoundErr(gatewayv1.VirtualHostOptionCrd, err) {
 				// Just warn. If the CRD is required, the check would have failed on the crashing gloo/gloo-ee pod.
 				fmt.Printf("WARN: %s\n", CrdNotFoundErr(gatewayv1.VirtualHostOptionCrd.KindName).Error())
-				return nil, nil
+				return nil, nil, 0
 			}
-			return nil, err
+			return nil, err, 1
 		}
 		vhOpts, err := vhoptClient.List(ns, clients.ListOpts{})
 		if err != nil {
-			return nil, err
+			return nil, err, 1
 		}
 		for _, vhOpt := range vhOpts {
 			if vhOpt.GetStatus().GetState() == core.Status_Rejected {
@@ -480,29 +605,36 @@ func checkVirtualHostOptions(ctx context.Context, namespaces []string) ([]string
 	}
 	if multiErr != nil {
 		fmt.Printf("%v Errors!\n", multiErr.Len())
-		return nil, multiErr
+		return nil, multiErr, multiErr.Len()
 	}
-	fmt.Printf("OK\n")
-	return knownVhOpts, nil
+
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("OK\n")
+	}
+
+	return knownVhOpts, nil, 0
 }
 
-func checkRouteOptions(ctx context.Context, namespaces []string) ([]string, error) {
-	fmt.Printf("Checking RouteOptions... ")
+func checkRouteOptions(opts *options.Options, namespaces []string) ([]string, error, int) {
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("Checking RouteOptions... ")
+	}
+
 	var knownVhOpts []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		routeOptionClient, err := helpers.RouteOptionClient(ctx, []string{ns})
+		routeOptionClient, err := helpers.RouteOptionClient(opts.Top.Ctx, []string{ns})
 		if err != nil {
 			if isCrdNotFoundErr(gatewayv1.RouteOptionCrd, err) {
 				// Just warn. If the CRD is required, the check would have failed on the crashing gloo/gloo-ee pod.
 				fmt.Printf("WARN: %s\n", CrdNotFoundErr(gatewayv1.RouteOptionCrd.KindName).Error())
-				return nil, nil
+				return nil, nil, 0
 			}
-			return nil, err
+			return nil, err, 1
 		}
 		vhOpts, err := routeOptionClient.List(ns, clients.ListOpts{})
 		if err != nil {
-			return nil, err
+			return nil, err, 1
 		}
 		for _, routeOpt := range vhOpts {
 			if routeOpt.GetStatus().GetState() == core.Status_Rejected {
@@ -519,20 +651,27 @@ func checkRouteOptions(ctx context.Context, namespaces []string) ([]string, erro
 	}
 	if multiErr != nil {
 		fmt.Printf("%v Errors!\n", multiErr.Len())
-		return nil, multiErr
+		return nil, multiErr, multiErr.Len()
 	}
-	fmt.Printf("OK\n")
-	return knownVhOpts, nil
+
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("OK\n")
+	}
+
+	return knownVhOpts, nil, 0
 }
 
-func checkVirtualServices(ctx context.Context, namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs, knownVirtualHostOptions, knownRouteOptions []string) error {
-	fmt.Printf("Checking virtual services... ")
+func checkVirtualServices(opts *options.Options, namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs, knownVirtualHostOptions, knownRouteOptions []string) (error, int) {
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("Checking virtual services... ")
+	}
+
 	var multiErr *multierror.Error
 
 	for _, ns := range namespaces {
-		virtualServices, err := helpers.MustNamespacedVirtualServiceClient(ctx, ns).List(ns, clients.ListOpts{})
+		virtualServices, err := helpers.MustNamespacedVirtualServiceClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{})
 		if err != nil {
-			return err
+			return err, 1
 		}
 		for _, virtualService := range virtualServices {
 			if virtualService.GetStatus().GetState() == core.Status_Rejected {
@@ -645,19 +784,26 @@ func checkVirtualServices(ctx context.Context, namespaces, knownUpstreams, known
 
 	if multiErr != nil {
 		fmt.Printf("%v Errors!\n", multiErr.Len())
-		return multiErr
+		return multiErr, multiErr.Len()
 	}
-	fmt.Printf("OK\n")
-	return nil
+
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("OK\n")
+	}
+
+	return nil, 0
 }
 
-func checkGateways(ctx context.Context, namespaces []string) error {
-	fmt.Printf("Checking gateways... ")
+func checkGateways(opts *options.Options, namespaces []string) (error, int) {
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("Checking gateways... ")
+	}
+
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		gateways, err := helpers.MustNamespacedGatewayClient(ctx, ns).List(ns, clients.ListOpts{})
+		gateways, err := helpers.MustNamespacedGatewayClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{})
 		if err != nil {
-			return err
+			return err, 1
 		}
 		for _, gateway := range gateways {
 			if gateway.GetStatus().GetState() == core.Status_Rejected {
@@ -675,24 +821,30 @@ func checkGateways(ctx context.Context, namespaces []string) error {
 
 	if multiErr != nil {
 		fmt.Printf("%v Errors!\n", multiErr.Len())
-		return multiErr
+		return multiErr, multiErr.Len()
 	}
 
-	fmt.Printf("OK\n")
-	return nil
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("OK\n")
+	}
+
+	return nil, 0
 }
 
-func checkProxies(ctx context.Context, namespaces []string, glooNamespace string, deployments *appsv1.DeploymentList) error {
-	fmt.Printf("Checking proxies... ")
+func checkProxies(opts *options.Options, namespaces []string, glooNamespace string, deployments *appsv1.DeploymentList) (error, int) {
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("Checking proxies... ")
+	}
+
 	if deployments == nil {
 		fmt.Println("Skipping due to an error in checking deployments")
-		return fmt.Errorf("proxy check was skipped due to an error in checking deployments")
+		return fmt.Errorf("proxy check was skipped due to an error in checking deployments"), 1
 	}
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		proxies, err := helpers.MustNamespacedProxyClient(ctx, ns).List(ns, clients.ListOpts{})
+		proxies, err := helpers.MustNamespacedProxyClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{})
 		if err != nil {
-			return err
+			return err, 1
 		}
 		for _, proxy := range proxies {
 			if proxy.GetStatus().GetState() == core.Status_Rejected {
@@ -708,22 +860,29 @@ func checkProxies(ctx context.Context, namespaces []string, glooNamespace string
 		}
 	}
 
-	if err := checkProxiesPromStats(ctx, glooNamespace, deployments); err != nil {
+	if err := checkProxiesPromStats(opts.Top.Ctx, glooNamespace, deployments); err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
 
 	if multiErr != nil {
 		fmt.Printf("%v Errors!\n", multiErr.Len())
-		return multiErr
+		return multiErr, multiErr.Len()
 	}
-	fmt.Printf("OK\n")
-	return nil
+
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("OK\n")
+	}
+
+	return nil, 0
 }
 
-func checkSecrets(ctx context.Context, namespaces []string) error {
-	fmt.Printf("Checking secrets... ")
+func checkSecrets(opts *options.Options, namespaces []string) (error, int) {
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("Checking secrets... ")
+	}
+
 	var multiErr *multierror.Error
-	client := helpers.MustSecretClientWithOptions(ctx, 5*time.Second, namespaces)
+	client := helpers.MustSecretClientWithOptions(opts.Top.Ctx, 5*time.Second, namespaces)
 
 	for _, ns := range namespaces {
 		_, err := client.List(ns, clients.ListOpts{})
@@ -734,10 +893,14 @@ func checkSecrets(ctx context.Context, namespaces []string) error {
 	}
 	if multiErr != nil {
 		fmt.Printf("%v Errors!\n", multiErr.Len())
-		return multiErr
+		return multiErr, multiErr.Len()
 	}
-	fmt.Printf("OK\n")
-	return nil
+
+	if opts.Top.Output.IsTable() {
+		fmt.Printf("OK\n")
+	}
+
+	return nil, 0
 }
 
 func renderMetadata(metadata *core.Metadata) string {

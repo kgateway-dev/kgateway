@@ -1,17 +1,28 @@
 package printers
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
+	"encoding/json"
+	"fmt"
 )
-type checkResponse struct {
-	Resource *checkStatus
-	Errors   error
+
+type CheckResponse struct {
+	Resource []CheckStatus `json:"resources"`
+	Errors   []string      `json:"errors"`
 }
-type checkStatus struct {
-	Name   string
-	Status string
+type CheckStatus struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
 }
 
-PrintCheck(checkResponse response, outputType OutputType) error {
-checkRes
+func PrintChecks(CheckResponse CheckResponse, outputType OutputType) error {
+	if outputType == JSON {
+
+		cr, err := json.Marshal(CheckResponse)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		fmt.Println(string(cr))
+	}
+	return nil
 }

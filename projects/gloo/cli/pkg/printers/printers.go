@@ -29,14 +29,16 @@ type outputTypeProperties struct {
 	names []string
 	// if the type is a table output, it does not support dry run
 	isTable bool
+
+	isJSON bool
 }
 
 var typeProperties = []outputTypeProperties{
-	{TABLE, []string{"table"}, true},
-	{YAML, []string{"yaml", "yml"}, false},
-	{KUBE_YAML, []string{"kube-yaml"}, false},
-	{JSON, []string{"json"}, false},
-	{WIDE, []string{"wide"}, true},
+	{TABLE, []string{"table"}, true, false},
+	{YAML, []string{"yaml", "yml"}, false, false},
+	{KUBE_YAML, []string{"kube-yaml"}, false, false},
+	{JSON, []string{"json"}, false, true},
+	{WIDE, []string{"wide"}, true, false},
 }
 
 var (
@@ -48,6 +50,9 @@ var (
 	// YAML:      "yaml",
 
 	_OutputValueToIsTable = map[OutputType]bool{}
+	// YAML:      false,
+
+	_OutputValueToIsJSON = map[OutputType]bool{}
 	// YAML:      false,
 )
 
@@ -65,6 +70,7 @@ func init() {
 			_OutputValueToType[tp.outputType] = name
 		}
 		_OutputValueToIsTable[tp.outputType] = tp.isTable
+		_OutputValueToIsJSON[tp.outputType] = tp.isJSON
 	}
 }
 
@@ -111,4 +117,8 @@ func (o *OutputType) UnmarshalJSON(data []byte) error {
 
 func (o *OutputType) IsTable() bool {
 	return _OutputValueToIsTable[*o]
+}
+
+func (o *OutputType) IsJSON() bool {
+	return _OutputValueToIsJSON[*o]
 }
