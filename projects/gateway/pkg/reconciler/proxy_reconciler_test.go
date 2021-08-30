@@ -55,7 +55,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		})
 
-		proxyValidationClient *mock_validation.MockProxyValidationServiceClient
+		validationClient *mock_validation.MockGlooValidationServiceClient
 
 		reconciler ProxyReconciler
 	)
@@ -69,15 +69,15 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 
 	BeforeEach(func() {
 		mockCtrl := gomock.NewController(GinkgoT())
-		proxyValidationClient = mock_validation.NewMockProxyValidationServiceClient(mockCtrl)
-		proxyValidationClient.EXPECT().ValidateProxy(ctx, gomock.Any()).DoAndReturn(
-			func(_ context.Context, req *validation.ProxyValidationServiceRequest) (*validation.ProxyValidationServiceResponse, error) {
-				return &validation.ProxyValidationServiceResponse{
+		validationClient = mock_validation.NewMockGlooValidationServiceClient(mockCtrl)
+		validationClient.EXPECT().Validate(ctx, gomock.Any()).DoAndReturn(
+			func(_ context.Context, req *validation.GlooValidationServiceRequest) (*validation.GlooValidationServiceResponse, error) {
+				return &validation.GlooValidationServiceResponse{
 					ProxyReport: validationutils.MakeReport(req.Proxy),
 				}, nil
 			}).AnyTimes()
 
-		reconciler = NewProxyReconciler(proxyValidationClient, proxyClient)
+		reconciler = NewProxyReconciler(validationClient, proxyClient)
 
 		snap = samples.SimpleGatewaySnapshot(us, ns)
 
