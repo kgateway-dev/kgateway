@@ -2776,6 +2776,49 @@ var _ = Describe("Translator", func() {
 		Expect(report.VirtualHostReports[1].Errors[0].Type).To(Equal(validation.VirtualHostReport_Error_EmptyDomainError), "The error reported for the virtual host with empty domain should be the EmptyDomainError")
 		Expect(listener.GetListenerFilters()[0].GetName()).To(Equal(wellknown.TlsInspector))
 	})
+
+	It("clusterSpecifier is set even when there is an error setting the route action", func() {
+		proxy.Listeners[0].GetHttpListener().GetVirtualHosts()[0].Routes = []*v1.Route{
+			{
+				Name:     "testRouteName",
+				Matchers: []*matchers.Matcher{matcher},
+				Action: &v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_Multi{
+							Multi: &v1.MultiDestination{
+								Destinations: []*v1.WeightedDestination{
+									{
+										Destination: &v1.Destination{
+											DestinationType: &v1.Destination_Upstream{
+												Upstream: &core.ResourceRef{
+													Name:      "test",
+													Namespace: "gloo-system",
+												},
+											},
+											Subset: &v1.Subset{
+												Values: map[string]string{
+													"key": "value",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		snap, resourceReport, _, _ := translator.Translate(params, proxy)
+		Expect(resourceReport.ValidateStrict()).To(HaveOccurred())
+
+		routes := snap.GetResources(resource.RouteTypeV3)
+		routesProto := routes.Items["http-listener-routes"]
+		routeConfig := routesProto.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
+		clusterSpecifier := routeConfig.VirtualHosts[0].Routes[0].GetRoute().GetClusterSpecifier()
+		Expect(clusterSpecifier).NotTo(BeNil())
+	})
+
 })
 
 // The endpoint Cluster is now the UpstreamToClusterName-<hash of upstream> to facilitate
