@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5262
+    description: >
+      Fix NPE when Gateway CR is defined to enable oneWayTls, but a VirtualService does not define an sslConfig
