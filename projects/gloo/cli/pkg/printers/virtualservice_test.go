@@ -35,7 +35,7 @@ var _ = Describe("getStatus", func() {
 
 	It("handles Pending resource state", func() {
 		vs := &v1.VirtualService{}
-		Expect(vs.UpsertNamespacedStatus(&core.Status{
+		Expect(vs.SetStatusForNamespace(&core.Status{
 			State:      core.Status_Pending,
 			ReportedBy: "gloo",
 		})).NotTo(HaveOccurred())
@@ -44,7 +44,7 @@ var _ = Describe("getStatus", func() {
 		// range through all possible sub resource states
 		for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
 			subResourceStatusState := core.Status_State(subResourceStatusInt)
-			namespacedStatus, err := vs.GetNamespacedStatus()
+			namespacedStatus, err := vs.GetStatusForNamespace()
 			Expect(err).NotTo(HaveOccurred())
 			namespacedStatus.SubresourceStatuses = map[string]*core.Status{
 				thing1: {
@@ -59,7 +59,7 @@ var _ = Describe("getStatus", func() {
 
 	It("handles Accepted resource state", func() {
 		vs := &v1.VirtualService{}
-		Expect(vs.UpsertNamespacedStatus(&core.Status{
+		Expect(vs.SetStatusForNamespace(&core.Status{
 			State:      core.Status_Accepted,
 			ReportedBy: "gloo",
 		})).NotTo(HaveOccurred())
@@ -69,7 +69,7 @@ var _ = Describe("getStatus", func() {
 		for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
 			subResourceStatusState := core.Status_State(subResourceStatusInt)
 			By(fmt.Sprintf("subresource: %v", subResourceStatusString))
-			status, err := vs.GetNamespacedStatus()
+			status, err := vs.GetStatusForNamespace()
 			Expect(err).NotTo(HaveOccurred())
 			status.SubresourceStatuses = map[string]*core.Status{
 				thing1: {
@@ -100,7 +100,7 @@ var _ = Describe("getStatus", func() {
 			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String() {
 				By(fmt.Sprintf("resource: %v", resourceStatusString))
 				vs := &v1.VirtualService{}
-				Expect(vs.UpsertNamespacedStatus(&core.Status{
+				Expect(vs.SetStatusForNamespace(&core.Status{
 					State:      resourceStatusState,
 					ReportedBy: "gloo",
 				})).NotTo(HaveOccurred())
@@ -122,7 +122,7 @@ var _ = Describe("getStatus", func() {
 					},
 				}
 				vs := &v1.VirtualService{}
-				Expect(vs.UpsertNamespacedStatus(&core.Status{
+				Expect(vs.SetStatusForNamespace(&core.Status{
 					State:               resourceStatusState,
 					SubresourceStatuses: subStatuses,
 					ReportedBy:          "gloo",
@@ -138,7 +138,7 @@ var _ = Describe("getStatus", func() {
 						State: core.Status_Accepted,
 					},
 				}
-				namespacedStatus, err := vs.GetNamespacedStatus()
+				namespacedStatus, err := vs.GetStatusForNamespace()
 				Expect(err).NotTo(HaveOccurred())
 				namespacedStatus.SubresourceStatuses = subStatuses
 				Expect(getStatus(ctx, vs, namespace)).To(Equal("gloo-system: " + resourceStatusString))
@@ -161,7 +161,7 @@ var _ = Describe("getStatus", func() {
 					},
 				}
 				vs := &v1.VirtualService{}
-				Expect(vs.UpsertNamespacedStatus(&core.Status{
+				Expect(vs.SetStatusForNamespace(&core.Status{
 					State:               resourceStatusState,
 					SubresourceStatuses: subStatuses,
 					ReportedBy:          "gloo",
@@ -180,7 +180,7 @@ var _ = Describe("getStatus", func() {
 						Reason: reasonUntracked,
 					},
 				}
-				namespacedStatus, err := vs.GetNamespacedStatus()
+				namespacedStatus, err := vs.GetStatusForNamespace()
 				Expect(err).NotTo(HaveOccurred())
 				namespacedStatus.SubresourceStatuses = subStatuses
 				out = getStatus(ctx, vs, namespace)
@@ -208,7 +208,7 @@ var _ = Describe("getStatus", func() {
 					},
 				}
 				vs := &v1.VirtualService{}
-				Expect(vs.UpsertNamespacedStatus(&core.Status{
+				Expect(vs.SetStatusForNamespace(&core.Status{
 					State:               resourceStatusState,
 					SubresourceStatuses: subStatuses,
 					ReportedBy:          "gloo",
@@ -226,7 +226,7 @@ var _ = Describe("getStatus", func() {
 						State: core.Status_Accepted,
 					},
 				}
-				namespacedStatus, err := vs.GetNamespacedStatus()
+				namespacedStatus, err := vs.GetStatusForNamespace()
 				Expect(err).NotTo(HaveOccurred())
 				namespacedStatus.SubresourceStatuses = subStatuses
 				out = getStatus(ctx, vs, namespace)
@@ -244,7 +244,7 @@ var _ = Describe("getStatus", func() {
 						Reason: reasonUpstreamList,
 					},
 				}
-				namespacedStatus, err = vs.GetNamespacedStatus()
+				namespacedStatus, err = vs.GetStatusForNamespace()
 				Expect(err).NotTo(HaveOccurred())
 				namespacedStatus.SubresourceStatuses = subStatuses
 				out = getStatus(ctx, vs, namespace)
