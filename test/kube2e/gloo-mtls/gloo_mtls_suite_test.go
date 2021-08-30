@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
@@ -27,7 +29,7 @@ import (
 
 var (
 	testHelper       *helper.SoloTestHelper
-	installNamespace = "gloo-system"
+	installNamespace = defaults.GlooSystem
 	ctx              context.Context
 	cancel           context.CancelFunc
 )
