@@ -38,7 +38,7 @@ Now that we've got all the prerequisites in place, there are a few things to do 
 
 ### Install Kubernetes and Envoy Integrations
 
-From the Datadog portal, select [Integrations](https://app.datadoghq.com/account/settings#integrations) and install the Envoy and Kubernetes integrations.
+From the Datadog portal, select [**Integrations**](https://app.datadoghq.com/account/settings#integrations). Then, install the **Envoy** and **Kubernetes** integrations.
 
 ![Envoy Integration]({{% versioned_link_path fromRoot="/img/datadog-envoy.png" %}})
 
