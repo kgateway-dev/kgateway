@@ -48,7 +48,7 @@ If this is the first time you've logged into Datadog, you can also follow the wi
 
 ### Retrieve the API key
 
-From the Datadog portal, select Integrations and the Agents subcategory. Then select the [Kubernetes agent](https://app.datadoghq.com/account/settings#agent/kubernetes). Under the directions, you can find the Helm command to install the Datadog agent on your cluster. Your API key will be included in the sample command. It will look like this:
+From the Datadog portal, select **Integrations > Agents**. Then, select the [**Kubernetes** agent](https://app.datadoghq.com/account/settings#agent/kubernetes). In the directions, find the Helm command to install the Datadog agent on your cluster. Your API key is included in the sample command, similar to the following example.
 
 ```bash
 helm install datadog-gloo -f datadog-values.yaml --set datadog.site='datadoghq.com' --set datadog.apiKey=YOUR_API_KEY datadog/datadog 
