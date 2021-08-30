@@ -38,14 +38,14 @@ static:
     port: 80
 `
 
-		tableOutput := `+--------------------+--------+---------+---------------------------------+
-|      UPSTREAM      |  TYPE  | STATUS  |             DETAILS             |
-+--------------------+--------+---------+---------------------------------+
-| jsonplaceholder-80 | Static | Pending | hosts:                          |
-|                    |        |         | -                               |
-|                    |        |         | jsonplaceholder.typicode.com:80 |
-|                    |        |         |                                 |
-+--------------------+--------+---------+---------------------------------+`
+		tableOutput := `+--------------------+--------+--------+---------------------------------+
+|      UPSTREAM      |  TYPE  | STATUS |             DETAILS             |
++--------------------+--------+--------+---------------------------------+
+| jsonplaceholder-80 | Static |        | hosts:                          |
+|                    |        |        | -                               |
+|                    |        |        | jsonplaceholder.typicode.com:80 |
+|                    |        |        |                                 |
++--------------------+--------+--------+---------------------------------+`
 
 		It("--dry-run should override -o table and replace with kube-yaml", func() {
 			By("should use kube-yaml format by default")

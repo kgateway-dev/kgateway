@@ -10,6 +10,7 @@ import (
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/go-utils/cliutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -33,7 +34,7 @@ func UpstreamTable(xdsDump *xdsinspection.XdsDump, upstreams []*v1.Upstream, w i
 
 	for _, us := range upstreams {
 		name := us.GetMetadata().GetName()
-		s := us.GetStatus().GetState().String()
+		s := upstreamStatus(us)
 
 		u := upstreamType(us)
 		details := upstreamDetails(us, xdsDump)
@@ -55,12 +56,18 @@ func UpstreamTable(xdsDump *xdsinspection.XdsDump, upstreams []*v1.Upstream, w i
 	table.Render()
 }
 
+func upstreamStatus(us *v1.Upstream) string {
+	return AggregateNamespacedStatuses(us.GetNamespacedStatuses(), func(status *core.Status) string {
+		return status.GetState().String()
+	})
+}
+
 func upstreamType(up *v1.Upstream) string {
 	if up == nil {
 		return "Invalid"
 	}
 
-	switch up.GetUpstreamType().(type) {
+	switch up.UpstreamType.(type) {
 	case *v1.Upstream_Aws:
 		return "AWS Lambda"
 	case *v1.Upstream_Azure:
@@ -87,16 +94,15 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 	add := func(s ...string) {
 		details = append(details, s...)
 	}
-	switch usType := up.GetUpstreamType().(type) {
+	switch usType := up.UpstreamType.(type) {
 	case *v1.Upstream_Aws:
 		var functions []string
 		for _, fn := range usType.Aws.GetLambdaFunctions() {
-
-			functions = append(functions, fn.GetLambdaFunctionName()+" ("+fn.GetQualifier()+")")
+			functions = append(functions, fn.GetLambdaFunctionName())
 		}
 		add(
-			fmt.Sprintf("region: %v", usType.Aws.GetRegion()),
-			fmt.Sprintf("secret: %v", usType.Aws.GetSecretRef().Key()),
+			fmt.Sprintf("region: %v", usType.Aws.Region),
+			fmt.Sprintf("secret: %v", usType.Aws.SecretRef.Key()),
 		)
 		for i := range functions {
 			if i == 0 {
@@ -106,9 +112,9 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 		}
 	case *v1.Upstream_AwsEc2:
 		add(
-			fmt.Sprintf("role:           %v", usType.AwsEc2.GetRoleArn()),
-			fmt.Sprintf("uses public ip: %v", usType.AwsEc2.GetPublicIp()),
-			fmt.Sprintf("port:           %v", usType.AwsEc2.GetPort()),
+			fmt.Sprintf("role:           %v", usType.AwsEc2.RoleArn),
+			fmt.Sprintf("uses public ip: %v", usType.AwsEc2.PublicIp),
+			fmt.Sprintf("port:           %v", usType.AwsEc2.Port),
 		)
 		add(getEc2TagFiltersString(usType.AwsEc2.GetFilters())...)
 		instances := xdsDump.GetEc2InstancesForUpstream(up.GetMetadata().Ref())
@@ -124,8 +130,8 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 			functions = append(functions, fn.GetFunctionName())
 		}
 		add(
-			fmt.Sprintf("function app name: %v", usType.Azure.GetFunctionAppName()),
-			fmt.Sprintf("secret: %v", usType.Azure.GetSecretRef().Key()),
+			fmt.Sprintf("function app name: %v", usType.Azure.FunctionAppName),
+			fmt.Sprintf("secret: %v", usType.Azure.SecretRef.Key()),
 		)
 
 		for i := range functions {
@@ -136,19 +142,19 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 		}
 	case *v1.Upstream_Consul:
 		add(
-			fmt.Sprintf("svc name: %v", usType.Consul.GetServiceName()),
-			fmt.Sprintf("svc tags: %v", usType.Consul.GetServiceTags()),
+			fmt.Sprintf("svc name: %v", usType.Consul.ServiceName),
+			fmt.Sprintf("svc tags: %v", usType.Consul.ServiceTags),
 		)
 		if usType.Consul.GetServiceSpec() != nil {
 			add(linesForServiceSpec(usType.Consul.GetServiceSpec())...)
 		}
 	case *v1.Upstream_Kube:
 		add(
-			fmt.Sprintf("svc name:      %v", usType.Kube.GetServiceName()),
-			fmt.Sprintf("svc namespace: %v", usType.Kube.GetServiceNamespace()),
-			fmt.Sprintf("port:          %v", usType.Kube.GetServicePort()),
+			fmt.Sprintf("svc name:      %v", usType.Kube.ServiceName),
+			fmt.Sprintf("svc namespace: %v", usType.Kube.ServiceNamespace),
+			fmt.Sprintf("port:          %v", usType.Kube.ServicePort),
 		)
-		if usType.Kube.GetServiceSpec() != nil {
+		if usType.Kube.ServiceSpec != nil {
 			add(linesForServiceSpec(usType.Kube.GetServiceSpec())...)
 		}
 	case *v1.Upstream_Static:
@@ -156,10 +162,10 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 			if i == 0 {
 				add("hosts:")
 			}
-			add(fmt.Sprintf("- %v:%v", usType.Static.GetHosts()[i].GetAddr(), usType.Static.GetHosts()[i].GetPort()))
+			add(fmt.Sprintf("- %v:%v", usType.Static.Hosts[i].Addr, usType.Static.Hosts[i].Port))
 		}
-		if usType.Static.GetServiceSpec() != nil {
-			add(linesForServiceSpec(usType.Static.GetServiceSpec())...)
+		if usType.Static.ServiceSpec != nil {
+			add(linesForServiceSpec(usType.Static.ServiceSpec)...)
 		}
 	}
 	add("")
@@ -171,7 +177,7 @@ func linesForServiceSpec(serviceSpec *plugins.ServiceSpec) []string {
 	add := func(s ...string) {
 		spec = append(spec, s...)
 	}
-	switch plug := serviceSpec.GetPluginType().(type) {
+	switch plug := serviceSpec.PluginType.(type) {
 	case *plugins.ServiceSpec_Rest:
 		add("REST service:")
 		var functions []string
@@ -202,9 +208,9 @@ func linesForServiceSpec(serviceSpec *plugins.ServiceSpec) []string {
 		}
 	case *plugins.ServiceSpec_Grpc:
 		add("gRPC service:")
-		for _, grpcService := range plug.Grpc.GetGrpcServices() {
-			add(fmt.Sprintf("  %v", grpcService.GetServiceName()))
-			for _, fn := range grpcService.GetFunctionNames() {
+		for _, grpcService := range plug.Grpc.GrpcServices {
+			add(fmt.Sprintf("  %v", grpcService.ServiceName))
+			for _, fn := range grpcService.FunctionNames {
 				add(fmt.Sprintf("  - %v", fn))
 			}
 		}
@@ -222,7 +228,7 @@ func getEc2TagFiltersString(filters []*ec2.TagFilter) []string {
 	var kFilters []*ec2.TagFilter_Key
 	var kvFilters []*ec2.TagFilter_KvPair
 	for _, f := range filters {
-		switch x := f.GetSpec().(type) {
+		switch x := f.Spec.(type) {
 		case *ec2.TagFilter_Key:
 			kFilters = append(kFilters, x)
 		case *ec2.TagFilter_KvPair_:
@@ -242,7 +248,7 @@ func getEc2TagFiltersString(filters []*ec2.TagFilter) []string {
 	} else {
 		add(fmt.Sprintf("key-value filters:"))
 		for _, f := range kvFilters {
-			add(fmt.Sprintf("- %v: %v", f.GetKey(), f.GetValue()))
+			add(fmt.Sprintf("- %v: %v", f.Key, f.Value))
 		}
 	}
 	return out

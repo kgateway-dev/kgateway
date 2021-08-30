@@ -3,6 +3,7 @@ package printers
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -23,60 +24,74 @@ var _ = Describe("getStatus", func() {
 	)
 
 	BeforeEach(func() {
+		Expect(os.Setenv("POD_NAMESPACE", "gloo-system")).NotTo(HaveOccurred())
 		ctx, cancel = context.WithCancel(context.Background())
 	})
 
 	AfterEach(func() {
+		Expect(os.Unsetenv("POD_NAMESPACE")).NotTo(HaveOccurred())
 		cancel()
 	})
 
 	It("handles Pending resource state", func() {
-		vs := &v1.VirtualService{
-			Status: &core.Status{
-				State: core.Status_Pending,
-			},
-		}
-		Expect(getStatus(ctx, vs, namespace)).To(Equal(core.Status_Pending.String()))
+		vs := &v1.VirtualService{}
+		Expect(vs.UpsertNamespacedStatus(&core.Status{
+			State:      core.Status_Pending,
+			ReportedBy: "gloo",
+		})).NotTo(HaveOccurred())
+		Expect(getStatus(ctx, vs, namespace)).To(Equal("gloo-system: Pending"))
 
 		// range through all possible sub resource states
 		for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
 			subResourceStatusState := core.Status_State(subResourceStatusInt)
-			vs.Status.SubresourceStatuses = map[string]*core.Status{
+			namespacedStatus, err := vs.GetNamespacedStatus()
+			Expect(err).NotTo(HaveOccurred())
+			namespacedStatus.SubresourceStatuses = map[string]*core.Status{
 				thing1: {
 					State:  subResourceStatusState,
 					Reason: "any reason",
 				},
 			}
 			By(fmt.Sprintf("subresource: %v", subResourceStatusString))
-			Expect(getStatus(ctx, vs, namespace)).To(Equal(core.Status_Pending.String()))
+			Expect(getStatus(ctx, vs, namespace)).To(Equal("gloo-system: Pending"))
 		}
 	})
+
 	It("handles Accepted resource state", func() {
-		vs := &v1.VirtualService{
-			Status: &core.Status{
-				State: core.Status_Accepted,
-			},
-		}
-		Expect(getStatus(ctx, vs, namespace)).To(Equal(core.Status_Accepted.String()))
+		vs := &v1.VirtualService{}
+		Expect(vs.UpsertNamespacedStatus(&core.Status{
+			State:      core.Status_Accepted,
+			ReportedBy: "gloo",
+		})).NotTo(HaveOccurred())
+		Expect(getStatus(ctx, vs, namespace)).To(Equal("gloo-system: Accepted"))
 
 		// range through all possible sub resource states
 		for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
 			subResourceStatusState := core.Status_State(subResourceStatusInt)
 			By(fmt.Sprintf("subresource: %v", subResourceStatusString))
-			vs.Status.SubresourceStatuses = map[string]*core.Status{
+			status, err := vs.GetNamespacedStatus()
+			Expect(err).NotTo(HaveOccurred())
+			status.SubresourceStatuses = map[string]*core.Status{
 				thing1: {
-					State:  subResourceStatusState,
-					Reason: "any reason",
+					State:      subResourceStatusState,
+					Reason:     "any reason",
+					ReportedBy: "gloo",
 				},
 			}
+			vs.SetNamespacedStatuses(&core.NamespacedStatuses{
+				Statuses: map[string]*core.Status{
+					"gloo-system": status,
+				},
+			})
 
 			if subResourceStatusString == core.Status_Accepted.String() {
-				Expect(getStatus(ctx, vs, namespace)).To(Equal(core.Status_Accepted.String()))
+				Expect(getStatus(ctx, vs, namespace)).To(Equal("gloo-system: Accepted"))
 			} else {
-				Expect(getStatus(ctx, vs, namespace)).To(Equal(core.Status_Accepted.String() + "\n" + genericSubResourceMessage(thing1, subResourceStatusString)))
+				Expect(getStatus(ctx, vs, namespace)).To(Equal("gloo-system: Accepted\n" + genericSubResourceMessage(thing1, subResourceStatusString)))
 			}
 		}
 	})
+
 	It("handles simple non-Pending and non-Accepted resource states", func() {
 		// range through all possible resource states
 		for resourceStatusString, resourceStatusInt := range core.Status_State_value {
@@ -84,15 +99,16 @@ var _ = Describe("getStatus", func() {
 			// check all values other than accepted and pending
 			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String() {
 				By(fmt.Sprintf("resource: %v", resourceStatusString))
-				vs := &v1.VirtualService{
-					Status: &core.Status{
-						State: resourceStatusState,
-					},
-				}
-				Expect(getStatus(ctx, vs, namespace)).To(Equal(resourceStatusString))
+				vs := &v1.VirtualService{}
+				Expect(vs.UpsertNamespacedStatus(&core.Status{
+					State:      resourceStatusState,
+					ReportedBy: "gloo",
+				})).NotTo(HaveOccurred())
+				Expect(getStatus(ctx, vs, namespace)).To(Equal("gloo-system: " + resourceStatusString))
 			}
 		}
 	})
+
 	It("handles non-Pending and non-Accepted state - sub resources accepted", func() {
 		// range through all possible resource states
 		for resourceStatusString, resourceStatusInt := range core.Status_State_value {
@@ -105,13 +121,13 @@ var _ = Describe("getStatus", func() {
 						State: core.Status_Accepted,
 					},
 				}
-				vs := &v1.VirtualService{
-					Status: &core.Status{
-						State:               resourceStatusState,
-						SubresourceStatuses: subStatuses,
-					},
-				}
-				Expect(getStatus(ctx, vs, namespace)).To(Equal(resourceStatusString))
+				vs := &v1.VirtualService{}
+				Expect(vs.UpsertNamespacedStatus(&core.Status{
+					State:               resourceStatusState,
+					SubresourceStatuses: subStatuses,
+					ReportedBy:          "gloo",
+				})).NotTo(HaveOccurred())
+				Expect(getStatus(ctx, vs, namespace)).To(Equal("gloo-system: " + resourceStatusString))
 
 				By(fmt.Sprintf("resource: %v, two subresources accepted", resourceStatusString))
 				subStatuses = map[string]*core.Status{
@@ -122,11 +138,14 @@ var _ = Describe("getStatus", func() {
 						State: core.Status_Accepted,
 					},
 				}
-				vs.Status.SubresourceStatuses = subStatuses
-				Expect(getStatus(ctx, vs, namespace)).To(Equal(resourceStatusString))
+				namespacedStatus, err := vs.GetNamespacedStatus()
+				Expect(err).NotTo(HaveOccurred())
+				namespacedStatus.SubresourceStatuses = subStatuses
+				Expect(getStatus(ctx, vs, namespace)).To(Equal("gloo-system: " + resourceStatusString))
 			}
 		}
 	})
+
 	It("handles non-Pending and non-Accepted state - sub resources rejected", func() {
 		reasonUntracked := "some reason that does not match a known criteria"
 		// range through all possible resource states
@@ -141,14 +160,14 @@ var _ = Describe("getStatus", func() {
 						Reason: reasonUntracked,
 					},
 				}
-				vs := &v1.VirtualService{
-					Status: &core.Status{
-						State:               resourceStatusState,
-						SubresourceStatuses: subStatuses,
-					},
-				}
+				vs := &v1.VirtualService{}
+				Expect(vs.UpsertNamespacedStatus(&core.Status{
+					State:               resourceStatusState,
+					SubresourceStatuses: subStatuses,
+					ReportedBy:          "gloo",
+				})).NotTo(HaveOccurred())
 				out := getStatus(ctx, vs, namespace)
-				Expect(out).To(Equal(resourceStatusString + "\n" + genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUntracked)))
+				Expect(out).To(Equal("gloo-system: " + resourceStatusString + "\n" + genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUntracked)))
 
 				By(fmt.Sprintf("resource: %v, two subresources rejected", resourceStatusString))
 				subStatuses = map[string]*core.Status{
@@ -161,9 +180,11 @@ var _ = Describe("getStatus", func() {
 						Reason: reasonUntracked,
 					},
 				}
-				vs.Status.SubresourceStatuses = subStatuses
+				namespacedStatus, err := vs.GetNamespacedStatus()
+				Expect(err).NotTo(HaveOccurred())
+				namespacedStatus.SubresourceStatuses = subStatuses
 				out = getStatus(ctx, vs, namespace)
-				Expect(out).To(HavePrefix(resourceStatusString + "\n"))
+				Expect(out).To(HavePrefix("gloo-system: " + resourceStatusString + "\n"))
 				// Use regex because order does not matter
 				Expect(out).To(MatchRegexp(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUntracked)))
 				Expect(out).To(MatchRegexp(genericErrorFormat(thing2, core.Status_Rejected.String(), reasonUntracked)))
@@ -186,14 +207,14 @@ var _ = Describe("getStatus", func() {
 						Reason: reasonUpstreamList,
 					},
 				}
-				vs := &v1.VirtualService{
-					Status: &core.Status{
-						State:               resourceStatusState,
-						SubresourceStatuses: subStatuses,
-					},
-				}
+				vs := &v1.VirtualService{}
+				Expect(vs.UpsertNamespacedStatus(&core.Status{
+					State:               resourceStatusState,
+					SubresourceStatuses: subStatuses,
+					ReportedBy:          "gloo",
+				})).NotTo(HaveOccurred())
 				out := getStatus(ctx, vs, namespace)
-				Expect(out).To(Equal(resourceStatusString + "\n" + subResourceErrorFormat(erroredResourceIdentifier)))
+				Expect(out).To(Equal("gloo-system: " + resourceStatusString + "\n" + subResourceErrorFormat(erroredResourceIdentifier)))
 
 				By(fmt.Sprintf("resource: %v, one subresource accepted and one rejected", resourceStatusString))
 				subStatuses = map[string]*core.Status{
@@ -205,9 +226,11 @@ var _ = Describe("getStatus", func() {
 						State: core.Status_Accepted,
 					},
 				}
-				vs.Status.SubresourceStatuses = subStatuses
+				namespacedStatus, err := vs.GetNamespacedStatus()
+				Expect(err).NotTo(HaveOccurred())
+				namespacedStatus.SubresourceStatuses = subStatuses
 				out = getStatus(ctx, vs, namespace)
-				Expect(out).To(HavePrefix(resourceStatusString + "\n"))
+				Expect(out).To(HavePrefix("gloo-system: " + resourceStatusString + "\n"))
 				Expect(out).To(MatchRegexp(reasonUpstreamList))
 
 				By(fmt.Sprintf("resource: %v, two subresources rejected", resourceStatusString))
@@ -221,9 +244,11 @@ var _ = Describe("getStatus", func() {
 						Reason: reasonUpstreamList,
 					},
 				}
-				vs.Status.SubresourceStatuses = subStatuses
+				namespacedStatus, err = vs.GetNamespacedStatus()
+				Expect(err).NotTo(HaveOccurred())
+				namespacedStatus.SubresourceStatuses = subStatuses
 				out = getStatus(ctx, vs, namespace)
-				Expect(out).To(HavePrefix(resourceStatusString + "\n"))
+				Expect(out).To(HavePrefix("gloo-system: " + resourceStatusString + "\n"))
 				// Use regex because order does not matter
 				Expect(out).To(MatchRegexp(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUpstreamList)))
 				Expect(out).To(MatchRegexp(genericErrorFormat(thing2, core.Status_Rejected.String(), reasonUpstreamList)))

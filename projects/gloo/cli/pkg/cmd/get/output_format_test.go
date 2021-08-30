@@ -42,14 +42,14 @@ var _ = Describe("Upstream", func() {
 		return up
 	}
 
-	tableOutput := `+--------------------+--------+---------+---------------------------------+
-|      UPSTREAM      |  TYPE  | STATUS  |             DETAILS             |
-+--------------------+--------+---------+---------------------------------+
-| jsonplaceholder-80 | Static | Pending | hosts:                          |
-|                    |        |         | -                               |
-|                    |        |         | jsonplaceholder.typicode.com:80 |
-|                    |        |         |                                 |
-+--------------------+--------+---------+---------------------------------+`
+	tableOutput := `+--------------------+--------+--------+---------------------------------+
+|      UPSTREAM      |  TYPE  | STATUS |             DETAILS             |
++--------------------+--------+--------+---------------------------------+
+| jsonplaceholder-80 | Static |        | hosts:                          |
+|                    |        |        | -                               |
+|                    |        |        | jsonplaceholder.typicode.com:80 |
+|                    |        |        |                                 |
++--------------------+--------+--------+---------------------------------+`
 
 	kubeYamlOutput := `apiVersion: gloo.solo.io/v1
 kind: Upstream

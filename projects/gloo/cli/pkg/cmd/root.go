@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/postrun"
-
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/dashboard"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/debug"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/demo"
@@ -132,13 +130,10 @@ func GlooCli() *cobra.Command {
 		// should make sure to read the config file first
 		ReadConfigFile,
 		prerun.SetKubeConfigEnv,
-		prerun.SetPodNamespaceEnv,
 		prerun.VersionMismatchWarning,
 	}
 
-	postRunFuncs := []RunnableCommand{
-		postrun.UnsetPodNamespaceEnv,
-	}
+	var postRunFuncs []RunnableCommand
 
 	return App(opts, preRunFuncs, postRunFuncs, optionsFunc)
 }

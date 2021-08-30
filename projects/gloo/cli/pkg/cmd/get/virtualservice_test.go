@@ -79,12 +79,12 @@ var _ = Describe("VirtualService", func() {
 
 			out, err := testutils.GlooctlOut("get vs default")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out).To(ContainSubstring(`+-----------------+--------------+---------+------+---------+-----------------+--------------------------------+
-| VIRTUAL SERVICE | DISPLAY NAME | DOMAINS | SSL  | STATUS  | LISTENERPLUGINS |             ROUTES             |
-+-----------------+--------------+---------+------+---------+-----------------+--------------------------------+
-| default         |              | *       | none | Pending |                 | testRouteName: /foo, /bar ->   |
-|                 |              |         |      |         |                 | gloo-system.test (upstream)    |
-+-----------------+--------------+---------+------+---------+-----------------+--------------------------------+`))
+			Expect(out).To(ContainSubstring(`+-----------------+--------------+---------+------+--------+-----------------+--------------------------------+
+| VIRTUAL SERVICE | DISPLAY NAME | DOMAINS | SSL  | STATUS | LISTENERPLUGINS |             ROUTES             |
++-----------------+--------------+---------+------+--------+-----------------+--------------------------------+
+| default         |              | *       | none |        |                 | testRouteName: /foo, /bar ->   |
+|                 |              |         |      |        |                 | gloo-system.test (upstream)    |
++-----------------+--------------+---------+------+--------+-----------------+--------------------------------+`))
 		})
 
 		It("gets the virtual service routes", func() {

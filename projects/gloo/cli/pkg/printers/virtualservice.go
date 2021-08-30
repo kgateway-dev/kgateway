@@ -50,7 +50,7 @@ func VirtualServiceTable(ctx context.Context, list []*v1.VirtualService, w io.Wr
 	table.SetHeader([]string{"Virtual Service", "Display Name", "Domains", "SSL", "Status", "ListenerPlugins", "Routes"})
 
 	for _, v := range list {
-		name := v.GetMetadata().GetName()
+		name := v.GetMetadata().Name
 		displayName := v.GetDisplayName()
 		domains := domains(v)
 		ssl := sslConfig(v)
@@ -81,7 +81,7 @@ func RouteTableTable(list []*v1.RouteTable, w io.Writer) {
 	table.SetHeader([]string{"Route Table", "Routes", "Status"})
 
 	for _, rt := range list {
-		name := rt.GetMetadata().GetName()
+		name := rt.GetMetadata().Name
 		routes := routeList(rt.GetRoutes())
 		status := getRouteTableStatus(rt)
 
@@ -117,7 +117,7 @@ func getRouteTableStatus(vs *v1.RouteTable) string {
 	subResourceErrorMessages := []string{}
 	for k, v := range vs.GetStatus().GetSubresourceStatuses() {
 		if v.GetState() != core.Status_Accepted {
-			subResourceErrorMessages = append(subResourceErrorMessages, fmt.Sprintf("%v %v: %v", k, v.GetState().String(), v.GetReason()))
+			subResourceErrorMessages = append(subResourceErrorMessages, fmt.Sprintf("%v %v: %v", k, v.State.String(), v.Reason))
 		}
 	}
 
@@ -135,15 +135,16 @@ func getRouteTableStatus(vs *v1.RouteTable) string {
 }
 
 func getStatus(ctx context.Context, res resources.InputResource, namespace string) string {
+	return AggregateNamespacedStatuses(res.GetNamespacedStatuses(), func(status *core.Status) string {
+		return getSingleStatus(status, ctx, namespace)
+	})
+}
+
+func getSingleStatus(status *core.Status, ctx context.Context, namespace string) string {
 
 	// If the virtual service is still pending and may yet be accepted, don't clutter the status with other errors.
-	resourceStatus, err := res.GetStatusForNamespace()
-	if err != nil {
-		return "" // TODO
-	}
-
-	resourceStatusState := resourceStatus.GetState()
-	if resourceStatusState == core.Status_Pending {
+	resourceStatus := status.GetState()
+	if resourceStatus == core.Status_Pending {
 		return resourceStatus.String()
 	}
 
@@ -151,10 +152,10 @@ func getStatus(ctx context.Context, res resources.InputResource, namespace strin
 	// At the moment, virtual services only have one subresource, the associated gateway.
 	// In the future, we may add more.
 	// Either way, we only care if a subresource is in a non-accepted state.
-	subresourceStatuses := res.GetStatus().GetSubresourceStatuses()
+	subresourceStatuses := status.GetSubresourceStatuses()
 
 	// If the virtual service was accepted, don't include confusing errors on subresources but note if there's another resource potentially blocking config updates.
-	if resourceStatusState == core.Status_Accepted {
+	if resourceStatus == core.Status_Accepted {
 		// if route replacement is turned on, don't say that updates to this resource may be blocked
 		settingsClient, err := helpers.SettingsClient(ctx, []string{namespace})
 		// if we get any errors, ignore and default to more verbose error message
@@ -176,7 +177,7 @@ func getStatus(ctx context.Context, res resources.InputResource, namespace strin
 	subResourceErrorMessages := []string{}
 	for k, v := range subresourceStatuses {
 		if v.GetState() != core.Status_Accepted {
-			subResourceErrorMessages = append(subResourceErrorMessages, fmt.Sprintf("%v %v: %v", k, v.GetState().String(), v.GetReason()))
+			subResourceErrorMessages = append(subResourceErrorMessages, fmt.Sprintf("%v %v: %v", k, v.State.String(), v.Reason))
 		}
 	}
 
@@ -244,7 +245,7 @@ func matchersString(matchers []*matchers.Matcher) string {
 }
 
 func matcherString(matcher *matchers.Matcher) string {
-	switch ps := matcher.GetPathSpecifier().(type) {
+	switch ps := matcher.PathSpecifier.(type) {
 	case *matchers.Matcher_Exact:
 		return ps.Exact
 	case *matchers.Matcher_Prefix:
@@ -256,25 +257,25 @@ func matcherString(matcher *matchers.Matcher) string {
 }
 
 func destinationString(route *v1.Route) string {
-	switch action := route.GetAction().(type) {
+	switch action := route.Action.(type) {
 	case *v1.Route_RouteAction:
-		switch dest := action.RouteAction.GetDestination().(type) {
+		switch dest := action.RouteAction.Destination.(type) {
 		case *gloov1.RouteAction_Multi:
-			return fmt.Sprintf("%v destinations", len(dest.Multi.GetDestinations()))
+			return fmt.Sprintf("%v destinations", len(dest.Multi.Destinations))
 		case *gloov1.RouteAction_Single:
-			switch destType := dest.Single.GetDestinationType().(type) {
+			switch destType := dest.Single.DestinationType.(type) {
 			case *gloov1.Destination_Upstream:
 				return fmt.Sprintf("%s (upstream)", destType.Upstream.Key())
 			case *gloov1.Destination_Kube:
-				return fmt.Sprintf("%s (service)", destType.Kube.GetRef().Key())
+				return fmt.Sprintf("%s (service)", destType.Kube.Ref.Key())
 			}
 		case *gloov1.RouteAction_UpstreamGroup:
-			return fmt.Sprintf("upstream group: %s.%s", dest.UpstreamGroup.GetName(), dest.UpstreamGroup.GetNamespace())
+			return fmt.Sprintf("upstream group: %s.%s", dest.UpstreamGroup.Name, dest.UpstreamGroup.Namespace)
 		}
 	case *v1.Route_DirectResponseAction:
-		return strconv.Itoa(int(action.DirectResponseAction.GetStatus()))
+		return strconv.Itoa(int(action.DirectResponseAction.Status))
 	case *v1.Route_RedirectAction:
-		return action.RedirectAction.GetHostRedirect()
+		return action.RedirectAction.HostRedirect
 	case *v1.Route_DelegateAction:
 		if delegateSingle := action.DelegateAction.GetRef(); delegateSingle != nil {
 			return fmt.Sprintf("%s (route table)", delegateSingle.Key())
@@ -284,11 +285,11 @@ func destinationString(route *v1.Route) string {
 }
 
 func domains(v *v1.VirtualService) string {
-	if v.GetVirtualHost().GetDomains() == nil || len(v.GetVirtualHost().GetDomains()) == 0 {
+	if v.VirtualHost.Domains == nil || len(v.VirtualHost.Domains) == 0 {
 		return ""
 	}
 
-	return strings.Join(v.GetVirtualHost().GetDomains(), ", ")
+	return strings.Join(v.VirtualHost.Domains, ", ")
 }
 
 func sslConfig(v *v1.VirtualService) string {
@@ -296,7 +297,7 @@ func sslConfig(v *v1.VirtualService) string {
 		return "none"
 	}
 
-	switch v.GetSslConfig().GetSslSecrets().(type) {
+	switch v.GetSslConfig().SslSecrets.(type) {
 	case *gloov1.SslConfig_SecretRef:
 		return "secret_ref"
 	case *gloov1.SslConfig_SslFiles:
