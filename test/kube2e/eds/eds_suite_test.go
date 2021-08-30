@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	namespace = "eds-test-ns"
+	namespace = defaults.GlooSystem
 
 	_ = BeforeSuite(func() {
 		err := os.Setenv("POD_NAMESPACE", namespace)
