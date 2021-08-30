@@ -2809,8 +2809,7 @@ var _ = Describe("Translator", func() {
 				},
 			},
 		}
-		snap, resourceReport, _, err := translator.Translate(params, proxy)
-		Expect(err).NotTo(HaveOccurred())
+		snap, resourceReport, _, _ := translator.Translate(params, proxy)
 		Expect(resourceReport.ValidateStrict()).To(HaveOccurred())
 
 		routes := snap.GetResources(resource.RouteTypeV3)
