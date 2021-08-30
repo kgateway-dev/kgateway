@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = FDescribe("Kube2e: glooctl", func() {
+var _ = Describe("Kube2e: glooctl", func() {
 
 	const (
 		gatewayProxy = defaults.GatewayProxyName
