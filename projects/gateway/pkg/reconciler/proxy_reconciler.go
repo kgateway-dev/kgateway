@@ -23,11 +23,11 @@ type ProxyReconciler interface {
 }
 
 type proxyReconciler struct {
-	proxyValidator validation.ProxyValidationServiceClient
+	proxyValidator validation.GlooValidationServiceClient
 	baseReconciler gloov1.ProxyReconciler
 }
 
-func NewProxyReconciler(proxyValidator validation.ProxyValidationServiceClient, proxyClient gloov1.ProxyClient) *proxyReconciler {
+func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient) *proxyReconciler {
 	return &proxyReconciler{proxyValidator: proxyValidator, baseReconciler: gloov1.NewProxyReconciler(proxyClient)}
 }
 
@@ -102,7 +102,7 @@ func (s *proxyReconciler) addProxyValidationResults(ctx context.Context, proxies
 
 	for proxy, reports := range proxiesToWrite {
 
-		proxyRpt, err := s.proxyValidator.ValidateProxy(ctx, &validation.ProxyValidationServiceRequest{
+		proxyRpt, err := s.proxyValidator.Validate(ctx, &validation.GlooValidationServiceRequest{
 			Proxy: proxy,
 		})
 		if err != nil {

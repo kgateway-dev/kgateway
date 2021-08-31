@@ -12,7 +12,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
-	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
+	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -173,10 +173,9 @@ func initRoutes(
 	routeReport *validationapi.RouteReport,
 	generatedName string,
 ) []*envoy_config_route_v3.Route {
-	out := make([]*envoy_config_route_v3.Route, len(in.GetMatchers()))
 
 	if len(in.GetMatchers()) == 0 {
-		out = []*envoy_config_route_v3.Route{
+		return []*envoy_config_route_v3.Route{
 			{
 				Match: &envoy_config_route_v3.RouteMatch{
 					PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{Prefix: "/"},
@@ -185,6 +184,7 @@ func initRoutes(
 		}
 	}
 
+	out := make([]*envoy_config_route_v3.Route, len(in.GetMatchers()))
 	for i, matcher := range in.GetMatchers() {
 		if matcher.GetPathSpecifier() == nil {
 			validation.AppendRouteError(routeReport,
@@ -358,13 +358,12 @@ func (t *translatorInstance) setAction(
 func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.RouteAction, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport, routeName string) error {
 	switch dest := in.GetDestination().(type) {
 	case *v1.RouteAction_Single:
+		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{}
 		usRef, err := usconversion.DestinationToUpstreamRef(dest.Single)
 		if err != nil {
 			return err
 		}
-		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
-			Cluster: UpstreamToClusterName(usRef),
-		}
+		out.GetClusterSpecifier().(*envoy_config_route_v3.RouteAction_Cluster).Cluster = UpstreamToClusterName(usRef)
 
 		out.MetadataMatch = getSubsetMatch(dest.Single)
 
@@ -396,12 +395,13 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 }
 
 func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, multiDest *v1.MultiDestination, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport, routeName string) error {
-	if len(multiDest.GetDestinations()) == 0 {
-		return NoDestinationSpecifiedError
-	}
-
 	clusterSpecifier := &envoy_config_route_v3.RouteAction_WeightedClusters{
 		WeightedClusters: &envoy_config_route_v3.WeightedCluster{},
+	}
+	out.ClusterSpecifier = clusterSpecifier
+
+	if len(multiDest.GetDestinations()) == 0 {
+		return NoDestinationSpecifiedError
 	}
 
 	var totalWeight uint32
@@ -444,7 +444,6 @@ func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, mul
 
 	clusterSpecifier.WeightedClusters.TotalWeight = &wrappers.UInt32Value{Value: totalWeight}
 
-	out.ClusterSpecifier = clusterSpecifier
 	return nil
 }
 

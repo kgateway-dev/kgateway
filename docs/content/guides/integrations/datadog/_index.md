@@ -38,7 +38,7 @@ Now that we've got all the prerequisites in place, there are a few things to do 
 
 ### Install Kubernetes and Envoy Integrations
 
-From the Datadog portal, select Integrations and install the Envoy and Kubernetes integrations.
+From the Datadog portal, select [**Integrations**](https://app.datadoghq.com/account/settings#integrations). Then, install the **Envoy** and **Kubernetes** integrations.
 
 ![Envoy Integration]({{% versioned_link_path fromRoot="/img/datadog-envoy.png" %}})
 
@@ -48,10 +48,10 @@ If this is the first time you've logged into Datadog, you can also follow the wi
 
 ### Retrieve the API key
 
-From the Datadog portal, select Integrations and the Agents subcategory. Then select the Kubernetes agent. Under the directions, you can find the Helm command to install the Datadog agent on your cluster. It will look like this:
+From the Datadog portal, select **Integrations > Agents**. Then, select the [**Kubernetes** agent](https://app.datadoghq.com/account/settings#agent/kubernetes). In the directions, find the Helm command to install the Datadog agent on your cluster. Your API key is included in the sample command, similar to the following example.
 
 ```bash
-helm install datadog-gloo -f datadog-values.yaml --set datadog.apiKey=API_KEY datadog/datadog 
+helm install datadog-gloo -f datadog-values.yaml --set datadog.site='datadoghq.com' --set datadog.apiKey=YOUR_API_KEY datadog/datadog 
 ```
 
 Copy this command for later use.
@@ -95,10 +95,10 @@ Now that the `datadog-values.yaml` file is ready, we will use Helm to deploy Dat
 
 You will need to log into your Datadog account to retrieve the API keys for your installation. We retrieved them in an earlier step. You can find the example Helm command with your API keys on the [Kubernetes integration page](https://app.datadoghq.com/account/settings#agent/kubernetes). 
 
-Since we already prepared our `datadog-values.yaml` file in the previous step, we can simply run the following Helm command against the target Kubernetes cluster. Be sure to change the `API_KEY` to the key found in the example command in your Datadog account.
+Since we already prepared our `datadog-values.yaml` file in the previous step, we can simply run the following Helm command against the target Kubernetes cluster. Be sure to change the `YOUR_API_KEY` value to the key found in the example command in your Datadog account.
 
 ```bash
-helm install datadog-gloo -f datadog-values.yaml --set datadog.apiKey=API_KEY stable/datadog 
+helm install datadog-gloo -f datadog-values.yaml --set datadog.site='datadoghq.com' --set datadog.apiKey=YOUR_API_KEY datadog/datadog 
 ```
 
 You can validate that Datadog has installed by checking for the deployed pods.
@@ -153,8 +153,10 @@ spec:
 These annotations can also be added declaratively via helm, for example if using Gloo Edge Enterprise, these annotations can be added as a value for `gloo.gatewayProxies.gatewayProxy.podTemplate.extraAnnotations`.
 
 {{< notice note >}}
-If you upgrade the cluster using Helm version 3, these annotations should stay in place. Helm 3 uses a three-way merge when performing an update. Helm version 2 will also attempt a merge, but may have issues with changes made using kubectl edit. You should update the values used by Helm to include these annotations. More information is available [here](https://helm.sh/docs/faq/#improved-upgrade-strategy-3-way-strategic-merge-patches).
+If you upgrade the cluster using Helm version 3, these annotations should stay in place. Helm 3 uses a three-way merge when performing an update. Helm version 2 will also attempt a merge, but may have issues with changes made using kubectl edit. You should update the values used by Helm to include these annotations. Note that Helm 2 is not supported in Gloo Edge v1.8.0 and later.
 {{< /notice >}}
+
+For more information about merging strategies, see the [Helm documentation](https://helm.sh/docs/faq/changes_since_helm2/#improved-upgrade-strategy-3-way-strategic-merge-patches).
 
 You can verify that the annotations have been successfully updated by running the following command:
 
