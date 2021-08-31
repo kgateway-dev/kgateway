@@ -186,7 +186,7 @@ To follow the logs of other Gloo Edge deployments, simply change the value of th
 
 ### Changing logging levels and more
 
-Each Gloo Edge control plane component comes with a optional debug port that can be enabled with the `START_STATS_SERVER` environment variable. To get access to it, you can port-forward from Kubernetes like this:
+Each Gloo Edge control plane component comes with an optional debug port that you can enable with the `START_STATS_SERVER` environment variable. To get access to the port, you can forward the port of the Kubernetes deployment such as with the following command:
 
 ```bash
 kubectl port-forward -n gloo-system deploy/gloo 9091:9091
