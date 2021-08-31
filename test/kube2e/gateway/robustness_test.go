@@ -352,7 +352,7 @@ var _ = Describe("Robustness tests", func() {
 					},
 				},
 			}
-			scaleDeploymentTo(kubeClient, glooDeployment, 0) //TODO(kdorosh) fix test pollution in after each
+			scaleDeploymentTo(kubeClient, glooDeployment, 0)
 
 			By("bounce envoy")
 			envoyDeployment := &appsv1.Deployment{
@@ -377,6 +377,37 @@ var _ = Describe("Robustness tests", func() {
 			scaleDeploymentTo(kubeClient, envoyDeployment, 1)
 
 			By("verify that the endpoints have been propagated to Envoy by xds relay")
+			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+				Protocol:          "http",
+				Path:              "/1",
+				Method:            "GET",
+				Host:              gatewayProxy,
+				Service:           gatewayProxy,
+				Port:              gatewayPort,
+				ConnectionTimeout: 1,
+				WithoutStats:      true,
+			}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
+
+			By("reconnects to upstream gloo after scaling up, new endpoints are picked up")
+			scaleDeploymentTo(kubeClient, glooDeployment, 1) //TODO(kdorosh) fix test pollution in after each
+
+			By("force proxy into warning state")
+			forceProxyIntoWarningState(virtualService)
+
+			By("force an update of the service endpoints")
+			initialEndpointIPs := endpointIPsForKubeService(kubeClient, appService)
+
+			scaleDeploymentTo(kubeClient, appDeployment, 0)
+			scaleDeploymentTo(kubeClient, appDeployment, 1)
+
+			Eventually(func() []string {
+				return endpointIPsForKubeService(kubeClient, appService)
+			}, 20*time.Second, 1*time.Second).Should(And(
+				HaveLen(len(initialEndpointIPs)),
+				Not(BeEquivalentTo(initialEndpointIPs)),
+			))
+
+			By("verify that the new endpoints have been propagated to Envoy by xds relay")
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",
 				Path:              "/1",
