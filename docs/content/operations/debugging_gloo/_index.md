@@ -201,7 +201,7 @@ Now you can navigate to http://localhost:9091 and you get a simple page with som
 
 With these endpoints, you can profile the behavior of the component, adjust its logging, view the prometheus-style telemetry signals, as well as view tracing spans within the process. This is a very handy page to understand the behavior of a particular component. 
 
-If you'd prefer to change the log levels of individual components from the command line instead of the administrative interface, then use commands of this form.
+To change the log levels of individual Gloo Edge deployments from the CLI instead of the Admin UI, use commands similar to the following example with the `discovery` deployment.
 
 ```bash
 kubectl port-forward -n gloo-system deploy/discovery 9091:9091
