@@ -1,0 +1,7 @@
+changelog:
+- type: HELM
+  issueLink: https://github.com/solo-io/gloo/issues/5215
+  resolvesIssue: false
+  description: >
+    Migrate to mergeOverwrite in `gloo.util.merge` helm helper to allow override
+    a boolean property with the false value

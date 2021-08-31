@@ -4495,6 +4495,22 @@ metadata:
 				)
 			})
 
+			Context("Kube GatewayKube overrides", func() {
+				It("httpsGatewayKubeOverride allows to override ssl true value with false", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.httpsGatewayKubeOverride.spec.ssl=false"},
+					})
+					resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+						if u.GetKind() == "Gateway" && u.GetName() == "gateway-proxy-ssl" {
+							a := getFieldFromUnstructured(u, "spec", "ssl")
+							Expect(a).To(Equal(false))
+							return true
+						}
+						return false
+					})
+					Expect(resources.NumResources()).To(Equal(1))
+				})
+			})
 		})
 
 		Context("Reflection", func() {
