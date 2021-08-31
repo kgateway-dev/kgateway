@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rotisserie/eris"
+
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
@@ -31,7 +33,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -230,6 +231,7 @@ var _ = Describe("Robustness tests", func() {
 		}
 
 		It("works", func() {
+			// we already verify that the initial curl works in the BeforeEach()
 			By("force proxy into warning state")
 			forceProxyIntoWarningState(virtualService)
 
@@ -324,6 +326,67 @@ var _ = Describe("Robustness tests", func() {
 				return len(oldEndpointMatches) == 0 && len(newEndpointMatches) > 0
 			}, 60*time.Second, 1*time.Second).Should(BeTrue())
 
+		})
+
+		It("works, even if gloo is scaled to zero and envoy is bounced", func() {
+
+			By("verify that the endpoints have been propagated to Envoy")
+			// we already verify that the initial curl works in the BeforeEach()
+
+			By("scale gloo to zero")
+			glooDeployment := &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "gloo-system",
+					Name:      "gloo",
+					Labels:    map[string]string{"gloo": "gloo"},
+				},
+				Spec: appsv1.DeploymentSpec{
+					Replicas: pointerToInt32(1),
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"gloo": "gloo"},
+					},
+					Template: corev1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{"gloo": "gloo"},
+						},
+					},
+				},
+			}
+			scaleDeploymentTo(kubeClient, glooDeployment, 0) //TODO(kdorosh) fix test pollution in after each
+
+			By("bounce envoy")
+			envoyDeployment := &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "gloo-system",
+					Name:      "gateway-proxy",
+					Labels:    map[string]string{"gloo": "gateway-proxy"},
+				},
+				Spec: appsv1.DeploymentSpec{
+					Replicas: pointerToInt32(1),
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"gloo": "gateway-proxy"},
+					},
+					Template: corev1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: map[string]string{"gloo": "gateway-proxy"},
+						},
+					},
+				},
+			}
+			scaleDeploymentTo(kubeClient, envoyDeployment, 0)
+			scaleDeploymentTo(kubeClient, envoyDeployment, 1)
+
+			By("verify that the endpoints have been propagated to Envoy by xds relay")
+			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+				Protocol:          "http",
+				Path:              "/1",
+				Method:            "GET",
+				Host:              gatewayProxy,
+				Service:           gatewayProxy,
+				Port:              gatewayPort,
+				ConnectionTimeout: 1,
+				WithoutStats:      true,
+			}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
 		})
 
 	})
