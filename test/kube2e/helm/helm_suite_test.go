@@ -21,6 +21,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/pkg/utils/envutils"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
@@ -48,7 +49,7 @@ func StartTestHelper() {
 
 	namespace := kube2e.GetRandomNamespace("helm")
 
-	err = os.Setenv("POD_NAMESPACE", namespace)
+	err = os.Setenv(envutils.PodNamespaceEnvName, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
@@ -80,7 +81,7 @@ func StartTestHelper() {
 }
 
 func TearDownTestHelper() {
-	err := os.Unsetenv("POD_NAMESPACE")
+	err := os.Unsetenv(envutils.PodNamespaceEnvName)
 	Expect(err).NotTo(HaveOccurred())
 	if os.Getenv("TEAR_DOWN") == "true" {
 		Expect(testHelper).ToNot(BeNil())

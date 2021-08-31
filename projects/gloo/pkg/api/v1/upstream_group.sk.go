@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/envutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -52,7 +53,7 @@ func (r *UpstreamGroup) SetNamespacedStatuses(statuses *core.NamespacedStatuses)
 // Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
 // If unset, a podNamespaceErr is returned.
 func (r *UpstreamGroup) SetStatusForNamespace(status *core.Status) error {
-	podNamespace := os.Getenv("POD_NAMESPACE")
+	podNamespace := os.Getenv(envutils.PodNamespaceEnvName)
 	if podNamespace == "" {
 		return errors.NewPodNamespaceErr()
 	}
@@ -72,7 +73,7 @@ func (r *UpstreamGroup) SetStatusForNamespace(status *core.Status) error {
 // Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
 // If unset, a podNamespaceErr is returned.
 func (r *UpstreamGroup) GetStatusForNamespace() (*core.Status, error) {
-	podNamespace := os.Getenv("POD_NAMESPACE")
+	podNamespace := os.Getenv(envutils.PodNamespaceEnvName)
 	if podNamespace == "" {
 		return nil, errors.NewPodNamespaceErr()
 	}

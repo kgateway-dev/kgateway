@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	"github.com/solo-io/solo-kit/pkg/utils/envutils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v12 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -26,13 +28,13 @@ var _ = Describe("Root", func() {
 	)
 
 	BeforeEach(func() {
-		Expect(os.Setenv("POD_NAMESPACE", "gloo-system")).NotTo(HaveOccurred())
+		Expect(os.Setenv(envutils.PodNamespaceEnvName, "gloo-system")).NotTo(HaveOccurred())
 		helpers.UseMemoryClients()
 		ctx, cancel = context.WithCancel(context.Background())
 	})
 
 	AfterEach(func() {
-		Expect(os.Unsetenv("POD_NAMESPACE")).NotTo(HaveOccurred())
+		Expect(os.Unsetenv(envutils.PodNamespaceEnvName)).NotTo(HaveOccurred())
 		cancel()
 	})
 

@@ -24,6 +24,7 @@ import (
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/envutils"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
@@ -53,7 +54,7 @@ var _ = BeforeSuite(func() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 
-	err = os.Setenv("POD_NAMESPACE", installNamespace)
+	err = os.Setenv(envutils.PodNamespaceEnvName, installNamespace)
 	Expect(err).NotTo(HaveOccurred())
 
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
@@ -98,7 +99,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	err := os.Unsetenv("POD_NAMESPACE")
+	err := os.Unsetenv(envutils.PodNamespaceEnvName)
 	Expect(err).NotTo(HaveOccurred())
 	if os.Getenv("TEAR_DOWN") == "true" {
 		err := testHelper.UninstallGloo()

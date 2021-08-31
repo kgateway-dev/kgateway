@@ -7,18 +7,19 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/pkg/utils/envutils"
 )
 
 var (
 	namespace = "syncer-test-ns"
 
 	_ = BeforeSuite(func() {
-		err := os.Setenv("POD_NAMESPACE", namespace)
+		err := os.Setenv(envutils.PodNamespaceEnvName, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	_ = AfterSuite(func() {
-		err := os.Unsetenv("POD_NAMESPACE")
+		err := os.Unsetenv(envutils.PodNamespaceEnvName)
 		Expect(err).NotTo(HaveOccurred())
 	})
 )

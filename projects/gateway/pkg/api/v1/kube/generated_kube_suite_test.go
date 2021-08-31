@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/k8s-utils/testutils/clusterlock"
+	"github.com/solo-io/solo-kit/pkg/utils/envutils"
 )
 
 func TestKube(t *testing.T) {
@@ -27,7 +28,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(locker.AcquireLock(retry.Attempts(40))).NotTo(HaveOccurred())
 
-	err = os.Setenv("POD_NAMESPACE", namespace)
+	err = os.Setenv(envutils.PodNamespaceEnvName, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
 })
@@ -35,6 +36,6 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	locker.ReleaseLock()
 
-	err := os.Unsetenv("POD_NAMESPACE")
+	err := os.Unsetenv(envutils.PodNamespaceEnvName)
 	Expect(err).NotTo(HaveOccurred())
 })
