@@ -135,7 +135,20 @@ func getRouteTableStatus(vs *v1.RouteTable) string {
 }
 
 func getStatus(ctx context.Context, res resources.InputResource, namespace string) string {
-	return AggregateNamespacedStatuses(res.GetNamespacedStatuses(), func(status *core.Status) string {
+	namespacedStatuses := res.GetNamespacedStatuses()
+
+	// If there are no statuses defined for this resource, default to a pending status for the resource namespace
+	if namespacedStatuses == nil {
+		namespacedStatuses = &core.NamespacedStatuses{
+			Statuses: map[string]*core.Status{
+				namespace: {
+					State: core.Status_Pending,
+				},
+			},
+		}
+	}
+
+	return AggregateNamespacedStatuses(namespacedStatuses, func(status *core.Status) string {
 		return getSingleStatus(status, ctx, namespace)
 	})
 }

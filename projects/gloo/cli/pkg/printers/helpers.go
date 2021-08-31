@@ -46,16 +46,37 @@ func PrintKubeCrdList(in resources.InputResourceList, resourceCrd crd.Crd) error
 
 // AggregateNamespacedStatuses Formats a NamespacedStatuses into a string, using the statusProcessor function to
 // format each individual controller's status
-func AggregateNamespacedStatuses(NamespacedStatuses *core.NamespacedStatuses, statusProcessor func(*core.Status) string) string {
+func AggregateNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses, statusProcessor func(*core.Status) string) string {
+	if len(namespacedStatuses.GetStatuses()) > 1 {
+		return aggregateMultipleNamespacedStatuses(namespacedStatuses, statusProcessor)
+	}
+	return aggregateSingleNamespacedStatus(namespacedStatuses, statusProcessor)
+}
+
+func aggregateSingleNamespacedStatus(namespacedStatuses *core.NamespacedStatuses, statusProcessor func(*core.Status) string) string {
+	var sb strings.Builder
+
+	for _, status := range namespacedStatuses.GetStatuses() {
+		// for a resource with a single status, we don't need to include the controller information
+		sb.WriteString(statusProcessor(status))
+		// we expect there to only be one status in this map
+		// but we short circuit anyway
+		break
+	}
+	return sb.String()
+}
+
+func aggregateMultipleNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses, statusProcessor func(*core.Status) string) string {
 	var sb strings.Builder
 	var index = 0
-	for controller, status := range NamespacedStatuses.GetStatuses() {
+
+	for controller, status := range namespacedStatuses.GetStatuses() {
 		sb.WriteString(controller)
 		sb.WriteString(": ")
 		sb.WriteString(statusProcessor(status))
 		index += 1
 		// Don't write newline after last status in the map
-		if index != len(NamespacedStatuses.GetStatuses()) {
+		if index != len(namespacedStatuses.GetStatuses()) {
 			sb.WriteString("\n")
 		}
 	}
