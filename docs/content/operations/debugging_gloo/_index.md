@@ -114,7 +114,7 @@ kubectl port-forward -n gloo-system deploy/gateway-proxy 19000:19000
 
 Now you can `curl localhost:19000` and get access to the Envoy Admin API. 
 
-Note that after enabling `debug` logging on Envoy proxy, it does not automatically revert to the default `info` logging. In order to reset logging to the default `info` level, you will need to either use the `logging` button on the admin interface. Alternatively, you can use a single `curl` command:
+Note that after enabling `debug` logging, the Envoy proxy does not automatically revert to the default `info` logging. To reset logging to the default `info` level, you can click **logging** in the Admin UI or run the following `curl` command in the CLI:
 ```bash
 curl -X POST http://localhost:19000/logging\?level\=info
 ```
