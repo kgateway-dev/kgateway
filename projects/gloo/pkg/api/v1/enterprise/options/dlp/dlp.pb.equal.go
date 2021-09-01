@@ -258,5 +258,54 @@ func (m *CustomAction) Equal(that interface{}) bool {
 		}
 	}
 
+	if len(m.GetRegexActions()) != len(target.GetRegexActions()) {
+		return false
+	}
+	for idx, v := range m.GetRegexActions() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRegexActions()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetRegexActions()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *RegexAction) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*RegexAction)
+	if !ok {
+		that2, ok := that.(RegexAction)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetRegex(), target.GetRegex()) != 0 {
+		return false
+	}
+
+	if m.GetSubgroup() != target.GetSubgroup() {
+		return false
+	}
+
 	return true
 }
