@@ -98,7 +98,7 @@ You will need to log into your Datadog account to retrieve the API keys for your
 Since we already prepared our `datadog-values.yaml` file in the previous step, we can simply run the following Helm command against the target Kubernetes cluster. Be sure to change the `YOUR_API_KEY` value to the key found in the example command in your Datadog account.
 
 ```bash
-helm install datadog-gloo -f datadog-values.yaml --set datadog.site='datadoghq.com' --set datadog.apiKey=YOUR_API_KEY datadog/datadog 
+helm install datadog-gloo -f datadog-values.yaml --set datadog.site='datadoghq.com' --set datadog.apiKey=YOUR_API_KEY --set datadog.prometheusScrape.enabled=true datadog/datadog 
 ```
 
 You can validate that Datadog has installed by checking for the deployed pods.
@@ -109,12 +109,13 @@ kubectl get pods | grep datadog
 
 ```console
 datadog-gloo-6d7wk                                 1/1     Running   0          3m1s
+datadog-gloo-cluster-agent-646f8f947d-sdm2z        1/1     Running   0          3m1s
 datadog-gloo-j227x                                 1/1     Running   0          3m1s
 datadog-gloo-kube-state-metrics-678b97d74f-w69jz   1/1     Running   0          3m1s
 datadog-gloo-prn8j                                 1/1     Running   0          3m1s
 ```
 
-The installation creates a daemonset for the Datadog agent, so there will be a pod for each worker node in your cluster, and a pod for `kube-state-metrics`.
+The installation creates a `DaemonSet` for the Datadog agent, so there will be `datadog-gloo` pods for each worker node in your cluster, and separate pods for the `cluster-agent` and `kube-state-metrics`.
 
 With Datadog installed, we now need to configure our Gloo Edge deployment to make Envoy metrics available to Datadog.
 
@@ -122,7 +123,7 @@ With Datadog installed, we now need to configure our Gloo Edge deployment to mak
 
 ## Configure the Gloo Edge deployment
 
-In this section, we will show you how to modify Gloo Edge deployments to provide two sets of metrics to Datadog. The first will be the Envoy proxy itself (`gateway-proxy` deployment). The second will be for metrics from the Gloo Edge control plane exported by `glooe-prometheus-server`, which is available only in the Enterprise edition.
+In this section, we will show you how to modify the Envoy proxy itself (`gateway-proxy` deployment) to provide its metrics to Datadog. In addition, by enabling the `prometheusScrape` option in the Datadog agent installation, we  expect to see control-plane-specific metrics emitted by other pods in the Gloo Edge fleet (e.g., gloo, discovery).
 
 We will need to update two things to allow metrics collection from Datadog. In order to discover the Envoy pods, the Datadog agent is relying on an [Autodiscovery feature](https://docs.datadoghq.com/agent/kubernetes/integrations/?tab=kubernetes) that looks for specific annotations associated with Envoy pods. 
 
@@ -194,67 +195,6 @@ And update it to the following:
 
 Then save the change. The Envoy pod will update within a few seconds with the new configuration settings. Datadog should now be able to collect metrics from any Envoy pods using the `/metrics` path.
 
-### Updating the `glooe-prometheus` annotations (Enterprise only)
-
-Second, we will publish metrics to Datadog for the elements of the Gloo Edge control plane (e.g., discovery). To do this, we are going to edit the `glooe-prometheus` deployment in Gloo Edge. We are going to add a series of Datadog-specific annotations that alert the agent that these pods are running Envoy. The annotations also let Datadog know what address to use for metrics collection and any log processing rules. The full list of potential annotations can be found in the [Datadog documentation](https://docs.datadoghq.com/agent/kubernetes/integrations/?tab=kubernetes).
-
-Assuming that you have deployed Gloo Edge in the namespace `gloo-system`, run the following command:
-
-```bash
-kubectl edit deployments -n gloo-system glooe-prometheus-server
-```
-
-Then update the `spec.template.metadata` section of the yaml with these additional annotations.  Be sure to add the annotations in the `spec.template.metadata.annotations` section, not the `metadata.annotations` section.  Adding them to the wrong section will cause the annotations not to be propagated through to the `gateway-proxy` pod.
-
-```yaml
-spec:
-  template:
-    metadata:
-      annotations:
-          ad.datadoghq.com/glooe-prometheus-server-configmap-reload.check_names: |
-            ["openmetrics"]
-          ad.datadoghq.com/glooe-prometheus-server-configmap-reload.init_configs: |
-            [{}]
-          ad.datadoghq.com/glooe-prometheus-server-configmap-reload.instances: |
-            [
-              {
-                "prometheus_url": "http://%%host%%:%%port%%/metrics",
-                "namespace": "documentation_example_kubernetes",
-                "metrics": [ {"promhttp_metric_handler_requests_total": "prometheus.handler.requests.total"}]
-              }
-            ]
-```
-
-Alternatively, you may use this `kubectl patch` command:
-
-```bash
-kubectl -n gloo-system patch deployment glooe-prometheus-server --patch "$(cat<<EOF
-spec:
-  template:
-    metadata:
-      annotations:
-          ad.datadoghq.com/glooe-prometheus-server-configmap-reload.check_names: |
-            ["openmetrics"]
-          ad.datadoghq.com/glooe-prometheus-server-configmap-reload.init_configs: |
-            [{}]
-          ad.datadoghq.com/glooe-prometheus-server-configmap-reload.instances: |
-            [
-              {
-                "prometheus_url": "http://%%host%%:%%port%%/metrics",
-                "namespace": "documentation_example_kubernetes",
-                "metrics": [ {"promhttp_metric_handler_requests_total": "prometheus.handler.requests.total"}]
-              }
-            ]
-EOF
-)"
-```
-
-You can verify that the annotations have been successfully updated by running the following command:
-
-```bash
-kubectl get pods -n gloo-system -l app=glooe-prometheus -o json | jq '.items | .[].metadata.annotations'
-```
-
 ---
 
 ## Validate the configuration
@@ -281,15 +221,15 @@ kubectl exec $POD_NAME -- agent status | grep envoy
 The output should be similar to this:
 
 ```console
-envoy (1.14.0)
+envoy (1.23.0)
       Instance ID: envoy:f312c8247060dc62 [OK]
 ```
 
-That means the Datadog agent has fired up the Envoy integration and should be collecting metrics. You can now verify this by going back to the Datadog portal and navigating to the Envoy Overview dashboard.
+That means the Datadog agent has fired up the Envoy integration and should be collecting metrics. You can verify this by going back to the Datadog portal and navigating to the Envoy Overview dashboard.
 
 ![Envoy Overview Dashboard](./envoy-dd-dash.png)
 
-You should be able to see meaningful statistics on the Datadog Metrics Explorer.
+In addition, you should be able to see meaningful statistics on the Datadog Metrics Explorer.
 
 ![Gloo Edge Metrics in Datadog Metrics Explorer](./envoy-dd-metrics-explorer.png)
 
