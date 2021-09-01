@@ -17,6 +17,7 @@ weight: 5
 - [Transformation](#transformation)
 - [DlpTransformation](#dlptransformation)
 - [Action](#action)
+- [RegexAction](#regexaction)
   
 
 
@@ -132,6 +133,7 @@ weight: 5
 ```yaml
 "name": string
 "regex": []string
+"regexActions": []envoy.config.filter.http.transformation_ee.v2.RegexAction
 "shadow": bool
 "percent": .solo.io.envoy.type.Percent
 "maskChar": string
@@ -142,9 +144,29 @@ weight: 5
 | ----- | ---- | ----------- | 
 | `name` | `string` | Identifier for this action. Used mostly to help ID specific actions in logs. If left null will default to unknown. |
 | `regex` | `[]string` | List of regexes to apply to the response body to match data which should be masked They will be applied iteratively in the order which they are specified. |
+| `regexActions` | [[]envoy.config.filter.http.transformation_ee.v2.RegexAction](../transformation.proto.sk/#regexaction) | List of regexes to apply to the response body to match data which should be masked. They will be applied iteratively in the order which they are specified. |
 | `shadow` | `bool` | If specified, this rule will not actually be applied, but only logged. |
 | `percent` | [.solo.io.envoy.type.Percent](../../../../../../../../../solo-kit/api/external/envoy/type/percent.proto.sk/#percent) | The percent of the string which should be masked. If not set, defaults to 75%. |
 | `maskChar` | `string` | The character which should overwrite the masked data If left empty, defaults to "X". |
+
+
+
+
+---
+### RegexAction
+
+
+
+```yaml
+"regex": string
+"subgroup": int
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `regex` | `string` | The regex to match for masking. |
+| `subgroup` | `int` | If provided and not 0, only this specific subgroup of the regex will be masked. |
 
 
 
