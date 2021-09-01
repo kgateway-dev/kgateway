@@ -296,28 +296,3 @@ func (m *CustomAction) Hash(hasher hash.Hash64) (uint64, error) {
 
 	return hasher.Sum64(), nil
 }
-
-// Hash function
-func (m *RegexAction) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("dlp.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/dlp.RegexAction")); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetRegex())); err != nil {
-		return 0, err
-	}
-
-	err = binary.Write(hasher, binary.LittleEndian, m.GetSubgroup())
-	if err != nil {
-		return 0, err
-	}
-
-	return hasher.Sum64(), nil
-}

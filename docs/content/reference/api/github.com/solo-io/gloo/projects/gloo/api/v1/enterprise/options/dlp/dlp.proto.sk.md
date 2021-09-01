@@ -19,7 +19,6 @@ weight: 5
 - [Action](#action)
 - [ActionType](#actiontype)
 - [CustomAction](#customaction)
-- [RegexAction](#regexaction)
   
 
 
@@ -253,7 +252,7 @@ If the mask_char, and percent were left to default, the result would be:
 "regex": []string
 "maskChar": string
 "percent": .solo.io.envoy.type.Percent
-"regexActions": []dlp.options.gloo.solo.io.RegexAction
+"regexActions": []envoy.config.filter.http.transformation_ee.v2.RegexAction
 
 ```
 
@@ -263,26 +262,7 @@ If the mask_char, and percent were left to default, the result would be:
 | `regex` | `[]string` | The list of regex strings which will be applied in order. |
 | `maskChar` | `string` | The masking character for the sensitive data. default value: X. |
 | `percent` | [.solo.io.envoy.type.Percent](../../../../../../../../../solo-kit/api/external/envoy/type/percent.proto.sk/#percent) | The percent of the string which will be masked by the mask_char default value: 75% rounds ratio (percent/100) by std::round http://www.cplusplus.com/reference/cmath/round/. |
-| `regexActions` | [[]dlp.options.gloo.solo.io.RegexAction](../dlp.proto.sk/#regexaction) | List of regexes to apply to the response body to match data which should be masked. They will be applied iteratively in the order which they are specified. |
-
-
-
-
----
-### RegexAction
-
-
-
-```yaml
-"regex": string
-"subgroup": int
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `regex` | `string` | The regex to match for masking. |
-| `subgroup` | `int` | If provided and not 0, only this specific subgroup of the regex will be masked. |
+| `regexActions` | [[]envoy.config.filter.http.transformation_ee.v2.RegexAction](../../../../../external/envoy/extensions/transformation_ee/transformation.proto.sk/#regexaction) | List of regexes to apply to the response body to match data which should be masked. They will be applied iteratively in the order which they are specified. |
 
 
 
