@@ -4,7 +4,7 @@ weight: 60
 description: Integrate the Datadog agent with your Gloo Edge and Envoy deployment
 ---
 
-Datadog is a SaaS platform that allows you to easily collect metrics and events from your environment through integrations with solutions like Kubernetes, public cloud providers, Linux and more. In this guide, we will show you how Gloo Edge can work with the Datadog Kubernetes integration to deliver information from Envoy to Datadog for analysis.
+Datadog is a SaaS platform that allows you to easily collect metrics and events from your environment through integrations with solutions like Kubernetes, public cloud providers, Linux and more. In this guide, we will show you how Gloo Edge can work with the Datadog Kubernetes integration to deliver information from Envoy and other Gloo Edge components to Datadog for analysis.
 
 Here are the high level steps for completing the integration:
 
@@ -51,7 +51,7 @@ If this is the first time you've logged into Datadog, you can also follow the wi
 From the Datadog portal, select **Integrations > Agents**. Then, select the [**Kubernetes** agent](https://app.datadoghq.com/account/settings#agent/kubernetes). In the directions, find the Helm command to install the Datadog agent on your cluster. Your API key is included in the sample command, similar to the following example.
 
 ```bash
-helm install datadog-gloo -f datadog-values.yaml --set datadog.site='datadoghq.com' --set datadog.apiKey=YOUR_API_KEY datadog/datadog 
+helm install datadog-gloo -f datadog-values.yaml --set datadog.site='datadoghq.com' --set datadog.apiKey=YOUR_API_KEY --set datadog.prometheusScrape.enabled=true datadog/datadog 
 ```
 
 Copy this command for later use.
@@ -98,7 +98,7 @@ You will need to log into your Datadog account to retrieve the API keys for your
 Since we already prepared our `datadog-values.yaml` file in the previous step, we can simply run the following Helm command against the target Kubernetes cluster. Be sure to change the `YOUR_API_KEY` value to the key found in the example command in your Datadog account.
 
 ```bash
-helm install datadog-gloo -f datadog-values.yaml --set datadog.site='datadoghq.com' --set datadog.apiKey=YOUR_API_KEY datadog/datadog 
+helm install datadog-gloo -f datadog-values.yaml --set datadog.site='datadoghq.com' --set datadog.apiKey=YOUR_API_KEY --set datadog.prometheusScrape.enabled=true datadog/datadog 
 ```
 
 You can validate that Datadog has installed by checking for the deployed pods.
@@ -109,12 +109,13 @@ kubectl get pods | grep datadog
 
 ```console
 datadog-gloo-6d7wk                                 1/1     Running   0          3m1s
+datadog-gloo-cluster-agent-646f8f947d-sdm2z        1/1     Running   0          3m1s
 datadog-gloo-j227x                                 1/1     Running   0          3m1s
 datadog-gloo-kube-state-metrics-678b97d74f-w69jz   1/1     Running   0          3m1s
 datadog-gloo-prn8j                                 1/1     Running   0          3m1s
 ```
 
-The installation creates a daemonset for the Datadog agent, so there will be a pod for each worker node in your cluster, and a pod for `kube-state-metrics`.
+The installation creates a `DaemonSet` for the Datadog agent, so there will be `datadog-gloo` pods for each worker node in your cluster, and separate pods for the `cluster-agent` and `kube-state-metrics`.
 
 With Datadog installed, we now need to configure our Gloo Edge deployment to make Envoy metrics available to Datadog.
 
@@ -122,13 +123,15 @@ With Datadog installed, we now need to configure our Gloo Edge deployment to mak
 
 ## Configure the Gloo Edge deployment
 
+In this section, we will show you how to modify the Envoy proxy itself (`gateway-proxy` deployment) to provide its metrics to Datadog. In addition, by enabling the `prometheusScrape` option in the Datadog agent installation, we  expect to see control-plane-specific metrics emitted by other pods in the Gloo Edge fleet (e.g., gloo, discovery).
+
 We will need to update two things to allow metrics collection from Datadog. In order to discover the Envoy pods, the Datadog agent is relying on an [Autodiscovery feature](https://docs.datadoghq.com/agent/kubernetes/integrations/?tab=kubernetes) that looks for specific annotations associated with Envoy pods. 
 
 The Envoy pods are configured by default to listen on port 8081 and the path `/metrics`. When a request comes in matching that path, it is rewritten to `/stats/prometheus`. Since we want to use Datadog instead, we are going to update that rule to rewrite the path to just `/stats`. If you'd like to use both Prometheus and Datadog, you could set up a matcher for a different path and rewrite it to `/stats`.
 
-### Updating the annotations
+### Updating the `gateway-proxy` annotations
 
-We are going to edit the deployment for the `gateway-proxy` in Gloo Edge, which includes the pods running Envoy. We are going to add a series of Datadog specific annotations that alert the agent that these pods are running Envoy. The annotations also let Datadog know what address to use for metrics collection and any log processing rules. The full list of potential annotations can be found in the [Datadog documentation](https://docs.datadoghq.com/agent/kubernetes/integrations/?tab=kubernetes).
+First, we will publish metrics to Datadog for the Envoy proxy itself. To do this, we are going to edit the `gateway-proxy` deployment in Gloo Edge. We are going to add a series of Datadog-specific annotations that alert the agent that these pods are running Envoy. The annotations also let Datadog know what address to use for metrics collection and any log processing rules. The full list of potential annotations can be found in the [Datadog documentation](https://docs.datadoghq.com/agent/kubernetes/integrations/?tab=kubernetes).
 
 Assuming that you have deployed Gloo Edge in the namespace `gloo-system`, run the following command:
 
@@ -202,28 +205,37 @@ We can check that the Datadog agent has enabled Envoy metrics collection by runn
 NODE_NAME=$(kubectl get pods -n gloo-system -l gloo=gateway-proxy -o json | jq '.items | .[].spec.nodeName' -r)
 ```
 
-Then we can get the daemonset pod for Datadog by running the following:
+Then we can get the `DaemonSet` pod for Datadog by running the following:
 
 ```bash
-kubectl get pods -o wide --field-selector spec.nodeName=$NODE_NAME
+# Assumes that Datadog agent pods are running in the default namespace
+POD_NAME=$(kubectl get pods -n default --field-selector spec.nodeName=$NODE_NAME --selector=app=datadog-gloo | tail -1 | cut -d' ' -f1)
 ```
 
-You may see two pods returned. You want the one that doesn't have `kube-state-metrics` in the name. Now you can run the `agent status` command from inside the Datadog agent pod. Change the `POD_NAME` to reflect your pod name.
+Now you can run the `agent status` command from inside the Datadog agent pod:
 
 ```bash
-kubectl exec POD_NAME -- agent status | grep envoy
+kubectl exec $POD_NAME -- agent status | grep envoy
 ```
 
 The output should be similar to this:
 
 ```console
-envoy (1.14.0)
+envoy (1.23.0)
       Instance ID: envoy:f312c8247060dc62 [OK]
 ```
 
-That means the Datadog agent has fired up the Envoy integration and should be collecting metrics. You can now verify this by going back to the Datadog portal and navigating to the Envoy Overview dashboard.
+That means the Datadog agent has fired up the Envoy integration and should be collecting metrics. You can verify this by going back to the Datadog portal and navigating to the Envoy Overview dashboard.
 
-![Envoy Overview Dashboard](./envoy-dd-dash-1.png)
+![Envoy Overview Dashboard](./envoy-dd-dash.png)
+
+In addition, you should be able to see meaningful statistics on the Datadog Metrics Explorer.
+
+![Gloo Edge Metrics in Datadog Metrics Explorer](./envoy-dd-metrics-explorer.png)
+
+You should also be able to see log messages emitted by various Gloo Edge components.
+
+![Gloo Edge Logs in Datadog](./envoy-dd-logs.png)
 
 ---
 
