@@ -367,7 +367,7 @@ type Action struct {
 	// They will be applied iteratively in the order which they are specified
 	Regex []string `protobuf:"bytes,2,rep,name=regex,proto3" json:"regex,omitempty"`
 	// List of regexes to apply to the response body to match data which should be
-	// masked They will be applied iteratively in the order which they are
+	// masked. They will be applied iteratively in the order which they are
 	// specified.
 	RegexActions []*RegexAction `protobuf:"bytes,6,rep,name=regex_actions,json=regexActions,proto3" json:"regex_actions,omitempty"`
 	// If specified, this rule will not actually be applied, but only logged.
