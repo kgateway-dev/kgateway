@@ -24,13 +24,13 @@ func AppendResponse(name string, status string, message string, err string, outp
 
 	if outputType.IsTable() {
 
-		if name != "" && status == ""{
+		if name != "" && status == "" {
 			fmt.Printf(name)
 		} else if status != "" {
 			fmt.Printf(status)
 		} else if message != "" {
 			fmt.Printf(message)
-		} 
+		}
 	} else if outputType.IsJSON() {
 
 		if checkResult == nil {
