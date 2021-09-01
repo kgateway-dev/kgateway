@@ -8,6 +8,7 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1/types"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +37,7 @@ func CheckMulticlusterResources(opts *options.Options) {
 	glooInstanceList, err := instanceReader.listGlooInstances(opts.Top.Ctx)
 	if err != nil {
 		if meta.IsNoMatchError(err) {
-			fmt.Print("Skipping Gloo Instance check -- Gloo Federation not detected\n")
+			printers.AppendResponse("", "", "Skipping Gloo Instance check -- Gloo Federation not detected\n", "", opts.Top.Output)
 			return
 		}
 		fmt.Printf("Warning: could not list Gloo Instances: %v\n", err)
@@ -47,7 +48,7 @@ func CheckMulticlusterResources(opts *options.Options) {
 		// No Gloo Instance CRD exist, meaning that none are registered.
 		return
 	}
-	fmt.Printf("\nDetected Gloo Federation!\n")
+	printers.AppendResponse("", "", "\nDetected Gloo Federation!\n", "", opts.Top.Output)
 	for _, glooInstance := range glooInstanceList.Items {
 		fmt.Printf("\nChecking Gloo Instance %s... ", glooInstance.GetName())
 		printGlooInstanceCheckSummary("deployments", glooInstance.Spec.GetCheck().GetDeployments())
