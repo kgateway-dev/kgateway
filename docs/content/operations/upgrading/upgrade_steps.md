@@ -172,7 +172,7 @@ additional steps to ensure there is no downtime because the charts do not have t
 ##### Helm 3
 
 {{% notice warning %}}
-Using Helm 2 is not supported in Gloo Edge v1.8.0.
+Using Helm 2 is not supported in Gloo Edge v1.8.0 and later.
 {{% /notice %}}
 
 {{% notice note %}}
