@@ -1,4 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink: https://github.com/solo-io/gloo/issues/4807
-    description: Adds JSON output to the `glooctl check -o json` command. The default output remains 'table', and no other functionality is added to the command.
