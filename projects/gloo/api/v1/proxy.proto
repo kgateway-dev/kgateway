@@ -38,6 +38,10 @@ message Proxy {
 
     option (core.solo.io.resource).short_name = "px";
     option (core.solo.io.resource).plural_name = "proxies";
+
+    // This field is populated when the proxy compression is turned on.
+    string compressedSpec = 3;
+
     // Define here each listener the proxy should create.
     // Listeners define the a set of behaviors for a single bind address/port where the proxy will listen
     // If no listeners are specified, the instances configured with the proxy resource will not accept connections.
