@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4807
+    description: Add support for json output from `glooctl check -o json`. `glooctl check` continues to function as it did before.
