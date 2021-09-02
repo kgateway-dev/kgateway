@@ -56,7 +56,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			if !opts.Top.Output.IsTable() && !opts.Top.Output.IsJSON() {
-				return errors.New("Invalid output type")
+				return errors.New("Invalid output type. Only table (default) and json are supported.")
 			}
 
 			err := CheckResources(opts)
