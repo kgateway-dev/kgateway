@@ -145,6 +145,16 @@ spec:
                                 items:
                                   type: string
                                 type: array
+                              regexActions:
+                                items:
+                                  properties:
+                                    regex:
+                                      type: string
+                                    subgroup:
+                                      format: int32
+                                      type: integer
+                                  type: object
+                                type: array
                             type: object
                           shadow:
                             type: boolean
