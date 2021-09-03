@@ -17,8 +17,8 @@ For example, Gloo Edge's data plane (the `gateway-proxy` pod) has ReadOnly file 
 * **Disable Kubernetes destinations**
     - Gloo Edge out of the box routes to upstreams. It can also route directly to Kubernetes destinations (bypassing upstreams). Upstreams is the recommended abstraction to which to route in VirtualServices, and you can disable the Kubernetes destinations with the `settings.disableKubernetesDestinations`. This saves on memory overhead so Gloo Edge pod doesn't cache both upstreams and Kubernetes destinations. 
 
-    You can set this value in the default `Settings` CRD by adding the following content:   
-    ```
+    You can set this value in the default `Settings` CR by adding the following content:
+    ```yaml
     apiVersion: gloo.solo.io/v1
     kind: Settings
     metadata:
@@ -30,8 +30,8 @@ For example, Gloo Edge's data plane (the `gateway-proxy` pod) has ReadOnly file 
         ...
     ```
 
-    You can set this value helm overrides by setting
-    ```
+    You can set this value helm overrides by setting:
+    ```yaml
     settings:
       disableKubernetesDestinations: true
     ```
@@ -39,7 +39,7 @@ For example, Gloo Edge's data plane (the `gateway-proxy` pod) has ReadOnly file 
 ## Enable replacing invalid routes
 
 * **Configure invalidConfigPolicy**
-    - In some cases, it may be desirable to update a virtual service even if its config becomes partially invalid. This is particularly useful when delegating to Route Tables as it ensures that a single Route Table will not block updates for other Route Tables which share the same Virtual Service. More information on why and how to enable this can be found [here]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/invalid_route_replacement/" %}})
+    - In some cases it may be desirable to update a virtual service even if its config becomes partially invalid. This is particularly useful when delegating to Route Tables as it ensures that a single Route Table will not block updates for other Route Tables which share the same Virtual Service. More information on why and how to enable this can be found [here]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/invalid_route_replacement/" %}})
 
 ## Enable health checks
 
@@ -64,6 +64,26 @@ These health checks are used by Envoy to determine the health of the various ups
 Additionally, "outlier detection" can be configured which allows Envoy to passively check the health of upstream hosts.
 A helpful [overview of this feature is available in Envoy's documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier).
 This can be configured via the `outlierDetection` field on the `Upstream` resource. See the {{< protobuf name="gloo.solo.io.Upstream" display="API reference for more detail" >}}.
+
+## XDS Relay
+
+You should consider protecting against control plane downtime (either by node failure or gloo bug) by installing gloo edge alongside the xds-relay helm chart. This helm chart installs a daemonset (configurable, daemonset by default) of xds-relay pods that serve as intermediaries between envoy and gloo (the xds server).
+
+This serves two purposes. One, it separates the lifecycle of gloo edge from the xds cache proxies. This means a failure during helm upgrade will not mean loss of last good xds state. Second, it allows you to scale xds-relay to as many replicas as desired, since gloo is only intended for one replica today. Without xds-relay, if the single gloo replica were down, then any new envoy proxies spun up would be unable to get valid configuration.
+
+
+To enable:
+
+- install `xds-relay`:
+  - `helm repo add xds-relay https://storage.googleapis.com/xds-relay-helm`
+  - `helm install xdsrelay xds-relay/xds-relay`
+- install gloo edge with the following helm values for each proxy (envoy) to point them towards xds-relay:
+```yaml
+gatewayProxies:
+  gatewayProxy:
+    xdsServiceName: xds-relay.default.svc.cluster.local
+    xdsServicePort: 9991
+```
 
 ## Envoy performance
 
