@@ -230,7 +230,7 @@ var _ = Describe("Robustness tests", func() {
 			}, 20*time.Second, 1*time.Second)
 		}
 
-		It("works", func() {
+		FIt("works", func() {
 			// we already verify that the initial curl works in the BeforeEach()
 			By("force proxy into warning state")
 			forceProxyIntoWarningState(virtualService)
@@ -328,7 +328,7 @@ var _ = Describe("Robustness tests", func() {
 
 		})
 
-		It("works, even if gloo is scaled to zero and envoy is bounced", func() {
+		FIt("works, even if gloo is scaled to zero and envoy is bounced", func() {
 
 			By("verify that the endpoints have been propagated to Envoy")
 			// we already verify that the initial curl works in the BeforeEach()
