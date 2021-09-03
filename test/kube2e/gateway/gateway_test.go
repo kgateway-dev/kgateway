@@ -18,6 +18,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
@@ -193,6 +194,52 @@ var _ = Describe("Kube2e: gateway", func() {
 			err := virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{IgnoreNotExist: true})
 			Expect(err).NotTo(HaveOccurred())
 		})
+
+		DescribeTable("can route to upstream", func(compressedProxy bool) {
+
+			kube2e.UpdateSettings(func(settings *gloov1.Settings) {
+				Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
+				settings.GetGateway().CompressedProxySpec = compressedProxy
+			}, ctx, testHelper.InstallNamespace)
+
+			dest := &gloov1.Destination{
+				DestinationType: &gloov1.Destination_Upstream{
+					Upstream: &core.ResourceRef{
+						Namespace: testHelper.InstallNamespace,
+						Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+					},
+				},
+			}
+			// give proxy validation a chance to start
+			Eventually(func() error {
+				_, err := virtualServiceClient.Write(getVirtualService(dest, nil), clients.WriteOpts{})
+				return err
+			}).ShouldNot(HaveOccurred())
+
+			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
+			// wait for default gateway to be created
+			Eventually(func() (*gatewayv1.Gateway, error) {
+				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
+			}, "15s", "0.5s").Should(Not(BeNil()))
+
+			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+				Protocol:          "http",
+				Path:              "/",
+				Method:            "GET",
+				Host:              gatewayProxy,
+				Service:           gatewayProxy,
+				Port:              gatewayPort,
+				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+				WithoutStats:      true,
+			}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
+
+			kube2e.UpdateSettings(func(settings *gloov1.Settings) {
+				Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
+				settings.GetGateway().CompressedProxySpec = false
+			}, ctx, testHelper.InstallNamespace)
+		},
+			Entry("can route to upstreams", false),
+			Entry("can route to upstreams with compressed proxy", true))
 
 		It("correctly routes requests to an upstream", func() {
 			dest := &gloov1.Destination{
