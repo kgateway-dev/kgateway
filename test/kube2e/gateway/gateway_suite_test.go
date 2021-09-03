@@ -2,13 +2,14 @@ package gateway_test
 
 import (
 	"context"
-	"github.com/solo-io/go-utils/testutils/exec"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/solo-io/go-utils/testutils/exec"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
@@ -56,11 +57,22 @@ func StartTestHelper() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// install xds-relay if needed
-	installXdsRelay()
+	if os.Getenv("USE_XDS_RELAY") == "true" {
+		err = installXdsRelay()
+		Expect(err).NotTo(HaveOccurred())
+	}
 
 	// Register additional fail handlers
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
-	valueOverrideFile, cleanupFunc := getXdsRelayHelmValuesOverrideFile()//kube2e.GetHelmValuesOverrideFile()
+
+	var valueOverrideFile string
+	var cleanupFunc func()
+
+	if os.Getenv("USE_XDS_RELAY") == "true" {
+		valueOverrideFile, cleanupFunc = getXdsRelayHelmValuesOverrideFile()
+	} else {
+		valueOverrideFile, cleanupFunc = kube2e.GetHelmValuesOverrideFile()
+	}
 	defer cleanupFunc()
 
 	// Allow skipping of install step for running multiple times
@@ -78,7 +90,7 @@ func StartTestHelper() {
 
 	// Ensure gloo reaches valid state and doesn't continually resync
 	// we can consider doing the same for leaking go-routines after resyncs
-	//kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
+	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
 }
 
 func installXdsRelay() error {

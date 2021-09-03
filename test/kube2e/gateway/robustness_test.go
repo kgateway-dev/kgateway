@@ -3,6 +3,7 @@ package gateway_test
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -230,7 +231,7 @@ var _ = Describe("Robustness tests", func() {
 			}, 20*time.Second, 1*time.Second)
 		}
 
-		FIt("works", func() {
+		It("works", func() {
 			// we already verify that the initial curl works in the BeforeEach()
 			By("force proxy into warning state")
 			forceProxyIntoWarningState(virtualService)
@@ -328,7 +329,11 @@ var _ = Describe("Robustness tests", func() {
 
 		})
 
-		FIt("works, even if gloo is scaled to zero and envoy is bounced", func() {
+		It("works, even if gloo is scaled to zero and envoy is bounced", func() {
+
+			if os.Getenv("USE_XDS_RELAY") != "true" {
+				Skip("skipping test that only passes with xds relay enabled")
+			}
 
 			By("verify that the endpoints have been propagated to Envoy")
 			// we already verify that the initial curl works in the BeforeEach()

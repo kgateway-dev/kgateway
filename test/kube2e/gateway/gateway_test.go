@@ -194,7 +194,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		FIt("correctly routes requests to an upstream", func() {
+		It("correctly routes requests to an upstream", func() {
 			dest := &gloov1.Destination{
 				DestinationType: &gloov1.Destination_Upstream{
 					Upstream: &core.ResourceRef{
