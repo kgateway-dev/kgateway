@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/1592
+    resolvesIssue: false
+    description: Define RegexActions as part of the DLP protobuf instead of importing them.
