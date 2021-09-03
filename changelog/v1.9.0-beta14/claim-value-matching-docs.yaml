@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4873
+    description: >
+      Adds documentation for using `ClaimMatcher` to specify how claims should be matched to values in JWT RBAC.

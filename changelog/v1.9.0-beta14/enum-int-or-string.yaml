@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5200
+    resolvesIssue: false
+    description: Allow enum fields in resources to be specified with int values

@@ -81,9 +81,9 @@ var _ = Describe("Validation Server", func() {
 			proxy := params.Snapshot.Proxies[0]
 			s := NewValidator(context.TODO(), translator, xdsSanitizer)
 			_ = s.Sync(context.TODO(), params.Snapshot)
-			rpt, err := s.ValidateProxy(context.TODO(), &validationgrpc.ProxyValidationServiceRequest{Proxy: proxy})
+			rpt, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{Proxy: proxy})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(rpt).To(matchers.MatchProto(&validationgrpc.ProxyValidationServiceResponse{ProxyReport: validation.MakeReport(proxy)}))
+			Expect(rpt).To(matchers.MatchProto(&validationgrpc.GlooValidationServiceResponse{ProxyReport: validation.MakeReport(proxy)}))
 		})
 		It("updates the proxy report when sanitization causes a change", func() {
 			proxy := params.Snapshot.Proxies[0]
@@ -102,7 +102,7 @@ var _ = Describe("Validation Server", func() {
 
 			s := NewValidator(context.TODO(), translator, xdsSanitizer)
 			_ = s.Sync(context.TODO(), params.Snapshot)
-			rpt, err := s.ValidateProxy(context.TODO(), &validationgrpc.ProxyValidationServiceRequest{Proxy: proxy})
+			rpt, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{Proxy: proxy})
 			routeError := rpt.GetProxyReport().GetListenerReports()[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0].GetErrors()
 			routeWarning := rpt.GetProxyReport().GetListenerReports()[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0].GetWarnings()
 			Expect(err).NotTo(HaveOccurred())
@@ -115,7 +115,7 @@ var _ = Describe("Validation Server", func() {
 		var (
 			srv    *grpc.Server
 			v      Validator
-			client validationgrpc.ProxyValidationServiceClient
+			client validationgrpc.GlooValidationServiceClient
 		)
 		BeforeEach(func() {
 			lis, err := net.Listen("tcp", ":0")
@@ -138,7 +138,7 @@ var _ = Describe("Validation Server", func() {
 			cc, err := grpc.DialContext(context.TODO(), lis.Addr().String(), grpc.WithInsecure(), grpc.WithBlock())
 			Expect(err).NotTo(HaveOccurred())
 
-			client = validationgrpc.NewProxyValidationServiceClient(cc)
+			client = validationgrpc.NewGlooValidationServiceClient(cc)
 
 		})
 		AfterEach(func() {

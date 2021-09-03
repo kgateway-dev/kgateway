@@ -181,13 +181,13 @@ spec:
   configs:
   - oauth2:
       oidcAuthorizationCode:
-        app_url: http://localhost:8080/
-        callback_path: /callback
-        client_id: gloo
-        client_secret_ref:
+        appUrl: http://localhost:8080/
+        callbackPath: /callback
+        clientId: gloo
+        clientSecretRef:
           name: oauth
           namespace: gloo-system
-        issuer_url: http://dex.gloo-system.svc.cluster.local:32000/
+        issuerUrl: http://dex.gloo-system.svc.cluster.local:32000/
         scopes:
         - email
         session:

@@ -16,6 +16,7 @@ weight: 5
 - [Policy](#policy)
 - [Principal](#principal)
 - [JWTPrincipal](#jwtprincipal)
+- [ClaimMatcher](#claimmatcher)
 - [Permissions](#permissions)
   
 
@@ -113,13 +114,30 @@ A JWT principal. To use this, JWT option MUST be enabled.
 ```yaml
 "claims": map<string, string>
 "provider": string
+"matcher": .rbac.options.gloo.solo.io.JWTPrincipal.ClaimMatcher
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `claims` | `map<string, string>` | Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used. all claims must be present on the JWT. |
+| `claims` | `map<string, string>` | Set of claims that make up this principal. Commonly, the 'iss' and 'sub' or 'email' claims are used. If you specify the path for a nested claim, such as 'parent.child.foo', you must also specify a non-empty string value for the `nested_claim_delimiter` field in the Policy. |
 | `provider` | `string` | Verify that the JWT came from a specific provider. This usually can be left empty and a provider will be chosen automatically. |
+| `matcher` | [.rbac.options.gloo.solo.io.JWTPrincipal.ClaimMatcher](../rbac.proto.sk/#claimmatcher) | The matcher to use when evaluating this principal. By default, exact string comparison (EXACT_STRING) is used. |
+
+
+
+
+---
+### ClaimMatcher
+
+ 
+Used to specify how claims should be matched to the value.
+
+| Name | Description |
+| ----- | ----------- | 
+| `EXACT_STRING` | The JWT claim value is a string that exactly matches the value. |
+| `BOOLEAN` | The JWT claim value is a boolean that matches the value. |
+| `LIST_CONTAINS` | The JWT claim value is a list that contains a string that exactly matches the value. |
 
 
 

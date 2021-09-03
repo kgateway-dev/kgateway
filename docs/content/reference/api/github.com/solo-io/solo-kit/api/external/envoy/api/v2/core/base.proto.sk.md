@@ -310,9 +310,9 @@ Data source consisting of either a file or an inline value.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `filename` | `string` | Local filesystem data source. Only one of `filename`, or `inlineString` can be set. |
-| `inlineBytes` | `bytes` | Bytes inlined in the configuration. Only one of `inlineBytes`, or `inlineString` can be set. |
-| `inlineString` | `string` | String inlined in the configuration. Only one of `inlineString`, or `inlineBytes` can be set. |
+| `filename` | `string` | Local filesystem data source. Only one of `filename`, `inlineBytes`, or `inlineString` can be set. |
+| `inlineBytes` | `bytes` | Bytes inlined in the configuration. Only one of `inlineBytes`, `filename`, or `inlineString` can be set. |
+| `inlineString` | `string` | String inlined in the configuration. Only one of `inlineString`, `filename`, or `inlineBytes` can be set. |
 
 
 

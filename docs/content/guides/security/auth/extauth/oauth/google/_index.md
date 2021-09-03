@@ -126,13 +126,13 @@ spec:
   configs:
   - oauth2:
       oidcAuthorizationCode:
-        app_url: http://localhost:8080
-        callback_path: /callback
-        client_id: $CLIENT_ID
-        client_secret_ref:
+        appUrl: http://localhost:8080
+        callbackPath: /callback
+        clientId: $CLIENT_ID
+        clientSecretRef:
           name: google
           namespace: gloo-system
-        issuer_url: https://accounts.google.com
+        issuerUrl: https://accounts.google.com
         session:
           cookieOptions:
             notSecure: true

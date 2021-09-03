@@ -25,7 +25,7 @@ import (
 
 type Validator interface {
 	v1.ApiSyncer
-	validation.ProxyValidationServiceServer
+	validation.GlooValidationServiceServer
 }
 
 type validator struct {
@@ -118,7 +118,7 @@ func (s *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	return nil
 }
 
-func (s *validator) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream validation.ProxyValidationService_NotifyOnResyncServer) error {
+func (s *validator) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream validation.GlooValidationService_NotifyOnResyncServer) error {
 	// send initial response as ACK
 	if err := stream.Send(&validation.NotifyOnResyncResponse{}); err != nil {
 		return err
@@ -160,9 +160,9 @@ func (s *validator) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream
 	}
 }
 
-func (s *validator) ValidateProxy(ctx context.Context, req *validation.ProxyValidationServiceRequest) (*validation.ProxyValidationServiceResponse, error) {
+func (s *validator) Validate(ctx context.Context, req *validation.GlooValidationServiceRequest) (*validation.GlooValidationServiceResponse, error) {
 	s.lock.RLock()
-	// we may receive a ValidateProxy call before a Sync has occurred
+	// we may receive a Validate call before a Sync has occurred
 	if s.latestSnapshot == nil {
 		s.lock.RUnlock()
 		return nil, eris.New("proxy validation called before the validation server received its first sync of resources")
@@ -188,7 +188,7 @@ func (s *validator) ValidateProxy(ctx context.Context, req *validation.ProxyVali
 	routeErrorToWarnings(resourceReports, report)
 
 	logger.Infof("proxy validation report result: %v", report.String())
-	return &validation.ProxyValidationServiceResponse{ProxyReport: report}, nil
+	return &validation.GlooValidationServiceResponse{ProxyReport: report}, nil
 }
 
 // Update the validation report so that route errors that were changed into warnings during sanitization
@@ -234,7 +234,7 @@ func routeErrorToWarnings(resourceReport reporter.ResourceReports, validationRep
 }
 
 type ValidationServer interface {
-	validation.ProxyValidationServiceServer
+	validation.GlooValidationServiceServer
 	SetValidator(v Validator)
 	Register(grpcServer *grpc.Server)
 }
@@ -255,10 +255,10 @@ func (s *validationServer) SetValidator(v Validator) {
 }
 
 func (s *validationServer) Register(grpcServer *grpc.Server) {
-	validation.RegisterProxyValidationServiceServer(grpcServer, s)
+	validation.RegisterGlooValidationServiceServer(grpcServer, s)
 }
 
-func (s *validationServer) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream validation.ProxyValidationService_NotifyOnResyncServer) error {
+func (s *validationServer) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream validation.GlooValidationService_NotifyOnResyncServer) error {
 	s.lock.RLock()
 	validator := s.validator
 	s.lock.RUnlock()
@@ -266,10 +266,10 @@ func (s *validationServer) NotifyOnResync(req *validation.NotifyOnResyncRequest,
 	return validator.NotifyOnResync(req, stream)
 }
 
-func (s *validationServer) ValidateProxy(ctx context.Context, req *validation.ProxyValidationServiceRequest) (*validation.ProxyValidationServiceResponse, error) {
+func (s *validationServer) Validate(ctx context.Context, req *validation.GlooValidationServiceRequest) (*validation.GlooValidationServiceResponse, error) {
 	s.lock.RLock()
 	validator := s.validator
 	s.lock.RUnlock()
 
-	return validator.ValidateProxy(ctx, req)
+	return validator.Validate(ctx, req)
 }

@@ -34,6 +34,7 @@ import (
 )
 
 var (
+	clientset         *kubernetes.Clientset
 	fakeKubeClientset *fake.Clientset
 	memResourceClient *factory.MemoryResourceClientFactory
 	consulClient      *factory.ConsulResourceClientFactory
@@ -123,11 +124,19 @@ func KubeClient() (kubernetes.Interface, error) {
 	if fakeKubeClientset != nil {
 		return fakeKubeClientset, nil
 	}
-	cfg, err := kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
-	if err != nil {
-		return nil, errors.Wrapf(err, "getting kube config")
+	if clientset == nil {
+		cfg, err := kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting kube config")
+		}
+		client, err := kubernetes.NewForConfig(cfg)
+		if err != nil {
+			return nil, errors.Wrapf(err, "creating clientset")
+		}
+		clientset = client
 	}
-	return kubernetes.NewForConfig(cfg)
+
+	return clientset, nil
 }
 
 func MustGetNamespaces(ctx context.Context) []string {
