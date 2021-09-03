@@ -21,6 +21,8 @@ spec:
       properties:
         spec:
           properties:
+            compressedSpec:
+              type: string
             listeners:
               items:
                 properties:
