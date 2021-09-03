@@ -277,3 +277,35 @@ func (m *CustomAction) Equal(that interface{}) bool {
 
 	return true
 }
+
+// Equal function
+func (m *RegexAction) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*RegexAction)
+	if !ok {
+		that2, ok := that.(RegexAction)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetRegex(), target.GetRegex()) != 0 {
+		return false
+	}
+
+	if m.GetSubgroup() != target.GetSubgroup() {
+		return false
+	}
+
+	return true
+}
