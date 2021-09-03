@@ -210,7 +210,7 @@ data:
                     {{- else }}
                     address: {{ $spec.xdsServiceName }}
                     {{- end }}
-                    port_value: {{ empty $spec.xdsServicePort | ternary .Values.gloo.deployment.xdsPort $spec.xdsServicePort }}
+                    port_value: {{ empty $spec.xdsServicePort | ternary .Values.gloo.deployment.restXdsPort $spec.xdsServicePort }}
         upstream_connection_options:
           tcp_keepalive: {}
         type: STRICT_DNS
