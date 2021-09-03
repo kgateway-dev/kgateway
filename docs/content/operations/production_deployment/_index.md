@@ -67,6 +67,10 @@ This can be configured via the `outlierDetection` field on the `Upstream` resour
 
 ## XDS Relay
 
+{{% notice warning %}}
+Today, this feature does not work in tandem with the follow non-default installation modes of Gloo Edge: rest eds, gloo mTLS mode, gloo with istio mTLS mode
+{{% /notice %}}
+
 You should consider protecting against control plane downtime (either by node failure or gloo bug) by installing gloo edge alongside the xds-relay helm chart. This helm chart installs a daemonset (configurable, daemonset by default) of xds-relay pods that serve as intermediaries between envoy and gloo (the xds server).
 
 This serves two purposes. One, it separates the lifecycle of gloo edge from the xds cache proxies. This means a failure during helm upgrade will not mean loss of last good xds state. Second, it allows you to scale xds-relay to as many replicas as desired, since gloo is only intended for one replica today. Without xds-relay, if the single gloo replica were down, then any new envoy proxies spun up would be unable to get valid configuration.
