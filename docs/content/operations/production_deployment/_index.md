@@ -81,7 +81,7 @@ To enable:
 ```yaml
 gatewayProxies:
   gatewayProxy:
-    xdsServiceName: xds-relay.default.svc.cluster.local
+    xdsServiceAddress: xds-relay.default.svc.cluster.local
     xdsServicePort: 9991
 ```
 

@@ -143,10 +143,10 @@ data:
             - endpoint:
                 address:
                   socket_address:
-                    {{- if empty $spec.xdsServiceName }}
+                    {{- if empty $spec.xdsServiceAddress }}
                     address: gloo.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}
                     {{- else }}
-                    address: {{ $spec.xdsServiceName }}
+                    address: {{ $spec.xdsServiceAddress }}
                     {{- end }}
                     port_value: {{ empty $spec.xdsServicePort | ternary .Values.gloo.deployment.xdsPort $spec.xdsServicePort }}
         http2_protocol_options: {}
@@ -205,10 +205,10 @@ data:
             - endpoint:
                 address:
                   socket_address:
-                    {{- if empty $spec.xdsServiceName }}
+                    {{- if empty $spec.xdsServiceAddress }}
                     address: gloo.{{ .Release.Namespace }}.svc.{{ .Values.k8s.clusterName}}
                     {{- else }}
-                    address: {{ $spec.xdsServiceName }}
+                    address: {{ $spec.xdsServiceAddress }}
                     {{- end }}
                     port_value: {{ empty $spec.xdsServicePort | ternary .Values.gloo.deployment.restXdsPort $spec.xdsServicePort }}
         upstream_connection_options:
