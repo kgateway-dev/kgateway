@@ -241,39 +241,6 @@ var _ = Describe("Kube2e: gateway", func() {
 			Entry("can route to upstreams", false),
 			Entry("can route to upstreams with compressed proxy", true))
 
-		It("correctly routes requests to an upstream", func() {
-			dest := &gloov1.Destination{
-				DestinationType: &gloov1.Destination_Upstream{
-					Upstream: &core.ResourceRef{
-						Namespace: testHelper.InstallNamespace,
-						Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
-					},
-				},
-			}
-			// give proxy validation a chance to start
-			Eventually(func() error {
-				_, err := virtualServiceClient.Write(getVirtualService(dest, nil), clients.WriteOpts{})
-				return err
-			}).ShouldNot(HaveOccurred())
-
-			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
-			// wait for default gateway to be created
-			Eventually(func() (*gatewayv1.Gateway, error) {
-				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
-			}, "15s", "0.5s").Should(Not(BeNil()))
-
-			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-				Protocol:          "http",
-				Path:              "/",
-				Method:            "GET",
-				Host:              gatewayProxy,
-				Service:           gatewayProxy,
-				Port:              gatewayPort,
-				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
-				WithoutStats:      true,
-			}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
-		})
-
 		Context("routing directly to kubernetes services", func() {
 
 			BeforeEach(func() {
