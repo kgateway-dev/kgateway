@@ -38,6 +38,10 @@ func (m *Proxy) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte(m.GetCompressedSpec())); err != nil {
+		return 0, err
+	}
+
 	for _, v := range m.GetListeners() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
