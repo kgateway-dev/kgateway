@@ -21,7 +21,7 @@ message UpstreamSpec {
     // The environment variables used to indicate the AWS account can be:
     // - for the access key: "AWS_ACCESS_KEY_ID" or "AWS_ACCESS_KEY"
 	// - for the secret: "AWS_SECRET_ACCESS_KEY" or "AWS_SECRET_KEY"
-    // If set, a [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret
+    // If set, a [Gloo Secret Ref](https://docs.solo.io/gloo-edge/latest/reference/cli/glooctl_create_secret_aws/) to an AWS Secret
     // AWS Secrets can be created with `glooctl secret create aws ...`
     // If the secret is created manually, it must conform to the following structure:
     //  ```

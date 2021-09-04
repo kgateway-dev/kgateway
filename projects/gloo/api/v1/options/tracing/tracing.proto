@@ -18,8 +18,8 @@ import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
 
 // Contains settings for configuring Envoy's tracing capabilities at the listener level.
-// See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
-// See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/user_guides/setup_options/observability/#tracing
+// See [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html) for additional information on Envoy's tracing capabilities. 
+// See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Edge.
 message ListenerTracingSettings {
     // Optional. If specified, Envoy will include the headers and header values for any matching request headers.
     repeated string request_headers_for_tags = 1;
@@ -42,8 +42,8 @@ message ListenerTracingSettings {
 
 // Contains settings for configuring Envoy's tracing capabilities at the route level.
 // Note: must also specify ListenerTracingSettings for the associated listener.
-// See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
-// See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/user_guides/setup_options/observability/#tracing
+// See [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html) for additional information on Envoy's tracing capabilities.
+// See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Edge.
 message RouteTracingSettings {
     // Optional. If set, will be used to identify the route that produced the trace.
     // Note that this value will be overridden if the "x-envoy-decorator-operation" header is passed.
