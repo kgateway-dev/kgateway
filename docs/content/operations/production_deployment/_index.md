@@ -155,9 +155,10 @@ gatewayProxies:
 
 For the other control plane components, such as the Gateway deployment or the Discovery deployment, *DO NOT* scale them. Today, it can lead to race conditions and there are no need to scale them up.
 
-## Metrics and monitoring
 
-### Enable health checks
+## Enhancing the data-plane reliability
+
+### Downstream to Envoy health checks
 
 {{% notice warning %}}
 Liveness/readiness probes on Envoy are disabled by default. This is because Envoy's behavior can be surprising: When there are no
@@ -177,9 +178,16 @@ In addition to defining health checks for Envoy, you should strongly consider de
 These health checks are used by Envoy to determine the health of the various upstream hosts in an upstream cluster, for example checking the health of the various pods that make up a Kubernetes `Service`. This is known as "active health checking" and can be configured on the `Upstream` resource directly.
 [See the documentation]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/upstream_health_checks/" %}}) for additional info.
 
+### Other considerations
+
 Additionally, "outlier detection" can be configured which allows Envoy to passively check the health of upstream hosts.
 A helpful [overview of this feature is available in Envoy's documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier).
 This can be configured via the `outlierDetection` field on the `Upstream` resource. See the {{< protobuf name="gloo.solo.io.Upstream" display="API reference for more detail" >}}.
+
+Also, consider using `retries` on your _routes_. The default value for this attribute is `1`. Generally spealing, we observed better results with the value being set to `3`.
+
+
+## Metrics and monitoring
 
 ### Grafana dashboards
 
