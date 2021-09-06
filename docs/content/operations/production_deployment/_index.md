@@ -7,11 +7,11 @@ weight: 20
 This document shows some of the Production options that may be useful. We will continue to add to this document and welcome users of Gloo Edge to send PRs to this as well.
 
 
-## Securing the control-plane
+## Securing the control-plane from configuration errors
 
 ### Enable replacing invalid routes
 
-In some cases, it may be desirable to update a virtual service even if its config becomes partially invalid. This is particularly useful when delegating to Route Tables as it ensures that a single Route Table will not block updates for other Route Tables which share the same Virtual Service. More information on why and how to enable this can be found [here]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/invalid_route_replacement/" %}})
+In some cases it may be desirable to update a virtual service even if its config becomes partially invalid. This is particularly useful when delegating to Route Tables as it ensures that a single Route Table will not block updates for other Route Tables which share the same Virtual Service. More information on why and how to enable this can be found [here]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/invalid_route_replacement/" %}})
 
 Example:
 
@@ -47,7 +47,7 @@ gloo:
 ### Disable Kubernetes destinations
 Gloo Edge out of the box routes to upstreams. It can also route directly to Kubernetes destinations (bypassing upstreams). Upstreams is the recommended abstraction to which to route in VirtualServices, and you can disable the Kubernetes destinations with the `settings.disableKubernetesDestinations`. This saves on memory overhead so Gloo Edge pod doesn't cache both upstreams and Kubernetes destinations. 
 
-You can set this value in the default `Settings` CRD by adding the following content:   
+You can set this value in the default `Settings` CR by adding the following content:   
 ```yaml
 apiVersion: gloo.solo.io/v1
 kind: Settings
@@ -60,7 +60,7 @@ spec:
     ...
 ```
 
-You can set this value helm overrides by setting
+You can set this value helm overrides by setting:
 ```yaml
 settings:
   disableKubernetesDestinations: true
@@ -116,13 +116,44 @@ The [access logging documentation]({{%versioned_link_path fromRoot="/guides/secu
 Make sure you have the `%RESPONSE_FLAGS%` item in the log pattern. 
 {{% /notice %}}
 
-## Horizontal scaling
+## Horizontal scaling - the data-plane
 
-It's fine to scale up the gateway-proxies (Envoy instances). You can use a Deployment or a DeamonSet. The more CPU you will dedicate to the gateway-proxy, the more requets if will be able to handle.
+### Gateway proxy
+
+It's fine to scale up the gateway-proxies (Envoy instances). You can use a Deployment or a DeamonSet. The more CPU you will dedicate to the gateway-proxy, the more requests if will be able to handle.
+
+### Ext-Auth
 
 You can also scale-up the ExtAuth service. Most of the time, one instance is fine. We have seen deployments with 2 replicas working well.
 
-For the other control plane components, such as the Gateway deployment, the Gloo deployment, the Discovery deployment, *DO NOT* scale them. Today, it can lead to race conditions and there are no need to scale them up.
+## Horizontal scaling - the control-plane
+
+### XDS Relay
+
+{{% notice warning %}}
+Today, this feature does not work in tandem with the follow non-default installation modes of Gloo Edge: rest eds, gloo mTLS mode, gloo with istio mTLS mode
+{{% /notice %}}
+
+You should consider protecting against control plane downtime (either by node failure or gloo bug) by installing gloo edge alongside the xds-relay helm chart. This helm chart installs a daemonset (configurable, daemonset by default) of xds-relay pods that serve as intermediaries between envoy and gloo (the xds server).
+
+This serves two purposes. One, it separates the lifecycle of gloo edge from the xds cache proxies. This means a failure during helm upgrade will not mean loss of last good xds state. Second, it allows you to scale xds-relay to as many replicas as desired, since gloo is only intended for one replica today. Without xds-relay, if the single gloo replica were down, then any new envoy proxies spun up would be unable to get valid configuration.
+
+To enable:
+
+- install `xds-relay`:
+  - `helm repo add xds-relay https://storage.googleapis.com/xds-relay-helm`
+  - `helm install xdsrelay xds-relay/xds-relay`
+- install gloo edge with the following helm values for each proxy (envoy) to point them towards xds-relay:
+```yaml
+gatewayProxies:
+  gatewayProxy:
+    xdsServiceAddress: xds-relay.default.svc.cluster.local
+    xdsServicePort: 9991
+```
+
+### Other components
+
+For the other control plane components, such as the Gateway deployment or the Discovery deployment, *DO NOT* scale them. Today, it can lead to race conditions and there are no need to scale them up.
 
 ## Metrics and monitoring
 
