@@ -18,6 +18,7 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
@@ -194,7 +195,13 @@ var _ = Describe("Kube2e: gateway", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("correctly routes requests to an upstream", func() {
+		DescribeTable("can route to upstream", func(compressedProxy bool) {
+
+			kube2e.UpdateSettings(func(settings *gloov1.Settings) {
+				Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
+				settings.GetGateway().CompressedProxySpec = compressedProxy
+			}, ctx, testHelper.InstallNamespace)
+
 			dest := &gloov1.Destination{
 				DestinationType: &gloov1.Destination_Upstream{
 					Upstream: &core.ResourceRef{
@@ -225,7 +232,14 @@ var _ = Describe("Kube2e: gateway", func() {
 				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 				WithoutStats:      true,
 			}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
-		})
+
+			kube2e.UpdateSettings(func(settings *gloov1.Settings) {
+				Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
+				settings.GetGateway().CompressedProxySpec = false
+			}, ctx, testHelper.InstallNamespace)
+		},
+			Entry("can route to upstreams", false),
+			Entry("can route to upstreams with compressed proxy", true))
 
 		Context("routing directly to kubernetes services", func() {
 
