@@ -46,6 +46,10 @@ func (m *Proxy) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetCompressedSpec(), target.GetCompressedSpec()) != 0 {
+		return false
+	}
+
 	if len(m.GetListeners()) != len(target.GetListeners()) {
 		return false
 	}

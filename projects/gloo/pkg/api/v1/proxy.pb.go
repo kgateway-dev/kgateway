@@ -109,6 +109,8 @@ type Proxy struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// This field is populated when the proxy compression is turned on.
+	CompressedSpec string `protobuf:"bytes,3,opt,name=compressedSpec,proto3" json:"compressedSpec,omitempty"`
 	// Define here each listener the proxy should create.
 	// Listeners define the a set of behaviors for a single bind address/port where the proxy will listen
 	// If no listeners are specified, the instances configured with the proxy resource will not accept connections.
@@ -150,6 +152,13 @@ func (x *Proxy) ProtoReflect() protoreflect.Message {
 // Deprecated: Use Proxy.ProtoReflect.Descriptor instead.
 func (*Proxy) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *Proxy) GetCompressedSpec() string {
+	if x != nil {
+		return x.CompressedSpec
+	}
+	return ""
 }
 
 func (x *Proxy) GetListeners() []*Listener {
@@ -1954,7 +1963,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDesc = []by
 	0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f,
 	0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x6b,
 	0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0xc0, 0xf5, 0x04, 0x01, 0xb8, 0xf5, 0x04, 0x01,
-	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33
 }
 
 var (
