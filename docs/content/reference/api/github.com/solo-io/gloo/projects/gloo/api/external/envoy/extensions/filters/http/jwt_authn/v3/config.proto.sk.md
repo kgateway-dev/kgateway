@@ -13,6 +13,7 @@ weight: 5
 
 - [JwtProvider](#jwtprovider)
 - [RemoteJwks](#remotejwks)
+- [JwksAsyncFetch](#jwksasyncfetch)
 - [JwtHeader](#jwtheader)
 - [ProviderWithAudiences](#providerwithaudiences)
 - [JwtRequirement](#jwtrequirement)
@@ -107,6 +108,7 @@ This message specifies how to fetch JWKS from remote and how to cache it.
 ```yaml
 "httpUri": .solo.io.envoy.config.core.v3.HttpUri
 "cacheDuration": .google.protobuf.Duration
+"jwtAsyncFetch": .solo.io.envoy.extensions.filters.http.jwt_authn.v3.JwksAsyncFetch
 
 ```
 
@@ -114,6 +116,24 @@ This message specifies how to fetch JWKS from remote and how to cache it.
 | ----- | ---- | ----------- | 
 | `httpUri` | [.solo.io.envoy.config.core.v3.HttpUri](../../../../../../config/core/v3/http_uri.proto.sk/#httpuri) | The HTTP URI to fetch the JWKS. For example: .. code-block:: yaml http_uri: uri: https://www.googleapis.com/oauth2/v1/certs cluster: jwt.www.googleapis.com|443 timeout: 1s. |
 | `cacheDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Duration after which the cached JWKS should be expired. If not specified, default cache duration is 5 minutes. |
+| `jwtAsyncFetch` | [.solo.io.envoy.extensions.filters.http.jwt_authn.v3.JwksAsyncFetch](../config.proto.sk/#jwksasyncfetch) |  |
+
+
+
+
+---
+### JwksAsyncFetch
+
+
+
+```yaml
+"fastListener": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `fastListener` | `bool` |  |
 
 
 

@@ -1271,6 +1271,9 @@ apis:
   solo.io.envoy.extensions.filters.http.jwt_authn.v3.FilterStateRule:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto.sk/#FilterStateRule
     package: solo.io.envoy.extensions.filters.http.jwt_authn.v3
+  solo.io.envoy.extensions.filters.http.jwt_authn.v3.JwksAsyncFetch:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto.sk/#JwksAsyncFetch
+    package: solo.io.envoy.extensions.filters.http.jwt_authn.v3
   solo.io.envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto.sk/#JwtAuthentication
     package: solo.io.envoy.extensions.filters.http.jwt_authn.v3
