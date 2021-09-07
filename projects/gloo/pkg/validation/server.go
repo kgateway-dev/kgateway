@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/rotisserie/eris"
@@ -176,19 +177,29 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 
 	logger := contextutils.LoggerFrom(ctx)
 
-	logger.Infof("received proxy validation request")
-	xdsSnapshot, resourceReports, report, err := s.translator.Translate(params, req.GetProxy())
-	if err != nil {
-		logger.Errorw("failed to validate proxy", zap.Error(err))
-		return nil, err
+	response := validation.GlooValidationServiceResponse{}
+
+	if req.GetProxy() != nil {
+		logger.Infof("received proxy validation request")
+		xdsSnapshot, resourceReports, report, err := s.translator.Translate(params, req.GetProxy())
+		if err != nil {
+			logger.Errorw("failed to validate proxy", zap.Error(err))
+			return nil, err
+		}
+		// Sanitize routes before sending report to gateway
+		s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
+		routeErrorToWarnings(resourceReports, report)
+		logger.Infof("proxy validation report result: %v", report.String())
+		response.ProxyReport = report
 	}
 
-	// Sanitize routes before sending report to gateway
-	s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
-	routeErrorToWarnings(resourceReports, report)
+	if req.GetUpstream() != nil {
+		logger.Infof("received upstream validation request")
+		upstreamReport := ValidateUpstream(&snapCopy, req.GetUpstream())
+		response.UpstreamReport = upstreamReport
+	}
 
-	logger.Infof("proxy validation report result: %v", report.String())
-	return &validation.GlooValidationServiceResponse{ProxyReport: report}, nil
+	return &response, nil
 }
 
 // Update the validation report so that route errors that were changed into warnings during sanitization

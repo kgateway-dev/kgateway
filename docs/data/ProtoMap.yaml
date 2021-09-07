@@ -557,6 +557,9 @@ apis:
   gloo.solo.io.UpstreamOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#UpstreamOptions
     package: gloo.solo.io
+  gloo.solo.io.UpstreamReport:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#UpstreamReport
+    package: gloo.solo.io
   gloo.solo.io.UpstreamSslConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#UpstreamSslConfig
     package: gloo.solo.io

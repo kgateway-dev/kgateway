@@ -3,6 +3,7 @@ package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto";
 
 // The gloo validation service validates gloo resources for clients against current snapshot resources
 service GlooValidationService {
@@ -16,10 +17,12 @@ service GlooValidationService {
 
 message GlooValidationServiceRequest {
     gloo.solo.io.Proxy proxy = 1;
+    gloo.solo.io.Upstream upstream = 2;
 }
 
 message GlooValidationServiceResponse {
     ProxyReport proxy_report = 1;
+    UpstreamReport upstream_report = 2;
 }
 
 message NotifyOnResyncRequest {
@@ -180,4 +183,21 @@ message TcpHostReport {
 
     // errors on the tcp host
     repeated Error errors = 2;
+}
+
+message UpstreamReport {
+    // error types for upstream config
+    message Error {
+        enum Type {
+            SSL_CONFIG_ERROR = 0;
+        }
+
+        // the type of error
+        Type type = 1;
+        // any extra info as a string
+        string reason = 2;
+    }
+
+    // errors on upstream
+    repeated Error errors = 1;
 }

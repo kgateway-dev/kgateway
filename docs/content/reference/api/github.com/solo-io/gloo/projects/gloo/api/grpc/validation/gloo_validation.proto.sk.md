@@ -36,6 +36,9 @@ weight: 5
 - [TcpHostReport](#tcphostreport)
 - [Error](#error)
 - [Type](#type)
+- [UpstreamReport](#upstreamreport)
+- [Error](#error)
+- [Type](#type)
   
 
 
@@ -53,12 +56,14 @@ weight: 5
 
 ```yaml
 "proxy": .gloo.solo.io.Proxy
+"upstream": .gloo.solo.io.Upstream
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) |  |
+| `upstream` | [.gloo.solo.io.Upstream](../../../v1/upstream.proto.sk/#upstream) |  |
 
 
 
@@ -70,12 +75,14 @@ weight: 5
 
 ```yaml
 "proxyReport": .gloo.solo.io.ProxyReport
+"upstreamReport": .gloo.solo.io.UpstreamReport
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `proxyReport` | [.gloo.solo.io.ProxyReport](../gloo_validation.proto.sk/#proxyreport) |  |
+| `upstreamReport` | [.gloo.solo.io.UpstreamReport](../gloo_validation.proto.sk/#upstreamreport) |  |
 
 
 
@@ -478,6 +485,55 @@ error types for tcp host config
 | `NameNotUniqueError` |  |
 | `InvalidDestinationError` |  |
 | `ProcessingError` |  |
+
+
+
+
+---
+### UpstreamReport
+
+
+
+```yaml
+"errors": []gloo.solo.io.UpstreamReport.Error
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `errors` | [[]gloo.solo.io.UpstreamReport.Error](../gloo_validation.proto.sk/#error) | errors on upstream. |
+
+
+
+
+---
+### Error
+
+ 
+error types for upstream config
+
+```yaml
+"type": .gloo.solo.io.UpstreamReport.Error.Type
+"reason": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `type` | [.gloo.solo.io.UpstreamReport.Error.Type](../gloo_validation.proto.sk/#type) | the type of error. |
+| `reason` | `string` | any extra info as a string. |
+
+
+
+
+---
+### Type
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `SSL_CONFIG_ERROR` |  |
 
 
 
