@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/log"
-	"github.com/solo-io/solo-kit/pkg/utils/envutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
@@ -20,12 +20,12 @@ var (
 	namespace = defaults.GlooSystem
 
 	_ = BeforeSuite(func() {
-		err := os.Setenv(envutils.PodNamespaceEnvName, namespace)
+		err := os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	_ = AfterSuite(func() {
-		err := os.Unsetenv(envutils.PodNamespaceEnvName)
+		err := os.Unsetenv(statusutils.PodNamespaceEnvName)
 		Expect(err).NotTo(HaveOccurred())
 	})
 )

@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/solo-kit/pkg/utils/envutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 )
 
@@ -32,7 +32,7 @@ var _ = BeforeSuite(func() {
 	vaultFactory, err = services.NewVaultFactory()
 	Expect(err).NotTo(HaveOccurred())
 
-	err = os.Setenv(envutils.PodNamespaceEnvName, namespace)
+	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 	Expect(err).NotTo(HaveOccurred())
 })
 
@@ -41,7 +41,7 @@ var _ = AfterSuite(func() {
 	_ = consulFactory.Clean()
 	_ = vaultFactory.Clean()
 
-	err := os.Unsetenv(envutils.PodNamespaceEnvName)
+	err := os.Unsetenv(statusutils.PodNamespaceEnvName)
 	Expect(err).NotTo(HaveOccurred())
 })
 

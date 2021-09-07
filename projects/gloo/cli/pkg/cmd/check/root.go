@@ -445,11 +445,14 @@ func checkRateLimitConfigs(ctx context.Context, namespaces []string) ([]string, 
 			return nil, err
 		}
 		for _, config := range configs {
-			if config.Status.GetState() == v1alpha1.RateLimitConfigStatus_REJECTED {
-				errMessage := fmt.Sprintf("Found rejected rate limit config: %s ", renderMetadata(config.GetMetadata()))
-				errMessage += fmt.Sprintf("(Reason: %s)", config.Status.GetMessage())
-				multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
+			for _, status := range config.Status.GetStatuses() {
+				if status.GetState() == v1alpha1.RateLimitConfigStatus_REJECTED {
+					errMessage := fmt.Sprintf("Found rejected rate limit config: %s ", renderMetadata(config.GetMetadata()))
+					errMessage += fmt.Sprintf("(Reason: %s)", status.GetMessage())
+					multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
+				}
 			}
+
 			knownConfigs = append(knownConfigs, renderMetadata(config.GetMetadata()))
 		}
 	}

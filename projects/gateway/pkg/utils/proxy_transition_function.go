@@ -3,7 +3,7 @@ package utils
 import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/hashutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 )
 
 func TransitionFunction(original, desired *v1.Proxy) (bool, error) {
@@ -30,6 +30,6 @@ func updateDesiredStatus(original, desired *v1.Proxy) {
 	// until we make the full move.
 	equal, ok := hashutils.HashableEqual(original, desired)
 	if ok && equal {
-		_ = resources.CopyStatusForNamespace(original, desired)
+		_ = statusutils.CopyStatusForPodNamespace(original, desired)
 	}
 }

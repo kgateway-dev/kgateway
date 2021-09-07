@@ -11,7 +11,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/utils/envutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 )
 
 var _ = Describe("getStatus", func() {
@@ -25,12 +25,12 @@ var _ = Describe("getStatus", func() {
 	)
 
 	BeforeEach(func() {
-		Expect(os.Setenv(envutils.PodNamespaceEnvName, "gloo-system")).NotTo(HaveOccurred())
+		Expect(os.Setenv(statusutils.PodNamespaceEnvName, "gloo-system")).NotTo(HaveOccurred())
 		ctx, cancel = context.WithCancel(context.Background())
 	})
 
 	AfterEach(func() {
-		Expect(os.Unsetenv(envutils.PodNamespaceEnvName)).NotTo(HaveOccurred())
+		Expect(os.Unsetenv(statusutils.PodNamespaceEnvName)).NotTo(HaveOccurred())
 		cancel()
 	})
 

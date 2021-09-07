@@ -15,6 +15,7 @@ weight: 5
 - [Raw](#raw)
 - [RateLimitConfigStatus](#ratelimitconfigstatus)
 - [State](#state)
+- [RateLimitConfigNamespacedStatuses](#ratelimitconfignamespacedstatuses)
 - [Descriptor](#descriptor)
 - [SetDescriptor](#setdescriptor)
 - [SimpleDescriptor](#simpledescriptor)
@@ -120,6 +121,23 @@ The current status of the `RateLimitConfig`.
 | `PENDING` |  |
 | `ACCEPTED` |  |
 | `REJECTED` |  |
+
+
+
+
+---
+### RateLimitConfigNamespacedStatuses
+
+
+
+```yaml
+"statuses": map<string, .ratelimit.api.solo.io.RateLimitConfigStatus>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `statuses` | `map<string, .ratelimit.api.solo.io.RateLimitConfigStatus>` |  |
 
 
 

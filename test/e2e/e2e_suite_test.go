@@ -11,7 +11,7 @@ import (
 
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/utils/envutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -31,7 +31,7 @@ var _ = BeforeSuite(func() {
 	consulFactory, err = services.NewConsulFactory()
 	Expect(err).NotTo(HaveOccurred())
 
-	err = os.Setenv(envutils.PodNamespaceEnvName, namespace)
+	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
 })
@@ -40,7 +40,7 @@ var _ = AfterSuite(func() {
 	_ = envoyFactory.Clean()
 	_ = consulFactory.Clean()
 
-	err := os.Unsetenv(envutils.PodNamespaceEnvName)
+	err := os.Unsetenv(statusutils.PodNamespaceEnvName)
 	Expect(err).NotTo(HaveOccurred())
 })
 

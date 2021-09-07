@@ -1,7 +1,7 @@
 package sidecars
 
 import (
-	"github.com/solo-io/solo-kit/pkg/utils/envutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -23,7 +23,7 @@ func GetSdsSidecar(version string) corev1.Container {
 				},
 			},
 			{
-				Name: envutils.PodNamespaceEnvName,
+				Name: statusutils.PodNamespaceEnvName,
 				ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{
 						FieldPath: "metadata.namespace",

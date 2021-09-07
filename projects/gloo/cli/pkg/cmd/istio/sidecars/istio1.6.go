@@ -1,7 +1,7 @@
 package sidecars
 
 import (
-	"github.com/solo-io/solo-kit/pkg/utils/envutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -76,7 +76,7 @@ func generateIstio16Sidecar(version, jwtPolicy string, istioMetaMeshID string, i
 				},
 			},
 			{
-				Name: envutils.PodNamespaceEnvName,
+				Name: statusutils.PodNamespaceEnvName,
 				ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{
 						FieldPath: "metadata.namespace",

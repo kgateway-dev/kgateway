@@ -5,11 +5,11 @@ import (
 	"os"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/solo-kit/pkg/utils/envutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 )
 
 const (
-	PodNamespace = envutils.PodNamespaceEnvName
+	PodNamespace = statusutils.PodNamespaceEnvName
 )
 
 var (

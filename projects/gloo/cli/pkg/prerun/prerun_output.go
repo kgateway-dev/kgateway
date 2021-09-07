@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/solo-kit/pkg/utils/envutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
@@ -36,5 +36,5 @@ func SetPodNamsepaceEnv(opts *options.Options, cmd *cobra.Command) error {
 		podNamepace = opts.Metadata.GetNamespace()
 	}
 
-	return os.Setenv(envutils.PodNamespaceEnvName, podNamepace)
+	return os.Setenv(statusutils.PodNamespaceEnvName, podNamepace)
 }
