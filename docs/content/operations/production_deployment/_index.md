@@ -80,7 +80,39 @@ To enable:
 
 - install `xds-relay`:
   - `helm repo add xds-relay https://storage.googleapis.com/xds-relay-helm`
-  - `helm install xdsrelay xds-relay/xds-relay`
+  - `helm install xdsrelay xds-relay/xds-relay` (supports envoy v2 and v3 api; should work with any Gloo Edge release)
+
+Some extra helm values you may want to customize for xds-relay (default helm values listed below):
+```yaml
+deployment:
+  kind: DaemonSet
+  logLevel: INFO
+  image:
+    pullPolicy: IfNotPresent
+    registry: quay.io/solo-io
+    repository: xds-relay
+    tag: %version% # this will match the release version of the xds-relay chart
+# might want to set resources for prod deploy, e.g.:
+#  resources:
+#    requests:
+#      cpu: 125m
+#      memory: 256Mi
+service:
+  type: ClusterIP
+  port: 9991
+bootstrap:
+  originServer:
+    address: gloo.gloo-system.svc.cluster.local
+    port: 9977
+  logging:
+    level: INFO
+# might want to add extra, non-default identifiers
+#extraLabels:
+#  k: v
+#extraTemplateAnnotations:
+#  k: v
+```
+
 - install gloo edge with the following helm values for each proxy (envoy) to point them towards xds-relay:
 ```yaml
 gatewayProxies:
