@@ -62,6 +62,10 @@ In the Helm values below, we will define two Envoy proxies, named `publicGw` and
 By default, for each Proxy, Helm will create two `Gateways`: one for HTTP and another one for HTTPS. \
 In our example, we will disable the HTTP `Gateway` for the internet-facing Proxy, and also disable the HTTPS Gateway for the traffic coming from the Intranet.
 
+Overview:
+
+![Full example overview]({{< versioned_link_path fromRoot="/img/gw-proxies-full-example.png" >}})
+
 If you want additional `Gateways` for a given Proxy, consider crafting `Gateway` _Custom Resources_ youself, similarly to what you can do with `VirtualServices`.
 
 As you will see in the example below, you can declare as many Envoy proxies as you want under the Helm's `gloo.gatewayProxies` property.
@@ -130,11 +134,74 @@ deployment.apps/public-gw                             2/2     2            2    
 ```
 
 
-
-The associated `VirtualServices`:
+The associated `VirtualServices` could be something like this:
 
 ```yaml
-
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: httpbin
+  namespace: gloo-system
+  labels:
+    gateway-type: public # label used by the "public" Gateway
+spec:
+  sslConfig: # the internet-facing proxy uses TLS
+    secretRef:
+      name: upstream-tls
+      namespace: gloo-system
+  virtualHost:
+    domains:
+    - '*.mycompany.com' # listen on these public domain names
+    routes:
+    - matchers:
+      - prefix: /
+      routeAction:
+        single:
+          upstream:
+            name: default-httpbin-8000
+            namespace: gloo-system
+---
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: httpbin-private
+  namespace: gloo-system
+  labels:
+    gateway-type: private # label used by the "corp" Gateway
+spec:
+  virtualHost:
+    domains:
+    - '*.mycompany.corp' # listen on these private domain names
+    routes:
+    - matchers:
+      - prefix: /
+      routeAction:
+        single:
+          upstream:
+            name: default-httpbin-8000
+            namespace: gloo-system
 ```
 
+You can check everything is correct with `glooctl` commands:
 
+```bash
+$ glooctl get vs
++-----------------+--------------+------------------+------------+----------+-----------------+----------------------------------+
+| VIRTUAL SERVICE | DISPLAY NAME |     DOMAINS      |    SSL     |  STATUS  | LISTENERPLUGINS |              ROUTES              |
++-----------------+--------------+------------------+------------+----------+-----------------+----------------------------------+
+| httpbin         |              | *.mycompany.com  | secret_ref | Accepted |                 | / ->                             |
+|                 |              |                  |            |          |                 | gloo-system.default-httpbin-8000 |
+|                 |              |                  |            |          |                 | (upstream)                       |
+| httpbin-private |              | *.mycompany.corp | none       | Accepted |                 | / ->                             |
+|                 |              |                  |            |          |                 | gloo-system.default-httpbin-8000 |
+|                 |              |                  |            |          |                 | (upstream)                       |
++-----------------+--------------+------------------+------------+----------+-----------------+----------------------------------+
+
+$ glooctl get proxy
++-----------+-----------+---------------+----------+
+|   PROXY   | LISTENERS | VIRTUAL HOSTS |  STATUS  |
++-----------+-----------+---------------+----------+
+| corp-gw   | :::8080   | 1             | Accepted |
+| public-gw | :::8443   | 1             | Accepted |
++-----------+-----------+---------------+----------+
+```
