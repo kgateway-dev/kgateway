@@ -25,9 +25,9 @@ If we take a closer look at the cardinality of the relationships:
  This is a mean for you to differentiate the incoming traffic and to apply different kind of server configurations (like TLS, mTLS, TCP, etc.). \
  Of course, you can also have multiple (Envoy) proxies running on your cluster.
 
-* On the left-hand side: \
- A `Gateway` CR can select one or more `VirtualService(s)`, using a discrete list or Kubernetes labels. \
- Of course, if you define a `Gateway` with `ssl: true`, then you must provide `VirtualServices` with a `sslConfig` block.
+* From the middle Gateway CRD to the left-hand VirtualService CRD in this diagram:  \
+ You can configure the `Gateway` CR to select one or more `VirtualServices` by providing a discrete list of virtual services or by using Kubernetes labels. \
+ Additionally, if you define a `Gateway` with the `ssl: true` setting, then you must choose the `VirtualServices` by configuring the `sslConfig` setting.
 
 
 The following `Gateway` example selects a particular Envoy proxy, `public-gw`, and some `VirtualServices` with the Kubernetes label `gateway-type: public`.
