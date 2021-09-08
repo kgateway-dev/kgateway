@@ -55,10 +55,9 @@ spec:
 
 ## Full example
 
-In the Helm values below, we will define two Envoy proxies, named `publicGw` and `corpGw`. One could be internet facing, whereas the latter could be for intranet usage.
-
-By default, for each Proxy, Helm will create two `Gateways`: one for HTTP and another one for HTTPS. \
-In our example, we will disable the HTTP `Gateway` for the internet-facing Proxy, and also disable the HTTPS Gateway for the traffic coming from the Intranet.
+You can use the following Helm configuration file to create multiple proxies.
+* `publicGw`: An internet-facing proxy, with the default HTTP `Gateway` disabled so that only secure HTTPS traffic is allowed from the public network.
+* `corpGw`: A proxy for the company intranet, with the default HTTPS `Gateway` disabled so that traffic does not have to be encrypted because the network is private.
 
 Overview:
 
