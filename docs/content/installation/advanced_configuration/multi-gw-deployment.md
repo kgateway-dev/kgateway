@@ -18,12 +18,11 @@ For more detail about how the `Gateway` and `Proxy` CRDs interact, review the fo
 
 ![Gateways and Gateway-proxies]({{< versioned_link_path fromRoot="/img/gateways-relationship.png" >}})
 
-* From the middle to the right-hand side of this graphic: \
- The `Gateway` CRD defines the server host and port Envoy will be listening to, as in an "Envoy listener". \
- The `Proxy` CRs are created automatically by the Gloo controller. You should not modify them. \
- That means you can have several Gateways - or Envoy listeners - bound to one single "_Proxy_"/Envoy instance. \
- This is a mean for you to differentiate the incoming traffic and to apply different kind of server configurations (like TLS, mTLS, TCP, etc.). \
- Of course, you can also have multiple (Envoy) proxies running on your cluster.
+* From the middle Gateway CRD to the right-hand Proxy and Gateway-Proxy in this diagram: \
+ The `Gateway` CRD defines the server host and port that the Envoy listener gateway listens to. \
+ The `Proxy` CRs are created automatically by the Gloo controller. Do not modify these CRs. Any changes might interrupt the proxy and are overwritten by the Gloo controller. \
+ This setup means you can have several "_Gateways_", Envoy listeners, that are bound to a single "_Proxy_", or Envoy instance. You can use each gateway to differentiate incoming traffic and apply different server configurations, such as creating separate `Gateway` CRs for TLS, mTLS, and TCP. \
+ However, you do not have to set up all your gateways to use the same proxy. You can create multiple Envoy proxies in your cluster, as shown in [Example configuration for multiple gateway proxies]({{<ref "#example-configuration-for-multiple-gateway-proxies">}}).
 
 * From the middle Gateway CRD to the left-hand VirtualService CRD in this diagram:  \
  You can configure the `Gateway` CR to select one or more `VirtualServices` by providing a discrete list of virtual services or by using Kubernetes labels. \
