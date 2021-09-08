@@ -186,18 +186,18 @@ message TcpHostReport {
 }
 
 message UpstreamReport {
-    // error types for upstream config
+    // Error types for the upstream config.
     message Error {
         enum Type {
             SSL_CONFIG_ERROR = 0;
         }
 
-        // the type of error
+        // The type of error
         Type type = 1;
-        // any extra info as a string
+        // Any extra information, as a string
         string reason = 2;
     }
 
-    // errors on upstream
+    // Errors returned by the upstream resource.
     repeated Error errors = 1;
 }
