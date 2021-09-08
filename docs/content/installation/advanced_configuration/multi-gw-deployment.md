@@ -8,7 +8,7 @@ Create multiple Envoy gateway proxies with Gloo Edge to segregate and customize 
 
 Gloo Edge offers a flexible architecture by providing custom resource definitions (CRDs) that you can use to configure _proxies_ and _gateways_. These two terms describe the physical and logical architecture of a gateway system.
 - **Proxies**: The _physical_ gateways, or reverse proxies, that are running instances of Envoy as the `gateway-proxy` pods in your cluster. You define these gateway proxies in the Helm configuration file when you install or upgrade your Gloo Edge deployment.
-- **Gateways** - this one is the _logical_ Gateway. It's actually an Envoy _listener_, which represents a server socket and a protocol. By default, you will get two of them for handling plain text HTTP and HTTPS connections. You can create more `Gateway` _Custom Resources_, which will generate additional Envoy listeners.
+- **Gateways**: The _logical_ gateway that is an Envoy _listener_, which represents a server socket and a protocol. By default, your cluster gets two gateways for handling plain text HTTP and HTTPS connections. To generate more Envoy listeners such as for other protocols, you can create more `Gateway` _Custom Resources_.
 
 See the diagram below about the [Custom Resource Usage]({{< versioned_link_path fromRoot="/introduction/architecture/custom_resources/" >}}). The blue squares are Kubernetes _Custom Resources_ and the **Gateway** and **Gloo** circles are Kubernetes deployments / CR controllers:
 
