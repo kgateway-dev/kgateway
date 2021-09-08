@@ -59,7 +59,7 @@ You can use the following Helm configuration file to create multiple proxies.
 * `publicGw`: An internet-facing proxy, with the default HTTP `Gateway` disabled so that only secure HTTPS traffic is allowed from the public network.
 * `corpGw`: A proxy for the company intranet, with the default HTTPS `Gateway` disabled so that traffic does not have to be encrypted because the network is private.
 
-Overview:
+Overview diagram:
 
 ![Full example overview]({{< versioned_link_path fromRoot="/img/gw-proxies-full-example.png" >}})
 
