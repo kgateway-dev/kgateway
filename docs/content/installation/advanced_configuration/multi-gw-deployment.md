@@ -4,7 +4,7 @@ weight: 80
 description: Deploying more gateways and gateway-proxies
 ---
 Create multiple Envoy gateway proxies with Gloo Edge to segregate and customize traffic controls in an environment with multiple types of traffic, such as public internet and a private intranet.
-## Logical and physical architecture
+## Multiple gateway architecture and terminology
 
 Gloo Edge offers a flexible architecture with its _Gateways_ and _Proxies_.
 
