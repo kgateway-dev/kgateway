@@ -57,6 +57,7 @@ weight: 5
 ```yaml
 "proxy": .gloo.solo.io.Proxy
 "upstream": .gloo.solo.io.Upstream
+
 ```
 
 | Field | Type | Description |
@@ -533,6 +534,7 @@ error types for upstream config
 | Name | Description |
 | ----- | ----------- | 
 | `SSL_CONFIG_ERROR` |  |
+
 
 
 

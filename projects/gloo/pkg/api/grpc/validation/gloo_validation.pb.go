@@ -473,7 +473,6 @@ type GlooValidationServiceResponse struct {
 
 	ProxyReport    *ProxyReport    `protobuf:"bytes,1,opt,name=proxy_report,json=proxyReport,proto3" json:"proxy_report,omitempty"`
 	UpstreamReport *UpstreamReport `protobuf:"bytes,2,opt,name=upstream_report,json=upstreamReport,proto3" json:"upstream_report,omitempty"`
-	ProxyReport *ProxyReport `protobuf:"bytes,1,opt,name=proxy_report,json=proxyReport,proto3" json:"proxy_report,omitempty"`
 }
 
 func (x *GlooValidationServiceResponse) Reset() {
@@ -1750,7 +1749,6 @@ func file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validat
 	return file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validation_proto_rawDescData
 }
 
-
 var file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validation_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
 var file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validation_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validation_proto_goTypes = []interface{}{
@@ -1987,9 +1985,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validat
 				return nil
 			}
 		}
-
 		file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validation_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-
 			switch v := v.(*HttpListenerReport_Error); i {
 			case 0:
 				return &v.state
@@ -2001,7 +1997,6 @@ func file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validat
 				return nil
 			}
 		}
-
 		file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validation_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*VirtualHostReport_Error); i {
 			case 0:
@@ -2014,7 +2009,6 @@ func file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validat
 				return nil
 			}
 		}
-
 		file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validation_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*RouteReport_Error); i {
 			case 0:
@@ -2027,7 +2021,6 @@ func file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validat
 				return nil
 			}
 		}
-
 		file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validation_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*RouteReport_Warning); i {
 			case 0:
@@ -2040,7 +2033,6 @@ func file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validat
 				return nil
 			}
 		}
-
 		file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validation_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TcpListenerReport_Error); i {
 			case 0:
@@ -2053,7 +2045,6 @@ func file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validat
 				return nil
 			}
 		}
-
 		file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validation_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TcpHostReport_Error); i {
 			case 0:
@@ -2065,7 +2056,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validat
 			default:
 				return nil
 			}
-    }
+		}
 		file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validation_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*UpstreamReport_Error); i {
 			case 0:
