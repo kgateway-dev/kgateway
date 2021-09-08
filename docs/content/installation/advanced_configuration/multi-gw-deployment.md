@@ -52,7 +52,7 @@ spec:
 ```
 
 
-## Full example
+## Example configuration for multiple gateway proxies
 
 You can use the following Helm configuration file to create multiple proxies.
 * `publicGw`: An internet-facing proxy, with the default HTTP `Gateway` disabled so that only secure HTTPS traffic is allowed from the public network.
