@@ -30,7 +30,7 @@ If we take a closer look at the cardinality of the relationships:
  Of course, if you define a `Gateway` with `ssl: true`, then you must provide `VirtualServices` with a `sslConfig` block.
 
 
-Below is a example of a `Gateway` that selects a particular (Envoy) Proxy and a some `VirtualServices` by a selector:
+The following `Gateway` example selects a particular Envoy proxy, `public-gw`, and some `VirtualServices` with the Kubernetes label `gateway-type: public`.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
