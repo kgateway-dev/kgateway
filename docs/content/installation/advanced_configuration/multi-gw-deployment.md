@@ -14,7 +14,7 @@ See the following diagram for more information about [Custom Resource Usage]({{<
 
 ![Gateway and Proxy Configuration]({{< versioned_link_path fromRoot="/img/gateway-cr.png" >}})
 
-If we take a closer look at the cardinality of the relationships:
+For more detail about how the `Gateway` and `Proxy` CRDs interact, review the following diagram and description.
 
 ![Gateways and Gateway-proxies]({{< versioned_link_path fromRoot="/img/gateways-relationship.png" >}})
 
