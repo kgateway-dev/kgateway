@@ -254,6 +254,79 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		Expect(listenersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackListener))
 		Expect(clustersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackCluster))
 	})
+	It("only missing cluster", func() {
+		routeCfg := &envoy_config_route_v3.RouteConfiguration{
+			Name: routeCfgName,
+			VirtualHosts: []*envoy_config_route_v3.VirtualHost{
+				{
+					Routes: []*envoy_config_route_v3.Route{
+						missingRouteSingle,
+					},
+				},
+				{
+					Routes: []*envoy_config_route_v3.Route{
+						missingRouteMulti,
+					},
+				},
+			},
+		}
+
+		expectedRoutes := &envoy_config_route_v3.RouteConfiguration{
+			Name: routeCfgName,
+			VirtualHosts: []*envoy_config_route_v3.VirtualHost{
+				{
+					Routes: []*envoy_config_route_v3.Route{
+						fixedRouteSingle,
+					},
+				},
+				{
+					Routes: []*envoy_config_route_v3.Route{
+						fixedRouteMulti,
+					},
+				},
+			},
+		}
+
+		xdsSnapshot := xds.NewSnapshotFromResources(
+			envoycache.NewResources("", nil),
+			envoycache.NewResources("", nil),
+			envoycache.NewResources("routes", []envoycache.Resource{
+				resource.NewEnvoyResource(routeCfg),
+			}),
+			envoycache.NewResources("listeners", []envoycache.Resource{
+				resource.NewEnvoyResource(listener),
+			}),
+		)
+
+		sanitizer, err := NewRouteReplacingSanitizer(invalidCfgPolicy)
+		Expect(err).NotTo(HaveOccurred())
+
+		// should have a warning to trigger this sanitizer
+		reports := reporter.ResourceReports{
+			&v1.Proxy{}: {
+				Warnings: []string{"route with missing upstream"},
+			},
+		}
+
+		glooSnapshot := &v1.ApiSnapshot{
+			Upstreams: v1.UpstreamList{us},
+		}
+
+		snap, err := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
+		Expect(err).NotTo(HaveOccurred())
+
+		routeCfgs := snap.GetResources(resource.RouteTypeV3)
+		listeners := snap.GetResources(resource.ListenerTypeV3)
+		clusters := snap.GetResources(resource.ClusterTypeV3)
+
+		sanitizedRoutes := routeCfgs.Items[routeCfg.GetName()]
+		listenersWithFallback := listeners.Items[fallbackListenerName]
+		clustersWithFallback := clusters.Items[fallbackClusterName]
+
+		Expect(sanitizedRoutes.ResourceProto()).To(Equal(expectedRoutes))
+		Expect(listenersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackListener))
+		Expect(clustersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackCluster))
+	})
 	It("replaces routes that have errored", func() {
 		var multiErr *multierror.Error
 		baseError := eris.Errorf("abc. Reason: plugin. %s: %s", validationutils.RouteIdentifierTxt, erroredRouteName)
