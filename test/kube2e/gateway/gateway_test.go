@@ -218,9 +218,9 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
-			Eventually(func() (*gatewayv1.Gateway, error) {
+			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
-			}, "15s", "0.5s").Should(Not(BeNil()))
+			})
 
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",

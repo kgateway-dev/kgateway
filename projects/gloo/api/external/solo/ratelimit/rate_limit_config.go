@@ -3,8 +3,6 @@ package ratelimit
 import (
 	"reflect"
 
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	skres "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
@@ -46,8 +44,7 @@ func (r *RateLimitConfig) UnmarshalSpec(spec skres.Spec) error {
 }
 
 func (r *RateLimitConfig) UnmarshalStatus(status skres.Status) error {
-	// TODO (samheilbron) this should fail
-	return statusutils.UnmarshalInputResourceStatus(status, r, protoutils.UnmarshalMapToProto)
+	return protoutils.UnmarshalMapToProto(status, &r.Status)
 }
 
 func (r *RateLimitConfig) MarshalSpec() (skres.Spec, error) {
@@ -70,47 +67,29 @@ func (r *RateLimitConfig) SetStatus(status *core.Status) {
 }
 
 func (r *RateLimitConfig) GetStatusForNamespace() (*core.Status, error) {
-	return statusutils.GetStatusForPodNamespace(r)
+	return r.convertRateLimitConfigStatusToSoloKitStatus(&r.Status), nil
 }
 
 func (r *RateLimitConfig) SetStatusForNamespace(status *core.Status) error {
-	return statusutils.SetStatusForPodNamespace(r, status)
+	if status != nil {
+		r.Status = *r.convertSoloKitStatusToRateLimitConfigStatus(status)
+	}
+	return nil
 }
 
 func (r *RateLimitConfig) GetNamespacedStatuses() *core.NamespacedStatuses {
-	statuses := r.Status.GetStatuses()
-	if statuses == nil {
-		return nil
-	}
-
-	namespacedStatuses := make(map[string]*core.Status)
-	for statusNs, rateLimitConfigStatus := range statuses {
-		namespacedStatuses[statusNs] = r.convertRateLimitConfigStatusToSoloKitStatus(rateLimitConfigStatus)
-	}
-
-	return &core.NamespacedStatuses{
-		Statuses: namespacedStatuses,
-	}
+	panic("implement me")
 }
 
 func (r *RateLimitConfig) SetNamespacedStatuses(status *core.NamespacedStatuses) {
-	statuses := status.GetStatuses()
-	if statuses == nil {
-		r.Status = v1alpha1.RateLimitConfigNamespacedStatuses{}
-		return
-	}
-
-	rateLimitConfigStatusMap := make(map[string]*v1alpha1.RateLimitConfigStatus)
-	for statusNs, soloKitStatus := range statuses {
-		rateLimitConfigStatusMap[statusNs] = r.convertSoloKitStatusToRateLimitConfigStatus(soloKitStatus)
-	}
-
-	r.Status = v1alpha1.RateLimitConfigNamespacedStatuses{
-		Statuses: rateLimitConfigStatusMap,
-	}
+	panic("implement me")
 }
 
 func (r *RateLimitConfig) convertSoloKitStatusToRateLimitConfigStatus(status *core.Status) *v1alpha1.RateLimitConfigStatus {
+	if status == nil {
+		return nil
+	}
+
 	var outputState types.RateLimitConfigStatus_State
 	switch status.GetState() {
 	case core.Status_Pending:
@@ -132,8 +111,11 @@ func (r *RateLimitConfig) convertSoloKitStatusToRateLimitConfigStatus(status *co
 }
 
 func (r *RateLimitConfig) convertRateLimitConfigStatusToSoloKitStatus(status *v1alpha1.RateLimitConfigStatus) *core.Status {
-	var outputState core.Status_State
+	if status == nil {
+		return nil
+	}
 
+	var outputState core.Status_State
 	switch status.GetState() {
 	case types.RateLimitConfigStatus_PENDING:
 		outputState = core.Status_Pending

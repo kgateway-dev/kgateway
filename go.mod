@@ -83,7 +83,7 @@ require (
 	github.com/solo-io/protoc-gen-ext v0.0.15
 	github.com/solo-io/skv2 v0.17.17
 	// Pinned to the `rate-limiter-v0.1.8` tag of solo-apis
-	github.com/solo-io/solo-apis v0.0.0-20210907120537-ffbe53609db1
+	github.com/solo-io/solo-apis v0.0.0-20210908033621-cf6df8475409
 	github.com/solo-io/solo-kit v0.21.4-0.20210907205813-3429ccefb0fa
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.5.1
