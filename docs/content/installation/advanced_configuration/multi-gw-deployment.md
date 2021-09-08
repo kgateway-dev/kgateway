@@ -63,7 +63,7 @@ Overview:
 
 ![Full example overview]({{< versioned_link_path fromRoot="/img/gw-proxies-full-example.png" >}})
 
-If you want additional `Gateways` for a given Proxy, consider crafting `Gateway` _Custom Resources_ youself, similarly to what you can do with `VirtualServices`.
+If you want additional `Gateways` for a single proxy, create your own `Gateway` _Custom Resources_, similar to what you can do with `VirtualServices`. For more information, see the [`Gateway` API reference documentation]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/" >}})
 
 As you will see in the example below, you can declare as many Envoy proxies as you want under the Helm's `gloo.gatewayProxies` property.
 
