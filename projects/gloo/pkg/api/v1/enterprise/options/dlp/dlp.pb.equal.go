@@ -258,5 +258,22 @@ func (m *CustomAction) Equal(that interface{}) bool {
 		}
 	}
 
+	if len(m.GetRegexActions()) != len(target.GetRegexActions()) {
+		return false
+	}
+	for idx, v := range m.GetRegexActions() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRegexActions()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetRegexActions()[idx]) {
+				return false
+			}
+		}
+
+	}
+
 	return true
 }

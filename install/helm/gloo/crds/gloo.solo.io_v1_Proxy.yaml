@@ -21,6 +21,8 @@ spec:
       properties:
         spec:
           properties:
+            compressedSpec:
+              type: string
             listeners:
               items:
                 properties:
@@ -74,11 +76,8 @@ spec:
                                   defaultValue:
                                     properties:
                                       denominator:
-                                        enum:
-                                        - HUNDRED
-                                        - TEN_THOUSAND
-                                        - MILLION
                                         type: string
+                                        x-kubernetes-int-or-string: true
                                       numerator:
                                         format: int32
                                         type: integer
@@ -91,11 +90,8 @@ spec:
                                   defaultValue:
                                     properties:
                                       denominator:
-                                        enum:
-                                        - HUNDRED
-                                        - TEN_THOUSAND
-                                        - MILLION
                                         type: string
+                                        x-kubernetes-int-or-string: true
                                       numerator:
                                         format: int32
                                         type: integer
@@ -113,18 +109,8 @@ spec:
                                       items:
                                         properties:
                                           actionType:
-                                            enum:
-                                            - CUSTOM
-                                            - SSN
-                                            - MASTERCARD
-                                            - VISA
-                                            - AMEX
-                                            - DISCOVER
-                                            - JCB
-                                            - DINERS_CLUB
-                                            - CREDIT_CARD_TRACKERS
-                                            - ALL_CREDIT_CARDS
                                             type: string
+                                            x-kubernetes-int-or-string: true
                                           customAction:
                                             properties:
                                               maskChar:
@@ -139,6 +125,16 @@ spec:
                                               regex:
                                                 items:
                                                   type: string
+                                                type: array
+                                              regexActions:
+                                                items:
+                                                  properties:
+                                                    regex:
+                                                      type: string
+                                                    subgroup:
+                                                      format: int32
+                                                      type: integer
+                                                  type: object
                                                 type: array
                                             type: object
                                           shadow:
@@ -188,11 +184,8 @@ spec:
                                   type: object
                                 type: array
                               enabledFor:
-                                enum:
-                                - RESPONSE_BODY
-                                - ACCESS_LOGS
-                                - ALL
                                 type: string
+                                x-kubernetes-int-or-string: true
                             type: object
                           extauth:
                             properties:
@@ -252,9 +245,8 @@ spec:
                                 format: int32
                                 type: integer
                               transportApiVersion:
-                                enum:
-                                - V3
                                 type: string
+                                x-kubernetes-int-or-string: true
                               userIdHeader:
                                 type: string
                             type: object
@@ -309,18 +301,11 @@ spec:
                           gzip:
                             properties:
                               compressionLevel:
-                                enum:
-                                - DEFAULT
-                                - BEST
-                                - SPEED
                                 type: string
+                                x-kubernetes-int-or-string: true
                               compressionStrategy:
-                                enum:
-                                - DEFAULT
-                                - FILTERED
-                                - HUFFMAN
-                                - RLE
                                 type: string
+                                x-kubernetes-int-or-string: true
                               contentLength:
                                 maximum: 4294967295
                                 minimum: 0
@@ -361,13 +346,8 @@ spec:
                               drainTimeout:
                                 type: string
                               forwardClientCertDetails:
-                                enum:
-                                - SANITIZE
-                                - FORWARD_ONLY
-                                - APPEND_FORWARD
-                                - SANITIZE_SET
-                                - ALWAYS_FORWARD_ONLY
                                 type: string
+                                x-kubernetes-int-or-string: true
                               generateRequestId:
                                 nullable: true
                                 type: boolean
@@ -383,13 +363,8 @@ spec:
                               maxStreamDuration:
                                 type: string
                               pathWithEscapedSlashesAction:
-                                enum:
-                                - IMPLEMENTATION_SPECIFIC_DEFAULT
-                                - KEEP_UNCHANGED
-                                - REJECT_REQUEST
-                                - UNESCAPE_AND_REDIRECT
-                                - UNESCAPE_AND_FORWARD
                                 type: string
+                                x-kubernetes-int-or-string: true
                               preserveExternalRequestId:
                                 type: boolean
                               properCaseHeaderKeyFormat:
@@ -399,11 +374,8 @@ spec:
                               requestTimeout:
                                 type: string
                               serverHeaderTransformation:
-                                enum:
-                                - OVERWRITE
-                                - APPEND_IF_ABSENT
-                                - PASS_THROUGH
                                 type: string
+                                x-kubernetes-int-or-string: true
                               serverName:
                                 type: string
                               setCurrentClientCertDetails:
@@ -485,11 +457,8 @@ spec:
                                       collectorEndpoint:
                                         type: string
                                       collectorEndpointVersion:
-                                        enum:
-                                        - DEPRECATED_AND_UNAVAILABLE_DO_NOT_USE
-                                        - HTTP_JSON
-                                        - HTTP_PROTO
                                         type: string
+                                        x-kubernetes-int-or-string: true
                                       collectorUpstreamRef:
                                         properties:
                                           name:
@@ -541,19 +510,11 @@ spec:
                               measureRequestInternally:
                                 type: boolean
                               request:
-                                enum:
-                                - LAST_INCOMING_FIRST_OUTGOING
-                                - FIRST_INCOMING_FIRST_OUTGOING
-                                - LAST_INCOMING_LAST_OUTGOING
-                                - FIRST_INCOMING_LAST_OUTGOING
                                 type: string
+                                x-kubernetes-int-or-string: true
                               response:
-                                enum:
-                                - LAST_INCOMING_FIRST_OUTGOING
-                                - FIRST_INCOMING_FIRST_OUTGOING
-                                - LAST_INCOMING_LAST_OUTGOING
-                                - FIRST_INCOMING_LAST_OUTGOING
                                 type: string
+                                x-kubernetes-int-or-string: true
                             type: object
                           ratelimitServer:
                             properties:
@@ -579,16 +540,11 @@ spec:
                               auditLogging:
                                 properties:
                                   action:
-                                    enum:
-                                    - NEVER
-                                    - RELEVANT_ONLY
-                                    - ALWAYS
                                     type: string
+                                    x-kubernetes-int-or-string: true
                                   location:
-                                    enum:
-                                    - FILTER_STATE
-                                    - DYNAMIC_METADATA
                                     type: string
+                                    x-kubernetes-int-or-string: true
                                 type: object
                               coreRuleSet:
                                 properties:
@@ -632,23 +588,11 @@ spec:
                                     filterStage:
                                       properties:
                                         predicate:
-                                          enum:
-                                          - During
-                                          - Before
-                                          - After
                                           type: string
+                                          x-kubernetes-int-or-string: true
                                         stage:
-                                          enum:
-                                          - FaultStage
-                                          - CorsStage
-                                          - WafStage
-                                          - AuthNStage
-                                          - AuthZStage
-                                          - RateLimitStage
-                                          - AcceptedStage
-                                          - OutAuthStage
-                                          - RouteStage
                                           type: string
+                                          x-kubernetes-int-or-string: true
                                       type: object
                                     image:
                                       type: string
@@ -657,10 +601,8 @@ spec:
                                     rootId:
                                       type: string
                                     vmType:
-                                      enum:
-                                      - V8
-                                      - WAVM
                                       type: string
+                                      x-kubernetes-int-or-string: true
                                   type: object
                                 type: array
                             type: object
@@ -756,11 +698,8 @@ spec:
                                         defaultValue:
                                           properties:
                                             denominator:
-                                              enum:
-                                              - HUNDRED
-                                              - TEN_THOUSAND
-                                              - MILLION
                                               type: string
+                                              x-kubernetes-int-or-string: true
                                             numerator:
                                               format: int32
                                               type: integer
@@ -773,11 +712,8 @@ spec:
                                         defaultValue:
                                           properties:
                                             denominator:
-                                              enum:
-                                              - HUNDRED
-                                              - TEN_THOUSAND
-                                              - MILLION
                                               type: string
+                                              x-kubernetes-int-or-string: true
                                             numerator:
                                               format: int32
                                               type: integer
@@ -792,18 +728,8 @@ spec:
                                       items:
                                         properties:
                                           actionType:
-                                            enum:
-                                            - CUSTOM
-                                            - SSN
-                                            - MASTERCARD
-                                            - VISA
-                                            - AMEX
-                                            - DISCOVER
-                                            - JCB
-                                            - DINERS_CLUB
-                                            - CREDIT_CARD_TRACKERS
-                                            - ALL_CREDIT_CARDS
                                             type: string
+                                            x-kubernetes-int-or-string: true
                                           customAction:
                                             properties:
                                               maskChar:
@@ -819,17 +745,24 @@ spec:
                                                 items:
                                                   type: string
                                                 type: array
+                                              regexActions:
+                                                items:
+                                                  properties:
+                                                    regex:
+                                                      type: string
+                                                    subgroup:
+                                                      format: int32
+                                                      type: integer
+                                                  type: object
+                                                type: array
                                             type: object
                                           shadow:
                                             type: boolean
                                         type: object
                                       type: array
                                     enabledFor:
-                                      enum:
-                                      - RESPONSE_BODY
-                                      - ACCESS_LOGS
-                                      - ALL
                                       type: string
+                                      x-kubernetes-int-or-string: true
                                   type: object
                                 extauth:
                                   properties:
@@ -1202,10 +1135,8 @@ spec:
                                                           type: array
                                                       type: object
                                                     source:
-                                                      enum:
-                                                      - DYNAMIC
-                                                      - ROUTE_ENTRY
                                                       type: string
+                                                      x-kubernetes-int-or-string: true
                                                   type: object
                                                 remoteAddress:
                                                   type: object
@@ -1287,10 +1218,8 @@ spec:
                                                           type: array
                                                       type: object
                                                     source:
-                                                      enum:
-                                                      - DYNAMIC
-                                                      - ROUTE_ENTRY
                                                       type: string
+                                                      x-kubernetes-int-or-string: true
                                                   type: object
                                                 remoteAddress:
                                                   type: object
@@ -1316,13 +1245,8 @@ spec:
                                           format: int32
                                           type: integer
                                         unit:
-                                          enum:
-                                          - UNKNOWN
-                                          - SECOND
-                                          - MINUTE
-                                          - HOUR
-                                          - DAY
                                           type: string
+                                          x-kubernetes-int-or-string: true
                                       type: object
                                     authorizedLimits:
                                       properties:
@@ -1330,13 +1254,8 @@ spec:
                                           format: int32
                                           type: integer
                                         unit:
-                                          enum:
-                                          - UNKNOWN
-                                          - SECOND
-                                          - MINUTE
-                                          - HOUR
-                                          - DAY
                                           type: string
+                                          x-kubernetes-int-or-string: true
                                       type: object
                                   type: object
                                 rbac:
@@ -1367,11 +1286,8 @@ spec:
                                                         type: string
                                                       type: object
                                                     matcher:
-                                                      enum:
-                                                      - EXACT_STRING
-                                                      - BOOLEAN
-                                                      - LIST_CONTAINS
                                                       type: string
+                                                      x-kubernetes-int-or-string: true
                                                     provider:
                                                       type: string
                                                   type: object
@@ -1505,10 +1421,8 @@ spec:
                                                       mergeExtractorsToBody:
                                                         type: object
                                                       parseBodyBehavior:
-                                                        enum:
-                                                        - ParseAsJson
-                                                        - DontParse
                                                         type: string
+                                                        x-kubernetes-int-or-string: true
                                                       passthrough:
                                                         type: object
                                                     type: object
@@ -1588,10 +1502,8 @@ spec:
                                                       mergeExtractorsToBody:
                                                         type: object
                                                       parseBodyBehavior:
-                                                        enum:
-                                                        - ParseAsJson
-                                                        - DontParse
                                                         type: string
+                                                        x-kubernetes-int-or-string: true
                                                       passthrough:
                                                         type: object
                                                     type: object
@@ -1691,10 +1603,8 @@ spec:
                                                       mergeExtractorsToBody:
                                                         type: object
                                                       parseBodyBehavior:
-                                                        enum:
-                                                        - ParseAsJson
-                                                        - DontParse
                                                         type: string
+                                                        x-kubernetes-int-or-string: true
                                                       passthrough:
                                                         type: object
                                                     type: object
@@ -1826,10 +1736,8 @@ spec:
                                                       mergeExtractorsToBody:
                                                         type: object
                                                       parseBodyBehavior:
-                                                        enum:
-                                                        - ParseAsJson
-                                                        - DontParse
                                                         type: string
+                                                        x-kubernetes-int-or-string: true
                                                       passthrough:
                                                         type: object
                                                     type: object
@@ -1909,10 +1817,8 @@ spec:
                                                       mergeExtractorsToBody:
                                                         type: object
                                                       parseBodyBehavior:
-                                                        enum:
-                                                        - ParseAsJson
-                                                        - DontParse
                                                         type: string
+                                                        x-kubernetes-int-or-string: true
                                                       passthrough:
                                                         type: object
                                                     type: object
@@ -2012,10 +1918,8 @@ spec:
                                                       mergeExtractorsToBody:
                                                         type: object
                                                       parseBodyBehavior:
-                                                        enum:
-                                                        - ParseAsJson
-                                                        - DontParse
                                                         type: string
+                                                        x-kubernetes-int-or-string: true
                                                       passthrough:
                                                         type: object
                                                     type: object
@@ -2117,10 +2021,8 @@ spec:
                                             mergeExtractorsToBody:
                                               type: object
                                             parseBodyBehavior:
-                                              enum:
-                                              - ParseAsJson
-                                              - DontParse
                                               type: string
+                                              x-kubernetes-int-or-string: true
                                             passthrough:
                                               type: object
                                           type: object
@@ -2200,10 +2102,8 @@ spec:
                                             mergeExtractorsToBody:
                                               type: object
                                             parseBodyBehavior:
-                                              enum:
-                                              - ParseAsJson
-                                              - DontParse
                                               type: string
+                                              x-kubernetes-int-or-string: true
                                             passthrough:
                                               type: object
                                           type: object
@@ -2223,16 +2123,11 @@ spec:
                                     auditLogging:
                                       properties:
                                         action:
-                                          enum:
-                                          - NEVER
-                                          - RELEVANT_ONLY
-                                          - ALWAYS
                                           type: string
+                                          x-kubernetes-int-or-string: true
                                         location:
-                                          enum:
-                                          - FILTER_STATE
-                                          - DYNAMIC_METADATA
                                           type: string
+                                          x-kubernetes-int-or-string: true
                                       type: object
                                     coreRuleSet:
                                       properties:
@@ -2402,11 +2297,8 @@ spec:
                                               defaultValue:
                                                 properties:
                                                   denominator:
-                                                    enum:
-                                                    - HUNDRED
-                                                    - TEN_THOUSAND
-                                                    - MILLION
                                                     type: string
+                                                    x-kubernetes-int-or-string: true
                                                   numerator:
                                                     format: int32
                                                     type: integer
@@ -2419,11 +2311,8 @@ spec:
                                               defaultValue:
                                                 properties:
                                                   denominator:
-                                                    enum:
-                                                    - HUNDRED
-                                                    - TEN_THOUSAND
-                                                    - MILLION
                                                     type: string
+                                                    x-kubernetes-int-or-string: true
                                                   numerator:
                                                     format: int32
                                                     type: integer
@@ -2438,18 +2327,8 @@ spec:
                                             items:
                                               properties:
                                                 actionType:
-                                                  enum:
-                                                  - CUSTOM
-                                                  - SSN
-                                                  - MASTERCARD
-                                                  - VISA
-                                                  - AMEX
-                                                  - DISCOVER
-                                                  - JCB
-                                                  - DINERS_CLUB
-                                                  - CREDIT_CARD_TRACKERS
-                                                  - ALL_CREDIT_CARDS
                                                   type: string
+                                                  x-kubernetes-int-or-string: true
                                                 customAction:
                                                   properties:
                                                     maskChar:
@@ -2465,17 +2344,24 @@ spec:
                                                       items:
                                                         type: string
                                                       type: array
+                                                    regexActions:
+                                                      items:
+                                                        properties:
+                                                          regex:
+                                                            type: string
+                                                          subgroup:
+                                                            format: int32
+                                                            type: integer
+                                                        type: object
+                                                      type: array
                                                   type: object
                                                 shadow:
                                                   type: boolean
                                               type: object
                                             type: array
                                           enabledFor:
-                                            enum:
-                                            - RESPONSE_BODY
-                                            - ACCESS_LOGS
-                                            - ALL
                                             type: string
+                                            x-kubernetes-int-or-string: true
                                         type: object
                                       envoyMetadata:
                                         additionalProperties:
@@ -2709,10 +2595,8 @@ spec:
                                                                 type: array
                                                             type: object
                                                           source:
-                                                            enum:
-                                                            - DYNAMIC
-                                                            - ROUTE_ENTRY
                                                             type: string
+                                                            x-kubernetes-int-or-string: true
                                                         type: object
                                                       remoteAddress:
                                                         type: object
@@ -2794,10 +2678,8 @@ spec:
                                                                 type: array
                                                             type: object
                                                           source:
-                                                            enum:
-                                                            - DYNAMIC
-                                                            - ROUTE_ENTRY
                                                             type: string
+                                                            x-kubernetes-int-or-string: true
                                                         type: object
                                                       remoteAddress:
                                                         type: object
@@ -2823,13 +2705,8 @@ spec:
                                                 format: int32
                                                 type: integer
                                               unit:
-                                                enum:
-                                                - UNKNOWN
-                                                - SECOND
-                                                - MINUTE
-                                                - HOUR
-                                                - DAY
                                                 type: string
+                                                x-kubernetes-int-or-string: true
                                             type: object
                                           authorizedLimits:
                                             properties:
@@ -2837,13 +2714,8 @@ spec:
                                                 format: int32
                                                 type: integer
                                               unit:
-                                                enum:
-                                                - UNKNOWN
-                                                - SECOND
-                                                - MINUTE
-                                                - HOUR
-                                                - DAY
                                                 type: string
+                                                x-kubernetes-int-or-string: true
                                             type: object
                                         type: object
                                       rbac:
@@ -2874,11 +2746,8 @@ spec:
                                                               type: string
                                                             type: object
                                                           matcher:
-                                                            enum:
-                                                            - EXACT_STRING
-                                                            - BOOLEAN
-                                                            - LIST_CONTAINS
                                                             type: string
+                                                            x-kubernetes-int-or-string: true
                                                           provider:
                                                             type: string
                                                         type: object
@@ -3042,10 +2911,8 @@ spec:
                                                             mergeExtractorsToBody:
                                                               type: object
                                                             parseBodyBehavior:
-                                                              enum:
-                                                              - ParseAsJson
-                                                              - DontParse
                                                               type: string
+                                                              x-kubernetes-int-or-string: true
                                                             passthrough:
                                                               type: object
                                                           type: object
@@ -3125,10 +2992,8 @@ spec:
                                                             mergeExtractorsToBody:
                                                               type: object
                                                             parseBodyBehavior:
-                                                              enum:
-                                                              - ParseAsJson
-                                                              - DontParse
                                                               type: string
+                                                              x-kubernetes-int-or-string: true
                                                             passthrough:
                                                               type: object
                                                           type: object
@@ -3228,10 +3093,8 @@ spec:
                                                             mergeExtractorsToBody:
                                                               type: object
                                                             parseBodyBehavior:
-                                                              enum:
-                                                              - ParseAsJson
-                                                              - DontParse
                                                               type: string
+                                                              x-kubernetes-int-or-string: true
                                                             passthrough:
                                                               type: object
                                                           type: object
@@ -3363,10 +3226,8 @@ spec:
                                                             mergeExtractorsToBody:
                                                               type: object
                                                             parseBodyBehavior:
-                                                              enum:
-                                                              - ParseAsJson
-                                                              - DontParse
                                                               type: string
+                                                              x-kubernetes-int-or-string: true
                                                             passthrough:
                                                               type: object
                                                           type: object
@@ -3446,10 +3307,8 @@ spec:
                                                             mergeExtractorsToBody:
                                                               type: object
                                                             parseBodyBehavior:
-                                                              enum:
-                                                              - ParseAsJson
-                                                              - DontParse
                                                               type: string
+                                                              x-kubernetes-int-or-string: true
                                                             passthrough:
                                                               type: object
                                                           type: object
@@ -3549,10 +3408,8 @@ spec:
                                                             mergeExtractorsToBody:
                                                               type: object
                                                             parseBodyBehavior:
-                                                              enum:
-                                                              - ParseAsJson
-                                                              - DontParse
                                                               type: string
+                                                              x-kubernetes-int-or-string: true
                                                             passthrough:
                                                               type: object
                                                           type: object
@@ -3662,10 +3519,8 @@ spec:
                                                   mergeExtractorsToBody:
                                                     type: object
                                                   parseBodyBehavior:
-                                                    enum:
-                                                    - ParseAsJson
-                                                    - DontParse
                                                     type: string
+                                                    x-kubernetes-int-or-string: true
                                                   passthrough:
                                                     type: object
                                                 type: object
@@ -3745,10 +3600,8 @@ spec:
                                                   mergeExtractorsToBody:
                                                     type: object
                                                   parseBodyBehavior:
-                                                    enum:
-                                                    - ParseAsJson
-                                                    - DontParse
                                                     type: string
+                                                    x-kubernetes-int-or-string: true
                                                   passthrough:
                                                     type: object
                                                 type: object
@@ -3779,16 +3632,11 @@ spec:
                                           auditLogging:
                                             properties:
                                               action:
-                                                enum:
-                                                - NEVER
-                                                - RELEVANT_ONLY
-                                                - ALWAYS
                                                 type: string
+                                                x-kubernetes-int-or-string: true
                                               location:
-                                                enum:
-                                                - FILTER_STATE
-                                                - DYNAMIC_METADATA
                                                 type: string
+                                                x-kubernetes-int-or-string: true
                                             type: object
                                           coreRuleSet:
                                             properties:
@@ -3831,13 +3679,8 @@ spec:
                                       prefixRewrite:
                                         type: string
                                       responseCode:
-                                        enum:
-                                        - MOVED_PERMANENTLY
-                                        - FOUND
-                                        - SEE_OTHER
-                                        - TEMPORARY_REDIRECT
-                                        - PERMANENT_REDIRECT
                                         type: string
+                                        x-kubernetes-int-or-string: true
                                       stripQuery:
                                         type: boolean
                                     type: object
@@ -3870,10 +3713,8 @@ spec:
                                                         aws:
                                                           properties:
                                                             invocationStyle:
-                                                              enum:
-                                                              - SYNC
-                                                              - ASYNC
                                                               type: string
+                                                              x-kubernetes-int-or-string: true
                                                             logicalName:
                                                               type: string
                                                             responseTransformation:
@@ -3979,10 +3820,8 @@ spec:
                                                                 mergeExtractorsToBody:
                                                                   type: object
                                                                 parseBodyBehavior:
-                                                                  enum:
-                                                                  - ParseAsJson
-                                                                  - DontParse
                                                                   type: string
+                                                                  x-kubernetes-int-or-string: true
                                                                 passthrough:
                                                                   type: object
                                                               type: object
@@ -4064,11 +3903,8 @@ spec:
                                                             defaultValue:
                                                               properties:
                                                                 denominator:
-                                                                  enum:
-                                                                  - HUNDRED
-                                                                  - TEN_THOUSAND
-                                                                  - MILLION
                                                                   type: string
+                                                                  x-kubernetes-int-or-string: true
                                                                 numerator:
                                                                   format: int32
                                                                   type: integer
@@ -4081,11 +3917,8 @@ spec:
                                                             defaultValue:
                                                               properties:
                                                                 denominator:
-                                                                  enum:
-                                                                  - HUNDRED
-                                                                  - TEN_THOUSAND
-                                                                  - MILLION
                                                                   type: string
+                                                                  x-kubernetes-int-or-string: true
                                                                 numerator:
                                                                   format: int32
                                                                   type: integer
@@ -4286,10 +4119,8 @@ spec:
                                                                           mergeExtractorsToBody:
                                                                             type: object
                                                                           parseBodyBehavior:
-                                                                            enum:
-                                                                            - ParseAsJson
-                                                                            - DontParse
                                                                             type: string
+                                                                            x-kubernetes-int-or-string: true
                                                                           passthrough:
                                                                             type: object
                                                                         type: object
@@ -4369,10 +4200,8 @@ spec:
                                                                           mergeExtractorsToBody:
                                                                             type: object
                                                                           parseBodyBehavior:
-                                                                            enum:
-                                                                            - ParseAsJson
-                                                                            - DontParse
                                                                             type: string
+                                                                            x-kubernetes-int-or-string: true
                                                                           passthrough:
                                                                             type: object
                                                                         type: object
@@ -4472,10 +4301,8 @@ spec:
                                                                           mergeExtractorsToBody:
                                                                             type: object
                                                                           parseBodyBehavior:
-                                                                            enum:
-                                                                            - ParseAsJson
-                                                                            - DontParse
                                                                             type: string
+                                                                            x-kubernetes-int-or-string: true
                                                                           passthrough:
                                                                             type: object
                                                                         type: object
@@ -4607,10 +4434,8 @@ spec:
                                                                           mergeExtractorsToBody:
                                                                             type: object
                                                                           parseBodyBehavior:
-                                                                            enum:
-                                                                            - ParseAsJson
-                                                                            - DontParse
                                                                             type: string
+                                                                            x-kubernetes-int-or-string: true
                                                                           passthrough:
                                                                             type: object
                                                                         type: object
@@ -4690,10 +4515,8 @@ spec:
                                                                           mergeExtractorsToBody:
                                                                             type: object
                                                                           parseBodyBehavior:
-                                                                            enum:
-                                                                            - ParseAsJson
-                                                                            - DontParse
                                                                             type: string
+                                                                            x-kubernetes-int-or-string: true
                                                                           passthrough:
                                                                             type: object
                                                                         type: object
@@ -4793,10 +4616,8 @@ spec:
                                                                           mergeExtractorsToBody:
                                                                             type: object
                                                                           parseBodyBehavior:
-                                                                            enum:
-                                                                            - ParseAsJson
-                                                                            - DontParse
                                                                             type: string
+                                                                            x-kubernetes-int-or-string: true
                                                                           passthrough:
                                                                             type: object
                                                                         type: object
@@ -4884,10 +4705,8 @@ spec:
                                                                 mergeExtractorsToBody:
                                                                   type: object
                                                                 parseBodyBehavior:
-                                                                  enum:
-                                                                  - ParseAsJson
-                                                                  - DontParse
                                                                   type: string
+                                                                  x-kubernetes-int-or-string: true
                                                                 passthrough:
                                                                   type: object
                                                               type: object
@@ -4967,10 +4786,8 @@ spec:
                                                                 mergeExtractorsToBody:
                                                                   type: object
                                                                 parseBodyBehavior:
-                                                                  enum:
-                                                                  - ParseAsJson
-                                                                  - DontParse
                                                                   type: string
+                                                                  x-kubernetes-int-or-string: true
                                                                 passthrough:
                                                                   type: object
                                                               type: object
@@ -5012,10 +4829,8 @@ spec:
                                               aws:
                                                 properties:
                                                   invocationStyle:
-                                                    enum:
-                                                    - SYNC
-                                                    - ASYNC
                                                     type: string
+                                                    x-kubernetes-int-or-string: true
                                                   logicalName:
                                                     type: string
                                                   responseTransformation:
@@ -5121,10 +4936,8 @@ spec:
                                                       mergeExtractorsToBody:
                                                         type: object
                                                       parseBodyBehavior:
-                                                        enum:
-                                                        - ParseAsJson
-                                                        - DontParse
                                                         type: string
+                                                        x-kubernetes-int-or-string: true
                                                       passthrough:
                                                         type: object
                                                     type: object
@@ -5249,11 +5062,8 @@ spec:
                               type: integer
                               x-kubernetes-int-or-string: true
                             state:
-                              enum:
-                              - STATE_PREBIND
-                              - STATE_BOUND
-                              - STATE_LISTENING
                               type: string
+                              x-kubernetes-int-or-string: true
                           type: object
                         type: array
                     type: object
@@ -5289,21 +5099,11 @@ spec:
                                 type: string
                               type: array
                             maximumProtocolVersion:
-                              enum:
-                              - TLS_AUTO
-                              - TLSv1_0
-                              - TLSv1_1
-                              - TLSv1_2
-                              - TLSv1_3
                               type: string
+                              x-kubernetes-int-or-string: true
                             minimumProtocolVersion:
-                              enum:
-                              - TLS_AUTO
-                              - TLSv1_0
-                              - TLSv1_1
-                              - TLSv1_2
-                              - TLSv1_3
                               type: string
+                              x-kubernetes-int-or-string: true
                           type: object
                         sds:
                           properties:
@@ -5407,10 +5207,8 @@ spec:
                                                   aws:
                                                     properties:
                                                       invocationStyle:
-                                                        enum:
-                                                        - SYNC
-                                                        - ASYNC
                                                         type: string
+                                                        x-kubernetes-int-or-string: true
                                                       logicalName:
                                                         type: string
                                                       responseTransformation:
@@ -5516,10 +5314,8 @@ spec:
                                                           mergeExtractorsToBody:
                                                             type: object
                                                           parseBodyBehavior:
-                                                            enum:
-                                                            - ParseAsJson
-                                                            - DontParse
                                                             type: string
+                                                            x-kubernetes-int-or-string: true
                                                           passthrough:
                                                             type: object
                                                         type: object
@@ -5601,11 +5397,8 @@ spec:
                                                       defaultValue:
                                                         properties:
                                                           denominator:
-                                                            enum:
-                                                            - HUNDRED
-                                                            - TEN_THOUSAND
-                                                            - MILLION
                                                             type: string
+                                                            x-kubernetes-int-or-string: true
                                                           numerator:
                                                             format: int32
                                                             type: integer
@@ -5618,11 +5411,8 @@ spec:
                                                       defaultValue:
                                                         properties:
                                                           denominator:
-                                                            enum:
-                                                            - HUNDRED
-                                                            - TEN_THOUSAND
-                                                            - MILLION
                                                             type: string
+                                                            x-kubernetes-int-or-string: true
                                                           numerator:
                                                             format: int32
                                                             type: integer
@@ -5823,10 +5613,8 @@ spec:
                                                                     mergeExtractorsToBody:
                                                                       type: object
                                                                     parseBodyBehavior:
-                                                                      enum:
-                                                                      - ParseAsJson
-                                                                      - DontParse
                                                                       type: string
+                                                                      x-kubernetes-int-or-string: true
                                                                     passthrough:
                                                                       type: object
                                                                   type: object
@@ -5906,10 +5694,8 @@ spec:
                                                                     mergeExtractorsToBody:
                                                                       type: object
                                                                     parseBodyBehavior:
-                                                                      enum:
-                                                                      - ParseAsJson
-                                                                      - DontParse
                                                                       type: string
+                                                                      x-kubernetes-int-or-string: true
                                                                     passthrough:
                                                                       type: object
                                                                   type: object
@@ -6009,10 +5795,8 @@ spec:
                                                                     mergeExtractorsToBody:
                                                                       type: object
                                                                     parseBodyBehavior:
-                                                                      enum:
-                                                                      - ParseAsJson
-                                                                      - DontParse
                                                                       type: string
+                                                                      x-kubernetes-int-or-string: true
                                                                     passthrough:
                                                                       type: object
                                                                   type: object
@@ -6144,10 +5928,8 @@ spec:
                                                                     mergeExtractorsToBody:
                                                                       type: object
                                                                     parseBodyBehavior:
-                                                                      enum:
-                                                                      - ParseAsJson
-                                                                      - DontParse
                                                                       type: string
+                                                                      x-kubernetes-int-or-string: true
                                                                     passthrough:
                                                                       type: object
                                                                   type: object
@@ -6227,10 +6009,8 @@ spec:
                                                                     mergeExtractorsToBody:
                                                                       type: object
                                                                     parseBodyBehavior:
-                                                                      enum:
-                                                                      - ParseAsJson
-                                                                      - DontParse
                                                                       type: string
+                                                                      x-kubernetes-int-or-string: true
                                                                     passthrough:
                                                                       type: object
                                                                   type: object
@@ -6330,10 +6110,8 @@ spec:
                                                                     mergeExtractorsToBody:
                                                                       type: object
                                                                     parseBodyBehavior:
-                                                                      enum:
-                                                                      - ParseAsJson
-                                                                      - DontParse
                                                                       type: string
+                                                                      x-kubernetes-int-or-string: true
                                                                     passthrough:
                                                                       type: object
                                                                   type: object
@@ -6421,10 +6199,8 @@ spec:
                                                           mergeExtractorsToBody:
                                                             type: object
                                                           parseBodyBehavior:
-                                                            enum:
-                                                            - ParseAsJson
-                                                            - DontParse
                                                             type: string
+                                                            x-kubernetes-int-or-string: true
                                                           passthrough:
                                                             type: object
                                                         type: object
@@ -6504,10 +6280,8 @@ spec:
                                                           mergeExtractorsToBody:
                                                             type: object
                                                           parseBodyBehavior:
-                                                            enum:
-                                                            - ParseAsJson
-                                                            - DontParse
                                                             type: string
+                                                            x-kubernetes-int-or-string: true
                                                           passthrough:
                                                             type: object
                                                         type: object
@@ -6549,10 +6323,8 @@ spec:
                                         aws:
                                           properties:
                                             invocationStyle:
-                                              enum:
-                                              - SYNC
-                                              - ASYNC
                                               type: string
+                                              x-kubernetes-int-or-string: true
                                             logicalName:
                                               type: string
                                             responseTransformation:
@@ -6658,10 +6430,8 @@ spec:
                                                 mergeExtractorsToBody:
                                                   type: object
                                                 parseBodyBehavior:
-                                                  enum:
-                                                  - ParseAsJson
-                                                  - DontParse
                                                   type: string
+                                                  x-kubernetes-int-or-string: true
                                                 passthrough:
                                                   type: object
                                               type: object
@@ -6728,21 +6498,11 @@ spec:
                                         type: string
                                       type: array
                                     maximumProtocolVersion:
-                                      enum:
-                                      - TLS_AUTO
-                                      - TLSv1_0
-                                      - TLSv1_1
-                                      - TLSv1_2
-                                      - TLSv1_3
                                       type: string
+                                      x-kubernetes-int-or-string: true
                                     minimumProtocolVersion:
-                                      enum:
-                                      - TLS_AUTO
-                                      - TLSv1_0
-                                      - TLSv1_1
-                                      - TLSv1_2
-                                      - TLSv1_3
                                       type: string
+                                      x-kubernetes-int-or-string: true
                                   type: object
                                 sds:
                                   properties:

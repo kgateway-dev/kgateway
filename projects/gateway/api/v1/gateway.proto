@@ -57,7 +57,7 @@ message Gateway {
     }
 
     /*
-    * Names of the [`Proxy`](https://gloo.solo.io/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/)
+    * Names of the [`Proxy`](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/)
     * resources to generate from this gateway. If other gateways exist which point to the same proxy,
     * Gloo will join them together.
     *

@@ -107,11 +107,8 @@ spec:
             discovery:
               properties:
                 fdsMode:
-                  enum:
-                  - BLACKLIST
-                  - WHITELIST
-                  - DISABLED
                   type: string
+                  x-kubernetes-int-or-string: true
               type: object
             discoveryNamespace:
               type: string
@@ -173,9 +170,8 @@ spec:
                   format: int32
                   type: integer
                 transportApiVersion:
-                  enum:
-                  - V3
                   type: string
+                  x-kubernetes-int-or-string: true
                 userIdHeader:
                   type: string
               type: object
@@ -395,9 +391,8 @@ spec:
                     format: int32
                     type: integer
                   transportApiVersion:
-                    enum:
-                    - V3
                     type: string
+                    x-kubernetes-int-or-string: true
                   userIdHeader:
                     type: string
                 type: object
@@ -431,13 +426,8 @@ spec:
                             format: int32
                             type: integer
                           unit:
-                            enum:
-                            - UNKNOWN
-                            - SECOND
-                            - MINUTE
-                            - HOUR
-                            - DAY
                             type: string
+                            x-kubernetes-int-or-string: true
                         type: object
                       simpleDescriptors:
                         items:
@@ -490,21 +480,11 @@ spec:
                         type: string
                       type: array
                     maximumProtocolVersion:
-                      enum:
-                      - TLS_AUTO
-                      - TLSv1_0
-                      - TLSv1_1
-                      - TLSv1_2
-                      - TLSv1_3
                       type: string
+                      x-kubernetes-int-or-string: true
                     minimumProtocolVersion:
-                      enum:
-                      - TLS_AUTO
-                      - TLSv1_0
-                      - TLSv1_1
-                      - TLSv1_2
-                      - TLSv1_3
                       type: string
+                      x-kubernetes-int-or-string: true
                   type: object
               type: object
             vaultSecretSource:

@@ -84,7 +84,7 @@ type UpstreamSpec struct {
 
 	// The AWS Region where the desired Lambda Functions exist
 	Region string `protobuf:"bytes,1,opt,name=region,proto3" json:"region,omitempty"`
-	// A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an AWS Secret
+	// A [Gloo Secret Ref](https://docs.solo.io/gloo-edge/latest/reference/cli/glooctl_create_secret_aws/) to an AWS Secret
 	// AWS Secrets can be created with `glooctl secret create aws ...`
 	// If the secret is created manually, it must conform to the following structure:
 	//  ```

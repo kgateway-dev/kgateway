@@ -15,8 +15,7 @@ import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 message UpstreamSpec {
     // The Name of the Azure Function App where the functions are grouped
     string function_app_name = 1;
-    // A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an [Azure Publish Profile JSON file](https://azure.microsoft.com/en-us/downloads/publishing-profile-overview/).
-    // {{ hide_not_implemented "Azure Secrets can be created with `glooctl secret create azure ...`" }}
+    // A [Gloo Secret Ref](https://docs.solo.io/gloo-edge/latest/reference/cli/glooctl_create_secret_azure/) to an [Azure Publish Profile JSON file](https://azure.microsoft.com/en-us/downloads/publishing-profile-overview/).
     // Note that this secret is not required unless Function Discovery is enabled
     core.solo.io.ResourceRef secret_ref = 2;
 

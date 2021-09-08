@@ -90,7 +90,6 @@ When you have the logging window up, send requests through to the proxy and you 
 
 Additionally, you can enable access logging to dump specific parts of the request into the logs. Please see the [doc on access logging]({{< versioned_link_path fromRoot="/guides/security/access_logging//" >}}) to configure that. 
 
-
 ### Viewing Envoy stats
 Envoy collects a wealth of statistics and makes them available for metric-collection systems like Prometheus, Statsd, and Datadog (to name a few). You can also very quickly get access to the stats from the cli:
 
@@ -98,7 +97,7 @@ Envoy collects a wealth of statistics and makes them available for metric-collec
 glooctl proxy stats
 ```
 
-### All else with Envoy: bootstrap and Admin
+### All else with Envoy: bootstrap and administration
 
 There may be more limited times where you need direct access to the [Envoy Admin API](https://www.envoyproxy.io/docs/envoy/latest/operations/admin). You can view both the Envoy bootstrap config as well as access the [Admin API](https://www.envoyproxy.io/docs/envoy/latest/operations/admin) with the following commands:
 
@@ -113,7 +112,12 @@ You can port-forward the Envoy Admin API similarly:
 kubectl port-forward -n gloo-system deploy/gateway-proxy 19000:19000
 ```
 
-That way you can `curl localhost:19000` and get access to the Envoy Admin API. 
+Now you can `curl localhost:19000` and get access to the Envoy Admin API. 
+
+Note that after enabling `debug` logging, the Envoy proxy does not automatically revert to the default `info` logging. To reset logging to the default `info` level, you can click **logging** in the Admin UI or run the following `curl` command in the CLI:
+```bash
+curl -X POST http://localhost:19000/logging\?level\=info
+```
 
 ## Debugging the control plane
 
@@ -169,15 +173,26 @@ Likely you just want to see each individual components logs. You can use `kubect
 kubectl logs -f -n gloo-system -l gloo=gloo
 ```
 
-### Changing logging Levels and more
+To follow the logs of other Gloo Edge deployments, simply change the value of the `gloo` label as shown in the table below.
 
-Each Gloo Edge control plane component comes with a optional debug port that can be enabled with the `START_STATS_SERVER` environment variable. To get access to it, you can port-forward to it with Kubernetes like this:
+| Component | Command |
+| ------------- | ------------- |
+| Discovery | `kubectl logs -f -n gloo-system -l gloo=discovery` |
+| External Auth (Enterprise) | `kubectl logs -f -n gloo-system -l gloo=extauth` |
+| Gateway | `kubectl logs -f -n gloo-system -l gloo=gateway`  |
+| Gloo Control Plane | `kubectl logs -f -n gloo-system -l gloo=gloo` |
+| Observability (Enterprise) | `kubectl logs -f -n gloo-system -l gloo=observability` |
+| Rate Limiting (Enterprise) | `kubectl logs -f -n gloo-system -l gloo=rate-limit` |
+
+### Changing logging levels and more
+
+Each Gloo Edge control plane component comes with an optional debug port that you can enable with the `START_STATS_SERVER` environment variable. To get access to the port, you can forward the port of the Kubernetes deployment such as with the following command:
 
 ```bash
-kubectl port-forward  -n gloo-system deploy/gloo  9091:9091
+kubectl port-forward -n gloo-system deploy/gloo 9091:9091
 ```
 
-Now you can navigate to http://localhost:9091 and you get a simple page with some additional endpoints:
+Now you can navigate to `http://localhost:9091` and you get a simple page with some additional endpoints:
 
 * `/debug/pprof`
 * `/logging`
@@ -186,6 +201,15 @@ Now you can navigate to http://localhost:9091 and you get a simple page with som
 
 With these endpoints, you can profile the behavior of the component, adjust its logging, view the prometheus-style telemetry signals, as well as view tracing spans within the process. This is a very handy page to understand the behavior of a particular component. 
 
+To change the log levels of individual Gloo Edge deployments from the CLI instead of the Admin UI, use commands similar to the following example with the `discovery` deployment.
+
+```bash
+kubectl port-forward -n gloo-system deploy/discovery 9091:9091
+# Change log level to debug for discovery deployment
+% curl -X PUT -d '{"level": "debug"}' http://localhost:9091/logging
+# Change log level to info for discovery deployment
+% curl -X PUT -d '{"level": "info"}' http://localhost:9091/logging
+```
 
 #### Declaratively setting log levels on start
 
