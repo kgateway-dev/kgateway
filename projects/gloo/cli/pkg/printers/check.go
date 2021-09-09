@@ -3,8 +3,18 @@ package printers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 )
+
+type CheckPrinters interface {
+	AppendCheck(name string)
+	AppendStatus(name string, status string)
+	AppendMessage(message string)
+	AppendError(err string)
+	PrintChecks() error
+	NewCheckResult() CheckResult
+}
 
 type CheckResult struct {
 	Resources []CheckStatus `json:"resources"`
@@ -16,60 +26,74 @@ type CheckStatus struct {
 	Status string `json:"status"`
 }
 
-var (
-	checkResult *CheckResult
-)
+type P struct {
+	OutputType  OutputType
+	CheckResult *CheckResult
+}
 
-func AppendResponse(name string, status string, message string, err string, outputType OutputType) {
+// var (
+// 	checkResult CheckResult
+// )
 
-	if outputType.IsTable() {
+func (p P) AppendCheck(name string) {
+	if p.OutputType.IsTable() {
+		fmt.Printf(name)
+	} else if p.OutputType.IsJSON() {
+		cr := CheckStatus{Name: sanitizeName(name)}
+		p.CheckResult.Resources = append(p.CheckResult.Resources, cr)
+	}
+}
 
-		if name != "" && status == "" {
-			fmt.Printf(name)
-		} else if status != "" {
-			fmt.Printf(status)
-		} else if message != "" {
-			fmt.Printf(message)
-		}
-	} else if outputType.IsJSON() {
+func (p P) AppendStatus(name string, status string) {
 
-		if checkResult == nil {
-			checkResult = new(CheckResult)
-		}
-
-		if name != "" && status == "" {
-			cr := CheckStatus{Name: sanitizeName(name)}
-			checkResult.Resources = append(checkResult.Resources, cr)
-		} else if name != "" && status != "" {
-			for i := range checkResult.Resources {
-				if checkResult.Resources[i].Name == name {
-					checkResult.Resources[i].Status = sanitizeStatus(status)
-					break
-				}
+	if p.OutputType.IsTable() {
+		fmt.Printf(status + "\n")
+	} else if p.OutputType.IsJSON() {
+		for i := range p.CheckResult.Resources {
+			if p.CheckResult.Resources[i].Name == name {
+				p.CheckResult.Resources[i].Status = (status)
+				break
 			}
-		} else if message != "" {
-			checkResult.Messages = append(checkResult.Messages, strings.ReplaceAll(message, "\n", ""))
-		} else if err != "" {
-			checkResult.Errors = append(checkResult.Errors, strings.ReplaceAll(err, "\n", ""))
 		}
 	}
 }
 
-func PrintChecks() error {
-
-	cr, err := json.Marshal(checkResult)
-	if err != nil {
-		fmt.Println(err)
-		return err
+func (p P) AppendMessage(message string) {
+	if p.OutputType.IsTable() {
+		fmt.Printf(message + "\n")
+	} else if p.OutputType.IsJSON() {
+		p.CheckResult.Messages = append(p.CheckResult.Messages, strings.ReplaceAll(message, "\n", ""))
 	}
-	fmt.Println(string(cr))
+}
+
+func (p P) AppendError(err string) {
+	if p.OutputType.IsTable() {
+		// fmt.Printf(err)
+	} else if p.OutputType.IsJSON() {
+		p.CheckResult.Errors = append(p.CheckResult.Errors, err)
+	}
+}
+
+func (p P) PrintChecks(w io.Writer) {
+
+	err := json.NewEncoder(w).Encode(p.CheckResult)
+	if err != nil {
+		fmt.Print(err)
+	}
+	fmt.Print(w)
+}
+
+func (p P) NewCheckResult() *CheckResult {
+
+	if p.OutputType.IsJSON() {
+		return new(CheckResult)
+	}
 
 	return nil
 }
 
+//We must sanitze the name for json formatting because the name comes in as "Checking deployments..."
+//and we just require the type "deployments"
 func sanitizeName(name string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(name, "Checking ", ""), "... ", "")
-}
-func sanitizeStatus(status string) string {
-	return strings.ReplaceAll(status, "\n", "")
 }

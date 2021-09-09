@@ -1,6 +1,7 @@
 package check
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -36,6 +37,8 @@ var (
 	CrdNotFoundErr = func(crdName string) error {
 		return eris.Errorf("%s CRD has not been registered", crdName)
 	}
+
+	printer printers.P
 )
 
 // contains method
@@ -59,6 +62,8 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				return errors.New("Invalid output type. Only table (default) and json are supported.")
 			}
 
+			printer = printers.P{OutputType: opts.Top.Output}
+			printer.CheckResult = printer.NewCheckResult()
 			err := CheckResources(opts)
 
 			if err != nil {
@@ -67,13 +72,13 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 					return err
 				}
 			} else {
-				printers.AppendResponse("", "", fmt.Sprintf("No problems detected.\n"), "", opts.Top.Output)
+				printer.AppendMessage(fmt.Sprintf("No problems detected."))
 			}
 
 			CheckMulticlusterResources(opts)
 
 			if opts.Top.Output.IsJSON() {
-				printers.PrintChecks()
+				printer.PrintChecks(new(bytes.Buffer))
 			}
 
 			return nil
@@ -191,7 +196,7 @@ func CheckResources(opts *options.Options) error {
 
 	if multiErr.ErrorOrNil() != nil {
 		for _, err := range multiErr.Errors {
-			printers.AppendResponse("", "", "", fmt.Sprint(err), opts.Top.Output)
+			printer.AppendError(fmt.Sprint(err))
 		}
 	}
 
@@ -199,7 +204,7 @@ func CheckResources(opts *options.Options) error {
 }
 
 func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, error) {
-	printers.AppendResponse("Checking deployments... ", "", "", "", opts.Top.Output)
+	printer.AppendCheck("Checking deployments... ")
 	client := helpers.MustKubeClient()
 	_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, opts.Metadata.GetNamespace(), metav1.GetOptions{})
 	if err != nil {
@@ -263,15 +268,15 @@ func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, erro
 		}
 	}
 	if multiErr != nil {
-		printers.AppendResponse("deployments", fmt.Sprintf("%v Errors!\n", multiErr.Len()), "", "", opts.Top.Output)
+		printer.AppendStatus("deployments", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return nil, multiErr
 	}
-	printers.AppendResponse("deployments", "OK\n", "", "", opts.Top.Output)
+	printer.AppendStatus("deployments", "OK")
 	return deployments, nil
 }
 
 func checkPods(opts *options.Options) error {
-	printers.AppendResponse("Checking pods... ", "", "", "", opts.Top.Output)
+	printer.AppendCheck("Checking pods... ")
 	client := helpers.MustKubeClient()
 	pods, err := client.CoreV1().Pods(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{})
 	if err != nil {
@@ -322,10 +327,10 @@ func checkPods(opts *options.Options) error {
 		}
 	}
 	if multiErr != nil {
-		printers.AppendResponse("pods", fmt.Sprintf("%v Errors!\n", multiErr.Len()), "", "", opts.Top.Output)
+		printer.AppendStatus("pods", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
-	printers.AppendResponse("pods", fmt.Sprintf("OK\n"), "", "", opts.Top.Output)
+	printer.AppendStatus("pods", fmt.Sprintf("OK"))
 	return nil
 }
 
@@ -343,7 +348,7 @@ func getNamespaces(ctx context.Context, settings *v1.Settings) ([]string, error)
 }
 
 func checkUpstreams(opts *options.Options, namespaces []string) ([]string, error) {
-	printers.AppendResponse("Checking upstreams... ", "", "", "", opts.Top.Output)
+	printer.AppendCheck("Checking upstreams... ")
 	var knownUpstreams []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
@@ -366,15 +371,15 @@ func checkUpstreams(opts *options.Options, namespaces []string) ([]string, error
 		}
 	}
 	if multiErr != nil {
-		printers.AppendResponse("upstreams", fmt.Sprintf("%v Errors!\n", multiErr.Len()), "", "", opts.Top.Output)
+		printer.AppendStatus("upstreams", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return nil, multiErr
 	}
-	printers.AppendResponse("upstreams", fmt.Sprintf("OK\n"), "", "", opts.Top.Output)
+	printer.AppendStatus("upstreams", fmt.Sprintf("OK"))
 	return knownUpstreams, nil
 }
 
 func checkUpstreamGroups(opts *options.Options, namespaces []string) error {
-	printers.AppendResponse("Checking upstream groups... ", "", "", "", opts.Top.Output)
+	printer.AppendCheck("Checking upstream groups... ")
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
 		upstreamGroups, err := helpers.MustNamespacedUpstreamGroupClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{})
@@ -395,15 +400,15 @@ func checkUpstreamGroups(opts *options.Options, namespaces []string) error {
 		}
 	}
 	if multiErr != nil {
-		printers.AppendResponse("upstream groups", fmt.Sprintf("%v Errors!\n", multiErr.Len()), "", "", opts.Top.Output)
+		printer.AppendStatus("upstream groups", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
-	printers.AppendResponse("upstream groups", fmt.Sprintf("OK\n"), "", "", opts.Top.Output)
+	printer.AppendStatus("upstream groups", fmt.Sprintf("OK"))
 	return nil
 }
 
 func checkAuthConfigs(opts *options.Options, namespaces []string) ([]string, error) {
-	printers.AppendResponse("Checking auth configs... ", "", "", "", opts.Top.Output)
+	printer.AppendCheck("Checking auth configs... ")
 	var knownAuthConfigs []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
@@ -425,15 +430,15 @@ func checkAuthConfigs(opts *options.Options, namespaces []string) ([]string, err
 		}
 	}
 	if multiErr != nil {
-		printers.AppendResponse("auth configs", fmt.Sprintf("%v Errors!\n", multiErr.Len()), "", "", opts.Top.Output)
+		printer.AppendStatus("auth configs", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return nil, multiErr
 	}
-	printers.AppendResponse("auth configs", fmt.Sprintf("OK\n"), "", "", opts.Top.Output)
+	printer.AppendStatus("auth configs", fmt.Sprintf("OK"))
 	return knownAuthConfigs, nil
 }
 
 func checkRateLimitConfigs(opts *options.Options, namespaces []string) ([]string, error) {
-	printers.AppendResponse("Checking rate limit configs... ", "", "", "", opts.Top.Output)
+	printer.AppendCheck("Checking rate limit configs... ")
 	var knownConfigs []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
@@ -463,16 +468,16 @@ func checkRateLimitConfigs(opts *options.Options, namespaces []string) ([]string
 	}
 
 	if multiErr != nil {
-		printers.AppendResponse("rate limit configs", fmt.Sprintf("%v Errors!\n", multiErr.Len()), "", "", opts.Top.Output)
+		printer.AppendStatus("rate limit configs", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return nil, multiErr
 	}
 
-	printers.AppendResponse("rate limit configs", fmt.Sprintf("OK\n"), "", "", opts.Top.Output)
+	printer.AppendStatus("rate limit configs", fmt.Sprintf("OK"))
 	return knownConfigs, nil
 }
 
 func checkVirtualHostOptions(opts *options.Options, namespaces []string) ([]string, error) {
-	printers.AppendResponse("Checking VirtualHostOptions... ", "", "", "", opts.Top.Output)
+	printer.AppendCheck("Checking VirtualHostOptions... ")
 	var knownVhOpts []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
@@ -503,15 +508,15 @@ func checkVirtualHostOptions(opts *options.Options, namespaces []string) ([]stri
 		}
 	}
 	if multiErr != nil {
-		printers.AppendResponse("VirtualHostOptions", fmt.Sprintf("%v Errors!\n", multiErr.Len()), "", "", opts.Top.Output)
+		printer.AppendStatus("VirtualHostOptions", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return nil, multiErr
 	}
-	printers.AppendResponse("VirtualHostOptions", fmt.Sprintf("OK\n"), "", "", opts.Top.Output)
+	printer.AppendStatus("VirtualHostOptions", fmt.Sprintf("OK"))
 	return knownVhOpts, nil
 }
 
 func checkRouteOptions(opts *options.Options, namespaces []string) ([]string, error) {
-	printers.AppendResponse("Checking RouteOptions... ", "", "", "", opts.Top.Output)
+	printer.AppendCheck("Checking RouteOptions... ")
 	var knownVhOpts []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
@@ -542,15 +547,15 @@ func checkRouteOptions(opts *options.Options, namespaces []string) ([]string, er
 		}
 	}
 	if multiErr != nil {
-		printers.AppendResponse("RouteOptions", fmt.Sprintf("%v Errors!\n", multiErr.Len()), "", "", opts.Top.Output)
+		printer.AppendStatus("RouteOptions", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return nil, multiErr
 	}
-	printers.AppendResponse("RouteOptions", fmt.Sprintf("OK\n"), "", "", opts.Top.Output)
+	printer.AppendStatus("RouteOptions", fmt.Sprintf("OK"))
 	return knownVhOpts, nil
 }
 
 func checkVirtualServices(opts *options.Options, namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs, knownVirtualHostOptions, knownRouteOptions []string) error {
-	printers.AppendResponse("Checking virtual services... ", "", "", "", opts.Top.Output)
+	printer.AppendCheck("Checking virtual services... ")
 	var multiErr *multierror.Error
 
 	for _, ns := range namespaces {
@@ -668,15 +673,15 @@ func checkVirtualServices(opts *options.Options, namespaces, knownUpstreams, kno
 	}
 
 	if multiErr != nil {
-		printers.AppendResponse("virtual services", fmt.Sprintf("%v Errors!\n", multiErr.Len()), "", "", opts.Top.Output)
+		printer.AppendStatus("virtual services", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
-	printers.AppendResponse("virtual services", fmt.Sprintf("OK\n"), "", "", opts.Top.Output)
+	printer.AppendStatus("virtual services", fmt.Sprintf("OK"))
 	return nil
 }
 
 func checkGateways(opts *options.Options, namespaces []string) error {
-	printers.AppendResponse("Checking gateways... ", "", "", "", opts.Top.Output)
+	printer.AppendCheck("Checking gateways... ")
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
 		gateways, err := helpers.MustNamespacedGatewayClient(opts.Top.Ctx, ns).List(ns, clients.ListOpts{})
@@ -698,16 +703,16 @@ func checkGateways(opts *options.Options, namespaces []string) error {
 	}
 
 	if multiErr != nil {
-		printers.AppendResponse("gateways", fmt.Sprintf("%v Errors!\n", multiErr.Len()), "", "", opts.Top.Output)
+		printer.AppendStatus("gateways", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
 
-	printers.AppendResponse("gateways", fmt.Sprintf("OK\n"), "", "", opts.Top.Output)
+	printer.AppendStatus("gateways", fmt.Sprintf("OK"))
 	return nil
 }
 
 func checkProxies(opts *options.Options, namespaces []string, glooNamespace string, deployments *appsv1.DeploymentList) error {
-	printers.AppendResponse("Checking proxies... ", "", "", "", opts.Top.Output)
+	printer.AppendCheck("Checking proxies... ")
 	if deployments == nil {
 		fmt.Println("Skipping due to an error in checking deployments")
 		return fmt.Errorf("proxy check was skipped due to an error in checking deployments")
@@ -737,15 +742,15 @@ func checkProxies(opts *options.Options, namespaces []string, glooNamespace stri
 	}
 
 	if multiErr != nil {
-		printers.AppendResponse("proxies", fmt.Sprintf("%v Errors!\n", multiErr.Len()), "", "", opts.Top.Output)
+		printer.AppendStatus("proxies", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
-	printers.AppendResponse("proxies", fmt.Sprintf("OK\n"), "", "", opts.Top.Output)
+	printer.AppendStatus("proxies", fmt.Sprintf("OK"))
 	return nil
 }
 
 func checkSecrets(opts *options.Options, namespaces []string) error {
-	printers.AppendResponse("Checking secrets... ", "", "", "", opts.Top.Output)
+	printer.AppendCheck("Checking secrets... ")
 	var multiErr *multierror.Error
 	client := helpers.MustSecretClientWithOptions(opts.Top.Ctx, 5*time.Second, namespaces)
 
@@ -757,10 +762,10 @@ func checkSecrets(opts *options.Options, namespaces []string) error {
 		// currently this would only find syntax errors
 	}
 	if multiErr != nil {
-		printers.AppendResponse("secrets", fmt.Sprintf("%v Errors!\n", multiErr.Len()), "", "", opts.Top.Output)
+		printer.AppendStatus("secrets", fmt.Sprintf("%v Errors!", multiErr.Len()))
 		return multiErr
 	}
-	printers.AppendResponse("secrets", fmt.Sprintf("OK\n"), "", "", opts.Top.Output)
+	printer.AppendStatus("secrets", fmt.Sprintf("OK"))
 	return nil
 }
 

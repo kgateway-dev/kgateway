@@ -7,7 +7,6 @@ import (
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	v1 "k8s.io/api/apps/v1"
 )
@@ -102,11 +101,11 @@ func checkXdsMetrics(opts *options.Options, glooNamespace string, deployments *v
 
 	for _, deployment := range deployments.Items {
 		if deployment.Name == rateLimitDeployment {
-			printers.AppendResponse("Checking rate limit server... ", "", "", "", opts.Top.Output)
+			printer.AppendCheck("Checking rate limit server... ")
 			if !RateLimitIsConnected(stats) {
 				return fmt.Errorf("rate limit server is not connected")
 			}
-			printers.AppendResponse("rate limit server", "OK\n", "", "", opts.Top.Output)
+			printer.AppendStatus("rate limit server", "OK")
 		}
 	}
 
