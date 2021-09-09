@@ -3,15 +3,15 @@ package sanitizer
 import (
 	"context"
 
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/solo-io/gloo/pkg/utils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
@@ -46,16 +46,26 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 
 	clusters := xdsSnapshot.GetResources(resource.ClusterTypeV3)
 	endpoints := xdsSnapshot.GetResources(resource.EndpointTypeV3)
-
 	var removed int64
 
 	// Find all the errored upstreams and remove them from the xDS snapshot
 	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
+
 		if reports[up].Errors != nil {
+
 			clusterName := translator.UpstreamToClusterName(up.GetMetadata().Ref())
+			endpointName := clusterName
+			cluster, _ := clusters.Items[clusterName].ResourceProto().(*envoy_config_cluster_v3.Cluster)
+			if cluster.GetType() == envoy_config_cluster_v3.Cluster_EDS {
+				if cluster.GetEdsClusterConfig().GetServiceName() != "" {
+					endpointName = cluster.GetEdsClusterConfig().GetServiceName()
+				} else {
+					endpointName = cluster.GetName()
+				}
+			}
 			// remove cluster and endpoints
 			delete(clusters.Items, clusterName)
-			delete(endpoints.Items, clusterName)
+			delete(endpoints.Items, endpointName)
 			removed++
 		}
 	}
