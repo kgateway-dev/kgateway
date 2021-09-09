@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5287
+    description: Fixing the gloo compressedProxySpec notworking after the crd schemas introduction.
