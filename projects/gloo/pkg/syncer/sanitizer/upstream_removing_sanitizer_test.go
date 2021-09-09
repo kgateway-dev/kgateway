@@ -30,7 +30,7 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 			Type: envoy_config_cluster_v3.Cluster_EDS,
 		}
 		goodClusterName = translator.UpstreamToClusterName(us.Metadata.Ref())
-		goodCluster     = &envoy_config_cluster_v3.Cluster{
+		goodCluster     = &envoyclusterapi.Cluster{
 			Name: goodClusterName,
 			ClusterDiscoveryType: clusterType,
 			EdsClusterConfig: &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
