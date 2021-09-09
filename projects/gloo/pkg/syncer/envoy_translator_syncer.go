@@ -141,7 +141,6 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot, 
 		if err != nil {
 			logger.Warnf("proxy %v was rejected due to invalid config: %v\n"+
 				"Attempting to update only EDS information", proxy.Metadata.Ref().Key(), err)
-
 			// If the snapshot is invalid, attempt at least to update the EDS information. This is important because
 			// endpoints are relatively ephemeral entities and the previous snapshot Envoy got might be stale by now.
 			sanitizedSnapshot, err = s.updateEndpointsOnly(key, xdsSnapshot)
@@ -152,7 +151,8 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot, 
 			}
 			logger.Infof("successfully updated EDS information for proxy %v", proxy.Metadata.Ref().Key())
 		}
-
+		// Merge reports after sanitization to capture changes made by the sanitizers
+		allReports.Merge(reports)
 		if err := s.xdsCache.SetSnapshot(key, sanitizedSnapshot); err != nil {
 			err := eris.Wrapf(err, "failed while updating xDS snapshot cache")
 			logger.DPanicw("", zap.Error(err))
