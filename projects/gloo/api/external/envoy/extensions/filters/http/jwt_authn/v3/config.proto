@@ -235,7 +235,7 @@ message RemoteJwks {
   // duration is 5 minutes.
   google.protobuf.Duration cache_duration = 2;
 
-  JwksAsyncFetch jwt_async_fetch = 3;
+  JwksAsyncFetch async_fetch = 3;
 }
 message JwksAsyncFetch {
   bool fast_listener = 1;
