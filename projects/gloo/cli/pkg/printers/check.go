@@ -31,10 +31,6 @@ type P struct {
 	CheckResult *CheckResult
 }
 
-// var (
-// 	checkResult CheckResult
-// )
-
 func (p P) AppendCheck(name string) {
 	if p.OutputType.IsTable() {
 		fmt.Printf(name)
