@@ -54,7 +54,7 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 		if reports[up].Errors != nil {
 
 			clusterName := translator.UpstreamToClusterName(up.GetMetadata().Ref())
-			endpointName := ""
+			endpointName := clusterName
 			cluster, _ := clusters.Items[clusterName].ResourceProto().(*envoy_config_cluster_v3.Cluster)
 			if cluster.GetType() == envoy_config_cluster_v3.Cluster_EDS {
 				if cluster.GetEdsClusterConfig().GetServiceName() != "" {
@@ -63,7 +63,6 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 					endpointName = cluster.GetName()
 				}
 			}
-			contextutils.LoggerFrom(ctx).Info("deleting endpoint ", endpointName)
 			// remove cluster and endpoints
 			delete(clusters.Items, clusterName)
 			delete(endpoints.Items, endpointName)
