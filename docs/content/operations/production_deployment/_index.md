@@ -7,7 +7,7 @@ weight: 20
 This document shows some of the Production options that may be useful. We will continue to add to this document and welcome users of Gloo Edge to send PRs to this as well.
 
 
-## Securing the control-plane from configuration errors
+## Safeguarding the control plane configuration
 
 ### Enable replacing invalid routes
 
@@ -45,7 +45,7 @@ gloo:
 ## Performance tips
 
 ### Disable Kubernetes destinations
-Gloo Edge out of the box routes to upstreams. It can also route directly to Kubernetes destinations (bypassing upstreams). Upstreams is the recommended abstraction to which to route in VirtualServices, and you can disable the Kubernetes destinations with the `settings.disableKubernetesDestinations`. This saves on memory overhead so Gloo Edge pod doesn't cache both upstreams and Kubernetes destinations. 
+Gloo Edge routes to upstreams by default, but it can alternatively be configured to bypass upstreams and route directly to Kubernetes destinations. Because routing to upstreams is the recommended configuration, you can disable the option to route to the Kubernetes destinations with the `settings.disableKubernetesDestinations: true` setting. This setting saves memory because the Gloo Edge pod doesn't cache both upstreams and Kubernetes destinations.
 
 You can set this value in the default `Settings` CR by adding the following content:   
 ```yaml
@@ -60,7 +60,7 @@ spec:
     ...
 ```
 
-You can set this value helm overrides by setting:
+You can set this value in your Helm overrides file by adding the following setting:
 ```yaml
 settings:
   disableKubernetesDestinations: true
@@ -103,7 +103,7 @@ You can also patch the `default` *Settings* CR with this value and delete the `d
 Optionally, you may choose to enable Envoy's gzip filter through Gloo Edge. More information on that can be found [here]({{% versioned_link_path fromRoot="/installation/advanced_configuration/gzip/" %}}).
 
 ### Set up an EDS warming timeout
-Set up the endpoints warming timeout to some nonzero value. More details [here]({{%versioned_link_path fromRoot="/operations/upgrading/1.3.0/#recommended-settings" %}}).
+Set up the endpoints warming timeout to a non-zero value. More details [here]({{%versioned_link_path fromRoot="/operations/upgrading/1.3.0/#recommended-settings" %}}).
 
 
 ## Access Logging
@@ -116,17 +116,17 @@ The [access logging documentation]({{%versioned_link_path fromRoot="/guides/secu
 Make sure you have the `%RESPONSE_FLAGS%` item in the log pattern. 
 {{% /notice %}}
 
-## Horizontal scaling - the data-plane
+## Horizontally scaling the data plane
 
 ### Gateway proxy
 
-It's fine to scale up the gateway-proxies (Envoy instances). You can use a Deployment or a DeamonSet. The more CPU you will dedicate to the gateway-proxy, the more requests if will be able to handle.
+You can scale up the `gateway-proxies` Envoy instances by using a Deployment or a DeamonSet. The amount of requests that the `gateway-proxies` can process increases with the amount of CPU that the `gateway-proxies` have access to.
 
 ### Ext-Auth
 
-You can also scale-up the ExtAuth service. Most of the time, one instance is fine. We have seen deployments with 2 replicas working well.
+You can also scale up the ExtAuth service. Typically, one to two instances are sufficient.
 
-## Horizontal scaling - the control-plane
+## Horizontally scaling the control plane
 
 ### XDS Relay
 
@@ -153,7 +153,7 @@ gatewayProxies:
 
 ### Other components
 
-For the other control plane components, such as the Gateway deployment or the Discovery deployment, *DO NOT* scale them. Today, it can lead to race conditions and there are no need to scale them up.
+*DO NOT* scale other control plane components, such as the Gateway deployment or the Discovery deployment. Scaling these components provides no benefit and can lead to race conditions.
 
 
 ## Enhancing the data-plane reliability
@@ -184,14 +184,14 @@ Additionally, "outlier detection" can be configured which allows Envoy to passiv
 A helpful [overview of this feature is available in Envoy's documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier).
 This can be configured via the `outlierDetection` field on the `Upstream` resource. See the {{< protobuf name="gloo.solo.io.Upstream" display="API reference for more detail" >}}.
 
-Also, consider using `retries` on your _routes_. The default value for this attribute is `1`. Generally spealing, we observed better results with the value being set to `3`.
+Also, consider using `retries` on your _routes_. The default value for this attribute is `1`, which you can increase to `3` for better results.
 
 
 ## Metrics and monitoring
 
 ### Grafana dashboards
 
-You will find a dedicated Grafana dashboard for each `Upstream` _Custom Resource_ that exists. These dashboard are pretty handy when you want to understand if your active/passive health-checks are working, as well as retries, requests rate and latency, responses codes, number of active connections and more.
+A dedicated Grafana dashboard exists for each `Upstream` _Custom Resource_. These dashboards can help you verify whether your active/passive health checks are working, as well as provide insight into retries, requests rate and latency, responses codes, number of active connections, and more.
 
 ![Upstream dashboard - part 1]({{< versioned_link_path fromRoot="/img/grafana-us-part1.png" >}})
 
