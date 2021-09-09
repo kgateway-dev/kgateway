@@ -68,6 +68,7 @@ func (p P) AppendMessage(message string) {
 
 func (p P) AppendError(err string) {
 	if p.OutputType.IsTable() {
+		// errors are returned by the root cmd, no need to print them here
 		// fmt.Printf(err)
 	} else if p.OutputType.IsJSON() {
 		p.CheckResult.Errors = append(p.CheckResult.Errors, err)
