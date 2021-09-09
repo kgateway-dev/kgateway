@@ -501,7 +501,7 @@ error types for tcp host config
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `errors` | [[]gloo.solo.io.UpstreamReport.Error](../gloo_validation.proto.sk/#error) | errors on upstream. |
+| `errors` | [[]gloo.solo.io.UpstreamReport.Error](../gloo_validation.proto.sk/#error) | Errors returned by the upstream resource. |
 
 
 
@@ -510,7 +510,7 @@ error types for tcp host config
 ### Error
 
  
-error types for upstream config
+Error types for the upstream config.
 
 ```yaml
 "type": .gloo.solo.io.UpstreamReport.Error.Type
@@ -520,8 +520,8 @@ error types for upstream config
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `type` | [.gloo.solo.io.UpstreamReport.Error.Type](../gloo_validation.proto.sk/#type) | the type of error. |
-| `reason` | `string` | any extra info as a string. |
+| `type` | [.gloo.solo.io.UpstreamReport.Error.Type](../gloo_validation.proto.sk/#type) | The type of error. |
+| `reason` | `string` | Any extra information, as a string. |
 
 
 

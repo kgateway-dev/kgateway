@@ -1019,7 +1019,7 @@ type UpstreamReport struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// errors on upstream
+	// Errors returned by the upstream resource.
 	Errors []*UpstreamReport_Error `protobuf:"bytes,1,rep,name=errors,proto3" json:"errors,omitempty"`
 }
 
@@ -1468,15 +1468,15 @@ func (x *TcpHostReport_Error) GetReason() string {
 	return ""
 }
 
-// error types for upstream config
+// Error types for the upstream config.
 type UpstreamReport_Error struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// the type of error
+	// The type of error
 	Type UpstreamReport_Error_Type `protobuf:"varint,1,opt,name=type,proto3,enum=gloo.solo.io.UpstreamReport_Error_Type" json:"type,omitempty"`
-	// any extra info as a string
+	// Any extra information, as a string
 	Reason string `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
 }
 
