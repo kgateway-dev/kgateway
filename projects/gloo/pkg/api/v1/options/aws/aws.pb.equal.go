@@ -149,6 +149,10 @@ func (m *DestinationSpec) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetHeaderBodyRequestTransformation() != target.GetHeaderBodyRequestTransformation() {
+		return false
+	}
+
 	if m.GetResponseTransformation() != target.GetResponseTransformation() {
 		return false
 	}

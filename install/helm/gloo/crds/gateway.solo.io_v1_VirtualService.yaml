@@ -3264,6 +3264,8 @@ spec:
                                           properties:
                                             aws:
                                               properties:
+                                                headerBodyRequestTransformation:
+                                                  type: boolean
                                                 invocationStyle:
                                                   type: string
                                                   x-kubernetes-int-or-string: true
@@ -4380,6 +4382,8 @@ spec:
                                 properties:
                                   aws:
                                     properties:
+                                      headerBodyRequestTransformation:
+                                        type: boolean
                                       invocationStyle:
                                         type: string
                                         x-kubernetes-int-or-string: true

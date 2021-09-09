@@ -215,28 +215,53 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				return nil, nil
 			}
 
-			repsonsetransform := awsDestinationSpec.Aws.GetResponseTransformation()
-			if !repsonsetransform {
-				return nil, nil
-			}
-			*p.transformsAdded = true
-			return &envoy_transform.RouteTransformations{
-				ResponseTransformation: &envoy_transform.Transformation{
-					TransformationType: &envoy_transform.Transformation_TransformationTemplate{
-						TransformationTemplate: &envoy_transform.TransformationTemplate{
-							BodyTransformation: &envoy_transform.TransformationTemplate_Body{
-								Body: &envoy_transform.InjaTemplate{
-									Text: "{{body}}",
-								},
-							},
-							Headers: map[string]*envoy_transform.InjaTemplate{
-								"content-type": {
-									Text: "text/html",
+			transformations := []*envoy_transform.RouteTransformations_RouteTransformation{}
+
+			requesttransform := awsDestinationSpec.Aws.GetHeaderBodyRequestTransformation()
+			if requesttransform {
+				transformations = append(transformations, &envoy_transform.RouteTransformations_RouteTransformation{
+					Match: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch_{
+						RequestMatch: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch{
+							RequestTransformation: &envoy_transform.Transformation{
+								TransformationType: &envoy_transform.Transformation_HeaderBodyTransform{
+									HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{},
 								},
 							},
 						},
 					},
-				},
+				})
+				*p.transformsAdded = true
+			}
+
+			repsonsetransform := awsDestinationSpec.Aws.GetResponseTransformation()
+			if repsonsetransform {
+				transformations = append(transformations, &envoy_transform.RouteTransformations_RouteTransformation{
+					Match: &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch_{
+						ResponseMatch: &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch{
+							ResponseTransformation: &envoy_transform.Transformation{
+								TransformationType: &envoy_transform.Transformation_TransformationTemplate{
+									TransformationTemplate: &envoy_transform.TransformationTemplate{
+										BodyTransformation: &envoy_transform.TransformationTemplate_Body{
+											Body: &envoy_transform.InjaTemplate{
+												Text: "{{body}}",
+											},
+										},
+										Headers: map[string]*envoy_transform.InjaTemplate{
+											"content-type": {
+												Text: "text/html",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				})
+				*p.transformsAdded = true
+			}
+
+			return &envoy_transform.RouteTransformations{
+				Transformations: transformations,
 			}, nil
 		},
 	)
