@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3160
+    description: >
+      Adds the `headerBodyRequestTransform` property to AWS destinationSpec,
+      allowing users to easily forward incoming request headers to an AWS Lambda upstream.
+    resolvesIssue: true
