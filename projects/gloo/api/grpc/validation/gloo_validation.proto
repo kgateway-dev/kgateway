@@ -16,8 +16,8 @@ service GlooValidationService {
 }
 
 message GlooValidationServiceRequest {
-    gloo.solo.io.Proxy proxy = 1;
-    gloo.solo.io.Upstream upstream = 2;
+    repeated gloo.solo.io.Proxy proxy = 1;
+    repeated gloo.solo.io.Upstream upstream = 2;
 }
 
 message GlooValidationServiceResponse {

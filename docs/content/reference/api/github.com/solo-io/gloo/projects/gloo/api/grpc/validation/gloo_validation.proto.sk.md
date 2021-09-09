@@ -55,15 +55,15 @@ weight: 5
 
 
 ```yaml
-"proxy": .gloo.solo.io.Proxy
-"upstream": .gloo.solo.io.Upstream
+"proxy": []gloo.solo.io.Proxy
+"upstream": []gloo.solo.io.Upstream
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) |  |
-| `upstream` | [.gloo.solo.io.Upstream](../../../v1/upstream.proto.sk/#upstream) |  |
+| `proxy` | [[]gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) |  |
+| `upstream` | [[]gloo.solo.io.Upstream](../../../v1/upstream.proto.sk/#upstream) |  |
 
 
 
