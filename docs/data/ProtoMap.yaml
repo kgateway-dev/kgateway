@@ -809,6 +809,9 @@ apis:
   jwt.options.gloo.solo.io.Jwks:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto.sk/#Jwks
     package: jwt.options.gloo.solo.io
+  jwt.options.gloo.solo.io.JwksAsyncFetch:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto.sk/#JwksAsyncFetch
+    package: jwt.options.gloo.solo.io
   jwt.options.gloo.solo.io.JwtStagedRouteExtension:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto.sk/#JwtStagedRouteExtension
     package: jwt.options.gloo.solo.io

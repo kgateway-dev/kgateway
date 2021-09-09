@@ -439,6 +439,21 @@ type RemoteJwks struct {
 	// Duration after which the cached JWKS should be expired.
 	// If not specified, default cache duration is 5 minutes.
 	CacheDuration *duration.Duration `protobuf:"bytes,4,opt,name=cache_duration,json=cacheDuration,proto3" json:"cache_duration,omitempty"`
+	// Fetch Jwks asynchronously in the main thread before the listener is activated.
+	// Fetched Jwks can be used by all worker threads.
+	//
+	// If this feature is not enabled:
+	//
+	// * The Jwks is fetched on-demand when the requests come. During the fetching, first
+	//   few requests are paused until the Jwks is fetched.
+	// * Each worker thread fetches its own Jwks since Jwks cache is per worker thread.
+	//
+	// If this feature is enabled:
+	//
+	// * Fetched Jwks is done in the main thread before the listener is activated. Its fetched
+	//   Jwks can be used by all worker threads. Each worker thread doesn't need to fetch its own.
+	// * Jwks is ready when the requests come, not need to wait for the Jwks fetching.
+	AsyncFetch *JwksAsyncFetch `protobuf:"bytes,3,opt,name=async_fetch,json=asyncFetch,proto3" json:"async_fetch,omitempty"`
 }
 
 func (x *RemoteJwks) Reset() {
@@ -494,6 +509,68 @@ func (x *RemoteJwks) GetCacheDuration() *duration.Duration {
 	return nil
 }
 
+func (x *RemoteJwks) GetAsyncFetch() *JwksAsyncFetch {
+	if x != nil {
+		return x.AsyncFetch
+	}
+	return nil
+}
+
+// Fetch Jwks asynchronously in the main thread when the filter config is parsed.
+// The listener is activated only after the Jwks is fetched.
+// When the Jwks is expired in the cache, it is fetched again in the main thread.
+// The fetched Jwks from the main thread can be used by all worker threads.
+type JwksAsyncFetch struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// If false, the listener is activated after the initial fetch is completed.
+	// The initial fetch result can be either successful or failed.
+	// If true, it is activated without waiting for the initial fetch to complete.
+	// Default is false.
+	FastListener bool `protobuf:"varint,1,opt,name=fast_listener,json=fastListener,proto3" json:"fast_listener,omitempty"`
+}
+
+func (x *JwksAsyncFetch) Reset() {
+	*x = JwksAsyncFetch{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *JwksAsyncFetch) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JwksAsyncFetch) ProtoMessage() {}
+
+func (x *JwksAsyncFetch) ProtoReflect() protoreflect.Message {
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JwksAsyncFetch.ProtoReflect.Descriptor instead.
+func (*JwksAsyncFetch) Descriptor() ([]byte, []int) {
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *JwksAsyncFetch) GetFastListener() bool {
+	if x != nil {
+		return x.FastListener
+	}
+	return false
+}
+
 type LocalJwks struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -506,7 +583,7 @@ type LocalJwks struct {
 func (x *LocalJwks) Reset() {
 	*x = LocalJwks{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[7]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -519,7 +596,7 @@ func (x *LocalJwks) String() string {
 func (*LocalJwks) ProtoMessage() {}
 
 func (x *LocalJwks) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[7]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -532,7 +609,7 @@ func (x *LocalJwks) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LocalJwks.ProtoReflect.Descriptor instead.
 func (*LocalJwks) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_rawDescGZIP(), []int{7}
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *LocalJwks) GetKey() string {
@@ -557,7 +634,7 @@ type TokenSource struct {
 func (x *TokenSource) Reset() {
 	*x = TokenSource{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[8]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -570,7 +647,7 @@ func (x *TokenSource) String() string {
 func (*TokenSource) ProtoMessage() {}
 
 func (x *TokenSource) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[8]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -583,7 +660,7 @@ func (x *TokenSource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TokenSource.ProtoReflect.Descriptor instead.
 func (*TokenSource) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_rawDescGZIP(), []int{8}
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *TokenSource) GetHeaders() []*TokenSource_HeaderSource {
@@ -617,7 +694,7 @@ type ClaimToHeader struct {
 func (x *ClaimToHeader) Reset() {
 	*x = ClaimToHeader{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[9]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -630,7 +707,7 @@ func (x *ClaimToHeader) String() string {
 func (*ClaimToHeader) ProtoMessage() {}
 
 func (x *ClaimToHeader) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[9]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -643,7 +720,7 @@ func (x *ClaimToHeader) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClaimToHeader.ProtoReflect.Descriptor instead.
 func (*ClaimToHeader) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_rawDescGZIP(), []int{9}
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ClaimToHeader) GetClaim() string {
@@ -682,7 +759,7 @@ type TokenSource_HeaderSource struct {
 func (x *TokenSource_HeaderSource) Reset() {
 	*x = TokenSource_HeaderSource{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[11]
+		mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -695,7 +772,7 @@ func (x *TokenSource_HeaderSource) String() string {
 func (*TokenSource_HeaderSource) ProtoMessage() {}
 
 func (x *TokenSource_HeaderSource) ProtoReflect() protoreflect.Message {
-	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[11]
+	mi := &file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -708,7 +785,7 @@ func (x *TokenSource_HeaderSource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TokenSource_HeaderSource.ProtoReflect.Descriptor instead.
 func (*TokenSource_HeaderSource) Descriptor() ([]byte, []int) {
-	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_rawDescGZIP(), []int{8, 0}
+	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_rawDescGZIP(), []int{9, 0}
 }
 
 func (x *TokenSource_HeaderSource) GetHeader() string {
@@ -812,7 +889,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt
 	0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f,
 	0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x4c, 0x6f, 0x63, 0x61, 0x6c, 0x4a, 0x77, 0x6b, 0x73, 0x48,
 	0x00, 0x52, 0x05, 0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x42, 0x06, 0x0a, 0x04, 0x6a, 0x77, 0x6b, 0x73,
-	0x22, 0x9e, 0x01, 0x0a, 0x0a, 0x52, 0x65, 0x6d, 0x6f, 0x74, 0x65, 0x4a, 0x77, 0x6b, 0x73, 0x12,
+	0x22, 0xe9, 0x01, 0x0a, 0x0a, 0x52, 0x65, 0x6d, 0x6f, 0x74, 0x65, 0x4a, 0x77, 0x6b, 0x73, 0x12,
 	0x10, 0x0a, 0x03, 0x75, 0x72, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x75, 0x72,
 	0x6c, 0x12, 0x3c, 0x0a, 0x0c, 0x75, 0x70, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x5f, 0x72, 0x65,
 	0x66, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x73,
@@ -822,32 +899,40 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt
 	0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
 	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x44, 0x75, 0x72, 0x61, 0x74, 0x69,
 	0x6f, 0x6e, 0x52, 0x0d, 0x63, 0x61, 0x63, 0x68, 0x65, 0x44, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f,
-	0x6e, 0x22, 0x1d, 0x0a, 0x09, 0x4c, 0x6f, 0x63, 0x61, 0x6c, 0x4a, 0x77, 0x6b, 0x73, 0x12, 0x10,
-	0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79,
-	0x22, 0xbe, 0x01, 0x0a, 0x0b, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65,
-	0x12, 0x4c, 0x0a, 0x07, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28,
-	0x0b, 0x32, 0x32, 0x2e, 0x6a, 0x77, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e,
-	0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x54, 0x6f, 0x6b,
-	0x65, 0x6e, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x53,
-	0x6f, 0x75, 0x72, 0x63, 0x65, 0x52, 0x07, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x12, 0x21,
-	0x0a, 0x0c, 0x71, 0x75, 0x65, 0x72, 0x79, 0x5f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x18, 0x02,
-	0x20, 0x03, 0x28, 0x09, 0x52, 0x0b, 0x71, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d,
-	0x73, 0x1a, 0x3e, 0x0a, 0x0c, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x53, 0x6f, 0x75, 0x72, 0x63,
-	0x65, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x06, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x12, 0x16, 0x0a, 0x06, 0x70, 0x72, 0x65,
-	0x66, 0x69, 0x78, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x70, 0x72, 0x65, 0x66, 0x69,
-	0x78, 0x22, 0x55, 0x0a, 0x0d, 0x43, 0x6c, 0x61, 0x69, 0x6d, 0x54, 0x6f, 0x48, 0x65, 0x61, 0x64,
-	0x65, 0x72, 0x12, 0x14, 0x0a, 0x05, 0x63, 0x6c, 0x61, 0x69, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x05, 0x63, 0x6c, 0x61, 0x69, 0x6d, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x61, 0x64,
-	0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72,
-	0x12, 0x16, 0x0a, 0x06, 0x61, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x18, 0x04, 0x20, 0x01, 0x28, 0x08,
-	0x52, 0x06, 0x61, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x42, 0x51, 0x5a, 0x47, 0x67, 0x69, 0x74, 0x68,
-	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67,
-	0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67, 0x6c, 0x6f,
-	0x6f, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x65, 0x6e, 0x74,
-	0x65, 0x72, 0x70, 0x72, 0x69, 0x73, 0x65, 0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2f,
-	0x6a, 0x77, 0x74, 0xc0, 0xf5, 0x04, 0x01, 0xb8, 0xf5, 0x04, 0x01, 0x62, 0x06, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x33,
+	0x6e, 0x12, 0x49, 0x0a, 0x0b, 0x61, 0x73, 0x79, 0x6e, 0x63, 0x5f, 0x66, 0x65, 0x74, 0x63, 0x68,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x28, 0x2e, 0x6a, 0x77, 0x74, 0x2e, 0x6f, 0x70, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69,
+	0x6f, 0x2e, 0x4a, 0x77, 0x6b, 0x73, 0x41, 0x73, 0x79, 0x6e, 0x63, 0x46, 0x65, 0x74, 0x63, 0x68,
+	0x52, 0x0a, 0x61, 0x73, 0x79, 0x6e, 0x63, 0x46, 0x65, 0x74, 0x63, 0x68, 0x22, 0x35, 0x0a, 0x0e,
+	0x4a, 0x77, 0x6b, 0x73, 0x41, 0x73, 0x79, 0x6e, 0x63, 0x46, 0x65, 0x74, 0x63, 0x68, 0x12, 0x23,
+	0x0a, 0x0d, 0x66, 0x61, 0x73, 0x74, 0x5f, 0x6c, 0x69, 0x73, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0c, 0x66, 0x61, 0x73, 0x74, 0x4c, 0x69, 0x73, 0x74, 0x65,
+	0x6e, 0x65, 0x72, 0x22, 0x1d, 0x0a, 0x09, 0x4c, 0x6f, 0x63, 0x61, 0x6c, 0x4a, 0x77, 0x6b, 0x73,
+	0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b,
+	0x65, 0x79, 0x22, 0xbe, 0x01, 0x0a, 0x0b, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x53, 0x6f, 0x75, 0x72,
+	0x63, 0x65, 0x12, 0x4c, 0x0a, 0x07, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x18, 0x01, 0x20,
+	0x03, 0x28, 0x0b, 0x32, 0x32, 0x2e, 0x6a, 0x77, 0x74, 0x2e, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
+	0x73, 0x2e, 0x67, 0x6c, 0x6f, 0x6f, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x54,
+	0x6f, 0x6b, 0x65, 0x6e, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e, 0x48, 0x65, 0x61, 0x64, 0x65,
+	0x72, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x52, 0x07, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73,
+	0x12, 0x21, 0x0a, 0x0c, 0x71, 0x75, 0x65, 0x72, 0x79, 0x5f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73,
+	0x18, 0x02, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0b, 0x71, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72,
+	0x61, 0x6d, 0x73, 0x1a, 0x3e, 0x0a, 0x0c, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x53, 0x6f, 0x75,
+	0x72, 0x63, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x06, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x12, 0x16, 0x0a, 0x06, 0x70,
+	0x72, 0x65, 0x66, 0x69, 0x78, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x70, 0x72, 0x65,
+	0x66, 0x69, 0x78, 0x22, 0x55, 0x0a, 0x0d, 0x43, 0x6c, 0x61, 0x69, 0x6d, 0x54, 0x6f, 0x48, 0x65,
+	0x61, 0x64, 0x65, 0x72, 0x12, 0x14, 0x0a, 0x05, 0x63, 0x6c, 0x61, 0x69, 0x6d, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x05, 0x63, 0x6c, 0x61, 0x69, 0x6d, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65,
+	0x61, 0x64, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x68, 0x65, 0x61, 0x64,
+	0x65, 0x72, 0x12, 0x16, 0x0a, 0x06, 0x61, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x18, 0x04, 0x20, 0x01,
+	0x28, 0x08, 0x52, 0x06, 0x61, 0x70, 0x70, 0x65, 0x6e, 0x64, 0x42, 0x51, 0x5a, 0x47, 0x67, 0x69,
+	0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f,
+	0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x73, 0x2f, 0x67,
+	0x6c, 0x6f, 0x6f, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x65,
+	0x6e, 0x74, 0x65, 0x72, 0x70, 0x72, 0x69, 0x73, 0x65, 0x2f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
+	0x73, 0x2f, 0x6a, 0x77, 0x74, 0xc0, 0xf5, 0x04, 0x01, 0xb8, 0xf5, 0x04, 0x01, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -862,7 +947,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jw
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_rawDescData
 }
 
-var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_goTypes = []interface{}{
 	(*JwtStagedVhostExtension)(nil),  // 0: jwt.options.gloo.solo.io.JwtStagedVhostExtension
 	(*JwtStagedRouteExtension)(nil),  // 1: jwt.options.gloo.solo.io.JwtStagedRouteExtension
@@ -871,34 +956,36 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt
 	(*Provider)(nil),                 // 4: jwt.options.gloo.solo.io.Provider
 	(*Jwks)(nil),                     // 5: jwt.options.gloo.solo.io.Jwks
 	(*RemoteJwks)(nil),               // 6: jwt.options.gloo.solo.io.RemoteJwks
-	(*LocalJwks)(nil),                // 7: jwt.options.gloo.solo.io.LocalJwks
-	(*TokenSource)(nil),              // 8: jwt.options.gloo.solo.io.TokenSource
-	(*ClaimToHeader)(nil),            // 9: jwt.options.gloo.solo.io.ClaimToHeader
-	nil,                              // 10: jwt.options.gloo.solo.io.VhostExtension.ProvidersEntry
-	(*TokenSource_HeaderSource)(nil), // 11: jwt.options.gloo.solo.io.TokenSource.HeaderSource
-	(*core.ResourceRef)(nil),         // 12: core.solo.io.ResourceRef
-	(*duration.Duration)(nil),        // 13: google.protobuf.Duration
+	(*JwksAsyncFetch)(nil),           // 7: jwt.options.gloo.solo.io.JwksAsyncFetch
+	(*LocalJwks)(nil),                // 8: jwt.options.gloo.solo.io.LocalJwks
+	(*TokenSource)(nil),              // 9: jwt.options.gloo.solo.io.TokenSource
+	(*ClaimToHeader)(nil),            // 10: jwt.options.gloo.solo.io.ClaimToHeader
+	nil,                              // 11: jwt.options.gloo.solo.io.VhostExtension.ProvidersEntry
+	(*TokenSource_HeaderSource)(nil), // 12: jwt.options.gloo.solo.io.TokenSource.HeaderSource
+	(*core.ResourceRef)(nil),         // 13: core.solo.io.ResourceRef
+	(*duration.Duration)(nil),        // 14: google.protobuf.Duration
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_depIdxs = []int32{
 	2,  // 0: jwt.options.gloo.solo.io.JwtStagedVhostExtension.before_ext_auth:type_name -> jwt.options.gloo.solo.io.VhostExtension
 	2,  // 1: jwt.options.gloo.solo.io.JwtStagedVhostExtension.after_ext_auth:type_name -> jwt.options.gloo.solo.io.VhostExtension
 	3,  // 2: jwt.options.gloo.solo.io.JwtStagedRouteExtension.before_ext_auth:type_name -> jwt.options.gloo.solo.io.RouteExtension
 	3,  // 3: jwt.options.gloo.solo.io.JwtStagedRouteExtension.after_ext_auth:type_name -> jwt.options.gloo.solo.io.RouteExtension
-	10, // 4: jwt.options.gloo.solo.io.VhostExtension.providers:type_name -> jwt.options.gloo.solo.io.VhostExtension.ProvidersEntry
+	11, // 4: jwt.options.gloo.solo.io.VhostExtension.providers:type_name -> jwt.options.gloo.solo.io.VhostExtension.ProvidersEntry
 	5,  // 5: jwt.options.gloo.solo.io.Provider.jwks:type_name -> jwt.options.gloo.solo.io.Jwks
-	8,  // 6: jwt.options.gloo.solo.io.Provider.token_source:type_name -> jwt.options.gloo.solo.io.TokenSource
-	9,  // 7: jwt.options.gloo.solo.io.Provider.claims_to_headers:type_name -> jwt.options.gloo.solo.io.ClaimToHeader
+	9,  // 6: jwt.options.gloo.solo.io.Provider.token_source:type_name -> jwt.options.gloo.solo.io.TokenSource
+	10, // 7: jwt.options.gloo.solo.io.Provider.claims_to_headers:type_name -> jwt.options.gloo.solo.io.ClaimToHeader
 	6,  // 8: jwt.options.gloo.solo.io.Jwks.remote:type_name -> jwt.options.gloo.solo.io.RemoteJwks
-	7,  // 9: jwt.options.gloo.solo.io.Jwks.local:type_name -> jwt.options.gloo.solo.io.LocalJwks
-	12, // 10: jwt.options.gloo.solo.io.RemoteJwks.upstream_ref:type_name -> core.solo.io.ResourceRef
-	13, // 11: jwt.options.gloo.solo.io.RemoteJwks.cache_duration:type_name -> google.protobuf.Duration
-	11, // 12: jwt.options.gloo.solo.io.TokenSource.headers:type_name -> jwt.options.gloo.solo.io.TokenSource.HeaderSource
-	4,  // 13: jwt.options.gloo.solo.io.VhostExtension.ProvidersEntry.value:type_name -> jwt.options.gloo.solo.io.Provider
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	8,  // 9: jwt.options.gloo.solo.io.Jwks.local:type_name -> jwt.options.gloo.solo.io.LocalJwks
+	13, // 10: jwt.options.gloo.solo.io.RemoteJwks.upstream_ref:type_name -> core.solo.io.ResourceRef
+	14, // 11: jwt.options.gloo.solo.io.RemoteJwks.cache_duration:type_name -> google.protobuf.Duration
+	7,  // 12: jwt.options.gloo.solo.io.RemoteJwks.async_fetch:type_name -> jwt.options.gloo.solo.io.JwksAsyncFetch
+	12, // 13: jwt.options.gloo.solo.io.TokenSource.headers:type_name -> jwt.options.gloo.solo.io.TokenSource.HeaderSource
+	4,  // 14: jwt.options.gloo.solo.io.VhostExtension.ProvidersEntry.value:type_name -> jwt.options.gloo.solo.io.Provider
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() {
@@ -994,7 +1081,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jw
 			}
 		}
 		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*LocalJwks); i {
+			switch v := v.(*JwksAsyncFetch); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1006,7 +1093,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jw
 			}
 		}
 		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TokenSource); i {
+			switch v := v.(*LocalJwks); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1018,6 +1105,18 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jw
 			}
 		}
 		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TokenSource); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ClaimToHeader); i {
 			case 0:
 				return &v.state
@@ -1029,7 +1128,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jw
 				return nil
 			}
 		}
-		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+		file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*TokenSource_HeaderSource); i {
 			case 0:
 				return &v.state
@@ -1052,7 +1151,7 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jw
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_jwt_jwt_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

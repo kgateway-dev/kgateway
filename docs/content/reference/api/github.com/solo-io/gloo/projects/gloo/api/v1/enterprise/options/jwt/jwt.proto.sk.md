@@ -18,6 +18,7 @@ weight: 5
 - [Provider](#provider)
 - [Jwks](#jwks)
 - [RemoteJwks](#remotejwks)
+- [JwksAsyncFetch](#jwksasyncfetch)
 - [LocalJwks](#localjwks)
 - [TokenSource](#tokensource)
 - [HeaderSource](#headersource)
@@ -161,6 +162,7 @@ weight: 5
 "url": string
 "upstreamRef": .core.solo.io.ResourceRef
 "cacheDuration": .google.protobuf.Duration
+"asyncFetch": .jwt.options.gloo.solo.io.JwksAsyncFetch
 
 ```
 
@@ -169,6 +171,28 @@ weight: 5
 | `url` | `string` | The url used when accessing the upstream for Json Web Key Set. This is used to set the host and path in the request. |
 | `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The Upstream representing the Json Web Key Set server. |
 | `cacheDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Duration after which the cached JWKS should be expired. If not specified, default cache duration is 5 minutes. |
+| `asyncFetch` | [.jwt.options.gloo.solo.io.JwksAsyncFetch](../jwt.proto.sk/#jwksasyncfetch) | Fetch Jwks asynchronously in the main thread before the listener is activated. Fetched Jwks can be used by all worker threads. If this feature is not enabled: * The Jwks is fetched on-demand when the requests come. During the fetching, first few requests are paused until the Jwks is fetched. * Each worker thread fetches its own Jwks since Jwks cache is per worker thread. If this feature is enabled: * Fetched Jwks is done in the main thread before the listener is activated. Its fetched Jwks can be used by all worker threads. Each worker thread doesn't need to fetch its own. * Jwks is ready when the requests come, not need to wait for the Jwks fetching. |
+
+
+
+
+---
+### JwksAsyncFetch
+
+ 
+Fetch Jwks asynchronously in the main thread when the filter config is parsed.
+The listener is activated only after the Jwks is fetched.
+When the Jwks is expired in the cache, it is fetched again in the main thread.
+The fetched Jwks from the main thread can be used by all worker threads.
+
+```yaml
+"fastListener": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `fastListener` | `bool` | If false, the listener is activated after the initial fetch is completed. The initial fetch result can be either successful or failed. If true, it is activated without waiting for the initial fetch to complete. Default is false. |
 
 
 
