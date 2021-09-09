@@ -2,7 +2,6 @@ package sanitizer
 
 import (
 	"context"
-	"fmt"
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -54,7 +53,7 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 		if reports[up].Errors != nil {
 
 			clusterName := translator.UpstreamToClusterName(up.GetMetadata().Ref())
-		    endpointName := ""
+			endpointName := ""
 			cluster, _ := clusters.Items[clusterName].ResourceProto().(*envoy_config_cluster_v3.Cluster)
 			if cluster.GetType() == envoy_config_cluster_v3.Cluster_EDS {
 				if cluster.GetEdsClusterConfig().GetServiceName() != "" {
@@ -85,7 +84,6 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 
 	// If the snapshot is not consistent,
 	if xdsSnapshot.Consistent() != nil {
-		fmt.Printf("consistent %s", xdsSnapshot.Consistent())
 		return xdsSnapshot, resourcesErr
 	}
 

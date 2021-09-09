@@ -2,6 +2,7 @@ package sanitizer_test
 
 import (
 	"context"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyclusterapi "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo"
@@ -31,7 +32,7 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 		}
 		goodClusterName = translator.UpstreamToClusterName(us.Metadata.Ref())
 		goodCluster     = &envoyclusterapi.Cluster{
-			Name: goodClusterName,
+			Name:                 goodClusterName,
 			ClusterDiscoveryType: clusterType,
 			EdsClusterConfig: &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
 				ServiceName: goodClusterName + "-123",
@@ -49,7 +50,7 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 		}
 		badClusterName = translator.UpstreamToClusterName(badUs.Metadata.Ref())
 		badCluster     = &envoyclusterapi.Cluster{
-			Name: badClusterName,
+			Name:                 badClusterName,
 			ClusterDiscoveryType: clusterType,
 			EdsClusterConfig: &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
 				ServiceName: badClusterName + "-123",
