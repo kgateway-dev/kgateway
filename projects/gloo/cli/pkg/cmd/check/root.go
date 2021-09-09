@@ -85,7 +85,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		},
 	}
 	pflags := cmd.PersistentFlags()
-	flagutils.AddOutputFlag(pflags, &opts.Top.Output)
+	flagutils.AddCheckOutputFlag(pflags, &opts.Top.Output)
 	flagutils.AddNamespaceFlag(pflags, &opts.Metadata.Namespace)
 	flagutils.AddExcludecheckFlag(pflags, &opts.Top.CheckName)
 	cliutils.ApplyOptions(cmd, optionsFunc)

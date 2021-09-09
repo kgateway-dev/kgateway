@@ -20,7 +20,7 @@ glooctl check [flags]
   -x, --exclude strings     check to exclude: (pods, upstreamgroup, secrets, gateways, proxies)
   -h, --help                help for check
   -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
-  -o, --output OutputType   output format: (yaml, json, table, kube-yaml, wide) (default table)
+  -o, --output OutputType   output format: (json, table) (default table)
 ```
 
 ### Options inherited from parent commands
