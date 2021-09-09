@@ -237,6 +237,111 @@ var _ = Describe("AWS Lambda", func() {
 		validateLambda(1, defaults.HttpPort, `<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>`)
 	}
 
+	testProxyWithRequestTransform := func() {
+		err := envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		proxy := &gloov1.Proxy{
+			Metadata: &core.Metadata{
+				Name:      "proxy",
+				Namespace: "default",
+			},
+			Listeners: []*gloov1.Listener{{
+				Name:        "listener",
+				BindAddress: "::",
+				BindPort:    defaults.HttpPort,
+				ListenerType: &gloov1.Listener_HttpListener{
+					HttpListener: &gloov1.HttpListener{
+						VirtualHosts: []*gloov1.VirtualHost{{
+							Name:    "virt1",
+							Domains: []string{"*"},
+							Routes: []*gloov1.Route{{
+								Action: &gloov1.Route_RouteAction{
+									RouteAction: &gloov1.RouteAction{
+										Destination: &gloov1.RouteAction_Single{
+											Single: &gloov1.Destination{
+												DestinationType: &gloov1.Destination_Upstream{
+													Upstream: upstream.Metadata.Ref(),
+												},
+												DestinationSpec: &gloov1.DestinationSpec{
+													DestinationType: &gloov1.DestinationSpec_Aws{
+														Aws: &aws_plugin.DestinationSpec{
+															LogicalName:                     "dumpContext",
+															HeaderBodyRequestTransformation: true,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							}},
+						}},
+					},
+				},
+			}},
+		}
+
+		var opts clients.WriteOpts
+		_, err = testClients.ProxyClient.Write(proxy, opts)
+		Expect(err).NotTo(HaveOccurred())
+
+		validateLambda(1, defaults.HttpPort, `\"body\": \"\\\"solo.io\\\"\", \"headers\": `)
+	}
+
+	testProxyWithRequestAndResponseTransforms := func() {
+		err := envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		proxy := &gloov1.Proxy{
+			Metadata: &core.Metadata{
+				Name:      "proxy",
+				Namespace: "default",
+			},
+			Listeners: []*gloov1.Listener{{
+				Name:        "listener",
+				BindAddress: "::",
+				BindPort:    defaults.HttpPort,
+				ListenerType: &gloov1.Listener_HttpListener{
+					HttpListener: &gloov1.HttpListener{
+						VirtualHosts: []*gloov1.VirtualHost{{
+							Name:    "virt1",
+							Domains: []string{"*"},
+							Routes: []*gloov1.Route{{
+								Action: &gloov1.Route_RouteAction{
+									RouteAction: &gloov1.RouteAction{
+										Destination: &gloov1.RouteAction_Single{
+											Single: &gloov1.Destination{
+												DestinationType: &gloov1.Destination_Upstream{
+													Upstream: upstream.Metadata.Ref(),
+												},
+												DestinationSpec: &gloov1.DestinationSpec{
+													DestinationType: &gloov1.DestinationSpec_Aws{
+														Aws: &aws_plugin.DestinationSpec{
+															LogicalName:                     "dumpContext",
+															ResponseTransformation:          true,
+															HeaderBodyRequestTransformation: true,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							}},
+						}},
+					},
+				},
+			}},
+		}
+
+		var opts clients.WriteOpts
+		_, err = testClients.ProxyClient.Write(proxy, opts)
+		Expect(err).NotTo(HaveOccurred())
+
+		validateLambda(1, defaults.HttpPort, `"\"solo.io\""`)
+	}
+
 	testLambdaWithVirtualService := func() {
 		err := envoyInstance.RunWithRoleAndRestXds("gloo-system~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
@@ -326,6 +431,10 @@ var _ = Describe("AWS Lambda", func() {
 
 		It("should be able to call lambda with response transform", testProxyWithResponseTransform)
 
+		It("should be able to call lambda with request transform", testProxyWithRequestTransform)
+
+		It("should be able to call lambda with request and response transforms", testProxyWithRequestAndResponseTransforms)
+
 		It("should be able to call lambda via gateway", testLambdaWithVirtualService)
 	})
 
@@ -369,6 +478,10 @@ var _ = Describe("AWS Lambda", func() {
 		It("should be able to call lambda", testProxy)
 
 		It("should be able lambda with response transform", testProxyWithResponseTransform)
+
+		It("should be able to call lambda with request transform", testProxyWithRequestTransform)
+
+		It("should be able to call lambda with request and response transforms", testProxyWithRequestAndResponseTransforms)
 
 		It("should be able to call lambda via gateway", testLambdaWithVirtualService)
 	})
@@ -520,6 +633,10 @@ var _ = Describe("AWS Lambda", func() {
 		It("should be able to call lambda", testProxy)
 
 		It("should be able lambda with response transform", testProxyWithResponseTransform)
+
+		It("should be able to call lambda with request transform", testProxyWithRequestTransform)
+
+		It("should be able to call lambda with request and response transforms", testProxyWithRequestAndResponseTransforms)
 
 		It("should be able to call lambda via gateway", testLambdaWithVirtualService)
 	})
