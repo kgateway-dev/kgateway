@@ -3,6 +3,7 @@ package sanitizer_test
 import (
 	"context"
 
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyclusterapi "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -26,9 +27,19 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 				Namespace: "upstream",
 			},
 		}
+		clusterType = &envoy_config_cluster_v3.Cluster_Type{
+			Type: envoy_config_cluster_v3.Cluster_EDS,
+		}
 		goodClusterName = translator.UpstreamToClusterName(us.Metadata.Ref())
 		goodCluster     = &envoyclusterapi.Cluster{
-			Name: goodClusterName,
+			Name:                 goodClusterName,
+			ClusterDiscoveryType: clusterType,
+			EdsClusterConfig: &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
+				ServiceName: goodClusterName + "-123",
+			},
+		}
+		goodEndpoint = &envoyclusterapi.Cluster{
+			Name: goodClusterName + "-123",
 		}
 
 		badUs = &v1.Upstream{
@@ -39,21 +50,30 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 		}
 		badClusterName = translator.UpstreamToClusterName(badUs.Metadata.Ref())
 		badCluster     = &envoyclusterapi.Cluster{
-			Name: badClusterName,
+			Name:                 badClusterName,
+			ClusterDiscoveryType: clusterType,
+			EdsClusterConfig: &envoy_config_cluster_v3.Cluster_EdsClusterConfig{
+				ServiceName: badClusterName + "-123",
+			},
+		}
+		badEndpoint = &envoyclusterapi.Cluster{
+			Name: badClusterName + "-123",
 		}
 	)
 	It("removes upstreams whose reports have an error, and changes the error to a warning", func() {
 
 		xdsSnapshot := xds.NewSnapshotFromResources(
-			envoycache.NewResources("", nil),
-			envoycache.NewResources("clusters", []envoycache.Resource{
+			envoycache.NewResources("unit_test", []envoycache.Resource{
+				resource.NewEnvoyResource(goodEndpoint),
+				resource.NewEnvoyResource(badEndpoint),
+			}),
+			envoycache.NewResources("unit_test", []envoycache.Resource{
 				resource.NewEnvoyResource(goodCluster),
 				resource.NewEnvoyResource(badCluster),
 			}),
 			envoycache.NewResources("", nil),
 			envoycache.NewResources("", nil),
 		)
-
 		sanitizer := NewUpstreamRemovingSanitizer()
 
 		reports := reporter.ResourceReports{
