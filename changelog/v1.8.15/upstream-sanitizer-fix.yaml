@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5022
+    resolvesIssue: true
+    description: Ensure that endpoints for invalid upstreams are deleted from snapshots and invalid upstreams are not accepted.
