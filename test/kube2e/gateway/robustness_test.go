@@ -418,33 +418,36 @@ var _ = Describe("Robustness tests", func() {
 				WithoutStats:      true,
 			}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
 
-			//By("reconnects to upstream gloo after scaling up, new endpoints are picked up")
-			//scaleDeploymentTo(kubeClient, glooDeployment, 1)
-			//
-			//By("force an update of the service endpoints")
-			//initialEndpointIPs := endpointIPsForKubeService(kubeClient, appService)
-			//
-			//scaleDeploymentTo(kubeClient, appDeployment, 0)
-			//scaleDeploymentTo(kubeClient, appDeployment, 1)
-			//
-			//Eventually(func() []string {
-			//	return endpointIPsForKubeService(kubeClient, appService)
-			//}, 20*time.Second, 1*time.Second).Should(And(
-			//	HaveLen(len(initialEndpointIPs)),
-			//	Not(BeEquivalentTo(initialEndpointIPs)),
-			//))
-			//
-			//By("verify that the new endpoints have been propagated to envoy by xds relay from gloo")
-			//testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-			//	Protocol:          "http",
-			//	Path:              "/1",
-			//	Method:            "GET",
-			//	Host:              gatewayProxy,
-			//	Service:           gatewayProxy,
-			//	Port:              gatewayPort,
-			//	ConnectionTimeout: 1,
-			//	WithoutStats:      true,
-			//}, expectedResponse(appName), 1, 60*time.Second, 1*time.Second)
+			// TODO(kdorosh) confirm every single envoy eventually gets the update!!
+			// The rest was commented out before while iterating..
+
+			By("reconnects to upstream gloo after scaling up, new endpoints are picked up")
+			scaleDeploymentTo(kubeClient, glooDeployment, 1)
+
+			By("force an update of the service endpoints")
+			initialEndpointIPs := endpointIPsForKubeService(kubeClient, appService)
+
+			scaleDeploymentTo(kubeClient, appDeployment, 0)
+			scaleDeploymentTo(kubeClient, appDeployment, 1)
+
+			Eventually(func() []string {
+				return endpointIPsForKubeService(kubeClient, appService)
+			}, 20*time.Second, 1*time.Second).Should(And(
+				HaveLen(len(initialEndpointIPs)),
+				Not(BeEquivalentTo(initialEndpointIPs)),
+			))
+
+			By("verify that the new endpoints have been propagated to envoy by xds relay from gloo")
+			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+				Protocol:          "http",
+				Path:              "/1",
+				Method:            "GET",
+				Host:              gatewayProxy,
+				Service:           gatewayProxy,
+				Port:              gatewayPort,
+				ConnectionTimeout: 1,
+				WithoutStats:      true,
+			}, expectedResponse(appName), 1, 60*time.Second, 1*time.Second)
 		})
 
 	})
