@@ -122,6 +122,8 @@ spec:
           - --disable-hot-restart
           - --bootstrap-version
           - "3"
+          - -l
+          - debug
         {{- if $spec.envoyLogLevel }}
           - --log-level {{ $spec.envoyLogLevel }}
         {{- end}}
