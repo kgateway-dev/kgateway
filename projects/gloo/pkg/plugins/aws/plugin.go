@@ -251,7 +251,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 												Regex:    `([^\?]+)(\?(.*))?`,
 												Subgroup: uint32(3),
 											},
-											"method": {
+											"httpMethod": {
 												Source:   &envoy_transform.Extraction_Header{Header: ":method"},
 												Regex:    `(.*)`,
 												Subgroup: uint32(1),
