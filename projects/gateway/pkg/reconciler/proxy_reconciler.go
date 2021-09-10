@@ -102,7 +102,7 @@ func (s *proxyReconciler) addProxyValidationResults(ctx context.Context, proxies
 
 	for proxy, reports := range proxiesToWrite {
 		proxyRpt, err := s.proxyValidator.Validate(ctx, &validation.GlooValidationServiceRequest{
-			Proxy: []*gloov1.Proxy{proxy},
+			Proxy: proxy,
 		})
 		if err != nil {
 			return errors.Wrapf(err, proxyValidationErrMsg)

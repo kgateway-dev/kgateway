@@ -182,17 +182,15 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 	if req.GetProxy() != nil {
 		logger.Infof("received proxy validation request")
 		// Sanitize routes before sending report to gateway
-		for _, proxy := range req.GetProxy() {
-			xdsSnapshot, resourceReports, report, err := s.translator.Translate(params, proxy)
-			if err != nil {
-				logger.Errorw("failed to validate proxy", zap.Error(err))
-				return nil, err
-			}
-			s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
-			routeErrorToWarnings(resourceReports, report)
-			logger.Infof("proxy validation report result: %v", report.String())
-			response.ProxyReport = report
+		xdsSnapshot, resourceReports, report, err := s.translator.Translate(params, req.GetProxy())
+		if err != nil {
+			logger.Errorw("failed to validate proxy", zap.Error(err))
+			return nil, err
 		}
+		s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
+		routeErrorToWarnings(resourceReports, report)
+		logger.Infof("proxy validation report result: %v", report.String())
+		response.ProxyReport = report
 	}
 
 	if req.GetUpstream() != nil {

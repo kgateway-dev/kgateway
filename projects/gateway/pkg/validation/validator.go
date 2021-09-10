@@ -234,7 +234,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		// validate the proxy with gloo
 		var proxyReport *validation.GlooValidationServiceResponse
 		err := retry.Do(func() error {
-			rpt, err := v.validationClient.Validate(ctx, &validation.GlooValidationServiceRequest{Proxy: []*gloov1.Proxy{proxy}})
+			rpt, err := v.validationClient.Validate(ctx, &validation.GlooValidationServiceRequest{Proxy: proxy})
 			proxyReport = rpt
 			return err
 		},
