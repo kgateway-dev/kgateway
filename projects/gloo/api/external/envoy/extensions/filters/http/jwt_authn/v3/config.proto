@@ -7,6 +7,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envo
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/http_uri.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/route/v3/route_components.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
@@ -249,18 +250,7 @@ message RemoteJwks {
   // * Fetched Jwks is done in the main thread before the listener is activated. Its fetched
   //   Jwks can be used by all worker threads. Each worker thread doesn't need to fetch its own.
   // * Jwks is ready when the requests come, not need to wait for the Jwks fetching.
-  JwksAsyncFetch async_fetch = 3;
-}
-// Fetch Jwks asynchronously in the main thread when the filter config is parsed.
-// The listener is activated only after the Jwks is fetched.
-// When the Jwks is expired in the cache, it is fetched again in the main thread.
-// The fetched Jwks from the main thread can be used by all worker threads.
-message JwksAsyncFetch {
-  // If false, the listener is activated after the initial fetch is completed.
-  // The initial fetch result can be either successful or failed.
-  // If true, it is activated without waiting for the initial fetch to complete.
-  // Default is false.
-  bool fast_listener = 1;
+  jwt.options.gloo.solo.io.JwksAsyncFetch async_fetch = 3;
 }
 // This message specifies a header location to extract JWT token.
 message JwtHeader {
