@@ -332,16 +332,12 @@ func (p *plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 	}
 
 	if p.requestTransformsAdded {
-		earlyStageConfig := &envoy_transform.FilterTransformations{
-			Stage: transformation.EarlyStageNumber,
-		}
-
-		tf, err := plugins.NewStagedFilterWithConfig(transformation.FilterName, earlyStageConfig, transformation.EarlyPluginStage)
+		earlyStageFilter, err := transformation.GetEarlyStageFilter()
 		if err != nil {
 			return nil, err
 		}
 
-		filters = append(filters, tf)
+		filters = append(filters, *earlyStageFilter)
 	}
 
 	return filters, nil
