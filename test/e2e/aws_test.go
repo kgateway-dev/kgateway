@@ -266,8 +266,8 @@ var _ = Describe("AWS Lambda", func() {
 												DestinationSpec: &gloov1.DestinationSpec{
 													DestinationType: &gloov1.DestinationSpec_Aws{
 														Aws: &aws_plugin.DestinationSpec{
-															LogicalName:                     "dumpContext",
-															HeaderBodyRequestTransformation: true,
+															LogicalName:           "dumpContext",
+															RequestTransformation: true,
 														},
 													},
 												},
@@ -318,9 +318,9 @@ var _ = Describe("AWS Lambda", func() {
 												DestinationSpec: &gloov1.DestinationSpec{
 													DestinationType: &gloov1.DestinationSpec_Aws{
 														Aws: &aws_plugin.DestinationSpec{
-															LogicalName:                     "dumpContext",
-															ResponseTransformation:          true,
-															HeaderBodyRequestTransformation: true,
+															LogicalName:            "dumpContext",
+															ResponseTransformation: true,
+															RequestTransformation:  true,
 														},
 													},
 												},

@@ -43,13 +43,13 @@ spec:
                         properties:
                           aws:
                             properties:
-                              headerBodyRequestTransformation:
-                                type: boolean
                               invocationStyle:
                                 type: string
                                 x-kubernetes-int-or-string: true
                               logicalName:
                                 type: string
+                              requestTransformation:
+                                type: boolean
                               responseTransformation:
                                 type: boolean
                             type: object

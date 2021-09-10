@@ -219,7 +219,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 			transformations := []*envoy_transform.RouteTransformations_RouteTransformation{}
 
-			requesttransform := awsDestinationSpec.Aws.GetHeaderBodyRequestTransformation()
+			requesttransform := awsDestinationSpec.Aws.GetRequestTransformation()
 			if requesttransform {
 				// Early stage transform: place all headers in the request body
 				transformations = append(transformations, &envoy_transform.RouteTransformations_RouteTransformation{

@@ -143,7 +143,7 @@ func (m *DestinationSpec) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetHeaderBodyRequestTransformation())
+	err = binary.Write(hasher, binary.LittleEndian, m.GetRequestTransformation())
 	if err != nil {
 		return 0, err
 	}

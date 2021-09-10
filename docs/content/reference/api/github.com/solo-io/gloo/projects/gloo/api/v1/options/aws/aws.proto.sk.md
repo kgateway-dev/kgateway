@@ -84,7 +84,7 @@ Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda func
 ```yaml
 "logicalName": string
 "invocationStyle": .aws.options.gloo.solo.io.DestinationSpec.InvocationStyle
-"headerBodyRequestTransformation": bool
+"requestTransformation": bool
 "responseTransformation": bool
 
 ```
@@ -93,7 +93,7 @@ Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda func
 | ----- | ---- | ----------- | 
 | `logicalName` | `string` | The Logical Name of the LambdaFunctionSpec to be invoked. |
 | `invocationStyle` | [.aws.options.gloo.solo.io.DestinationSpec.InvocationStyle](../aws.proto.sk/#invocationstyle) | Can be either Sync or Async. |
-| `headerBodyRequestTransformation` | `bool` | Include headers in the event sent to aws lambda. |
+| `requestTransformation` | `bool` | Include headers, querystring, request path, and request method in the event payload sent to aws lambda. |
 | `responseTransformation` | `bool` | de-jsonify response bodies returned from aws lambda. |
 
 
