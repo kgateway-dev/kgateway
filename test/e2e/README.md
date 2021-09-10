@@ -36,6 +36,8 @@ The `WAIT_ON_FAIL` environment variable can be used to inspect Gloo/Envoy state 
     |-----|-----|-----|
     |quay.io/solo-io/gloo-envoy-wrapper:<ENVOY_IMAGE_TAG>|0.0.0.0:11082-11083->11082-11083/tcp, :::11082-11083->11082-11083/tcp, 0.0.0.0:21001->21001/tcp, :::21001->21001/tcp|e2e_envoy|
 - Open http://0.0.0.0:21001 in your browser to access the envoy control panel
+  - we default the adminPort to 20000 (https://github.com/solo-io/gloo/blob/master/test/services/envoy.go#L36), and when we create a new instance we add some digits to ensure it can be run in parallel (https://github.com/solo-io/gloo/blob/master/test/services/envoy.go#L401)
+  - I believe our current way of running tests only runs a single envoy at a time, so this will always be 1 instance more than the default case, which is why it is port 21001.
 - Click on the `config_dump` hyperlink to obtain a complete dump of the current envoy configuration
 ## (Option B) Run Envoy as a Binary
 *Note: We need someone to update these instructions*
@@ -74,3 +76,4 @@ In addition to the configuration steps provided above, you will need to do the f
        - You will be asked to provide your Access Key ID and Secret Key from step 2, as well as the default region name and default output format
          - It is critical that you set the default region to `us-east-1`
        - This will create a credentials file at `~/.aws/credentials` on Linux or macOS, or at `C:\Users\USERNAME\.aws\credentials` on Windows. The tests read this file in order to interact with lambdas that have been created in the Solo.io organization
+    
