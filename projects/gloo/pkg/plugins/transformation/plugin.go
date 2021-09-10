@@ -28,7 +28,7 @@ const (
 )
 
 var (
-	EarlyPluginStage = plugins.AfterStage(plugins.FaultStage)
+	earlyPluginStage = plugins.AfterStage(plugins.FaultStage)
 	pluginStage      = plugins.AfterStage(plugins.AuthZStage)
 )
 
@@ -152,7 +152,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	earlyStageConfig := &envoytransformation.FilterTransformations{
 		Stage: EarlyStageNumber,
 	}
-	earlyFilter, err := plugins.NewStagedFilterWithConfig(FilterName, earlyStageConfig, EarlyPluginStage)
+	earlyFilter, err := plugins.NewStagedFilterWithConfig(FilterName, earlyStageConfig, earlyPluginStage)
 	if err != nil {
 		return nil, err
 	}
