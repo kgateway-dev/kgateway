@@ -148,7 +148,7 @@ func (p *Plugin) ProcessWeightedDestination(
 	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, envoyTransformation)
 }
 
-func GetEarlyStageFilter() (*plugins.StagedHttpFilter, error) {
+func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	earlyStageConfig := &envoytransformation.FilterTransformations{
 		Stage: EarlyStageNumber,
 	}
@@ -156,21 +156,11 @@ func GetEarlyStageFilter() (*plugins.StagedHttpFilter, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	return &earlyFilter, nil
-}
-
-func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-
 	var filters []plugins.StagedHttpFilter
 	if p.RequireEarlyTransformation {
-		earlyFilter, err := GetEarlyStageFilter()
-		if err != nil {
-			return nil, err
-		}
 		// only add early transformations if we have to, to allow rolling gloo updates;
 		// i.e. an older envoy without stages connects to gloo, it shouldn't have 2 filters.
-		filters = append(filters, *earlyFilter)
+		filters = append(filters, earlyFilter)
 	}
 	filters = append(filters, plugins.NewStagedFilter(FilterName, pluginStage))
 	return filters, nil
