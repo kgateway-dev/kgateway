@@ -25,6 +25,18 @@ Example:
 ENVOY_IMAGE_TAG=solo-test-image TEST_PKG=./test/e2e/... make run-tests
 ```
 
+### Example Debug Workflow: Use `WAIT_ON_FAIL` to Dump Envoy Config
+The `WAIT_ON_FAIL` environment variable can be used to inspect Gloo/Envoy state during an e2e test. Instructions to do so are as follows:
+- Run your e2e test with `WAIT_ON_FAIL=1`, in order to prevent the Gloo installation from being torn down on failure
+  - It is important that your test fails -- teardown will occur as normal if the test suite runs successfully
+- When failure occurs, inspect running Docker containers using `docker ps`
+  - You should see a container which matches the following criteria:
+  - 
+    |IMAGE|PORTS|NAMES|
+    |-----|-----|-----|
+    |quay.io/solo-io/gloo-envoy-wrapper:<ENVOY_IMAGE_TAG>|0.0.0.0:11082-11083->11082-11083/tcp, :::11082-11083->11082-11083/tcp, 0.0.0.0:21001->21001/tcp, :::21001->21001/tcp|e2e_envoy|
+- Open http://0.0.0.0:21001 in your browser to access the envoy control panel
+- Click on the `config_dump` hyperlink to obtain a complete dump of the current envoy configuration
 ## (Option B) Run Envoy as a Binary
 *Note: We need someone to update these instructions*
 
