@@ -374,6 +374,16 @@ func (m *RemoteJwks) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetAsyncFetch()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAsyncFetch()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAsyncFetch(), target.GetAsyncFetch()) {
+			return false
+		}
+	}
+
 	return true
 }
 
