@@ -288,6 +288,11 @@ spec:
                                 type: object
                               remote:
                                 properties:
+                                  asyncFetch:
+                                    properties:
+                                      fastListener:
+                                        type: boolean
+                                    type: object
                                   cacheDuration:
                                     type: string
                                   upstreamRef:
@@ -357,6 +362,11 @@ spec:
                                     type: object
                                   remote:
                                     properties:
+                                      asyncFetch:
+                                        properties:
+                                          fastListener:
+                                            type: boolean
+                                        type: object
                                       cacheDuration:
                                         type: string
                                       upstreamRef:
@@ -424,6 +434,11 @@ spec:
                                     type: object
                                   remote:
                                     properties:
+                                      asyncFetch:
+                                        properties:
+                                          fastListener:
+                                            type: boolean
+                                        type: object
                                       cacheDuration:
                                         type: string
                                       upstreamRef:

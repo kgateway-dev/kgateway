@@ -4,6 +4,7 @@ package jwt.options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/jwt";
 
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto";
 
 import "extproto/ext.proto";
 option (extproto.equal_all) = true;
@@ -80,8 +81,22 @@ message RemoteJwks {
     // Duration after which the cached JWKS should be expired. 
     // If not specified, default cache duration is 5 minutes.
     google.protobuf.Duration cache_duration = 4;
+    // Fetch Jwks asynchronously in the main thread before the listener is activated.
+    // Fetched Jwks can be used by all worker threads.
+    //
+    // If this feature is not enabled:
+    //
+    // * The Jwks is fetched on-demand when the requests come. During the fetching, first
+    //   few requests are paused until the Jwks is fetched.
+    // * Each worker thread fetches its own Jwks since Jwks cache is per worker thread.
+    //
+    // If this feature is enabled:
+    //
+    // * Fetched Jwks is done in the main thread before the listener is activated. Its fetched
+    //   Jwks can be used by all worker threads. Each worker thread doesn't need to fetch its own.
+    // * Jwks is ready when the requests come, not need to wait for the Jwks fetching.
+    .solo.io.envoy.extensions.filters.http.jwt_authn.v3.JwksAsyncFetch async_fetch = 3;
 }
-
 message LocalJwks {
     // Inline key. this can be json web key, key-set or PEM format.
     string key = 1;
