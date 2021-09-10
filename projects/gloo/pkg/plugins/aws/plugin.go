@@ -321,18 +321,23 @@ func (p *plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 		return nil, err
 	}
 
-	earlyPluginStage := plugins.AfterStage(plugins.FaultStage)
-	earlyStageConfig := &envoy_transform.FilterTransformations{
-		Stage: transformation.EarlyStageNumber,
-	}
-
-	tf, err := plugins.NewStagedFilterWithConfig("io.solo.transformation", earlyStageConfig, earlyPluginStage)
-	if err != nil {
-		return nil, err
-	}
-
-	return []plugins.StagedHttpFilter{
-		tf,
+	filters := []plugins.StagedHttpFilter{
 		f,
-	}, nil
+	}
+
+	if *p.transformsAdded {
+		earlyPluginStage := plugins.AfterStage(plugins.FaultStage)
+		earlyStageConfig := &envoy_transform.FilterTransformations{
+			Stage: transformation.EarlyStageNumber,
+		}
+
+		tf, err := plugins.NewStagedFilterWithConfig("io.solo.transformation", earlyStageConfig, earlyPluginStage)
+		if err != nil {
+			return nil, err
+		}
+
+		filters = append(filters, tf)
+	}
+
+	return filters, nil
 }
