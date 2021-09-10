@@ -49,7 +49,7 @@ type TranslateTransformationFn func(*transformation.Transformation) (*envoytrans
 
 type Plugin struct {
 	RequireTransformationFilter bool
-	requireEarlyTransformation  bool
+	RequireEarlyTransformation  bool
 	TranslateTransformation     TranslateTransformationFn
 	settings                    *v1.Settings
 }
@@ -68,7 +68,7 @@ func NewPlugin() *Plugin {
 
 func (p *Plugin) Init(params plugins.InitParams) error {
 	p.RequireTransformationFilter = false
-	p.requireEarlyTransformation = false
+	p.RequireEarlyTransformation = false
 	p.settings = params.Settings
 	p.TranslateTransformation = TranslateTransformation
 	return nil
@@ -163,7 +163,7 @@ func GetEarlyStageFilter() (*plugins.StagedHttpFilter, error) {
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 
 	var filters []plugins.StagedHttpFilter
-	if p.requireEarlyTransformation {
+	if p.RequireEarlyTransformation {
 		earlyFilter, err := GetEarlyStageFilter()
 		if err != nil {
 			return nil, err
@@ -213,8 +213,12 @@ func (p *Plugin) convertTransformation(
 		})
 	}
 
+	fmt.Println("Logging get early output")
+	fmt.Printf("\n%+v\n", stagedTransformations.GetEarly)
+
 	if early := stagedTransformations.GetEarly(); early != nil {
-		p.requireEarlyTransformation = true
+		fmt.Println("early")
+		p.RequireEarlyTransformation = true
 		transformations, err := p.getTransformations(ctx, EarlyStageNumber, early)
 		if err != nil {
 			return nil, err

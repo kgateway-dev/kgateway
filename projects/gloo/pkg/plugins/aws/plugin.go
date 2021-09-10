@@ -44,19 +44,20 @@ func getLambdaHostname(s *aws.UpstreamSpec) string {
 	return fmt.Sprintf("lambda.%s.amazonaws.com", s.GetRegion())
 }
 
-func NewPlugin(transformsAdded *bool) plugins.Plugin {
+func NewPlugin(transformsAdded, earlyTransformsAdded *bool) plugins.Plugin {
 	return &plugin{
-		transformsAdded: transformsAdded,
+		transformsAdded:      transformsAdded,
+		earlyTransformsAdded: earlyTransformsAdded,
 	}
 }
 
 type plugin struct {
-	recordedUpstreams      map[string]*aws.UpstreamSpec
-	ctx                    context.Context
-	requestTransformsAdded bool
-	transformsAdded        *bool
-	settings               *v1.GlooOptions_AWSOptions
-	upstreamOptions        *v1.UpstreamOptions
+	recordedUpstreams    map[string]*aws.UpstreamSpec
+	ctx                  context.Context
+	earlyTransformsAdded *bool
+	transformsAdded      *bool
+	settings             *v1.GlooOptions_AWSOptions
+	upstreamOptions      *v1.UpstreamOptions
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
@@ -267,7 +268,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 						},
 					},
 				})
-				p.requestTransformsAdded = true
+				*p.earlyTransformsAdded = true
 			}
 
 			repsonsetransform := awsDestinationSpec.Aws.GetResponseTransformation()
@@ -329,15 +330,6 @@ func (p *plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 
 	filters := []plugins.StagedHttpFilter{
 		f,
-	}
-
-	if p.requestTransformsAdded {
-		earlyStageFilter, err := transformation.GetEarlyStageFilter()
-		if err != nil {
-			return nil, err
-		}
-
-		filters = append(filters, *earlyStageFilter)
 	}
 
 	return filters, nil
