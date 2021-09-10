@@ -248,8 +248,13 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 											},
 											"querystring": {
 												Source:   &envoy_transform.Extraction_Header{Header: ":path"},
-												Regex:    `([^\?]+)(\?.*)?`,
-												Subgroup: uint32(2),
+												Regex:    `([^\?]+)(\?(.*))?`,
+												Subgroup: uint32(3),
+											},
+											"method": {
+												Source:   &envoy_transform.Extraction_Header{Header: ":method"},
+												Regex:    `(.*)`,
+												Subgroup: uint32(1),
 											},
 										},
 										BodyTransformation: &envoy_transform.TransformationTemplate_MergeExtractorsToBody{
