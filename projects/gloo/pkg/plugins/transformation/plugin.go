@@ -24,12 +24,11 @@ import (
 const (
 	FilterName       = "io.solo.transformation"
 	EarlyStageNumber = 1
-
-	PluginName = "transformation.plugin.solo"
+	PluginName       = "transformation.plugin.solo"
 )
 
 var (
-	earlyPluginStage = plugins.AfterStage(plugins.FaultStage)
+	EarlyPluginStage = plugins.AfterStage(plugins.FaultStage)
 	pluginStage      = plugins.AfterStage(plugins.AuthZStage)
 )
 
@@ -153,7 +152,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	earlyStageConfig := &envoytransformation.FilterTransformations{
 		Stage: EarlyStageNumber,
 	}
-	earlyFilter, err := plugins.NewStagedFilterWithConfig(FilterName, earlyStageConfig, earlyPluginStage)
+	earlyFilter, err := plugins.NewStagedFilterWithConfig(FilterName, earlyStageConfig, EarlyPluginStage)
 	if err != nil {
 		return nil, err
 	}

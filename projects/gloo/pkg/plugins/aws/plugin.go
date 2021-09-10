@@ -51,11 +51,12 @@ func NewPlugin(transformsAdded *bool) plugins.Plugin {
 }
 
 type plugin struct {
-	recordedUpstreams map[string]*aws.UpstreamSpec
-	ctx               context.Context
-	transformsAdded   *bool
-	settings          *v1.GlooOptions_AWSOptions
-	upstreamOptions   *v1.UpstreamOptions
+	recordedUpstreams      map[string]*aws.UpstreamSpec
+	ctx                    context.Context
+	requestTransformsAdded bool
+	transformsAdded        *bool
+	settings               *v1.GlooOptions_AWSOptions
+	upstreamOptions        *v1.UpstreamOptions
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
@@ -266,7 +267,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 						},
 					},
 				})
-				*p.transformsAdded = true
+				p.requestTransformsAdded = true
 			}
 
 			repsonsetransform := awsDestinationSpec.Aws.GetResponseTransformation()
@@ -330,13 +331,12 @@ func (p *plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 		f,
 	}
 
-	if *p.transformsAdded {
-		earlyPluginStage := plugins.AfterStage(plugins.FaultStage)
+	if p.requestTransformsAdded {
 		earlyStageConfig := &envoy_transform.FilterTransformations{
 			Stage: transformation.EarlyStageNumber,
 		}
 
-		tf, err := plugins.NewStagedFilterWithConfig("io.solo.transformation", earlyStageConfig, earlyPluginStage)
+		tf, err := plugins.NewStagedFilterWithConfig(transformation.FilterName, earlyStageConfig, transformation.EarlyPluginStage)
 		if err != nil {
 			return nil, err
 		}
