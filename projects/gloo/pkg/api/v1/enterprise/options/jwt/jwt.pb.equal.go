@@ -388,34 +388,6 @@ func (m *RemoteJwks) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *JwksAsyncFetch) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*JwksAsyncFetch)
-	if !ok {
-		that2, ok := that.(JwksAsyncFetch)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if m.GetFastListener() != target.GetFastListener() {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
 func (m *LocalJwks) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
