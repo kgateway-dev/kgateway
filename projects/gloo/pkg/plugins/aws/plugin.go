@@ -219,12 +219,43 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 			requesttransform := awsDestinationSpec.Aws.GetHeaderBodyRequestTransformation()
 			if requesttransform {
+				// Early stage transform: place all headers in the request body
 				transformations = append(transformations, &envoy_transform.RouteTransformations_RouteTransformation{
+					Stage: transformation.EarlyStageNumber,
 					Match: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch_{
 						RequestMatch: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch{
 							RequestTransformation: &envoy_transform.Transformation{
 								TransformationType: &envoy_transform.Transformation_HeaderBodyTransform{
 									HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{},
+								},
+							},
+						},
+					},
+				})
+
+				// Regular stage transform: extract the path and querystring
+				transformations = append(transformations, &envoy_transform.RouteTransformations_RouteTransformation{
+					Match: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch_{
+						RequestMatch: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch{
+							RequestTransformation: &envoy_transform.Transformation{
+								TransformationType: &envoy_transform.Transformation_TransformationTemplate{
+									TransformationTemplate: &envoy_transform.TransformationTemplate{
+										Extractors: map[string]*envoy_transform.Extraction{
+											"path": {
+												Source:   &envoy_transform.Extraction_Header{Header: ":path"},
+												Regex:    `([^\?]+)(\?.*)?`,
+												Subgroup: uint32(1),
+											},
+											"querystring": {
+												Source:   &envoy_transform.Extraction_Header{Header: ":path"},
+												Regex:    `([^\?]+)(\?.*)?`,
+												Subgroup: uint32(2),
+											},
+										},
+										BodyTransformation: &envoy_transform.TransformationTemplate_MergeExtractorsToBody{
+											MergeExtractorsToBody: &envoy_transform.MergeExtractorsToBody{},
+										},
+									},
 								},
 							},
 						},
@@ -289,7 +320,19 @@ func (p *plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 	if err != nil {
 		return nil, err
 	}
+
+	earlyPluginStage := plugins.AfterStage(plugins.FaultStage)
+	earlyStageConfig := &envoy_transform.FilterTransformations{
+		Stage: transformation.EarlyStageNumber,
+	}
+
+	tf, err := plugins.NewStagedFilterWithConfig("io.solo.transformation", earlyStageConfig, earlyPluginStage)
+	if err != nil {
+		return nil, err
+	}
+
 	return []plugins.StagedHttpFilter{
+		tf,
 		f,
 	}, nil
 }
