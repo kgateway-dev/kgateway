@@ -17,6 +17,10 @@ const (
 	DryRunFlag = "dry-run"
 )
 
+func AddCheckOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
+	set.VarP(outputType, OutputFlag, "o", "output format: (json, table)")
+}
+
 func AddOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
 	set.VarP(outputType, OutputFlag, "o", "output format: (yaml, json, table, kube-yaml, wide)")
 }
