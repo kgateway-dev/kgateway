@@ -36,7 +36,7 @@ func CheckMulticlusterResources(opts *options.Options) {
 	glooInstanceList, err := instanceReader.listGlooInstances(opts.Top.Ctx)
 	if err != nil {
 		if meta.IsNoMatchError(err) {
-			fmt.Print("Skipping Gloo Instance check -- Gloo Federation not detected\n")
+			printer.AppendMessage("Skipping Gloo Instance check -- Gloo Federation not detected")
 			return
 		}
 		fmt.Printf("Warning: could not list Gloo Instances: %v\n", err)
@@ -47,7 +47,7 @@ func CheckMulticlusterResources(opts *options.Options) {
 		// No Gloo Instance CRD exist, meaning that none are registered.
 		return
 	}
-	fmt.Printf("\nDetected Gloo Federation!\n")
+	printer.AppendMessage("\nDetected Gloo Federation!")
 	for _, glooInstance := range glooInstanceList.Items {
 		fmt.Printf("\nChecking Gloo Instance %s... ", glooInstance.GetName())
 		printGlooInstanceCheckSummary("deployments", glooInstance.Spec.GetCheck().GetDeployments())
