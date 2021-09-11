@@ -6,6 +6,10 @@ weight: 5
 
 Checks Gloo resources for errors (requires Gloo running on Kubernetes)
 
+### Synopsis
+
+usage: glooctl check [-o FORMAT]
+
 ```
 glooctl check [flags]
 ```
@@ -13,9 +17,10 @@ glooctl check [flags]
 ### Options
 
 ```
-  -x, --exclude strings    check to exclude: (pods, upstreamgroup, secrets, gateways, proxies)
-  -h, --help               help for check
-  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
+  -x, --exclude strings     check to exclude: (pods, upstreamgroup, secrets, gateways, proxies)
+  -h, --help                help for check
+  -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
+  -o, --output OutputType   output format: (json, table) (default table)
 ```
 
 ### Options inherited from parent commands
