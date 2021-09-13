@@ -3289,6 +3289,8 @@ spec:
                                                   x-kubernetes-int-or-string: true
                                                 logicalName:
                                                   type: string
+                                                requestTransformation:
+                                                  type: boolean
                                                 responseTransformation:
                                                   type: boolean
                                               type: object
@@ -4405,6 +4407,8 @@ spec:
                                         x-kubernetes-int-or-string: true
                                       logicalName:
                                         type: string
+                                      requestTransformation:
+                                        type: boolean
                                       responseTransformation:
                                         type: boolean
                                     type: object
