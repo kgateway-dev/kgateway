@@ -78,7 +78,7 @@ var _ = Describe("AWS Lambda", func() {
 			var buf bytes.Buffer
 			buf.Write(body)
 
-			res, err := http.Post(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), "application/octet-stream", &buf)
+			res, err := http.Post(fmt.Sprintf("http://%s:%d/1?param_a=value_1&param_b=value_b", "localhost", envoyPort), "application/octet-stream", &buf)
 			if err != nil {
 				return "", err
 			}
@@ -238,7 +238,7 @@ var _ = Describe("AWS Lambda", func() {
 	}
 
 	testProxyWithRequestTransform := func() {
-		err := envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err := envoyInstance.RunWithRole(services.DefaultProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy := &gloov1.Proxy{
@@ -287,10 +287,13 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		validateLambda(1, defaults.HttpPort, `\"body\": \"\\\"solo.io\\\"\", \"headers\": `)
+		validateLambda(1, defaults.HttpPort, `\"queryString\": \"param_a=value_1&param_b=value_b\"`)
+		validateLambda(1, defaults.HttpPort, `\"path\": \"/1\"`)
+		validateLambda(1, defaults.HttpPort, `\"httpMethod\": \"POST\"`)
 	}
 
 	testProxyWithRequestAndResponseTransforms := func() {
-		err := envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err := envoyInstance.RunWithRole(services.DefaultProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy := &gloov1.Proxy{
