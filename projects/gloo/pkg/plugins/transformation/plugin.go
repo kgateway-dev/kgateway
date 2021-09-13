@@ -203,11 +203,7 @@ func (p *Plugin) convertTransformation(
 		})
 	}
 
-	fmt.Println("Logging get early output")
-	fmt.Printf("\n%+v\n", stagedTransformations.GetEarly)
-
 	if early := stagedTransformations.GetEarly(); early != nil {
-		fmt.Println("early")
 		p.RequireEarlyTransformation = true
 		transformations, err := p.getTransformations(ctx, EarlyStageNumber, early)
 		if err != nil {
