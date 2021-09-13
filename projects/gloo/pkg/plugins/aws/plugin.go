@@ -51,8 +51,12 @@ func NewPlugin(earlyTransformsAdded *bool) plugins.Plugin {
 }
 
 type plugin struct {
-	recordedUpstreams    map[string]*aws.UpstreamSpec
-	ctx                  context.Context
+	recordedUpstreams map[string]*aws.UpstreamSpec
+	ctx               context.Context
+	// earlyTransformsAdded is intended to point to the RequireEarlyTransformation property
+	// in the transformation plugin, which controls whether early-stage transforms will be processed
+	// see AWS plugin instantiation at the following link as an example:
+	// https://github.com/solo-io/gloo/blob/2168dff1344d2b488d74cb2c1baabe10a9301757/projects/gloo/pkg/plugins/registry/registry.go#L61
 	earlyTransformsAdded *bool
 	settings             *v1.GlooOptions_AWSOptions
 	upstreamOptions      *v1.UpstreamOptions
@@ -266,6 +270,8 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 						},
 					},
 				})
+
+				// Tell the transformation filter to process early-stage transformations
 				*p.earlyTransformsAdded = true
 			}
 
