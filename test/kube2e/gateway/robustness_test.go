@@ -352,7 +352,7 @@ var _ = Describe("Robustness tests", func() {
 				return names
 			}
 
-			findEchoAppClusterEndpoints := func(podName string) int {
+			findEchoAppClusterEndpoints := func(podName, expectedEndpoints string) int {
 				clusters, portFwdCmd, err := cliutils.PortForwardGet(ctx, defaults2.GlooSystem, podName, "19000", "19000", true, "/clusters")
 				if err != nil {
 					fmt.Println(err)
@@ -362,7 +362,7 @@ var _ = Describe("Robustness tests", func() {
 					defer portFwdCmd.Process.Kill()
 				}
 				//clusters := testutils.CurlWithEphemeralPod(ctx, ioutil.Discard, "", defaults2.GlooSystem, podName, "http://localhost:19000/clusters")
-				echoAppClusterEndpoints := regexp.MustCompile("\ngloo-system-echo-app-for-robustness-test-5678_gloo-system::[0-9.]+:5678::")
+				echoAppClusterEndpoints := regexp.MustCompile(fmt.Sprintf("\ngloo-system-echo-app-for-robustness-test-5678_gloo-system::%s:5678::", expectedEndpoints))
 				matches := echoAppClusterEndpoints.FindAllStringIndex(clusters, -1)
 				fmt.Println(fmt.Sprintf("Number of cluster stats for echo app (i.e., checking for endpoints) on clusters page: %d", len(matches)))
 				return len(matches)
@@ -456,10 +456,13 @@ var _ = Describe("Robustness tests", func() {
 			envoyPodNames := findPodNamesByLabel(cfg, ctx, defaults2.GlooSystem, "gloo=gateway-proxy")
 			Expect(envoyPodNames).To(HaveLen(8))
 
+			initialEndpointIPs := endpointIPsForKubeService(kubeClient, appService)
+			Expect(initialEndpointIPs).To(HaveLen(1))
+
 			for _, envoyPodName := range envoyPodNames {
 				fmt.Println(fmt.Sprintf("Checking for endpoints for %v", envoyPodName))
 				Eventually(func() int {
-					return findEchoAppClusterEndpoints(envoyPodName)
+					return findEchoAppClusterEndpoints(envoyPodName, initialEndpointIPs[0])
 				}, "30s", "1s").Should(BeNumerically(">", 0))
 			}
 
@@ -467,8 +470,6 @@ var _ = Describe("Robustness tests", func() {
 			scaleDeploymentTo(kubeClient, glooDeployment, 1)
 
 			By("force an update of the service endpoints")
-			initialEndpointIPs := endpointIPsForKubeService(kubeClient, appService)
-
 			scaleDeploymentTo(kubeClient, appDeployment, 0)
 			scaleDeploymentTo(kubeClient, appDeployment, 1)
 
@@ -490,6 +491,16 @@ var _ = Describe("Robustness tests", func() {
 				ConnectionTimeout: 1,
 				WithoutStats:      true,
 			}, expectedResponse(appName), 1, 60*time.Second, 1*time.Second)
+
+			newEndpointIPs := endpointIPsForKubeService(kubeClient, appService)
+			Expect(newEndpointIPs).To(HaveLen(1))
+
+			for _, envoyPodName := range envoyPodNames {
+				fmt.Println(fmt.Sprintf("Checking for endpoints for %v", envoyPodName))
+				Eventually(func() int {
+					return findEchoAppClusterEndpoints(envoyPodName, newEndpointIPs[0])
+				}, "30s", "1s").Should(BeNumerically(">", 0))
+			}
 		})
 
 	})
