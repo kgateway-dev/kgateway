@@ -110,6 +110,10 @@ message Upstream {
     //
     // Note: if setting this field to a hostname rather than IP:PORT, you may want to also set `host_rewrite` on the route
     google.protobuf.StringValue http_proxy_hostname = 21;
+
+    // (bool) If set to true, Envoy will ignore the health value of a host when processing its removal from service discovery.
+    // This means that if active health checking is used, Envoy will not wait for the endpoint to go unhealthy before removing it.
+    bool ignore_health_on_host_removal = 22;
 }
 
 // created by discovery services
