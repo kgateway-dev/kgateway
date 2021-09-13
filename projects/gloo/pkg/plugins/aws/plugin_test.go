@@ -42,8 +42,8 @@ var _ = Describe("Plugin", func() {
 	)
 
 	BeforeEach(func() {
-		var b bool
-		awsPlugin = NewPlugin(&b)
+		var b1, b2 bool
+		awsPlugin = NewPlugin(&b1, &b2)
 
 		upstreamName := "up"
 		clusterName := upstreamName
