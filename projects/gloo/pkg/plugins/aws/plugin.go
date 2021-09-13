@@ -248,7 +248,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 												Regex:    `([^\?]+)(\?.*)?`,
 												Subgroup: uint32(1),
 											},
-											"querystring": {
+											"queryString": {
 												Source:   &envoy_transform.Extraction_Header{Header: ":path"},
 												Regex:    `([^\?]+)(\?(.*))?`,
 												Subgroup: uint32(3),
@@ -268,6 +268,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 						},
 					},
 				})
+				*p.transformsAdded = true
 				*p.earlyTransformsAdded = true
 			}
 
