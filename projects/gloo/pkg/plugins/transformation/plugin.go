@@ -24,8 +24,7 @@ import (
 const (
 	FilterName       = "io.solo.transformation"
 	EarlyStageNumber = 1
-
-	PluginName = "transformation.plugin.solo"
+	PluginName       = "transformation.plugin.solo"
 )
 
 var (
@@ -49,10 +48,9 @@ var _ plugins.HttpFilterPlugin = new(Plugin)
 type TranslateTransformationFn func(*transformation.Transformation) (*envoytransformation.Transformation, error)
 
 type Plugin struct {
-	RequireTransformationFilter bool
-	requireEarlyTransformation  bool
-	TranslateTransformation     TranslateTransformationFn
-	settings                    *v1.Settings
+	RequireEarlyTransformation bool
+	TranslateTransformation    TranslateTransformationFn
+	settings                   *v1.Settings
 }
 
 func (p *Plugin) PluginName() string {
@@ -68,8 +66,7 @@ func NewPlugin() *Plugin {
 }
 
 func (p *Plugin) Init(params plugins.InitParams) error {
-	p.RequireTransformationFilter = false
-	p.requireEarlyTransformation = false
+	p.RequireEarlyTransformation = false
 	p.settings = params.Settings
 	p.TranslateTransformation = TranslateTransformation
 	return nil
@@ -91,13 +88,11 @@ func (p *Plugin) ProcessVirtualHost(
 	if envoyTransformation == nil {
 		return nil
 	}
-	p.RequireTransformationFilter = true
 	err = p.validateTransformation(params.Ctx, envoyTransformation)
 	if err != nil {
 		return err
 	}
 
-	p.RequireTransformationFilter = true
 	return pluginutils.SetVhostPerFilterConfig(out, FilterName, envoyTransformation)
 }
 
@@ -113,13 +108,11 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if envoyTransformation == nil {
 		return nil
 	}
-	p.RequireTransformationFilter = true
 	err = p.validateTransformation(params.Ctx, envoyTransformation)
 	if err != nil {
 		return err
 	}
 
-	p.RequireTransformationFilter = true
 	return pluginutils.SetRoutePerFilterConfig(out, FilterName, envoyTransformation)
 }
 
@@ -140,7 +133,6 @@ func (p *Plugin) ProcessWeightedDestination(
 		return nil
 	}
 
-	p.RequireTransformationFilter = true
 	err = p.validateTransformation(params.Ctx, envoyTransformation)
 	if err != nil {
 		return err
@@ -158,7 +150,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		return nil, err
 	}
 	var filters []plugins.StagedHttpFilter
-	if p.requireEarlyTransformation {
+	if p.RequireEarlyTransformation {
 		// only add early transformations if we have to, to allow rolling gloo updates;
 		// i.e. an older envoy without stages connects to gloo, it shouldn't have 2 filters.
 		filters = append(filters, earlyFilter)
@@ -205,7 +197,7 @@ func (p *Plugin) convertTransformation(
 	}
 
 	if early := stagedTransformations.GetEarly(); early != nil {
-		p.requireEarlyTransformation = true
+		p.RequireEarlyTransformation = true
 		transformations, err := p.getTransformations(ctx, EarlyStageNumber, early)
 		if err != nil {
 			return nil, err

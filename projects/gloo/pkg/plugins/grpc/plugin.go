@@ -42,15 +42,13 @@ var _ plugins.UpstreamPlugin = &plugin{}
 var _ plugins.RoutePlugin = &plugin{}
 var _ plugins.HttpFilterPlugin = &plugin{}
 
-func NewPlugin(transformsAdded *bool) *plugin {
+func NewPlugin() *plugin {
 	return &plugin{
 		recordedUpstreams: make(map[string]*v1.Upstream),
-		transformsAdded:   transformsAdded,
 	}
 }
 
 type plugin struct {
-	transformsAdded   *bool
 	recordedUpstreams map[string]*v1.Upstream
 	upstreamServices  []ServicesAndDescriptor
 
