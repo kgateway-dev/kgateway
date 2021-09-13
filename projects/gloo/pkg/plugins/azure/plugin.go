@@ -36,11 +36,10 @@ type plugin struct {
 	recordedUpstreams map[string]*azure.UpstreamSpec
 	apiKeys           map[string]string
 	ctx               context.Context
-	transformsAdded   *bool
 }
 
-func NewPlugin(transformsAdded *bool) plugins.Plugin {
-	return &plugin{transformsAdded: transformsAdded}
+func NewPlugin() plugins.Plugin {
+	return &plugin{}
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
@@ -129,8 +128,6 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 					if err != nil {
 						return nil, err
 					}
-
-					*p.transformsAdded = true
 
 					hostname := GetHostname(upstreamSpec)
 					// TODO: consider adding a new add headers transformation allow adding headers with no templates to improve performance.

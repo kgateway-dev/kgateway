@@ -42,7 +42,7 @@ var globalRegistry = func(opts bootstrap.Opts) *registry {
 		upstreamconn.NewPlugin(),
 		upstreamssl.NewPlugin(),
 		azure.NewPlugin(&transformationPlugin.RequireTransformationFilter),
-		aws.NewPlugin(&transformationPlugin.RequireTransformationFilter),
+		aws.NewPlugin(&transformationPlugin.RequireTransformationFilter, &transformationPlugin.RequireEarlyTransformation),
 		rest.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		hcm.NewPlugin(),
 		static.NewPlugin(),

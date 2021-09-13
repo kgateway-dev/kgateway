@@ -32,8 +32,7 @@ var _ = Describe("Plugin", func() {
 	)
 
 	BeforeEach(func() {
-		b := false
-		p = NewPlugin(&b).(*plugin)
+		p = NewPlugin().(*plugin)
 		out = new(envoy_config_cluster_v3.Cluster)
 
 		restSpec = &pluginsv1.ServiceSpec_Rest{
