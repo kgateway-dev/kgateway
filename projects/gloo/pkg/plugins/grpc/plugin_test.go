@@ -32,8 +32,7 @@ var _ = Describe("Plugin", func() {
 	)
 
 	BeforeEach(func() {
-		b := false
-		p = NewPlugin(&b)
+		p = NewPlugin()
 		out = new(envoy_config_cluster_v3.Cluster)
 
 		grpcSpec = &pluginsv1.ServiceSpec_Grpc{

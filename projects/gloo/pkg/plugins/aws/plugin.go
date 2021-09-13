@@ -44,9 +44,8 @@ func getLambdaHostname(s *aws.UpstreamSpec) string {
 	return fmt.Sprintf("lambda.%s.amazonaws.com", s.GetRegion())
 }
 
-func NewPlugin(transformsAdded, earlyTransformsAdded *bool) plugins.Plugin {
+func NewPlugin(earlyTransformsAdded *bool) plugins.Plugin {
 	return &plugin{
-		transformsAdded:      transformsAdded,
 		earlyTransformsAdded: earlyTransformsAdded,
 	}
 }
@@ -55,7 +54,6 @@ type plugin struct {
 	recordedUpstreams    map[string]*aws.UpstreamSpec
 	ctx                  context.Context
 	earlyTransformsAdded *bool
-	transformsAdded      *bool
 	settings             *v1.GlooOptions_AWSOptions
 	upstreamOptions      *v1.UpstreamOptions
 }
@@ -268,7 +266,6 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 						},
 					},
 				})
-				*p.transformsAdded = true
 				*p.earlyTransformsAdded = true
 			}
 
@@ -296,7 +293,6 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 						},
 					},
 				})
-				*p.transformsAdded = true
 			}
 
 			return &envoy_transform.RouteTransformations{

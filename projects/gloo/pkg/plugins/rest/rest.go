@@ -33,13 +33,12 @@ var _ plugins.UpstreamPlugin = &plugin{}
 var _ plugins.RoutePlugin = &plugin{}
 
 type plugin struct {
-	transformsAdded   *bool
 	recordedUpstreams map[string]*glooplugins.ServiceSpec_Rest
 	ctx               context.Context
 }
 
-func NewPlugin(transformsAdded *bool) plugins.Plugin {
-	return &plugin{transformsAdded: transformsAdded}
+func NewPlugin() plugins.Plugin {
+	return &plugin{}
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
@@ -117,7 +116,6 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				},
 			}
 
-			*p.transformsAdded = true
 			if restDestinationSpec.Rest.GetResponseTransformation() != nil {
 				// TODO(yuval-k): should we add \ support response parameters?
 				ret.ResponseTransformation = &transformapi.Transformation{

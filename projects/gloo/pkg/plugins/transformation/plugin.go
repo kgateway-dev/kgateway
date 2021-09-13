@@ -48,10 +48,9 @@ var _ plugins.HttpFilterPlugin = new(Plugin)
 type TranslateTransformationFn func(*transformation.Transformation) (*envoytransformation.Transformation, error)
 
 type Plugin struct {
-	RequireTransformationFilter bool
-	RequireEarlyTransformation  bool
-	TranslateTransformation     TranslateTransformationFn
-	settings                    *v1.Settings
+	RequireEarlyTransformation bool
+	TranslateTransformation    TranslateTransformationFn
+	settings                   *v1.Settings
 }
 
 func (p *Plugin) PluginName() string {
@@ -67,7 +66,6 @@ func NewPlugin() *Plugin {
 }
 
 func (p *Plugin) Init(params plugins.InitParams) error {
-	p.RequireTransformationFilter = false
 	p.RequireEarlyTransformation = false
 	p.settings = params.Settings
 	p.TranslateTransformation = TranslateTransformation
@@ -90,13 +88,11 @@ func (p *Plugin) ProcessVirtualHost(
 	if envoyTransformation == nil {
 		return nil
 	}
-	p.RequireTransformationFilter = true
 	err = p.validateTransformation(params.Ctx, envoyTransformation)
 	if err != nil {
 		return err
 	}
 
-	p.RequireTransformationFilter = true
 	return pluginutils.SetVhostPerFilterConfig(out, FilterName, envoyTransformation)
 }
 
@@ -112,13 +108,11 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if envoyTransformation == nil {
 		return nil
 	}
-	p.RequireTransformationFilter = true
 	err = p.validateTransformation(params.Ctx, envoyTransformation)
 	if err != nil {
 		return err
 	}
 
-	p.RequireTransformationFilter = true
 	return pluginutils.SetRoutePerFilterConfig(out, FilterName, envoyTransformation)
 }
 
@@ -139,7 +133,6 @@ func (p *Plugin) ProcessWeightedDestination(
 		return nil
 	}
 
-	p.RequireTransformationFilter = true
 	err = p.validateTransformation(params.Ctx, envoyTransformation)
 	if err != nil {
 		return err
