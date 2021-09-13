@@ -62,6 +62,9 @@ message DestinationSpec {
         SYNC = 0;
         ASYNC = 1;
     }
+    // Include headers, querystring, request path, and request method in the event payload sent to aws lambda
+    bool request_transformation = 6;
+    
     // de-jsonify response bodies returned from aws lambda
     bool response_transformation = 5;
 }
