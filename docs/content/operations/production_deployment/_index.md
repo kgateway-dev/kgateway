@@ -6,42 +6,137 @@ weight: 20
 
 This document shows some of the Production options that may be useful. We will continue to add to this document and welcome users of Gloo Edge to send PRs to this as well.
 
-## Dropping capabilities
 
-One of the more important (and unique) things about Gloo Edge is the ability to significantly lock down the edge proxy. Other proxies require privileges to write to disk or access the Kubernetes API, while Gloo Edge splits those responsibilities between control plane and data plane. The data plane can be locked down with zero privileges while separating out the need to secure the control plane differently. 
+## Safeguarding the control plane configuration
 
-For example, Gloo Edge's data plane (the `gateway-proxy` pod) has ReadOnly file system. Additionally it doesn't require any additional tokens mounted in or OS-level privileges. By default some of these options are enabled to simplify developer experience, but if your use case doesn't need them, you should lock them down. 
+### Enable replacing invalid routes
 
-* **Disable service account token mount**
-    - For example, when integrating with Istio's SDS (see integration with Istio), you need to have a service account token mounted. If you're not integrating with Istio, you can eliminate the need for the service account token. When installing Gloo Edge, set the `gateway.proxyServiceAccount.disableAutomount` field. 
-* **Disable Kubernetes destinations**
-    - Gloo Edge out of the box routes to upstreams. It can also route directly to Kubernetes destinations (bypassing upstreams). Upstreams is the recommended abstraction to which to route in VirtualServices, and you can disable the Kubernetes destinations with the `settings.disableKubernetesDestinations`. This saves on memory overhead so Gloo Edge pod doesn't cache both upstreams and Kubernetes destinations. 
+In some cases it may be desirable to update a virtual service even if its config becomes partially invalid. This is particularly useful when delegating to Route Tables as it ensures that a single Route Table will not block updates for other Route Tables which share the same Virtual Service. More information on why and how to enable this can be found [here]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/invalid_route_replacement/" %}})
 
-    You can set this value in the default `Settings` CRD by adding the following content:   
-    ```
-    apiVersion: gloo.solo.io/v1
-    kind: Settings
-    metadata:
-      name: default
-      namespace: gloo-system
-    spec:
-      gloo:
-        disableKubernetesDestinations: true
-        ...
-    ```
+Example:
 
-    You can set this value helm overrides by setting
-    ```
-    settings:
-      disableKubernetesDestinations: true
-    ```
+```yaml
+gloo:
+  settings:
+    invalidConfigPolicy:
+      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators
+        should run `glooctl check` to find and fix config errors.
+      invalidRouteResponseCode: 404
+      replaceInvalidRoutes: true
+```
 
-## Enable replacing invalid routes
+### OpenAPI schema validation on CRDs
+Since Gloo v1.8, CRDs are given OpenAPI schemas. This way, the kube `api-server` (validation webhook) will refuse _Custom Resources_ with invalid definitions.
 
-* **Configure invalidConfigPolicy**
-    - In some cases, it may be desirable to update a virtual service even if its config becomes partially invalid. This is particularly useful when delegating to Route Tables as it ensures that a single Route Table will not block updates for other Route Tables which share the same Virtual Service. More information on why and how to enable this can be found [here]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/invalid_route_replacement/" %}})
+### More safeguards
+In addition to the CRD schemas, Gloo can perform a deeper inspection of the _Custom Resources_.
 
-## Enable health checks
+You can use these flags:
+
+```yaml
+gloo:
+  gateway:
+    validation:
+      allowWarnings: false # reject if warning status or rejected status
+      alwaysAcceptResources: false # reject invalid resources
+      warnRouteShortCircuiting: true
+```
+
+## Performance tips
+
+### Disable Kubernetes destinations
+Gloo Edge routes to upstreams by default, but it can alternatively be configured to bypass upstreams and route directly to Kubernetes destinations. Because routing to upstreams is the recommended configuration, you can disable the option to route to the Kubernetes destinations with the `settings.disableKubernetesDestinations: true` setting. This setting saves memory because the Gloo Edge pod doesn't cache both upstreams and Kubernetes destinations.
+
+You can set this value in the default `Settings` CR by adding the following content:   
+```yaml
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  name: default
+  namespace: gloo-system
+spec:
+  gloo:
+    disableKubernetesDestinations: true
+    ...
+```
+
+You can set this value in your Helm overrides file by adding the following setting:
+```yaml
+settings:
+  disableKubernetesDestinations: true
+```
+
+
+### Configure appropriate resource usage
+
+Before running in production it is important to ensure you have correctly configured the resources allocated to the various components of Gloo Edge. Ideally this tuning will be done in conjunction with load/performance testing.
+
+These values can be configured via helm values for the various deployments, such as 
+* `gloo.deployment.resources.requests.*` 
+* `gatewayProxies.gatewayProxy.podTemplate.resources.requests.*`
+
+See the [helm chart value reference]({{%versioned_link_path fromRoot="/reference/helm_chart_values/" %}}) for a full list.
+
+### Transformations
+
+* Disabling transformation validation can drastically improve the CPU usage on the control-plane side.
+
+```yaml
+gloo:
+  gateway:
+    validation:
+      disableTransformationValidation: true # better performances but more risky
+```
+
+### Discovery
+If you have hundreds of Kubernetes services, you can get better performances on the control-plane if you disable the Upstream and Function discovery.
+
+```yaml
+gloo:
+  discovery:
+    enabled: false
+```
+You can also patch the `default` *Settings* CR with this value and delete the `discovery` deployment.
+
+
+### Enable Envoy's gzip filter
+Optionally, you may choose to enable Envoy's gzip filter through Gloo Edge. More information on that can be found [here]({{% versioned_link_path fromRoot="/installation/advanced_configuration/gzip/" %}}).
+
+### Set up an EDS warming timeout
+Set up the endpoints warming timeout to a non-zero value. More details [here]({{%versioned_link_path fromRoot="/operations/upgrading/1.3.0/#recommended-settings" %}}).
+
+
+## Access Logging
+
+Envoy provides a powerful access logging mechanism which enables users and operators to understand the various traffic flowing through the proxy.
+Before deploying Gloo Edge in production, consider enabling access logging to help with monitoring traffic as well as to provide helpful information for troubleshooting.
+The [access logging documentation]({{%versioned_link_path fromRoot="/guides/security/access_logging/" %}}) should be consulted for more details.
+
+{{% notice note %}}
+Make sure you have the `%RESPONSE_FLAGS%` item in the log pattern. 
+{{% /notice %}}
+
+## Horizontally scaling the data plane
+
+### Gateway proxy
+
+You can scale up the `gateway-proxies` Envoy instances by using a Deployment or a DeamonSet. The amount of requests that the `gateway-proxies` can process increases with the amount of CPU that the `gateway-proxies` have access to.
+
+### Ext-Auth
+
+You can also scale up the ExtAuth service. Typically, one to two instances are sufficient.
+
+## Horizontally scaling the control plane
+
+*DO NOT* scale the control plane components, such as the Gateway deployment, the Gloo deployment or the Discovery deployment. Scaling these components provides no benefit and can lead to race conditions.
+
+{{% notice note %}}
+There some work in progress on the XDS architecture to allow for horizontal scalability of the Gloo deployment.
+{{% /notice %}}
+
+## Enhancing the data-plane reliability
+
+### Downstream to Envoy health checks
 
 {{% notice warning %}}
 Liveness/readiness probes on Envoy are disabled by default. This is because Envoy's behavior can be surprising: When there are no
@@ -55,30 +150,34 @@ If you are running Gloo Edge Enterprise, you'll need to prefix that Helm values 
 * **Configure your load balancer correctly**
     - If you are running Gloo Edge behind a load balancer, be sure to configure your load balancer properly to consume the readiness probe mentioned above.
 
-#### Upstream health checks
+### Upstream health checks
 
 In addition to defining health checks for Envoy, you should strongly consider defining health checks for your `Upstreams`.
 These health checks are used by Envoy to determine the health of the various upstream hosts in an upstream cluster, for example checking the health of the various pods that make up a Kubernetes `Service`. This is known as "active health checking" and can be configured on the `Upstream` resource directly.
 [See the documentation]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/upstream_health_checks/" %}}) for additional info.
 
+### Other considerations
+
 Additionally, "outlier detection" can be configured which allows Envoy to passively check the health of upstream hosts.
 A helpful [overview of this feature is available in Envoy's documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/outlier).
 This can be configured via the `outlierDetection` field on the `Upstream` resource. See the {{< protobuf name="gloo.solo.io.Upstream" display="API reference for more detail" >}}.
 
-## Envoy performance
+Also, consider using `retries` on your _routes_. The default value for this attribute is `1`, which you can increase to `3` for better results.
 
-* **Enable Envoy's gzip filter**
-    - Optionally, you may choose to enable Envoy's gzip filter through Gloo Edge. More information on that can be found [here]({{% versioned_link_path fromRoot="/installation/advanced_configuration/gzip/" %}}).
-* **Set up an EDS warming timeout**
-    - Set up the endpoints warming timeout to some nonzero value. More details [here]({{%versioned_link_path fromRoot="/operations/upgrading/1.3.0/#recommended-settings" %}}).
-
-## Configure appropriate resource usage
-
-* Before running in production it is important to ensure you have correctly configured the resources allocated to the various components of Gloo Edge. Ideally this tuning will be done in conjunction with load/performance testing.
-These values can be configured via helm values for the various deployments, such as `gloo.deployment.resources.requests.*` or `gatewayProxies.gatewayProxy.podTemplate.resources.requests.*`.
-See the [helm chart value reference]({{%versioned_link_path fromRoot="/reference/helm_chart_values/" %}}) for a full list.
 
 ## Metrics and monitoring
+
+### Grafana dashboards
+
+A dedicated Grafana dashboard exists for each `Upstream` _Custom Resource_. These dashboards can help you verify whether your active/passive health checks are working, as well as provide insight into retries, requests rate and latency, responses codes, number of active connections, and more.
+
+![Upstream dashboard - part 1]({{< versioned_link_path fromRoot="/img/grafana-us-part1.png" >}})
+
+![Upstream dashboard - part 2]({{< versioned_link_path fromRoot="/img/grafana-us-part2.png" >}})
+
+![Upstream dashboard - part 3]({{< versioned_link_path fromRoot="/img/grafana-us-part3.png" >}})
+
+### Prometheus 
 
 {{% notice note %}}
 Gloo Edge default prometheus server and grafana instance are not meant to be used `as-is` in production. Please provide your own instance or configure the provided one with production values
@@ -93,6 +192,7 @@ Some metrics that may be useful to monitor (listed in Prometheus format):
 * `envoy_control_plane_connected_state` -- This metric shows whether or not a given Envoy instance is connected to the control plane, i.e. the Gloo pod.
  This metric should have a value of `1` otherwise it indicates that Envoy is having trouble connecting to the Gloo pod.
 * `container_cpu_cfs_throttled_seconds_total / container_cpu_cfs_throttled_periods_total` -- This is a generic expression that will show whether or not a given container is being throttled for CPU, which will result is performance issues and service degradation. If the Gloo Edge containers are being throttled, it is important to understand why and given the underlying cause, increase the resources allocated.
+
 
 ### Troubleshooting monitoring components
 
@@ -190,13 +290,18 @@ Choosing the right values requires some business knowledge, but as a rule of thu
 persistentVolume.size = retention_in_seconds * ingested_samples_per_second * bytes_per_sample
 ```
 
-## Access Logging
+## Security concerns
 
-Envoy provides a powerful access logging mechanism which enables users and operators to understand the various traffic flowing through the proxy.
-Before deploying Gloo Edge in production, consider enabling access logging to help with monitoring traffic as well as to provide helpful information for troubleshooting.
-The [access logging documentation]({{%versioned_link_path fromRoot="/guides/security/access_logging/" %}}) should be consulted for more details.
+One of the more important (and unique) things about Gloo Edge is the ability to significantly lock down the edge proxy. Other proxies require privileges to write to disk or access the Kubernetes API, while Gloo Edge splits those responsibilities between control plane and data plane. The data plane can be locked down with zero privileges while separating out the need to secure the control plane differently. 
+
+For example, Gloo Edge's data plane (the `gateway-proxy` pod) has ReadOnly file system. Additionally it doesn't require any additional tokens mounted in or OS-level privileges. By default some of these options are enabled to simplify developer experience, but if your use case doesn't need them, you should lock them down. 
+
+* **Disable service account token mount**
+    - For example, when integrating with Istio's SDS (see integration with Istio), you need to have a service account token mounted. If you're not integrating with Istio, you can eliminate the need for the service account token. When installing Gloo Edge, set the `gateway.proxyServiceAccount.disableAutomount` field. 
+
 
 ## Other Envoy-specific guidance
 
 * Envoy has a list of edge proxy best-practices in their docs. You may also want to consult that to see what is applicable for your use case. Find those docs [here](https://www.envoyproxy.io/docs/envoy/latest/configuration/best_practices/edge#best-practices-edge).
     - In particular, you may especially want to set `use_remote_address` to true. More details [here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-use-remote-address)
+
