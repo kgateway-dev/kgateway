@@ -9,6 +9,9 @@ import (
 	"strings"
 	"time"
 
+	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/go-utils/cliutils"
+
 	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/test/helpers"
@@ -335,6 +338,36 @@ var _ = Describe("Robustness tests", func() {
 				Skip("skipping test that only passes with xds relay enabled")
 			}
 
+			// labelSelector is a string map e.g. gloo=gateway-proxy
+			findPodNamesByLabel := func(cfg *rest.Config, ctx context.Context, ns, labelSelector string) []string {
+				clientset, err := kubernetes.NewForConfig(cfg)
+				Expect(err).NotTo(HaveOccurred())
+				pl, err := clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(pl.Items).NotTo(BeEmpty())
+				var names []string
+				for _, item := range pl.Items {
+					names = append(names, item.Name)
+				}
+				return names
+			}
+
+			findEchoAppClusterEndpoints := func(podName string) int {
+				clusters, portFwdCmd, err := cliutils.PortForwardGet(ctx, defaults2.GlooSystem, podName, "19000", "19000", true, "/clusters")
+				if err != nil {
+					fmt.Println(err)
+				}
+				if portFwdCmd.Process != nil {
+					defer portFwdCmd.Process.Release()
+					defer portFwdCmd.Process.Kill()
+				}
+				//clusters := testutils.CurlWithEphemeralPod(ctx, ioutil.Discard, "", defaults2.GlooSystem, podName, "http://localhost:19000/clusters")
+				echoAppClusterEndpoints := regexp.MustCompile("\ngloo-system-echo-app-for-robustness-test-5678_gloo-system::[0-9.]+:5678::")
+				matches := echoAppClusterEndpoints.FindAllStringIndex(clusters, -1)
+				fmt.Println(fmt.Sprintf("Number of cluster stats for echo app (i.e., checking for endpoints) on clusters page: %d", len(matches)))
+				return len(matches)
+			}
+
 			xdsRelayDeployment := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
@@ -373,8 +406,8 @@ var _ = Describe("Robustness tests", func() {
 			}
 
 			scaleDeploymentTo(kubeClient, xdsRelayDeployment, 5)
-			time.Sleep(3*time.Second)
-	///			scaleDeploymentTo(kubeClient, envoyDeployment, 0)
+			time.Sleep(3 * time.Second)
+			///			scaleDeploymentTo(kubeClient, envoyDeployment, 0)
 			//time.Sleep(3*time.Second)
 
 			By("verify that the endpoints have been propagated to Envoy")
@@ -420,6 +453,15 @@ var _ = Describe("Robustness tests", func() {
 
 			// TODO(kdorosh) confirm every single envoy eventually gets the update!!
 			// The rest was commented out before while iterating..
+			envoyPodNames := findPodNamesByLabel(cfg, ctx, defaults2.GlooSystem, "gloo=gateway-proxy")
+			Expect(envoyPodNames).To(HaveLen(8))
+
+			for _, envoyPodName := range envoyPodNames {
+				fmt.Println(fmt.Sprintf("Checking for endpoints for %v", envoyPodName))
+				Eventually(func() int {
+					return findEchoAppClusterEndpoints(envoyPodName)
+				}, "30s", "1s").Should(BeNumerically(">", 0))
+			}
 
 			By("reconnects to upstream gloo after scaling up, new endpoints are picked up")
 			scaleDeploymentTo(kubeClient, glooDeployment, 1)
@@ -523,7 +565,6 @@ func pointerToInt64(value int64) *int64 {
 }
 
 func endpointIPsForKubeService(kubeClient kubernetes.Interface, svc *corev1.Service) []string {
-	var endpoints *corev1.EndpointsList
 	listOpts := metav1.ListOptions{LabelSelector: labels.SelectorFromSet(svc.Spec.Selector).String()}
 	endpoints, err := kubeClient.CoreV1().Endpoints(svc.Namespace).List(ctx, listOpts)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())

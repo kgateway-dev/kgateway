@@ -2,13 +2,14 @@ package gateway_test
 
 import (
 	"context"
-	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/cliutil/install"
 
 	"github.com/solo-io/go-utils/testutils/exec"
 
@@ -83,7 +84,7 @@ func StartTestHelper() {
 	}
 
 	// Check that everything is OK
-	time.Sleep(4*time.Second)
+	time.Sleep(4 * time.Second)
 	//kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 
 	// TODO(marco): explicitly enable strict validation, this can be removed once we enable validation by default
