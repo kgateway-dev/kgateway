@@ -113,6 +113,9 @@ type Upstream struct {
 	//
 	// Note: if setting this field to a hostname rather than IP:PORT, you may want to also set `host_rewrite` on the route
 	HttpProxyHostname *wrappers.StringValue `protobuf:"bytes,21,opt,name=http_proxy_hostname,json=httpProxyHostname,proto3" json:"http_proxy_hostname,omitempty"`
+	// (bool) If set to true, Envoy will ignore the health value of a host when processing its removal from service discovery.
+	// This means that if active health checking is used, Envoy will not wait for the endpoint to go unhealthy before removing it.
+	IgnoreHealthOnHostRemoval bool `protobuf:"varint,22,opt,name=ignore_health_on_host_removal,json=ignoreHealthOnHostRemoval,proto3" json:"ignore_health_on_host_removal,omitempty"`
 }
 
 func (x *Upstream) Reset() {
@@ -299,6 +302,13 @@ func (x *Upstream) GetHttpProxyHostname() *wrappers.StringValue {
 		return x.HttpProxyHostname
 	}
 	return nil
+}
+
+func (x *Upstream) GetIgnoreHealthOnHostRemoval() bool {
+	if x != nil {
+		return x.IgnoreHealthOnHostRemoval
+	}
+	return false
 }
 
 type isUpstream_UpstreamType interface {

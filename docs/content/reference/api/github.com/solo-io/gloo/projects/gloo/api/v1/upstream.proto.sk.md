@@ -54,6 +54,7 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 "initialStreamWindowSize": .google.protobuf.UInt32Value
 "initialConnectionWindowSize": .google.protobuf.UInt32Value
 "httpProxyHostname": .google.protobuf.StringValue
+"ignoreHealthOnHostRemoval": bool
 
 ```
 
@@ -80,6 +81,7 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `initialStreamWindowSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | (UInt32Value) Initial stream-level flow-control window size. Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum) and defaults to 268435456 (256 * 1024 * 1024). NOTE: 65535 is the initial window size from HTTP/2 spec. We only support increasing the default window size now, so it’s also the minimum. This field also acts as a soft limit on the number of bytes Envoy will buffer per-stream in the HTTP/2 codec buffers. Once the buffer reaches this pointer, watermark callbacks will fire to stop the flow of data to the codec buffers. Requires UseHttp2 to be true to be acknowledged. |
 | `initialConnectionWindowSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | (UInt32Value) Similar to initial_stream_window_size, but for connection-level flow-control window. Currently, this has the same minimum/maximum/default as initial_stream_window_size. Requires UseHttp2 to be true to be acknowledged. |
 | `httpProxyHostname` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Tells envoy that the upstream is an HTTP proxy (e.g., another proxy in a DMZ) that supports HTTP Connect. This configuration sets the hostname used as part of the HTTP Connect request. For example, setting to: host.com:443 and making a request routed to the upstream such as `curl <envoy>:<port>/v1` would result in the following request: CONNECT host.com:443 HTTP/1.1 host: host.com:443 GET /v1 HTTP/1.1 host: <envoy>:<port> user-agent: curl/7.64.1 accept: */* Note: if setting this field to a hostname rather than IP:PORT, you may want to also set `host_rewrite` on the route. |
+| `ignoreHealthOnHostRemoval` | `bool` | (bool) If set to true, Envoy will ignore the health value of a host when processing its removal from service discovery. This means that if active health checking is used, Envoy will not wait for the endpoint to go unhealthy before removing it. |
 
 
 

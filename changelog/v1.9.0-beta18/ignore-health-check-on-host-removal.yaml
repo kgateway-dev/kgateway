@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5276
+    description: >
+      Expose the `ignore_health_check_on_host_removal` [envoy cluster](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#config-cluster-v3-cluster)
+      field on the Gloo Upstream proto
+    resolvesIssue: true
