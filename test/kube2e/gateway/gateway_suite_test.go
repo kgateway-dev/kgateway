@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/go-utils/testutils/exec"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/test/helpers"
