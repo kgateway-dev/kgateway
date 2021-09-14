@@ -41,7 +41,7 @@ message Upstream {
     reserved 1;
     // NamespacedStatuses indicates the validation status of this resource.
     // NamespacedStatuses is read-only by clients, and set by gloo during validation
-    core.solo.io.NamespacedStatuses namespaced_statuses = 22 [(extproto.skip_hashing) = true];
+    core.solo.io.NamespacedStatuses namespaced_statuses = 23 [(extproto.skip_hashing) = true];
 
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 2;
