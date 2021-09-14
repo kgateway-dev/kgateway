@@ -107,19 +107,19 @@ var _ = Describe("Robustness tests", func() {
 	})
 
 	AfterEach(func() {
-		//_ = kubeClient.AppsV1().Deployments(testHelper.InstallNamespace).Delete(ctx, appDeployment.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
-		//Eventually(func() bool {
-		//	deployments, err := kubeClient.AppsV1().Deployments(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName}).String()})
-		//	Expect(err).NotTo(HaveOccurred())
-		//	return len(deployments.Items) == 0
-		//}, "15s", "0.5s").Should(BeTrue())
-		//
-		//_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(ctx, appService.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
-		//Eventually(func() bool {
-		//	services, err := kubeClient.CoreV1().Services(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName}).String()})
-		//	Expect(err).NotTo(HaveOccurred())
-		//	return len(services.Items) == 0
-		//}, "15s", "0.5s").Should(BeTrue())
+		_ = kubeClient.AppsV1().Deployments(testHelper.InstallNamespace).Delete(ctx, appDeployment.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
+		Eventually(func() bool {
+			deployments, err := kubeClient.AppsV1().Deployments(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName}).String()})
+			Expect(err).NotTo(HaveOccurred())
+			return len(deployments.Items) == 0
+		}, "15s", "0.5s").Should(BeTrue())
+
+		_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(ctx, appService.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
+		Eventually(func() bool {
+			services, err := kubeClient.CoreV1().Services(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName}).String()})
+			Expect(err).NotTo(HaveOccurred())
+			return len(services.Items) == 0
+		}, "15s", "0.5s").Should(BeTrue())
 
 		cancel()
 	})
@@ -187,10 +187,10 @@ var _ = Describe("Robustness tests", func() {
 		})
 
 		AfterEach(func() {
-			//_ = virtualServiceClient.Delete(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
-			//helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
-			//	return virtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
-			//}, "15s", "0.5s")
+			_ = virtualServiceClient.Delete(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
+			helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
+				return virtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+			}, "15s", "0.5s")
 		})
 
 		forceProxyIntoWarningState := func(virtualService *gatewayv1.VirtualService) {
@@ -417,16 +417,13 @@ var _ = Describe("Robustness tests", func() {
 				}
 			)
 
-			FIt("works, even if gloo is scaled to zero and envoy is bounced", func() {
+			It("works, even if gloo is scaled to zero and envoy is bounced", func() {
 
 				if os.Getenv("USE_XDS_RELAY") != "true" {
 					Skip("skipping test that only passes with xds relay enabled")
 				}
 
 				scaleDeploymentTo(kubeClient, xdsRelayDeployment, 5)
-				time.Sleep(3 * time.Second)
-				///			scaleDeploymentTo(kubeClient, envoyDeployment, 0)
-				//time.Sleep(3*time.Second)
 
 				By("verify that the endpoints have been propagated to Envoy")
 				// we already verify that the initial curl works in the BeforeEach()
@@ -460,7 +457,7 @@ var _ = Describe("Robustness tests", func() {
 					fmt.Println(fmt.Sprintf("Checking for endpoints for %v", envoyPodName))
 					Eventually(func() int {
 						return findEchoAppClusterEndpoints(envoyPodName, initialEndpointIPs[0])
-					}, "90s", "1s").Should(BeNumerically(">", 0))
+					}, "45s", "1s").Should(BeNumerically(">", 0))
 				}
 
 				By("reconnects to upstream gloo after scaling up, new endpoints are picked up")
