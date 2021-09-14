@@ -159,21 +159,21 @@ These health checks are used by Envoy to determine the health of the various ups
 ## XDS Relay
 
 {{% notice warning %}}
-Today, this feature does not work in tandem with the follow non-default installation modes of Gloo Edge: rest eds, gloo mTLS mode, gloo with istio mTLS mode
+This feature is not supported for the following non-default installation modes of Gloo Edge: REST Endpoint Discovery (EDS), Gloo Edge mTLS mode, Gloo Edge with Istio mTLS mode
 {{% /notice %}}
 
-You should consider protecting against control plane downtime (either by node failure or gloo bug) by installing gloo edge alongside the xds-relay helm chart. This helm chart installs a daemonset (configurable, daemonset by default) of xds-relay pods that serve as intermediaries between envoy and gloo (the xds server).
+To protect against control plane downtime, you can install Gloo Edge alongside the `xds-relay` Helm chart. This Helm chart installs a daemonset of `xds-relay` pods that serve as intermediaries between Envoy proxies and the xDS server of Gloo Edge.
 
-This serves two purposes. One, it separates the lifecycle of gloo edge from the xds cache proxies. This means a failure during helm upgrade will not mean loss of last good xds state. Second, it allows you to scale xds-relay to as many replicas as desired, since gloo is only intended for one replica today. Without xds-relay, if the single gloo replica were down, then any new envoy proxies spun up would be unable to get valid configuration.
+The presence of `xds-relay` intermediary pods serve two purposes. First, it separates the lifecycle of Gloo Edge from the xDS cache proxies. For example, a failure during a Helm upgrade will not cause the loss of the last valid xDS state. Second, it allows you to scale `xds-relay` to as many replicas as needed, since Gloo Edge uses only one replica. Without `xds-relay`, a failure of the single Gloo Edge replica causes any new Envoy proxies to be created without a valid configuration.
 
 
 To enable:
 
-- install `xds-relay`:
+Install the xds-relay Helm chart, which supports version 2 and 3 of the Envoy API:
   - `helm repo add xds-relay https://storage.googleapis.com/xds-relay-helm`
-  - `helm install xdsrelay xds-relay/xds-relay` (supports envoy v2 and v3 api; should work with any Gloo Edge release)
+  - `helm install xdsrelay xds-relay/xds-relay`
 
-Some extra helm values you may want to customize for xds-relay (default helm values listed below):
+If needed, change the default values for the xds-relay chart:
 ```yaml
 deployment:
   kind: DaemonSet
