@@ -392,6 +392,22 @@ var _ = Describe("Validator", func() {
 				Expect(rows).NotTo(BeEmpty())
 				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(1))
 			})
+			It("returns 0 when there are validation errors", func() {
+				vc.validate = failProxy
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], false)
+				Expect(err).To(HaveOccurred())
+
+				rows, err := view.RetrieveData("validation.gateway.solo.io/valid_config")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(rows).NotTo(BeEmpty())
+				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(0))
+			})
 			It("returns 0 when there are validation warnings and allowWarnings is false", func() {
 				v.allowWarnings = false
 				vc.validate = warnProxy
