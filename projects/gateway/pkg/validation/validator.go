@@ -117,7 +117,11 @@ func (v *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	var errs error
 	for proxyName, gatewayList := range gatewaysByProxy {
 		_, reports := v.translator.Translate(ctx, proxyName, v.writeNamespace, snap, gatewayList)
-		if err := reports.Validate(); err != nil {
+		validate := reports.ValidateStrict
+		if v.allowWarnings {
+			validate = reports.Validate
+		}
+		if err := validate(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
 	}
@@ -196,8 +200,6 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		return nil, nil
 	}
 
-	utils2.MeasureOne(ctx, mValidConfig)
-
 	// verify the mutation against a snapshot clone first, only apply the change to the actual snapshot if this passes
 	proxyNames, resource, ref := apply(&snapshotClone)
 
@@ -266,10 +268,12 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 
 	if errs != nil {
 		contextutils.LoggerFrom(ctx).Debugf("Rejected %T %v: %v", resource, ref, errs)
+		utils2.MeasureZero(ctx, mValidConfig)
 		return proxyReports, errors.Wrapf(errs, "validating %T %v", resource, ref)
 	}
 
 	contextutils.LoggerFrom(ctx).Debugf("Accepted %T %v", resource, ref)
+	utils2.MeasureOne(ctx, mValidConfig)
 
 	if !dryRun {
 		// update internal snapshot to handle race where a lot of resources may be applied at once, before syncer updates

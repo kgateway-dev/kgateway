@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"go.opencensus.io/stats/view"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -374,7 +375,58 @@ var _ = Describe("Validator", func() {
 				Expect(proxyReports).To(HaveLen(0))
 			})
 		})
+		Context("valid config gauge", func() {
+			It("returns 1 when there are no validation errors", func() {
+				vc.validate = acceptProxy
 
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], false)
+				Expect(err).NotTo(HaveOccurred())
+
+				rows, err := view.RetrieveData("validation.gateway.solo.io/valid_config")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(rows).NotTo(BeEmpty())
+				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(1))
+			})
+			It("returns 0 when there are validation warnings and allowWarnings is false", func() {
+				v.allowWarnings = false
+				vc.validate = warnProxy
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], false)
+				Expect(err).To(HaveOccurred())
+
+				rows, err := view.RetrieveData("validation.gateway.solo.io/valid_config")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(rows).NotTo(BeEmpty())
+				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(0))
+			})
+			It("returns 1 when there are validation warnings and allowWarnings is true", func() {
+				v.allowWarnings = true
+				vc.validate = warnProxy
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], false)
+				Expect(err).NotTo(HaveOccurred())
+
+				rows, err := view.RetrieveData("validation.gateway.solo.io/valid_config")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(rows).NotTo(BeEmpty())
+				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(1))
+			})
+		})
 		Context("dry-run", func() {
 			It("accepts the vs and rejects the second", func() {
 				vc.validate = acceptProxy
