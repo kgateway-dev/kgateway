@@ -104,8 +104,9 @@ func (t *translatorInstance) initializeCluster(
 		HealthChecks:     hcConfig,
 		OutlierDetection: detectCfg,
 		// this field can be overridden by plugins
-		ConnectTimeout:       ptypes.DurationProto(ClusterConnectionTimeout),
-		Http2ProtocolOptions: getHttp2options(upstream),
+		ConnectTimeout:            ptypes.DurationProto(ClusterConnectionTimeout),
+		Http2ProtocolOptions:      getHttp2options(upstream),
+		IgnoreHealthOnHostRemoval: upstream.GetIgnoreHealthOnHostRemoval(),
 	}
 
 	if sslConfig := upstream.GetSslConfig(); sslConfig != nil {
