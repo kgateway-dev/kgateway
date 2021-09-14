@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/cliutil/install"
-
 	"github.com/solo-io/go-utils/testutils/exec"
 
 	"github.com/solo-io/gloo/test/helpers"
@@ -102,39 +100,42 @@ func installXdsRelay() error {
 	if err != nil {
 		return err
 	}
-	helmInstallArgs := strings.Split("helm install xdsrelay xds-relay/xds-relay --version 0.0.2 --namespace default --set deployment.kind=Deployment --set bootstrap.logging.level=DEBUG --set deployment.image.registry=gcr.io/gloo-edge", " ")
+
+	helmInstallArgs := strings.Split("helm install xdsrelay /Users/kdorosh/gomod/forks/xds-relay-private/output/helm/charts/xds-relay-0.0.0-kdorosh.tgz --set bootstrap.logging.level=DEBUG --set deployment.replicas=1", " ")
+
+	//helmInstallArgs := strings.Split("helm install xdsrelay xds-relay/xds-relay --version 0.0.2 --namespace default --set deployment.kind=Deployment --set bootstrap.logging.level=DEBUG --set deployment.image.registry=gcr.io/gloo-edge", " ")
 	err = exec.RunCommandInput("", testHelper.RootDir, true, helmInstallArgs...)
 	if err != nil {
 		return err
 	}
-	var yaml string
-	yaml = `
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    meta.helm.sh/release-name: xdsrelay
-    meta.helm.sh/release-namespace: default
-  labels:
-    app: xds-relay
-    app.kubernetes.io/managed-by: Helm
-  name: xds-relay
-  namespace: default
-spec:
-  clusterIP: None
-  ports:
-  - port: 9991
-    protocol: TCP
-    targetPort: 9991
-  selector:
-    app: xds-relay
-  sessionAffinity: None
-  type: ClusterIP
-`
-	err = install.KubectlDelete([]byte(yaml))
-	Expect(err).ToNot(HaveOccurred())
-	_, err = install.KubectlApplyOut([]byte(yaml))
-	Expect(err).ToNot(HaveOccurred())
+//	var yaml string
+//	yaml = `
+//apiVersion: v1
+//kind: Service
+//metadata:
+//  annotations:
+//    meta.helm.sh/release-name: xdsrelay
+//    meta.helm.sh/release-namespace: default
+//  labels:
+//    app: xds-relay
+//    app.kubernetes.io/managed-by: Helm
+//  name: xds-relay
+//  namespace: default
+//spec:
+//  clusterIP: None
+//  ports:
+//  - port: 9991
+//    protocol: TCP
+//    targetPort: 9991
+//  selector:
+//    app: xds-relay
+//  sessionAffinity: None
+//  type: ClusterIP
+//`
+//	err = install.KubectlDelete([]byte(yaml))
+//	Expect(err).ToNot(HaveOccurred())
+//	_, err = install.KubectlApplyOut([]byte(yaml))
+//	Expect(err).ToNot(HaveOccurred())
 	return nil
 }
 

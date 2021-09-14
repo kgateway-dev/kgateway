@@ -460,7 +460,7 @@ var _ = Describe("Robustness tests", func() {
 					fmt.Println(fmt.Sprintf("Checking for endpoints for %v", envoyPodName))
 					Eventually(func() int {
 						return findEchoAppClusterEndpoints(envoyPodName, initialEndpointIPs[0])
-					}, "30s", "1s").Should(BeNumerically(">", 0))
+					}, "90s", "1s").Should(BeNumerically(">", 0))
 				}
 
 				By("reconnects to upstream gloo after scaling up, new endpoints are picked up")
@@ -496,7 +496,7 @@ var _ = Describe("Robustness tests", func() {
 					fmt.Println(fmt.Sprintf("Checking for endpoints for %v", envoyPodName))
 					Eventually(func() int {
 						return findEchoAppClusterEndpoints(envoyPodName, newEndpointIPs[0])
-					}, "30s", "1s").Should(BeNumerically(">", 0))
+					}, "15s", "1s").Should(BeNumerically(">", 0)) // should be quicker than before, we already connected
 				}
 			})
 		})
