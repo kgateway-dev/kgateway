@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4838
+    resolvesIssue: false
+    description: Expose Envoy configuration for fetching JWKs in the background.

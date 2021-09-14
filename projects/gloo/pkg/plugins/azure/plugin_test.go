@@ -29,8 +29,7 @@ var _ = Describe("Plugin", func() {
 	)
 
 	BeforeEach(func() {
-		var b bool
-		p = azureplugin.NewPlugin(&b)
+		p = azureplugin.NewPlugin()
 
 		namespace = ""
 		initParams = plugins.InitParams{

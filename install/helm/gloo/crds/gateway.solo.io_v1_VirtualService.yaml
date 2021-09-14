@@ -366,6 +366,11 @@ spec:
                                     type: object
                                   remote:
                                     properties:
+                                      asyncFetch:
+                                        properties:
+                                          fastListener:
+                                            type: boolean
+                                        type: object
                                       cacheDuration:
                                         type: string
                                       upstreamRef:
@@ -435,6 +440,11 @@ spec:
                                         type: object
                                       remote:
                                         properties:
+                                          asyncFetch:
+                                            properties:
+                                              fastListener:
+                                                type: boolean
+                                            type: object
                                           cacheDuration:
                                             type: string
                                           upstreamRef:
@@ -502,6 +512,11 @@ spec:
                                         type: object
                                       remote:
                                         properties:
+                                          asyncFetch:
+                                            properties:
+                                              fastListener:
+                                                type: boolean
+                                            type: object
                                           cacheDuration:
                                             type: string
                                           upstreamRef:
@@ -3269,6 +3284,8 @@ spec:
                                                   x-kubernetes-int-or-string: true
                                                 logicalName:
                                                   type: string
+                                                requestTransformation:
+                                                  type: boolean
                                                 responseTransformation:
                                                   type: boolean
                                               type: object
@@ -4385,6 +4402,8 @@ spec:
                                         x-kubernetes-int-or-string: true
                                       logicalName:
                                         type: string
+                                      requestTransformation:
+                                        type: boolean
                                       responseTransformation:
                                         type: boolean
                                     type: object

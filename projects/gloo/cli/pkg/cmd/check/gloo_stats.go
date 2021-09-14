@@ -1,12 +1,12 @@
 package check
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	v1 "k8s.io/api/apps/v1"
 )
@@ -63,7 +63,7 @@ func RateLimitIsConnected(stats string) bool {
 	return true
 }
 
-func checkXdsMetrics(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) error {
+func checkXdsMetrics(opts *options.Options, glooNamespace string, deployments *v1.DeploymentList) error {
 	errMessage := "Problem while checking for gloo xds errors"
 	if deployments == nil {
 		fmt.Println("Skipping due to an error in checking deployments")
@@ -78,7 +78,7 @@ func checkXdsMetrics(ctx context.Context, glooNamespace string, deployments *v1.
 	localPort := strconv.Itoa(freePort)
 	adminPort := strconv.Itoa(int(defaults.GlooAdminPort))
 	// stats is the string containing all stats from /stats/prometheus
-	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, glooNamespace, "deploy/"+glooDeployment,
+	stats, portFwdCmd, err := cliutil.PortForwardGet(opts.Top.Ctx, glooNamespace, "deploy/"+glooDeployment,
 		localPort, adminPort, false, glooStatsPath)
 	if err != nil {
 		return err
@@ -101,11 +101,11 @@ func checkXdsMetrics(ctx context.Context, glooNamespace string, deployments *v1.
 
 	for _, deployment := range deployments.Items {
 		if deployment.Name == rateLimitDeployment {
-			fmt.Printf("Checking rate limit server... ")
+			printer.AppendCheck("Checking rate limit server... ")
 			if !RateLimitIsConnected(stats) {
 				return fmt.Errorf("rate limit server is not connected")
 			}
-			fmt.Printf("OK\n")
+			printer.AppendStatus("rate limit server", "OK")
 		}
 	}
 
