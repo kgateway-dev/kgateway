@@ -333,6 +333,10 @@ var _ = Describe("Robustness tests", func() {
 		})
 
 		Context("xds-relay", func() {
+			const (
+				xdsRelayReplicas = 5
+				envoyReplicas    = 8
+			)
 			var (
 				xdsRelayDeployment = &appsv1.Deployment{
 					ObjectMeta: metav1.ObjectMeta{
@@ -423,18 +427,24 @@ var _ = Describe("Robustness tests", func() {
 					Skip("skipping test that only passes with xds relay enabled")
 				}
 
-				scaleDeploymentTo(kubeClient, xdsRelayDeployment, 5)
-
 				By("verify that the endpoints have been propagated to Envoy")
 				// we already verify that the initial curl works in the BeforeEach()
+
+				// scale to five replicas, envoy already connected to our initial xds-relay replica so the
+				// other four will have stale caches
+				scaleDeploymentTo(kubeClient, xdsRelayDeployment, xdsRelayReplicas)
 
 				By("scale gloo to zero")
 				scaleDeploymentTo(kubeClient, glooDeployment, 0)
 
 				By("bounce envoy")
 				scaleDeploymentTo(kubeClient, envoyDeployment, 0)
-				scaleDeploymentTo(kubeClient, envoyDeployment, 8) // change to 8 when committing
+				// scale to eight replicas to ensure / maximize likelihood that at least one of the new envoys
+				// will connect to an xds-relay replica with a cold cache. xds-relay should disconnect on the cache
+				// miss and envoy will retry until it hits our xds-relay with the warm cache
+				scaleDeploymentTo(kubeClient, envoyDeployment, envoyReplicas)
 
+				// this asserts that at least one envoy has the correct endpoints
 				By("verify that the endpoints have been propagated to Envoy by xds relay")
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 					Protocol:          "http",
@@ -448,11 +458,13 @@ var _ = Describe("Robustness tests", func() {
 				}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
 
 				envoyPodNames := findPodNamesByLabel(cfg, ctx, defaults2.GlooSystem, "gloo=gateway-proxy")
-				Expect(envoyPodNames).To(HaveLen(8))
+				Expect(envoyPodNames).To(HaveLen(envoyReplicas))
 
 				initialEndpointIPs := endpointIPsForKubeService(kubeClient, appService)
 				Expect(initialEndpointIPs).To(HaveLen(1))
 
+				// this asserts that at all envoys have the correct endpoints.
+				// envoy may need to retry until it hits xds relay with the warm cache, hence the 45s timeout.
 				for _, envoyPodName := range envoyPodNames {
 					fmt.Println(fmt.Sprintf("Checking for endpoints for %v", envoyPodName))
 					Eventually(func() int {
@@ -474,6 +486,7 @@ var _ = Describe("Robustness tests", func() {
 					Not(BeEquivalentTo(initialEndpointIPs)),
 				))
 
+				// this asserts that at least one envoy has the correct endpoints
 				By("verify that the new endpoints have been propagated to envoy by xds relay from gloo")
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 					Protocol:          "http",
@@ -489,11 +502,14 @@ var _ = Describe("Robustness tests", func() {
 				newEndpointIPs := endpointIPsForKubeService(kubeClient, appService)
 				Expect(newEndpointIPs).To(HaveLen(1))
 
+				// this asserts that at all envoys have the correct endpoints.
+				// should be quicker than before, we already connected to the warm xds-relay
+				// (and all xds relays should be able to reconnect to origin regardless).
 				for _, envoyPodName := range envoyPodNames {
 					fmt.Println(fmt.Sprintf("Checking for endpoints for %v", envoyPodName))
 					Eventually(func() int {
 						return findEchoAppClusterEndpoints(envoyPodName, newEndpointIPs[0])
-					}, "15s", "1s").Should(BeNumerically(">", 0)) // should be quicker than before, we already connected
+					}, "15s", "1s").Should(BeNumerically(">", 0))
 				}
 			})
 		})
