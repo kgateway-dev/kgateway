@@ -125,7 +125,7 @@ type Gateway struct {
 	// top level optional configuration for all routes on the gateway
 	Options *v1.ListenerOptions `protobuf:"bytes,5,opt,name=options,proto3" json:"options,omitempty"`
 	// NamespacedStatuses indicates the validation status of this resource.
-	// NamespacedStatuses is read-only by clients, and set by gloo during validation
+	// NamespacedStatuses is read-only by clients, and set by gateway during validation
 	NamespacedStatuses *core.NamespacedStatuses `protobuf:"bytes,14,opt,name=namespaced_statuses,json=namespacedStatuses,proto3" json:"namespaced_statuses,omitempty"`
 	// Metadata contains the object metadata for this resource
 	Metadata *core.Metadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata,omitempty"`

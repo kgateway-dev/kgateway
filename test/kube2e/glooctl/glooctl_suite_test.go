@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/log"
@@ -38,14 +40,13 @@ func TestGlooctl(t *testing.T) {
 var testHelper *helper.SoloTestHelper
 
 var ctx, _ = context.WithCancel(context.Background())
+var namespace = defaults.GlooSystem
 var _ = BeforeSuite(StartTestHelper)
 var _ = AfterSuite(TearDownTestHelper)
 
 func StartTestHelper() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
-
-	namespace := kube2e.GetRandomNamespace("glooctl")
 
 	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 	Expect(err).NotTo(HaveOccurred())

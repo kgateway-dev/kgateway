@@ -243,7 +243,7 @@ func (s *statusSyncer) setStatuses(ctx context.Context, list gloov1.ProxyList) {
 		var status *core.Status
 		var err error
 		if status, err = proxy.GetStatusForNamespace(); err != nil {
-			contextutils.LoggerFrom(ctx).Errorf("Error getting NamespacedStatus: %v", err)
+			contextutils.LoggerFrom(ctx).Errorf("error getting NamespacedStatus: %v", err)
 			continue
 		}
 

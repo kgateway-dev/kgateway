@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/solo-io/go-utils/log"
 
 	"github.com/solo-io/gloo/test/kube2e"
@@ -39,15 +41,13 @@ func TestHelm(t *testing.T) {
 
 var testHelper *helper.SoloTestHelper
 var ctx, cancel = context.WithCancel(context.Background())
-
+var namespace = defaults.GlooSystem
 var _ = BeforeSuite(StartTestHelper)
 var _ = AfterSuite(TearDownTestHelper)
 
 func StartTestHelper() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
-
-	namespace := kube2e.GetRandomNamespace("helm")
 
 	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 	Expect(err).NotTo(HaveOccurred())

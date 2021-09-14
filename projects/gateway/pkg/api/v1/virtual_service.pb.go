@@ -219,7 +219,7 @@ type VirtualService struct {
 	// and can be changed after creating the resource.
 	DisplayName string `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	// NamespacedStatuses indicates the validation status of this resource.
-	// NamespacedStatuses is read-only by clients, and set by gloo during validation
+	// NamespacedStatuses is read-only by clients, and set by gateway during validation
 	NamespacedStatuses *core.NamespacedStatuses `protobuf:"bytes,8,opt,name=namespaced_statuses,json=namespacedStatuses,proto3" json:"namespaced_statuses,omitempty"`
 	// Metadata contains the object metadata for this resource
 	Metadata *core.Metadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata,omitempty"`
