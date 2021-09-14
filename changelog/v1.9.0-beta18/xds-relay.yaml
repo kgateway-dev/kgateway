@@ -1,0 +1,8 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/4839
+    resolvesIssue: false
+    description: >-
+      Add docs and tests to integrate Gloo Edge with the xds-relay project as an xds cache to increase availability
+      in the event of Gloo pod failure as an xds server. Update the helm chart to allow configuring Gloo Edge to look
+      at the xds-relay pods to get xds config rather than from gloo directly.

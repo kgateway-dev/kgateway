@@ -11,6 +11,10 @@ jobs:
     strategy:
       matrix:
         kube-e2e-test-type: ['gateway', 'ingress', 'knative', 'helm', 'gloomtls', 'glooctl', 'eds']
+        xds-relay: [ 'false' ]
+        include:
+          - kube-e2e-test-type: 'gateway'
+            xds-relay: 'true'
     steps:
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.4.1
@@ -63,6 +67,7 @@ jobs:
     - name: Setup test env
       env:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
+        USE_XDS_RELAY: ${{ matrix.xds-relay }}
         CLUSTER_NAME: 'kind'
         CLUSTER_NODE_VERSION: 'v1.17.17@sha256:66f1d0d91a88b8a001811e2f1054af60eef3b669a9a74f9b6db871f2f1eeed00'
         VERSION: 'kind'
