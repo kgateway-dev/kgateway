@@ -9,6 +9,8 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	"github.com/onsi/ginkgo/reporters"
 
 	"github.com/ghodss/yaml"
@@ -39,6 +41,9 @@ func TestHelm(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	err := os.Setenv(statusutils.PodNamespaceEnvName, namespace)
+	Expect(err).NotTo(HaveOccurred())
+
 	version = os.Getenv("TAGGED_VERSION")
 	if !glooVersion.IsReleaseVersion() {
 		gitInfo, err := git.GetGitRefInfo("./")
@@ -51,6 +56,11 @@ var _ = BeforeSuite(func() {
 	pullPolicy = v1.PullIfNotPresent
 	// generate the values.yaml and Chart.yaml files
 	MustMake(".", "-C", "../../", "generate-helm-files", "-B")
+})
+
+var _ = AfterSuite(func() {
+	err := os.Unsetenv(statusutils.PodNamespaceEnvName)
+	Expect(err).NotTo(HaveOccurred())
 })
 
 type renderTestCase struct {
@@ -69,7 +79,7 @@ func runTests(callback func(testCase renderTestCase)) {
 }
 
 const (
-	namespace = "gloo-system"
+	namespace = defaults.GlooSystem
 	chartDir  = "../helm/gloo"
 )
 
@@ -217,7 +227,7 @@ func buildRenderer(namespace string) (*action.Install, error) {
 	renderer.DryRun = true
 	renderer.Namespace = namespace
 	renderer.ReleaseName = "gloo"
-	renderer.Namespace = "gloo-system"
+	renderer.Namespace = defaults.GlooSystem
 	renderer.ClientOnly = true
 
 	return renderer, nil
