@@ -2819,6 +2819,31 @@ var _ = Describe("Translator", func() {
 		Expect(clusterSpecifier).NotTo(BeNil())
 	})
 
+	Context("IgnoreHealthOnHostRemoval is set", func() {
+		BeforeEach(func() {
+			upstream.IgnoreHealthOnHostRemoval = true
+		})
+
+		AfterEach(func() {
+			upstream.IgnoreHealthOnHostRemoval = false
+		})
+
+		It("propagates IgnoreHealthOnHostRemoval", func() {
+			snap, errs, report, err := translator.Translate(params, proxy)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(errs.Validate()).NotTo(HaveOccurred())
+			Expect(snap).NotTo(BeNil())
+			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
+
+			clusters := snap.GetResources(resource.ClusterTypeV3)
+			clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
+			cluster = clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
+			Expect(cluster).NotTo(BeNil())
+			Expect(cluster.IgnoreHealthOnHostRemoval).To(BeTrue())
+		})
+	})
+
 })
 
 // The endpoint Cluster is now the UpstreamToClusterName-<hash of upstream> to facilitate
