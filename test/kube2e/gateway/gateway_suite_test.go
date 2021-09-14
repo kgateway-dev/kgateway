@@ -2,10 +2,14 @@ package gateway_test
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/solo-io/go-utils/testutils/exec"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
@@ -52,9 +56,23 @@ func StartTestHelper() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
+	// install xds-relay if needed
+	if os.Getenv("USE_XDS_RELAY") == "true" {
+		err = installXdsRelay()
+		Expect(err).NotTo(HaveOccurred())
+	}
+
 	// Register additional fail handlers
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
-	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
+
+	var valueOverrideFile string
+	var cleanupFunc func()
+
+	if os.Getenv("USE_XDS_RELAY") == "true" {
+		valueOverrideFile, cleanupFunc = getXdsRelayHelmValuesOverrideFile()
+	} else {
+		valueOverrideFile, cleanupFunc = kube2e.GetHelmValuesOverrideFile()
+	}
 	defer cleanupFunc()
 
 	// Allow skipping of install step for running multiple times
@@ -73,6 +91,55 @@ func StartTestHelper() {
 	// Ensure gloo reaches valid state and doesn't continually resync
 	// we can consider doing the same for leaking go-routines after resyncs
 	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
+}
+
+func installXdsRelay() error {
+	helmRepoAddArgs := strings.Split("helm repo add xds-relay https://storage.googleapis.com/xds-relay-helm", " ")
+	err := exec.RunCommandInput("", testHelper.RootDir, true, helmRepoAddArgs...)
+	if err != nil {
+		return err
+	}
+
+	helmInstallArgs := strings.Split("helm install xdsrelay xds-relay/xds-relay --version 0.0.3 --set bootstrap.logging.level=DEBUG --set deployment.replicas=1", " ")
+
+	err = exec.RunCommandInput("", testHelper.RootDir, true, helmInstallArgs...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func getXdsRelayHelmValuesOverrideFile() (filename string, cleanup func()) {
+	values, err := ioutil.TempFile("", "values-*.yaml")
+	Expect(err).NotTo(HaveOccurred())
+
+	// disabling usage statistics is not important to the functionality of the tests,
+	// but we don't want to report usage in CI since we only care about how our users are actually using Gloo.
+	// install to a single namespace so we can run multiple invocations of the regression tests against the
+	// same cluster in CI.
+	_, err = values.Write([]byte(`
+global:
+  image:
+    pullPolicy: IfNotPresent
+  glooRbac:
+    namespaced: true
+    nameSuffix: e2e-test-rbac-suffix
+settings:
+  singleNamespace: true
+  create: true
+  replaceInvalidRoutes: true
+gatewayProxies:
+  gatewayProxy:
+    healthyPanicThreshold: 0
+    xdsServiceAddress: xds-relay.default.svc.cluster.local
+    xdsServicePort: 9991
+`))
+	Expect(err).NotTo(HaveOccurred())
+
+	err = values.Close()
+	Expect(err).NotTo(HaveOccurred())
+
+	return values.Name(), func() { _ = os.Remove(values.Name()) }
 }
 
 func TearDownTestHelper() {
