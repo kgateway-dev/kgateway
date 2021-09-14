@@ -476,6 +476,8 @@
 |gatewayProxies.NAME.istioMetaMeshId|string||ISTIO_META_MESH_ID Environment Variable. Defaults to "cluster.local"|
 |gatewayProxies.NAME.istioMetaClusterId|string||ISTIO_META_CLUSTER_ID Environment Variable. Defaults to "Kubernetes"|
 |gatewayProxies.NAME.logLevel|string||Level at which the pod should log. Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info|
+|gatewayProxies.NAME.xdsServiceAddress|string||The k8s service name for the xds server. Defaults to gloo.|
+|gatewayProxies.NAME.xdsServicePort|uint32||The k8s service port for the xds server. Defaults to the value from .Values.gloo.deployment.xdsPort, but can be overridden to use, for example, xds-relay.|
 |gatewayProxies.NAME.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.kind.deployment.replicas|int|1|number of instances to deploy|
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].name|string|||
@@ -640,6 +642,8 @@
 |gatewayProxies.gatewayProxy.istioMetaMeshId|string||ISTIO_META_MESH_ID Environment Variable. Defaults to "cluster.local"|
 |gatewayProxies.gatewayProxy.istioMetaClusterId|string||ISTIO_META_CLUSTER_ID Environment Variable. Defaults to "Kubernetes"|
 |gatewayProxies.gatewayProxy.logLevel|string||Level at which the pod should log. Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info|
+|gatewayProxies.gatewayProxy.xdsServiceAddress|string||The k8s service name for the xds server. Defaults to gloo.|
+|gatewayProxies.gatewayProxy.xdsServicePort|uint32||The k8s service port for the xds server. Defaults to the value from .Values.gloo.deployment.xdsPort, but can be overridden to use, for example, xds-relay.|
 |gatewayProxies.gatewayProxy.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |ingress.enabled|bool|false||
 |ingress.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
