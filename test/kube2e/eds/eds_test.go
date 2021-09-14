@@ -151,6 +151,7 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 		}, "3m", "5s").Should(BeNil()) // 3 min to be safe, usually repros in ~40s when running locally without REST EDS
 	}
 
+	// note: this test fails for xds relay; xds relay does not currently support rest
 	Context("rest EDS", func() {
 
 		BeforeEach(func() {
