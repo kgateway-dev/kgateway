@@ -194,7 +194,9 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 	snapshotClone := v.latestSnapshot.Clone()
 
 	if v.latestSnapshotErr != nil {
-		utils2.MeasureZero(ctx, mValidConfig)
+		if !dryRun {
+			utils2.MeasureZero(ctx, mValidConfig)
+		}
 		contextutils.LoggerFrom(ctx).Errorw(InvalidSnapshotErrMessage, zap.Error(v.latestSnapshotErr))
 		// allow writes if storage is already broken
 		return nil, nil
@@ -268,12 +270,16 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 
 	if errs != nil {
 		contextutils.LoggerFrom(ctx).Debugf("Rejected %T %v: %v", resource, ref, errs)
-		utils2.MeasureZero(ctx, mValidConfig)
+		if !dryRun {
+			utils2.MeasureZero(ctx, mValidConfig)
+		}
 		return proxyReports, errors.Wrapf(errs, "validating %T %v", resource, ref)
 	}
 
 	contextutils.LoggerFrom(ctx).Debugf("Accepted %T %v", resource, ref)
-	utils2.MeasureOne(ctx, mValidConfig)
+	if !dryRun {
+		utils2.MeasureOne(ctx, mValidConfig)
+	}
 
 	if !dryRun {
 		// update internal snapshot to handle race where a lot of resources may be applied at once, before syncer updates
@@ -307,7 +313,7 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 
 	if dryRun {
 		// to validate the entire list of changes against one another, each item was applied to the latestSnapshot
-		// if this is a dry run, latestSnapshot needs to be reset back to it's original value without any of the changes
+		// if this is a dry run, latestSnapshot needs to be reset back to its original value without any of the changes
 		v.latestSnapshot = &originalSnapshot
 	}
 

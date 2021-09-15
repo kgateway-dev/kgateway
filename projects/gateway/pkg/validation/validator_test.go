@@ -442,6 +442,30 @@ var _ = Describe("Validator", func() {
 				Expect(rows).NotTo(BeEmpty())
 				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(1))
 			})
+			It("does not affect metrics when dryRun is true", func() {
+				vc.validate = failProxy
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				// the successful Sync should cause the value of 1 to be written
+				rows, err := view.RetrieveData("validation.gateway.solo.io/valid_config")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(rows).NotTo(BeEmpty())
+				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(1))
+
+				_, err = v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], true)
+				Expect(err).To(HaveOccurred())
+
+				// the subsequent ValidateVirtualService (which failed) shouldn't affect the value,
+				// since dryRun was true
+				rows, err = view.RetrieveData("validation.gateway.solo.io/valid_config")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(rows).NotTo(BeEmpty())
+				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(1))
+			})
 		})
 		Context("dry-run", func() {
 			It("accepts the vs and rejects the second", func() {
