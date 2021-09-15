@@ -23,11 +23,16 @@ webhooks:
       namespace: {{ .Release.Namespace }}
       path: "/validation"
     caBundle: "" # update manually or use certgen job or cert-manager's ca-injector
+  matchPolicy: Exact
   rules:
   - operations: [ "CREATE", "UPDATE", "DELETE" ]
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
     resources: ["*"]
+  - operations: [ "CREATE", "UPDATE", "DELETE" ]
+    apiGroups: ["gloo.solo.io"]
+    apiVersions: ["v1"]
+    resources: ["upstreams"] {{/* TODO(https://github.com/solo-io/gloo/issues/2797): Extend to all gloo resources */}}
   sideEffects: None
 {{- if .Values.gateway.validation.failurePolicy }}
   failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
