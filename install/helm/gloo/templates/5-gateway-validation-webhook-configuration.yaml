@@ -32,7 +32,7 @@ webhooks:
   - operations: [ "CREATE", "UPDATE", "DELETE" ]
     apiGroups: ["gloo.solo.io"]
     apiVersions: ["v1"]
-    resources: ["upstreams"] {{/* TODO(https://github.com/solo-io/gloo/issues/2797): Extend to all gloo resources */}}
+    resources: ["upstreams"]{{/* TODO(https://github.com/solo-io/gloo/issues/2797): Extend to all gloo resources */}}
   sideEffects: None
 {{- if .Values.gateway.validation.failurePolicy }}
   failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
