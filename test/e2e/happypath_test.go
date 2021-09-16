@@ -519,7 +519,7 @@ var _ = Describe("Happy path", func() {
 					})
 
 					It("correctly routes requests to a service destination", func() {
-						svcRef := skkubeutils.FromKubeMeta(svc.ObjectMeta).Ref()
+						svcRef := skkubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref()
 						svcPort := svc.Spec.Ports[0].Port
 						proxy := getTrivialProxyForService(namespace, envoyPort, svcRef, uint32(svcPort))
 

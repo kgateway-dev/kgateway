@@ -77,7 +77,7 @@ func (t *TLSSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 					RootCa:     string(secret.Data[kubev1.ServiceAccountRootCAKey]),
 				},
 			},
-			Metadata: kubeutils.FromKubeMeta(secret.ObjectMeta),
+			Metadata: kubeutils.FromKubeMeta(secret.ObjectMeta, true),
 		}
 		if glooSecret.GetMetadata().GetAnnotations() == nil {
 			glooSecret.GetMetadata().Annotations = make(map[string]string)

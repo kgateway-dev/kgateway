@@ -33,7 +33,7 @@ func (c *converter) FromKubeConfigMap(_ context.Context, rc *skcfgmap.ResourceCl
 func KubeConfigMapToArtifact(configMap *kubev1.ConfigMap) *v1.Artifact {
 	artifact := new(v1.Artifact)
 	artifact.Data = configMap.Data
-	artifact.SetMetadata(skkubeutils.FromKubeMeta(configMap.ObjectMeta))
+	artifact.SetMetadata(skkubeutils.FromKubeMeta(configMap.ObjectMeta, true))
 
 	return artifact
 }

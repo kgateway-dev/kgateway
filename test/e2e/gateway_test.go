@@ -162,7 +162,7 @@ var _ = Describe("Gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Create a virtual service with a route pointing to the above service
-				vs := getTrivialVirtualServiceForService("gloo-system", kubeutils.FromKubeMeta(svc.ObjectMeta).Ref(), uint32(svc.Spec.Ports[0].Port))
+				vs := getTrivialVirtualServiceForService("gloo-system", kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
 				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
@@ -213,7 +213,7 @@ var _ = Describe("Gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Create a trivial, working service with a route pointing to the above service
-				vs1 := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta).Ref(), uint32(svc.Spec.Ports[0].Port))
+				vs1 := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
 				vs1.VirtualHost.Domains = []string{"vs1"}
 				vs1.Metadata.Name = "vs1"
 				_, err = testClients.VirtualServiceClient.Write(vs1, clients.WriteOpts{})
@@ -230,7 +230,7 @@ var _ = Describe("Gateway", func() {
 				}, "60s", "2s").Should(BeTrue(), "first virtualservice should be accepted")
 
 				// Create a second vs with a bad authconfig
-				vs2 := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta).Ref(), uint32(svc.Spec.Ports[0].Port))
+				vs2 := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
 				vs2.VirtualHost.Domains = []string{"vs2"}
 				vs2.Metadata.Name = "vs2"
 				vs2.VirtualHost.Options = &gloov1.VirtualHostOptions{
@@ -277,7 +277,7 @@ var _ = Describe("Gateway", func() {
 				}, "10s", "0.1s").Should(BeTrue(), "second virtualservice should not end up in the proxy (bad config)")
 
 				// Create a third trivial vs with valid config
-				vs3 := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta).Ref(), uint32(svc.Spec.Ports[0].Port))
+				vs3 := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
 				vs3.Metadata.Name = "vs3"
 				vs3.VirtualHost.Domains = []string{"vs3"}
 				_, err = testClients.VirtualServiceClient.Write(vs3, clients.WriteOpts{})
