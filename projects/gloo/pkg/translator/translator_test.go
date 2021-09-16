@@ -2821,7 +2821,7 @@ var _ = Describe("Translator", func() {
 		Expect(clusterSpecifier).NotTo(BeNil())
 	})
 
-	FContext("IgnoreHealthOnHostRemoval", func() {
+	Context("IgnoreHealthOnHostRemoval", func() {
 		table.DescribeTable("propagates IgnoreHealthOnHostRemoval to Cluster", func(upstreamValue *wrappers.BoolValue, expectedClusterValue bool) {
 			// Set the value
 			upstream.IgnoreHealthOnHostRemoval = upstreamValue
