@@ -4,16 +4,9 @@ weight: 20
 description: Set up Gloo Edge to route to TLS-encrypted services
 ---
 
-## Configuring Upstream TLS for Gloo Edge
+You can configure Gloo Edge to use TLS or mTLS when connecting to upstream services.
 
-We can configure Gloo Edge to use client-side TLS
-when connecting to upstream services.
-
-## Client TLS
-
-Gloo Edge supports client-side TLS where the proxy (Envoy) presents a certificate to upstream servers when initiating a connection on behalf of a downstream client, encrypting all traffic between the proxy and the upstream.
-
-### Prepare sample environment
+## Prepare sample environment
 
 Let's deploy a sample application and configure a route to it. We will expect the route to return errors because the sample application is serving HTTPS, not HTTP.
 
@@ -84,24 +77,17 @@ glooctl add route \
     --dest-name default-example-tls-server-8080
 ```
 
-### Adding Client SSL to Gloo Edge
 
-Let's see what happens when we try to hit our route without adding client tls config to Gloo Edge:
+## One-way TLS
+
+Envoy will connect to an upstream server over HTTPS. 
+
+In this case, the `Upstream` CRs require a `sslConfig` block to create an HTTPS request. Otherwise, Envoy will try plain text HTTP.
 
 
-```bash
-curl $(glooctl proxy url)/hello
-```
+### Untrusted mode
 
-The response should be an error:
-
-```bash
-Client sent an HTTP request to an HTTPS server.
-```
-
-This response indicates Envoy attempted to use HTTP to communicate to our HTTPS service. Let's fix this by adding the required certificates to the Upstream.
-
-The certificates added to the Upstream should match those required by the server.
+By default, Envoy will not verify the upstream server certificate. But you still have to provide Gloo with a TLS secret to enable HTTPS (you need the two default fields named `tls.key` and `tls.crt`). 
 
 The certificates used for this service are hard-coded for testing purposes. Let's create local copies of them:
 
@@ -232,7 +218,7 @@ status:
   state: 1
 {{< /highlight >}}
 
-### Try the request again
+#### Try the request again
 
 
 ```bash
@@ -247,7 +233,67 @@ Hello, world!
 
 Great! Now we've seen how Gloo Edge can be configured to encrypt traffic sent to a backend service which is configured to serve TLS.
 
+
+
+### Trusted mode
+
+If you want Envoy to verify the upstream server certificate, there are two ways:
+- using a standard **TLS** secret, as shown above, with an additional field named `ca.crt`. Only this `ca.crt` field will be transmitted from Gloo to Envoy, as part of trusted CAs.
+- using an Opaque secret created with the following command:
+
+```bash
+glooctl create secret tls --rootca=...
+```
+
+
+## Two-way TLS (mTLS)
+
+During the TLS handshake, the upstream server will ask Envoy to present a client certificate.
+
+### Client certificate without a trust store
+
+There are two ways:
+- using a standard **TLS** secret with the `tls.key` and `tls.crt` fields
+- using an Opaque secret created with the following command:
+
+```bash
+glooctl create secret tls --privatekey ... --certchain ...
+```
+
+### Client certificate with a trust store
+
+There are two ways:
+- using a standard **TLS** secret with the `tls.key`, `tls.crt` and also `ca.crt` fields
+- using an Opaque secret created with the following command: 
+
+```bash
+glooctl create secret tls --rootca=...
+```
+
+{{% notice warning %}}
+Do not use a **generic** secret with these three keys (`tls.crt`, `tls.key`, `ca.crt`) because Gloo does not recognize generic secrets in this case. Instead, you must create a **tls** secret from an existing `.PEM` encoded public and private key pair.
+{{% /notice %}}
+
+
+Gloo Edge supports client-side TLS where the proxy (Envoy) presents a certificate to upstream servers when initiating a connection on behalf of a downstream client, encrypting all traffic between the proxy and the upstream.
+
+
+
 ## Troubleshooting
+
+### Secret not found
+Sometimes, the Gloo control plane might not process and send the `sslConfig` to the Envoy data plane. To check if a sync issue happened, review the Gloo pod logs.
+
+```bash
+kubectl -n gloo-system logs -l gloo=gloo
+```
+
+Example of an issue:
+```json
+{"level":"warn","ts":1631524528.8111176,"logger":"gloo-ee.v1.event_loop.setup.v1.event_loop.envoyTranslatorSyncer","caller":"syncer/envoy_translator_syncer.go:140","msg":"proxy gloo-system.gateway-proxy was rejected due to invalid config: 2 errors occurred:\n\t* invalid resource gloo-system.default-server-mtls\n\t* SSL secret not found: list did not find secret default.client-mtls\n\n\nAttempting to update only EDS information","version":"1.8.7"}
+```
+
+To see which `sslConfig` is actually used by Envoy, run an [Envoy config dump]({{< versioned_link_path fromRoot="/operations/debugging_gloo/#dumping-envoy-configuration" >}}).
 
 ### Mismatched Ciphers
 
