@@ -327,9 +327,13 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 		dryRun = *req.DryRun
 	}
 
-	proxyReports, validationErrs := wh.validate(ctx, gvk, ref, req.Object.Raw, isDelete, dryRun)
+	reports, validationErrs := wh.validate(ctx, gvk, ref, req.Object.Raw, isDelete, dryRun)
+	if reports == nil {
+		reports = &validation.Reports{}
+	}
+	proxyReports := reports.ProxyReports
 	var proxies []*gloov1.Proxy
-	for proxy, _ := range proxyReports {
+	for proxy, _ := range *proxyReports {
 		proxies = append(proxies, proxy)
 	}
 
@@ -392,7 +396,7 @@ func (wh *gatewayValidationWebhook) validate(
 	ref *core.ResourceRef,
 	rawJson []byte,
 	isDelete, dryRun bool,
-) (validation.ProxyReports, *multierror.Error) {
+) (*validation.Reports, *multierror.Error) {
 
 	switch gvk {
 	case ListGVK:
@@ -405,42 +409,50 @@ func (wh *gatewayValidationWebhook) validate(
 		return wh.validateGateway(ctx, rawJson, dryRun)
 	case gwv1.VirtualServiceGVK:
 		if isDelete {
-			return validation.ProxyReports{}, &multierror.Error{Errors: []error{wh.validator.ValidateDeleteVirtualService(ctx, ref, dryRun)}}
+			return &validation.Reports{}, &multierror.Error{Errors: []error{wh.validator.ValidateDeleteVirtualService(ctx, ref, dryRun)}}
 		} else {
 			return wh.validateVirtualService(ctx, rawJson, dryRun)
 		}
 	case gwv1.RouteTableGVK:
 		if isDelete {
-			return validation.ProxyReports{}, &multierror.Error{Errors: []error{wh.validator.ValidateDeleteRouteTable(ctx, ref, dryRun)}}
+			return &validation.Reports{}, &multierror.Error{Errors: []error{wh.validator.ValidateDeleteRouteTable(ctx, ref, dryRun)}}
 		} else {
 			return wh.validateRouteTable(ctx, rawJson, dryRun)
 		}
+	// TODO(mitchaman):
+	case gloov1.UpstreamGVK:
+		contextutils.LoggerFrom(ctx).Infof("mitchaman - Upstream GVK: %s", rawJson)
+		if isDelete {
+			return &validation.Reports{}, &multierror.Error{Errors: []error{wh.validator.ValidateDeleteUpstream(ctx, ref, dryRun)}}
+		} else {
+			return wh.validateUpstream(ctx, rawJson, dryRun)
+		}
 	}
-	return validation.ProxyReports{}, nil
+	return &validation.Reports{}, nil
 
 }
 
-func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []byte, dryRun bool) (validation.ProxyReports, *multierror.Error) {
+func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []byte, dryRun bool) (*validation.Reports, *multierror.Error) {
 	var (
-		ul           unstructured.UnstructuredList
-		proxyReports validation.ProxyReports
-		errs         *multierror.Error
+		ul      unstructured.UnstructuredList
+		reports *validation.Reports
+		errs    *multierror.Error
 	)
 
 	if err := ul.UnmarshalJSON(rawJson); err != nil {
 		return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
 	}
-	if proxyReports, errs = wh.validator.ValidateList(ctx, &ul, dryRun); errs != nil {
-		return proxyReports, errs
+	if reports, errs = wh.validator.ValidateList(ctx, &ul, dryRun); errs != nil {
+		return reports, errs
 	}
-	return proxyReports, nil
+	return reports, nil
 }
 
-func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, rawJson []byte, dryRun bool) (validation.ProxyReports, *multierror.Error) {
+func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, rawJson []byte, dryRun bool) (*validation.Reports, *multierror.Error) {
 	var (
-		gw           gwv1.Gateway
-		proxyReports validation.ProxyReports
-		err          error
+		gw      gwv1.Gateway
+		reports *validation.Reports
+		err     error
 	)
 	if err := protoutils.UnmarshalResource(rawJson, &gw); err != nil {
 		return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
@@ -448,17 +460,17 @@ func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, rawJson
 	if skipValidationCheck(gw.GetMetadata().GetAnnotations()) {
 		return nil, nil
 	}
-	if proxyReports, err = wh.validator.ValidateGateway(ctx, &gw, dryRun); err != nil {
-		return proxyReports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", gw)}}
+	if reports, err = wh.validator.ValidateGateway(ctx, &gw, dryRun); err != nil {
+		return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", gw)}}
 	}
-	return proxyReports, nil
+	return reports, nil
 }
 
-func (wh *gatewayValidationWebhook) validateVirtualService(ctx context.Context, rawJson []byte, dryRun bool) (validation.ProxyReports, *multierror.Error) {
+func (wh *gatewayValidationWebhook) validateVirtualService(ctx context.Context, rawJson []byte, dryRun bool) (*validation.Reports, *multierror.Error) {
 	var (
-		vs           gwv1.VirtualService
-		proxyReports validation.ProxyReports
-		err          error
+		vs      gwv1.VirtualService
+		reports *validation.Reports
+		err     error
 	)
 	if err := protoutils.UnmarshalResource(rawJson, &vs); err != nil {
 		return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
@@ -466,17 +478,17 @@ func (wh *gatewayValidationWebhook) validateVirtualService(ctx context.Context, 
 	if skipValidationCheck(vs.GetMetadata().GetAnnotations()) {
 		return nil, nil
 	}
-	if proxyReports, err = wh.validator.ValidateVirtualService(ctx, &vs, dryRun); err != nil {
-		return proxyReports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", vs)}}
+	if reports, err = wh.validator.ValidateVirtualService(ctx, &vs, dryRun); err != nil {
+		return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", vs)}}
 	}
-	return proxyReports, nil
+	return reports, nil
 }
 
-func (wh *gatewayValidationWebhook) validateRouteTable(ctx context.Context, rawJson []byte, dryRun bool) (validation.ProxyReports, *multierror.Error) {
+func (wh *gatewayValidationWebhook) validateRouteTable(ctx context.Context, rawJson []byte, dryRun bool) (*validation.Reports, *multierror.Error) {
 	var (
-		rt           gwv1.RouteTable
-		proxyReports validation.ProxyReports
-		err          error
+		rt      gwv1.RouteTable
+		reports *validation.Reports
+		err     error
 	)
 	if err := protoutils.UnmarshalResource(rawJson, &rt); err != nil {
 		return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
@@ -484,8 +496,26 @@ func (wh *gatewayValidationWebhook) validateRouteTable(ctx context.Context, rawJ
 	if skipValidationCheck(rt.GetMetadata().GetAnnotations()) {
 		return nil, nil
 	}
-	if proxyReports, err = wh.validator.ValidateRouteTable(ctx, &rt, dryRun); err != nil {
-		return proxyReports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", rt)}}
+	if reports, err = wh.validator.ValidateRouteTable(ctx, &rt, dryRun); err != nil {
+		return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", rt)}}
 	}
-	return proxyReports, nil
+	return reports, nil
+}
+
+func (wh *gatewayValidationWebhook) validateUpstream(ctx context.Context, rawJson []byte, dryRun bool) (*validation.Reports, *multierror.Error) {
+	var (
+		us      gloov1.Upstream
+		reports *validation.Reports
+		err     error
+	)
+	if err := protoutils.UnmarshalResource(rawJson, &us); err != nil {
+		return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
+	}
+	if skipValidationCheck(us.GetMetadata().GetAnnotations()) {
+		return nil, nil
+	}
+	if reports, err = wh.validator.ValidateUpstream(ctx, &us, dryRun); err != nil {
+		return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", us)}}
+	}
+	return reports, nil
 }

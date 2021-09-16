@@ -176,8 +176,20 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 
 	logger := contextutils.LoggerFrom(ctx)
 
+	// TODO(mitchaman): Clean up logging
+	numProxy := 0
+	if req.GetProxy() != nil {
+		numProxy = 1
+	}
+	logger.Infof("mitchaman - received validation request with %d proxy and %d upstream(s)", numProxy, len(req.GetUpstreams()))
+	if req.GetUpstreams() != nil {
+		for _, us := range req.GetUpstreams() {
+			logger.Infof("mitchaman - Upstream validation: %s", us.String())
+		}
+	}
 	logger.Infof("received proxy validation request")
-	xdsSnapshot, resourceReports, report, err := s.translator.Translate(params, req.GetProxy())
+
+	xdsSnapshot, resourceReports, report, err := s.translator.Translate(params, req.GetProxy(), req.GetUpstreams())
 	if err != nil {
 		logger.Errorw("failed to validate proxy", zap.Error(err))
 		return nil, err

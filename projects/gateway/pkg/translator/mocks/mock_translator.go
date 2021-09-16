@@ -38,12 +38,13 @@ func (m *MockTranslator) EXPECT() *MockTranslatorMockRecorder {
 }
 
 // Translate mocks base method
-func (m *MockTranslator) Translate(arg0 context.Context, arg1, arg2 string, arg3 *v1.ApiSnapshot, arg4 v1.GatewayList) (*v10.Proxy, reporter.ResourceReports) {
+func (m *MockTranslator) Translate(arg0 context.Context, arg1, arg2 string, arg3 *v1.ApiSnapshot, arg4 v1.GatewayList) (*v10.Proxy, []*v10.Upstream, reporter.ResourceReports) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Translate", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(*v10.Proxy)
-	ret1, _ := ret[1].(reporter.ResourceReports)
-	return ret0, ret1
+	ret1, _ := ret[1].([]*v10.Upstream)
+	ret2, _ := ret[2].(reporter.ResourceReports)
+	return ret0, ret1, ret2
 }
 
 // Translate indicates an expected call of Translate
