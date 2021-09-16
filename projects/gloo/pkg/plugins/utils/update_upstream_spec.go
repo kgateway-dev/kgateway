@@ -52,4 +52,6 @@ func UpdateUpstream(original, desired *v1.Upstream) {
 		}
 	}
 
+	desired.IgnoreHealthOnHostRemoval = original.GetIgnoreHealthOnHostRemoval()
+
 }
