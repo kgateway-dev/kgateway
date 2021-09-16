@@ -580,6 +580,7 @@ spec:
               nullable: true
               type: string
             ignoreHealthOnHostRemoval:
+              nullable: true
               type: boolean
             initialConnectionWindowSize:
               maximum: 4294967295
