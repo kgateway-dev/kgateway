@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5128
+    description: Fix the validation_gateway_solo_io_valid_config metric to accurately indicate validation errors.
