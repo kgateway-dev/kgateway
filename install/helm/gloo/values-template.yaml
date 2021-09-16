@@ -133,6 +133,10 @@ gatewayProxies:
     loopBackAddress: 127.0.0.1
     globalDownstreamMaxConnections: 250000
     healthyPanicThreshold: 50
+    # intentionally unset, so we default to the gloo service address. if set, this overrides the derived gloo service address
+    # xdsServiceAddress: xds-relay.default.svc.cluster.local
+    # intentionally unset, so we default to the gloo service port. if set, this overrides .Values.gloo.deployment.xdsPort
+    # xdsServicePort: 9991
 accessLogger:
   enabled: false
   port: 8083

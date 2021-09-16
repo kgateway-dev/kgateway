@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/onsi/ginkgo/extensions/table"
+
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -2817,6 +2819,29 @@ var _ = Describe("Translator", func() {
 		routeConfig := routesProto.ResourceProto().(*envoy_config_route_v3.RouteConfiguration)
 		clusterSpecifier := routeConfig.VirtualHosts[0].Routes[0].GetRoute().GetClusterSpecifier()
 		Expect(clusterSpecifier).NotTo(BeNil())
+	})
+
+	Context("IgnoreHealthOnHostRemoval", func() {
+		table.DescribeTable("propagates IgnoreHealthOnHostRemoval to Cluster", func(upstreamValue *wrappers.BoolValue, expectedClusterValue bool) {
+			// Set the value
+			upstream.IgnoreHealthOnHostRemoval = upstreamValue
+
+			snap, errs, report, err := translator.Translate(params, proxy)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(errs.Validate()).NotTo(HaveOccurred())
+			Expect(snap).NotTo(BeNil())
+			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
+
+			clusters := snap.GetResources(resource.ClusterTypeV3)
+			clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
+			cluster = clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
+			Expect(cluster).NotTo(BeNil())
+			Expect(cluster.IgnoreHealthOnHostRemoval).To(Equal(expectedClusterValue))
+		},
+			table.Entry("When value=true", &wrappers.BoolValue{Value: true}, true),
+			table.Entry("When value=false", &wrappers.BoolValue{Value: false}, false),
+			table.Entry("When value=nil", nil, false))
 	})
 
 })
