@@ -133,11 +133,9 @@ func (v *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	v.latestSnapshot = &snapCopy
 
 	if errs != nil {
-		utils2.MeasureZero(ctx, mValidConfig)
 		return errors.Wrapf(errs, InvalidSnapshotErrMessage)
 	}
 
-	utils2.MeasureOne(ctx, mValidConfig)
 	return nil
 }
 
