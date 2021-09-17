@@ -46,7 +46,7 @@ ifeq ($(CREATE_TEST_ASSETS), "true")
 else
   ifeq ($(RELEASE), "true")
   else
-    CREATE_ASSETS := "false"
+    CREATE_ASSETS = "false"
   endif
 endif
 
