@@ -46,7 +46,7 @@ ifeq ($(CREATE_TEST_ASSETS), "true")
 else
   ifeq ($(RELEASE), "true")
   else
-    CREATE_ASSETS = "false"
+    CREATE_ASSETS := "false"
   endif
 endif
 
@@ -613,7 +613,7 @@ docker-build: discovery-docker gateway-docker gloo-docker \
 # docker-push is intended to be run by CI
 .PHONY: docker-push
 docker-push: $(DOCKER_IMAGES)
-ifeq ($(CREATE_ASSETS), "true")
+ifeq ($(RELEASE), "true")
 	docker push $(IMAGE_REPO)/gateway:$(VERSION) && \
 	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
@@ -626,7 +626,7 @@ endif
 
 .PHONY: docker-push-extended
 docker-push-extended:
-ifeq ($(CREATE_ASSETS), "true")
+ifeq ($(RELEASE), "true")
 	ci/extended-docker/extended-docker.sh
 endif
 
