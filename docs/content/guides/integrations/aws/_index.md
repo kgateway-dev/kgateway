@@ -35,6 +35,10 @@ While the _legacy_ [in-tree](https://github.com/kubernetes/kubernetes/blob/maste
 
 The [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/annotations/) ([source code](https://github.com/kubernetes-sigs/aws-load-balancer-controller)) has a deeper integretion with both NLBs and ALBs. Once [installed](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/deploy/installation/), you will be able to leverage advanced annotations such as health checks, access logs and more. 
 
+{{% notice note %}}
+Today, it's not clear for how long AWS will keep supporting the legacy cloud controller: https://stackoverflow.com/questions/61632540/is-classic-load-balancer-going-to-be-discontinued-by-aws
+{{% /notice %}}
+
 ### [Legacy] Side notes on the in-tree controller
 
 In an AWS EKS cluster, whenever any Kubernetes Service of type `LoadBalancer` deploys, AWS will, by default, create an AWS Classic Load Balancer paired with that Kubernetes Service. AWS will also automatically create Load Balancer Health Checks against the first port listed in that Service. You can influence some of how AWS creates a Load Balancer for Kubernetes Services by adding [AWS specific annotations](https://v1-17.docs.kubernetes.io//docs/concepts/cluster-administration/cloud-providers/#aws) to your `LoadBalancer` type Service.
