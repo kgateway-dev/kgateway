@@ -42,7 +42,6 @@ var _ = Describe("TranslatorSyncer", func() {
 
 		curSyncer := newStatusSyncer(defaults.GlooSystem, fakeWatcher, mockReporter, statusClient)
 		syncer = &curSyncer
-
 	})
 
 	getMapOnlyKey := func(r map[string]reporter.Report) string {

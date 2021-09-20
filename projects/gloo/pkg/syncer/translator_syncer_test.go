@@ -183,7 +183,7 @@ var _ = Describe("Empty cache", func() {
 		snapshot       envoycache.Snapshot
 		proxyName      = "proxy-name"
 		ns             = "any-ns"
-		ref            *core.ResourceRef
+		ref            = "syncer-test"
 		statusClient   reporter.StatusClient
 	)
 
@@ -214,7 +214,7 @@ var _ = Describe("Empty cache", func() {
 		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(ns)
 		statusClient = statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
 
-		rep := reporter.NewReporter("syncer-test", statusClient, proxyClient.BaseClient(), upstreamClient)
+		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
 
@@ -284,7 +284,7 @@ var _ = Describe("Empty cache", func() {
 		Expect(statusClient.GetStatus(proxies[0])).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
-			ReportedBy: ref.GetName(),
+			ReportedBy: ref,
 		}))
 	})
 })
@@ -302,7 +302,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		proxyName      = "proxy-name"
 		upstreamName   = "upstream-name"
 		ns             = "any-ns"
-		ref            *core.ResourceRef
+		ref            = "syncer-test"
 		statusClient   reporter.StatusClient
 	)
 
@@ -313,7 +313,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 			Expect(statusClient.GetStatus(proxy)).To(Equal(&core.Status{
 				State:      2,
 				Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
-				ReportedBy: ref.GetName(),
+				ReportedBy: ref,
 			}))
 
 		}
@@ -375,7 +375,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(ns)
 		statusClient = statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
 
-		rep := reporter.NewReporter("syncer-test", statusClient, proxyClient.BaseClient(), usClient)
+		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), usClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
 		syncer = NewTranslatorSyncer(&mockTranslator{true, true, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
@@ -405,7 +405,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		Expect(statusClient.GetStatus(proxies[0])).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
-			ReportedBy: ref.GetName(),
+			ReportedBy: ref,
 		}))
 
 		// NilSnapshot is always consistent, so snapshot will always be set as part of endpoints update
@@ -430,7 +430,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		Expect(statusClient.GetStatus(upstreams[0])).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "2 errors occurred:\n\t* upstream is bad - determined by proxy-name1\n\t* upstream is bad - determined by proxy-name2\n\n",
-			ReportedBy: ref.GetName(),
+			ReportedBy: ref,
 		}))
 
 		Expect(xdsCache.Called).To(BeTrue())
@@ -449,7 +449,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		Expect(statusClient.GetStatus(upstreams[0])).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "1 error occurred:\n\t* generic upstream error\n\n",
-			ReportedBy: ref.GetName(),
+			ReportedBy: ref,
 		}))
 
 		Expect(xdsCache.Called).To(BeTrue())

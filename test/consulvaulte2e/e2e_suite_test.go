@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 )
 
@@ -19,8 +18,6 @@ var (
 	envoyFactory  *services.EnvoyFactory
 	consulFactory *services.ConsulFactory
 	vaultFactory  *services.VaultFactory
-
-	namespace = "consul-vault-e2e-test-ns"
 )
 
 var _ = BeforeSuite(func() {
@@ -31,18 +28,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	vaultFactory, err = services.NewVaultFactory()
 	Expect(err).NotTo(HaveOccurred())
-
-	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
-	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {
 	_ = envoyFactory.Clean()
 	_ = consulFactory.Clean()
 	_ = vaultFactory.Clean()
-
-	err := os.Unsetenv(statusutils.PodNamespaceEnvName)
-	Expect(err).NotTo(HaveOccurred())
 })
 
 func TestE2e(t *testing.T) {

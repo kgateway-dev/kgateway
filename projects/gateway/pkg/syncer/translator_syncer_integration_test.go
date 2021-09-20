@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -26,6 +27,7 @@ import (
 )
 
 var _ = Describe("TranslatorSyncer integration test", func() {
+
 	var (
 		ts                       v1.ApiSyncer
 		baseVirtualServiceClient v1.VirtualServiceClient
@@ -37,6 +39,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		ctx    context.Context
 		cancel context.CancelFunc
 	)
+
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 		memFactory := &factory.MemoryResourceClientFactory{
@@ -136,12 +139,13 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 	})
 
 	EventuallyProxyStatusInVs := func() gomega.AsyncAssertion {
-		return EventuallyWithOffset(1, func() (core.Status_State, error) {
+		return Eventually(func() (core.Status_State, error) {
 			newvs, err := baseVirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
 			if err != nil {
 				return core.Status_Pending, err
 			}
 
+			log.Printf("VS STATUS: %v", newvs.GetNamespacedStatuses())
 			subresource := statusClient.GetStatus(newvs).GetSubresourceStatuses()
 			if subresource == nil {
 				return core.Status_Pending, fmt.Errorf("no status")
@@ -155,7 +159,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 	}
 
 	EventuallyProxyStatus := func() gomega.AsyncAssertion {
-		return EventuallyWithOffset(1, func() (core.Status_State, error) {
+		return Eventually(func() (core.Status_State, error) {
 			proxy, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
 			if err != nil {
 				return core.Status_Pending, err

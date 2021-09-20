@@ -121,7 +121,8 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		err = flag.Set("namespace", writeNamespace)
 		Expect(err).NotTo(HaveOccurred())
 
-		statusClient = statusutils.NewNamespacedStatusesClient(writeNamespace)
+		statusReportingNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(writeNamespace)
+		statusClient = statusutils.NewNamespacedStatusesClient(statusReportingNamespace)
 
 		go func() {
 			defer GinkgoRecover()
