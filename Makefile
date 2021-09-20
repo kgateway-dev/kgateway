@@ -584,6 +584,7 @@ endif
 # if not, build them with tags for the repository specified by IMAGE_REPO.
 .PHONY: docker-push-retag
 docker-push-retag:
+ifeq ($(RELEASE), "true")
 	docker tag $(RETAG_IMAGE_REGISTRY)/gateway:$(VERSION) $(IMAGE_REPO)/gateway:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) $(IMAGE_REPO)/discovery:$(VERSION) && \
@@ -619,6 +620,7 @@ docker-push-retag:
 	docker push $(IMAGE_REPO)/certgen:$(VERSION)-extended && \
 	docker push $(IMAGE_REPO)/sds:$(VERSION)-extended && \
 	docker push $(IMAGE_REPO)/access-logger:$(VERSION)-extended
+endif
 
 .PHONY: docker docker-push
 docker: discovery-docker gateway-docker gloo-docker \
