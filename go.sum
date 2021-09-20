@@ -1360,9 +1360,8 @@ github.com/solo-io/protoc-gen-ext v0.0.15 h1:OVPo1essSt2hx5crEfnRxYlA5mwsGvrIWyn
 github.com/solo-io/protoc-gen-ext v0.0.15/go.mod h1:ch1ZUyVtN45zxAVwpuZUW+F1IR7aG0rCVAp2JrWKDCc=
 github.com/solo-io/skv2 v0.17.17 h1:reWPYrRI7VjZG0piQusPH6BdIXiBLs+piR5eeuQgEG4=
 github.com/solo-io/skv2 v0.17.17/go.mod h1:nYjANLlL1SLPV/7Gr2mKgfxO3Jta/yNAxKnAHKhSamM=
-github.com/solo-io/solo-apis v0.0.0-20210914213333-5ddd1f8ec230 h1:Y4GuKBYE7pmFxM12N9lOeFDLThAa1uGOI22zB/VO6Hg=
-github.com/solo-io/solo-apis v0.0.0-20210914213333-5ddd1f8ec230/go.mod h1:xr3Tu+QpWcQzeBoGa3un1WuP3tNW6jgG0wXPKV4kMr0=
-github.com/solo-io/solo-kit v0.21.4-0.20210914212113-dbdf1a102781/go.mod h1:uCOi8RQ3MetHXsRFvVKPzafYySUvFuPxB+gvo7ScRR8=
+github.com/solo-io/solo-apis v0.0.0-20210920020545-9c6a4af76fc1 h1:25/uOKXc6OWdHLl2Ig0+ksRRORMnhWUD2usTt4KYlU8=
+github.com/solo-io/solo-apis v0.0.0-20210920020545-9c6a4af76fc1/go.mod h1:caZjnVjc6CI6VkHY8FlcDcsxwHRqnrqOlTyRqwQq9MY=
 github.com/solo-io/solo-kit v0.22.1-0.20210920005009-0d277133631f h1:uJXu490yCcc8O9JPZ6Aybv1GTr3me0+wnxdlYI8ZKLs=
 github.com/solo-io/solo-kit v0.22.1-0.20210920005009-0d277133631f/go.mod h1:uCOi8RQ3MetHXsRFvVKPzafYySUvFuPxB+gvo7ScRR8=
 github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3 h1:Am1RMaWH7jOug0ys4gUeBCgwR/94NSfZqu90j9u8eTA=
