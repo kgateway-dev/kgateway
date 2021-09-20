@@ -583,7 +583,7 @@ endif
 # if so, retag them for the repository specified by IMAGE_REPO.
 # if not, build them with tags for the repository specified by IMAGE_REPO.
 .PHONY: docker-push-retag
-docker:
+docker-push-retag:
 	docker tag $(RETAG_IMAGE_REGISTRY)/gateway:$(VERSION) $(IMAGE_REPO)/gateway:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) $(IMAGE_REPO)/discovery:$(VERSION) && \
