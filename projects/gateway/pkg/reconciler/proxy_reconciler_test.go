@@ -11,6 +11,7 @@ import (
 	. "github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/gloo/test/debugprint"
 	mock_validation "github.com/solo-io/gloo/test/mocks/gloo"
@@ -79,7 +80,8 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				}, nil
 			}).AnyTimes()
 
-		statusReporterClient = statusutils.NewStatusReporterClient(ns)
+		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(ns)
+		statusReporterClient = statusutils.NewStatusReporterClient(statusReporterNamespace)
 		reconciler = NewProxyReconciler(validationClient, proxyClient, statusReporterClient)
 
 		snap = samples.SimpleGatewaySnapshot(us, ns)

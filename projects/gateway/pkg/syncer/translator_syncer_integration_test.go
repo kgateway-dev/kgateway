@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
@@ -64,7 +66,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		statusReporterNamespace := defaults.GlooSystem
+		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(defaults.GlooSystem)
 		reporterRef := &core.ResourceRef{Namespace: statusReporterNamespace, Name: "gateway"}
 		statusReporterClient = statusutils.NewStatusReporterClient(statusReporterNamespace)
 

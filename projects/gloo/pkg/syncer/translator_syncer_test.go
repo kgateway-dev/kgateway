@@ -3,6 +3,8 @@ package syncer_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -39,7 +41,7 @@ var _ = Describe("Translate Proxy", func() {
 		cancel               context.CancelFunc
 		proxyName            = "proxy-name"
 		ns                   = "any-ns"
-		ref                  = &core.ResourceRef{Name: "syncer-test", Namespace: ns}
+		ref                  *core.ResourceRef
 		statusReporterClient *statusutils.StatusReporterClient
 	)
 
@@ -67,8 +69,11 @@ var _ = Describe("Translate Proxy", func() {
 
 		settings = &v1.Settings{}
 
+		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(ns)
+		ref = &core.ResourceRef{Name: "syncer-test", Namespace: statusReporterNamespace}
+
 		rep := reporter.NewReporter(ref, proxyClient.BaseClient(), upstreamClient)
-		statusReporterClient = statusutils.NewStatusReporterClient(ref.GetNamespace())
+		statusReporterClient = statusutils.NewStatusReporterClient(statusReporterNamespace)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
 		syncer = NewTranslatorSyncer(&mockTranslator{true, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
@@ -179,7 +184,7 @@ var _ = Describe("Empty cache", func() {
 		snapshot             envoycache.Snapshot
 		proxyName            = "proxy-name"
 		ns                   = "any-ns"
-		ref                  = &core.ResourceRef{Name: "syncer-test", Namespace: ns}
+		ref                  *core.ResourceRef
 		statusReporterClient *statusutils.StatusReporterClient
 	)
 
@@ -207,8 +212,10 @@ var _ = Describe("Empty cache", func() {
 
 		settings = &v1.Settings{}
 
+		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(ns)
+		ref = &core.ResourceRef{Name: "syncer-test", Namespace: statusReporterNamespace}
 		rep := reporter.NewReporter(ref, proxyClient.BaseClient(), upstreamClient)
-		statusReporterClient = statusutils.NewStatusReporterClient(ref.GetNamespace())
+		statusReporterClient = statusutils.NewStatusReporterClient(statusReporterNamespace)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
 
@@ -296,7 +303,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		proxyName            = "proxy-name"
 		upstreamName         = "upstream-name"
 		ns                   = "any-ns"
-		ref                  = &core.ResourceRef{Name: "syncer-test", Namespace: ns}
+		ref                  *core.ResourceRef
 		statusReporterClient *statusutils.StatusReporterClient
 	)
 
@@ -366,8 +373,10 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 
 		settings = &v1.Settings{}
 
+		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(ns)
+		ref = &core.ResourceRef{Name: "syncer-test", Namespace: statusReporterNamespace}
 		rep := reporter.NewReporter(ref, proxyClient.BaseClient(), usClient)
-		statusReporterClient = statusutils.NewStatusReporterClient(ref.GetNamespace())
+		statusReporterClient = statusutils.NewStatusReporterClient(statusReporterNamespace)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
 		syncer = NewTranslatorSyncer(&mockTranslator{true, true, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/golang/mock/gomock"
@@ -35,9 +37,10 @@ var _ = Describe("TranslatorSyncer", func() {
 
 	BeforeEach(func() {
 		mockReporter = &fakeReporter{}
-		statusReporterClient = statusutils.NewStatusReporterClient("gloo-system")
+		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(defaults.GlooSystem)
+		statusReporterClient = statusutils.NewStatusReporterClient(statusReporterNamespace)
 
-		curSyncer := newStatusSyncer("gloo-system", fakeWatcher, mockReporter, statusReporterClient)
+		curSyncer := newStatusSyncer(defaults.GlooSystem, fakeWatcher, mockReporter, statusReporterClient)
 		syncer = &curSyncer
 
 	})
