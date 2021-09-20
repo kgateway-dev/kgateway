@@ -83,7 +83,10 @@ var _ = Describe("Validation Server", func() {
 			_ = s.Sync(context.TODO(), params.Snapshot)
 			rpt, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{Proxy: proxy})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(rpt).To(matchers.MatchProto(&validationgrpc.GlooValidationServiceResponse{ProxyReport: validation.MakeReport(proxy)}))
+			Expect(rpt).To(matchers.MatchProto(&validationgrpc.GlooValidationServiceResponse{
+				ProxyReport:    validation.MakeReport(proxy),
+				UpstreamReport: &validationgrpc.UpstreamReport{},
+			}))
 		})
 		It("updates the proxy report when sanitization causes a change", func() {
 			proxy := params.Snapshot.Proxies[0]
