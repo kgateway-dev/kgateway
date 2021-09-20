@@ -9,16 +9,12 @@ import (
 func TransitionFunction(statusClient reporter.StatusClient) v1.TransitionProxyFunc {
 	return func(original, desired *v1.Proxy) (bool, error) {
 		if len(original.GetListeners()) != len(desired.GetListeners()) {
-			if err := updateDesiredStatus(original, desired, statusClient); err != nil {
-				return false, err
-			}
+			updateDesiredStatus(original, desired, statusClient)
 			return true, nil
 		}
 		for i := range original.GetListeners() {
 			if !original.GetListeners()[i].Equal(desired.GetListeners()[i]) {
-				if err := updateDesiredStatus(original, desired, statusClient); err != nil {
-					return false, err
-				}
+				updateDesiredStatus(original, desired, statusClient)
 				return true, nil
 			}
 		}
@@ -26,7 +22,7 @@ func TransitionFunction(statusClient reporter.StatusClient) v1.TransitionProxyFu
 	}
 }
 
-func updateDesiredStatus(original, desired *v1.Proxy, statusClient reporter.StatusClient) error {
+func updateDesiredStatus(original, desired *v1.Proxy, statusClient reporter.StatusClient) {
 	// we made an update to the proxy from the gateway's point of view.
 	// let's make sure we update the status for gloo if the hash hasn't changed.
 	// the proxy can change from the gateway's point of view but not from gloo's if,
@@ -38,5 +34,4 @@ func updateDesiredStatus(original, desired *v1.Proxy, statusClient reporter.Stat
 	if ok && equal {
 		statusClient.SetStatus(desired, statusClient.GetStatus(original))
 	}
-	return nil
 }

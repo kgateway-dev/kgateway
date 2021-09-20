@@ -130,8 +130,8 @@ type statusSyncer struct {
 
 	proxyWatcher   gloov1.ProxyWatcher
 	writeNamespace string
-	statusClient reporter.StatusClient
-	syncNeeded   chan struct{}
+	statusClient   reporter.StatusClient
+	syncNeeded     chan struct{}
 }
 
 func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, reporter reporter.StatusReporter, statusClient reporter.StatusClient) statusSyncer {
@@ -240,7 +240,7 @@ func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
 		ref := proxy.GetMetadata().Ref()
 		refKey := gloo_translator.UpstreamToClusterName(ref)
 		status := s.statusClient.GetStatus(proxy)
-		
+
 		if current, ok := s.proxyToLastStatus[refKey]; ok {
 			current.Status = status
 			s.proxyToLastStatus[refKey] = current

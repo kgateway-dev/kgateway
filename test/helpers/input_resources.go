@@ -3,6 +3,8 @@ package helpers
 import (
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
@@ -23,7 +25,7 @@ type InputResourceGetter func() (resources.InputResource, error)
 type InputResourceListGetter func() (resources.InputResourceList, error)
 
 var (
-	statusReporterNamespace = bootstrap.GetStatusReporterNamespaceOrDefault(defaults.GlooSystem)
+	statusClient = statusutils.NewNamespacedStatusesClient(bootstrap.GetStatusReporterNamespaceOrDefault(defaults.GlooSystem))
 )
 
 func EventuallyResourceAccepted(getter InputResourceGetter, intervals ...interface{}) {
@@ -50,7 +52,7 @@ func EventuallyResourceStatusMatchesState(offset int, getter InputResourceGetter
 			return core.Status{}, errors.Wrapf(err, "failed to get resource")
 		}
 
-		status := resource.GetStatusForNamespace(statusReporterNamespace)
+		status := statusClient.GetStatus(resource)
 		if status == nil {
 			return core.Status{}, errors.Wrapf(err, "waiting for %v status to be non-nil", resource.GetMetadata().GetName())
 		}

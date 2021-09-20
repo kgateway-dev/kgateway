@@ -73,7 +73,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		}
 
 		syncer.setCurrentProxies(desiredProxies)
-		syncer.setStatuses(context.Background(), gloov1.ProxyList{acceptedProxy})
+		syncer.setStatuses(gloov1.ProxyList{acceptedProxy})
 
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
@@ -118,7 +118,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		}
 
 		syncer.setCurrentProxies(desiredProxies)
-		syncer.setStatuses(context.Background(), gloov1.ProxyList{acceptedProxy1, acceptedProxy2})
+		syncer.setStatuses(gloov1.ProxyList{acceptedProxy1, acceptedProxy2})
 
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
@@ -232,7 +232,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		}
 
 		syncer.setCurrentProxies(desiredProxies)
-		syncer.setStatuses(context.Background(), gloov1.ProxyList{acceptedProxy, rejectedProxy})
+		syncer.setStatuses(gloov1.ProxyList{acceptedProxy, rejectedProxy})
 
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
@@ -269,7 +269,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		}
 
 		syncer.setCurrentProxies(desiredProxies)
-		syncer.setStatuses(context.Background(), gloov1.ProxyList{acceptedProxy, rejectedProxy})
+		syncer.setStatuses(gloov1.ProxyList{acceptedProxy, rejectedProxy})
 
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
@@ -308,7 +308,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		}
 
 		syncer.setCurrentProxies(desiredProxies)
-		syncer.setStatuses(context.Background(), gloov1.ProxyList{rejectedProxy1, rejectedProxy2})
+		syncer.setStatuses(gloov1.ProxyList{rejectedProxy1, rejectedProxy2})
 
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())

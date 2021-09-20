@@ -41,7 +41,7 @@ var _ = Describe("Translate Proxy", func() {
 		cancel         context.CancelFunc
 		proxyName      = "proxy-name"
 		ns             = "any-ns"
-		ref            *core.ResourceRef
+		ref            = "syncer-test"
 		statusClient   reporter.StatusClient
 	)
 
@@ -72,7 +72,7 @@ var _ = Describe("Translate Proxy", func() {
 		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(ns)
 		statusClient = statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
 
-		rep := reporter.NewReporter("syncer-test", statusClient, proxyClient.BaseClient(), upstreamClient)
+		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
 		syncer = NewTranslatorSyncer(&mockTranslator{true, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
@@ -93,7 +93,7 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(statusClient.GetStatus(proxies[0])).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
-			ReportedBy: ref.GetName(),
+			ReportedBy: ref,
 		}))
 
 		// NilSnapshot is always consistent, so snapshot will always be set as part of endpoints update
@@ -120,7 +120,7 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
 		Expect(statusClient.GetStatus(proxies[0])).To(Equal(&core.Status{
 			State:      1,
-			ReportedBy: ref.GetName(),
+			ReportedBy: ref,
 		}))
 
 		Expect(xdsCache.Called).To(BeTrue())

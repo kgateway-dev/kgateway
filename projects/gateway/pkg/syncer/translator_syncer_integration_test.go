@@ -3,7 +3,6 @@ package syncer
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -63,7 +62,6 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		routeTableClient, err := v1.NewRouteTableClient(ctx, memFactory)
 		Expect(err).NotTo(HaveOccurred())
 		if err := routeTableClient.Register(); err != nil {
-
 			Expect(err).NotTo(HaveOccurred())
 		}
 
@@ -138,15 +136,13 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 	})
 
 	EventuallyProxyStatusInVs := func() gomega.AsyncAssertion {
-		return Eventually(func() (core.Status_State, error) {
+		return EventuallyWithOffset(1, func() (core.Status_State, error) {
 			newvs, err := baseVirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
 			if err != nil {
 				return core.Status_Pending, err
 			}
 
-			newvsStatus := statusClient.GetStatus(newvs)
-			log.Printf("VS STATUS: %v", newvs.GetNamespacedStatuses())
-			subresource := newvsStatus.GetSubresourceStatuses()
+			subresource := statusClient.GetStatus(newvs).GetSubresourceStatuses()
 			if subresource == nil {
 				return core.Status_Pending, fmt.Errorf("no status")
 			}
@@ -157,30 +153,29 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			return proxyState.GetState(), nil
 		})
 	}
+
 	EventuallyProxyStatus := func() gomega.AsyncAssertion {
-		return Eventually(func() (core.Status_State, error) {
+		return EventuallyWithOffset(1, func() (core.Status_State, error) {
 			proxy, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
 			if err != nil {
 				return core.Status_Pending, err
 			}
 
-			proxyStatus := statusClient.GetStatus(proxy)
-			return proxyStatus.GetState(), nil
+			return statusClient.GetStatus(proxy).GetState(), nil
 		})
 	}
 
 	AcceptProxy := func() {
 		proxy, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 		statusClient.SetStatus(proxy, &core.Status{State: core.Status_Accepted})
 
 		_, err = proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
-		Expect(err).NotTo(HaveOccurred())
+		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	}
 
-	FIt("should set status correctly even when the status from the snapshot was not updated", func() {
-
+	It("should set status correctly even when the status from the snapshot was not updated", func() {
 		ts.Sync(ctx, snapshot())
 		// wait for proxy to be written
 		Eventually(func() (*gloov1.Proxy, error) {
