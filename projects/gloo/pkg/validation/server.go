@@ -184,10 +184,9 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 	logger.Infof("mitchaman - received validation request with %d proxy and %d upstream(s)", numProxy, len(req.GetUpstreams()))
 	if req.GetUpstreams() != nil {
 		for _, us := range req.GetUpstreams() {
-			logger.Infof("mitchaman - Upstream validation: %s", us.String())
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, us)
 		}
 	}
-	logger.Infof("received proxy validation request")
 
 	xdsSnapshot, resourceReports, report, err := s.translator.Translate(params, req.GetProxy(), req.GetUpstreams())
 	if err != nil {

@@ -584,17 +584,32 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 }
 
 func (v *validator) validateUpstreamInternal(ctx context.Context, us *gloov1.Upstream, dryRun, acquireLock bool) (*Reports, error) {
-	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, *core.ResourceRef) {
-		//  TODO(mitchaman): There's nothing to "apply" in this function because upstreams don't live in the gateway ApiSnapshot?
-		upstreamsToConsider := []string{us.GetMetadata().GetName()}
-		usRef := *us.GetMetadata().Ref()
-		return upstreamsToConsider, us, &usRef
+	// validate with gloo
+	var proxyReport *validation.GlooValidationServiceResponse
+	err := retry.Do(func() error {
+		rpt, err := v.validationClient.Validate(ctx,
+			&validation.GlooValidationServiceRequest{
+				Upstreams: []*gloov1.Upstream{us},
+			})
+		proxyReport = rpt
+		return err
+	},
+		retry.Attempts(4),
+		retry.Delay(250*time.Millisecond),
+	)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to communicate with Gloo validation server")
+		if v.ignoreProxyValidationFailure {
+			contextutils.LoggerFrom(ctx).Error(err)
+		} else {
+			return nil, err
+		}
 	}
-	if acquireLock {
-		return v.validateSnapshotThreadSafe(ctx, apply, dryRun, []*gloov1.Upstream{us})
-	} else {
-		return v.validateSnapshot(ctx, apply, dryRun, []*gloov1.Upstream{us})
-	}
+	return &Reports{
+		UpstreamReports: &UpstreamReports{
+			us: proxyReport.GetUpstreamReport(),
+		},
+	}, nil
 }
 
 func (v *validator) ValidateDeleteUpstream(ctx context.Context, rt *core.ResourceRef, dryRun bool) error {
