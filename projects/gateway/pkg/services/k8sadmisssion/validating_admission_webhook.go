@@ -146,7 +146,6 @@ func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
 		Handler:   mux,
 		ErrorLog:  log.New(&debugLogger{ctx: ctx}, "validation-webhook-server", log.LstdFlags),
 	}, nil
-
 }
 
 type debugLogger struct{ ctx context.Context }
@@ -397,7 +396,6 @@ func (wh *gatewayValidationWebhook) validate(
 	rawJson []byte,
 	isDelete, dryRun bool,
 ) (*validation.Reports, *multierror.Error) {
-
 	switch gvk {
 	case ListGVK:
 		return wh.validateList(ctx, rawJson, dryRun)
@@ -429,7 +427,6 @@ func (wh *gatewayValidationWebhook) validate(
 		}
 	}
 	return &validation.Reports{}, nil
-
 }
 
 func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []byte, dryRun bool) (*validation.Reports, *multierror.Error) {
