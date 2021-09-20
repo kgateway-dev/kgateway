@@ -282,7 +282,8 @@ func RunGateway(opts translator.Opts) error {
 		proxyClient,
 		proxyReconciler,
 		rpt,
-		txlator)
+		txlator,
+		statusReporterClient)
 
 	gatewaySyncers := v1.ApiSyncers{
 		translatorSyncer,
