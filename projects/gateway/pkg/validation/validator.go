@@ -591,7 +591,7 @@ func (v *validator) validateUpstreamInternal(ctx context.Context, us *gloov1.Ups
 		return upstreamsToConsider, us, &usRef
 	}
 	if acquireLock {
-		return v.validateSnapshotThreadSafe(ctx, apply, dryRun, nil)
+		return v.validateSnapshotThreadSafe(ctx, apply, dryRun, []*gloov1.Upstream{us})
 	} else {
 		return v.validateSnapshot(ctx, apply, dryRun, []*gloov1.Upstream{us})
 	}
