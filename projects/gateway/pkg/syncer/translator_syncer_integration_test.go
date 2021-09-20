@@ -3,7 +3,6 @@ package syncer
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -145,7 +144,6 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 				return core.Status_Pending, err
 			}
 
-			log.Printf("VS STATUS: %v", newvs.GetNamespacedStatuses())
 			subresource := statusClient.GetStatus(newvs).GetSubresourceStatuses()
 			if subresource == nil {
 				return core.Status_Pending, fmt.Errorf("no status")

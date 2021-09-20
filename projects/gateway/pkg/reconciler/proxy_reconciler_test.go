@@ -178,8 +178,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				// typically the reconciler sets resources to pending for processing, but here
 				// we expect the status to be carried over because nothing changed from gloo's
 				// point of view
-				status := statusClient.GetStatus(px)
-				Expect(status.GetState()).To(Equal(core.Status_Accepted))
+				Expect(statusClient.GetStatus(px).GetState()).To(Equal(core.Status_Accepted))
 
 				// after reconcile with the updated snapshot, we confirm that gateway-specific
 				// parts of the proxy have been updated
