@@ -1,4 +1,4 @@
-package k8sadmisssion
+package k8sadmission
 
 import (
 	"context"
