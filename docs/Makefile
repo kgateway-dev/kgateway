@@ -10,7 +10,7 @@ VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
 HUGO_VERSION := 0.69.2
 
-SOLO_HUGO_THEME_REVISION := 41587dc9dc719bd22cedd9803994f756e25f571f
+SOLO_HUGO_THEME_REVISION := $(shell curl --silent "https://api.github.com/repos/solo-io/hugo-theme-soloio/releases/latest" | jq -esr 'if . == [] then null else .[] | .tag_name end')
 
 SECURITY_SCAN_MIN_VERSION ?= v1.6.0
 
@@ -85,3 +85,11 @@ build-site: clean
 .PHONY: gloo-enterprise-version
 gloo-enterprise-version:
 	cd .. && GO111MODULE=on go run hack/find_latest_enterprise_version.go
+
+#----------------------------------------------------------------------------------
+# Printing makefile variables utility
+#----------------------------------------------------------------------------------
+
+# use `make print-MAKEFILE_VAR` to print the value of MAKEFILE_VAR
+
+print-%  : ; @echo $($*)
