@@ -193,8 +193,14 @@ func (m *Upstream) Equal(that interface{}) bool {
 		}
 	}
 
-	if m.GetIgnoreHealthOnHostRemoval() != target.GetIgnoreHealthOnHostRemoval() {
-		return false
+	if h, ok := interface{}(m.GetIgnoreHealthOnHostRemoval()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIgnoreHealthOnHostRemoval()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIgnoreHealthOnHostRemoval(), target.GetIgnoreHealthOnHostRemoval()) {
+			return false
+		}
 	}
 
 	switch m.UpstreamType.(type) {
