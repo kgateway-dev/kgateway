@@ -613,7 +613,7 @@ docker-build: discovery-docker gateway-docker gloo-docker \
 # docker-push is intended to be run by CI
 .PHONY: docker-push
 docker-push: $(DOCKER_IMAGES)
-ifeq ($(RELEASE), "true")
+ifeq ($(CREATE_ASSETS), "true")
 	docker push $(IMAGE_REPO)/gateway:$(VERSION) && \
 	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
