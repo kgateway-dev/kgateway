@@ -22,7 +22,7 @@ DO_NOT_SUBMIT_REGEX="[[:space:]]*//[[:space:]]*DO_NOT_SUBMIT"
 file_count=0
 for filename in "$@"; do
   # Only check *.go files for now
-  if [[ "$filename" == *".go" ]]; then
+  if [[ "$filename" == *".go" || "$filename" == *"go.mod" ]]; then
     ((file_count++))
     line_number=1
     while IFS= read -r line; do
@@ -35,7 +35,7 @@ for filename in "$@"; do
 done
 
 if [[ "$OUTPUT" == "" ]]; then
-  echo "$file_count *.go files check, none contain DO_NOT_SUBMIT"
+  echo "$file_count go files checked, none contain DO_NOT_SUBMIT"
   exit 0
 else
   echo "$OUTPUT"
