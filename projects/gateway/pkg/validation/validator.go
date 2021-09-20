@@ -124,7 +124,7 @@ func (v *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
 	var errs error
 	for proxyName, gatewayList := range gatewaysByProxy {
-		_, _, reports := v.translator.Translate(ctx, proxyName, v.writeNamespace, snap, gatewayList)
+		_, reports := v.translator.Translate(ctx, proxyName, v.writeNamespace, snap, gatewayList)
 		validate := reports.ValidateStrict
 		if v.allowWarnings {
 			validate = reports.Validate
@@ -219,8 +219,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 	)
 	for _, proxyName := range proxyNames {
 		gatewayList := gatewaysByProxy[proxyName]
-		// TODO(mitchaman): I need this to return upstreams too?
-		proxy, upstreams, reports := v.translator.Translate(ctx, proxyName, v.writeNamespace, &snapshotClone, gatewayList)
+		proxy, reports := v.translator.Translate(ctx, proxyName, v.writeNamespace, &snapshotClone, gatewayList)
 		validate := reports.ValidateStrict
 		if v.allowWarnings {
 			validate = reports.Validate
