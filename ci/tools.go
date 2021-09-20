@@ -15,7 +15,8 @@ limitations under the License.
 
 // This package imports things required by build scripts, to force `go mod` to see them as dependencies
 package tools
-
+// DO_NOT_SUBMIT
+// DO_NOT_SUBMIT
 import (
 	_ "github.com/cratonica/2goarray"
 	_ "github.com/envoyproxy/protoc-gen-validate"
