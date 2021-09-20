@@ -49,7 +49,7 @@ func NewDefaultTranslator(opts Opts) *translator {
 	return NewTranslator([]ListenerFactory{&HttpTranslator{WarnOnRouteShortCircuiting: warnOnRouteShortCircuiting}, &TcpTranslator{}}, opts)
 }
 
-func (t *translator) Translate(ctx context.Context, proxyName, namespace string, snap *v1.ApiSnapshot, gatewaysByProxy v1.GatewayList) (*gloov1.Proxy, []*gloov1.Upstream, reporter.ResourceReports) {
+func (t *translator) Translate(ctx context.Context, proxyName, namespace string, snap *v1.ApiSnapshot, gatewaysByProxy v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
 	logger := contextutils.LoggerFrom(ctx)
 
 	filteredGateways := t.filterGateways(gatewaysByProxy, namespace)
@@ -61,7 +61,7 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 	if len(filteredGateways) == 0 {
 		snapHash := hashutils.MustHash(snap)
 		logger.Infof("%v had no gateways", snapHash)
-		return nil, nil, reports
+		return nil, reports
 	}
 	validateGateways(filteredGateways, snap.VirtualServices, reports)
 	listeners := make([]*gloov1.Listener, 0, len(filteredGateways))
@@ -69,17 +69,15 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 		listeners = append(listeners, listenerFactory.GenerateListeners(ctx, proxyName, snap, filteredGateways, reports)...)
 	}
 	if len(listeners) == 0 {
-		return nil, nil, reports
+		return nil, reports
 	}
 	return &gloov1.Proxy{
-			Metadata: &core.Metadata{
-				Name:      proxyName,
-				Namespace: namespace,
-			},
-			Listeners: listeners,
-		}, []*gloov1.Upstream{
-			// TODO(mitchaman)
-		}, reports
+		Metadata: &core.Metadata{
+			Name:      proxyName,
+			Namespace: namespace,
+		},
+		Listeners: listeners,
+	}, reports
 }
 
 func makeListener(gateway *v1.Gateway) *gloov1.Listener {
