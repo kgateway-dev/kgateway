@@ -2885,7 +2885,7 @@ spec:
 					It("creates the validating webhook configuration", func() {
 						vwc := makeUnstructured(`
 
-apiVersion: admissionregistration.k8s.io/v1beta1
+apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   name: gloo-gateway-validation-webhook-` + namespace + `
@@ -2909,6 +2909,9 @@ webhooks:
        apiVersions: ["v1"]
        resources: ["*"]
    sideEffects: None
+   matchPolicy: Exact
+   admissionReviewVersions:
+     - v1beta1
    failurePolicy: Ignore
 
 `)
