@@ -30,38 +30,30 @@ func (r *VirtualService) SetMetadata(meta *core.Metadata) {
 
 // Deprecated
 func (r *VirtualService) SetStatus(status *core.Status) {
-	r.SetStatusForNamespace(status)
+	r.SetStatusForNamespace("", status)
 }
 
 // Deprecated
 func (r *VirtualService) GetStatus() *core.Status {
 	if r != nil {
-		s, _ := r.GetStatusForNamespace()
-		return s
+		return r.GetStatusForNamespace("")
 	}
 	return nil
 }
 
-func (r *VirtualService) SetNamespacedStatuses(statuses *core.NamespacedStatuses) {
-	r.NamespacedStatuses = statuses
+func (r *VirtualService) SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses) {
+	r.NamespacedStatuses = namespacedStatuses
 }
 
-// SetStatusForNamespace inserts the specified status into the NamespacedStatuses.Statuses map for
-// the current namespace (as specified by POD_NAMESPACE env var).  If the resource does not yet
-// have a NamespacedStatuses, one will be created.
-// Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
-// If unset, a podNamespaceErr is returned.
-func (r *VirtualService) SetStatusForNamespace(status *core.Status) error {
-	return statusutils.SetStatusForPodNamespace(r, status)
+// SetStatusForNamespace inserts the specified status into the NamespacedStatuses.Statuses map for the namespace
+func (r *VirtualService) SetStatusForNamespace(namespace string, status *core.Status) {
+	statusutils.SetStatusForNamespace(r, namespace, status)
 }
 
 // GetStatusForNamespace returns the status stored in the NamespacedStatuses.Statuses map for the
-// controller specified by the POD_NAMESPACE env var, or nil if no status exists for that
-// controller.
-// Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
-// If unset, a podNamespaceErr is returned.
-func (r *VirtualService) GetStatusForNamespace() (*core.Status, error) {
-	return statusutils.GetStatusForPodNamespace(r)
+// controller specified by the namespace, or nil if no status exists for that namespace.
+func (r *VirtualService) GetStatusForNamespace(namespace string) *core.Status {
+	return statusutils.GetStatusForNamespace(r, namespace)
 }
 
 func (r *VirtualService) MustHash() uint64 {

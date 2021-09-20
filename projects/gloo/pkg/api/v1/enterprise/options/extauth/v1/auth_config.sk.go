@@ -30,38 +30,30 @@ func (r *AuthConfig) SetMetadata(meta *core.Metadata) {
 
 // Deprecated
 func (r *AuthConfig) SetStatus(status *core.Status) {
-	r.SetStatusForNamespace(status)
+	r.SetStatusForNamespace("", status)
 }
 
 // Deprecated
 func (r *AuthConfig) GetStatus() *core.Status {
 	if r != nil {
-		s, _ := r.GetStatusForNamespace()
-		return s
+		return r.GetStatusForNamespace("")
 	}
 	return nil
 }
 
-func (r *AuthConfig) SetNamespacedStatuses(statuses *core.NamespacedStatuses) {
-	r.NamespacedStatuses = statuses
+func (r *AuthConfig) SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses) {
+	r.NamespacedStatuses = namespacedStatuses
 }
 
-// SetStatusForNamespace inserts the specified status into the NamespacedStatuses.Statuses map for
-// the current namespace (as specified by POD_NAMESPACE env var).  If the resource does not yet
-// have a NamespacedStatuses, one will be created.
-// Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
-// If unset, a podNamespaceErr is returned.
-func (r *AuthConfig) SetStatusForNamespace(status *core.Status) error {
-	return statusutils.SetStatusForPodNamespace(r, status)
+// SetStatusForNamespace inserts the specified status into the NamespacedStatuses.Statuses map for the namespace
+func (r *AuthConfig) SetStatusForNamespace(namespace string, status *core.Status) {
+	statusutils.SetStatusForNamespace(r, namespace, status)
 }
 
 // GetStatusForNamespace returns the status stored in the NamespacedStatuses.Statuses map for the
-// controller specified by the POD_NAMESPACE env var, or nil if no status exists for that
-// controller.
-// Note: POD_NAMESPACE environment variable must be set for this function to behave as expected.
-// If unset, a podNamespaceErr is returned.
-func (r *AuthConfig) GetStatusForNamespace() (*core.Status, error) {
-	return statusutils.GetStatusForPodNamespace(r)
+// controller specified by the namespace, or nil if no status exists for that namespace.
+func (r *AuthConfig) GetStatusForNamespace(namespace string) *core.Status {
+	return statusutils.GetStatusForNamespace(r, namespace)
 }
 
 func (r *AuthConfig) MustHash() uint64 {

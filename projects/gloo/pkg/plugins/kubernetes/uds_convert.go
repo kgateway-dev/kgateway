@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/serviceconverter"
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -46,7 +44,7 @@ func (uc *KubeUpstreamConverter) UpstreamsForService(ctx context.Context, svc *k
 
 func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort) *v1.Upstream {
 	meta := svc.ObjectMeta
-	coremeta := kubeutils.FromKubeMeta(meta)
+	coremeta := kubeutils.FromKubeMeta(meta, true)
 	coremeta.ResourceVersion = ""
 	coremeta.Name = UpstreamName(meta.Namespace, meta.Name, port.Port)
 	labels := coremeta.GetLabels()
@@ -135,9 +133,7 @@ func upstreamsEqual(original, desired *v1.Upstream) bool {
 	copyDesired := *desired
 
 	copyOriginal.Metadata = copyDesired.GetMetadata()
-	if err := statusutils.CopyStatusForPodNamespace(&copyOriginal, &copyDesired); err != nil {
-		return false
-	}
+	copyOriginal.SetNamespacedStatuses(copyDesired.GetNamespacedStatuses())
 
 	return copyOriginal.Equal(copyDesired)
 }

@@ -3,6 +3,9 @@ package compress_test
 import (
 	"encoding/json"
 
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
@@ -11,6 +14,17 @@ import (
 )
 
 var _ = Describe("Compress", func() {
+
+	var (
+		statusUnmarshaler *statusutils.NamespacedStatusesUnmarshaler
+	)
+
+	BeforeEach(func() {
+		statusUnmarshaler = &statusutils.NamespacedStatusesUnmarshaler{
+			StatusReporterNamespace: "default",
+			UnmarshalMapToProto:     protoutils.UnmarshalMapToProto,
+		}
+	})
 
 	Context("spec", func() {
 		It("should  not compress spec when not annotated", func() {
@@ -90,14 +104,13 @@ var _ = Describe("Compress", func() {
 					Annotations: map[string]string{"gloo.solo.io/compress": "true"},
 				},
 			}
-			err := p.SetStatusForNamespace(&core.Status{State: core.Status_Accepted})
-			Expect(err).NotTo(HaveOccurred())
+			p.SetStatusForNamespace(statusUnmarshaler.StatusReporterNamespace, &core.Status{State: core.Status_Accepted})
 
 			status, err := MarshalStatus(p)
 			Expect(err).NotTo(HaveOccurred())
 
 			p2 := &v1.Proxy{}
-			err = UnmarshalStatus(p2, status)
+			err = UnmarshalStatus(p2, status, statusUnmarshaler)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(p.GetNamespacedStatuses()).To(BeEquivalentTo(p2.GetNamespacedStatuses()))
 		})
@@ -108,8 +121,7 @@ var _ = Describe("Compress", func() {
 					Name: "foo",
 				},
 			}
-			err := p.SetStatusForNamespace(&core.Status{State: core.Status_Accepted})
-			Expect(err).NotTo(HaveOccurred())
+			p.SetStatusForNamespace(statusUnmarshaler.StatusReporterNamespace, &core.Status{State: core.Status_Accepted})
 
 			status1, err := MarshalStatus(p)
 			Expect(err).NotTo(HaveOccurred())

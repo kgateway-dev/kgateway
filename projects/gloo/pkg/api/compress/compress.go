@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/hashicorp/go-multierror"
-
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	v1 "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
@@ -150,21 +148,8 @@ func MarshalSpec(in resources.Resource) (v1.Spec, error) {
 	return spec, nil
 }
 
-func UnmarshalStatus(in resources.InputResource, status v1.Status) error {
-	namespacedStatuses := core.NamespacedStatuses{}
-	if namespacedStatusesErr := protoutils.UnmarshalMapToProto(status, &namespacedStatuses); namespacedStatusesErr != nil {
-
-		singleStatus := core.Status{}
-		if statusErr := protoutils.UnmarshalMapToProto(status, &singleStatus); statusErr != nil {
-			var multiErr *multierror.Error
-			multiErr = multierror.Append(multiErr, namespacedStatusesErr)
-			multiErr = multierror.Append(multiErr, statusErr)
-			return multiErr
-		}
-		return in.SetStatusForNamespace(&singleStatus)
-	}
-	in.SetNamespacedStatuses(&namespacedStatuses)
-	return nil
+func UnmarshalStatus(in resources.InputResource, status v1.Status, unmarshaler resources.StatusUnmarshaler) error {
+	return unmarshaler.UnmarshalStatus(status, in)
 }
 
 func MarshalStatus(in resources.InputResource) (v1.Status, error) {

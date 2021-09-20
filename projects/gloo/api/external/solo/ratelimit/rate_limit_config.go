@@ -21,7 +21,7 @@ var _ resources.CustomInputResource = &RateLimitConfig{}
 type RateLimitConfig v1alpha1.RateLimitConfig
 
 func (r *RateLimitConfig) GetMetadata() *core.Metadata {
-	return kubeutils.FromKubeMeta(r.ObjectMeta)
+	return kubeutils.FromKubeMeta(r.ObjectMeta, true)
 }
 
 func (r *RateLimitConfig) SetMetadata(meta *core.Metadata) {
@@ -43,7 +43,7 @@ func (r *RateLimitConfig) UnmarshalSpec(spec skres.Spec) error {
 	return protoutils.UnmarshalMapToProto(spec, &r.Spec)
 }
 
-func (r *RateLimitConfig) UnmarshalStatus(status skres.Status) error {
+func (r *RateLimitConfig) UnmarshalStatus(status skres.Status, unmarshaler resources.StatusUnmarshaler) error {
 	return protoutils.UnmarshalMapToProto(status, &r.Status)
 }
 
@@ -57,24 +57,22 @@ func (r *RateLimitConfig) MarshalStatus() (skres.Status, error) {
 
 // Deprecated
 func (r *RateLimitConfig) GetStatus() *core.Status {
-	s, _ := r.GetStatusForNamespace()
-	return s
+	return r.GetStatusForNamespace("")
 }
 
 // Deprecated
 func (r *RateLimitConfig) SetStatus(status *core.Status) {
-	_ = r.SetStatusForNamespace(status)
+	r.SetStatusForNamespace("", status)
 }
 
-func (r *RateLimitConfig) GetStatusForNamespace() (*core.Status, error) {
-	return r.convertRateLimitConfigStatusToSoloKitStatus(&r.Status), nil
+func (r *RateLimitConfig) GetStatusForNamespace(namespace string) *core.Status {
+	return r.convertRateLimitConfigStatusToSoloKitStatus(&r.Status)
 }
 
-func (r *RateLimitConfig) SetStatusForNamespace(status *core.Status) error {
+func (r *RateLimitConfig) SetStatusForNamespace(namespace string, status *core.Status) {
 	if status != nil {
 		r.Status = *r.convertSoloKitStatusToRateLimitConfigStatus(status)
 	}
-	return nil
 }
 
 func (r *RateLimitConfig) GetNamespacedStatuses() *core.NamespacedStatuses {
