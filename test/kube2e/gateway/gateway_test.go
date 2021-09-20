@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -85,6 +87,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		upstreamClient          gloov1.UpstreamClient
 		proxyClient             gloov1.ProxyClient
 		serviceClient           skkube.ServiceClient
+		statusReporterClient    *statusutils.StatusReporterClient
 	)
 
 	BeforeEach(func() {
@@ -182,6 +185,8 @@ var _ = Describe("Kube2e: gateway", func() {
 		kubeCoreCache, err := kubecache.NewKubeCoreCache(ctx, kubeClient)
 		Expect(err).NotTo(HaveOccurred())
 		serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
+
+		statusReporterClient = statusutils.NewStatusReporterClient(testHelper.InstallNamespace)
 	})
 
 	AfterEach(func() {
@@ -277,9 +282,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						return err
 					}
 
-					proxyStatus, err := proxy.GetStatusForNamespace()
-					Expect(err).NotTo(HaveOccurred())
-
+					proxyStatus := statusReporterClient.GetStatus(proxy)
 					if proxyStatus.GetState() != core.Status_Accepted {
 						return eris.Errorf("unexpected proxy state: %v. Reason: %v", proxyStatus, proxyStatus.GetReason())
 					}
@@ -1300,9 +1303,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					return err
 				}
 
-				proxyStatus, err := proxy.GetStatusForNamespace()
-				Expect(err).NotTo(HaveOccurred())
-
+				proxyStatus := statusReporterClient.GetStatus(proxy)
 				if proxyStatus.GetState() != core.Status_Accepted {
 					return eris.Errorf("unexpected proxy state: %v. Reason: %v", proxyStatus.GetState(), proxyStatus.GetReason())
 				}
@@ -1384,9 +1385,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					return nil, err
 				}
 
-				proxyStatus, err := proxy.GetStatusForNamespace()
-				Expect(err).NotTo(HaveOccurred())
-
+				proxyStatus := statusReporterClient.GetStatus(proxy)
 				if proxyStatus.GetState() != core.Status_Accepted {
 					return nil, eris.New("proxy not in accepted state")
 				}

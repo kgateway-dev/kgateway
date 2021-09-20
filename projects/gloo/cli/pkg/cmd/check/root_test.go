@@ -25,12 +25,16 @@ var _ = Describe("Root", func() {
 	var (
 		ctx    context.Context
 		cancel context.CancelFunc
+
+		statusReporterClient *statusutils.StatusReporterClient
 	)
 
 	BeforeEach(func() {
-		Expect(os.Setenv(statusutils.PodNamespaceEnvName, "gloo-system")).NotTo(HaveOccurred())
+		Expect(os.Setenv(statusutils.PodNamespaceEnvName, defaults.GlooSystem)).NotTo(HaveOccurred())
 		helpers.UseMemoryClients()
 		ctx, cancel = context.WithCancel(context.Background())
+
+		statusReporterClient = statusutils.NewStatusReporterClient(defaults.GlooSystem)
 	})
 
 	AfterEach(func() {
@@ -111,11 +115,11 @@ var _ = Describe("Root", func() {
 					Namespace: "gloo-system",
 				},
 			}
-			Expect(warningUpstream.SetStatusForNamespace(&core.Status{
+			statusReporterClient.SetStatus(warningUpstream, &core.Status{
 				State:      core.Status_Warning,
 				Reason:     "I am an upstream with a warning",
 				ReportedBy: "gateway",
-			})).NotTo(HaveOccurred())
+			})
 			_, usErr := helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(warningUpstream, clients.WriteOpts{})
 			Expect(usErr).NotTo(HaveOccurred())
 
@@ -125,22 +129,22 @@ var _ = Describe("Root", func() {
 					Namespace: "gloo-system",
 				},
 			}
-			Expect(rejectedUpstream.SetStatusForNamespace(&core.Status{
+			statusReporterClient.SetStatus(rejectedUpstream, &core.Status{
 				State:      core.Status_Rejected,
 				Reason:     "I am a rejected upstream",
 				ReportedBy: "gateway",
-			})).NotTo(HaveOccurred())
+			})
 			_, rUsErr := helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(rejectedUpstream, clients.WriteOpts{})
 			Expect(rUsErr).NotTo(HaveOccurred())
 
 			rejectedVs := &v12.VirtualService{
 				Metadata: &core.Metadata{Name: "some-bad-vs", Namespace: "gloo-system"},
 			}
-			Expect(rejectedVs.SetStatusForNamespace(&core.Status{
+			statusReporterClient.SetStatus(rejectedVs, &core.Status{
 				State:      core.Status_Rejected,
 				Reason:     "I am a rejected vs",
 				ReportedBy: "gateway",
-			})).NotTo(HaveOccurred())
+			})
 			_, vsErr := helpers.MustNamespacedVirtualServiceClient(ctx, "gloo-system").Write(rejectedVs, clients.WriteOpts{})
 			Expect(vsErr).NotTo(HaveOccurred())
 			testutils.Glooctl("check -x xds-metrics")

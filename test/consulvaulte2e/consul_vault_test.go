@@ -9,6 +9,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
@@ -39,14 +42,15 @@ import (
 var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 
 	var (
-		ctx            context.Context
-		cancel         context.CancelFunc
-		consulInstance *services.ConsulInstance
-		vaultInstance  *services.VaultInstance
-		envoyInstance  *services.EnvoyInstance
-		svc1           *v1helpers.TestUpstream
-		err            error
-		settingsDir    string
+		ctx                  context.Context
+		cancel               context.CancelFunc
+		consulInstance       *services.ConsulInstance
+		vaultInstance        *services.VaultInstance
+		envoyInstance        *services.EnvoyInstance
+		svc1                 *v1helpers.TestUpstream
+		err                  error
+		settingsDir          string
+		statusReporterClient *statusutils.StatusReporterClient
 
 		consulClient    *consulapi.Client
 		vaultClient     *vaultapi.Client
@@ -115,6 +119,8 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		err = flag.Set("dir", settingsDir)
 		err = flag.Set("namespace", writeNamespace)
 		Expect(err).NotTo(HaveOccurred())
+
+		statusReporterClient = statusutils.NewStatusReporterClient(writeNamespace)
 
 		go func() {
 			defer GinkgoRecover()
@@ -221,27 +227,15 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Wait for vs and gw to be accepted
-		Eventually(func() (core.Status_State, error) {
-			readVs, err := vsClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{Ctx: ctx})
-			if err != nil {
-				return 0, err
-			}
-			readVsStatus, err := readVs.GetStatusForNamespace()
-			Expect(err).NotTo(HaveOccurred())
-			return readVsStatus.GetState(), nil
-		}, "60s", "0.2s").Should(Equal(core.Status_Accepted))
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return vsClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+		}, "60s", ".2s")
 
 		// Wait for the proxy to be accepted. this can take up to 40 seconds, as the vault snapshot
 		// updates every 30 seconds.
-		Eventually(func() (core.Status_State, error) {
-			proxy, err := proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-			if err != nil {
-				return 0, err
-			}
-			readVsStatus, err := proxy.GetStatusForNamespace()
-			Expect(err).NotTo(HaveOccurred())
-			return readVsStatus.GetState(), nil
-		}, "60s", "0.2s").Should(Equal(core.Status_Accepted))
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+		}, "60s", ".2s")
 
 		v1helpers.TestUpstreamReachable(defaults.HttpsPort, svc1, &cert)
 	})
@@ -261,15 +255,9 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Wait for the proxy to be accepted.
-		Eventually(func() (core.Status_State, error) {
-			proxy, err := proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-			if err != nil {
-				return 0, err
-			}
-			readVsStatus, err := proxy.GetStatusForNamespace()
-			Expect(err).NotTo(HaveOccurred())
-			return readVsStatus.GetState(), nil
-		}, "60s", "0.2s").Should(Equal(core.Status_Accepted))
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+		}, "60s", ".2s")
 
 		v1helpers.ExpectHttpOK(nil, nil, defaults.HttpPort,
 			`[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]

@@ -4,6 +4,8 @@ import (
 	"context"
 	"sort"
 
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	"github.com/solo-io/gloo/projects/gateway/pkg/reporting"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -23,12 +25,17 @@ type ProxyReconciler interface {
 }
 
 type proxyReconciler struct {
-	proxyValidator validation.GlooValidationServiceClient
-	baseReconciler gloov1.ProxyReconciler
+	statusReporterClient *statusutils.StatusReporterClient
+	proxyValidator       validation.GlooValidationServiceClient
+	baseReconciler       gloov1.ProxyReconciler
 }
 
-func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient) *proxyReconciler {
-	return &proxyReconciler{proxyValidator: proxyValidator, baseReconciler: gloov1.NewProxyReconciler(proxyClient)}
+func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient, statusReporterClient *statusutils.StatusReporterClient) *proxyReconciler {
+	return &proxyReconciler{
+		statusReporterClient: statusReporterClient,
+		proxyValidator:       proxyValidator,
+		baseReconciler:       gloov1.NewProxyReconciler(proxyClient),
+	}
 }
 
 const proxyValidationErrMsg = "internal err: communication with proxy validation (gloo) failed"
@@ -52,7 +59,9 @@ func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite G
 		return allProxies[i].GetMetadata().Less(allProxies[j].GetMetadata())
 	})
 
-	if err := s.baseReconciler.Reconcile(writeNamespace, allProxies, transitionFunc(proxiesToWrite), clients.ListOpts{
+	proxyTransitionFunction := transitionFunc(proxiesToWrite, utils.TransitionFunction(s.statusReporterClient))
+
+	if err := s.baseReconciler.Reconcile(writeNamespace, allProxies, proxyTransitionFunction, clients.ListOpts{
 		Ctx:      ctx,
 		Selector: labels,
 	}); err != nil {
@@ -190,7 +199,7 @@ func stripInvalidListenersAndVirtualHosts(ctx context.Context, proxiesToWrite Ge
 // stripping invalid virtual hosts / listeners from the desired proxy,
 // else we will wind up with both an invalid and valid version of the same listener/vhost on our proxy
 // which is invalid and will be rejected by Envoy
-func transitionFunc(proxiesToWrite GeneratedProxies) gloov1.TransitionProxyFunc {
+func transitionFunc(proxiesToWrite GeneratedProxies, defaultTransitionFunc gloov1.TransitionProxyFunc) gloov1.TransitionProxyFunc {
 	return func(original, desired *gloov1.Proxy) (b bool, e error) {
 
 		// We intentionally process desired.Listeners first, and then original.Listeners second
@@ -258,6 +267,6 @@ func transitionFunc(proxiesToWrite GeneratedProxies) gloov1.TransitionProxyFunc 
 			return desired.GetListeners()[i].GetName() < desired.GetListeners()[j].GetName()
 		})
 
-		return utils.TransitionFunction(original, desired)
+		return defaultTransitionFunc(original, desired)
 	}
 }

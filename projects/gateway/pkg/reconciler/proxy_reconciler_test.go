@@ -21,6 +21,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"context"
 
@@ -55,7 +56,8 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		})
 
-		validationClient *mock_validation.MockGlooValidationServiceClient
+		validationClient     *mock_validation.MockGlooValidationServiceClient
+		statusReporterClient *statusutils.StatusReporterClient
 
 		reconciler ProxyReconciler
 	)
@@ -77,7 +79,8 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				}, nil
 			}).AnyTimes()
 
-		reconciler = NewProxyReconciler(validationClient, proxyClient)
+		statusReporterClient = statusutils.NewStatusReporterClient(ns)
+		reconciler = NewProxyReconciler(validationClient, proxyClient, statusReporterClient)
 
 		snap = samples.SimpleGatewaySnapshot(us, ns)
 
@@ -153,13 +156,10 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				liveProxy, err := proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
-				liveProxyStatus, err := liveProxy.GetStatusForNamespace()
-				Expect(err).NotTo(HaveOccurred())
-
+				liveProxyStatus := statusReporterClient.GetStatus(liveProxy)
 				if liveProxyStatus == nil {
 					liveProxyStatus = &core.Status{State: core.Status_Accepted, ReportedBy: "gateway"}
-					err := liveProxy.SetStatusForNamespace(liveProxyStatus)
-					Expect(err).NotTo(HaveOccurred())
+					statusReporterClient.SetStatus(liveProxy, liveProxyStatus)
 				} else {
 					liveProxyStatus.State = core.Status_Accepted
 				}
@@ -176,8 +176,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				// typically the reconciler sets resources to pending for processing, but here
 				// we expect the status to be carried over because nothing changed from gloo's
 				// point of view
-				status, err := px.GetStatusForNamespace()
-				Expect(err).NotTo(HaveOccurred())
+				status := statusReporterClient.GetStatus(px)
 				Expect(status.GetState()).To(Equal(core.Status_Accepted))
 
 				// after reconcile with the updated snapshot, we confirm that gateway-specific

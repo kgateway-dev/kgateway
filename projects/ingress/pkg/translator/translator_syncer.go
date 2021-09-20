@@ -3,6 +3,8 @@ package translator
 import (
 	"context"
 
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap/zapcore"
@@ -26,17 +28,20 @@ type translatorSyncer struct {
 	// only relevant when requireIngressClass is true.
 	// defaults to 'gloo'
 	customIngressClass string
+
+	statusReporterClient *statusutils.StatusReporterClient
 }
 
-func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error, requireIngressClass bool, customIngressClass string) v1.TranslatorSyncer {
+func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error, requireIngressClass bool, customIngressClass string, statusReporterClient *statusutils.StatusReporterClient) v1.TranslatorSyncer {
 	return &translatorSyncer{
-		writeNamespace:      writeNamespace,
-		writeErrs:           writeErrs,
-		proxyClient:         proxyClient,
-		ingressClient:       ingressClient,
-		proxyReconciler:     gloov1.NewProxyReconciler(proxyClient),
-		requireIngressClass: requireIngressClass,
-		customIngressClass:  customIngressClass,
+		writeNamespace:       writeNamespace,
+		writeErrs:            writeErrs,
+		proxyClient:          proxyClient,
+		ingressClient:        ingressClient,
+		proxyReconciler:      gloov1.NewProxyReconciler(proxyClient),
+		requireIngressClass:  requireIngressClass,
+		customIngressClass:   customIngressClass,
+		statusReporterClient: statusReporterClient,
 	}
 }
 
@@ -69,7 +74,9 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		desiredResources = gloov1.ProxyList{proxy}
 	}
 
-	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, utils.TransitionFunction, clients.ListOpts{
+	proxyTransitionFunction := utils.TransitionFunction(s.statusReporterClient)
+
+	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, proxyTransitionFunction, clients.ListOpts{
 		Ctx:      ctx,
 		Selector: labels,
 	}); err != nil {

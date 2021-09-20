@@ -3,6 +3,9 @@ package helpers
 import (
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	errors "github.com/rotisserie/eris"
@@ -18,6 +21,10 @@ const (
 
 type InputResourceGetter func() (resources.InputResource, error)
 type InputResourceListGetter func() (resources.InputResourceList, error)
+
+var (
+	statusReporterNamespace = bootstrap.GetStatusReporterNamespaceOrDefault(defaults.GlooSystem)
+)
 
 func EventuallyResourceAccepted(getter InputResourceGetter, intervals ...interface{}) {
 	EventuallyResourceStatusMatchesState(1, getter, core.Status_Accepted, intervals...)
@@ -43,10 +50,7 @@ func EventuallyResourceStatusMatchesState(offset int, getter InputResourceGetter
 			return core.Status{}, errors.Wrapf(err, "failed to get resource")
 		}
 
-		status, err := resource.GetStatusForNamespace()
-		if err != nil {
-			return core.Status{}, errors.Wrapf(err, "GetStatusForNamespace for %v fails", resource.GetMetadata().GetName())
-		}
+		status := resource.GetStatusForNamespace(statusReporterNamespace)
 		if status == nil {
 			return core.Status{}, errors.Wrapf(err, "waiting for %v status to be non-nil", resource.GetMetadata().GetName())
 		}

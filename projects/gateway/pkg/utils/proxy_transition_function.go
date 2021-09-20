@@ -6,25 +6,27 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 )
 
-func TransitionFunction(original, desired *v1.Proxy) (bool, error) {
-	if len(original.GetListeners()) != len(desired.GetListeners()) {
-		if err := updateDesiredStatus(original, desired); err != nil {
-			return false, err
-		}
-		return true, nil
-	}
-	for i := range original.GetListeners() {
-		if !original.GetListeners()[i].Equal(desired.GetListeners()[i]) {
-			if err := updateDesiredStatus(original, desired); err != nil {
+func TransitionFunction(statusReporterClient *statusutils.StatusReporterClient) v1.TransitionProxyFunc {
+	return func(original, desired *v1.Proxy) (bool, error) {
+		if len(original.GetListeners()) != len(desired.GetListeners()) {
+			if err := updateDesiredStatus(original, desired, statusReporterClient); err != nil {
 				return false, err
 			}
 			return true, nil
 		}
+		for i := range original.GetListeners() {
+			if !original.GetListeners()[i].Equal(desired.GetListeners()[i]) {
+				if err := updateDesiredStatus(original, desired, statusReporterClient); err != nil {
+					return false, err
+				}
+				return true, nil
+			}
+		}
+		return false, nil
 	}
-	return false, nil
 }
 
-func updateDesiredStatus(original, desired *v1.Proxy) error {
+func updateDesiredStatus(original, desired *v1.Proxy, statusReporterClient *statusutils.StatusReporterClient) error {
 	// we made an update to the proxy from the gateway's point of view.
 	// let's make sure we update the status for gloo if the hash hasn't changed.
 	// the proxy can change from the gateway's point of view but not from gloo's if,
@@ -34,7 +36,7 @@ func updateDesiredStatus(original, desired *v1.Proxy) error {
 	// until we make the full move.
 	equal, ok := hashutils.HashableEqual(original, desired)
 	if ok && equal {
-		return statusutils.CopyStatusForPodNamespace(original, desired)
+		statusReporterClient.SetStatus(desired, statusReporterClient.GetStatus(original))
 	}
 	return nil
 }

@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
@@ -27,6 +30,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		proxyClient              gloov1.ProxyClient
 		vs                       *v1.VirtualService
 		snapshot                 func() *v1.ApiSnapshot
+		statusReporterClient     *statusutils.StatusReporterClient
 
 		ctx    context.Context
 		cancel context.CancelFunc
@@ -60,12 +64,16 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
+		statusReporterNamespace := defaults.GlooSystem
+		reporterRef := &core.ResourceRef{Namespace: statusReporterNamespace, Name: "gateway"}
+		statusReporterClient = statusutils.NewStatusReporterClient(statusReporterNamespace)
+
 		proxyClient, err = gloov1.NewProxyClient(ctx, memFactory)
 		Expect(err).NotTo(HaveOccurred())
-		proxyReconciler := reconciler.NewProxyReconciler(nil, proxyClient)
-		rpt := reporter.NewReporter("gateway", gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())
+		proxyReconciler := reconciler.NewProxyReconciler(nil, proxyClient, statusReporterClient)
+		rpt := reporter.NewReporter(reporterRef, gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())
 		xlator := translator.NewDefaultTranslator(translator.Opts{})
-		ts = NewTranslatorSyncer(ctx, "gloo-system", proxyClient, proxyReconciler, rpt, xlator)
+		ts = NewTranslatorSyncer(ctx, "gloo-system", proxyClient, proxyReconciler, rpt, xlator, statusReporterClient)
 
 		vs = &v1.VirtualService{
 			Metadata: &core.Metadata{
@@ -134,8 +142,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 				return core.Status_Pending, err
 			}
 
-			newvsStatus, err := newvs.GetStatusForNamespace()
-			Expect(err).NotTo(HaveOccurred())
+			newvsStatus := statusReporterClient.GetStatus(newvs)
 			subresource := newvsStatus.GetSubresourceStatuses()
 			if subresource == nil {
 				return core.Status_Pending, fmt.Errorf("no status")
@@ -153,8 +160,8 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			if err != nil {
 				return core.Status_Pending, err
 			}
-			proxyStatus, err := proxy.GetStatusForNamespace()
-			Expect(err).NotTo(HaveOccurred())
+
+			proxyStatus := statusReporterClient.GetStatus(proxy)
 			return proxyStatus.GetState(), nil
 		})
 	}
@@ -163,8 +170,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		proxy, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		err = proxy.SetStatusForNamespace(&core.Status{State: core.Status_Accepted})
-		Expect(err).NotTo(HaveOccurred())
+		statusReporterClient.SetStatus(proxy, &core.Status{State: core.Status_Accepted})
 
 		_, err = proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())

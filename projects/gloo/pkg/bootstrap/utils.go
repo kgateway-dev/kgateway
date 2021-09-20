@@ -5,6 +5,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
@@ -284,4 +287,22 @@ func initializeForKube(ctx context.Context,
 
 	return nil
 
+}
+
+func GetStatusReporterNamespaceOrDefault(defaultNamespace string) string {
+	namespace, err := statusutils.GetStatusReporterNamespaceFromEnv()
+	if err == nil {
+		return namespace
+	}
+
+	return defaultNamespace
+}
+
+func GetWriteNamespace(settings *v1.Settings) string {
+	writeNamespace := settings.GetDiscoveryNamespace()
+	if writeNamespace == "" {
+		writeNamespace = defaults.GlooSystem
+	}
+
+	return writeNamespace
 }

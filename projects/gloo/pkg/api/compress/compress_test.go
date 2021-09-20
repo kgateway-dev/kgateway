@@ -16,14 +16,17 @@ import (
 var _ = Describe("Compress", func() {
 
 	var (
-		statusUnmarshaler *statusutils.NamespacedStatusesUnmarshaler
+		statusReporterClent *statusutils.StatusReporterClient
+		statusUnmarshaler   *statusutils.NamespacedStatusesUnmarshaler
 	)
 
 	BeforeEach(func() {
+		ns := "default"
 		statusUnmarshaler = &statusutils.NamespacedStatusesUnmarshaler{
-			StatusReporterNamespace: "default",
+			StatusReporterNamespace: ns,
 			UnmarshalMapToProto:     protoutils.UnmarshalMapToProto,
 		}
+		statusReporterClent = statusutils.NewStatusReporterClient(ns)
 	})
 
 	Context("spec", func() {
@@ -104,7 +107,7 @@ var _ = Describe("Compress", func() {
 					Annotations: map[string]string{"gloo.solo.io/compress": "true"},
 				},
 			}
-			p.SetStatusForNamespace(statusUnmarshaler.StatusReporterNamespace, &core.Status{State: core.Status_Accepted})
+			statusReporterClent.SetStatus(p, &core.Status{State: core.Status_Accepted})
 
 			status, err := MarshalStatus(p)
 			Expect(err).NotTo(HaveOccurred())
@@ -121,7 +124,7 @@ var _ = Describe("Compress", func() {
 					Name: "foo",
 				},
 			}
-			p.SetStatusForNamespace(statusUnmarshaler.StatusReporterNamespace, &core.Status{State: core.Status_Accepted})
+			statusReporterClent.SetStatus(p, &core.Status{State: core.Status_Accepted})
 
 			status1, err := MarshalStatus(p)
 			Expect(err).NotTo(HaveOccurred())

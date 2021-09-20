@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap/zapcore"
@@ -33,11 +35,13 @@ type translatorSyncer struct {
 	ingressClient        knativeclient.IngressesGetter
 	requireIngressClass  bool
 
+	statusReporterClient *statusutils.StatusReporterClient
+
 	// injection for testing
 	translateProxy func(ctx context.Context, proxyName, proxyNamespace string, ingresses v1alpha1.IngressList) (*gloov1.Proxy, error)
 }
 
-func NewSyncer(externalProxyAddress, internalProxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, writeErrs chan error, requireIngressClass bool) v1.TranslatorSyncer {
+func NewSyncer(externalProxyAddress, internalProxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, writeErrs chan error, requireIngressClass bool, statusReporterClient *statusutils.StatusReporterClient) v1.TranslatorSyncer {
 	return &translatorSyncer{
 		externalProxyAddress: externalProxyAddress,
 		internalProxyAddress: internalProxyAddress,
@@ -47,6 +51,7 @@ func NewSyncer(externalProxyAddress, internalProxyAddress, writeNamespace string
 		ingressClient:        ingressClient,
 		proxyReconciler:      gloov1.NewProxyReconciler(proxyClient),
 		requireIngressClass:  requireIngressClass,
+		statusReporterClient: statusReporterClient,
 		translateProxy:       translateProxy,
 	}
 }
@@ -128,7 +133,9 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		desiredResources = append(desiredResources, internalProxy)
 	}
 
-	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, utils.TransitionFunction, clients.ListOpts{
+	proxyTransitionFunction := utils.TransitionFunction(s.statusReporterClient)
+
+	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, proxyTransitionFunction, clients.ListOpts{
 		Ctx:      ctx,
 		Selector: labels,
 	}); err != nil {
@@ -170,11 +177,8 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 			if err != nil {
 				return err
 			}
-			updatedProxyStatus, err := updatedProxy.GetStatusForNamespace()
-			if err != nil {
-				return err
-			}
 
+			updatedProxyStatus := s.statusReporterClient.GetStatus(updatedProxy)
 			switch updatedProxyStatus.GetState() {
 			case core.Status_Pending:
 				continue

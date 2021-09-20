@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 
 	"github.com/golang/protobuf/ptypes/duration"
@@ -277,6 +279,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		return err
 	}
 	opts.WriteNamespace = writeNamespace
+	opts.StatusReporterNamespace = bootstrap.GetStatusReporterNamespaceOrDefault(writeNamespace)
 	opts.WatchNamespaces = watchNamespaces
 	opts.WatchOpts = clients.WatchOpts{
 		Ctx:         ctx,
@@ -521,7 +524,13 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		apiEmitterChan,
 	)
 
-	rpt := reporter.NewReporter("gloo",
+	reporterRef := &core.ResourceRef{
+		Name:      "gloo",
+		Namespace: opts.StatusReporterNamespace,
+	}
+
+	rpt := reporter.NewReporter(
+		reporterRef,
 		hybridUsClient.BaseClient(),
 		proxyClient.BaseClient(),
 		upstreamGroupClient.BaseClient(),
