@@ -196,10 +196,10 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 
 	// Sanitize routes before sending report to gateway
 	s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
-	routeErrorToWarnings(resourceReports, report)
+	routeErrorToWarnings(resourceReports, report.GetProxyReport())
 
-	logger.Infof("proxy validation report result: %v", report.String())
-	return &validation.GlooValidationServiceResponse{ProxyReport: report}, nil
+	logger.Infof("mitchaman - validation report result: %v", report.String())
+	return report, nil
 }
 
 // Update the validation report so that route errors that were changed into warnings during sanitization

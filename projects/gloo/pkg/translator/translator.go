@@ -31,7 +31,7 @@ type Translator interface {
 		params plugins.Params,
 		proxy *v1.Proxy,
 		upstreams []*v1.Upstream,
-	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error)
+	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.GlooValidationServiceResponse, error)
 }
 
 func NewTranslator(
@@ -67,7 +67,7 @@ func (t *translatorFactory) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
 	upstreams []*v1.Upstream,
-) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
+) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.GlooValidationServiceResponse, error) {
 	instance := &translatorInstance{
 		plugins:             t.getPlugins(),
 		settings:            t.settings,
@@ -90,7 +90,7 @@ func (t *translatorInstance) Translate(
 	proxy *v1.Proxy,
 	// TODO(mitchaman): Need to do something with the upstreams
 	upstreams []*v1.Upstream,
-) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
+) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.GlooValidationServiceResponse, error) {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	params.Ctx = ctx
@@ -218,7 +218,13 @@ ClusterLoop:
 		}
 	}
 
-	return xdsSnapshot, reports, proxyRpt, nil
+	report := &validationapi.GlooValidationServiceResponse{
+		ProxyReport: proxyRpt,
+		// TODO(mitchaman): Build upstream report from errors
+		UpstreamReport: &validationapi.UpstreamReport{},
+	}
+
+	return xdsSnapshot, reports, report, nil
 }
 
 // the set of resources returned by one iteration for a single v1.Listener
