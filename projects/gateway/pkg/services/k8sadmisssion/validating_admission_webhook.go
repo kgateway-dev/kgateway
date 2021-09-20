@@ -329,7 +329,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 
 	reports, validationErrs := wh.validate(ctx, gvk, ref, req.Object.Raw, isDelete, dryRun)
 	if reports == nil {
-		reports = &validation.Reports{}
+		reports = &validation.Reports{ProxyReports: &validation.ProxyReports{}}
 	}
 	proxyReports := reports.ProxyReports
 	var proxies []*gloov1.Proxy
