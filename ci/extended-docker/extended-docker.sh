@@ -14,7 +14,9 @@ cleanup() {
 trap "cleanup" EXIT SIGINT
 
 echo ">> Temporary output file ${TEMP_FILE}"
-
+if [ "$err" != 0 ]; then
+  exit $err
+fi
 # grab the image names out of the `make docker` output
 sed -nE 's|Successfully tagged (.*$)|\1|p' ${TEMP_FILE} | grep -v "build-container" | while read f;
 do
