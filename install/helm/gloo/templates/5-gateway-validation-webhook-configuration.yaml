@@ -1,6 +1,6 @@
 {{- define "gateway.validationWebhookSpec" }}
 {{- if and (and .Values.gateway.enabled .Values.gateway.validation.enabled) .Values.gateway.validation.webhook.enabled }}
-apiVersion: admissionregistration.k8s.io/v1beta1
+apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   name: gloo-gateway-validation-webhook-{{ .Release.Namespace }}
@@ -29,6 +29,9 @@ webhooks:
     apiVersions: ["v1"]
     resources: ["*"]
   sideEffects: None
+  matchPolicy: Exact
+  admissionReviewVersions:
+    - v1beta1 # v1beta1 still live in 1.22 https://github.com/kubernetes/api/blob/release-1.22/admission/v1beta1/types.go#L33
 {{- if .Values.gateway.validation.failurePolicy }}
   failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
 {{- end }} {{/* if .Values.gateway.validation.failurePolicy */}}
