@@ -13,6 +13,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 )
 
@@ -25,14 +26,14 @@ var _ = Describe("getStatus", func() {
 		ctx    context.Context
 		cancel context.CancelFunc
 
-		statusReporterClient *statusutils.StatusReporterClient
+		statusClient reporter.StatusClient
 	)
 
 	BeforeEach(func() {
 		Expect(os.Setenv(statusutils.PodNamespaceEnvName, defaults.GlooSystem)).NotTo(HaveOccurred())
 		ctx, cancel = context.WithCancel(context.Background())
 
-		statusReporterClient = statusutils.NewStatusReporterClient(defaults.GlooSystem)
+		statusClient = statusutils.NewNamespacedStatusesClient(defaults.GlooSystem)
 	})
 
 	AfterEach(func() {
@@ -42,7 +43,7 @@ var _ = Describe("getStatus", func() {
 
 	It("handles Pending resource state", func() {
 		vs := &v1.VirtualService{}
-		statusReporterClient.SetStatus(vs, &core.Status{
+		statusClient.SetStatus(vs, &core.Status{
 			State:      core.Status_Pending,
 			ReportedBy: "gloo",
 		})
@@ -51,7 +52,7 @@ var _ = Describe("getStatus", func() {
 		// range through all possible sub resource states
 		for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
 			subResourceStatusState := core.Status_State(subResourceStatusInt)
-			namespacedStatus := statusReporterClient.GetStatus(vs)
+			namespacedStatus := statusClient.GetStatus(vs)
 			namespacedStatus.SubresourceStatuses = map[string]*core.Status{
 				thing1: {
 					State:  subResourceStatusState,
@@ -65,7 +66,7 @@ var _ = Describe("getStatus", func() {
 
 	It("handles Accepted resource state", func() {
 		vs := &v1.VirtualService{}
-		statusReporterClient.SetStatus(vs, &core.Status{
+		statusClient.SetStatus(vs, &core.Status{
 			State:      core.Status_Accepted,
 			ReportedBy: "gloo",
 		})
@@ -75,7 +76,7 @@ var _ = Describe("getStatus", func() {
 		for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
 			subResourceStatusState := core.Status_State(subResourceStatusInt)
 			By(fmt.Sprintf("subresource: %v", subResourceStatusString))
-			status := statusReporterClient.GetStatus(vs)
+			status := statusClient.GetStatus(vs)
 			status.SubresourceStatuses = map[string]*core.Status{
 				thing1: {
 					State:      subResourceStatusState,
@@ -105,7 +106,7 @@ var _ = Describe("getStatus", func() {
 			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String() {
 				By(fmt.Sprintf("resource: %v", resourceStatusString))
 				vs := &v1.VirtualService{}
-				statusReporterClient.SetStatus(vs, &core.Status{
+				statusClient.SetStatus(vs, &core.Status{
 					State:      resourceStatusState,
 					ReportedBy: "gloo",
 				})
@@ -127,7 +128,7 @@ var _ = Describe("getStatus", func() {
 					},
 				}
 				vs := &v1.VirtualService{}
-				statusReporterClient.SetStatus(vs, &core.Status{
+				statusClient.SetStatus(vs, &core.Status{
 					State:               resourceStatusState,
 					SubresourceStatuses: subStatuses,
 					ReportedBy:          "gloo",
@@ -143,7 +144,7 @@ var _ = Describe("getStatus", func() {
 						State: core.Status_Accepted,
 					},
 				}
-				namespacedStatus := statusReporterClient.GetStatus(vs)
+				namespacedStatus := statusClient.GetStatus(vs)
 				namespacedStatus.SubresourceStatuses = subStatuses
 				Expect(getStatus(ctx, vs, namespace)).To(Equal(resourceStatusString))
 			}
@@ -165,7 +166,7 @@ var _ = Describe("getStatus", func() {
 					},
 				}
 				vs := &v1.VirtualService{}
-				statusReporterClient.SetStatus(vs, &core.Status{
+				statusClient.SetStatus(vs, &core.Status{
 					State:               resourceStatusState,
 					SubresourceStatuses: subStatuses,
 					ReportedBy:          "gloo",
@@ -184,7 +185,7 @@ var _ = Describe("getStatus", func() {
 						Reason: reasonUntracked,
 					},
 				}
-				namespacedStatus := statusReporterClient.GetStatus(vs)
+				namespacedStatus := statusClient.GetStatus(vs)
 				namespacedStatus.SubresourceStatuses = subStatuses
 				out = getStatus(ctx, vs, namespace)
 				Expect(out).To(HavePrefix(resourceStatusString + "\n"))
@@ -211,7 +212,7 @@ var _ = Describe("getStatus", func() {
 					},
 				}
 				vs := &v1.VirtualService{}
-				statusReporterClient.SetStatus(vs, &core.Status{
+				statusClient.SetStatus(vs, &core.Status{
 					State:               resourceStatusState,
 					SubresourceStatuses: subStatuses,
 					ReportedBy:          "gloo",
@@ -229,7 +230,7 @@ var _ = Describe("getStatus", func() {
 						State: core.Status_Accepted,
 					},
 				}
-				namespacedStatus := statusReporterClient.GetStatus(vs)
+				namespacedStatus := statusClient.GetStatus(vs)
 				namespacedStatus.SubresourceStatuses = subStatuses
 				out = getStatus(ctx, vs, namespace)
 				Expect(out).To(HavePrefix(resourceStatusString + "\n"))
@@ -246,7 +247,7 @@ var _ = Describe("getStatus", func() {
 						Reason: reasonUpstreamList,
 					},
 				}
-				namespacedStatus = statusReporterClient.GetStatus(vs)
+				namespacedStatus = statusClient.GetStatus(vs)
 				namespacedStatus.SubresourceStatuses = subStatuses
 				out = getStatus(ctx, vs, namespace)
 				Expect(out).To(HavePrefix(resourceStatusString + "\n"))

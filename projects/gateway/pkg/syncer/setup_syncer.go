@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
@@ -216,13 +215,10 @@ func RunGateway(opts translator.Opts) error {
 		return err
 	}
 
-	reporterRef := &core.ResourceRef{
-		Name:      "gateway",
-		Namespace: opts.StatusReporterNamespace,
-	}
+	statusClient := statusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
 
-	rpt := reporter.NewReporter(
-		reporterRef,
+	rpt := reporter.NewReporter("gateway",
+		statusClient,
 		gatewayClient.BaseClient(),
 		virtualServiceClient.BaseClient(),
 		routeTableClient.BaseClient(),
@@ -272,9 +268,7 @@ func RunGateway(opts translator.Opts) error {
 		allowWarnings,
 	))
 
-	statusReporterClient := statusutils.NewStatusReporterClient(opts.StatusReporterNamespace)
-
-	proxyReconciler := reconciler.NewProxyReconciler(validationClient, proxyClient, statusReporterClient)
+	proxyReconciler := reconciler.NewProxyReconciler(validationClient, proxyClient, statusClient)
 
 	translatorSyncer := NewTranslatorSyncer(
 		ctx,
@@ -283,7 +277,7 @@ func RunGateway(opts translator.Opts) error {
 		proxyReconciler,
 		rpt,
 		txlator,
-		statusReporterClient)
+		statusClient)
 
 	gatewaySyncers := v1.ApiSyncers{
 		translatorSyncer,

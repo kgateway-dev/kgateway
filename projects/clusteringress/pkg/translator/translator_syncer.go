@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
 	v1machinery "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -25,24 +25,24 @@ import (
 )
 
 type translatorSyncer struct {
-	proxyAddress         string
-	writeNamespace       string
-	writeErrs            chan error
-	proxyClient          gloov1.ProxyClient
-	proxyReconciler      gloov1.ProxyReconciler
-	ingressClient        knativeclient.IngressesGetter
-	statusReporterClient *statusutils.StatusReporterClient
+	proxyAddress    string
+	writeNamespace  string
+	writeErrs       chan error
+	proxyClient     gloov1.ProxyClient
+	proxyReconciler gloov1.ProxyReconciler
+	ingressClient   knativeclient.IngressesGetter
+	statusClient    reporter.StatusClient
 }
 
-func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, statusReporterClient *statusutils.StatusReporterClient, writeErrs chan error) v1.TranslatorSyncer {
+func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, statusClient reporter.StatusClient, writeErrs chan error) v1.TranslatorSyncer {
 	return &translatorSyncer{
-		proxyAddress:         proxyAddress,
-		writeNamespace:       writeNamespace,
-		writeErrs:            writeErrs,
-		proxyClient:          proxyClient,
-		ingressClient:        ingressClient,
-		proxyReconciler:      gloov1.NewProxyReconciler(proxyClient),
-		statusReporterClient: statusReporterClient,
+		proxyAddress:    proxyAddress,
+		writeNamespace:  writeNamespace,
+		writeErrs:       writeErrs,
+		proxyClient:     proxyClient,
+		ingressClient:   ingressClient,
+		proxyReconciler: gloov1.NewProxyReconciler(proxyClient),
+		statusClient:    statusClient,
 	}
 }
 
@@ -81,7 +81,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		desiredResources = gloov1.ProxyList{proxy}
 	}
 
-	proxyTransitionFunction := utils.TransitionFunction(s.statusReporterClient)
+	proxyTransitionFunction := utils.TransitionFunction(s.statusClient)
 
 	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, proxyTransitionFunction, clients.ListOpts{
 		Ctx:      ctx,
@@ -121,7 +121,7 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 			if err != nil {
 				return err
 			}
-			proxyStatus := s.statusReporterClient.GetStatus(updatedProxy)
+			proxyStatus := s.statusClient.GetStatus(updatedProxy)
 
 			switch proxyStatus.GetState() {
 			case core.Status_Pending:

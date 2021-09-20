@@ -30,19 +30,19 @@ import (
 var _ = Describe("Translate Proxy", func() {
 
 	var (
-		xdsCache             *MockXdsCache
-		sanitizer            *MockXdsSanitizer
-		syncer               v1.ApiSyncer
-		snap                 *v1.ApiSnapshot
-		settings             *v1.Settings
-		upstreamClient       clients.ResourceClient
-		proxyClient          v1.ProxyClient
-		ctx                  context.Context
-		cancel               context.CancelFunc
-		proxyName            = "proxy-name"
-		ns                   = "any-ns"
-		ref                  *core.ResourceRef
-		statusReporterClient *statusutils.StatusReporterClient
+		xdsCache       *MockXdsCache
+		sanitizer      *MockXdsSanitizer
+		syncer         v1.ApiSyncer
+		snap           *v1.ApiSnapshot
+		settings       *v1.Settings
+		upstreamClient clients.ResourceClient
+		proxyClient    v1.ProxyClient
+		ctx            context.Context
+		cancel         context.CancelFunc
+		proxyName      = "proxy-name"
+		ns             = "any-ns"
+		ref            *core.ResourceRef
+		statusClient   reporter.StatusClient
 	)
 
 	BeforeEach(func() {
@@ -70,10 +70,9 @@ var _ = Describe("Translate Proxy", func() {
 		settings = &v1.Settings{}
 
 		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(ns)
-		ref = &core.ResourceRef{Name: "syncer-test", Namespace: statusReporterNamespace}
+		statusClient = statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
 
-		rep := reporter.NewReporter(ref, proxyClient.BaseClient(), upstreamClient)
-		statusReporterClient = statusutils.NewStatusReporterClient(statusReporterNamespace)
+		rep := reporter.NewReporter("syncer-test", statusClient, proxyClient.BaseClient(), upstreamClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
 		syncer = NewTranslatorSyncer(&mockTranslator{true, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
@@ -91,7 +90,7 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(proxies).To(HaveLen(1))
 		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
-		Expect(statusReporterClient.GetStatus(proxies[0])).To(Equal(&core.Status{
+		Expect(statusClient.GetStatus(proxies[0])).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
 			ReportedBy: ref.GetName(),
@@ -119,7 +118,7 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(proxies).To(HaveLen(1))
 		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
-		Expect(statusReporterClient.GetStatus(proxies[0])).To(Equal(&core.Status{
+		Expect(statusClient.GetStatus(proxies[0])).To(Equal(&core.Status{
 			State:      1,
 			ReportedBy: ref.GetName(),
 		}))
@@ -172,20 +171,20 @@ var _ = Describe("Translate Proxy", func() {
 var _ = Describe("Empty cache", func() {
 
 	var (
-		xdsCache             *MockXdsCache
-		sanitizer            *MockXdsSanitizer
-		syncer               v1.ApiSyncer
-		settings             *v1.Settings
-		upstreamClient       clients.ResourceClient
-		proxyClient          v1.ProxyClient
-		ctx                  context.Context
-		cancel               context.CancelFunc
-		proxy                *v1.Proxy
-		snapshot             envoycache.Snapshot
-		proxyName            = "proxy-name"
-		ns                   = "any-ns"
-		ref                  *core.ResourceRef
-		statusReporterClient *statusutils.StatusReporterClient
+		xdsCache       *MockXdsCache
+		sanitizer      *MockXdsSanitizer
+		syncer         v1.ApiSyncer
+		settings       *v1.Settings
+		upstreamClient clients.ResourceClient
+		proxyClient    v1.ProxyClient
+		ctx            context.Context
+		cancel         context.CancelFunc
+		proxy          *v1.Proxy
+		snapshot       envoycache.Snapshot
+		proxyName      = "proxy-name"
+		ns             = "any-ns"
+		ref            *core.ResourceRef
+		statusClient   reporter.StatusClient
 	)
 
 	BeforeEach(func() {
@@ -213,9 +212,9 @@ var _ = Describe("Empty cache", func() {
 		settings = &v1.Settings{}
 
 		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(ns)
-		ref = &core.ResourceRef{Name: "syncer-test", Namespace: statusReporterNamespace}
-		rep := reporter.NewReporter(ref, proxyClient.BaseClient(), upstreamClient)
-		statusReporterClient = statusutils.NewStatusReporterClient(statusReporterNamespace)
+		statusClient = statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
+
+		rep := reporter.NewReporter("syncer-test", statusClient, proxyClient.BaseClient(), upstreamClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
 
@@ -282,7 +281,7 @@ var _ = Describe("Empty cache", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(proxies).To(HaveLen(1))
 		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
-		Expect(statusReporterClient.GetStatus(proxies[0])).To(Equal(&core.Status{
+		Expect(statusClient.GetStatus(proxies[0])).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
 			ReportedBy: ref.GetName(),
@@ -293,25 +292,25 @@ var _ = Describe("Empty cache", func() {
 var _ = Describe("Translate mulitple proxies with errors", func() {
 
 	var (
-		xdsCache             *MockXdsCache
-		sanitizer            *MockXdsSanitizer
-		syncer               v1.ApiSyncer
-		snap                 *v1.ApiSnapshot
-		settings             *v1.Settings
-		proxyClient          v1.ProxyClient
-		upstreamClient       v1.UpstreamClient
-		proxyName            = "proxy-name"
-		upstreamName         = "upstream-name"
-		ns                   = "any-ns"
-		ref                  *core.ResourceRef
-		statusReporterClient *statusutils.StatusReporterClient
+		xdsCache       *MockXdsCache
+		sanitizer      *MockXdsSanitizer
+		syncer         v1.ApiSyncer
+		snap           *v1.ApiSnapshot
+		settings       *v1.Settings
+		proxyClient    v1.ProxyClient
+		upstreamClient v1.UpstreamClient
+		proxyName      = "proxy-name"
+		upstreamName   = "upstream-name"
+		ns             = "any-ns"
+		ref            *core.ResourceRef
+		statusClient   reporter.StatusClient
 	)
 
 	proxiesShouldHaveErrors := func(proxies v1.ProxyList, numProxies int) {
 		Expect(proxies).To(HaveLen(numProxies))
 		for _, proxy := range proxies {
 			Expect(proxy).To(BeAssignableToTypeOf(&v1.Proxy{}))
-			Expect(statusReporterClient.GetStatus(proxy)).To(Equal(&core.Status{
+			Expect(statusClient.GetStatus(proxy)).To(Equal(&core.Status{
 				State:      2,
 				Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
 				ReportedBy: ref.GetName(),
@@ -374,9 +373,9 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		settings = &v1.Settings{}
 
 		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(ns)
-		ref = &core.ResourceRef{Name: "syncer-test", Namespace: statusReporterNamespace}
-		rep := reporter.NewReporter(ref, proxyClient.BaseClient(), usClient)
-		statusReporterClient = statusutils.NewStatusReporterClient(statusReporterNamespace)
+		statusClient = statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
+
+		rep := reporter.NewReporter("syncer-test", statusClient, proxyClient.BaseClient(), usClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
 		syncer = NewTranslatorSyncer(&mockTranslator{true, true, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
@@ -403,7 +402,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(proxies).To(HaveLen(2))
 		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
-		Expect(statusReporterClient.GetStatus(proxies[0])).To(Equal(&core.Status{
+		Expect(statusClient.GetStatus(proxies[0])).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
 			ReportedBy: ref.GetName(),
@@ -428,7 +427,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		upstreams, err := upstreamClient.List(ns, clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(statusReporterClient.GetStatus(upstreams[0])).To(Equal(&core.Status{
+		Expect(statusClient.GetStatus(upstreams[0])).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "2 errors occurred:\n\t* upstream is bad - determined by proxy-name1\n\t* upstream is bad - determined by proxy-name2\n\n",
 			ReportedBy: ref.GetName(),
@@ -447,7 +446,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		upstreams, err := upstreamClient.List(ns, clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(upstreams).To(HaveLen(1))
-		Expect(statusReporterClient.GetStatus(upstreams[0])).To(Equal(&core.Status{
+		Expect(statusClient.GetStatus(upstreams[0])).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "1 error occurred:\n\t* generic upstream error\n\n",
 			ReportedBy: ref.GetName(),

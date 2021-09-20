@@ -3,8 +3,6 @@ package translator
 import (
 	"context"
 
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
-
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap/zapcore"
@@ -14,6 +12,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
 type translatorSyncer struct {
@@ -29,19 +28,19 @@ type translatorSyncer struct {
 	// defaults to 'gloo'
 	customIngressClass string
 
-	statusReporterClient *statusutils.StatusReporterClient
+	statusClient reporter.StatusClient
 }
 
-func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error, requireIngressClass bool, customIngressClass string, statusReporterClient *statusutils.StatusReporterClient) v1.TranslatorSyncer {
+func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error, requireIngressClass bool, customIngressClass string, statusClient reporter.StatusClient) v1.TranslatorSyncer {
 	return &translatorSyncer{
-		writeNamespace:       writeNamespace,
-		writeErrs:            writeErrs,
-		proxyClient:          proxyClient,
-		ingressClient:        ingressClient,
-		proxyReconciler:      gloov1.NewProxyReconciler(proxyClient),
-		requireIngressClass:  requireIngressClass,
-		customIngressClass:   customIngressClass,
-		statusReporterClient: statusReporterClient,
+		writeNamespace:      writeNamespace,
+		writeErrs:           writeErrs,
+		proxyClient:         proxyClient,
+		ingressClient:       ingressClient,
+		proxyReconciler:     gloov1.NewProxyReconciler(proxyClient),
+		requireIngressClass: requireIngressClass,
+		customIngressClass:  customIngressClass,
+		statusClient:        statusClient,
 	}
 }
 
@@ -74,7 +73,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		desiredResources = gloov1.ProxyList{proxy}
 	}
 
-	proxyTransitionFunction := utils.TransitionFunction(s.statusReporterClient)
+	proxyTransitionFunction := utils.TransitionFunction(s.statusClient)
 
 	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, proxyTransitionFunction, clients.ListOpts{
 		Ctx:      ctx,

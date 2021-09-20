@@ -34,7 +34,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		namespace := "write-namespace"
 
 		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(namespace)
-		statusReporterClient := statusutils.NewStatusReporterClient(statusReporterNamespace)
+		statusClient := statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
 		proxyClient, _ := v1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{Cache: memory.NewInMemoryResourceCache()})
 		clusterIngress := &v1alpha1.ClusterIngress{ClusterIngress: knative.ClusterIngress{
 			ObjectMeta: v12.ObjectMeta{Generation: 1},
@@ -43,7 +43,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		knativeClient := &mockIngressesGetter{
 			ciClient: &mockCiClient{ci: toKube(clusterIngress)}}
 
-		syncer := NewSyncer(proxyAddress, namespace, proxyClient, knativeClient, statusReporterClient, make(chan error)).(*translatorSyncer)
+		syncer := NewSyncer(proxyAddress, namespace, proxyClient, knativeClient, statusClient, make(chan error)).(*translatorSyncer)
 		proxy := &v1.Proxy{Metadata: &core.Metadata{Name: "hi", Namespace: "howareyou"}}
 		proxy, _ = proxyClient.Write(proxy, clients.WriteOpts{})
 
@@ -51,7 +51,7 @@ var _ = Describe("TranslatorSyncer", func() {
 			defer GinkgoRecover()
 			// update status after a 1s sleep
 			time.Sleep(time.Second / 5)
-			statusReporterClient.SetStatus(proxy, &core.Status{
+			statusClient.SetStatus(proxy, &core.Status{
 				State: core.Status_Accepted,
 			})
 			_, err := proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 
@@ -524,13 +524,10 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		apiEmitterChan,
 	)
 
-	reporterRef := &core.ResourceRef{
-		Name:      "gloo",
-		Namespace: opts.StatusReporterNamespace,
-	}
+	statusClient := statusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
 
-	rpt := reporter.NewReporter(
-		reporterRef,
+	rpt := reporter.NewReporter("gloo",
+		statusClient,
 		hybridUsClient.BaseClient(),
 		proxyClient.BaseClient(),
 		upstreamGroupClient.BaseClient(),

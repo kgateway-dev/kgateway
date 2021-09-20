@@ -15,6 +15,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,7 +27,7 @@ var _ = Describe("Root", func() {
 		ctx    context.Context
 		cancel context.CancelFunc
 
-		statusReporterClient *statusutils.StatusReporterClient
+		statusClient reporter.StatusClient
 	)
 
 	BeforeEach(func() {
@@ -34,7 +35,7 @@ var _ = Describe("Root", func() {
 		helpers.UseMemoryClients()
 		ctx, cancel = context.WithCancel(context.Background())
 
-		statusReporterClient = statusutils.NewStatusReporterClient(defaults.GlooSystem)
+		statusClient = statusutils.NewNamespacedStatusesClient(defaults.GlooSystem)
 	})
 
 	AfterEach(func() {
@@ -115,7 +116,7 @@ var _ = Describe("Root", func() {
 					Namespace: "gloo-system",
 				},
 			}
-			statusReporterClient.SetStatus(warningUpstream, &core.Status{
+			statusClient.SetStatus(warningUpstream, &core.Status{
 				State:      core.Status_Warning,
 				Reason:     "I am an upstream with a warning",
 				ReportedBy: "gateway",
@@ -129,7 +130,7 @@ var _ = Describe("Root", func() {
 					Namespace: "gloo-system",
 				},
 			}
-			statusReporterClient.SetStatus(rejectedUpstream, &core.Status{
+			statusClient.SetStatus(rejectedUpstream, &core.Status{
 				State:      core.Status_Rejected,
 				Reason:     "I am a rejected upstream",
 				ReportedBy: "gateway",
@@ -140,7 +141,7 @@ var _ = Describe("Root", func() {
 			rejectedVs := &v12.VirtualService{
 				Metadata: &core.Metadata{Name: "some-bad-vs", Namespace: "gloo-system"},
 			}
-			statusReporterClient.SetStatus(rejectedVs, &core.Status{
+			statusClient.SetStatus(rejectedVs, &core.Status{
 				State:      core.Status_Rejected,
 				Reason:     "I am a rejected vs",
 				ReportedBy: "gateway",

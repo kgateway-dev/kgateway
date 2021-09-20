@@ -193,7 +193,7 @@ func RunIngress(opts Opts) error {
 		kubeServiceClient := v1.NewKubeServiceClientWithBase(baseKubeServiceClient)
 
 		translatorEmitter := v1.NewTranslatorEmitter(upstreamClient, kubeServiceClient, ingressClient)
-		statusReporterClient := statusutils.NewStatusReporterClient(opts.StatusReporterNamespace)
+		statusClient := statusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
 		translatorSync := translator.NewSyncer(
 			opts.WriteNamespace,
 			proxyClient,
@@ -201,7 +201,7 @@ func RunIngress(opts Opts) error {
 			writeErrs,
 			opts.RequireIngressClass,
 			opts.CustomIngressClass,
-			statusReporterClient)
+			statusClient)
 		translatorEventLoop := v1.NewTranslatorEventLoop(translatorEmitter, translatorSync)
 		translatorEventLoopErrs, err := translatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
 		if err != nil {
@@ -243,13 +243,13 @@ func RunIngress(opts Opts) error {
 			baseClient := clusteringressclient.NewResourceClient(knative, knativeCache)
 			ingressClient := clusteringressv1alpha1.NewClusterIngressClientWithBase(baseClient)
 			clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(ingressClient)
-			statusReporterClient := statusutils.NewStatusReporterClient(opts.StatusReporterNamespace)
+			statusClient := statusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
 			clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(
 				opts.ClusterIngressProxyAddress,
 				opts.WriteNamespace,
 				proxyClient,
 				knative.NetworkingV1alpha1(),
-				statusReporterClient,
+				statusClient,
 				writeErrs,
 			)
 			clusterIngTranslatorEventLoop := clusteringressv1.NewTranslatorEventLoop(clusterIngTranslatorEmitter, clusterIngTranslatorSync)
@@ -267,7 +267,7 @@ func RunIngress(opts Opts) error {
 			baseClient := knativeclient.NewResourceClient(knative, knativeCache)
 			ingressClient := knativev1alpha1.NewIngressClientWithBase(baseClient)
 			knativeTranslatorEmitter := knativev1.NewTranslatorEmitter(ingressClient)
-			statusReporterClient := statusutils.NewStatusReporterClient(opts.StatusReporterNamespace)
+			statusClient := statusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
 			knativeTranslatorSync := knativetranslator.NewSyncer(
 				opts.KnativeExternalProxyAddress,
 				opts.KnativeInternalProxyAddress,
@@ -276,7 +276,7 @@ func RunIngress(opts Opts) error {
 				knative.NetworkingV1alpha1(),
 				writeErrs,
 				opts.RequireIngressClass,
-				statusReporterClient,
+				statusClient,
 			)
 			knativeTranslatorEventLoop := knativev1.NewTranslatorEventLoop(knativeTranslatorEmitter, knativeTranslatorSync)
 			knativeTranslatorEventLoopErrs, err := knativeTranslatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)

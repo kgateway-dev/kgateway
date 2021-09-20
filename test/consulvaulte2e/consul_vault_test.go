@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -42,15 +43,15 @@ import (
 var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 
 	var (
-		ctx                  context.Context
-		cancel               context.CancelFunc
-		consulInstance       *services.ConsulInstance
-		vaultInstance        *services.VaultInstance
-		envoyInstance        *services.EnvoyInstance
-		svc1                 *v1helpers.TestUpstream
-		err                  error
-		settingsDir          string
-		statusReporterClient *statusutils.StatusReporterClient
+		ctx            context.Context
+		cancel         context.CancelFunc
+		consulInstance *services.ConsulInstance
+		vaultInstance  *services.VaultInstance
+		envoyInstance  *services.EnvoyInstance
+		svc1           *v1helpers.TestUpstream
+		err            error
+		settingsDir    string
+		statusClient   reporter.StatusClient
 
 		consulClient    *consulapi.Client
 		vaultClient     *vaultapi.Client
@@ -120,7 +121,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		err = flag.Set("namespace", writeNamespace)
 		Expect(err).NotTo(HaveOccurred())
 
-		statusReporterClient = statusutils.NewStatusReporterClient(writeNamespace)
+		statusClient = statusutils.NewNamespacedStatusesClient(writeNamespace)
 
 		go func() {
 			defer GinkgoRecover()

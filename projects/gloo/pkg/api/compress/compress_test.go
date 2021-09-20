@@ -13,12 +13,13 @@ import (
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
 var _ = Describe("Compress", func() {
 
 	var (
-		statusReporterClent *statusutils.StatusReporterClient
+		statusReporterClent reporter.StatusClient
 		statusUnmarshaler   *statusutils.NamespacedStatusesUnmarshaler
 	)
 
@@ -28,7 +29,7 @@ var _ = Describe("Compress", func() {
 			StatusReporterNamespace: ns,
 			UnmarshalMapToProto:     protoutils.UnmarshalMapToProto,
 		}
-		statusReporterClent = statusutils.NewStatusReporterClient(ns)
+		statusReporterClent = statusutils.NewNamespacedStatusesClient(ns)
 	})
 
 	Context("spec", func() {

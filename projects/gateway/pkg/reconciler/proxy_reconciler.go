@@ -4,8 +4,6 @@ import (
 	"context"
 	"sort"
 
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
-
 	"github.com/solo-io/gloo/projects/gateway/pkg/reporting"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -25,16 +23,16 @@ type ProxyReconciler interface {
 }
 
 type proxyReconciler struct {
-	statusReporterClient *statusutils.StatusReporterClient
-	proxyValidator       validation.GlooValidationServiceClient
-	baseReconciler       gloov1.ProxyReconciler
+	statusClient   reporter.StatusClient
+	proxyValidator validation.GlooValidationServiceClient
+	baseReconciler gloov1.ProxyReconciler
 }
 
-func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient, statusReporterClient *statusutils.StatusReporterClient) *proxyReconciler {
+func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient, statusClient reporter.StatusClient) *proxyReconciler {
 	return &proxyReconciler{
-		statusReporterClient: statusReporterClient,
-		proxyValidator:       proxyValidator,
-		baseReconciler:       gloov1.NewProxyReconciler(proxyClient),
+		statusClient:   statusClient,
+		proxyValidator: proxyValidator,
+		baseReconciler: gloov1.NewProxyReconciler(proxyClient),
 	}
 }
 
@@ -59,7 +57,7 @@ func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite G
 		return allProxies[i].GetMetadata().Less(allProxies[j].GetMetadata())
 	})
 
-	proxyTransitionFunction := transitionFunc(proxiesToWrite, utils.TransitionFunction(s.statusReporterClient))
+	proxyTransitionFunction := transitionFunc(proxiesToWrite, utils.TransitionFunction(s.statusClient))
 
 	if err := s.baseReconciler.Reconcile(writeNamespace, allProxies, proxyTransitionFunction, clients.ListOpts{
 		Ctx:      ctx,

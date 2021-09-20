@@ -57,8 +57,8 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		})
 
-		validationClient     *mock_validation.MockGlooValidationServiceClient
-		statusReporterClient *statusutils.StatusReporterClient
+		validationClient *mock_validation.MockGlooValidationServiceClient
+		statusClient     reporter.StatusClient
 
 		reconciler ProxyReconciler
 	)
@@ -81,8 +81,8 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 			}).AnyTimes()
 
 		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(ns)
-		statusReporterClient = statusutils.NewStatusReporterClient(statusReporterNamespace)
-		reconciler = NewProxyReconciler(validationClient, proxyClient, statusReporterClient)
+		statusClient = statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
+		reconciler = NewProxyReconciler(validationClient, proxyClient, statusClient)
 
 		snap = samples.SimpleGatewaySnapshot(us, ns)
 
@@ -158,10 +158,10 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				liveProxy, err := proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
-				liveProxyStatus := statusReporterClient.GetStatus(liveProxy)
+				liveProxyStatus := statusClient.GetStatus(liveProxy)
 				if liveProxyStatus == nil {
 					liveProxyStatus = &core.Status{State: core.Status_Accepted, ReportedBy: "gateway"}
-					statusReporterClient.SetStatus(liveProxy, liveProxyStatus)
+					statusClient.SetStatus(liveProxy, liveProxyStatus)
 				} else {
 					liveProxyStatus.State = core.Status_Accepted
 				}
@@ -178,7 +178,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				// typically the reconciler sets resources to pending for processing, but here
 				// we expect the status to be carried over because nothing changed from gloo's
 				// point of view
-				status := statusReporterClient.GetStatus(px)
+				status := statusClient.GetStatus(px)
 				Expect(status.GetState()).To(Equal(core.Status_Accepted))
 
 				// after reconcile with the updated snapshot, we confirm that gateway-specific
