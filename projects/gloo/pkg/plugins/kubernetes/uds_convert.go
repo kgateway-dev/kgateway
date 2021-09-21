@@ -44,7 +44,7 @@ func (uc *KubeUpstreamConverter) UpstreamsForService(ctx context.Context, svc *k
 
 func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort) *v1.Upstream {
 	meta := svc.ObjectMeta
-	coremeta := kubeutils.FromKubeMeta(meta)
+	coremeta := kubeutils.FromKubeMeta(meta, false)
 	coremeta.ResourceVersion = ""
 	coremeta.Name = UpstreamName(meta.Namespace, meta.Name, port.Port)
 	labels := coremeta.GetLabels()

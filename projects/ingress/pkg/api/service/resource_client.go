@@ -62,7 +62,7 @@ func FromKube(svc *kubev1.Service) (*v1.KubeService, error) {
 		KubeServiceStatus: status,
 	}
 
-	resource.SetMetadata(kubeutils.FromKubeMeta(svc.ObjectMeta))
+	resource.SetMetadata(kubeutils.FromKubeMeta(svc.ObjectMeta, true))
 
 	return resource, nil
 }
