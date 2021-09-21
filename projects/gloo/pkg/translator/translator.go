@@ -30,7 +30,6 @@ type Translator interface {
 	Translate(
 		params plugins.Params,
 		proxy *v1.Proxy,
-		upstreams []*v1.Upstream,
 	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.GlooValidationServiceResponse, error)
 }
 
@@ -66,7 +65,6 @@ type translatorFactory struct {
 func (t *translatorFactory) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
-	upstreams []*v1.Upstream,
 ) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.GlooValidationServiceResponse, error) {
 	instance := &translatorInstance{
 		plugins:             t.getPlugins(),
@@ -74,7 +72,7 @@ func (t *translatorFactory) Translate(
 		sslConfigTranslator: t.sslConfigTranslator,
 		hasher:              t.hasher,
 	}
-	return instance.Translate(params, proxy, upstreams)
+	return instance.Translate(params, proxy)
 }
 
 // a translator instance performs one
@@ -88,8 +86,6 @@ type translatorInstance struct {
 func (t *translatorInstance) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
-	// TODO(mitchaman): Need to do something with the upstreams
-	upstreams []*v1.Upstream,
 ) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.GlooValidationServiceResponse, error) {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")

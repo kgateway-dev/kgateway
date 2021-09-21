@@ -186,6 +186,8 @@ message TcpHostReport {
 }
 
 message UpstreamReport {
+    // TODO(mitchamam): String error, no enum, mirror ResourceReports
+
     // Error types for the upstream config.
     message Error {
         enum Type {

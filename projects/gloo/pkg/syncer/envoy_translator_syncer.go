@@ -122,7 +122,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot, 
 			Snapshot: snap,
 		}
 
-		xdsSnapshot, reports, _, err := s.translator.Translate(params, proxy /* TODO(mitchaman): do something for upstreams */, []*v1.Upstream{})
+		xdsSnapshot, reports, _, err := s.translator.Translate(params, proxy)
 		if err != nil {
 			err := eris.Wrapf(err, "translation loop failed")
 			logger.DPanicw("", zap.Error(err))

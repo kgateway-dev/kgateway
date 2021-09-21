@@ -446,7 +446,7 @@ type mockTranslator struct {
 	currentSnapshot    envoycache.Snapshot
 }
 
-func (t *mockTranslator) Translate(params plugins.Params, proxy *v1.Proxy, upstreams []*v1.Upstream) (envoycache.Snapshot, reporter.ResourceReports, *validation.GlooValidationServiceResponse, error) {
+func (t *mockTranslator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validation.GlooValidationServiceResponse, error) {
 	if t.reportErrs {
 		rpts := reporter.ResourceReports{}
 		rpts.AddError(proxy, errors.Errorf("hi, how ya doin'?"))

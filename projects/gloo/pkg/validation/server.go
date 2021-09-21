@@ -182,13 +182,24 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 		numProxy = 1
 	}
 	logger.Infof("mitchaman - received validation request with %d proxy and %d upstream(s)", numProxy, len(req.GetUpstreams()))
+
 	if req.GetUpstreams() != nil {
+		// Upsert req upstreams with upstreams from snapshot
+		upstreamsCopy := params.Snapshot.Upstreams.Clone()
 		for _, us := range req.GetUpstreams() {
-			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, us)
+			existingUpstream, err := upstreamsCopy.Find(us.GetMetadata().GetNamespace(), us.GetMetadata().GetName())
+			if err != nil {
+				// New upstream
+				upstreamsCopy = append(upstreamsCopy, us)
+			} else {
+				// Replace existing upstream
+				us.DeepCopyInto(existingUpstream)
+			}
 		}
+		params.Snapshot.Upstreams = upstreamsCopy
 	}
 
-	xdsSnapshot, resourceReports, report, err := s.translator.Translate(params, req.GetProxy(), req.GetUpstreams())
+	xdsSnapshot, resourceReports, report, err := s.translator.Translate(params, req.GetProxy())
 	if err != nil {
 		logger.Errorw("failed to validate proxy", zap.Error(err))
 		return nil, err
@@ -198,8 +209,15 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 	s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
 	routeErrorToWarnings(resourceReports, report.GetProxyReport())
 
+	writeUpstreamReport(ctx, resourceReports, report.GetUpstreamReport())
+
 	logger.Infof("mitchaman - validation report result: %v", report.String())
 	return report, nil
+}
+
+func writeUpstreamReport(ctx context.Context, reports reporter.ResourceReports, out *validation.UpstreamReport) {
+	// TODO(mitchaman): Implement
+	contextutils.LoggerFrom(ctx).Infof("mitchaman - reports (kind: Upstream): %s, UpstreamReport: %s", reports.FilterByKind("*v1.Upstream"), out.String())
 }
 
 // Update the validation report so that route errors that were changed into warnings during sanitization
