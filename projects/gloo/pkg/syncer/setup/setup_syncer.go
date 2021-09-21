@@ -479,8 +479,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 
 	errs := make(chan error)
 
-	statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(opts.StatusReporterNamespace)
-	statusClient := statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
+	statusClient := statusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
 
 	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, statusClient, discoveryPlugins)
 	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)

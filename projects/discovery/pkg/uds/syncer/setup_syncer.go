@@ -71,8 +71,7 @@ func RunUDS(opts bootstrap.Opts) error {
 
 	errs := make(chan error)
 
-	statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(opts.WriteNamespace)
-	statusClient := statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
+	statusClient := statusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
 
 	uds := discovery.NewUpstreamDiscovery(watchNamespaces, opts.WriteNamespace, upstreamClient, statusClient, discoveryPlugins)
 	// TODO(ilackarms) expose discovery options
