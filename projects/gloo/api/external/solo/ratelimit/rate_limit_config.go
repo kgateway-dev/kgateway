@@ -21,7 +21,7 @@ var _ resources.CustomInputResource = &RateLimitConfig{}
 type RateLimitConfig v1alpha1.RateLimitConfig
 
 func (r *RateLimitConfig) GetMetadata() *core.Metadata {
-	return kubeutils.FromKubeMeta(r.ObjectMeta)
+	return kubeutils.FromKubeMeta(r.ObjectMeta, true)
 }
 
 func (r *RateLimitConfig) SetMetadata(meta *core.Metadata) {
