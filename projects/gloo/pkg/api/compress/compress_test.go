@@ -25,10 +25,7 @@ var _ = Describe("Compress", func() {
 
 	BeforeEach(func() {
 		ns := bootstrap.GetStatusReporterNamespaceOrDefault("default")
-		statusUnmarshaler = &statusutils.NamespacedStatusesUnmarshaler{
-			StatusReporterNamespace: ns,
-			UnmarshalMapToProto:     protoutils.UnmarshalMapToProto,
-		}
+		statusUnmarshaler = statusutils.NewNamespacedStatusesUnmarshaler(ns, protoutils.UnmarshalMapToProto)
 		statusClient = statusutils.NewNamespacedStatusesClient(ns)
 	})
 
