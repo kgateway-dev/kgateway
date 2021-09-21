@@ -13,6 +13,7 @@ weight: 5
 
 - [GlooValidationServiceRequest](#gloovalidationservicerequest)
 - [GlooValidationServiceResponse](#gloovalidationserviceresponse)
+- [ResourceReport](#resourcereport)
 - [NotifyOnResyncRequest](#notifyonresyncrequest)
 - [NotifyOnResyncResponse](#notifyonresyncresponse)
 - [ProxyReport](#proxyreport)
@@ -34,9 +35,6 @@ weight: 5
 - [Error](#error)
 - [Type](#type)
 - [TcpHostReport](#tcphostreport)
-- [Error](#error)
-- [Type](#type)
-- [UpstreamReport](#upstreamreport)
 - [Error](#error)
 - [Type](#type)
   
@@ -75,14 +73,35 @@ weight: 5
 
 ```yaml
 "proxyReport": .gloo.solo.io.ProxyReport
-"upstreamReport": .gloo.solo.io.UpstreamReport
+"upstreamReports": []gloo.solo.io.ResourceReport
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `proxyReport` | [.gloo.solo.io.ProxyReport](../gloo_validation.proto.sk/#proxyreport) |  |
-| `upstreamReport` | [.gloo.solo.io.UpstreamReport](../gloo_validation.proto.sk/#upstreamreport) |  |
+| `upstreamReports` | [[]gloo.solo.io.ResourceReport](../gloo_validation.proto.sk/#resourcereport) |  |
+
+
+
+
+---
+### ResourceReport
+
+
+
+```yaml
+"resourceRef": .core.solo.io.ResourceRef
+"warnings": []string
+"error": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `resourceRef` | [.core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
+| `warnings` | `[]string` |  |
+| `error` | `[]string` |  |
 
 
 
@@ -485,55 +504,6 @@ error types for tcp host config
 | `NameNotUniqueError` |  |
 | `InvalidDestinationError` |  |
 | `ProcessingError` |  |
-
-
-
-
----
-### UpstreamReport
-
-
-
-```yaml
-"errors": []gloo.solo.io.UpstreamReport.Error
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `errors` | [[]gloo.solo.io.UpstreamReport.Error](../gloo_validation.proto.sk/#error) | Errors returned by the upstream resource. |
-
-
-
-
----
-### Error
-
- 
-Error types for the upstream config.
-
-```yaml
-"type": .gloo.solo.io.UpstreamReport.Error.Type
-"reason": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `type` | [.gloo.solo.io.UpstreamReport.Error.Type](../gloo_validation.proto.sk/#type) | The type of error. |
-| `reason` | `string` | Any extra information, as a string. |
-
-
-
-
----
-### Type
-
-
-
-| Name | Description |
-| ----- | ----------- | 
-| `SSL_CONFIG_ERROR` |  |
 
 
 

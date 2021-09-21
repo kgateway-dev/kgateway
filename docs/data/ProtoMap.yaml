@@ -494,6 +494,9 @@ apis:
   gloo.solo.io.RedirectAction:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#RedirectAction
     package: gloo.solo.io
+  gloo.solo.io.ResourceReport:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#ResourceReport
+    package: gloo.solo.io
   gloo.solo.io.Route:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Route
     package: gloo.solo.io
@@ -559,9 +562,6 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.UpstreamOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#UpstreamOptions
-    package: gloo.solo.io
-  gloo.solo.io.UpstreamReport:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#UpstreamReport
     package: gloo.solo.io
   gloo.solo.io.UpstreamSslConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#UpstreamSslConfig

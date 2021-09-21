@@ -2,6 +2,7 @@ syntax = "proto3";
 package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation";
 
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto";
 
@@ -22,7 +23,13 @@ message GlooValidationServiceRequest {
 
 message GlooValidationServiceResponse {
     ProxyReport proxy_report = 1;
-    UpstreamReport upstream_report = 2;
+    repeated ResourceReport upstream_reports = 2;
+}
+
+message ResourceReport {
+    core.solo.io.ResourceRef resource_ref = 1;
+    repeated string warnings = 2;
+    repeated string error = 3;
 }
 
 message NotifyOnResyncRequest {
@@ -183,23 +190,4 @@ message TcpHostReport {
 
     // errors on the tcp host
     repeated Error errors = 2;
-}
-
-message UpstreamReport {
-    // TODO(mitchamam): String error, no enum, mirror ResourceReports
-
-    // Error types for the upstream config.
-    message Error {
-        enum Type {
-            SSL_CONFIG_ERROR = 0;
-        }
-
-        // The type of error
-        Type type = 1;
-        // Any extra information, as a string
-        string reason = 2;
-    }
-
-    // Errors returned by the upstream resource.
-    repeated Error errors = 1;
 }
