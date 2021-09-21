@@ -646,7 +646,7 @@ endif
 
 .PHONY: docker-push-extended
 docker-push-extended:
-ifeq ($(RELEASE), "true")
+ifeq ($(CREATE_ASSETS), "true")
 	ci/extended-docker/extended-docker.sh
 endif
 
