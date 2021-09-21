@@ -17,8 +17,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
@@ -37,7 +37,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		proxy                *v1.Proxy
 		ctx                  context.Context
 		cancel               context.CancelFunc
-		statusClient         reporter.StatusClient
+		statusClient         resources.StatusClient
 	)
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())

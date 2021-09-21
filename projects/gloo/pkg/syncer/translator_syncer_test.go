@@ -22,6 +22,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -42,7 +43,7 @@ var _ = Describe("Translate Proxy", func() {
 		proxyName      = "proxy-name"
 		ns             = "any-ns"
 		ref            = "syncer-test"
-		statusClient   reporter.StatusClient
+		statusClient   resources.StatusClient
 	)
 
 	BeforeEach(func() {
@@ -184,7 +185,7 @@ var _ = Describe("Empty cache", func() {
 		proxyName      = "proxy-name"
 		ns             = "any-ns"
 		ref            = "syncer-test"
-		statusClient   reporter.StatusClient
+		statusClient   resources.StatusClient
 	)
 
 	BeforeEach(func() {
@@ -303,7 +304,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		upstreamName   = "upstream-name"
 		ns             = "any-ns"
 		ref            = "syncer-test"
-		statusClient   reporter.StatusClient
+		statusClient   resources.StatusClient
 	)
 
 	proxiesShouldHaveErrors := func(proxies v1.ProxyList, numProxies int) {

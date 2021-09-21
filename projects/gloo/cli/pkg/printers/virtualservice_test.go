@@ -12,8 +12,8 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 )
 
@@ -26,7 +26,7 @@ var _ = Describe("getStatus", func() {
 		ctx    context.Context
 		cancel context.CancelFunc
 
-		statusClient reporter.StatusClient
+		statusClient resources.StatusClient
 	)
 
 	BeforeEach(func() {

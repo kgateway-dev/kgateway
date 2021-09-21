@@ -11,7 +11,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
@@ -88,7 +87,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		upstreamClient          gloov1.UpstreamClient
 		proxyClient             gloov1.ProxyClient
 		serviceClient           skkube.ServiceClient
-		statusClient            reporter.StatusClient
+		statusClient            resources.StatusClient
 	)
 
 	BeforeEach(func() {

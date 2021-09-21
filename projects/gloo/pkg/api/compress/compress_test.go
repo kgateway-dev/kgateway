@@ -12,15 +12,15 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
 var _ = Describe("Compress", func() {
 
 	var (
-		statusReporterClent reporter.StatusClient
-		statusUnmarshaler   *statusutils.NamespacedStatusesUnmarshaler
+		statusClient      resources.StatusClient
+		statusUnmarshaler *statusutils.NamespacedStatusesUnmarshaler
 	)
 
 	BeforeEach(func() {
@@ -29,7 +29,7 @@ var _ = Describe("Compress", func() {
 			StatusReporterNamespace: ns,
 			UnmarshalMapToProto:     protoutils.UnmarshalMapToProto,
 		}
-		statusReporterClent = statusutils.NewNamespacedStatusesClient(ns)
+		statusClient = statusutils.NewNamespacedStatusesClient(ns)
 	})
 
 	Context("spec", func() {
@@ -110,7 +110,7 @@ var _ = Describe("Compress", func() {
 					Annotations: map[string]string{"gloo.solo.io/compress": "true"},
 				},
 			}
-			statusReporterClent.SetStatus(p, &core.Status{State: core.Status_Accepted})
+			statusClient.SetStatus(p, &core.Status{State: core.Status_Accepted})
 
 			status, err := MarshalStatus(p)
 			Expect(err).NotTo(HaveOccurred())
@@ -127,7 +127,7 @@ var _ = Describe("Compress", func() {
 					Name: "foo",
 				},
 			}
-			statusReporterClent.SetStatus(p, &core.Status{State: core.Status_Accepted})
+			statusClient.SetStatus(p, &core.Status{State: core.Status_Accepted})
 
 			status1, err := MarshalStatus(p)
 			Expect(err).NotTo(HaveOccurred())

@@ -479,7 +479,10 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 
 	errs := make(chan error)
 
-	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, discoveryPlugins)
+	statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(opts.StatusReporterNamespace)
+	statusClient := statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
+
+	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, statusClient, discoveryPlugins)
 	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
 	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
 	edsEventLoop := v1.NewEdsEventLoop(discoveryCache, edsSync)
@@ -523,8 +526,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		rlClient,
 		apiEmitterChan,
 	)
-
-	statusClient := statusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
 
 	rpt := reporter.NewReporter("gloo",
 		statusClient,

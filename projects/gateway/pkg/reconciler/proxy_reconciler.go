@@ -23,16 +23,16 @@ type ProxyReconciler interface {
 }
 
 type proxyReconciler struct {
-	statusClient   reporter.StatusClient
+	statusClient   resources.StatusClient
 	proxyValidator validation.GlooValidationServiceClient
 	baseReconciler gloov1.ProxyReconciler
 }
 
-func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient, statusClient reporter.StatusClient) *proxyReconciler {
+func NewProxyReconciler(proxyValidator validation.GlooValidationServiceClient, proxyClient gloov1.ProxyClient, statusClient resources.StatusClient) *proxyReconciler {
 	return &proxyReconciler{
 		statusClient:   statusClient,
 		proxyValidator: proxyValidator,
-		baseReconciler: gloov1.NewProxyReconciler(proxyClient),
+		baseReconciler: gloov1.NewProxyReconciler(proxyClient, statusClient),
 	}
 }
 

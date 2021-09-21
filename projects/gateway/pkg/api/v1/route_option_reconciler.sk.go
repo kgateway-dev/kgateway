@@ -24,9 +24,9 @@ func routeOptionsToResources(list RouteOptionList) resources.ResourceList {
 	return resourceList
 }
 
-func NewRouteOptionReconciler(client RouteOptionClient) RouteOptionReconciler {
+func NewRouteOptionReconciler(client RouteOptionClient, statusSetter resources.StatusSetter) RouteOptionReconciler {
 	return &routeOptionReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

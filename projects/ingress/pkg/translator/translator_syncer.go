@@ -12,7 +12,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
 type translatorSyncer struct {
@@ -28,16 +28,16 @@ type translatorSyncer struct {
 	// defaults to 'gloo'
 	customIngressClass string
 
-	statusClient reporter.StatusClient
+	statusClient resources.StatusClient
 }
 
-func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error, requireIngressClass bool, customIngressClass string, statusClient reporter.StatusClient) v1.TranslatorSyncer {
+func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error, requireIngressClass bool, customIngressClass string, statusClient resources.StatusClient) v1.TranslatorSyncer {
 	return &translatorSyncer{
 		writeNamespace:      writeNamespace,
 		writeErrs:           writeErrs,
 		proxyClient:         proxyClient,
 		ingressClient:       ingressClient,
-		proxyReconciler:     gloov1.NewProxyReconciler(proxyClient),
+		proxyReconciler:     gloov1.NewProxyReconciler(proxyClient, statusClient),
 		requireIngressClass: requireIngressClass,
 		customIngressClass:  customIngressClass,
 		statusClient:        statusClient,

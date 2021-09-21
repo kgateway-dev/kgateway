@@ -17,8 +17,8 @@ import (
 	v1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	v1machinery "k8s.io/apimachinery/pkg/apis/meta/v1"
 	knativev1alpha1 "knative.dev/networking/pkg/apis/networking/v1alpha1"
 	knativeclient "knative.dev/networking/pkg/client/clientset/versioned/typed/networking/v1alpha1"
@@ -34,13 +34,13 @@ type translatorSyncer struct {
 	ingressClient        knativeclient.IngressesGetter
 	requireIngressClass  bool
 
-	statusClient reporter.StatusClient
+	statusClient resources.StatusClient
 
 	// injection for testing
 	translateProxy func(ctx context.Context, proxyName, proxyNamespace string, ingresses v1alpha1.IngressList) (*gloov1.Proxy, error)
 }
 
-func NewSyncer(externalProxyAddress, internalProxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, writeErrs chan error, requireIngressClass bool, statusClient reporter.StatusClient) v1.TranslatorSyncer {
+func NewSyncer(externalProxyAddress, internalProxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, writeErrs chan error, requireIngressClass bool, statusClient resources.StatusClient) v1.TranslatorSyncer {
 	return &translatorSyncer{
 		externalProxyAddress: externalProxyAddress,
 		internalProxyAddress: internalProxyAddress,
@@ -48,7 +48,7 @@ func NewSyncer(externalProxyAddress, internalProxyAddress, writeNamespace string
 		writeErrs:            writeErrs,
 		proxyClient:          proxyClient,
 		ingressClient:        ingressClient,
-		proxyReconciler:      gloov1.NewProxyReconciler(proxyClient),
+		proxyReconciler:      gloov1.NewProxyReconciler(proxyClient, statusClient),
 		requireIngressClass:  requireIngressClass,
 		statusClient:         statusClient,
 		translateProxy:       translateProxy,

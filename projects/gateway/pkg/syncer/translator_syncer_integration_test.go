@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -33,7 +35,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		proxyClient              gloov1.ProxyClient
 		vs                       *v1.VirtualService
 		snapshot                 func() *v1.ApiSnapshot
-		statusClient             reporter.StatusClient
+		statusClient             resources.StatusClient
 
 		ctx    context.Context
 		cancel context.CancelFunc
@@ -153,7 +155,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 				return core.Status_Pending, fmt.Errorf("no state")
 			}
 			return proxyState.GetState(), nil
-		})
+		}, "60s")
 	}
 
 	EventuallyProxyStatus := func() gomega.AsyncAssertion {
@@ -177,7 +179,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	}
 
-	It("should set status correctly even when the status from the snapshot was not updated", func() {
+	FIt("should set status correctly even when the status from the snapshot was not updated", func() {
 		ts.Sync(ctx, snapshot())
 		// wait for proxy to be written
 		Eventually(func() (*gloov1.Proxy, error) {

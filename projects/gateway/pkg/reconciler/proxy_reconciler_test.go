@@ -58,7 +58,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		})
 
 		validationClient *mock_validation.MockGlooValidationServiceClient
-		statusClient     reporter.StatusClient
+		statusClient     resources.StatusClient
 
 		reconciler ProxyReconciler
 	)

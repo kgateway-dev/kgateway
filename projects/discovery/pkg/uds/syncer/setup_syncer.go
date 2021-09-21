@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 )
 
 func RunUDS(opts bootstrap.Opts) error {
@@ -70,7 +71,10 @@ func RunUDS(opts bootstrap.Opts) error {
 
 	errs := make(chan error)
 
-	uds := discovery.NewUpstreamDiscovery(watchNamespaces, opts.WriteNamespace, upstreamClient, discoveryPlugins)
+	statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(opts.WriteNamespace)
+	statusClient := statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
+
+	uds := discovery.NewUpstreamDiscovery(watchNamespaces, opts.WriteNamespace, upstreamClient, statusClient, discoveryPlugins)
 	// TODO(ilackarms) expose discovery options
 	udsErrs, err := uds.StartUds(watchOpts, discovery.Opts{})
 	if err != nil {

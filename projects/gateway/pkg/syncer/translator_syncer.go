@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"log"
 	"sort"
 	"sync"
 	"time"
@@ -40,7 +41,7 @@ type translatorSyncer struct {
 	managedProxyLabels map[string]string
 }
 
-func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyWatcher, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient reporter.StatusClient) v1.ApiSyncer {
+func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyWatcher, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient resources.StatusClient) v1.ApiSyncer {
 	t := &translatorSyncer{
 		writeNamespace:  writeNamespace,
 		reporter:        reporter,
@@ -130,11 +131,11 @@ type statusSyncer struct {
 
 	proxyWatcher   gloov1.ProxyWatcher
 	writeNamespace string
-	statusClient   reporter.StatusClient
+	statusClient   resources.StatusClient
 	syncNeeded     chan struct{}
 }
 
-func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, reporter reporter.StatusReporter, statusClient reporter.StatusClient) statusSyncer {
+func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, reporter reporter.StatusReporter, statusClient resources.StatusClient) statusSyncer {
 	return statusSyncer{
 		proxyToLastStatus:       map[string]reportsAndStatus{},
 		currentGeneratedProxies: nil,
@@ -241,10 +242,18 @@ func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
 		refKey := gloo_translator.UpstreamToClusterName(ref)
 		status := s.statusClient.GetStatus(proxy)
 
+		if status == nil {
+			log.Printf("NIL STATUS FUND ON PROXY")
+			log.Printf("%v", proxy.GetNamespacedStatuses())
+		}
+
 		if current, ok := s.proxyToLastStatus[refKey]; ok {
+			log.Printf("UPATE PROXY TO LAST STATUS: %v", status)
 			current.Status = status
 			s.proxyToLastStatus[refKey] = current
+			log.Printf("proxy to last status: %v", s.proxyToLastStatus[refKey].Status)
 		} else {
+			log.Printf("SET PROXY TO LAST STATUS: %v", status)
 			s.proxyToLastStatus[refKey] = reportsAndStatus{
 				Status: status,
 			}
@@ -308,11 +317,15 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 			for inputResource, subresourceStatuses := range reportsAndStatus.Reports {
 				if reportsAndStatus.Status != nil {
 					// add the proxy status as well if we have it
-					status := *reportsAndStatus.Status
+					status := reportsAndStatus.Status
+					//log.Printf("FOUND VALID STATUS FOR (%v) subresource status: %v", inputResource.GetMetadata().GetName(), status)
 					if _, ok := inputResourceBySubresourceStatuses[inputResource]; !ok {
 						inputResourceBySubresourceStatuses[inputResource] = map[string]*core.Status{}
 					}
-					inputResourceBySubresourceStatuses[inputResource][fmt.Sprintf("%T.%s", nilProxy, ref.Key())] = &status
+					inputResourceBySubresourceStatuses[inputResource][fmt.Sprintf("%T.%s", nilProxy, ref.Key())] = status
+					//log.Printf("AFTER CHANGE input resource subresource status: %v", inputResourceBySubresourceStatuses[inputResource])
+				} else {
+					log.Printf("FOUND NIL STATUS FOR %v", inputResource.GetMetadata().GetName())
 				}
 				if report, ok := allReports[inputResource]; ok {
 					if subresourceStatuses.Errors != nil {
@@ -329,10 +342,12 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		}
 	}()
 
+	log.Printf("\n\n WRITE ALL REPORTS \n\n")
 	var errs error
 	for inputResource, subresourceStatuses := range allReports {
 		// write reports may update the status, so clone the object
 		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
+		//log.Printf("Current Statuses : %v", currentStatuses)
 		clonedInputResource := resources.Clone(inputResource).(resources.InputResource)
 		reports := reporter.ResourceReports{clonedInputResource: subresourceStatuses}
 		// set the last known status on the input resource.

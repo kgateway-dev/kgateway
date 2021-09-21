@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-
 	v1machinery "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
@@ -19,6 +17,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	knativev1alpha1 "knative.dev/networking/pkg/apis/networking/v1alpha1"
 	knativeclient "knative.dev/networking/pkg/client/clientset/versioned/typed/networking/v1alpha1"
@@ -31,17 +30,17 @@ type translatorSyncer struct {
 	proxyClient     gloov1.ProxyClient
 	proxyReconciler gloov1.ProxyReconciler
 	ingressClient   knativeclient.IngressesGetter
-	statusClient    reporter.StatusClient
+	statusClient    resources.StatusClient
 }
 
-func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, statusClient reporter.StatusClient, writeErrs chan error) v1.TranslatorSyncer {
+func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, statusClient resources.StatusClient, writeErrs chan error) v1.TranslatorSyncer {
 	return &translatorSyncer{
 		proxyAddress:    proxyAddress,
 		writeNamespace:  writeNamespace,
 		writeErrs:       writeErrs,
 		proxyClient:     proxyClient,
 		ingressClient:   ingressClient,
-		proxyReconciler: gloov1.NewProxyReconciler(proxyClient),
+		proxyReconciler: gloov1.NewProxyReconciler(proxyClient, statusClient),
 		statusClient:    statusClient,
 	}
 }

@@ -24,9 +24,9 @@ func authConfigsToResources(list AuthConfigList) resources.ResourceList {
 	return resourceList
 }
 
-func NewAuthConfigReconciler(client AuthConfigClient) AuthConfigReconciler {
+func NewAuthConfigReconciler(client AuthConfigClient, statusSetter resources.StatusSetter) AuthConfigReconciler {
 	return &authConfigReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

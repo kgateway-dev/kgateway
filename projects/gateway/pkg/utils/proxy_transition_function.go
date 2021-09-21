@@ -3,10 +3,10 @@ package utils
 import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/hashutils"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
-func TransitionFunction(statusClient reporter.StatusClient) v1.TransitionProxyFunc {
+func TransitionFunction(statusClient resources.StatusClient) v1.TransitionProxyFunc {
 	return func(original, desired *v1.Proxy) (bool, error) {
 		if len(original.GetListeners()) != len(desired.GetListeners()) {
 			updateDesiredStatus(original, desired, statusClient)
@@ -22,7 +22,7 @@ func TransitionFunction(statusClient reporter.StatusClient) v1.TransitionProxyFu
 	}
 }
 
-func updateDesiredStatus(original, desired *v1.Proxy, statusClient reporter.StatusClient) {
+func updateDesiredStatus(original, desired *v1.Proxy, statusClient resources.StatusClient) {
 	// we made an update to the proxy from the gateway's point of view.
 	// let's make sure we update the status for gloo if the hash hasn't changed.
 	// the proxy can change from the gateway's point of view but not from gloo's if,

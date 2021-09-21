@@ -21,6 +21,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
@@ -32,7 +33,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		mockReporter *fakeReporter
 		syncer       *statusSyncer
 
-		statusClient reporter.StatusClient
+		statusClient resources.StatusClient
 	)
 
 	BeforeEach(func() {

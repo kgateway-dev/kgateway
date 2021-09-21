@@ -84,7 +84,7 @@ require (
 	github.com/solo-io/skv2 v0.17.17
 	// Pinned to the `rate-limiter-v0.1.8` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20210920020545-9c6a4af76fc1
-	github.com/solo-io/solo-kit v0.22.1-0.20210920155346-ee4b2d119ae7
+	github.com/solo-io/solo-kit v0.22.1-0.20210921020154-e0ab8b0e9252
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.5.1
 	github.com/spf13/cobra v1.1.3

@@ -24,9 +24,9 @@ func routeTablesToResources(list RouteTableList) resources.ResourceList {
 	return resourceList
 }
 
-func NewRouteTableReconciler(client RouteTableClient) RouteTableReconciler {
+func NewRouteTableReconciler(client RouteTableClient, statusSetter resources.StatusSetter) RouteTableReconciler {
 	return &routeTableReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 
