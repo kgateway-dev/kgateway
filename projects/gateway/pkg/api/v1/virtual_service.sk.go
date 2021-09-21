@@ -30,30 +30,19 @@ func (r *VirtualService) SetMetadata(meta *core.Metadata) {
 
 // Deprecated
 func (r *VirtualService) SetStatus(status *core.Status) {
-	r.SetStatusForNamespace("", status)
+	statusutils.SetFirstStatusInNamespacedStatuses(r, status)
 }
 
 // Deprecated
 func (r *VirtualService) GetStatus() *core.Status {
 	if r != nil {
-		return r.GetStatusForNamespace("")
+		return statusutils.GetFirstStatusInNamespacedStatuses(r)
 	}
 	return nil
 }
 
 func (r *VirtualService) SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses) {
 	r.NamespacedStatuses = namespacedStatuses
-}
-
-// SetStatusForNamespace inserts the specified status into the NamespacedStatuses.Statuses map for the namespace
-func (r *VirtualService) SetStatusForNamespace(namespace string, status *core.Status) {
-	statusutils.SetStatusForNamespace(r, namespace, status)
-}
-
-// GetStatusForNamespace returns the status stored in the NamespacedStatuses.Statuses map for the
-// controller specified by the namespace, or nil if no status exists for that namespace.
-func (r *VirtualService) GetStatusForNamespace(namespace string) *core.Status {
-	return statusutils.GetStatusForNamespace(r, namespace)
 }
 
 func (r *VirtualService) MustHash() uint64 {

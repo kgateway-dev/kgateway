@@ -57,19 +57,11 @@ func (r *RateLimitConfig) MarshalStatus() (skres.Status, error) {
 
 // Deprecated
 func (r *RateLimitConfig) GetStatus() *core.Status {
-	return r.GetStatusForNamespace("")
+	return r.convertRateLimitConfigStatusToSoloKitStatus(&r.Status)
 }
 
 // Deprecated
 func (r *RateLimitConfig) SetStatus(status *core.Status) {
-	r.SetStatusForNamespace("", status)
-}
-
-func (r *RateLimitConfig) GetStatusForNamespace(namespace string) *core.Status {
-	return r.convertRateLimitConfigStatusToSoloKitStatus(&r.Status)
-}
-
-func (r *RateLimitConfig) SetStatusForNamespace(namespace string, status *core.Status) {
 	if status != nil {
 		r.Status = *r.convertSoloKitStatusToRateLimitConfigStatus(status)
 	}
