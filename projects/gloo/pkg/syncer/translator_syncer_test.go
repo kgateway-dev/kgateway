@@ -68,7 +68,7 @@ var _ = Describe("Translate Proxy", func() {
 
 		settings = &v1.Settings{}
 
-		statusClient := statusutils.GetStatusClientFromEnvOrDefault(ns)
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
