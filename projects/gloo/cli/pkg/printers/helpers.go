@@ -47,9 +47,16 @@ func PrintKubeCrdList(in resources.InputResourceList, resourceCrd crd.Crd) error
 // AggregateNamespacedStatuses Formats a NamespacedStatuses into a string, using the statusProcessor function to
 // format each individual controller's status
 func AggregateNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses, statusProcessor func(*core.Status) string) string {
+	// If there are no statuses defined for this resource, default to a pending status
+	if namespacedStatuses == nil {
+		return core.Status_Pending.String()
+	}
+
+	// If there is more than one status, aggregate them
 	if len(namespacedStatuses.GetStatuses()) > 1 {
 		return aggregateMultipleNamespacedStatuses(namespacedStatuses, statusProcessor)
 	}
+
 	return aggregateSingleNamespacedStatus(namespacedStatuses, statusProcessor)
 }
 

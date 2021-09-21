@@ -17,7 +17,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 )
 
-var _ = Describe("getStatus", func() {
+var _ = Describe("getAggregateVirtualServiceStatus", func() {
 	var (
 		thing1    = "thing1"
 		thing2    = "thing2"
@@ -47,7 +47,7 @@ var _ = Describe("getStatus", func() {
 			State:      core.Status_Pending,
 			ReportedBy: "gloo",
 		})
-		Expect(getStatus(ctx, vs, namespace)).To(Equal(core.Status_Pending.String()))
+		Expect(getAggregateVirtualServiceStatus(ctx, vs, namespace)).To(Equal(core.Status_Pending.String()))
 
 		// range through all possible sub resource states
 		for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
@@ -60,7 +60,7 @@ var _ = Describe("getStatus", func() {
 				},
 			}
 			By(fmt.Sprintf("subresource: %v", subResourceStatusString))
-			Expect(getStatus(ctx, vs, namespace)).To(Equal(core.Status_Pending.String()))
+			Expect(getAggregateVirtualServiceStatus(ctx, vs, namespace)).To(Equal(core.Status_Pending.String()))
 		}
 	})
 
@@ -70,7 +70,7 @@ var _ = Describe("getStatus", func() {
 			State:      core.Status_Accepted,
 			ReportedBy: "gloo",
 		})
-		Expect(getStatus(ctx, vs, namespace)).To(Equal(core.Status_Accepted.String()))
+		Expect(getAggregateVirtualServiceStatus(ctx, vs, namespace)).To(Equal(core.Status_Accepted.String()))
 
 		// range through all possible sub resource states
 		for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
@@ -91,9 +91,9 @@ var _ = Describe("getStatus", func() {
 			})
 
 			if subResourceStatusString == core.Status_Accepted.String() {
-				Expect(getStatus(ctx, vs, namespace)).To(Equal(core.Status_Accepted.String()))
+				Expect(getAggregateVirtualServiceStatus(ctx, vs, namespace)).To(Equal(core.Status_Accepted.String()))
 			} else {
-				Expect(getStatus(ctx, vs, namespace)).To(Equal(core.Status_Accepted.String() + "\n" + genericSubResourceMessage(thing1, subResourceStatusString)))
+				Expect(getAggregateVirtualServiceStatus(ctx, vs, namespace)).To(Equal(core.Status_Accepted.String() + "\n" + genericSubResourceMessage(thing1, subResourceStatusString)))
 			}
 		}
 	})
@@ -110,7 +110,7 @@ var _ = Describe("getStatus", func() {
 					State:      resourceStatusState,
 					ReportedBy: "gloo",
 				})
-				Expect(getStatus(ctx, vs, namespace)).To(Equal(resourceStatusString))
+				Expect(getAggregateVirtualServiceStatus(ctx, vs, namespace)).To(Equal(resourceStatusString))
 			}
 		}
 	})
@@ -133,7 +133,7 @@ var _ = Describe("getStatus", func() {
 					SubresourceStatuses: subStatuses,
 					ReportedBy:          "gloo",
 				})
-				Expect(getStatus(ctx, vs, namespace)).To(Equal(resourceStatusString))
+				Expect(getAggregateVirtualServiceStatus(ctx, vs, namespace)).To(Equal(resourceStatusString))
 
 				By(fmt.Sprintf("resource: %v, two subresources accepted", resourceStatusString))
 				subStatuses = map[string]*core.Status{
@@ -146,7 +146,7 @@ var _ = Describe("getStatus", func() {
 				}
 				namespacedStatus := statusClient.GetStatus(vs)
 				namespacedStatus.SubresourceStatuses = subStatuses
-				Expect(getStatus(ctx, vs, namespace)).To(Equal(resourceStatusString))
+				Expect(getAggregateVirtualServiceStatus(ctx, vs, namespace)).To(Equal(resourceStatusString))
 			}
 		}
 	})
@@ -171,7 +171,7 @@ var _ = Describe("getStatus", func() {
 					SubresourceStatuses: subStatuses,
 					ReportedBy:          "gloo",
 				})
-				out := getStatus(ctx, vs, namespace)
+				out := getAggregateVirtualServiceStatus(ctx, vs, namespace)
 				Expect(out).To(Equal(resourceStatusString + "\n" + genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUntracked)))
 
 				By(fmt.Sprintf("resource: %v, two subresources rejected", resourceStatusString))
@@ -187,7 +187,7 @@ var _ = Describe("getStatus", func() {
 				}
 				namespacedStatus := statusClient.GetStatus(vs)
 				namespacedStatus.SubresourceStatuses = subStatuses
-				out = getStatus(ctx, vs, namespace)
+				out = getAggregateVirtualServiceStatus(ctx, vs, namespace)
 				Expect(out).To(HavePrefix(resourceStatusString + "\n"))
 				// Use regex because order does not matter
 				Expect(out).To(MatchRegexp(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUntracked)))
@@ -217,7 +217,7 @@ var _ = Describe("getStatus", func() {
 					SubresourceStatuses: subStatuses,
 					ReportedBy:          "gloo",
 				})
-				out := getStatus(ctx, vs, namespace)
+				out := getAggregateVirtualServiceStatus(ctx, vs, namespace)
 				Expect(out).To(Equal(resourceStatusString + "\n" + subResourceErrorFormat(erroredResourceIdentifier)))
 
 				By(fmt.Sprintf("resource: %v, one subresource accepted and one rejected", resourceStatusString))
@@ -232,7 +232,7 @@ var _ = Describe("getStatus", func() {
 				}
 				namespacedStatus := statusClient.GetStatus(vs)
 				namespacedStatus.SubresourceStatuses = subStatuses
-				out = getStatus(ctx, vs, namespace)
+				out = getAggregateVirtualServiceStatus(ctx, vs, namespace)
 				Expect(out).To(HavePrefix(resourceStatusString + "\n"))
 				Expect(out).To(MatchRegexp(reasonUpstreamList))
 
@@ -249,7 +249,7 @@ var _ = Describe("getStatus", func() {
 				}
 				namespacedStatus = statusClient.GetStatus(vs)
 				namespacedStatus.SubresourceStatuses = subStatuses
-				out = getStatus(ctx, vs, namespace)
+				out = getAggregateVirtualServiceStatus(ctx, vs, namespace)
 				Expect(out).To(HavePrefix(resourceStatusString + "\n"))
 				// Use regex because order does not matter
 				Expect(out).To(MatchRegexp(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUpstreamList)))

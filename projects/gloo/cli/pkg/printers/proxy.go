@@ -6,6 +6,9 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/cliutils"
@@ -47,7 +50,7 @@ func ProxyTable(list v1.ProxyList, w io.Writer) {
 		}
 		for i, listener := range listeners {
 			if i == 0 {
-				table.Append([]string{name, listener, strconv.Itoa(vhCount), proxy.GetStatus().GetState().String()})
+				table.Append([]string{name, listener, strconv.Itoa(vhCount), getAggregateProxyStatus(proxy)})
 			} else {
 				table.Append([]string{"", listener, "", ""})
 			}
@@ -56,4 +59,10 @@ func ProxyTable(list v1.ProxyList, w io.Writer) {
 
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.Render()
+}
+
+func getAggregateProxyStatus(res resources.InputResource) string {
+	return AggregateNamespacedStatuses(res.GetNamespacedStatuses(), func(status *core.Status) string {
+		return status.GetState().String()
+	})
 }

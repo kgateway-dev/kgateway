@@ -57,20 +57,7 @@ func UpstreamTable(xdsDump *xdsinspection.XdsDump, upstreams []*v1.Upstream, w i
 }
 
 func upstreamStatus(us *v1.Upstream) string {
-	namespacedStatuses := us.GetNamespacedStatuses()
-
-	// If there are no statuses defined for this resource, default to a pending status for the resource namespace
-	if namespacedStatuses == nil {
-		namespacedStatuses = &core.NamespacedStatuses{
-			Statuses: map[string]*core.Status{
-				us.GetMetadata().GetNamespace(): {
-					State: core.Status_Pending,
-				},
-			},
-		}
-	}
-
-	return AggregateNamespacedStatuses(namespacedStatuses, func(status *core.Status) string {
+	return AggregateNamespacedStatuses(us.GetNamespacedStatuses(), func(status *core.Status) string {
 		return status.GetState().String()
 	})
 }
