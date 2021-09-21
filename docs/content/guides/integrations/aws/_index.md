@@ -31,17 +31,23 @@ It's important to note that an AWS NLB has an idle timeout of 350 seconds that [
 
 To configure your NLB, you will probably use annotations on your Kubernetes `Service`, type LoadBalancer.
 
+There are two distinct controllers that can read these annotations. The _old_ one, in the Kubernetes codebase and the _new_ one called **AWS Load Balancer Controller**. The latter offers more options as explained below.
+
 While the _legacy_ [in-tree](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/legacy-cloud-providers/aws/aws.go) Cloud Controller will recognize some annotations listed in the Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/service/#aws-nlb-support), it is now recommended to deploy the **AWS Load Balancer Controller**.
 
-The [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/annotations/) ([source code](https://github.com/kubernetes-sigs/aws-load-balancer-controller)) has a deeper integretion with both NLBs and ALBs. Once [installed](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/deploy/installation/), you will be able to leverage advanced annotations such as health checks, access logs and more. 
+The [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/annotations/) ([source code](https://github.com/kubernetes-sigs/aws-load-balancer-controller)) has a [deeper integration](https://aws.amazon.com/blogs/containers/introducing-aws-load-balancer-controller/) with both NLBs and ALBs. Once [installed](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/deploy/installation/), you will be able to leverage advanced annotations such as health checks, access logs and more. 
 
 {{% notice note %}}
 Today, it's not clear for how long AWS will keep supporting the legacy cloud controller: https://stackoverflow.com/questions/61632540/is-classic-load-balancer-going-to-be-discontinued-by-aws
 {{% /notice %}}
 
-### [Legacy] Side notes on the in-tree controller
+### [Legacy] The in-tree controller
 
-In an AWS EKS cluster, whenever any Kubernetes Service of type `LoadBalancer` deploys, AWS will, by default, create an AWS Classic Load Balancer paired with that Kubernetes Service. AWS will also automatically create Load Balancer Health Checks against the first port listed in that Service. You can influence some of how AWS creates a Load Balancer for Kubernetes Services by adding [AWS specific annotations](https://v1-17.docs.kubernetes.io//docs/concepts/cluster-administration/cloud-providers/#aws) to your `LoadBalancer` type Service.
+{{% notice note %}}
+We strongly recommand you to migrate to the **AWS Load Balancer Controller**.
+{{% /notice %}}
+
+In an AWS EKS cluster, whenever any Kubernetes Service of type `LoadBalancer` deploys, AWS will, by default, create an AWS Classic Load Balancer paired with that Kubernetes Service. AWS will also automatically create Load Balancer Health Checks against the first port listed in that Service. You can influence some of how AWS creates a Load Balancer for Kubernetes Services by adding [AWS specific annotations](https://kubernetes.io/docs/concepts/services-networking/service/#aws-nlb-support) to your `LoadBalancer` type Service.
 
 Gloo Edge's managed Envoy proxies install on EKS as a `LoadBalancer` type Service named `gateway-proxy`. Gloo Edge's Helm chart allows the user to specify annotations added to Gloo Edge's `gateway-proxy` Service, including adding AWS ELB annotations that influence the AWS ELB associated with the Gloo Edge proxy service.
 
@@ -110,187 +116,26 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set serviceAccount.name=${IAM_SA}
 ```
 
-## NLB TLS passthrough
+From this point, you can use more annotations as [documented here](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/annotations/), on the **AWS Load Balancer Controller** website.
 
-In this example, SSL Termination will be setup at the load balancer and then the traffic will be re-encrypted from the load balancer to envoy. This results in two layers of encryption- one from the client to the load balancer and one from the load balancer to envoy. The helm example earlier demonstrated a simpler example of TLS Termination that does not re-encrypt the traffic. 
+The most important annotations you will need from this point are:
 
-Note: The following example uses Helm 3.
-
-```shell
-
-#Create an example Gloo Edge virtual service with a reference to the TLS secret and
-# your DNS domain that is mapped to the AWS NLB IP address (replace `gloo.example.com`)
-
-kubectl apply --filename - <<EOF
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
-metadata:
-  name: default
-  namespace: gloo-system
-spec:
-  sslConfig:
-    secretRef:
-      name: gateway-tls
-      namespace: gloo-system
-    sniDomains:
-    - gloo.example.com
-  virtualHost:
-    domains:
-    - 'gloo.example.com'
-    routes:
-    - matchers:
-      - prefix: /
-      directResponseAction:
-        status: 200
-        body: "Hello, world!"
-EOF
-
-# Optional. Create a Virtual Service that redirects HTTP to HTTPS
-
-# Hack to allow us to redirect HTTP => HTTPS given that `gloo.example.com` is
-# not a valid DNS. This step is not needed if you have a proper DNS correctly
-# mapped to the AWS NLB IP address.
-AWS_DNS=$(kubectl --namespace='gloo-system' get service/gateway-proxy --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-
-
-kubectl apply --filename - <<EOF
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
-metadata:
-  name: default-https-redirect
-  namespace: gloo-system
-spec:
-  displayName: http-redirect
-  virtualHost:
-    domains:
-    - 'gloo.example.com'
-    routes:
-    - matchers:
-      - prefix: /
-      redirectAction:
-        hostRedirect: ${AWS_DNS}
-        httpsRedirect: true
-EOF
-
+```yaml
+gloo:
+  gatewayProxies:
+    gatewayProxy:
+      service:
+        ...
+        extraAnnotations:
+          ## /!\ WARNING /!\
+          ## values below will only work with the "AWS Load Balancer Controller". Not with the default k8s in-tree controller
+          service.beta.kubernetes.io/aws-load-balancer-type: "external" # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/nlb/#configuration
+          service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/nlb/
+          ...
 ```
 
-{{< tabs >}}
 
-{{< tab name="Gloo Edge Open Source" codelang="shell">}}
-kubectl create namespace 'gloo-system'
-
-helm repo add gloo 'https://storage.googleapis.com/solo-public-helm'
-
-helm install gloo gloo/gloo \
-  --namespace='gloo-system' \
-  --version="${GLOO_VERSION}" \
-  --values - <<EOF
-
-gloo:
-  gatewayProxies:
-    gatewayProxy:
-      service:
-        extraAnnotations:
-          service.beta.kubernetes.io/aws-load-balancer-backend-protocol: ssl
-          service.beta.kubernetes.io/aws-load-balancer-ssl-cert: <cert-arn>
-          service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: ELBSecurityPolicy-TLS-1-2-2017-01
-          service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
-          service.beta.kubernetes.io/aws-load-balancer-type: nlb
-EOF
-{{< /tab >}}
-
-{{< tab name="Gloo Edge Enterprise" codelang="shell" >}}
-kubectl create namespace 'gloo-system'
-
-helm repo add glooe 'https://storage.googleapis.com/gloo-ee-helm'
-
-helm install glooe glooe/gloo-ee \
-  --namespace='gloo-system' \
-  --version="${GLOO_VERSION}" \
-  --set="license_key=${GLOOE_LICENSE_KEY}" \
-  --values - <<EOF
-gloo:
-  gatewayProxies:
-    gatewayProxy:
-      service:
-        extraAnnotations:
-          service.beta.kubernetes.io/aws-load-balancer-backend-protocol: ssl
-          service.beta.kubernetes.io/aws-load-balancer-ssl-cert: <cert-arn>
-          service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: ELBSecurityPolicy-TLS-1-2-2017-01
-          service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
-          service.beta.kubernetes.io/aws-load-balancer-type: nlb
-EOF
-{{< /tab >}}
-
-{{< /tabs >}}
-
-Remember, make sure the https targetPort on the Gloo gateway-proxy service is set to 8443.
-
-Test your Gloo Edge services deployed on AWS EKS behind an AWS Network Load Balancer. 
-
-```shell
-# Test SSL termination at Gloo Edge proxy. `--connect-to` option is needed if gloo.example.com is not a DNS mapped to AWS NLB
-# IP Address as `--connect-to` redirects connection while preserving SNI information
-curl --verbose --cacert tls.crt --connect-to "gloo.example.com:443:$(glooctl proxy address --port='https')" https://gloo.example.com
-
-# Test HTTP => HTTPS redirect
-curl -verbose --location --insecure --header "Host: gloo.example.com" $(glooctl proxy url --port='http')
-```
-
-If you are using an AWS ACM cert you can export the certificate following the instructions [here](https://aws.amazon.com/blogs/compute/automating-mutual-tls-setup-for-amazon-api-gateway/).
-
-Terminating SSL Traffic at AWS NLB with a virtual service redirects from HTTP to HTTPS. See the guide for [https redirects]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/https_redirect" %}}) for more information on configuration. 
-
-
-## TLS offloading at the NLB level
-
-
-
-### Gloo Edge Helm install examples
-
-These examples install Gloo Edge onto an existing AWS EKS cluster and associate an AWS Network Load Balancer (NLB) with the Gloo Edge proxy.
-
-{{< tabs >}}
-
-{{< tab name="Gloo Edge Open Source" codelang="shell">}}
-kubectl create namespace 'gloo-system'
-
-helm repo add gloo 'https://storage.googleapis.com/solo-public-helm'
-
-helm install gloo gloo/gloo \
-  --namespace='gloo-system' \
-  --version="${GLOO_VERSION}" \
-  --values - <<EOF
-gatewayProxies:
-  gatewayProxy:
-    service:
-      extraAnnotations:
-        service.beta.kubernetes.io/aws-load-balancer-type: nlb
-EOF
-{{< /tab >}}
-
-{{< tab name="Gloo Edge Enterprise" codelang="shell" >}}
-kubectl create namespace 'gloo-system'
-
-helm repo add glooe 'https://storage.googleapis.com/gloo-ee-helm'
-
-helm install glooe glooe/gloo-ee \
-  --namespace='gloo-system' \
-  --version="${GLOO_VERSION}" \
-  --set="license_key=${GLOOE_LICENSE_KEY}" \
-  --values - <<EOF
-gloo:
-  gatewayProxies:
-    gatewayProxy:
-      service:
-        extraAnnotations:
-          service.beta.kubernetes.io/aws-load-balancer-type: nlb
-EOF
-{{< /tab >}}
-
-{{< /tabs >}}
-
-### Passthrough TLS
+## NLB with TLS passthrough
 
 By using an AWS Network Load Balancer (NLB) in front of Gloo Edge, you get an additional benefit of TLS passthrough. That is, HTTPS requests passthrough the AWS NLB and terminate TLS at the Gloo Edge proxy for extra security. AWS NLB automatically configures listeners for each Kubernetes Service port, so both HTTP and HTTPS ports get exposed through the AWS NLB.
 
@@ -373,36 +218,47 @@ curl --verbose --cacert tls.crt --connect-to "gloo.example.com:443:$(glooctl pro
 curl -verbose --location --insecure --header "Host: gloo.example.com" $(glooctl proxy url --port='http')
 ```
 
-### TLS Considerations
+## NLB with TLS offloading
 
-You need to think carefully around using TLS in terms of:
+If you want to leverage the AWS NLB integration with managed Certificate service (ACM), then terminating the TLS connection at the NLB makes sense. 
 
-* Which segments of the request path should be encrypted/protected
-* Which components need access to the request and, therefore, which components need to terminate the TLS connection. For example, any component making routing decisions based on HTTP headers, query path or methods needs access to the decrypted request
-* What are your certificate management needs for each component terminating TLS? Who generates the TLS certificate, and how frequently should it be rotated?
+In the example below, you will configure the NLB with a x509 certificate and, optionally, with extra attributes so that Gloo Edge can redirect to HTTPS if client connections are using HTTP.
 
-Most people use Gloo Edge as an L7 proxy/router, and that means Gloo Edge needs access to the request as cleartext. Enabling access to the request means that either the AWS ELB terminates the TLS connection and/or Gloo Edge terminates, so you could end up with one or two certificates you need to manage.
 
-When using an L4 TCP load balancer, like AWS Network Load Balancer, those will passthrough TLS connections so that you only need to terminate the TLS connection once at the Gloo Edge proxy and only manage one TLS certificate. There are good reasons to terminate TLS connections at the AWS ELB, such as their integration with AWS Certificate Manager and AWS IAM, and offloading CPU workload associated with managing a TLS connection from the Gloo Edge proxy.
+```yaml
+gloo:
+  gatewayProxies:
+    gatewayProxy:
+      service:
+        extraAnnotations:
+          # LEGACY Kubernetes cloud controller
+          # service.beta.kubernetes.io/aws-load-balancer-type: nlb
 
-Spending a few minutes thinking through the deployment architecture of your TLS connections helps eliminate much frustration and debugging later on.
-
-### TLS certificates entities
-
-Gloo can be configured to use TLS certificates entities such as AWS ACM-issued certificates outside of k8s secrets such as Let's Encrypt. You will need to configure the Gloo Gateway Proxy and VirtualService to use HTTPS only listener and AWS ACM-issued TLS certificates with a few steps.
-
-1. Set the necessary annotations for Gloo Gateway Proxy.
-
-```shell
-service.beta.kubernetes.io/aws-load-balancer-ssl-cert: <cert-arn>
-service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
-service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
-service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: ELBSecurityPolicy-TLS-1-2-2017-01
+          # NEW AWS Load Balancer Controller
+          service.beta.kubernetes.io/aws-load-balancer-type: "external"
+          service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+          service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:xxxxxxxxxx"
+          service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+          service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+          
+        httpPort: 80
+        httpsFirst: true
+        httpsPort: 443
+        type: LoadBalancer
 ```
 
-2. Remove sslConfig from VirtualService and Proxy CRDs. This is used for Let's Encrypt certificates and the sslConfig configuration is not required for VirtualService and Proxy CRDs. If you remove the sslConfig directive, the Gloo Gateway Proxy service will also need to be changed to forward traffic to 8080 instead of 8443. When the sslConfig is removed, the Gloo Gateway Proxy will fallback to listen on the 8080 port. The official helm chart before Gloo 1.7 does not let you configure the service backing ports independently of the pod ports as it shares same variable.
+From that point, the NLB will be configured to listen both on ports 80 and 443. For the port 443 (HTTPS), a certificate will be exposed by the NLB. 
 
-```shell
+
+### Disabling the Gloo Edge HTTPS Gateway
+
+In this setup and since Gloo v1.8, you can disable the HTTPS Gateway (Envoy Listener) in Gloo Edge using `disableHttpsGateway`.
+
+Before Gloo 1.8, there was a trick have the NLB healthchecks working by changing the order the ports in the Kubernetes service, using this attribute: `httpsFirst: true`
+
+The setup below shows how the HTTPS traffic reaching the NLB is redirected to Gloo Edge over port 8080. And traffic reaching the NLB on port 8443 will be refused since there are no active Envoy listener behind the NLB.
+
+```yaml
 gatewayProxies:
   gatewayProxy:
     service:
@@ -411,28 +267,134 @@ gatewayProxies:
       httpPort: 443       # Backing port is 8080
       # To prevent conflicts with the above change we are making the https port match its default backing port
       httpsPort: 8443     # Backing port is 8443
+      httpsFirst: true # set the HTTPS port as the first element in the Kubernetes service, otherwise Health checks will fail
+
 ```
 
-3. Check the AWS Load Balancer - it should have has single TLS listener with AWS ACM cert attached and health check set for checking gateway-proxy service NodePort. The healtch check should be successful if everything is set up correctly.
+### HTTPS redirect
 
-### TLS Termination at Load Balancer Level
+Another common requirement is to have the HTTP traffic redirected to HTTPS. You will need to tweak a bit the Gloo Gateways, as pictured below:
 
-The TLS Termination configuration options manages the encryption between your clients and microservices. TLS Termination at the AWS load balancer provides integration with AWS Certificate Manager (ACM) and AWS IAM, as well as offloading CPU workload associated with managing a TLS connection from the Gloo Edge proxy.
+![HTTPS redirect with NLB doing TLS offloading]({{< versioned_link_path fromRoot="/img/https-redirect-tls-offloading.png" >}})
 
-{{% notice warning %}}
-For TLS Termination at the load balancer you will need to set the http port to 443 and then disable the https gateway in Gloo. You can set the http port to 443, then change the https port (ex. change the port to 6443) or delete the gateway. Once traffic hits Gloo from the load balancer it will be http traffic over port 443. Starting from Gloo v1.8 you can use the `disableHttpsGateway` helm value to disable https gateway generation and the `disableHttpGateway` helm value to disable http gateway generation.
-{{% /notice %}}
+If you want to know more about the purpose of a `Gateway` _Custom Resource_, check out this guide: https://docs.solo.io/gloo-edge/master/installation/advanced_configuration/multi-gw-deployment/
 
+Below is a configuration example:
 
+```yaml
+gloo:
+  gatewayProxies:
+    gatewayProxy:
+      service:
+        extraAnnotations:
+          service.beta.kubernetes.io/aws-load-balancer-type: "external"
+          service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+          service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:xxxxxxxxxx"
+          service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+          service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+        # both the HTTPS and HTTP port are exposed by the NLB
+        httpPort: 80
+        httpsFirst: true
+        httpsPort: 443
+        type: LoadBalancer
+        kubeResourceOverride:
+          spec:
+            ports:
+              - name: http
+                port: 80
+                protocol: TCP
+                targetPort: 8090 # NLB listener on port 80 will redirect traffic to the Gateway listening on port 8090
+              - name: https
+                port: 443
+                protocol: TCP
+                targetPort: 8080 # regular traffic
+      gatewaySettings:
+        disableHttpsGateway: true
+        # the HTTP Gateway listening on port 8080 will exclude traffic that is meant to the special Gateway, handling the HTTPS redirection
+        customHttpGateway:
+          virtualServiceExpressions:
+            expressions:
+              - key: gloo-role
+                operator: NotEquals
+                values:
+                  - redirect-https
+```
 
+And now, this is how to declare that additional Gateway and VirtualService solely built for the HTTPS redirection:
 
+```bash
+AWS_DNS=$(kubectl --namespace='gloo-system' get service/gateway-proxy --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+```
 
-## Load Balancer Annotations
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy-redirect
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8090
+  httpGateway:
+    virtualServiceSelector:
+      gloo-role: redirect-https
+---
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: http-redirect-ssl-vs
+  namespace: gloo-system
+  labels:
+    gloo-role: redirect-https
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matchers:
+      - prefix: /
+      redirectAction:
+        httpsRedirect: true
+        hostRedirect: ${AWS_DNS}
+```
 
-Kubernetes provides [annotations](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer) for load balancers which can be added to your service depending on your cloud provider. Here are some relevant AWS Load Balancer annotations you may need to configure:
+## More examples with annotations
 
-* `service.beta.kubernetes.io/aws-load-balancer-type` - Associate an AWS Network Load Balancer with the Service (`nlb`|`nlb-ip`). If this annotation is not present, then AWS associates a Classic ELB with this Service. NLB-IP mode may be helpful for debugging timeouts, see information [here](https://kubernetes-sigs.github.io/aws-load-balancer-controller/guide/service/nlb_ip_mode/).
-* `service.beta.kubernetes.io/aws-load-balancer-ssl-cert` - If specified, AWS load balancer configured listener uses TLS/HTTPS with the provided certificate. Value is a valid certificate ARN from AWS Certificate Manager or AWS IAM, e.g. `arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012`. It can be either a certificate from a third party issuer that was uploaded to IAM or one created within AWS Certificate Manager.
-* `service.beta.kubernetes.io/aws-load-balancer-ssl-ports`: In mixed-use environment where some ports are secured and others are left unencrypted, this specifies the port the load balancer will be listening for SSL traffic on.
-* `service.beta.kubernetes.io/aws-load-balancer-backend-protocol`: Specifies which protocol a Pod speaks (https|http|ssl|tcp). For HTTPS and SSL, the ELB expects the Pod to authenticate itself over the encrypted connection, using a certificate.
-* `service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy`: If using Kubernetes v1.9 onwards you can use predefined [AWS SSL policies](https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-security-policy-table.html) with HTTPS or SSL listeners for your Services.
+Below are examples of how deep you can go with the NLB configuration, thanks to the new AWS Load Balancer Controller:
+
+```yaml
+gloo:
+  gatewayProxies:
+    gatewayProxy:
+      service:
+        extraAnnotations:
+          service.beta.kubernetes.io/aws-load-balancer-type: "external" # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/nlb/#configuration
+          service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/nlb/
+          service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "instance" # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/nlb/#ip-mode_1
+          service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: "x-via-lb-type=external"
+          service.beta.kubernetes.io/aws-load-balancer-ip-address-type: "ipv4" # service.beta.kubernetes.io/aws-load-balancer-ip-address-type: ipv4
+
+          # LB attributes
+          service.beta.kubernetes.io/aws-load-balancer-attributes: "load_balancing.cross_zone.enabled=false"
+
+          # Access logs - will be soon deprecated in favor of "aws-load-balancer-attributes"
+          service.beta.kubernetes.io/aws-load-balancer-access-log-enabled: "true"
+          service.beta.kubernetes.io/aws-load-balancer-access-log-s3-bucket-name: "nlb-access-logs"
+          service.beta.kubernetes.io/aws-load-balancer-access-log-s3-bucket-prefix: "gloo-edge-gw"
+
+          # Target group attributes
+          service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: "deregistration_delay.timeout_seconds=15,deregistration_delay.connection_termination.enabled=true"
+          #service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: "stickiness.enabled=true,stickiness.type=source_ip,proxy_protocol_v2.enabled=true"
+
+          # Backend
+          service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
+
+          # Health checks
+          service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2" # 2-20
+          service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2" # 2-10
+          service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10" # 10 or 30
+          service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/" # suppose you have a route returning 200 on that path
+          service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "HTTP"
+          service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "traffic-port"
+          service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "6" # 6 is the minimum
+```
