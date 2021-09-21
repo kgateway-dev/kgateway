@@ -30,13 +30,13 @@ func (r *Upstream) SetMetadata(meta *core.Metadata) {
 
 // Deprecated
 func (r *Upstream) SetStatus(status *core.Status) {
-	statusutils.SetFirstStatusInNamespacedStatuses(r, status)
+	statusutils.SetSingleStatusInNamespacedStatuses(r, status)
 }
 
 // Deprecated
 func (r *Upstream) GetStatus() *core.Status {
 	if r != nil {
-		return statusutils.GetFirstStatusInNamespacedStatuses(r)
+		return statusutils.GetSingleStatusInNamespacedStatuses(r)
 	}
 	return nil
 }

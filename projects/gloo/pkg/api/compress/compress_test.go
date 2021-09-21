@@ -3,7 +3,7 @@ package compress_test
 import (
 	"encoding/json"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
@@ -24,7 +24,7 @@ var _ = Describe("Compress", func() {
 	)
 
 	BeforeEach(func() {
-		ns := bootstrap.GetStatusReporterNamespaceOrDefault("default")
+		ns := gloostatusutils.GetStatusReporterNamespaceOrDefault("default")
 		statusUnmarshaler = statusutils.NewNamespacedStatusesUnmarshaler(ns, protoutils.UnmarshalMapToProto)
 		statusClient = statusutils.NewNamespacedStatusesClient(ns)
 	})

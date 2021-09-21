@@ -3,9 +3,7 @@ package syncer_test
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -70,8 +68,7 @@ var _ = Describe("Translate Proxy", func() {
 
 		settings = &v1.Settings{}
 
-		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(ns)
-		statusClient = statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
+		statusClient := statusutils.GetStatusClientFromEnvOrDefault(ns)
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
@@ -212,8 +209,7 @@ var _ = Describe("Empty cache", func() {
 
 		settings = &v1.Settings{}
 
-		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(ns)
-		statusClient = statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
@@ -373,8 +369,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 
 		settings = &v1.Settings{}
 
-		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(ns)
-		statusClient = statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), usClient)
 

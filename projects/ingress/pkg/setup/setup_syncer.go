@@ -6,7 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
+
+	skstatusutils "github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/gloo/pkg/utils"
@@ -89,8 +91,11 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		return err
 	}
 
-	writeNamespace := bootstrap.GetWriteNamespace(settings)
-	statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(writeNamespace)
+	writeNamespace := settings.GetDiscoveryNamespace()
+	if writeNamespace == "" {
+		writeNamespace = gloodefaults.GlooSystem
+	}
+	statusReporterNamespace := statusutils.GetStatusReporterNamespaceOrDefault(writeNamespace)
 
 	watchNamespaces := utils.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
 
@@ -193,7 +198,7 @@ func RunIngress(opts Opts) error {
 		kubeServiceClient := v1.NewKubeServiceClientWithBase(baseKubeServiceClient)
 
 		translatorEmitter := v1.NewTranslatorEmitter(upstreamClient, kubeServiceClient, ingressClient)
-		statusClient := statusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
+		statusClient := skstatusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
 		translatorSync := translator.NewSyncer(
 			opts.WriteNamespace,
 			proxyClient,
@@ -243,7 +248,7 @@ func RunIngress(opts Opts) error {
 			baseClient := clusteringressclient.NewResourceClient(knative, knativeCache)
 			ingressClient := clusteringressv1alpha1.NewClusterIngressClientWithBase(baseClient)
 			clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(ingressClient)
-			statusClient := statusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
+			statusClient := skstatusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
 			clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(
 				opts.ClusterIngressProxyAddress,
 				opts.WriteNamespace,
@@ -267,7 +272,7 @@ func RunIngress(opts Opts) error {
 			baseClient := knativeclient.NewResourceClient(knative, knativeCache)
 			ingressClient := knativev1alpha1.NewIngressClientWithBase(baseClient)
 			knativeTranslatorEmitter := knativev1.NewTranslatorEmitter(ingressClient)
-			statusClient := statusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
+			statusClient := skstatusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
 			knativeTranslatorSync := knativetranslator.NewSyncer(
 				opts.KnativeExternalProxyAddress,
 				opts.KnativeInternalProxyAddress,

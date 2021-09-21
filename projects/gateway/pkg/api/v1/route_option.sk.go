@@ -30,13 +30,13 @@ func (r *RouteOption) SetMetadata(meta *core.Metadata) {
 
 // Deprecated
 func (r *RouteOption) SetStatus(status *core.Status) {
-	statusutils.SetFirstStatusInNamespacedStatuses(r, status)
+	statusutils.SetSingleStatusInNamespacedStatuses(r, status)
 }
 
 // Deprecated
 func (r *RouteOption) GetStatus() *core.Status {
 	if r != nil {
-		return statusutils.GetFirstStatusInNamespacedStatuses(r)
+		return statusutils.GetSingleStatusInNamespacedStatuses(r)
 	}
 	return nil
 }

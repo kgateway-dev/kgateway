@@ -7,7 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
+	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
+	skstatusutils "github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
@@ -90,8 +93,12 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 
 	refreshRate := prototime.DurationFromProto(settings.GetRefreshRate())
 
-	writeNamespace := bootstrap.GetWriteNamespace(settings)
-	statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(writeNamespace)
+	writeNamespace := settings.GetDiscoveryNamespace()
+	if writeNamespace == "" {
+		writeNamespace = gloodefaults.GlooSystem
+	}
+
+	statusReporterNamespace := statusutils.GetStatusReporterNamespaceOrDefault(writeNamespace)
 	watchNamespaces := utils.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
 
 	var validation *translator.ValidationOpts
@@ -215,7 +222,7 @@ func RunGateway(opts translator.Opts) error {
 		return err
 	}
 
-	statusClient := statusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
+	statusClient := skstatusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
 
 	rpt := reporter.NewReporter("gateway",
 		statusClient,

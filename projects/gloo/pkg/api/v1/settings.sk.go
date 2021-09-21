@@ -30,13 +30,13 @@ func (r *Settings) SetMetadata(meta *core.Metadata) {
 
 // Deprecated
 func (r *Settings) SetStatus(status *core.Status) {
-	statusutils.SetFirstStatusInNamespacedStatuses(r, status)
+	statusutils.SetSingleStatusInNamespacedStatuses(r, status)
 }
 
 // Deprecated
 func (r *Settings) GetStatus() *core.Status {
 	if r != nil {
-		return statusutils.GetFirstStatusInNamespacedStatuses(r)
+		return statusutils.GetSingleStatusInNamespacedStatuses(r)
 	}
 	return nil
 }

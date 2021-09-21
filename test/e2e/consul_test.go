@@ -187,14 +187,9 @@ var _ = Describe("Consul e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Wait for proxy to be accepted
-		var proxy *gloov1.Proxy
-		Eventually(func() bool {
-			proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-			if err != nil {
-				return false
-			}
-			return proxy.GetStatus().GetState() == core.Status_Accepted
-		}, "20s", "0.2s").Should(BeTrue())
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+		})
 
 		time.Sleep(3 * time.Second)
 

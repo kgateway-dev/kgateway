@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
@@ -279,7 +281,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		return err
 	}
 	opts.WriteNamespace = writeNamespace
-	opts.StatusReporterNamespace = bootstrap.GetStatusReporterNamespaceOrDefault(writeNamespace)
+	opts.StatusReporterNamespace = gloostatusutils.GetStatusReporterNamespaceOrDefault(writeNamespace)
 	opts.WatchNamespaces = watchNamespaces
 	opts.WatchOpts = clients.WatchOpts{
 		Ctx:         ctx,

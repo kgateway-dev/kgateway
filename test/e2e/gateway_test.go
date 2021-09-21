@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/errors"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -254,15 +256,20 @@ var _ = Describe("Gateway", func() {
 					return testClients.GatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 				})
 
-				Eventually(func() bool {
+				By("second virtualservice should not end up in the proxy (bad config)")
+				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 					proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 					if err != nil {
-						return false
+						return nil, err
 					}
 					nonSslListener := getNonSSLListener(proxy)
+					vhostCount := len(nonSslListener.GetHttpListener().VirtualHosts)
+					if vhostCount == 1 {
+						return proxy, nil
+					}
 
-					return proxy.GetStatus().GetState() == core.Status_Accepted && len(nonSslListener.GetHttpListener().VirtualHosts) == 1
-				}, "10s", "0.1s").Should(BeTrue(), "second virtualservice should not end up in the proxy (bad config)")
+					return nil, errors.Errorf("non-ssl listener virtual hosts: expected 1, found %d ", vhostCount)
+				})
 
 				// Create a third trivial vs with valid config
 				vs3 := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
@@ -272,16 +279,20 @@ var _ = Describe("Gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Wait for proxy to be accepted
-				Eventually(func() bool {
+				By("third virtualservice should end up in the proxy (good config)")
+				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 					proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 					if err != nil {
-						return false
-
+						return nil, err
 					}
 					nonSslListener := getNonSSLListener(proxy)
+					vhostCount := len(nonSslListener.GetHttpListener().VirtualHosts)
+					if vhostCount == 2 {
+						return proxy, nil
+					}
 
-					return proxy.GetStatus().GetState() == core.Status_Accepted && len(nonSslListener.GetHttpListener().VirtualHosts) == 2
-				}, "10s", "0.1s").Should(BeTrue(), "third virtualservice should end up in the proxy (good config)")
+					return nil, errors.Errorf("non-ssl listener virtual hosts: expected 2, found %d ", vhostCount)
+				})
 
 				// Verify that the proxy is as expected (2 functional virtualservices)
 				Expect(proxy.Listeners).To(HaveLen(2))

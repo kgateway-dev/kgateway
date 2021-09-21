@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
@@ -20,6 +17,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -69,8 +67,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 			Expect(err).NotTo(HaveOccurred())
 		}
 
-		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(defaults.GlooSystem)
-		statusClient = statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem)
 
 		proxyClient, err = gloov1.NewProxyClient(ctx, memFactory)
 		Expect(err).NotTo(HaveOccurred())
@@ -155,7 +152,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 				return core.Status_Pending, fmt.Errorf("no state")
 			}
 			return proxyState.GetState(), nil
-		}, "60s")
+		})
 	}
 
 	EventuallyProxyStatus := func() gomega.AsyncAssertion {
@@ -179,7 +176,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	}
 
-	FIt("should set status correctly even when the status from the snapshot was not updated", func() {
+	It("should set status correctly even when the status from the snapshot was not updated", func() {
 		ts.Sync(ctx, snapshot())
 		// wait for proxy to be written
 		Eventually(func() (*gloov1.Proxy, error) {

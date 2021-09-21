@@ -1,17 +1,19 @@
 package reconciler_test
 
 import (
+	"context"
+
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	. "github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/gloo/test/debugprint"
 	mock_validation "github.com/solo-io/gloo/test/mocks/gloo"
@@ -22,9 +24,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
-
-	"context"
 
 	errors "github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -80,8 +79,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				}, nil
 			}).AnyTimes()
 
-		statusReporterNamespace := bootstrap.GetStatusReporterNamespaceOrDefault(ns)
-		statusClient = statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
 		reconciler = NewProxyReconciler(validationClient, proxyClient, statusClient)
 
 		snap = samples.SimpleGatewaySnapshot(us, ns)
@@ -157,14 +155,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				// simulate gloo accepting the proxy resource
 				liveProxy, err := proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
-
-				liveProxyStatus := statusClient.GetStatus(liveProxy)
-				if liveProxyStatus == nil {
-					liveProxyStatus = &core.Status{State: core.Status_Accepted, ReportedBy: "gateway"}
-					statusClient.SetStatus(liveProxy, liveProxyStatus)
-				} else {
-					liveProxyStatus.State = core.Status_Accepted
-				}
+				statusClient.SetStatus(liveProxy, &core.Status{State: core.Status_Accepted})
 
 				liveProxy, err = proxyClient.Write(liveProxy, clients.WriteOpts{OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())

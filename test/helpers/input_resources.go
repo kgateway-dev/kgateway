@@ -3,9 +3,8 @@ package helpers
 import (
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/onsi/gomega"
@@ -24,10 +23,6 @@ const (
 type InputResourceGetter func() (resources.InputResource, error)
 type InputResourceListGetter func() (resources.InputResourceList, error)
 
-var (
-	statusClient = statusutils.NewNamespacedStatusesClient(bootstrap.GetStatusReporterNamespaceOrDefault(defaults.GlooSystem))
-)
-
 func EventuallyResourceAccepted(getter InputResourceGetter, intervals ...interface{}) {
 	EventuallyResourceStatusMatchesState(1, getter, core.Status_Accepted, intervals...)
 }
@@ -44,6 +39,8 @@ func EventuallyResourceStatusMatchesState(offset int, getter InputResourceGetter
 	statusStateMatcher := gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
 		"State": gomega.Equal(desiredStatusState),
 	})
+
+	statusClient := statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem)
 
 	timeoutInterval, pollingInterval := getTimeoutAndPollingIntervalsOrDefault(intervals...)
 	gomega.EventuallyWithOffset(offset+1, func() (core.Status, error) {
