@@ -582,16 +582,9 @@ endif
 # check if all images are already built for RETAG_IMAGE_REGISTRY.
 # if so, retag them for the repository specified by IMAGE_REPO.
 # if not, build them with tags for the repository specified by IMAGE_REPO.
-.PHONY: docker
-docker:
-	docker image inspect $(RETAG_IMAGE_REGISTRY)/gateway:$(VERSION) >/dev/null 2>&1 && \
-	docker image inspect $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) >/dev/null 2>&1 && \
-	docker image inspect $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) >/dev/null 2>&1 && \
-	docker image inspect $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION) >/dev/null 2>&1 && \
-	docker image inspect $(RETAG_IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) >/dev/null 2>&1 && \
-	docker image inspect $(RETAG_IMAGE_REGISTRY)/certgen:$(VERSION) >/dev/null 2>&1 && \
-	docker image inspect $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION) >/dev/null 2>&1 && \
-	docker image inspect $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION) >/dev/null 2>&1 && \
+.PHONY: docker-push-retag
+docker-push-retag:
+ifeq ($(RELEASE), "true")
 	docker tag $(RETAG_IMAGE_REGISTRY)/gateway:$(VERSION) $(IMAGE_REPO)/gateway:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) $(IMAGE_REPO)/discovery:$(VERSION) && \
@@ -599,11 +592,38 @@ docker:
 	docker tag $(RETAG_IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/certgen:$(VERSION) $(IMAGE_REPO)/certgen:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION) $(IMAGE_REPO)/sds:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION) $(IMAGE_REPO)/access-logger:$(VERSION) || \
-	make docker-build
+	docker tag $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION) $(IMAGE_REPO)/access-logger:$(VERSION)
 
-.PHONY: docker-build docker-push
-docker-build: discovery-docker gateway-docker gloo-docker \
+	docker tag $(RETAG_IMAGE_REGISTRY)/gateway:$(VERSION)-extended $(IMAGE_REPO)/gateway:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION)-extended $(IMAGE_REPO)/ingress:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION)-extended $(IMAGE_REPO)/discovery:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION)-extended $(IMAGE_REPO)/gloo:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION)-extended $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/certgen:$(VERSION)-extended $(IMAGE_REPO)/certgen:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION)-extended $(IMAGE_REPO)/sds:$(VERSION) && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION)-extended $(IMAGE_REPO)/access-logger:$(VERSION)
+
+	docker push $(IMAGE_REPO)/gateway:$(VERSION) && \
+	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
+	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
+	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
+	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
+	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
+	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
+	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
+
+	docker push $(IMAGE_REPO)/gateway:$(VERSION)-extended && \
+	docker push $(IMAGE_REPO)/ingress:$(VERSION)-extended && \
+	docker push $(IMAGE_REPO)/discovery:$(VERSION)-extended && \
+	docker push $(IMAGE_REPO)/gloo:$(VERSION)-extended && \
+	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION)-extended && \
+	docker push $(IMAGE_REPO)/certgen:$(VERSION)-extended && \
+	docker push $(IMAGE_REPO)/sds:$(VERSION)-extended && \
+	docker push $(IMAGE_REPO)/access-logger:$(VERSION)-extended
+endif
+
+.PHONY: docker docker-push
+docker: discovery-docker gateway-docker gloo-docker \
 		gloo-envoy-wrapper-docker certgen-docker sds-docker \
 		ingress-docker access-logger-docker
 
