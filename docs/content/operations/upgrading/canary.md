@@ -31,11 +31,11 @@ Gloo Edge 1.9.0 or later installed.
 
 ##### Simple Canary
 
-- Install
+- **Install**
   - Install Gloo Edge with the new version to another namespace, e.g. `glooctl install gateway --version 1.9.0 -n gloo-system-canary`.
-- Test
-  - Test your routes, monitor your metrics, run `glooctl check` on the new installation until you are happy with the installation.
-- Validate
+- **Test**
+  - Test your routes, monitor metrics, and run `glooctl check` until you are happy with the installation.
+- **Validate**
   - `gloooctl uninstall -n gloo-system`, or `helm delete` the original installation.
 
 ##### Advanced Canary: Separate Control and Data Planes
