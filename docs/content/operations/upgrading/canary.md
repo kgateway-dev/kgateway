@@ -29,7 +29,7 @@ from working as the old control plane would crash loop when it saw newly added f
 
 Gloo Edge 1.9.0 or later installed.
 
-##### Simple Canary
+##### Simple Canary (Recommended)
 
 - **Install**
   - Install Gloo Edge with the new version to another namespace, e.g. `glooctl install gateway --version 1.9.0 -n gloo-system-canary`.
@@ -38,38 +38,9 @@ Gloo Edge 1.9.0 or later installed.
 - **Validate**
   - `gloooctl uninstall -n gloo-system`, or `helm delete` the original installation.
 
-##### Advanced Canary: Separate Control and Data Planes
+##### Appendix: In-Place "Canary" using XDS-Relay
 
-The recommended installation above installs the full Gloo Edge chart twice for simplicity. This means that there will
-be duplicate data planes, which may be expensive if you don't want to roll out duplicate envoy fleets.
-
-One way to avoid this is to install the second canary control plane without any proxies, i.e. override the 
-`gatewayProxies` (`gloo.gatewayProxies` in enterprise) helm value with an empty list. Then you can incrementally use
-the following helm values per proxy to incrementally upgrade your envoy fleets to the new control plane once satisfied:
-
-```yaml
-gatewayProxies:
-  gatewayProxy: # do the following for each gateway proxy
-    xdsServiceAddress: xds-relay.default.svc.cluster.local # replace with the appropriate value for the canary gloo svc
-    xdsServicePort: 9991 # replace with the appropriate value for the canary gloo svc
-```
-
-{{% notice note %}}
-This will update all envoys in a deployment. If you'd rather test a single envoy first, update the corresponding envoy
-bootstrap configmap (`{{ $gatewayProxies.proxyName | kebabcase }}-envoy-config`) to point to the new xds server and
-bounce a single envoy pod to test.
-
-{{% /notice %}}
-
-Once updated, we want the new helm release to take ownership of these envoys by updating the following labels as
-appropriate (helm 3 only):
-
-- `meta.helm.sh/release-name: <RELEASE_NAME>`
-- `meta.helm.sh/release-namespace: <RELEASE_NAMESPACE>`
-
-Finally, make the same update to the new helm release's helm values so your envoy fleet isn't scaled to zero upon the
-next upgrade.
-
-##### Appendix: Alternate "Canary" using XDS-Relay
-
-Consider combining these upgrade approaches with [xds-relay]({{< versioned_link_path fromRoot="/operations/production_deployment/#xds-relay" >}}) if you desire extra resiliency.
+A simple way to decouple the lifecycle of your control plane from your data plane (installed together by default
+with Gloo Edge and Gloo Edge Enterprise) is to use the [xds-relay]({{< versioned_link_path fromRoot="/operations/production_deployment/#xds-relay" >}})
+project as your "canary" control plane. This provides extra resiliency for your live xds configuration in the event of
+failure during an in-place `helm upgrade`. 
