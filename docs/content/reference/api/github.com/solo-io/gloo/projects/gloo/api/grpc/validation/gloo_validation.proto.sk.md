@@ -93,7 +93,7 @@ weight: 5
 ```yaml
 "resourceRef": .core.solo.io.ResourceRef
 "warnings": []string
-"error": []string
+"errors": []string
 
 ```
 
@@ -101,7 +101,7 @@ weight: 5
 | ----- | ---- | ----------- | 
 | `resourceRef` | [.core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 | `warnings` | `[]string` |  |
-| `error` | `[]string` |  |
+| `errors` | `[]string` |  |
 
 
 

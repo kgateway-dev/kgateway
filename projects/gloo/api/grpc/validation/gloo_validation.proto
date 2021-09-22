@@ -29,7 +29,7 @@ message GlooValidationServiceResponse {
 message ResourceReport {
     core.solo.io.ResourceRef resource_ref = 1;
     repeated string warnings = 2;
-    repeated string error = 3;
+    repeated string errors = 3;
 }
 
 message NotifyOnResyncRequest {

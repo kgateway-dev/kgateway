@@ -30,7 +30,7 @@ type Translator interface {
 	Translate(
 		params plugins.Params,
 		proxy *v1.Proxy,
-	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.GlooValidationServiceResponse, error)
+	) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error)
 }
 
 func NewTranslator(
@@ -65,7 +65,7 @@ type translatorFactory struct {
 func (t *translatorFactory) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
-) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.GlooValidationServiceResponse, error) {
+) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
 	instance := &translatorInstance{
 		plugins:             t.getPlugins(),
 		settings:            t.settings,
@@ -86,7 +86,7 @@ type translatorInstance struct {
 func (t *translatorInstance) Translate(
 	params plugins.Params,
 	proxy *v1.Proxy,
-) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.GlooValidationServiceResponse, error) {
+) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	params.Ctx = ctx
@@ -214,13 +214,7 @@ ClusterLoop:
 		}
 	}
 
-	report := &validationapi.GlooValidationServiceResponse{
-		ProxyReport: proxyRpt,
-		// TODO(mitchaman): Build upstream report from errors
-		UpstreamReport: &validationapi.UpstreamReport{},
-	}
-
-	return xdsSnapshot, reports, report, nil
+	return xdsSnapshot, reports, proxyRpt, nil
 }
 
 // the set of resources returned by one iteration for a single v1.Listener

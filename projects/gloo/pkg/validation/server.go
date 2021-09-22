@@ -19,6 +19,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"google.golang.org/grpc"
 )
@@ -170,36 +171,16 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 	snapCopy := s.latestSnapshot.Clone()
 	s.lock.RUnlock()
 
+	// update the snapshot copy with the resources from the request
+	applyRequestToSnapshot(&snapCopy, req)
+
 	ctx = contextutils.WithLogger(ctx, "proxy-validator")
 
 	params := plugins.Params{Ctx: ctx, Snapshot: &snapCopy}
 
 	logger := contextutils.LoggerFrom(ctx)
 
-	// TODO(mitchaman): Clean up logging
-	numProxy := 0
-	if req.GetProxy() != nil {
-		numProxy = 1
-	}
-	logger.Infof("mitchaman - received validation request with %d proxy and %d upstream(s)", numProxy, len(req.GetUpstreams()))
-
-	if req.GetUpstreams() != nil {
-		// Upsert req upstreams with upstreams from snapshot
-		upstreamsCopy := params.Snapshot.Upstreams.Clone()
-		for _, us := range req.GetUpstreams() {
-			existingUpstream, err := upstreamsCopy.Find(us.GetMetadata().GetNamespace(), us.GetMetadata().GetName())
-			if err != nil {
-				// New upstream
-				upstreamsCopy = append(upstreamsCopy, us)
-			} else {
-				// Replace existing upstream
-				us.DeepCopyInto(existingUpstream)
-			}
-		}
-		params.Snapshot.Upstreams = upstreamsCopy
-	}
-
-	xdsSnapshot, resourceReports, report, err := s.translator.Translate(params, req.GetProxy())
+	xdsSnapshot, resourceReports, proxyReport, err := s.translator.Translate(params, req.GetProxy())
 	if err != nil {
 		logger.Errorw("failed to validate proxy", zap.Error(err))
 		return nil, err
@@ -207,17 +188,53 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 
 	// Sanitize routes before sending report to gateway
 	s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
-	routeErrorToWarnings(resourceReports, report.GetProxyReport())
+	routeErrorToWarnings(resourceReports, proxyReport)
 
-	writeUpstreamReport(ctx, resourceReports, report.GetUpstreamReport())
-
-	logger.Infof("mitchaman - validation report result: %v", report.String())
-	return report, nil
+	return convertToGlooValidationServiceResponse(proxyReport, resourceReports), nil
 }
 
-func writeUpstreamReport(ctx context.Context, reports reporter.ResourceReports, out *validation.UpstreamReport) {
-	// TODO(mitchaman): Implement
-	contextutils.LoggerFrom(ctx).Infof("mitchaman - reports (kind: Upstream): %s, UpstreamReport: %s", reports.FilterByKind("*v1.Upstream"), out.String())
+// updates the given snapshot with the resources from the request
+func applyRequestToSnapshot(snap *v1.ApiSnapshot, req *validation.GlooValidationServiceRequest) {
+	if req.GetUpstreams() != nil {
+		for _, us := range req.GetUpstreams() {
+			usRef := us.GetMetadata().Ref()
+
+			var isUpdate bool
+			for i, existingUs := range snap.Upstreams {
+				if existingUs.GetMetadata().Ref().Equal(usRef) {
+					// replace the existing upstream in the snapshot
+					snap.Upstreams[i] = us
+					isUpdate = true
+					break
+				}
+			}
+			if !isUpdate {
+				snap.Upstreams = append(snap.Upstreams, us)
+				snap.Upstreams.Sort()
+			}
+		}
+	}
+}
+
+func convertToGlooValidationServiceResponse(proxyReport *validation.ProxyReport, resourceReports reporter.ResourceReports) *validation.GlooValidationServiceResponse {
+	var upstreamReports []*validation.ResourceReport
+
+	for resource, report := range resourceReports {
+		switch resources.Kind(resource) {
+		case "*v1.Upstream":
+			upstreamReports = append(upstreamReports, &validation.ResourceReport{
+				ResourceRef: resource.GetMetadata().Ref(),
+				Warnings:    report.Warnings,
+				//Errors:       report.Errors,
+			})
+		}
+		// TODO add other resources types here
+	}
+
+	return &validation.GlooValidationServiceResponse{
+		ProxyReport:     proxyReport,
+		UpstreamReports: upstreamReports,
+	}
 }
 
 // Update the validation report so that route errors that were changed into warnings during sanitization

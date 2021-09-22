@@ -38,7 +38,8 @@ type Reports struct {
 }
 
 type ProxyReports map[*gloov1.Proxy]*validation.ProxyReport
-type UpstreamReports map[*gloov1.Upstream]*validation.UpstreamReport
+
+type UpstreamReports map[*gloov1.Upstream]*validation.ResourceReport
 
 var (
 	NotReadyErr = errors.Errorf("validation is not yet available. Waiting for first snapshot")
@@ -585,13 +586,13 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 
 func (v *validator) validateUpstreamInternal(ctx context.Context, us *gloov1.Upstream, dryRun, acquireLock bool) (*Reports, error) {
 	// validate with gloo
-	var proxyReport *validation.GlooValidationServiceResponse
+	var glooValidationResponse *validation.GlooValidationServiceResponse
 	err := retry.Do(func() error {
 		rpt, err := v.validationClient.Validate(ctx,
 			&validation.GlooValidationServiceRequest{
 				Upstreams: []*gloov1.Upstream{us},
 			})
-		proxyReport = rpt
+		glooValidationResponse = rpt
 		return err
 	},
 		retry.Attempts(4),
@@ -605,9 +606,10 @@ func (v *validator) validateUpstreamInternal(ctx context.Context, us *gloov1.Ups
 			return nil, err
 		}
 	}
+	contextutils.LoggerFrom(ctx).Debugf("resp: %v\n", glooValidationResponse) //TODO remove this
 	return &Reports{
 		UpstreamReports: &UpstreamReports{
-			us: proxyReport.GetUpstreamReport(),
+			//us: glooValidationResponse.GetUpstreamReports(), // TODO
 		},
 	}, nil
 }
