@@ -156,6 +156,9 @@ preventing potential downtime. The probes are not enabled in default installatio
 getting started experience. The following example upgrade assumes you're running in kubernetes with the kubernetes
 load-balancer.
 
+If upgrading from version 1.9.0 or later, use a [Canary upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/canary" >}})
+to make sure that the newer version works as you expect before upgrading.
+
 #### Using Helm
 
 For Enterprise users of Gloo Edge, the process with either Helm 3 is the same. You'll just need to set your license
