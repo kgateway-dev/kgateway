@@ -4,7 +4,6 @@ description: Use Gloo Edge to complement AWS load balancers
 weight: 7
 ---
 
-{{% versioned_link_path fromRoot="" %}}
 
 Gloo Edge is an application (L7) proxy based on [Envoy](https://www.envoyproxy.io) that can act as both a secure edge router and as a developer-friendly Kubernetes ingress/egress (north-south traffic) gateway. There are many benefits to pairing Gloo Edge with one of AWS Elastic Load Balancers (ELB), including better cross availability zone failover and deeper integration with AWS services like AWS Certificate Manager, AWS CLI & CloudFormation, and Route 53 (DNS). 
 
