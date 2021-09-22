@@ -180,21 +180,45 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 
 	logger := contextutils.LoggerFrom(ctx)
 
-	xdsSnapshot, resourceReports, proxyReport, err := s.translator.Translate(params, req.GetProxy())
-	if err != nil {
-		logger.Errorw("failed to validate proxy", zap.Error(err))
-		return nil, err
+	var glooValidationReports []*validation.GlooValidationReport
+	var proxiesToValidate v1.ProxyList
+	if req.GetProxy() != nil {
+		proxiesToValidate = v1.ProxyList{req.GetProxy()}
+	} else {
+		// if no proxy was passed in, call translate for all proxies in snapshot
+		proxiesToValidate = snapCopy.Proxies
+	}
+	for _, proxy := range proxiesToValidate {
+		xdsSnapshot, resourceReports, proxyReport, err := s.translator.Translate(params, proxy)
+		if err != nil {
+			logger.Errorw("failed to validate proxy", zap.Error(err))
+			return nil, err
+		}
+
+		// Sanitize routes before sending report to gateway
+		s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
+		routeErrorToWarnings(resourceReports, proxyReport)
+
+		glooValidationReports = append(glooValidationReports, convertToGlooValidationReport(proxyReport, resourceReports))
 	}
 
-	// Sanitize routes before sending report to gateway
-	s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
-	routeErrorToWarnings(resourceReports, proxyReport)
-
-	return convertToGlooValidationServiceResponse(proxyReport, resourceReports), nil
+	return &validation.GlooValidationServiceResponse{
+		GlooValidationReports: glooValidationReports,
+	}, nil
 }
 
 // updates the given snapshot with the resources from the request
 func applyRequestToSnapshot(snap *v1.ApiSnapshot, req *validation.GlooValidationServiceRequest) {
+	// update the snapshot with the given proxy
+	if req.GetProxy() != nil {
+		proxyRef := req.GetProxy().GetMetadata().Ref()
+		for i, proxy := range snap.Proxies {
+			if proxy.GetMetadata().Ref().Equal(proxyRef) {
+				// replace the existing proxy in the snapshot
+				snap.Proxies[i] = req.GetProxy()
+			}
+		}
+	}
 	if req.GetUpstreams() != nil {
 		for _, us := range req.GetUpstreams() {
 			usRef := us.GetMetadata().Ref()
@@ -216,7 +240,7 @@ func applyRequestToSnapshot(snap *v1.ApiSnapshot, req *validation.GlooValidation
 	}
 }
 
-func convertToGlooValidationServiceResponse(proxyReport *validation.ProxyReport, resourceReports reporter.ResourceReports) *validation.GlooValidationServiceResponse {
+func convertToGlooValidationReport(proxyReport *validation.ProxyReport, resourceReports reporter.ResourceReports) *validation.GlooValidationReport {
 	var upstreamReports []*validation.ResourceReport
 
 	for resource, report := range resourceReports {
@@ -231,7 +255,7 @@ func convertToGlooValidationServiceResponse(proxyReport *validation.ProxyReport,
 		// TODO add other resources types here
 	}
 
-	return &validation.GlooValidationServiceResponse{
+	return &validation.GlooValidationReport{
 		ProxyReport:     proxyReport,
 		UpstreamReports: upstreamReports,
 	}

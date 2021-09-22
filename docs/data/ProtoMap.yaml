@@ -428,6 +428,9 @@ apis:
   gloo.solo.io.GlooOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#GlooOptions
     package: gloo.solo.io
+  gloo.solo.io.GlooValidationReport:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#GlooValidationReport
+    package: gloo.solo.io
   gloo.solo.io.GlooValidationServiceRequest:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#GlooValidationServiceRequest
     package: gloo.solo.io

@@ -2,6 +2,10 @@ syntax = "proto3";
 package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation";
 
+import "extproto/ext.proto";
+option (extproto.equal_all) = true;
+option (extproto.hash_all) = true;
+
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto";
@@ -17,12 +21,20 @@ service GlooValidationService {
 }
 
 message GlooValidationServiceRequest {
+    // If a proxy is provided in the request, the response will contain only the report for that proxy.
+    // If no proxy is provided, the response will contain a report for each proxy in the Gloo API snapshot.
     gloo.solo.io.Proxy proxy = 1;
+
     repeated gloo.solo.io.Upstream upstreams = 2;
     repeated core.solo.io.ResourceRef deleted_upstreams = 3;
 }
 
 message GlooValidationServiceResponse {
+    repeated GlooValidationReport gloo_validation_reports = 1;
+}
+
+// A Gloo validation report represents the warnings/errors produced during a single translation loop of a proxy
+message GlooValidationReport {
     ProxyReport proxy_report = 1;
     repeated ResourceReport upstream_reports = 2;
 }
@@ -49,7 +61,8 @@ message NotifyOnResyncResponse {
 * If the report contains no errors, the (sub-)resource is valid.
 */
 message ProxyReport {
-    repeated ListenerReport listener_reports = 1;
+    core.solo.io.ResourceRef proxy_ref = 1;
+    repeated ListenerReport listener_reports = 2;
 }
 
 message ListenerReport {

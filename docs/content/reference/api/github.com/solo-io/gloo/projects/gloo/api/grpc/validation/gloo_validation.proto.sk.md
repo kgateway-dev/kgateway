@@ -13,6 +13,7 @@ weight: 5
 
 - [GlooValidationServiceRequest](#gloovalidationservicerequest)
 - [GlooValidationServiceResponse](#gloovalidationserviceresponse)
+- [GlooValidationReport](#gloovalidationreport)
 - [ResourceReport](#resourcereport)
 - [NotifyOnResyncRequest](#notifyonresyncrequest)
 - [NotifyOnResyncResponse](#notifyonresyncresponse)
@@ -61,7 +62,7 @@ weight: 5
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) |  |
+| `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) | If a proxy is provided in the request, the response will contain only the report for that proxy. If no proxy is provided, the response will contain a report for each proxy in the Gloo API snapshot. |
 | `upstreams` | [[]gloo.solo.io.Upstream](../../../v1/upstream.proto.sk/#upstream) |  |
 | `deletedUpstreams` | [[]core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 
@@ -72,6 +73,24 @@ weight: 5
 ### GlooValidationServiceResponse
 
 
+
+```yaml
+"glooValidationReports": []gloo.solo.io.GlooValidationReport
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `glooValidationReports` | [[]gloo.solo.io.GlooValidationReport](../gloo_validation.proto.sk/#gloovalidationreport) |  |
+
+
+
+
+---
+### GlooValidationReport
+
+ 
+A Gloo validation report represents the warnings/errors produced during a single translation loop of a proxy
 
 ```yaml
 "proxyReport": .gloo.solo.io.ProxyReport
@@ -149,12 +168,14 @@ a route report corresponding to each route on the listener.
 If the report contains no errors, the (sub-)resource is valid.
 
 ```yaml
+"proxyRef": .core.solo.io.ResourceRef
 "listenerReports": []gloo.solo.io.ListenerReport
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
+| `proxyRef` | [.core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 | `listenerReports` | [[]gloo.solo.io.ListenerReport](../gloo_validation.proto.sk/#listenerreport) |  |
 
 
