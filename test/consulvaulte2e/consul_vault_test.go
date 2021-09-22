@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/statusutils"
-
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
@@ -50,7 +48,6 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		svc1           *v1helpers.TestUpstream
 		err            error
 		settingsDir    string
-		statusClient   resources.StatusClient
 
 		consulClient    *consulapi.Client
 		vaultClient     *vaultapi.Client
@@ -119,9 +116,6 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		err = flag.Set("dir", settingsDir)
 		err = flag.Set("namespace", writeNamespace)
 		Expect(err).NotTo(HaveOccurred())
-
-		statusClient = statusutils.GetStatusClientFromEnvOrDefault(writeNamespace)
-
 		go func() {
 			defer GinkgoRecover()
 			// Start Gloo
