@@ -1,0 +1,5 @@
+changelog:
+ - type: FIX
+   issueLink: https://github.com/solo-io/gloo/issues/5318
+   resolvesIssue: false
+   description: Use the correct tags for extended images when retagging for gcr. 
