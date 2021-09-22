@@ -57,7 +57,7 @@ func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite G
 		return allProxies[i].GetMetadata().Less(allProxies[j].GetMetadata())
 	})
 
-	proxyTransitionFunction := transitionFunc(proxiesToWrite, utils.TransitionFunction(s.statusClient))
+	proxyTransitionFunction := transitionFunc(proxiesToWrite, s.statusClient)
 
 	if err := s.baseReconciler.Reconcile(writeNamespace, allProxies, proxyTransitionFunction, clients.ListOpts{
 		Ctx:      ctx,
@@ -197,7 +197,7 @@ func stripInvalidListenersAndVirtualHosts(ctx context.Context, proxiesToWrite Ge
 // stripping invalid virtual hosts / listeners from the desired proxy,
 // else we will wind up with both an invalid and valid version of the same listener/vhost on our proxy
 // which is invalid and will be rejected by Envoy
-func transitionFunc(proxiesToWrite GeneratedProxies, defaultTransitionFunc gloov1.TransitionProxyFunc) gloov1.TransitionProxyFunc {
+func transitionFunc(proxiesToWrite GeneratedProxies, statusClient resources.StatusClient) gloov1.TransitionProxyFunc {
 	return func(original, desired *gloov1.Proxy) (b bool, e error) {
 
 		// We intentionally process desired.Listeners first, and then original.Listeners second
@@ -265,6 +265,7 @@ func transitionFunc(proxiesToWrite GeneratedProxies, defaultTransitionFunc gloov
 			return desired.GetListeners()[i].GetName() < desired.GetListeners()[j].GetName()
 		})
 
-		return defaultTransitionFunc(original, desired)
+		transition := utils.TransitionFunction(statusClient)
+		return transition(original, desired)
 	}
 }

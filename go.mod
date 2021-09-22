@@ -82,8 +82,8 @@ require (
 	github.com/solo-io/k8s-utils v0.0.8
 	github.com/solo-io/protoc-gen-ext v0.0.15
 	github.com/solo-io/skv2 v0.17.17
-	// Pinned to the `rate-limiter-v0.1.8` tag of solo-apis
-	github.com/solo-io/solo-apis v0.0.0-20210921120122-e06e06434304
+	// Pinned to the `gloo-namespaced-statuses` tag of solo-apis
+	github.com/solo-io/solo-apis v0.0.0-20210922150112-505473b2e66c
 	github.com/solo-io/solo-kit v0.23.0
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20201021213306-77f82bdc3cc3
 	github.com/spf13/afero v1.5.1
