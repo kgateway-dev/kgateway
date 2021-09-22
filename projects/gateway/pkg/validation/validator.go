@@ -378,6 +378,9 @@ func (v *validator) processItem(ctx context.Context, item unstructured.Unstructu
 			return &Reports{ProxyReports: &ProxyReports{}}, WrappedUnmarshalErr(unmarshalErr)
 		}
 		return v.validateRouteTableInternal(ctx, &rt, false, false)
+
+	case gloov1.UpstreamGVK:
+		// TODO(mitchaman)
 	}
 	// should not happen
 	return &Reports{ProxyReports: &ProxyReports{}}, errors.Errorf("Unknown group/version/kind, %v", itemGvk)
@@ -590,6 +593,8 @@ func (v *validator) validateUpstreamInternal(ctx context.Context, us *gloov1.Ups
 	err := retry.Do(func() error {
 		rpt, err := v.validationClient.Validate(ctx,
 			&validation.GlooValidationServiceRequest{
+				// Sending a nil proxy causes the upstream to be translated with all proxies in gloo's snapshot
+				Proxy:     nil,
 				Upstreams: []*gloov1.Upstream{us},
 			})
 		glooValidationResponse = rpt
