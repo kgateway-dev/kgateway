@@ -63,7 +63,7 @@ weight: 5
 | ----- | ---- | ----------- | 
 | `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) |  |
 | `upstreams` | [[]gloo.solo.io.Upstream](../../../v1/upstream.proto.sk/#upstream) |  |
-| `deletedUpstreams` | [[]core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | True if the upstreams in the list are being deleted, false otherwise. |
+| `deletedUpstreams` | [[]core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 
 
 

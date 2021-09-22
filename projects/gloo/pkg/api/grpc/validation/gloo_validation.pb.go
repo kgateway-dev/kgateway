@@ -374,9 +374,8 @@ type GlooValidationServiceRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Proxy     *v1.Proxy      `protobuf:"bytes,1,opt,name=proxy,proto3" json:"proxy,omitempty"`
-	Upstreams []*v1.Upstream `protobuf:"bytes,2,rep,name=upstreams,proto3" json:"upstreams,omitempty"`
-	// True if the upstreams in the list are being deleted, false otherwise
+	Proxy            *v1.Proxy           `protobuf:"bytes,1,opt,name=proxy,proto3" json:"proxy,omitempty"`
+	Upstreams        []*v1.Upstream      `protobuf:"bytes,2,rep,name=upstreams,proto3" json:"upstreams,omitempty"`
 	DeletedUpstreams []*core.ResourceRef `protobuf:"bytes,3,rep,name=deleted_upstreams,json=deletedUpstreams,proto3" json:"deleted_upstreams,omitempty"`
 }
 
