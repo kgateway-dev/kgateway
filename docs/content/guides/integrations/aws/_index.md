@@ -4,14 +4,16 @@ description: Use Gloo Edge to complement AWS load balancers
 weight: 7
 ---
 
-Gloo Edge is an application (L7) proxy based on [Envoy](https://www.envoyproxy.io) that can act as both a secure edge router and as a developer friendly Kubernetes ingress/egress (north-south traffic) gateway. There are many benefits to pairing Gloo Edge with one of AWS Elastic Load Balancers (ELB), including better cross availability zone failover and deeper integration with AWS services like AWS Certificate Manager, AWS CLI & CloudFormation, and Route 53 (DNS). 
+{{% versioned_link_path fromRoot="" %}}
+
+Gloo Edge is an application (L7) proxy based on [Envoy](https://www.envoyproxy.io) that can act as both a secure edge router and as a developer-friendly Kubernetes ingress/egress (north-south traffic) gateway. There are many benefits to pairing Gloo Edge with one of AWS Elastic Load Balancers (ELB), including better cross availability zone failover and deeper integration with AWS services like AWS Certificate Manager, AWS CLI & CloudFormation, and Route 53 (DNS). 
 
 AWS provides these three (3) types of Elastic Load Balancers (ELB): 
-- Classic Load Balancer (CLB) - this is AWS original (and older) load balancer that provides a mixture of TCP/UDP and HTTP capabilities. It predates some of the Virtual Private Cloud (VPC) infrastructure, so AWS is currently recommending new deployments utilize the other load balancer types.
+- Classic Load Balancer (CLB) - this is AWS original (and older) load balancer that provides a mixture of TCP/UDP and HTTP capabilities. It predates some of the Virtual Private Cloud (VPC) infrastructure, so AWS recommends new deployments to utilize the other load balancer types.
 - Network Load Balancer (NLB) - this is an optimized L4 TCP/UDP load balancer. It provides extremely high throughput (millions of requests per second) while maintaining low latency. This load balancer also has deep integration with other AWS services like Route 53 (DNS).
 - Application Load Balancer (ALB) - this is an L7 (HTTP) only load balancer focused on providing HTTP request routing capabilities.
 
-All of these load balancers support offloading TLS termination and some degree of cross availability zone failover and support.
+These load balancers support offloading TLS termination and some degree of cross availability zone failover and support.
 More details about AWS cloud load balancers are [here](https://docs.aws.amazon.com/elasticloadbalancing/index.html).
 
 
@@ -19,35 +21,37 @@ More details about AWS cloud load balancers are [here](https://docs.aws.amazon.c
 
 ## Combining with Gloo Edge
 
-Using Gloo Edge with AWS ELBs is recommended for AWS based deployments. The gateways on Gloo Edge include one or more managed Envoy proxies that can manage both TCP/UDP (L4) and HTTP/gRPC (L7) traffic, and the Gloo Edge proxies can also terminate and originate TLS and HTTPS connections. Gloo Edge's configuration has benefits over AWS ELB, especially for EKS/Kubernetes based services, in that Gloo Edge's configurations are Kubernetes Custom Resources (CRDs) that allow development teams to keep service routing configurations with the application code and run through CI/CD. AWS ELBs have an advantage over Gloo Edge in terms of deep integration with AWS infrastructure, giving the AWS Load Balancers a better integration cross availability zone.
+Using Gloo Edge with AWS ELBs is recommended for AWS based deployments. The gateways on Gloo Edge include one or more managed Envoy proxies that can handle both TCP/UDP (L4) and HTTP/gRPC (L7) traffic, and the Gloo Edge proxies can also terminate and originate TLS and HTTPS connections. Gloo Edge's configuration has benefits over AWS ELB, especially for EKS/Kubernetes based services, in that Gloo Edge's configurations are Kubernetes Custom Resources (CRDs) that allow development teams to keep service routing configurations with the application code and run through CI/CD. AWS ELBs have an advantage over Gloo Edge in terms of deep integration with AWS infrastructure, giving the AWS Load Balancers a better integration cross availability zone.
 
-In general, we'd recommend using an **AWS Network Load Balancer** (NLB) with Gloo Edge. Gloo Edge provides more application (L7) capabilities than AWS Application Load Balancer (ALB). Gloo Edge's configuration can be managed and deployed like other Kubernetes assets, which allow application teams to move faster by reducing the number of different teams and infrastructure tiers they have to coordinate with as part of a deployment.
+In general, we'd recommend using an **AWS Network Load Balancer** (NLB) with Gloo Edge. Gloo Edge provides more application (L7) capabilities than AWS Application Load Balancer (ALB). Gloo Edge's configuration can be managed and deployed like other Kubernetes assets, which allows application teams to move faster by reducing the number of different teams and infrastructure tiers they have to coordinate with as part of a deployment.
 
-It's important to note that an AWS NLB has an idle timeout of 350 seconds that [cannot be changed](https://docs.aws.amazon.com/elasticloadbalancing/latest/network/network-load-balancers.html#connection-idle-timeout). This can lead to an increase in the number of reset TCP connections. This is a limitation of the load balancer in front of the Gloo Edge proxy, not a limitation of the proxy itself. To navigate this limitation, Gloo Edge can be configured with [socket options]({{% versioned_link_path fromRoot="/guides/dev/configuring-socket-options" %}}), to set TCP keep alive for downstream connections to envoy.
+{{% notice warning %}}
+**Important notes**
+- Gloo Edge does not open any proxy ports till at least one Virtual Service is successfully deployed. AWS ELB Health Checks are automatically created and can report that Gloo Edge is unhealthy until the port is open to connections, i.e., at least one Gloo Edge Virtual Service deployed. If your clients see 503 errors, double check the AWS ELB Health Checks are passing as it can take a couple of minutes for them to detect changes in the Gloo Edge proxy port status.
+- an AWS NLB has an idle timeout of 350 seconds that [cannot be changed](https://docs.aws.amazon.com/elasticloadbalancing/latest/network/network-load-balancers.html#connection-idle-timeout). This can lead to an increase in the number of reset TCP connections. This is a limitation of the load balancer in front of the Gloo Edge proxy, not a limitation of the proxy itself. To navigate this limitation, Gloo Edge can be configured with [socket options]({{% versioned_link_path fromRoot="/guides/dev/configuring-socket-options" %}}), to set TCP keep alive for downstream connections to envoy.
+{{% /notice %}}
 
 ---
 
-## The Kubernetes controllers
+## The two Kubernetes controllers
 
 To configure your NLB, you will probably use annotations on your Kubernetes `Service`, type LoadBalancer.
 
-There are two distinct controllers that can read these annotations. The _old_ one, in the Kubernetes codebase and the _new_ one called **AWS Load Balancer Controller**. The latter offers more options as explained below.
+**Two** distinct controllers can read these annotations. The _old_ one, in the Kubernetes codebase, and the _new_ one called **AWS Load Balancer Controller**. The latter offers more options, as explained below.
 
 While the _legacy_ [in-tree](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/legacy-cloud-providers/aws/aws.go) Cloud Controller will recognize some annotations listed in the Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/service/#aws-nlb-support), it is now recommended to deploy the **AWS Load Balancer Controller**.
 
-The [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/annotations/) ([source code](https://github.com/kubernetes-sigs/aws-load-balancer-controller)) has a [deeper integration](https://aws.amazon.com/blogs/containers/introducing-aws-load-balancer-controller/) with both NLBs and ALBs. Once [installed](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/deploy/installation/), you will be able to leverage advanced annotations such as health checks, access logs and more. 
+The [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/annotations/) ([source code](https://github.com/kubernetes-sigs/aws-load-balancer-controller)) has a [deeper integration](https://aws.amazon.com/blogs/containers/introducing-aws-load-balancer-controller/) with both NLBs and ALBs. Once [installed](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/deploy/installation/), you will be able to leverage advanced annotations such as health checks, access logs, and more. 
+
+
+
+### [Legacy] The Kubernetes (in-tree) Cloud controller
 
 {{% notice note %}}
-Today, it's not clear for how long AWS will keep supporting the legacy cloud controller: https://stackoverflow.com/questions/61632540/is-classic-load-balancer-going-to-be-discontinued-by-aws
+Today, it's not clear for how long the community will keep supporting the legacy cloud controller. We strongly recommend you migrate to the [AWS Load Balancer Controller]({{% versioned_link_path fromRoot="/guides/integrations/aws/#new-aws-load-balancer-controller" %}}).
 {{% /notice %}}
 
-### [Legacy] The in-tree controller
-
-{{% notice note %}}
-We strongly recommand you to migrate to the **AWS Load Balancer Controller**.
-{{% /notice %}}
-
-In an AWS EKS cluster, whenever any Kubernetes Service of type `LoadBalancer` deploys, AWS will, by default, create an AWS Classic Load Balancer paired with that Kubernetes Service. AWS will also automatically create Load Balancer Health Checks against the first port listed in that Service. You can influence some of how AWS creates a Load Balancer for Kubernetes Services by adding [AWS specific annotations](https://kubernetes.io/docs/concepts/services-networking/service/#aws-nlb-support) to your `LoadBalancer` type Service.
+In an AWS EKS cluster, whenever any Kubernetes Service of type `LoadBalancer` deploys, AWS will, by default, create an AWS Classic Load Balancer paired with that Kubernetes Service. AWS will also automatically create Load Balancer Health Checks against the first port listed in that Service. You can influence how AWS creates a Load Balancer for Kubernetes Services by adding [AWS specific annotations](https://kubernetes.io/docs/concepts/services-networking/service/#aws-nlb-support) to your `LoadBalancer` type Service.
 
 Gloo Edge's managed Envoy proxies install on EKS as a `LoadBalancer` type Service named `gateway-proxy`. Gloo Edge's Helm chart allows the user to specify annotations added to Gloo Edge's `gateway-proxy` Service, including adding AWS ELB annotations that influence the AWS ELB associated with the Gloo Edge proxy service.
 
@@ -56,16 +60,12 @@ The most commonly used AWS annotations used with Gloo Edge are:
 * `service.beta.kubernetes.io/aws-load-balancer-type` - Associate an AWS Network Load Balancer with the Service (`nlb`|`nlb-ip`). If this annotation is not present, then AWS associates a Classic ELB with this Service.
 * `service.beta.kubernetes.io/aws-load-balancer-ssl-cert` - If specified, AWS ELB's configured listener uses TLS/HTTPS with the provided certificate. Value is a valid certificate ARN from AWS Certificate Manager or AWS IAM, e.g. `arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012`.
 
-{{% notice warning %}}
-Gloo Edge does not open any proxy ports till at least one Virtual Service is successfully deployed. AWS ELB Health Checks are automatically created and can report that Gloo Edge is unhealthy until the port is open to connections, i.e., at least one Gloo Edge Virtual Service deployed. If your clients see 503 errors, double check the AWS ELB Health Checks are passing as it can take a couple of minutes for them to detect changes in the Gloo Edge proxy port status.
-{{% /notice %}}
-
 
 ### [NEW] AWS Load Balancer Controller
 
 While you will find official instructions on their [website](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/deploy/installation/), here is a quick way of getting started.
 
-The first step is to create an AWS IAM account that will create the NLB instances and that is bound to a Kubernetes service-account:
+The first step is to create an AWS IAM account that will create the NLB instances, and that is bound to a Kubernetes service-account:
 
 ```bash
 export CLUSTER_NAME="my-cluster"
@@ -102,7 +102,7 @@ eksctl create iamserviceaccount \
 kubectl -n kube-system get sa aws-load-balancer-controller -o yaml
 ```
 
-Next step is to deploy the **AWS Load Balancer Controller**:
+The next step is to deploy the **AWS Load Balancer Controller**:
 
 ```bash
 kubectl apply -k "github.com/aws/eks-charts/stable/aws-load-balancer-controller/crds?ref=master"
@@ -137,7 +137,7 @@ gloo:
 
 ## NLB with TLS passthrough
 
-By using an AWS Network Load Balancer (NLB) in front of Gloo Edge, you get an additional benefit of TLS passthrough. That is, HTTPS requests passthrough the AWS NLB and terminate TLS at the Gloo Edge proxy for extra security. AWS NLB automatically configures listeners for each Kubernetes Service port, so both HTTP and HTTPS ports get exposed through the AWS NLB.
+By using an AWS Network Load Balancer (NLB) in front of Gloo Edge, you get an additional benefit of TLS passthrough. That is, HTTPS requests pass through the AWS NLB and terminate TLS at the Gloo Edge proxy for extra security. AWS NLB automatically configures listeners for each Kubernetes Service port, so both HTTP and HTTPS ports get exposed through the AWS NLB.
 
 Note: Gloo Edge only opens proxy ports when a Virtual Service is successfully deployed and using that port. That is, Virtual Services with `sslConfig` opens the HTTPS proxy port. Virtual Services without the `sslConfig` only open the HTTP port. It may take a couple of minutes for AWS NLB health checks to mark the proxy ports as healthy after a first Virtual Service deploys, so be patient.
 
@@ -247,16 +247,16 @@ gloo:
         type: LoadBalancer
 ```
 
-From that point, the NLB will be configured to listen both on ports 80 and 443. For the port 443 (HTTPS), a certificate will be exposed by the NLB. 
+From that point, the NLB will be configured to listen to both on ports 80 and 443. For the port 443 (HTTPS), a certificate will be exposed by the NLB. 
 
 
 ### Disabling the Gloo Edge HTTPS Gateway
 
-In this setup and since Gloo v1.8, you can disable the HTTPS Gateway (Envoy Listener) in Gloo Edge using `disableHttpsGateway`.
+In this setup, you can disable the HTTPS Gateway (Envoy Listener) in Gloo Edge using `disableHttpsGateway` (since Gloo v1.8).
 
-Before Gloo 1.8, there was a trick have the NLB healthchecks working by changing the order the ports in the Kubernetes service, using this attribute: `httpsFirst: true`
+Before Gloo 1.8, there was a trick to have the NLB health checks working by changing the order of the ports in the Kubernetes service, using this attribute: `httpsFirst: true`
 
-The setup below shows how the HTTPS traffic reaching the NLB is redirected to Gloo Edge over port 8080. And traffic reaching the NLB on port 8443 will be refused since there are no active Envoy listener behind the NLB.
+The setup below shows how the HTTPS traffic reaching the NLB is redirected to Gloo Edge over port 8080. And traffic reaching the NLB on port 8443 will be refused since there is no active Envoy listener behind the NLB.
 
 ```yaml
 gatewayProxies:
@@ -264,16 +264,16 @@ gatewayProxies:
     service:
       # Set the http port to 443 (instead of 80) since we are terminating tls at the proxy and are
       # not performing a tls passthrough, we need the backing port be http 8080
-      httpPort: 443       # Backing port is 8080
+      httpPort: 443       # HTTP backing port is 8080
       # To prevent conflicts with the above change we are making the https port match its default backing port
-      httpsPort: 8443     # Backing port is 8443
+      httpsPort: 8443     # HTTPS backing port is 8443
       httpsFirst: true # set the HTTPS port as the first element in the Kubernetes service, otherwise Health checks will fail
 
 ```
 
 ### HTTPS redirect
 
-Another common requirement is to have the HTTP traffic redirected to HTTPS. You will need to tweak a bit the Gloo Gateways, as pictured below:
+Another common requirement is to have the HTTP traffic redirected to HTTPS. You will need to tweak the Gloo _Gateways_, as pictured below:
 
 ![HTTPS redirect with NLB doing TLS offloading]({{< versioned_link_path fromRoot="/img/https-redirect-tls-offloading.png" >}})
 
@@ -320,7 +320,7 @@ gloo:
                   - redirect-https
 ```
 
-And now, this is how to declare that additional Gateway and VirtualService solely built for the HTTPS redirection:
+The following _Gateway_ and _VirtualService_ are solely built for HTTPS redirection:
 
 ```bash
 AWS_DNS=$(kubectl --namespace='gloo-system' get service/gateway-proxy --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}')
@@ -360,7 +360,7 @@ spec:
 
 ## More examples with annotations
 
-Below are examples of how deep you can go with the NLB configuration, thanks to the new AWS Load Balancer Controller:
+Below are examples of how deep you can go with the NLB configuration, thanks to the new **AWS Load Balancer Controller**:
 
 ```yaml
 gloo:
