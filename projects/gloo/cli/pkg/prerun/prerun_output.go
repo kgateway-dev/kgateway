@@ -3,6 +3,8 @@ package prerun
 import (
 	"os"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -42,5 +44,5 @@ func SetPodNamespaceEnv(opts *options.Options, cmd *cobra.Command) error {
 	// This case, of a resource containing a single status, is not one we need to protect
 	// against in the CLI. Therefore, we just need to ensure that the POD_NAMESPACE
 	// variable is set so that the resource client can be created.
-	return os.Setenv(statusutils.PodNamespaceEnvName, "")
+	return os.Setenv(statusutils.PodNamespaceEnvName, defaults.GlooSystem)
 }
