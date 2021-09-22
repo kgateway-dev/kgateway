@@ -594,14 +594,14 @@ ifeq ($(RELEASE), "true")
 	docker tag $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION) $(IMAGE_REPO)/sds:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION) $(IMAGE_REPO)/access-logger:$(VERSION)
 
-	docker tag $(RETAG_IMAGE_REGISTRY)/gateway:$(VERSION)-extended $(IMAGE_REPO)/gateway:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION)-extended $(IMAGE_REPO)/ingress:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION)-extended $(IMAGE_REPO)/discovery:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION)-extended $(IMAGE_REPO)/gloo:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION)-extended $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/certgen:$(VERSION)-extended $(IMAGE_REPO)/certgen:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION)-extended $(IMAGE_REPO)/sds:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION)-extended $(IMAGE_REPO)/access-logger:$(VERSION)
+	docker tag $(RETAG_IMAGE_REGISTRY)/gateway:$(VERSION)-extended $(IMAGE_REPO)/gateway:$(VERSION)-extended && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION)-extended $(IMAGE_REPO)/ingress:$(VERSION)-extended && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION)-extended $(IMAGE_REPO)/discovery:$(VERSION)-extended && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION)-extended $(IMAGE_REPO)/gloo:$(VERSION)-extended && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION)-extended $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION)-extended && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/certgen:$(VERSION)-extended $(IMAGE_REPO)/certgen:$(VERSION)-extended && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION)-extended $(IMAGE_REPO)/sds:$(VERSION)-extended && \
+	docker tag $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION)-extended $(IMAGE_REPO)/access-logger:$(VERSION)-extended
 
 	docker push $(IMAGE_REPO)/gateway:$(VERSION) && \
 	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
