@@ -236,7 +236,7 @@ var _ = Describe("Translator", func() {
 		_, errs, report, err := translator.Translate(params, proxy)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 		ExpectWithOffset(1, errs.Validate()).To(HaveOccurred())
-		return report.GetProxyReport()
+		return report
 	}
 
 	// returns md5 Sum of current snapshot
@@ -245,7 +245,7 @@ var _ = Describe("Translator", func() {
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 		ExpectWithOffset(1, errs.Validate()).NotTo(HaveOccurred())
 		ExpectWithOffset(1, snap).NotTo(BeNil())
-		ExpectWithOffset(1, report.GetProxyReport()).To(Equal(validationutils.MakeReport(proxy)))
+		ExpectWithOffset(1, report).To(Equal(validationutils.MakeReport(proxy)))
 
 		clusters := snap.GetResources(resource.ClusterTypeV3)
 		clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
@@ -283,7 +283,7 @@ var _ = Describe("Translator", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(errs.Validate()).NotTo(HaveOccurred())
 		Expect(snap).NotTo(BeNil())
-		Expect(report.GetProxyReport()).To(Equal(validationutils.MakeReport(proxy)))
+		Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 
 		routes := snap.GetResources(resource.RouteTypeV3)
 		Expect(routes.Items).To(HaveKey("http-listener-routes"))
@@ -304,7 +304,7 @@ var _ = Describe("Translator", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(errs.Validate()).NotTo(HaveOccurred())
 		Expect(snap).NotTo(BeNil())
-		Expect(report.GetProxyReport()).To(Equal(validationutils.MakeReport(proxy)))
+		Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 
 		listeners := snap.GetResources(resource.ListenerTypeV3)
 		Expect(listeners.Items).To(HaveKey("http-listener"))
@@ -373,7 +373,7 @@ var _ = Describe("Translator", func() {
 					Reason: fmt.Sprintf("no path specifier provided. Route Name: %s", invalidMatcherName),
 				},
 			}
-			Expect(report.GetProxyReport()).To(Equal(expectedReport))
+			Expect(report).To(Equal(expectedReport))
 		})
 		It("should error when path math is missing even if we have grpc spec", func() {
 			dest := routes[0].GetRouteAction().GetSingle()
@@ -409,7 +409,7 @@ var _ = Describe("Translator", func() {
 					Reason: fmt.Sprintf("*grpc.plugin: missing path for grpc route. Route Name: %s", processingErrorName),
 				},
 			}
-			Expect(report.GetProxyReport()).To(Equal(expectedReport))
+			Expect(report).To(Equal(expectedReport))
 		})
 	})
 
@@ -807,7 +807,7 @@ var _ = Describe("Translator", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(errs.Validate()).NotTo(HaveOccurred())
 			Expect(snap).NotTo(BeNil())
-			Expect(report.GetProxyReport()).To(Equal(validationutils.MakeReport(proxy)))
+			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 
 			clusters := snap.GetResources(resource.ClusterTypeV3)
 			clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
@@ -1074,7 +1074,7 @@ var _ = Describe("Translator", func() {
 
 			It("should warn about invalid http header name", func() {
 				_, _, report, _ := translator.Translate(params, proxy)
-				routeReportWarning := report.GetProxyReport().GetListenerReports()[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0].GetWarnings()[0]
+				routeReportWarning := report.GetListenerReports()[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0].GetWarnings()[0]
 				reason := routeReportWarning.GetReason()
 				Expect(reason).To(Equal("invalid:-cluster is an invalid HTTP header name"))
 			})
@@ -1176,7 +1176,7 @@ var _ = Describe("Translator", func() {
 					Reason: "invalid destination in weighted destination list: *v1.Upstream { gloo-system.notexist } not found",
 				},
 			}
-			Expect(report.GetProxyReport()).To(Equal(expectedReport))
+			Expect(report).To(Equal(expectedReport))
 		})
 
 		It("should use upstreamGroup's namespace as default if namespace is omitted on upstream destination", func() {
@@ -1452,7 +1452,7 @@ var _ = Describe("Translator", func() {
 						Reason: fmt.Sprintf("route has a subset config, but none of the subsets in the upstream match it. Route Name: %s", processingErrorName),
 					},
 				}
-				Expect(report.GetProxyReport()).To(Equal(expectedReport))
+				Expect(report).To(Equal(expectedReport))
 			})
 		})
 
@@ -1489,7 +1489,7 @@ var _ = Describe("Translator", func() {
 					},
 				}
 
-				Expect(report.GetProxyReport()).To(Equal(expectedReport))
+				Expect(report).To(Equal(expectedReport))
 			})
 		})
 	})
@@ -2831,7 +2831,7 @@ var _ = Describe("Translator", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(errs.Validate()).NotTo(HaveOccurred())
 			Expect(snap).NotTo(BeNil())
-			Expect(report.GetProxyReport()).To(Equal(validationutils.MakeReport(proxy)))
+			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 
 			clusters := snap.GetResources(resource.ClusterTypeV3)
 			clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]

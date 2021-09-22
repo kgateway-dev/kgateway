@@ -55,6 +55,10 @@ var (
 		return errors.Wrapf(err, unmarshalErrMsg)
 	}
 
+	GlooValidationResponseLengthError = func(resp *validation.GlooValidationServiceResponse) error {
+		return errors.Errorf("Expected Gloo validation response to contain 1 report, but contained %d", len(resp.GetGlooValidationReports()))
+	}
+
 	mValidConfig = utils2.MakeGauge("validation.gateway.solo.io/valid_config", "A boolean indicating whether gloo config is valid")
 )
 
@@ -243,14 +247,14 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		}
 
 		// validate the proxy with gloo
-		var proxyReport *validation.GlooValidationServiceResponse
+		var glooValidationResponse *validation.GlooValidationServiceResponse
 		err := retry.Do(func() error {
 			rpt, err := v.validationClient.Validate(ctx,
 				&validation.GlooValidationServiceRequest{
 					Proxy:     proxy,
 					Upstreams: upstreams,
 				})
-			proxyReport = rpt
+			glooValidationResponse = rpt
 			return err
 		},
 			retry.Attempts(4),
@@ -266,12 +270,23 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 			continue
 		}
 
-		proxyReports[proxy] = proxyReport.GetProxyReport()
-		if err := validationutils.GetProxyError(proxyReport.GetProxyReport()); err != nil {
+		if len(glooValidationResponse.GetGlooValidationReports()) != 1 {
+			err := GlooValidationResponseLengthError(glooValidationResponse)
+			if v.ignoreProxyValidationFailure {
+				contextutils.LoggerFrom(ctx).Error(err)
+			} else {
+				errs = multierr.Append(errs, err)
+			}
+			continue
+		}
+
+		proxyReport := glooValidationResponse.GetGlooValidationReports()[0].GetProxyReport()
+		proxyReports[proxy] = proxyReport
+		if err := validationutils.GetProxyError(proxyReport); err != nil {
 			errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
 			continue
 		}
-		if warnings := validationutils.GetProxyWarning(proxyReport.GetProxyReport()); !v.allowWarnings && len(warnings) > 0 {
+		if warnings := validationutils.GetProxyWarning(proxyReport); !v.allowWarnings && len(warnings) > 0 {
 			for _, warning := range warnings {
 				errs = multierr.Append(errs, errors.New(warning))
 			}
@@ -593,16 +608,19 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 		return nil, err
 	}
 
-	if len(response.GetUpstreamReports()) == 0 {
+	if len(response.GetGlooValidationReports()) == 0 {
 		return &Reports{}, nil
 	}
-	for _, report := range response.GetUpstreamReports() {
-		if report.GetResourceRef().Equal(us.GetMetadata().Ref()) {
-			return &Reports{
-				UpstreamReports: &UpstreamReports{
-					us.GetMetadata().Ref(): report,
-				},
-			}, nil
+	// TODO(mitchaman) handle multiple proxies
+	for _, report := range response.GetGlooValidationReports() {
+		for _, upstreamReport := range report.GetUpstreamReports() {
+			if upstreamReport.GetResourceRef().Equal(us.GetMetadata().Ref()) {
+				return &Reports{
+					UpstreamReports: &UpstreamReports{
+						us.GetMetadata().Ref(): upstreamReport,
+					},
+				}, nil
+			}
 		}
 	}
 	return nil, errors.Errorf("Report for upstream %s~%s not found in response.", us.GetMetadata().GetNamespace(), us.GetMetadata().GetName())
@@ -618,16 +636,19 @@ func (v *validator) ValidateDeleteUpstream(ctx context.Context, us *core.Resourc
 		return nil, err
 	}
 
-	if len(response.GetUpstreamReports()) == 0 {
+	if len(response.GetGlooValidationReports()) == 0 {
 		return &Reports{}, nil
 	}
-	for _, report := range response.GetUpstreamReports() {
-		if report.GetResourceRef().Equal(us) {
-			return &Reports{
-				UpstreamReports: &UpstreamReports{
-					us: report,
-				},
-			}, nil
+	// TODO(mitchaman) handle multiple proxies
+	for _, report := range response.GetGlooValidationReports() {
+		for _, upstreamReport := range report.GetUpstreamReports() {
+			if upstreamReport.GetResourceRef().Equal(us) {
+				return &Reports{
+					UpstreamReports: &UpstreamReports{
+						us: upstreamReport,
+					},
+				}, nil
+			}
 		}
 	}
 	return nil, errors.Errorf("Report for upstream %s~%s not found in response.", us.GetNamespace(), us.GetName())
