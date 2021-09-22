@@ -225,7 +225,7 @@ func convertToGlooValidationServiceResponse(proxyReport *validation.ProxyReport,
 			upstreamReports = append(upstreamReports, &validation.ResourceReport{
 				ResourceRef: resource.GetMetadata().Ref(),
 				Warnings:    report.Warnings,
-				//Errors:       report.Errors,
+				Errors:      getErrors(report.Errors),
 			})
 		}
 		// TODO add other resources types here
@@ -235,6 +235,18 @@ func convertToGlooValidationServiceResponse(proxyReport *validation.ProxyReport,
 		ProxyReport:     proxyReport,
 		UpstreamReports: upstreamReports,
 	}
+}
+
+func getErrors(err error) []string {
+	switch err.(type) {
+	case *multierror.Error:
+		var errorStrings []string
+		for _, e := range err.(*multierror.Error).Errors {
+			errorStrings = append(errorStrings, e.Error())
+		}
+		return errorStrings
+	}
+	return []string{err.Error()}
 }
 
 // Update the validation report so that route errors that were changed into warnings during sanitization
