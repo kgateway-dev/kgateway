@@ -55,13 +55,15 @@ weight: 5
 ```yaml
 "proxy": .gloo.solo.io.Proxy
 "upstreams": []gloo.solo.io.Upstream
+"deletedUpstreams": []gloo.solo.io.Upstream
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) |  |
-| `upstreams` | [[]gloo.solo.io.Upstream](../../../v1/upstream.proto.sk/#upstream) |  |
+| `upstreams` | [[]gloo.solo.io.Upstream](../../../v1/upstream.proto.sk/#upstream) | Added or modified upstreams. |
+| `deletedUpstreams` | [[]gloo.solo.io.Upstream](../../../v1/upstream.proto.sk/#upstream) |  |
 
 
 
