@@ -308,7 +308,7 @@ type mockValidator struct {
 	fValidateRouteTable           func(ctx context.Context, rt *v1.RouteTable, dryRun bool) (*validation.Reports, error)
 	fValidateDeleteRouteTable     func(ctx context.Context, rt *core.ResourceRef, dryRun bool) error
 	fValidateUpstream             func(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*validation.Reports, error)
-	fValidateDeleteUpstream       func(ctx context.Context, us *core.ResourceRef, dryRun bool) error
+	fValidateDeleteUpstream       func(ctx context.Context, us *core.ResourceRef, dryRun bool) (*validation.Reports, error)
 }
 
 func (v *mockValidator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
@@ -367,7 +367,7 @@ func (v *mockValidator) ValidateUpstream(ctx context.Context, us *gloov1.Upstrea
 	return v.ValidateUpstream(ctx, us, dryRun)
 }
 
-func (v *mockValidator) ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) error {
+func (v *mockValidator) ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*validation.Reports, error) {
 	panic("implement me")
 }
 
