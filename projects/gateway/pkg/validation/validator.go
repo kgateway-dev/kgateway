@@ -39,7 +39,7 @@ type Reports struct {
 
 type ProxyReports map[*gloov1.Proxy]*validation.ProxyReport
 
-type UpstreamReports map[*gloov1.Upstream]*validation.ResourceReport
+type UpstreamReports map[*core.ResourceRef]*validation.ResourceReport
 
 var (
 	NotReadyErr = errors.Errorf("validation is not yet available. Waiting for first snapshot")
@@ -74,7 +74,7 @@ type Validator interface {
 	ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (*Reports, error)
 	ValidateDeleteRouteTable(ctx context.Context, rt *core.ResourceRef, dryRun bool) error
 	ValidateUpstream(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*Reports, error)
-	ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) error
+	ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*Reports, error)
 }
 
 type validator struct {
@@ -380,7 +380,7 @@ func (v *validator) processItem(ctx context.Context, item unstructured.Unstructu
 		return v.validateRouteTableInternal(ctx, &rt, false, false)
 
 	case gloov1.UpstreamGVK:
-		// TODO(mitchaman)
+		// DO_NOT_SUBMIT: Handle upstreams
 	}
 	// should not happen
 	return &Reports{ProxyReports: &ProxyReports{}}, errors.Errorf("Unknown group/version/kind, %v", itemGvk)
@@ -584,20 +584,63 @@ func (v *validator) validateGatewayInternal(ctx context.Context, gw *v1.Gateway,
 }
 
 func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*Reports, error) {
-	return v.validateUpstreamInternal(ctx, us, dryRun, true)
+	response, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
+		// Sending a nil proxy causes the upstream to be translated with all proxies in gloo's snapshot
+		Proxy:     nil,
+		Upstreams: []*gloov1.Upstream{us},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(response.GetUpstreamReports()) == 0 {
+		return &Reports{}, nil
+	}
+	for _, report := range response.GetUpstreamReports() {
+		if report.GetResourceRef().Equal(us.GetMetadata().Ref()) {
+			return &Reports{
+				UpstreamReports: &UpstreamReports{
+					us.GetMetadata().Ref(): report,
+				},
+			}, nil
+		}
+	}
+	return nil, errors.Errorf("Report for upstream %s~%s not found in response.", us.GetMetadata().GetNamespace(), us.GetMetadata().GetName())
 }
 
-func (v *validator) validateUpstreamInternal(ctx context.Context, us *gloov1.Upstream, dryRun, acquireLock bool) (*Reports, error) {
-	// validate with gloo
-	var glooValidationResponse *validation.GlooValidationServiceResponse
+func (v *validator) ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*Reports, error) {
+	response, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
+		// Sending a nil proxy causes the upstream to be translated with all proxies in gloo's snapshot
+		Proxy:            nil,
+		DeletedUpstreams: []*core.ResourceRef{us},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(response.GetUpstreamReports()) == 0 {
+		return &Reports{}, nil
+	}
+	for _, report := range response.GetUpstreamReports() {
+		if report.GetResourceRef().Equal(us) {
+			return &Reports{
+				UpstreamReports: &UpstreamReports{
+					us: report,
+				},
+			}, nil
+		}
+	}
+	return nil, errors.Errorf("Report for upstream %s~%s not found in response.", us.GetNamespace(), us.GetName())
+}
+
+func (v *validator) sendGlooValidationServiceRequest(
+	ctx context.Context,
+	req *validation.GlooValidationServiceRequest,
+) (*validation.GlooValidationServiceResponse, error) {
+	var response *validation.GlooValidationServiceResponse
 	err := retry.Do(func() error {
-		rpt, err := v.validationClient.Validate(ctx,
-			&validation.GlooValidationServiceRequest{
-				// Sending a nil proxy causes the upstream to be translated with all proxies in gloo's snapshot
-				Proxy:     nil,
-				Upstreams: []*gloov1.Upstream{us},
-			})
-		glooValidationResponse = rpt
+		rpt, err := v.validationClient.Validate(ctx, req)
+		response = rpt
 		return err
 	},
 		retry.Attempts(4),
@@ -611,17 +654,9 @@ func (v *validator) validateUpstreamInternal(ctx context.Context, us *gloov1.Ups
 			return nil, err
 		}
 	}
-	contextutils.LoggerFrom(ctx).Debugf("resp: %v\n", glooValidationResponse) //TODO remove this
-	return &Reports{
-		UpstreamReports: &UpstreamReports{
-			//us: glooValidationResponse.GetUpstreamReports(), // TODO
-		},
-	}, nil
-}
-
-func (v *validator) ValidateDeleteUpstream(ctx context.Context, rt *core.ResourceRef, dryRun bool) error {
-	// TODO(mitchaman)
-	return nil
+	// DO_NOT_SUBMIT: Remove logging
+	contextutils.LoggerFrom(ctx).Debugf("resp: %v\n", response)
+	return response, nil
 }
 
 func proxiesForVirtualService(gwList v1.GatewayList, vs *v1.VirtualService) []string {

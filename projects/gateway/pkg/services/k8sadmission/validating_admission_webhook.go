@@ -417,14 +417,11 @@ func (wh *gatewayValidationWebhook) validate(
 		} else {
 			return wh.validateRouteTable(ctx, rawJson, dryRun)
 		}
-	// TODO(mitchaman):
 	case gloov1.UpstreamGVK:
+		// DO_NOT_SUBMIT: Revert logging
 		contextutils.LoggerFrom(ctx).Infof("mitchaman - Upstream GVK: %s", rawJson)
-		if isDelete {
-			return &validation.Reports{}, &multierror.Error{Errors: []error{wh.validator.ValidateDeleteUpstream(ctx, ref, dryRun)}}
-		} else {
-			return wh.validateUpstream(ctx, rawJson, dryRun)
-		}
+		return wh.validateUpstream(ctx, rawJson, dryRun, isDelete)
+
 	}
 	return &validation.Reports{}, nil
 }
@@ -499,7 +496,7 @@ func (wh *gatewayValidationWebhook) validateRouteTable(ctx context.Context, rawJ
 	return reports, nil
 }
 
-func (wh *gatewayValidationWebhook) validateUpstream(ctx context.Context, rawJson []byte, dryRun bool) (*validation.Reports, *multierror.Error) {
+func (wh *gatewayValidationWebhook) validateUpstream(ctx context.Context, rawJson []byte, dryRun bool, isDelete bool) (*validation.Reports, *multierror.Error) {
 	var (
 		us      gloov1.Upstream
 		reports *validation.Reports
@@ -511,8 +508,14 @@ func (wh *gatewayValidationWebhook) validateUpstream(ctx context.Context, rawJso
 	if skipValidationCheck(us.GetMetadata().GetAnnotations()) {
 		return nil, nil
 	}
-	if reports, err = wh.validator.ValidateUpstream(ctx, &us, dryRun); err != nil {
-		return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", us)}}
+	if isDelete {
+		if reports, err = wh.validator.ValidateDeleteUpstream(ctx, us.GetMetadata().Ref(), dryRun); err != nil {
+			return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", us)}}
+		}
+	} else {
+		if reports, err = wh.validator.ValidateUpstream(ctx, &us, dryRun); err != nil {
+			return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", us)}}
+		}
 	}
 	return reports, nil
 }

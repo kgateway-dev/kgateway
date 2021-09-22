@@ -18,9 +18,9 @@ service GlooValidationService {
 
 message GlooValidationServiceRequest {
     gloo.solo.io.Proxy proxy = 1;
-    // Added or modified upstreams
     repeated gloo.solo.io.Upstream upstreams = 2;
-    repeated gloo.solo.io.Upstream deleted_upstreams = 3;
+    // True if the upstreams in the list are being deleted, false otherwise
+    repeated core.solo.io.ResourceRef deleted_upstreams = 3;
 }
 
 message GlooValidationServiceResponse {
