@@ -28,7 +28,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	vaultFactory, err = services.NewVaultFactory()
 	Expect(err).NotTo(HaveOccurred())
-
 })
 
 var _ = AfterSuite(func() {

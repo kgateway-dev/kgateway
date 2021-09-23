@@ -23,6 +23,14 @@ spec:
           properties:
             displayName:
               type: string
+            namespacedStatuses:
+              properties:
+                statuses:
+                  additionalProperties:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  type: object
+              type: object
             sslConfig:
               properties:
                 alpnProtocols:
@@ -98,9 +106,6 @@ spec:
                     type: string
                   type: array
               type: object
-            status:
-              type: object
-              x-kubernetes-preserve-unknown-fields: true
             virtualHost:
               properties:
                 domains:

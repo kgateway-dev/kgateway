@@ -62,7 +62,7 @@ func FromKube(ingress *v1beta1.Ingress) (*v1.Ingress, error) {
 		KubeIngressStatus: status,
 	}
 
-	resource.SetMetadata(kubeutils.FromKubeMeta(ingress.ObjectMeta))
+	resource.SetMetadata(kubeutils.FromKubeMeta(ingress.ObjectMeta, true))
 
 	return resource, nil
 }

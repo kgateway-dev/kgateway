@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+
 	alpha1 "knative.dev/networking/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 
 	. "github.com/onsi/ginkgo"
@@ -28,6 +30,8 @@ var _ = Describe("TranslatorSyncer", func() {
 
 		proxyAddress := "proxy-address"
 		namespace := "write-namespace"
+
+		statusClient := gloostatusutils.GetStatusClientFromEnvOrDefault(namespace)
 		proxyClient, _ := v1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{Cache: memory.NewInMemoryResourceCache()})
 		clusterIngress := &v1alpha1.ClusterIngress{ClusterIngress: knative.ClusterIngress{
 			ObjectMeta: v12.ObjectMeta{Generation: 1},
@@ -36,7 +40,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		knativeClient := &mockIngressesGetter{
 			ciClient: &mockCiClient{ci: toKube(clusterIngress)}}
 
-		syncer := NewSyncer(proxyAddress, namespace, proxyClient, knativeClient, make(chan error)).(*translatorSyncer)
+		syncer := NewSyncer(proxyAddress, namespace, proxyClient, knativeClient, statusClient, make(chan error)).(*translatorSyncer)
 		proxy := &v1.Proxy{Metadata: &core.Metadata{Name: "hi", Namespace: "howareyou"}}
 		proxy, _ = proxyClient.Write(proxy, clients.WriteOpts{})
 
@@ -44,9 +48,9 @@ var _ = Describe("TranslatorSyncer", func() {
 			defer GinkgoRecover()
 			// update status after a 1s sleep
 			time.Sleep(time.Second / 5)
-			proxy.Status = &core.Status{
+			statusClient.SetStatus(proxy, &core.Status{
 				State: core.Status_Accepted,
-			}
+			})
 			_, err := proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
 		}()

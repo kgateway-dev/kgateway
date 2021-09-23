@@ -24,9 +24,9 @@ func clusterIngresssToResources(list ClusterIngressList) resources.ResourceList 
 	return resourceList
 }
 
-func NewClusterIngressReconciler(client ClusterIngressClient) ClusterIngressReconciler {
+func NewClusterIngressReconciler(client ClusterIngressClient, statusSetter resources.StatusSetter) ClusterIngressReconciler {
 	return &clusterIngressReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

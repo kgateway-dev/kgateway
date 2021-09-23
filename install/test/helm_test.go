@@ -26,6 +26,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	test_matchers "github.com/solo-io/solo-kit/test/matchers"
 	appsv1 "k8s.io/api/apps/v1"
 	jobsv1 "k8s.io/api/batch/v1"
@@ -2884,7 +2885,7 @@ spec:
 					It("creates the validating webhook configuration", func() {
 						vwc := makeUnstructured(`
 
-apiVersion: admissionregistration.k8s.io/v1beta1
+apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
   name: gloo-gateway-validation-webhook-` + namespace + `
@@ -2908,6 +2909,9 @@ webhooks:
        apiVersions: ["v1"]
        resources: ["*"]
    sideEffects: None
+   matchPolicy: Exact
+   admissionReviewVersions:
+     - v1beta1
    failurePolicy: Ignore
 
 `)
@@ -4183,7 +4187,7 @@ metadata:
 											Ports: glooPorts,
 											Env: []v1.EnvVar{
 												{
-													Name: "POD_NAMESPACE",
+													Name: statusutils.PodNamespaceEnvName,
 													ValueFrom: &v1.EnvVarSource{
 														FieldRef: &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
 													},
@@ -4262,7 +4266,7 @@ metadata:
 											Image: "docker.io/ilackarms/ingress:test-ilackarms",
 											Env: []v1.EnvVar{
 												{
-													Name: "POD_NAMESPACE",
+													Name: statusutils.PodNamespaceEnvName,
 													ValueFrom: &v1.EnvVarSource{
 														FieldRef: &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
 													},

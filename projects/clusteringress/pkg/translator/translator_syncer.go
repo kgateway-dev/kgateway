@@ -17,6 +17,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	knativev1alpha1 "knative.dev/networking/pkg/apis/networking/v1alpha1"
 	knativeclient "knative.dev/networking/pkg/client/clientset/versioned/typed/networking/v1alpha1"
@@ -29,16 +30,18 @@ type translatorSyncer struct {
 	proxyClient     gloov1.ProxyClient
 	proxyReconciler gloov1.ProxyReconciler
 	ingressClient   knativeclient.IngressesGetter
+	statusClient    resources.StatusClient
 }
 
-func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, writeErrs chan error) v1.TranslatorSyncer {
+func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, statusClient resources.StatusClient, writeErrs chan error) v1.TranslatorSyncer {
 	return &translatorSyncer{
 		proxyAddress:    proxyAddress,
 		writeNamespace:  writeNamespace,
 		writeErrs:       writeErrs,
 		proxyClient:     proxyClient,
 		ingressClient:   ingressClient,
-		proxyReconciler: gloov1.NewProxyReconciler(proxyClient),
+		proxyReconciler: gloov1.NewProxyReconciler(proxyClient, statusClient),
+		statusClient:    statusClient,
 	}
 }
 
@@ -77,7 +80,9 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		desiredResources = gloov1.ProxyList{proxy}
 	}
 
-	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, utils.TransitionFunction, clients.ListOpts{
+	proxyTransitionFunction := utils.TransitionFunction(s.statusClient)
+
+	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, proxyTransitionFunction, clients.ListOpts{
 		Ctx:      ctx,
 		Selector: labels,
 	}); err != nil {
@@ -115,12 +120,13 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 			if err != nil {
 				return err
 			}
-			switch updatedProxy.GetStatus().GetState() {
+			proxyStatus := s.statusClient.GetStatus(updatedProxy)
+
+			switch proxyStatus.GetState() {
 			case core.Status_Pending:
 				continue
 			case core.Status_Rejected:
-				contextutils.LoggerFrom(ctx).Errorf("proxy was rejected by gloo: %v",
-					updatedProxy.GetStatus().GetReason())
+				contextutils.LoggerFrom(ctx).Errorf("proxy was rejected by gloo: %v", proxyStatus.GetReason())
 				return nil
 			case core.Status_Accepted:
 				return s.markClusterIngressesReady(ctx, clusterIngresses)

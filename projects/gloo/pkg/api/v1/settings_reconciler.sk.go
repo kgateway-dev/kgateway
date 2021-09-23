@@ -24,9 +24,9 @@ func settingssToResources(list SettingsList) resources.ResourceList {
 	return resourceList
 }
 
-func NewSettingsReconciler(client SettingsClient) SettingsReconciler {
+func NewSettingsReconciler(client SettingsClient, statusSetter resources.StatusSetter) SettingsReconciler {
 	return &settingsReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

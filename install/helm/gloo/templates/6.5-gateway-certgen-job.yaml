@@ -52,7 +52,6 @@ spec:
         {{- with .Values.gateway.certGenJob.resources }}
           resources: {{ toYaml . | nindent 12}}
         {{- end }}
-      restartPolicy: {{ .Values.gateway.certGenJob.restartPolicy }}
   # this feature is still in Alpha, which means it must be manually enabled in the k8s api server
   # with --feature-gates="TTLAfterFinished=true". This flag also works with minikube start ...
   # if the feature flag is not enabled in the k8s api server, this setting will be silently ignored at creation time

@@ -24,9 +24,9 @@ func upstreamsToResources(list UpstreamList) resources.ResourceList {
 	return resourceList
 }
 
-func NewUpstreamReconciler(client UpstreamClient) UpstreamReconciler {
+func NewUpstreamReconciler(client UpstreamClient, statusSetter resources.StatusSetter) UpstreamReconciler {
 	return &upstreamReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

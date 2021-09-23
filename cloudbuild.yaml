@@ -150,7 +150,7 @@ steps:
 
 # Run make targets to retag and push docker images to GCR
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.9'
-  args: ['docker-push-extended']
+  args: ['docker-push-retag']
   env:
   - 'DOCKER_CONFIG=/workspace/docker-config'
   - 'TAGGED_VERSION=$TAG_NAME'

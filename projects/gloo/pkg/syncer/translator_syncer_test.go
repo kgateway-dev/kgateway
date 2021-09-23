@@ -3,6 +3,8 @@ package syncer_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -18,6 +20,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/resource"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -36,8 +39,9 @@ var _ = Describe("Translate Proxy", func() {
 		ctx            context.Context
 		cancel         context.CancelFunc
 		proxyName      = "proxy-name"
-		ref            = "syncer-test"
 		ns             = "any-ns"
+		ref            = "syncer-test"
+		statusClient   resources.StatusClient
 	)
 
 	BeforeEach(func() {
@@ -64,7 +68,9 @@ var _ = Describe("Translate Proxy", func() {
 
 		settings = &v1.Settings{}
 
-		rep := reporter.NewReporter(ref, proxyClient.BaseClient(), upstreamClient)
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
+
+		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
 		syncer = NewTranslatorSyncer(&mockTranslator{true, false, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
@@ -82,7 +88,7 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(proxies).To(HaveLen(1))
 		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
-		Expect(proxies[0].Status).To(Equal(&core.Status{
+		Expect(statusClient.GetStatus(proxies[0])).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
 			ReportedBy: ref,
@@ -110,7 +116,7 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(proxies).To(HaveLen(1))
 		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
-		Expect(proxies[0].Status).To(Equal(&core.Status{
+		Expect(statusClient.GetStatus(proxies[0])).To(Equal(&core.Status{
 			State:      1,
 			ReportedBy: ref,
 		}))
@@ -174,8 +180,9 @@ var _ = Describe("Empty cache", func() {
 		proxy          *v1.Proxy
 		snapshot       envoycache.Snapshot
 		proxyName      = "proxy-name"
-		ref            = "syncer-test"
 		ns             = "any-ns"
+		ref            = "syncer-test"
+		statusClient   resources.StatusClient
 	)
 
 	BeforeEach(func() {
@@ -202,7 +209,9 @@ var _ = Describe("Empty cache", func() {
 
 		settings = &v1.Settings{}
 
-		rep := reporter.NewReporter(ref, proxyClient.BaseClient(), upstreamClient)
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
+
+		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
 
@@ -269,7 +278,7 @@ var _ = Describe("Empty cache", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(proxies).To(HaveLen(1))
 		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
-		Expect(proxies[0].Status).To(Equal(&core.Status{
+		Expect(statusClient.GetStatus(proxies[0])).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
 			ReportedBy: ref,
@@ -289,15 +298,16 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		upstreamClient v1.UpstreamClient
 		proxyName      = "proxy-name"
 		upstreamName   = "upstream-name"
-		ref            = "syncer-test"
 		ns             = "any-ns"
+		ref            = "syncer-test"
+		statusClient   resources.StatusClient
 	)
 
 	proxiesShouldHaveErrors := func(proxies v1.ProxyList, numProxies int) {
 		Expect(proxies).To(HaveLen(numProxies))
 		for _, proxy := range proxies {
 			Expect(proxy).To(BeAssignableToTypeOf(&v1.Proxy{}))
-			Expect(proxy.Status).To(Equal(&core.Status{
+			Expect(statusClient.GetStatus(proxy)).To(Equal(&core.Status{
 				State:      2,
 				Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
 				ReportedBy: ref,
@@ -359,7 +369,9 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 
 		settings = &v1.Settings{}
 
-		rep := reporter.NewReporter(ref, proxyClient.BaseClient(), usClient)
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
+
+		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), usClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
 		syncer = NewTranslatorSyncer(&mockTranslator{true, true, nil}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
@@ -386,7 +398,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(proxies).To(HaveLen(2))
 		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
-		Expect(proxies[0].Status).To(Equal(&core.Status{
+		Expect(statusClient.GetStatus(proxies[0])).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
 			ReportedBy: ref,
@@ -411,7 +423,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		upstreams, err := upstreamClient.List(ns, clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(upstreams[0].Status).To(Equal(&core.Status{
+		Expect(statusClient.GetStatus(upstreams[0])).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "2 errors occurred:\n\t* upstream is bad - determined by proxy-name1\n\t* upstream is bad - determined by proxy-name2\n\n",
 			ReportedBy: ref,
@@ -430,7 +442,7 @@ var _ = Describe("Translate mulitple proxies with errors", func() {
 		upstreams, err := upstreamClient.List(ns, clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(upstreams).To(HaveLen(1))
-		Expect(upstreams[0].Status).To(Equal(&core.Status{
+		Expect(statusClient.GetStatus(upstreams[0])).To(Equal(&core.Status{
 			State:      2,
 			Reason:     "1 error occurred:\n\t* generic upstream error\n\n",
 			ReportedBy: ref,

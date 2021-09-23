@@ -580,6 +580,7 @@ spec:
               nullable: true
               type: string
             ignoreHealthOnHostRemoval:
+              nullable: true
               type: boolean
             initialConnectionWindowSize:
               maximum: 4294967295
@@ -766,6 +767,14 @@ spec:
                   type: object
                 updateMergeWindow:
                   type: string
+              type: object
+            namespacedStatuses:
+              properties:
+                statuses:
+                  additionalProperties:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  type: object
               type: object
             outlierDetection:
               properties:
@@ -1142,9 +1151,6 @@ spec:
                 useTls:
                   type: boolean
               type: object
-            status:
-              type: object
-              x-kubernetes-preserve-unknown-fields: true
             useHttp2:
               nullable: true
               type: boolean

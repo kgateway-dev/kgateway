@@ -2,6 +2,11 @@ package check_test
 
 import (
 	"context"
+	"os"
+
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -11,6 +16,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -22,14 +28,22 @@ var _ = Describe("Root", func() {
 	var (
 		ctx    context.Context
 		cancel context.CancelFunc
+
+		statusClient resources.StatusClient
 	)
 
 	BeforeEach(func() {
+		Expect(os.Setenv(statusutils.PodNamespaceEnvName, defaults.GlooSystem)).NotTo(HaveOccurred())
 		helpers.UseMemoryClients()
 		ctx, cancel = context.WithCancel(context.Background())
+
+		statusClient = gloostatusutils.GetStatusClientForNamespace(defaults.GlooSystem)
 	})
 
-	AfterEach(func() { cancel() })
+	AfterEach(func() {
+		Expect(os.Unsetenv(statusutils.PodNamespaceEnvName)).NotTo(HaveOccurred())
+		cancel()
+	})
 
 	Context("With a good kube client", func() {
 
@@ -98,38 +112,44 @@ var _ = Describe("Root", func() {
 			}, clients.WriteOpts{})
 
 			// Creates rejected upstream in the gloo-system namespace
-
-			helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(&v1.Upstream{
+			warningUpstream := &v1.Upstream{
 				Metadata: &core.Metadata{
 					Name:      "some-warning-upstream",
 					Namespace: "gloo-system",
 				},
-				Status: &core.Status{
-					State:  core.Status_Warning,
-					Reason: "I am an upstream with a warning",
-				},
-			}, clients.WriteOpts{})
+			}
+			statusClient.SetStatus(warningUpstream, &core.Status{
+				State:      core.Status_Warning,
+				Reason:     "I am an upstream with a warning",
+				ReportedBy: "gateway",
+			})
+			_, usErr := helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(warningUpstream, clients.WriteOpts{})
+			Expect(usErr).NotTo(HaveOccurred())
 
-			helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(&v1.Upstream{
+			rejectedUpstream := &v1.Upstream{
 				Metadata: &core.Metadata{
 					Name:      "some-rejected-upstream",
 					Namespace: "gloo-system",
 				},
-				Status: &core.Status{
-					State:  core.Status_Rejected,
-					Reason: "I am a rejected upstream",
-				},
-			}, clients.WriteOpts{})
+			}
+			statusClient.SetStatus(rejectedUpstream, &core.Status{
+				State:      core.Status_Rejected,
+				Reason:     "I am a rejected upstream",
+				ReportedBy: "gateway",
+			})
+			_, rUsErr := helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(rejectedUpstream, clients.WriteOpts{})
+			Expect(rUsErr).NotTo(HaveOccurred())
 
-			helpers.MustNamespacedVirtualServiceClient(ctx, "gloo-system").Write(
-				&v12.VirtualService{
-					Metadata: &core.Metadata{Name: "some-bad-vs", Namespace: "gloo-system"},
-					Status: &core.Status{
-						State:  core.Status_Rejected,
-						Reason: "I am a rejected vs",
-					},
-				}, clients.WriteOpts{},
-			)
+			rejectedVs := &v12.VirtualService{
+				Metadata: &core.Metadata{Name: "some-bad-vs", Namespace: "gloo-system"},
+			}
+			statusClient.SetStatus(rejectedVs, &core.Status{
+				State:      core.Status_Rejected,
+				Reason:     "I am a rejected vs",
+				ReportedBy: "gateway",
+			})
+			_, vsErr := helpers.MustNamespacedVirtualServiceClient(ctx, "gloo-system").Write(rejectedVs, clients.WriteOpts{})
+			Expect(vsErr).NotTo(HaveOccurred())
 			testutils.Glooctl("check -x xds-metrics")
 
 			output, err := testutils.GlooctlOut("check -x xds-metrics")

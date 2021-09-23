@@ -24,9 +24,9 @@ func artifactsToResources(list ArtifactList) resources.ResourceList {
 	return resourceList
 }
 
-func NewArtifactReconciler(client ArtifactClient) ArtifactReconciler {
+func NewArtifactReconciler(client ArtifactClient, statusSetter resources.StatusSetter) ArtifactReconciler {
 	return &artifactReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

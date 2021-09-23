@@ -10,6 +10,7 @@ import (
 	"time"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
 	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
@@ -115,7 +116,6 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		err = flag.Set("dir", settingsDir)
 		err = flag.Set("namespace", writeNamespace)
 		Expect(err).NotTo(HaveOccurred())
-
 		go func() {
 			defer GinkgoRecover()
 			// Start Gloo
@@ -221,23 +221,15 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Wait for vs and gw to be accepted
-		Eventually(func() (core.Status_State, error) {
-			readVs, err := vsClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{Ctx: ctx})
-			if err != nil {
-				return 0, err
-			}
-			return readVs.GetStatus().GetState(), nil
-		}, "60s", "0.2s").Should(Equal(core.Status_Accepted))
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return vsClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+		}, "60s", ".2s")
 
 		// Wait for the proxy to be accepted. this can take up to 40 seconds, as the vault snapshot
 		// updates every 30 seconds.
-		Eventually(func() (core.Status_State, error) {
-			proxy, err := proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-			if err != nil {
-				return 0, err
-			}
-			return proxy.GetStatus().GetState(), nil
-		}, "60s", "0.2s").Should(Equal(core.Status_Accepted))
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+		}, "60s", ".2s")
 
 		v1helpers.TestUpstreamReachable(defaults.HttpsPort, svc1, &cert)
 	})
@@ -257,13 +249,9 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Wait for the proxy to be accepted.
-		Eventually(func() (core.Status_State, error) {
-			proxy, err := proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-			if err != nil {
-				return 0, err
-			}
-			return proxy.GetStatus().GetState(), nil
-		}, "60s", "0.2s").Should(Equal(core.Status_Accepted))
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+		}, "60s", ".2s")
 
 		v1helpers.ExpectHttpOK(nil, nil, defaults.HttpPort,
 			`[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
