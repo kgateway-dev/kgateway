@@ -3,6 +3,9 @@ package ratelimit
 import (
 	"reflect"
 
+	"github.com/hashicorp/go-multierror"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	skres "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
@@ -43,12 +46,35 @@ func (r *RateLimitConfig) UnmarshalSpec(spec skres.Spec) error {
 	return protoutils.UnmarshalMapToProto(spec, &r.Spec)
 }
 
-func (r *RateLimitConfig) UnmarshalStatus(status skres.Status, unmarshaler resources.StatusUnmarshaler) error {
-	return protoutils.UnmarshalMapToProto(status, &r.Status)
-}
-
 func (r *RateLimitConfig) MarshalSpec() (skres.Spec, error) {
 	return protoutils.MarshalMapFromProto(&r.Spec)
+}
+
+func (r *RateLimitConfig) UnmarshalStatus(status skres.Status, unmarshaler resources.StatusUnmarshaler) error {
+	// First, attempt to unmarshal the status as a map of statuses
+	// We do this first, since we will persist the status as a map moving forward
+	namespacedStatuses := v1alpha1.RateLimitConfigNamespacedStatuses{}
+	namespacedStatusesErr := protoutils.UnmarshalMapToProto(status, &namespacedStatuses)
+	if namespacedStatusesErr == nil {
+		r.Status = namespacedStatuses
+	}
+
+	// If it failed, try to unmarshal as a single status
+	singleStatus := v1alpha1.RateLimitConfigStatus{}
+	singleStatusErr := protoutils.UnmarshalMapToProto(status, &singleStatus)
+	if singleStatusErr == nil {
+		// Handle the case where we have a single status, and we need to convert this resource
+		// to use a map. This should only happen one time
+		// We intentionally do not set the status, so the controller assumes the resource
+		// needs to be re-synced
+		return nil
+	}
+
+	// There's actually something wrong if either status can't be unmarshalled.
+	var multiErr *multierror.Error
+	multiErr = multierror.Append(multiErr, namespacedStatusesErr)
+	multiErr = multierror.Append(multiErr, singleStatusErr)
+	return multiErr
 }
 
 func (r *RateLimitConfig) MarshalStatus() (skres.Status, error) {
@@ -57,25 +83,41 @@ func (r *RateLimitConfig) MarshalStatus() (skres.Status, error) {
 
 // Deprecated
 func (r *RateLimitConfig) GetStatus() *core.Status {
-	return r.convertRateLimitConfigStatusToSoloKitStatus(&r.Status)
+	return statusutils.GetSingleStatusInNamespacedStatuses(r)
 }
 
 // Deprecated
 func (r *RateLimitConfig) SetStatus(status *core.Status) {
-	if status != nil {
-		r.Status = *r.convertSoloKitStatusToRateLimitConfigStatus(status)
-	}
+	statusutils.SetSingleStatusInNamespacedStatuses(r, status)
 }
 
 func (r *RateLimitConfig) GetNamespacedStatuses() *core.NamespacedStatuses {
-	panic("implement me")
+	// TODO (sam-heilbron): Everytime we get/set the status, we convert it between the solo-kit and rate-limit types
+	// We could speed this up by storing an in memory reference of the solo-kit type and only convert
+	// it during marshaling and unmarshaling
+	return r.convertRateLimitConfigToSoloKitNamespacedStatuses(&r.Status)
 }
 
-func (r *RateLimitConfig) SetNamespacedStatuses(status *core.NamespacedStatuses) {
-	panic("implement me")
+func (r *RateLimitConfig) SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses) {
+	r.Status = *r.convertSoloKitToRateLimitConfigNamespacedStatuses(namespacedStatuses)
 }
 
-func (r *RateLimitConfig) convertSoloKitStatusToRateLimitConfigStatus(status *core.Status) *v1alpha1.RateLimitConfigStatus {
+func (r *RateLimitConfig) convertSoloKitToRateLimitConfigNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses) *v1alpha1.RateLimitConfigNamespacedStatuses {
+	if namespacedStatuses == nil {
+		return nil
+	}
+
+	statuses := map[string]*v1alpha1.RateLimitConfigStatus{}
+	for ns, status := range namespacedStatuses.GetStatuses() {
+		statuses[ns] = r.convertSoloKitToRateLimitConfigStatus(status)
+	}
+
+	return &v1alpha1.RateLimitConfigNamespacedStatuses{
+		Statuses: statuses,
+	}
+}
+
+func (r *RateLimitConfig) convertSoloKitToRateLimitConfigStatus(status *core.Status) *v1alpha1.RateLimitConfigStatus {
 	if status == nil {
 		return nil
 	}
@@ -97,6 +139,21 @@ func (r *RateLimitConfig) convertSoloKitStatusToRateLimitConfigStatus(status *co
 		State:              outputState,
 		Message:            status.GetReason(),
 		ObservedGeneration: r.GetGeneration(),
+	}
+}
+
+func (r *RateLimitConfig) convertRateLimitConfigToSoloKitNamespacedStatuses(namespacedStatuses *v1alpha1.RateLimitConfigNamespacedStatuses) *core.NamespacedStatuses {
+	if namespacedStatuses == nil {
+		return nil
+	}
+
+	statuses := map[string]*core.Status{}
+	for ns, status := range namespacedStatuses.GetStatuses() {
+		statuses[ns] = r.convertRateLimitConfigStatusToSoloKitStatus(status)
+	}
+
+	return &core.NamespacedStatuses{
+		Statuses: statuses,
 	}
 }
 

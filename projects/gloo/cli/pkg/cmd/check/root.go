@@ -23,7 +23,6 @@ import (
 	rlopts "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/cliutils"
-	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/spf13/cobra"
@@ -474,10 +473,12 @@ func checkRateLimitConfigs(opts *options.Options, namespaces []string) ([]string
 			return nil, err
 		}
 		for _, config := range configs {
-			if config.Status.GetState() == v1alpha1.RateLimitConfigStatus_REJECTED {
-				errMessage := fmt.Sprintf("Found rejected rate limit config: %s ", renderMetadata(config.GetMetadata()))
-				errMessage += fmt.Sprintf("(Reason: %s)", config.Status.GetMessage())
-				multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
+			for _, status := range config.GetNamespacedStatuses().GetStatuses() {
+				if status.GetState() == core.Status_Rejected {
+					errMessage := fmt.Sprintf("Found rejected rate limit config: %s ", renderMetadata(config.GetMetadata()))
+					errMessage += fmt.Sprintf("(Reason: %s)", status.GetReason())
+					multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
+				}
 			}
 
 			knownConfigs = append(knownConfigs, renderMetadata(config.GetMetadata()))
