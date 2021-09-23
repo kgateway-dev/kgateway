@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -186,7 +186,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		Expect(err).NotTo(HaveOccurred())
 		serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
 
-		statusClient = statusutils.NewNamespacedStatusesClient(testHelper.InstallNamespace)
+		statusClient = gloostatusutils.GetStatusClientForNamespace(testHelper.InstallNamespace)
 	})
 
 	AfterEach(func() {

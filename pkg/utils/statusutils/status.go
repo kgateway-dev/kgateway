@@ -1,7 +1,9 @@
 package statusutils
 
 import (
+	"github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 )
 
@@ -16,5 +18,43 @@ func GetStatusReporterNamespaceOrDefault(defaultNamespace string) string {
 
 func GetStatusClientFromEnvOrDefault(defaultNamespace string) resources.StatusClient {
 	statusReporterNamespace := GetStatusReporterNamespaceOrDefault(defaultNamespace)
-	return statusutils.NewNamespacedStatusesClient(statusReporterNamespace)
+	return GetStatusClientForNamespace(statusReporterNamespace)
+}
+
+func GetStatusClientForNamespace(namespace string) resources.StatusClient {
+	return &HybridStatusClient{
+		namespacedStatusClient: statusutils.NewNamespacedStatusesClient(namespace),
+	}
+}
+
+var _ resources.StatusClient = &HybridStatusClient{}
+
+// The HybridStatusClient is used while some resources support namespaced statuses
+// and others (RateLimitConfig) do not
+type HybridStatusClient struct {
+	namespacedStatusClient *statusutils.NamespacedStatusesClient
+}
+
+func (h *HybridStatusClient) GetStatus(resource resources.InputResource) *core.Status {
+	if h.shouldUseDeprecatedStatus(resource) {
+		return resource.GetStatus()
+	}
+
+	return h.namespacedStatusClient.GetStatus(resource)
+}
+
+func (h *HybridStatusClient) SetStatus(resource resources.InputResource, status *core.Status) {
+	if h.shouldUseDeprecatedStatus(resource) {
+		resource.SetStatus(status)
+		return
+	}
+
+	h.namespacedStatusClient.SetStatus(resource, status)
+}
+
+func (h *HybridStatusClient) shouldUseDeprecatedStatus(resource resources.InputResource) bool {
+	if _, ok := resource.(*ratelimit.RateLimitConfig); ok {
+		return true
+	}
+	return false
 }

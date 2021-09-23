@@ -11,8 +11,6 @@ import (
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 
 	"github.com/golang/protobuf/ptypes/duration"
@@ -481,7 +479,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 
 	errs := make(chan error)
 
-	statusClient := statusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
+	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
 
 	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, statusClient, discoveryPlugins)
 	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)

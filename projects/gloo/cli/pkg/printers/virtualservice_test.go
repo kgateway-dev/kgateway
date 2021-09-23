@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	. "github.com/onsi/ginkgo"
@@ -33,7 +35,7 @@ var _ = Describe("getAggregateVirtualServiceStatus", func() {
 		Expect(os.Setenv(statusutils.PodNamespaceEnvName, defaults.GlooSystem)).NotTo(HaveOccurred())
 		ctx, cancel = context.WithCancel(context.Background())
 
-		statusClient = statusutils.NewNamespacedStatusesClient(defaults.GlooSystem)
+		statusClient = gloostatusutils.GetStatusClientForNamespace(defaults.GlooSystem)
 	})
 
 	AfterEach(func() {

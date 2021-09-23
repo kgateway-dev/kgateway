@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
 	. "github.com/onsi/ginkgo"
@@ -35,7 +37,7 @@ var _ = Describe("Root", func() {
 		helpers.UseMemoryClients()
 		ctx, cancel = context.WithCancel(context.Background())
 
-		statusClient = statusutils.NewNamespacedStatusesClient(defaults.GlooSystem)
+		statusClient = gloostatusutils.GetStatusClientForNamespace(defaults.GlooSystem)
 	})
 
 	AfterEach(func() {

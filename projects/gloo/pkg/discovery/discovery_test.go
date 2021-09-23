@@ -4,8 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -15,6 +14,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/discovery"
@@ -32,7 +32,7 @@ var _ = Describe("Discovery", func() {
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
-		statusClient = statusutils.NewNamespacedStatusesClient("default")
+		statusClient = statusutils.GetStatusClientForNamespace("default")
 	})
 
 	AfterEach(func() {

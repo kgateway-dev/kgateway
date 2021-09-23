@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
 	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/cliutils"
@@ -105,7 +105,7 @@ var _ = Describe("Robustness tests", func() {
 		err = proxyClient.Register()
 		Expect(err).NotTo(HaveOccurred())
 
-		statusClient = statusutils.NewNamespacedStatusesClient(namespace)
+		statusClient = gloostatusutils.GetStatusClientForNamespace(namespace)
 
 		appDeployment, appService, err = createEchoDeploymentAndService(kubeClient, testHelper.InstallNamespace, appName)
 		Expect(err).NotTo(HaveOccurred())

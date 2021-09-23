@@ -10,8 +10,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
-	skstatusutils "github.com/solo-io/solo-kit/pkg/utils/statusutils"
-
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
@@ -222,7 +220,7 @@ func RunGateway(opts translator.Opts) error {
 		return err
 	}
 
-	statusClient := skstatusutils.NewNamespacedStatusesClient(opts.StatusReporterNamespace)
+	statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
 
 	rpt := reporter.NewReporter("gateway",
 		statusClient,

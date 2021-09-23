@@ -26,7 +26,7 @@ var _ = Describe("Compress", func() {
 	BeforeEach(func() {
 		ns := gloostatusutils.GetStatusReporterNamespaceOrDefault("default")
 		statusUnmarshaler = statusutils.NewNamespacedStatusesUnmarshaler(ns, protoutils.UnmarshalMapToProto)
-		statusClient = statusutils.NewNamespacedStatusesClient(ns)
+		statusClient = gloostatusutils.GetStatusClientForNamespace(ns)
 	})
 
 	Context("spec", func() {
