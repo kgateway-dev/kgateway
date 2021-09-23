@@ -53,8 +53,11 @@ func (h *HybridStatusClient) SetStatus(resource resources.InputResource, status 
 }
 
 func (h *HybridStatusClient) shouldUseDeprecatedStatus(resource resources.InputResource) bool {
-	if _, ok := resource.(*ratelimit.RateLimitConfig); ok {
+	switch resource.(type) {
+	case *ratelimit.RateLimitConfig:
 		return true
+
+	default:
+		return false
 	}
-	return false
 }
