@@ -23,7 +23,6 @@ webhooks:
       namespace: {{ .Release.Namespace }}
       path: "/validation"
     caBundle: "" # update manually or use certgen job or cert-manager's ca-injector
-  matchPolicy: Exact
   rules:
   - operations: [ "CREATE", "UPDATE", "DELETE" ]
     apiGroups: ["gateway.solo.io"]
