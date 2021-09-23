@@ -24,9 +24,9 @@ func virtualServicesToResources(list VirtualServiceList) resources.ResourceList 
 	return resourceList
 }
 
-func NewVirtualServiceReconciler(client VirtualServiceClient) VirtualServiceReconciler {
+func NewVirtualServiceReconciler(client VirtualServiceClient, statusSetter resources.StatusSetter) VirtualServiceReconciler {
 	return &virtualServiceReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

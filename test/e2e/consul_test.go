@@ -7,6 +7,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -126,14 +129,9 @@ var _ = Describe("Consul e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Wait for proxy to be accepted
-		var proxy *gloov1.Proxy
-		Eventually(func() bool {
-			proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-			if err != nil {
-				return false
-			}
-			return proxy.GetStatus().GetState() == core.Status_Accepted
-		}, "10s", "0.2s").Should(BeTrue())
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+		})
 
 		time.Sleep(3 * time.Second)
 
@@ -189,14 +187,9 @@ var _ = Describe("Consul e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Wait for proxy to be accepted
-		var proxy *gloov1.Proxy
-		Eventually(func() bool {
-			proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-			if err != nil {
-				return false
-			}
-			return proxy.GetStatus().GetState() == core.Status_Accepted
-		}, "20s", "0.2s").Should(BeTrue())
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+		})
 
 		time.Sleep(3 * time.Second)
 

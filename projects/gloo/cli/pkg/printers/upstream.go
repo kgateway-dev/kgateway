@@ -10,6 +10,7 @@ import (
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/go-utils/cliutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -33,7 +34,7 @@ func UpstreamTable(xdsDump *xdsinspection.XdsDump, upstreams []*v1.Upstream, w i
 
 	for _, us := range upstreams {
 		name := us.GetMetadata().GetName()
-		s := us.GetStatus().GetState().String()
+		s := upstreamStatus(us)
 
 		u := upstreamType(us)
 		details := upstreamDetails(us, xdsDump)
@@ -53,6 +54,12 @@ func UpstreamTable(xdsDump *xdsinspection.XdsDump, upstreams []*v1.Upstream, w i
 
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.Render()
+}
+
+func upstreamStatus(us *v1.Upstream) string {
+	return AggregateNamespacedStatuses(us.GetNamespacedStatuses(), func(status *core.Status) string {
+		return status.GetState().String()
+	})
 }
 
 func upstreamType(up *v1.Upstream) string {
@@ -91,8 +98,7 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 	case *v1.Upstream_Aws:
 		var functions []string
 		for _, fn := range usType.Aws.GetLambdaFunctions() {
-
-			functions = append(functions, fn.GetLambdaFunctionName()+" ("+fn.GetQualifier()+")")
+			functions = append(functions, fn.GetLambdaFunctionName())
 		}
 		add(
 			fmt.Sprintf("region: %v", usType.Aws.GetRegion()),

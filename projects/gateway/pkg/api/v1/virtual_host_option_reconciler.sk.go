@@ -24,9 +24,9 @@ func virtualHostOptionsToResources(list VirtualHostOptionList) resources.Resourc
 	return resourceList
 }
 
-func NewVirtualHostOptionReconciler(client VirtualHostOptionClient) VirtualHostOptionReconciler {
+func NewVirtualHostOptionReconciler(client VirtualHostOptionClient, statusSetter resources.StatusSetter) VirtualHostOptionReconciler {
 	return &virtualHostOptionReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

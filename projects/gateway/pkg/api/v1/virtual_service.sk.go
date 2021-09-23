@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -27,8 +28,21 @@ func (r *VirtualService) SetMetadata(meta *core.Metadata) {
 	r.Metadata = meta
 }
 
+// Deprecated
 func (r *VirtualService) SetStatus(status *core.Status) {
-	r.Status = status
+	statusutils.SetSingleStatusInNamespacedStatuses(r, status)
+}
+
+// Deprecated
+func (r *VirtualService) GetStatus() *core.Status {
+	if r != nil {
+		return statusutils.GetSingleStatusInNamespacedStatuses(r)
+	}
+	return nil
+}
+
+func (r *VirtualService) SetNamespacedStatuses(namespacedStatuses *core.NamespacedStatuses) {
+	r.NamespacedStatuses = namespacedStatuses
 }
 
 func (r *VirtualService) MustHash() uint64 {

@@ -21,6 +21,14 @@ spec:
       properties:
         spec:
           properties:
+            namespacedStatuses:
+              properties:
+                statuses:
+                  additionalProperties:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  type: object
+              type: object
             options:
               properties:
                 bufferPerRoute:
@@ -1574,9 +1582,6 @@ spec:
                       type: array
                   type: object
               type: object
-            status:
-              type: object
-              x-kubernetes-preserve-unknown-fields: true
           type: object
         status:
           type: object

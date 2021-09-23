@@ -1,6 +1,9 @@
 package sidecars
 
-import corev1 "k8s.io/api/core/v1"
+import (
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+	corev1 "k8s.io/api/core/v1"
+)
 
 // GetSdsSidecar returns an SDS Sidecar of the given gloo
 // release version to run alongside istio and gateway-proxy
@@ -20,7 +23,7 @@ func GetSdsSidecar(version string) corev1.Container {
 				},
 			},
 			{
-				Name: "POD_NAMESPACE",
+				Name: statusutils.PodNamespaceEnvName,
 				ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{
 						FieldPath: "metadata.namespace",

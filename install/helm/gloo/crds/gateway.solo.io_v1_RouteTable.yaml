@@ -21,6 +21,14 @@ spec:
       properties:
         spec:
           properties:
+            namespacedStatuses:
+              properties:
+                statuses:
+                  additionalProperties:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  type: object
+              type: object
             routes:
               items:
                 properties:
@@ -2901,9 +2909,6 @@ spec:
                     type: object
                 type: object
               type: array
-            status:
-              type: object
-              x-kubernetes-preserve-unknown-fields: true
             weight:
               maximum: 2147483647
               minimum: -2147483648

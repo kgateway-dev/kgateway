@@ -133,7 +133,7 @@ func upstreamsEqual(original, desired *v1.Upstream) bool {
 	copyDesired := *desired
 
 	copyOriginal.Metadata = copyDesired.GetMetadata()
-	copyOriginal.Status = copyDesired.GetStatus()
+	copyOriginal.SetNamespacedStatuses(copyDesired.GetNamespacedStatuses())
 
 	return copyOriginal.Equal(copyDesired)
 }

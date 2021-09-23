@@ -24,9 +24,9 @@ func ingresssToResources(list IngressList) resources.ResourceList {
 	return resourceList
 }
 
-func NewIngressReconciler(client IngressClient) IngressReconciler {
+func NewIngressReconciler(client IngressClient, statusSetter resources.StatusSetter) IngressReconciler {
 	return &ingressReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

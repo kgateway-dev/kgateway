@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+
 	knativev1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -34,6 +37,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		proxy                *v1.Proxy
 		ctx                  context.Context
 		cancel               context.CancelFunc
+		statusClient         resources.StatusClient
 	)
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
@@ -66,6 +70,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		knativeClient = &mockCiClient{ci: toKube(ingress)}
 		proxy = &v1.Proxy{Metadata: &core.Metadata{Name: "hi", Namespace: "howareyou"}}
 		proxy, _ = proxyClient.Write(proxy, clients.WriteOpts{})
+		statusClient = gloostatusutils.GetStatusClientForNamespace("ns")
 	})
 
 	AfterEach(func() {
@@ -73,7 +78,7 @@ var _ = Describe("TranslatorSyncer", func() {
 	})
 
 	It("only processes annotated proxies when requireIngressClass is set to true successful proxy status to the ingresses it was created from", func() {
-		syncer := NewSyncer(proxyAddressExternal, proxyAddressInternal, namespace, proxyClient, knativeClient, make(chan error), true).(*translatorSyncer)
+		syncer := NewSyncer(proxyAddressExternal, proxyAddressInternal, namespace, proxyClient, knativeClient, make(chan error), true, statusClient).(*translatorSyncer)
 
 		// expect ingress without class to be ignored
 		err := syncer.Sync(context.TODO(), &knativev1.TranslatorSnapshot{
@@ -108,15 +113,16 @@ var _ = Describe("TranslatorSyncer", func() {
 
 	It("propagates successful proxy status to the ingresses it was created from", func() {
 		// requireIngressClass = true
-		syncer := NewSyncer(proxyAddressExternal, proxyAddressInternal, namespace, proxyClient, knativeClient, make(chan error), false).(*translatorSyncer)
+		syncer := NewSyncer(proxyAddressExternal, proxyAddressInternal, namespace, proxyClient, knativeClient, make(chan error), false, statusClient).(*translatorSyncer)
 
 		go func() {
 			defer GinkgoRecover()
 			// update status after a 1s sleep
 			time.Sleep(time.Second / 5)
-			proxy.Status = &core.Status{
+			statusClient.SetStatus(proxy, &core.Status{
 				State: core.Status_Accepted,
-			}
+			})
+
 			_, err := proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
 		}()
@@ -132,7 +138,7 @@ var _ = Describe("TranslatorSyncer", func() {
 	})
 
 	It("puts all ingresses on the internal proxy", func() {
-		syncer := NewSyncer(proxyAddressExternal, proxyAddressInternal, namespace, proxyClient, knativeClient, make(chan error), false).(*translatorSyncer)
+		syncer := NewSyncer(proxyAddressExternal, proxyAddressInternal, namespace, proxyClient, knativeClient, make(chan error), false, statusClient).(*translatorSyncer)
 
 		// the ingresses loaded to each proxy
 		proxiesWithIngresses := make(map[string]v1alpha1.IngressList)

@@ -7,6 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
+	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
@@ -23,7 +26,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -93,6 +95,8 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	if writeNamespace == "" {
 		writeNamespace = gloodefaults.GlooSystem
 	}
+
+	statusReporterNamespace := statusutils.GetStatusReporterNamespaceOrDefault(writeNamespace)
 	watchNamespaces := utils.ProcessWatchNamespaces(settings.GetWatchNamespaces(), writeNamespace)
 
 	var validation *translator.ValidationOpts
@@ -140,15 +144,16 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	}
 
 	opts := translator.Opts{
-		GlooNamespace:      settings.GetMetadata().GetNamespace(),
-		WriteNamespace:     writeNamespace,
-		WatchNamespaces:    watchNamespaces,
-		Gateways:           gatewayFactory,
-		VirtualServices:    virtualServiceFactory,
-		RouteTables:        routeTableFactory,
-		Proxies:            proxyFactory,
-		VirtualHostOptions: virtualHostOptionFactory,
-		RouteOptions:       routeOptionFactory,
+		GlooNamespace:           settings.GetMetadata().GetNamespace(),
+		WriteNamespace:          writeNamespace,
+		StatusReporterNamespace: statusReporterNamespace,
+		WatchNamespaces:         watchNamespaces,
+		Gateways:                gatewayFactory,
+		VirtualServices:         virtualServiceFactory,
+		RouteTables:             routeTableFactory,
+		Proxies:                 proxyFactory,
+		VirtualHostOptions:      virtualHostOptionFactory,
+		RouteOptions:            routeOptionFactory,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: refreshRate,
@@ -215,7 +220,10 @@ func RunGateway(opts translator.Opts) error {
 		return err
 	}
 
+	statusClient := statusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+
 	rpt := reporter.NewReporter("gateway",
+		statusClient,
 		gatewayClient.BaseClient(),
 		virtualServiceClient.BaseClient(),
 		routeTableClient.BaseClient(),
@@ -265,7 +273,7 @@ func RunGateway(opts translator.Opts) error {
 		allowWarnings,
 	))
 
-	proxyReconciler := reconciler.NewProxyReconciler(validationClient, proxyClient)
+	proxyReconciler := reconciler.NewProxyReconciler(validationClient, proxyClient, statusClient)
 
 	translatorSyncer := NewTranslatorSyncer(
 		ctx,
@@ -273,7 +281,8 @@ func RunGateway(opts translator.Opts) error {
 		proxyClient,
 		proxyReconciler,
 		rpt,
-		txlator)
+		txlator,
+		statusClient)
 
 	gatewaySyncers := v1.ApiSyncers{
 		translatorSyncer,

@@ -637,6 +637,14 @@ spec:
                     type: object
                   type: array
               type: object
+            namespacedStatuses:
+              properties:
+                statuses:
+                  additionalProperties:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  type: object
+              type: object
             options:
               properties:
                 accessLoggingService:
@@ -729,9 +737,6 @@ spec:
               type: object
             ssl:
               type: boolean
-            status:
-              type: object
-              x-kubernetes-preserve-unknown-fields: true
             tcpGateway:
               properties:
                 options:

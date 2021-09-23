@@ -1,4 +1,4 @@
-package reconciler_test
+package statusutils_test
 
 import (
 	"testing"
@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestReconciler(t *testing.T) {
+func TestStatusUtils(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Reconciler Suite", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "Status Utils Suite", []Reporter{junitReporter})
 }

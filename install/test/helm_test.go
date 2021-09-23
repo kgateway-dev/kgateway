@@ -26,6 +26,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	test_matchers "github.com/solo-io/solo-kit/test/matchers"
 	appsv1 "k8s.io/api/apps/v1"
 	jobsv1 "k8s.io/api/batch/v1"
@@ -4190,7 +4191,7 @@ metadata:
 											Ports: glooPorts,
 											Env: []v1.EnvVar{
 												{
-													Name: "POD_NAMESPACE",
+													Name: statusutils.PodNamespaceEnvName,
 													ValueFrom: &v1.EnvVarSource{
 														FieldRef: &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
 													},
@@ -4269,7 +4270,7 @@ metadata:
 											Image: "docker.io/ilackarms/ingress:test-ilackarms",
 											Env: []v1.EnvVar{
 												{
-													Name: "POD_NAMESPACE",
+													Name: statusutils.PodNamespaceEnvName,
 													ValueFrom: &v1.EnvVarSource{
 														FieldRef: &v1.ObjectFieldSelector{APIVersion: "", FieldPath: "metadata.namespace"},
 													},

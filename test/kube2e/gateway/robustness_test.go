@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+
 	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/cliutils"
 
@@ -62,6 +64,7 @@ var _ = Describe("Robustness tests", func() {
 		kubeClient           kubernetes.Interface
 		proxyClient          gloov1.ProxyClient
 		virtualServiceClient gatewayv1.VirtualServiceClient
+		statusClient         resources.StatusClient
 
 		appName        = "echo-app-for-robustness-test"
 		appDeployment  *appsv1.Deployment
@@ -101,6 +104,8 @@ var _ = Describe("Robustness tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = proxyClient.Register()
 		Expect(err).NotTo(HaveOccurred())
+
+		statusClient = gloostatusutils.GetStatusClientForNamespace(namespace)
 
 		appDeployment, appService, err = createEchoDeploymentAndService(kubeClient, testHelper.InstallNamespace, appName)
 		Expect(err).NotTo(HaveOccurred())
@@ -225,7 +230,7 @@ var _ = Describe("Robustness tests", func() {
 				},
 			})
 
-			virtualServiceReconciler := gatewayv1.NewVirtualServiceReconciler(virtualServiceClient)
+			virtualServiceReconciler := gatewayv1.NewVirtualServiceReconciler(virtualServiceClient, statusClient)
 			err = virtualServiceReconciler.Reconcile(testHelper.InstallNamespace, gatewayv1.VirtualServiceList{virtualService}, nil, clients.ListOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
