@@ -270,6 +270,9 @@ func getErrors(err error) []string {
 		}
 		return errorStrings
 	}
+	if err == nil {
+		return []string{}
+	}
 	return []string{err.Error()}
 }
 
