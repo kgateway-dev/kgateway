@@ -56,7 +56,7 @@ var (
 	}
 
 	GlooValidationResponseLengthError = func(resp *validation.GlooValidationServiceResponse) error {
-		return errors.Errorf("Expected Gloo validation response to contain 1 report, but contained %d", len(resp.GetGlooValidationReports()))
+		return errors.Errorf("Expected Gloo validation response to contain 1 report, but contained %d", len(resp.GetValidationReports()))
 	}
 
 	mValidConfig = utils2.MakeGauge("validation.gateway.solo.io/valid_config", "A boolean indicating whether gloo config is valid")
@@ -270,7 +270,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 			continue
 		}
 
-		if len(glooValidationResponse.GetGlooValidationReports()) != 1 {
+		if len(glooValidationResponse.GetValidationReports()) != 1 {
 			err := GlooValidationResponseLengthError(glooValidationResponse)
 			if v.ignoreProxyValidationFailure {
 				contextutils.LoggerFrom(ctx).Error(err)
@@ -280,7 +280,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 			continue
 		}
 
-		proxyReport := glooValidationResponse.GetGlooValidationReports()[0].GetProxyReport()
+		proxyReport := glooValidationResponse.GetValidationReports()[0].GetProxyReport()
 		proxyReports[proxy] = proxyReport
 		if err := validationutils.GetProxyError(proxyReport); err != nil {
 			errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
@@ -608,11 +608,11 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 		return nil, err
 	}
 
-	if len(response.GetGlooValidationReports()) == 0 {
+	if len(response.GetValidationReports()) == 0 {
 		return &Reports{}, nil
 	}
 	// TODO(mitchaman) handle multiple proxies
-	for _, report := range response.GetGlooValidationReports() {
+	for _, report := range response.GetValidationReports() {
 		for _, upstreamReport := range report.GetUpstreamReports() {
 			if upstreamReport.GetResourceRef().Equal(us.GetMetadata().Ref()) {
 				return &Reports{
@@ -629,18 +629,18 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 func (v *validator) ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*Reports, error) {
 	response, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
 		// Sending a nil proxy causes the upstream to be translated with all proxies in gloo's snapshot
-		Proxy:            nil,
-		DeletedUpstreams: []*core.ResourceRef{us},
+		Proxy: nil,
+		//DeletedUpstreams: []*core.ResourceRef{us}, // TODO handle deleted upstreams
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	if len(response.GetGlooValidationReports()) == 0 {
+	if len(response.GetValidationReports()) == 0 {
 		return &Reports{}, nil
 	}
 	// TODO(mitchaman) handle multiple proxies
-	for _, report := range response.GetGlooValidationReports() {
+	for _, report := range response.GetValidationReports() {
 		for _, upstreamReport := range report.GetUpstreamReports() {
 			if upstreamReport.GetResourceRef().Equal(us) {
 				return &Reports{

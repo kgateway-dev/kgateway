@@ -26,15 +26,14 @@ message GlooValidationServiceRequest {
     gloo.solo.io.Proxy proxy = 1;
 
     repeated gloo.solo.io.Upstream upstreams = 2;
-    repeated core.solo.io.ResourceRef deleted_upstreams = 3;
 }
 
 message GlooValidationServiceResponse {
-    repeated GlooValidationReport gloo_validation_reports = 1;
+    repeated ValidationReport validation_reports = 1;
 }
 
-// A Gloo validation report represents the warnings/errors produced during a single translation loop of a proxy
-message GlooValidationReport {
+// A validation report represents the warnings/errors produced during a single translation loop of a proxy
+message ValidationReport {
     ProxyReport proxy_report = 1;
     repeated ResourceReport upstream_reports = 2;
 }
@@ -61,7 +60,6 @@ message NotifyOnResyncResponse {
 * If the report contains no errors, the (sub-)resource is valid.
 */
 message ProxyReport {
-    core.solo.io.ResourceRef proxy_ref = 1;
     repeated ListenerReport listener_reports = 2;
 }
 

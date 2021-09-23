@@ -73,23 +73,6 @@ func (m *GlooValidationServiceRequest) Equal(that interface{}) bool {
 
 	}
 
-	if len(m.GetDeletedUpstreams()) != len(target.GetDeletedUpstreams()) {
-		return false
-	}
-	for idx, v := range m.GetDeletedUpstreams() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetDeletedUpstreams()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetDeletedUpstreams()[idx]) {
-				return false
-			}
-		}
-
-	}
-
 	return true
 }
 
@@ -114,17 +97,17 @@ func (m *GlooValidationServiceResponse) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetGlooValidationReports()) != len(target.GetGlooValidationReports()) {
+	if len(m.GetValidationReports()) != len(target.GetValidationReports()) {
 		return false
 	}
-	for idx, v := range m.GetGlooValidationReports() {
+	for idx, v := range m.GetValidationReports() {
 
 		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetGlooValidationReports()[idx]) {
+			if !h.Equal(target.GetValidationReports()[idx]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetGlooValidationReports()[idx]) {
+			if !proto.Equal(v, target.GetValidationReports()[idx]) {
 				return false
 			}
 		}
@@ -135,14 +118,14 @@ func (m *GlooValidationServiceResponse) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *GlooValidationReport) Equal(that interface{}) bool {
+func (m *ValidationReport) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*GlooValidationReport)
+	target, ok := that.(*ValidationReport)
 	if !ok {
-		that2, ok := that.(GlooValidationReport)
+		that2, ok := that.(ValidationReport)
 		if ok {
 			target = &that2
 		} else {
@@ -308,16 +291,6 @@ func (m *ProxyReport) Equal(that interface{}) bool {
 		return m == nil
 	} else if m == nil {
 		return false
-	}
-
-	if h, ok := interface{}(m.GetProxyRef()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetProxyRef()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetProxyRef(), target.GetProxyRef()) {
-			return false
-		}
 	}
 
 	if len(m.GetListenerReports()) != len(target.GetListenerReports()) {

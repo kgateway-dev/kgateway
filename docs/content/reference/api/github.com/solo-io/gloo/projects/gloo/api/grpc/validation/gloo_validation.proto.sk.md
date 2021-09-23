@@ -13,7 +13,7 @@ weight: 5
 
 - [GlooValidationServiceRequest](#gloovalidationservicerequest)
 - [GlooValidationServiceResponse](#gloovalidationserviceresponse)
-- [GlooValidationReport](#gloovalidationreport)
+- [ValidationReport](#validationreport)
 - [ResourceReport](#resourcereport)
 - [NotifyOnResyncRequest](#notifyonresyncrequest)
 - [NotifyOnResyncResponse](#notifyonresyncresponse)
@@ -56,7 +56,6 @@ weight: 5
 ```yaml
 "proxy": .gloo.solo.io.Proxy
 "upstreams": []gloo.solo.io.Upstream
-"deletedUpstreams": []core.solo.io.ResourceRef
 
 ```
 
@@ -64,7 +63,6 @@ weight: 5
 | ----- | ---- | ----------- | 
 | `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) | If a proxy is provided in the request, the response will contain only the report for that proxy. If no proxy is provided, the response will contain a report for each proxy in the Gloo API snapshot. |
 | `upstreams` | [[]gloo.solo.io.Upstream](../../../v1/upstream.proto.sk/#upstream) |  |
-| `deletedUpstreams` | [[]core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 
 
 
@@ -75,22 +73,22 @@ weight: 5
 
 
 ```yaml
-"glooValidationReports": []gloo.solo.io.GlooValidationReport
+"validationReports": []gloo.solo.io.ValidationReport
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `glooValidationReports` | [[]gloo.solo.io.GlooValidationReport](../gloo_validation.proto.sk/#gloovalidationreport) |  |
+| `validationReports` | [[]gloo.solo.io.ValidationReport](../gloo_validation.proto.sk/#validationreport) |  |
 
 
 
 
 ---
-### GlooValidationReport
+### ValidationReport
 
  
-A Gloo validation report represents the warnings/errors produced during a single translation loop of a proxy
+A validation report represents the warnings/errors produced during a single translation loop of a proxy
 
 ```yaml
 "proxyReport": .gloo.solo.io.ProxyReport
@@ -168,14 +166,12 @@ a route report corresponding to each route on the listener.
 If the report contains no errors, the (sub-)resource is valid.
 
 ```yaml
-"proxyRef": .core.solo.io.ResourceRef
 "listenerReports": []gloo.solo.io.ListenerReport
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `proxyRef` | [.core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 | `listenerReports` | [[]gloo.solo.io.ListenerReport](../gloo_validation.proto.sk/#listenerreport) |  |
 
 

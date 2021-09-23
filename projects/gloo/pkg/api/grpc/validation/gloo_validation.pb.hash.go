@@ -82,30 +82,6 @@ func (m *GlooValidationServiceRequest) Hash(hasher hash.Hash64) (uint64, error) 
 
 	}
 
-	for _, v := range m.GetDeletedUpstreams() {
-
-		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = hasher.Write([]byte("")); err != nil {
-				return 0, err
-			}
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
-				return 0, err
-			} else {
-				if _, err = hasher.Write([]byte("")); err != nil {
-					return 0, err
-				}
-				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-					return 0, err
-				}
-			}
-		}
-
-	}
-
 	return hasher.Sum64(), nil
 }
 
@@ -122,7 +98,7 @@ func (m *GlooValidationServiceResponse) Hash(hasher hash.Hash64) (uint64, error)
 		return 0, err
 	}
 
-	for _, v := range m.GetGlooValidationReports() {
+	for _, v := range m.GetValidationReports() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("")); err != nil {
@@ -150,7 +126,7 @@ func (m *GlooValidationServiceResponse) Hash(hasher hash.Hash64) (uint64, error)
 }
 
 // Hash function
-func (m *GlooValidationReport) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *ValidationReport) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -158,7 +134,7 @@ func (m *GlooValidationReport) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation.GlooValidationReport")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation.ValidationReport")); err != nil {
 		return 0, err
 	}
 
@@ -304,26 +280,6 @@ func (m *ProxyReport) Hash(hasher hash.Hash64) (uint64, error) {
 	var err error
 	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation.ProxyReport")); err != nil {
 		return 0, err
-	}
-
-	if h, ok := interface{}(m.GetProxyRef()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("ProxyRef")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetProxyRef(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("ProxyRef")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
 	}
 
 	for _, v := range m.GetListenerReports() {

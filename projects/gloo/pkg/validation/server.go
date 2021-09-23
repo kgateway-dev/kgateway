@@ -180,7 +180,7 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 
 	logger := contextutils.LoggerFrom(ctx)
 
-	var glooValidationReports []*validation.GlooValidationReport
+	var validationReports []*validation.ValidationReport
 	var proxiesToValidate v1.ProxyList
 	if req.GetProxy() != nil {
 		proxiesToValidate = v1.ProxyList{req.GetProxy()}
@@ -199,11 +199,11 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 		s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
 		routeErrorToWarnings(resourceReports, proxyReport)
 
-		glooValidationReports = append(glooValidationReports, convertToGlooValidationReport(proxyReport, resourceReports))
+		validationReports = append(validationReports, convertToValidationReport(proxyReport, resourceReports))
 	}
 
 	return &validation.GlooValidationServiceResponse{
-		GlooValidationReports: glooValidationReports,
+		ValidationReports: validationReports,
 	}, nil
 }
 
@@ -240,7 +240,7 @@ func applyRequestToSnapshot(snap *v1.ApiSnapshot, req *validation.GlooValidation
 	}
 }
 
-func convertToGlooValidationReport(proxyReport *validation.ProxyReport, resourceReports reporter.ResourceReports) *validation.GlooValidationReport {
+func convertToValidationReport(proxyReport *validation.ProxyReport, resourceReports reporter.ResourceReports) *validation.ValidationReport {
 	var upstreamReports []*validation.ResourceReport
 
 	for resource, report := range resourceReports {
@@ -255,7 +255,7 @@ func convertToGlooValidationReport(proxyReport *validation.ProxyReport, resource
 		// TODO add other resources types here
 	}
 
-	return &validation.GlooValidationReport{
+	return &validation.ValidationReport{
 		ProxyReport:     proxyReport,
 		UpstreamReports: upstreamReports,
 	}
