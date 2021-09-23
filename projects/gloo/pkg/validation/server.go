@@ -180,6 +180,8 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 
 	logger := contextutils.LoggerFrom(ctx)
 
+	logger.Infof("received proxy validation request")
+
 	var validationReports []*validation.ValidationReport
 	var proxiesToValidate v1.ProxyList
 	if req.GetProxy() != nil {
@@ -219,23 +221,22 @@ func applyRequestToSnapshot(snap *v1.ApiSnapshot, req *validation.GlooValidation
 			}
 		}
 	}
-	if req.GetUpstreams() != nil {
-		for _, us := range req.GetUpstreams() {
-			usRef := us.GetMetadata().Ref()
 
-			var isUpdate bool
-			for i, existingUs := range snap.Upstreams {
-				if existingUs.GetMetadata().Ref().Equal(usRef) {
-					// replace the existing upstream in the snapshot
-					snap.Upstreams[i] = us
-					isUpdate = true
-					break
-				}
+	for _, us := range req.GetUpstreams() {
+		usRef := us.GetMetadata().Ref()
+
+		var isUpdate bool
+		for i, existingUs := range snap.Upstreams {
+			if existingUs.GetMetadata().Ref().Equal(usRef) {
+				// replace the existing upstream in the snapshot
+				snap.Upstreams[i] = us
+				isUpdate = true
+				break
 			}
-			if !isUpdate {
-				snap.Upstreams = append(snap.Upstreams, us)
-				snap.Upstreams.Sort()
-			}
+		}
+		if !isUpdate {
+			snap.Upstreams = append(snap.Upstreams, us)
+			snap.Upstreams.Sort()
 		}
 	}
 }
