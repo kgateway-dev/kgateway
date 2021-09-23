@@ -623,7 +623,7 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 			}
 		}
 	}
-	return nil, errors.Errorf("Report for upstream %s~%s not found in response.", us.GetMetadata().GetNamespace(), us.GetMetadata().GetName())
+	return &Reports{}, nil
 }
 
 func (v *validator) ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*Reports, error) {
@@ -651,13 +651,15 @@ func (v *validator) ValidateDeleteUpstream(ctx context.Context, us *core.Resourc
 			}
 		}
 	}
-	return nil, errors.Errorf("Report for upstream %s~%s not found in response.", us.GetNamespace(), us.GetName())
+	return &Reports{}, nil
 }
 
 func (v *validator) sendGlooValidationServiceRequest(
 	ctx context.Context,
 	req *validation.GlooValidationServiceRequest,
 ) (*validation.GlooValidationServiceResponse, error) {
+	logger := contextutils.LoggerFrom(ctx)
+	logger.Infof("mitchaman - Sending request to gloo validation service: %s", req.String())
 	var response *validation.GlooValidationServiceResponse
 	err := retry.Do(func() error {
 		rpt, err := v.validationClient.Validate(ctx, req)
@@ -670,13 +672,13 @@ func (v *validator) sendGlooValidationServiceRequest(
 	if err != nil {
 		err = errors.Wrapf(err, "failed to communicate with Gloo validation server")
 		if v.ignoreProxyValidationFailure {
-			contextutils.LoggerFrom(ctx).Error(err)
+			logger.Error(err)
 		} else {
 			return nil, err
 		}
 	}
-	// DO_NOT_SUBMIT: Remove logging
-	contextutils.LoggerFrom(ctx).Debugf("resp: %v\n", response)
+
+	logger.Infof("mitchaman - Received response from gloo validation service: %v", response)
 	return response, nil
 }
 

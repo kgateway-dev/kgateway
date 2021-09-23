@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway/pkg/validation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -47,6 +48,22 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 
 	gateway := defaults.DefaultGateway("namespace")
 	vs := defaults.DefaultVirtualService("namespace", "vs")
+	upstream := &gloov1.Upstream{
+		Metadata: &core.Metadata{
+			Name:      "us",
+			Namespace: "namespace",
+		},
+		UpstreamType: &gloov1.Upstream_Static{
+			Static: &static.UpstreamSpec{
+				Hosts: []*static.Host{
+					{
+						Addr: "localhost",
+						Port: 12345,
+					},
+				},
+			},
+		},
+	}
 
 	unstructuredList := unstructured.UnstructuredList{
 		Object: map[string]interface{}{
@@ -107,6 +124,8 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		Entry("invalid route table", false, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), routeTable),
 		Entry("valid unstructured list", true, nil, ListGVK, unstructuredList),
 		Entry("invalid unstructured list", false, nil, ListGVK, unstructuredList),
+		Entry("valid upstream", true, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), upstream),
+		Entry("invalid upstream", false, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), upstream),
 	)
 
 	Context("invalid yaml", func() {
@@ -364,11 +383,14 @@ func (v *mockValidator) ValidateUpstream(ctx context.Context, us *gloov1.Upstrea
 	if v.fValidateUpstream == nil {
 		return reports(), nil
 	}
-	return v.ValidateUpstream(ctx, us, dryRun)
+	return v.fValidateUpstream(ctx, us, dryRun)
 }
 
 func (v *mockValidator) ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*validation.Reports, error) {
-	panic("implement me")
+	if v.fValidateDeleteUpstream == nil {
+		return reports(), nil
+	}
+	return v.fValidateDeleteUpstream(ctx, us, dryRun)
 }
 
 func reports() *validation.Reports {
@@ -382,9 +404,6 @@ func reports() *validation.Reports {
 			}: {
 				ListenerReports: nil,
 			},
-		},
-		UpstreamReports: &validation.UpstreamReports{
-			// TODO(mitchaman)
 		},
 	}
 }
