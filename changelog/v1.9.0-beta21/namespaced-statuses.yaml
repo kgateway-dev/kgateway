@@ -4,4 +4,3 @@ changelog:
     resolvesIssue: true
     description: >
       Support having multiple statuses for a resource, one status per controller.
-      Requires the POD_NAMESPACE environment variable to be set for each controller.
