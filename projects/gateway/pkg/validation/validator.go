@@ -614,7 +614,7 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 		proxyReports    ProxyReports
 		upstreamReports UpstreamReports
 	)
-	for _, report := range response.GetGlooValidationReports() {
+	for _, report := range response.GetValidationReports() {
 		// Append proxy errors
 		proxyReports = append(proxyReports, report.GetProxyReport())
 		if err := validationutils.GetProxyError(report.GetProxyReport()); err != nil {

@@ -58,7 +58,6 @@ func MakeReport(proxy *v1.Proxy) *validation.ProxyReport {
 	}
 
 	return &validation.ProxyReport{
-		ProxyRef:        proxy.GetMetadata().Ref(),
 		ListenerReports: listenerReports,
 	}
 }

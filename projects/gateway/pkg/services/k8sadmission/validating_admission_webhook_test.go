@@ -396,10 +396,6 @@ func reports() *validation.Reports {
 	return &validation.Reports{
 		ProxyReports: &validation.ProxyReports{
 			&validation2.ProxyReport{
-				ProxyRef: &core.ResourceRef{
-					Name:      "listener-::-8080",
-					Namespace: "gloo-system",
-				},
 				ListenerReports: nil,
 			},
 		},
