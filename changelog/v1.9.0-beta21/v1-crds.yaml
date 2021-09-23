@@ -1,0 +1,5 @@
+changelog:
+  type: NEW_FEATURE
+  resolvesIssue: false
+  issueLink: https://github.com/solo-io/gloo/issues/4304
+  description: Generate CRDs using Kubernetes v1 API intstead of v1beta1 which is deprecated.
