@@ -5,6 +5,9 @@ import (
 	"io"
 	"os"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/cliutils"
@@ -28,7 +31,7 @@ func UpstreamGroupTable(upstreamGroups []*v1.UpstreamGroup, w io.Writer) {
 
 	for i, ug := range upstreamGroups {
 		name := ug.GetMetadata().GetName()
-		status := ug.GetStatus().GetState().String()
+		status := getAggregateUpstreamGroupStatus(ug)
 
 		weight := fmt.Sprint(totalWeight(ug))
 		details := upstreamGroupDetails(ug)
@@ -51,6 +54,12 @@ func UpstreamGroupTable(upstreamGroups []*v1.UpstreamGroup, w io.Writer) {
 
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.Render()
+}
+
+func getAggregateUpstreamGroupStatus(res resources.InputResource) string {
+	return AggregateNamespacedStatuses(res.GetNamespacedStatuses(), func(status *core.Status) string {
+		return status.GetState().String()
+	})
 }
 
 func totalWeight(ug *v1.UpstreamGroup) uint32 {

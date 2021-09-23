@@ -397,6 +397,14 @@ spec:
                     type: string
                 type: object
               type: object
+            namespacedStatuses:
+              properties:
+                statuses:
+                  additionalProperties:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  type: object
+              type: object
             observabilityOptions:
               properties:
                 grafanaIntegration:
@@ -464,9 +472,6 @@ spec:
               type: object
             refreshRate:
               type: string
-            status:
-              type: object
-              x-kubernetes-preserve-unknown-fields: true
             upstreamOptions:
               properties:
                 sslParameters:

@@ -43,7 +43,7 @@ func (r *RateLimitConfig) UnmarshalSpec(spec skres.Spec) error {
 	return protoutils.UnmarshalMapToProto(spec, &r.Spec)
 }
 
-func (r *RateLimitConfig) UnmarshalStatus(status skres.Status) error {
+func (r *RateLimitConfig) UnmarshalStatus(status skres.Status, unmarshaler resources.StatusUnmarshaler) error {
 	return protoutils.UnmarshalMapToProto(status, &r.Status)
 }
 
@@ -55,29 +55,32 @@ func (r *RateLimitConfig) MarshalStatus() (skres.Status, error) {
 	return protoutils.MarshalMapFromProto(&r.Status)
 }
 
+// Deprecated
 func (r *RateLimitConfig) GetStatus() *core.Status {
+	return r.convertRateLimitConfigStatusToSoloKitStatus(&r.Status)
+}
 
-	var outputState core.Status_State
-
-	switch r.Status.GetState() {
-	case types.RateLimitConfigStatus_PENDING:
-		outputState = core.Status_Pending
-	case types.RateLimitConfigStatus_ACCEPTED:
-		outputState = core.Status_Accepted
-	case types.RateLimitConfigStatus_REJECTED:
-		outputState = core.Status_Rejected
-	}
-
-	return &core.Status{
-		State:  outputState,
-		Reason: r.Status.GetMessage(),
+// Deprecated
+func (r *RateLimitConfig) SetStatus(status *core.Status) {
+	if status != nil {
+		r.Status = *r.convertSoloKitStatusToRateLimitConfigStatus(status)
 	}
 }
 
-func (r *RateLimitConfig) SetStatus(status *core.Status) {
+func (r *RateLimitConfig) GetNamespacedStatuses() *core.NamespacedStatuses {
+	panic("implement me")
+}
+
+func (r *RateLimitConfig) SetNamespacedStatuses(status *core.NamespacedStatuses) {
+	panic("implement me")
+}
+
+func (r *RateLimitConfig) convertSoloKitStatusToRateLimitConfigStatus(status *core.Status) *v1alpha1.RateLimitConfigStatus {
+	if status == nil {
+		return nil
+	}
 
 	var outputState types.RateLimitConfigStatus_State
-
 	switch status.GetState() {
 	case core.Status_Pending:
 		outputState = types.RateLimitConfigStatus_PENDING
@@ -90,7 +93,30 @@ func (r *RateLimitConfig) SetStatus(status *core.Status) {
 		panic("cannot set WARNING status on RateLimitConfig resources")
 	}
 
-	r.Status.State = outputState
-	r.Status.Message = status.GetReason()
-	r.Status.ObservedGeneration = r.Generation
+	return &v1alpha1.RateLimitConfigStatus{
+		State:              outputState,
+		Message:            status.GetReason(),
+		ObservedGeneration: r.GetGeneration(),
+	}
+}
+
+func (r *RateLimitConfig) convertRateLimitConfigStatusToSoloKitStatus(status *v1alpha1.RateLimitConfigStatus) *core.Status {
+	if status == nil {
+		return nil
+	}
+
+	var outputState core.Status_State
+	switch status.GetState() {
+	case types.RateLimitConfigStatus_PENDING:
+		outputState = core.Status_Pending
+	case types.RateLimitConfigStatus_ACCEPTED:
+		outputState = core.Status_Accepted
+	case types.RateLimitConfigStatus_REJECTED:
+		outputState = core.Status_Rejected
+	}
+
+	return &core.Status{
+		State:  outputState,
+		Reason: status.GetMessage(),
+	}
 }

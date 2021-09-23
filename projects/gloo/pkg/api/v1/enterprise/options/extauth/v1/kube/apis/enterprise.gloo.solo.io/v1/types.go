@@ -27,8 +27,8 @@ type AuthConfig struct {
 
 	// Spec defines the implementation of this definition.
 	// +optional
-	Spec   api.AuthConfig `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
-	Status core.Status    `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+	Spec   api.AuthConfig          `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Status core.NamespacedStatuses `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 func (o *AuthConfig) MarshalJSON() ([]byte, error) {
@@ -37,7 +37,7 @@ func (o *AuthConfig) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "status")
+	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
@@ -63,9 +63,9 @@ func (o *AuthConfig) UnmarshalJSON(data []byte) error {
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
 	}
-	if spec.Status != nil {
-		o.Status = *spec.Status
-		o.Spec.Status = nil
+	if spec.GetNamespacedStatuses() != nil {
+		o.Status = *spec.NamespacedStatuses
+		o.Spec.NamespacedStatuses = nil
 	}
 
 	return nil

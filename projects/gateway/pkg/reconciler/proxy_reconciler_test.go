@@ -1,12 +1,15 @@
 package reconciler_test
 
 import (
+	"context"
+
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	. "github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
@@ -21,8 +24,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-
-	"context"
 
 	errors "github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -56,6 +57,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		})
 
 		validationClient *mock_validation.MockGlooValidationServiceClient
+		statusClient     resources.StatusClient
 
 		reconciler ProxyReconciler
 	)
@@ -77,7 +79,8 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				}, nil
 			}).AnyTimes()
 
-		reconciler = NewProxyReconciler(validationClient, proxyClient)
+		statusClient = statusutils.GetStatusClientFromEnvOrDefault(ns)
+		reconciler = NewProxyReconciler(validationClient, proxyClient, statusClient)
 
 		snap = samples.SimpleGatewaySnapshot(us, ns)
 
@@ -152,7 +155,8 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				// simulate gloo accepting the proxy resource
 				liveProxy, err := proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
-				liveProxy.Status.State = core.Status_Accepted
+				statusClient.SetStatus(liveProxy, &core.Status{State: core.Status_Accepted})
+
 				liveProxy, err = proxyClient.Write(liveProxy, clients.WriteOpts{OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 
@@ -165,7 +169,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				// typically the reconciler sets resources to pending for processing, but here
 				// we expect the status to be carried over because nothing changed from gloo's
 				// point of view
-				Expect(px.GetStatus().State).To(Equal(core.Status_Accepted))
+				Expect(statusClient.GetStatus(px).GetState()).To(Equal(core.Status_Accepted))
 
 				// after reconcile with the updated snapshot, we confirm that gateway-specific
 				// parts of the proxy have been updated

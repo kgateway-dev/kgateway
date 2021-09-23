@@ -24,9 +24,9 @@ func secretsToResources(list SecretList) resources.ResourceList {
 	return resourceList
 }
 
-func NewSecretReconciler(client SecretClient) SecretReconciler {
+func NewSecretReconciler(client SecretClient, statusSetter resources.StatusSetter) SecretReconciler {
 	return &secretReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

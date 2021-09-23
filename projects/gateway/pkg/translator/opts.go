@@ -8,6 +8,7 @@ import (
 type Opts struct {
 	GlooNamespace                 string
 	WriteNamespace                string
+	StatusReporterNamespace       string
 	WatchNamespaces               []string
 	Gateways                      factory.ResourceClientFactory
 	VirtualServices               factory.ResourceClientFactory

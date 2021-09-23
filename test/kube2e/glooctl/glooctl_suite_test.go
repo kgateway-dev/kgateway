@@ -8,10 +8,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/k8s-utils/testutils/helper"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 
 	. "github.com/onsi/ginkgo"
@@ -37,6 +40,7 @@ func TestGlooctl(t *testing.T) {
 var testHelper *helper.SoloTestHelper
 
 var ctx, _ = context.WithCancel(context.Background())
+var namespace = defaults.GlooSystem
 var _ = BeforeSuite(StartTestHelper)
 var _ = AfterSuite(TearDownTestHelper)
 
@@ -44,10 +48,13 @@ func StartTestHelper() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 
+	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
+	Expect(err).NotTo(HaveOccurred())
+
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
-		defaults.InstallNamespace = "gloo-system"
+		defaults.InstallNamespace = namespace
 		defaults.Verbose = true
 		return defaults
 	})
@@ -88,6 +95,8 @@ gatewayProxies:
 }
 
 func TearDownTestHelper() {
+	err := os.Unsetenv(statusutils.PodNamespaceEnvName)
+	Expect(err).NotTo(HaveOccurred())
 	if os.Getenv("TEAR_DOWN") == "true" {
 		Expect(testHelper).ToNot(BeNil())
 		err := testHelper.UninstallGloo()

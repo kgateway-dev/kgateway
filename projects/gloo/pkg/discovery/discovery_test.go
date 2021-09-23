@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,6 +14,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/discovery"
@@ -22,10 +25,14 @@ var _ = Describe("Discovery", func() {
 	var (
 		ctx    context.Context
 		cancel context.CancelFunc
+
+		statusClient resources.StatusClient
 	)
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
+
+		statusClient = statusutils.GetStatusClientForNamespace("default")
 	})
 
 	AfterEach(func() {
@@ -60,6 +67,7 @@ var _ = Describe("Discovery", func() {
 
 		eds := NewEndpointDiscovery(nil, ns,
 			endpointClient,
+			statusClient,
 			[]DiscoveryPlugin{
 				redEdsPlugin,
 				blueEdsPlugin,

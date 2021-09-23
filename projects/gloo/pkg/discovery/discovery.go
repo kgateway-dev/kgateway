@@ -59,15 +59,17 @@ type EndpointDiscovery struct {
 	lock           sync.Mutex
 }
 
-func NewEndpointDiscovery(watchNamespaces []string,
+func NewEndpointDiscovery(
+	watchNamespaces []string,
 	writeNamespace string,
 	endpointsClient v1.EndpointClient,
+	statusSetter resources.StatusSetter,
 	discoveryPlugins []DiscoveryPlugin) *EndpointDiscovery {
 
 	return &EndpointDiscovery{
 		watchNamespaces:    watchNamespaces,
 		writeNamespace:     writeNamespace,
-		endpointReconciler: v1.NewEndpointReconciler(endpointsClient),
+		endpointReconciler: v1.NewEndpointReconciler(endpointsClient, statusSetter),
 		discoveryPlugins:   discoveryPlugins,
 		ready:              make(chan struct{}),
 		endpointsByEds:     make(map[DiscoveryPlugin]v1.EndpointList),
@@ -75,13 +77,16 @@ func NewEndpointDiscovery(watchNamespaces []string,
 	}
 }
 
-func NewUpstreamDiscovery(watchNamespaces []string, writeNamespace string,
+func NewUpstreamDiscovery(
+	watchNamespaces []string,
+	writeNamespace string,
 	upstreamClient v1.UpstreamClient,
+	statusSetter resources.StatusSetter,
 	discoveryPlugins []DiscoveryPlugin) *UpstreamDiscovery {
 	return &UpstreamDiscovery{
 		watchNamespaces:        watchNamespaces,
 		writeNamespace:         writeNamespace,
-		upstreamReconciler:     v1.NewUpstreamReconciler(upstreamClient),
+		upstreamReconciler:     v1.NewUpstreamReconciler(upstreamClient, statusSetter),
 		discoveryPlugins:       discoveryPlugins,
 		latestDesiredUpstreams: make(map[DiscoveryPlugin]v1.UpstreamList),
 	}

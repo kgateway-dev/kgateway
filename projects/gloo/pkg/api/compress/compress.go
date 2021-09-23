@@ -135,7 +135,7 @@ func MarshalSpec(in resources.Resource) (v1.Spec, error) {
 	}
 
 	delete(data, "metadata")
-	delete(data, "status")
+	delete(data, "namespacedStatuses")
 	// save this as usual:
 	var spec v1.Spec
 	spec = data
@@ -148,23 +148,18 @@ func MarshalSpec(in resources.Resource) (v1.Spec, error) {
 	return spec, nil
 }
 
-func UnmarshalStatus(in resources.InputResource, status v1.Status) error {
-	typedStatus := core.Status{}
-	if err := protoutils.UnmarshalMapToProto(status, &typedStatus); err != nil {
-		return err
-	}
-	in.SetStatus(&typedStatus)
-	return nil
+func UnmarshalStatus(in resources.InputResource, status v1.Status, unmarshaler resources.StatusUnmarshaler) error {
+	return unmarshaler.UnmarshalStatus(status, in)
 }
 
 func MarshalStatus(in resources.InputResource) (v1.Status, error) {
-	statusProto := in.GetStatus()
-	if statusProto == nil {
+	namespacedStatuses := in.GetNamespacedStatuses()
+	if namespacedStatuses == nil {
 		return v1.Status{}, nil
 	}
-	statusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(statusProto)
+	namespacedStatusMap, err := protoutils.MarshalMapFromProtoWithEnumsAsInts(namespacedStatuses)
 	if err != nil {
 		return nil, crd.MarshalErr(err, "resource status to map")
 	}
-	return statusMap, nil
+	return namespacedStatusMap, nil
 }

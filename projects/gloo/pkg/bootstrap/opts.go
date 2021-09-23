@@ -21,24 +21,25 @@ import (
 )
 
 type Opts struct {
-	WriteNamespace    string
-	WatchNamespaces   []string
-	Upstreams         factory.ResourceClientFactory
-	KubeServiceClient skkube.ServiceClient
-	UpstreamGroups    factory.ResourceClientFactory
-	Proxies           factory.ResourceClientFactory
-	Secrets           factory.ResourceClientFactory
-	Artifacts         factory.ResourceClientFactory
-	AuthConfigs       factory.ResourceClientFactory
-	RateLimitConfigs  factory.ResourceClientFactory
-	KubeClient        kubernetes.Interface
-	Consul            Consul
-	WatchOpts         clients.WatchOpts
-	DevMode           bool
-	ControlPlane      ControlPlane
-	ValidationServer  ValidationServer
-	Settings          *v1.Settings
-	KubeCoreCache     corecache.KubeCoreCache
+	WriteNamespace          string
+	StatusReporterNamespace string
+	WatchNamespaces         []string
+	Upstreams               factory.ResourceClientFactory
+	KubeServiceClient       skkube.ServiceClient
+	UpstreamGroups          factory.ResourceClientFactory
+	Proxies                 factory.ResourceClientFactory
+	Secrets                 factory.ResourceClientFactory
+	Artifacts               factory.ResourceClientFactory
+	AuthConfigs             factory.ResourceClientFactory
+	RateLimitConfigs        factory.ResourceClientFactory
+	KubeClient              kubernetes.Interface
+	Consul                  Consul
+	WatchOpts               clients.WatchOpts
+	DevMode                 bool
+	ControlPlane            ControlPlane
+	ValidationServer        ValidationServer
+	Settings                *v1.Settings
+	KubeCoreCache           corecache.KubeCoreCache
 }
 
 type Consul struct {

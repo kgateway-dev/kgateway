@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -307,6 +309,7 @@ var _ = Describe("Happy path", func() {
 					})
 
 					Context("sni", func() {
+
 						BeforeEach(func() {
 							upSsl.GetStatic().GetHosts()[0].SniAddr = "solo-sni-test"
 							upSsl.GetStatic().GetHosts()[1].SniAddr = "solo-sni-test2"
@@ -314,6 +317,7 @@ var _ = Describe("Happy path", func() {
 							_, err := testClients.UpstreamClient.Write(upSsl, clients.WriteOpts{})
 							Expect(err).NotTo(HaveOccurred())
 						})
+
 						It("should work with ssl", func() {
 							proxycli := testClients.ProxyClient
 							proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, upSsl.Metadata.Ref())
@@ -351,30 +355,18 @@ var _ = Describe("Happy path", func() {
 
 				Context("sad path", func() {
 					It("should error the proxy with two listeners with the same bind address", func() {
-
-						proxycli := testClients.ProxyClient
+						// create a proxy with two identical listeners to see errors come up
 						proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
-						// add two identical listeners two see errors come up
 						proxy.Listeners = append(proxy.Listeners, proxy.Listeners[0])
-						_, err := proxycli.Write(proxy, clients.WriteOpts{})
+
+						// persist the proxy
+						_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 						Expect(err).NotTo(HaveOccurred())
 
-						getStatus := func() (core.Status_State, error) {
-							updatedProxy, err := proxycli.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
-							if err != nil {
-								return 0, err
-							}
-							if updatedProxy.GetStatus() == nil {
-								return 0, nil
-							}
-							return updatedProxy.GetStatus().GetState(), nil
-						}
-
-						Eventually(getStatus, "10s").ShouldNot(Equal(core.Status_Pending))
-						st, err := getStatus()
-						Expect(err).NotTo(HaveOccurred())
-						Expect(st).To(Equal(core.Status_Rejected))
-
+						// eventually the proxy is rejected
+						gloohelpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
+							return testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
+						})
 					})
 				})
 			})
@@ -470,14 +462,6 @@ var _ = Describe("Happy path", func() {
 					return nil, fmt.Errorf("not found")
 				}
 
-				getStatus := func() (core.Status_State, error) {
-					u, err := getUpstream()
-					if err != nil {
-						return core.Status_Pending, err
-					}
-					return u.GetStatus().GetState(), nil
-				}
-
 				Context("specific namespace", func() {
 
 					BeforeEach(func() {
@@ -502,7 +486,9 @@ var _ = Describe("Happy path", func() {
 						err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 						Expect(err).NotTo(HaveOccurred())
 
-						Eventually(getStatus, "20s", "0.5s").Should(Equal(core.Status_Accepted))
+						gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+							return getUpstream()
+						}, "20s", ".5s")
 					})
 
 					It("should discover service", func() {
@@ -558,7 +544,9 @@ var _ = Describe("Happy path", func() {
 					})
 
 					It("watch all namespaces", func() {
-						Eventually(getStatus, "20s", "0.5s").Should(Equal(core.Status_Accepted))
+						gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+							return getUpstream()
+						})
 
 						up, err := getUpstream()
 						Expect(err).NotTo(HaveOccurred())

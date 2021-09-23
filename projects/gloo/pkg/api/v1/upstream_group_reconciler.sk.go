@@ -24,9 +24,9 @@ func upstreamGroupsToResources(list UpstreamGroupList) resources.ResourceList {
 	return resourceList
 }
 
-func NewUpstreamGroupReconciler(client UpstreamGroupClient) UpstreamGroupReconciler {
+func NewUpstreamGroupReconciler(client UpstreamGroupClient, statusSetter resources.StatusSetter) UpstreamGroupReconciler {
 	return &upstreamGroupReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

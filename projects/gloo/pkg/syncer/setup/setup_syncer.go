@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 
 	"github.com/golang/protobuf/ptypes/duration"
@@ -277,6 +279,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		return err
 	}
 	opts.WriteNamespace = writeNamespace
+	opts.StatusReporterNamespace = gloostatusutils.GetStatusReporterNamespaceOrDefault(writeNamespace)
 	opts.WatchNamespaces = watchNamespaces
 	opts.WatchOpts = clients.WatchOpts{
 		Ctx:         ctx,
@@ -476,7 +479,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 
 	errs := make(chan error)
 
-	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, discoveryPlugins)
+	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+
+	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, statusClient, discoveryPlugins)
 	edsSync := discovery.NewEdsSyncer(disc, discovery.Opts{}, watchOpts.RefreshRate)
 	discoveryCache := v1.NewEdsEmitter(hybridUsClient)
 	edsEventLoop := v1.NewEdsEventLoop(discoveryCache, edsSync)
@@ -522,6 +527,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 	)
 
 	rpt := reporter.NewReporter("gloo",
+		statusClient,
 		hybridUsClient.BaseClient(),
 		proxyClient.BaseClient(),
 		upstreamGroupClient.BaseClient(),

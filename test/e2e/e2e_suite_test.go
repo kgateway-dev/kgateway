@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -18,6 +20,8 @@ import (
 var (
 	envoyFactory  *services.EnvoyFactory
 	consulFactory *services.ConsulFactory
+
+	namespace = "e2e-test-ns"
 )
 
 var _ = BeforeSuite(func() {
@@ -27,11 +31,17 @@ var _ = BeforeSuite(func() {
 	consulFactory, err = services.NewConsulFactory()
 	Expect(err).NotTo(HaveOccurred())
 
+	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
+	Expect(err).NotTo(HaveOccurred())
+
 })
 
 var _ = AfterSuite(func() {
 	_ = envoyFactory.Clean()
 	_ = consulFactory.Clean()
+
+	err := os.Unsetenv(statusutils.PodNamespaceEnvName)
+	Expect(err).NotTo(HaveOccurred())
 })
 
 func TestE2e(t *testing.T) {

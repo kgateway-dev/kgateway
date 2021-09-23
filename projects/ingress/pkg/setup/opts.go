@@ -10,6 +10,7 @@ type Opts struct {
 	KnativeExternalProxyAddress string
 	KnativeInternalProxyAddress string
 	WriteNamespace              string
+	StatusReporterNamespace     string
 	WatchNamespaces             []string
 	Proxies                     factory.ResourceClientFactory
 	Upstreams                   factory.ResourceClientFactory
