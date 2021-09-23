@@ -2902,7 +2902,6 @@ webhooks:
        namespace: ` + namespace + `
        path: "/validation"
      caBundle: "" # update manually or use certgen job
-   matchPolicy: Exact
    rules:
      - operations: [ "CREATE", "UPDATE", "DELETE" ]
        apiGroups: ["gateway.solo.io"]
