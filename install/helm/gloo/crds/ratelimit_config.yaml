@@ -19,4 +19,5 @@ spec:
     subresources:
       status: {}
     schema:
-      openAPIV3Schema: {}
+      openAPIV3Schema:
+        type: object
