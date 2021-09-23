@@ -973,19 +973,37 @@ func (c *mockValidationClient) Validate(ctx context.Context, in *validation.Gloo
 }
 
 func acceptProxy(ctx context.Context, in *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error) {
-	return &validation.GlooValidationServiceResponse{ProxyReport: validationutils.MakeReport(in.Proxy)}, nil
+	return &validation.GlooValidationServiceResponse{
+		GlooValidationReports: []*validation.GlooValidationReport{
+			{
+				ProxyReport: validationutils.MakeReport(in.Proxy),
+			},
+		},
+	}, nil
 }
 
 func failProxy(ctx context.Context, in *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error) {
 	rpt := validationutils.MakeReport(in.Proxy)
 	validationutils.AppendListenerError(rpt.ListenerReports[0], validation.ListenerReport_Error_SSLConfigError, "you should try harder next time")
-	return &validation.GlooValidationServiceResponse{ProxyReport: rpt}, nil
+	return &validation.GlooValidationServiceResponse{
+		GlooValidationReports: []*validation.GlooValidationReport{
+			{
+				ProxyReport: rpt,
+			},
+		},
+	}, nil
 }
 
 func warnProxy(ctx context.Context, in *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error) {
 	rpt := validationutils.MakeReport(in.Proxy)
 	validationutils.AppendRouteWarning(rpt.ListenerReports[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0], validation.RouteReport_Warning_InvalidDestinationWarning, "you should try harder next time")
-	return &validation.GlooValidationServiceResponse{ProxyReport: rpt}, nil
+	return &validation.GlooValidationServiceResponse{
+		GlooValidationReports: []*validation.GlooValidationReport{
+			{
+				ProxyReport: rpt,
+			},
+		},
+	}, nil
 }
 
 func communicationErr(ctx context.Context, in *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error) {

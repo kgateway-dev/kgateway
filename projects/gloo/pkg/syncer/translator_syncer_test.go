@@ -446,7 +446,7 @@ type mockTranslator struct {
 	currentSnapshot    envoycache.Snapshot
 }
 
-func (t *mockTranslator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validation.GlooValidationServiceResponse, error) {
+func (t *mockTranslator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validation.ProxyReport, error) {
 	if t.reportErrs {
 		rpts := reporter.ResourceReports{}
 		rpts.AddError(proxy, errors.Errorf("hi, how ya doin'?"))
@@ -460,14 +460,14 @@ func (t *mockTranslator) Translate(params plugins.Params, proxy *v1.Proxy) (envo
 			}
 		}
 		if t.currentSnapshot != nil {
-			return t.currentSnapshot, rpts, &validation.GlooValidationServiceResponse{}, nil
+			return t.currentSnapshot, rpts, &validation.ProxyReport{}, nil
 		}
-		return envoycache.NilSnapshot{}, rpts, &validation.GlooValidationServiceResponse{}, nil
+		return envoycache.NilSnapshot{}, rpts, &validation.ProxyReport{}, nil
 	}
 	if t.currentSnapshot != nil {
-		return t.currentSnapshot, nil, &validation.GlooValidationServiceResponse{}, nil
+		return t.currentSnapshot, nil, &validation.ProxyReport{}, nil
 	}
-	return envoycache.NilSnapshot{}, nil, &validation.GlooValidationServiceResponse{}, nil
+	return envoycache.NilSnapshot{}, nil, &validation.ProxyReport{}, nil
 }
 
 var _ envoycache.SnapshotCache = &MockXdsCache{}
