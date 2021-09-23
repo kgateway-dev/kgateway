@@ -253,6 +253,7 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 			admissionReview.Response.UID = review.Request.UID
 		}
 	}
+	logger.Debugf("Returning AdmissionResponse: %s", admissionReview.Response)
 
 	resp, err := json.Marshal(admissionReview)
 	if err != nil {
@@ -330,11 +331,6 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	if reports == nil {
 		reports = &validation.Reports{ProxyReports: &validation.ProxyReports{}}
 	}
-	proxyReports := reports.ProxyReports
-	var proxies []*gloov1.Proxy
-	for proxy, _ := range *proxyReports {
-		proxies = append(proxies, proxy)
-	}
 
 	hasUnmarshalErr := false
 	if validationErrs != nil {
@@ -353,7 +349,6 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 			AdmissionResponse: &v1beta1.AdmissionResponse{
 				Allowed: true,
 			},
-			Proxies: proxies,
 		}
 	}
 
@@ -375,7 +370,6 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 				Details: details,
 			},
 		},
-		Proxies: proxies,
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway/pkg/validation"
+	validation2 "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -178,8 +179,6 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 
 			Expect(review.Response.Allowed).To(BeFalse())
 			Expect(review.Response.Result).ToNot(BeNil())
-			Expect(review.Proxies).To(HaveLen(1))
-			Expect(review.Proxies[0]).To(ContainSubstring("listener-::-8080"))
 		})
 	})
 
@@ -396,12 +395,11 @@ func (v *mockValidator) ValidateDeleteUpstream(ctx context.Context, us *core.Res
 func reports() *validation.Reports {
 	return &validation.Reports{
 		ProxyReports: &validation.ProxyReports{
-			{
-				Metadata: &core.Metadata{
+			&validation2.ProxyReport{
+				ProxyRef: &core.ResourceRef{
 					Name:      "listener-::-8080",
 					Namespace: "gloo-system",
 				},
-			}: {
 				ListenerReports: nil,
 			},
 		},

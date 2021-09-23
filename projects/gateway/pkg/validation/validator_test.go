@@ -68,13 +68,11 @@ var _ = Describe("Validator", func() {
 				reports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*(reports.ProxyReports)).To(HaveLen(1))
-				Expect(*(reports.ProxyReports)).To(HaveKey(ContainSubstring("listener-::-8080")))
 
 				// repeat to ensure any hashing doesn't short circuit returning the proxies
 				reports, err = v.ValidateRouteTable(context.TODO(), snap.RouteTables[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*(reports.ProxyReports)).To(HaveLen(1))
-				Expect(*(reports.ProxyReports)).To(HaveKey(ContainSubstring("listener-::-8080")))
 			})
 		})
 
@@ -292,13 +290,11 @@ var _ = Describe("Validator", func() {
 				reports, err := v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*(reports.ProxyReports)).To(HaveLen(1))
-				Expect(*(reports.ProxyReports)).To(HaveKey(ContainSubstring("listener-::-8080")))
 
 				// repeat to ensure any hashing doesn't short circuit returning the proxies
 				reports, err = v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*(reports.ProxyReports)).To(HaveLen(1))
-				Expect(*(reports.ProxyReports)).To(HaveKey(ContainSubstring("listener-::-8080")))
 			})
 		})
 		Context("no gateways for virtual service", func() {
@@ -611,13 +607,11 @@ var _ = Describe("Validator", func() {
 				reports, err := v.ValidateGateway(context.TODO(), snap.Gateways[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*(reports.ProxyReports)).To(HaveLen(1))
-				Expect(*(reports.ProxyReports)).To(HaveKey(ContainSubstring("listener-::-8080")))
 
 				// repeat to ensure any hashing doesn't short circuit returning the proxies
 				reports, err = v.ValidateGateway(context.TODO(), snap.Gateways[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(*(reports.ProxyReports)).To(HaveLen(1))
-				Expect(*(reports.ProxyReports)).To(HaveKey(ContainSubstring("listener-::-8080")))
 			})
 		})
 		Context("gw rejected", func() {
@@ -755,13 +749,11 @@ var _ = Describe("Validator", func() {
 				reports, merr := v.ValidateList(context.TODO(), toUnstructuredList(snap.VirtualServices[0]), false)
 				Expect(merr.ErrorOrNil()).NotTo(HaveOccurred())
 				Expect(*(reports.ProxyReports)).To(HaveLen(1))
-				Expect(*(reports.ProxyReports)).To(HaveKey(ContainSubstring("listener-::-8080")))
 
 				// repeat to ensure any hashing doesn't short circuit returning the proxies
 				reports, merr = v.ValidateList(context.TODO(), toUnstructuredList(snap.VirtualServices[0]), false)
 				Expect(merr.ErrorOrNil()).NotTo(HaveOccurred())
 				Expect(*(reports.ProxyReports)).To(HaveLen(1))
-				Expect(*(reports.ProxyReports)).To(HaveKey(ContainSubstring("listener-::-8080")))
 			})
 		})
 
@@ -954,7 +946,6 @@ var _ = Describe("Validator", func() {
 		})
 
 	})
-
 })
 
 type mockValidationClient struct {

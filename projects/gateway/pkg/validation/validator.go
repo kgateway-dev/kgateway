@@ -37,9 +37,8 @@ type Reports struct {
 	UpstreamReports *UpstreamReports
 }
 
-type ProxyReports map[*gloov1.Proxy]*validation.ProxyReport
-
-type UpstreamReports map[*core.ResourceRef]*validation.ResourceReport
+type ProxyReports []*validation.ProxyReport
+type UpstreamReports []*validation.ResourceReport
 
 var (
 	NotReadyErr = errors.Errorf("validation is not yet available. Waiting for first snapshot")
@@ -220,7 +219,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 
 	var (
 		errs         error
-		proxyReports ProxyReports = map[*gloov1.Proxy]*validation.ProxyReport{}
+		proxyReports ProxyReports
 	)
 	for _, proxyName := range proxyNames {
 		gatewayList := gatewaysByProxy[proxyName]
@@ -281,7 +280,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		}
 
 		proxyReport := glooValidationResponse.GetValidationReports()[0].GetProxyReport()
-		proxyReports[proxy] = proxyReport
+		proxyReports = append(proxyReports, proxyReport)
 		if err := validationutils.GetProxyError(proxyReport); err != nil {
 			errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
 			continue
@@ -330,10 +329,10 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 		var itemProxyReports, err = v.processItem(ctx, item)
 
 		errs = multierror.Append(errs, err)
-		for proxy, report := range *itemProxyReports.ProxyReports {
+		for _, report := range *itemProxyReports.ProxyReports {
 			// ok to return final proxy reports as the latest result includes latest proxy calculated
 			// for each resource, as we process incrementally, storing new state in memory as we go
-			proxyReports[proxy] = report
+			proxyReports = append(proxyReports, report)
 		}
 	}
 
@@ -599,6 +598,7 @@ func (v *validator) validateGatewayInternal(ctx context.Context, gw *v1.Gateway,
 }
 
 func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*Reports, error) {
+	logger := contextutils.LoggerFrom(ctx)
 	response, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
 		// Sending a nil proxy causes the upstream to be translated with all proxies in gloo's snapshot
 		Proxy:     nil,
@@ -607,51 +607,62 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 	if err != nil {
 		return nil, err
 	}
+	logger.Debugf("Got response from GlooValidationService: %s", response.String())
 
-	if len(response.GetValidationReports()) == 0 {
-		return &Reports{}, nil
-	}
-	// TODO(mitchaman) handle multiple proxies
-	for _, report := range response.GetValidationReports() {
-		for _, upstreamReport := range report.GetUpstreamReports() {
-			if upstreamReport.GetResourceRef().Equal(us.GetMetadata().Ref()) {
-				return &Reports{
-					UpstreamReports: &UpstreamReports{
-						us.GetMetadata().Ref(): upstreamReport,
-					},
-				}, nil
+	var (
+		errs            error
+		proxyReports    ProxyReports
+		upstreamReports UpstreamReports
+	)
+	for _, report := range response.GetGlooValidationReports() {
+		// Append proxy errors
+		proxyReports = append(proxyReports, report.GetProxyReport())
+		if err := validationutils.GetProxyError(report.GetProxyReport()); err != nil {
+			errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
+		}
+		if warnings := validationutils.GetProxyWarning(report.GetProxyReport()); !v.allowWarnings && len(warnings) > 0 {
+			for _, warning := range warnings {
+				errs = multierr.Append(errs, errors.New(warning))
+			}
+		}
+
+		// Append upstream errors
+		for _, usRpt := range report.GetUpstreamReports() {
+			upstreamReports = append(upstreamReports, usRpt)
+			if err := resourceReportToMultiErr(usRpt); err != nil {
+				errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Upstream with Gloo validation server"))
+			}
+			if warnings := usRpt.GetWarnings(); !v.allowWarnings && len(warnings) > 0 {
+				for _, warning := range warnings {
+					errs = multierr.Append(errs, errors.New(warning))
+				}
 			}
 		}
 	}
-	return &Reports{}, nil
+
+	if errs != nil {
+		logger.Debugf("Rejected Upstream %v: %v", us.GetMetadata().Ref(), errs)
+		if !dryRun {
+			utils2.MeasureZero(ctx, mValidConfig)
+		}
+		return &Reports{
+			ProxyReports:    &proxyReports,
+			UpstreamReports: &upstreamReports,
+		}, errors.Wrapf(errs, "validating %T %v", us, us.GetMetadata().Ref())
+	}
+
+	logger.Debugf("Accepted Upstream %v", us.GetMetadata().Ref())
+	if !dryRun {
+		utils2.MeasureOne(ctx, mValidConfig)
+	}
+
+	return &Reports{ProxyReports: &proxyReports, UpstreamReports: &upstreamReports}, nil
 }
 
 func (v *validator) ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*Reports, error) {
-	response, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
-		// Sending a nil proxy causes the upstream to be translated with all proxies in gloo's snapshot
-		Proxy: nil,
-		//DeletedUpstreams: []*core.ResourceRef{us}, // TODO handle deleted upstreams
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if len(response.GetValidationReports()) == 0 {
-		return &Reports{}, nil
-	}
-	// TODO(mitchaman) handle multiple proxies
-	for _, report := range response.GetValidationReports() {
-		for _, upstreamReport := range report.GetUpstreamReports() {
-			if upstreamReport.GetResourceRef().Equal(us) {
-				return &Reports{
-					UpstreamReports: &UpstreamReports{
-						us: upstreamReport,
-					},
-				}, nil
-			}
-		}
-	}
-	return &Reports{}, nil
+	// TODO(mitchaman): This function should never be called as long as 5-gateway-validation-webhook-configuration.yaml
+	//  isn't specifying the DELETE operation for upstreams
+	panic("implement me")
 }
 
 func (v *validator) sendGlooValidationServiceRequest(
@@ -659,7 +670,7 @@ func (v *validator) sendGlooValidationServiceRequest(
 	req *validation.GlooValidationServiceRequest,
 ) (*validation.GlooValidationServiceResponse, error) {
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("mitchaman - Sending request to gloo validation service: %s", req.String())
+	logger.Debugf("Sending request to GlooValidationService: %s", req.String())
 	var response *validation.GlooValidationServiceResponse
 	err := retry.Do(func() error {
 		rpt, err := v.validationClient.Validate(ctx, req)
@@ -796,4 +807,12 @@ func gatewayListContainsVirtualService(gwList v1.GatewayList, vs *v1.VirtualServ
 	}
 
 	return false
+}
+
+func resourceReportToMultiErr(resourceRpt *validation.ResourceReport) error {
+	var multiErr error
+	for _, errStr := range resourceRpt.GetErrors() {
+		multiErr = multierr.Append(multiErr, errors.New(errStr))
+	}
+	return multiErr
 }
