@@ -211,17 +211,6 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 
 // updates the given snapshot with the resources from the request
 func applyRequestToSnapshot(snap *v1.ApiSnapshot, req *validation.GlooValidationServiceRequest) {
-	// update the snapshot with the given proxy
-	if req.GetProxy() != nil {
-		proxyRef := req.GetProxy().GetMetadata().Ref()
-		for i, proxy := range snap.Proxies {
-			if proxy.GetMetadata().Ref().Equal(proxyRef) {
-				// replace the existing proxy in the snapshot
-				snap.Proxies[i] = req.GetProxy()
-			}
-		}
-	}
-
 	for _, us := range req.GetUpstreams() {
 		usRef := us.GetMetadata().Ref()
 
