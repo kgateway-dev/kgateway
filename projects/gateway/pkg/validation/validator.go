@@ -393,7 +393,7 @@ func (v *validator) processItem(ctx context.Context, item unstructured.Unstructu
 		return v.validateRouteTableInternal(ctx, &rt, false, false)
 
 	case gloov1.UpstreamGVK:
-		// DO_NOT_SUBMIT: Handle upstreams
+		// TODO(mitchaman): Handle upstreams
 	}
 	// should not happen
 	return &Reports{ProxyReports: &ProxyReports{}}, errors.Errorf("Unknown group/version/kind, %v", itemGvk)
