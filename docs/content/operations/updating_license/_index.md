@@ -58,7 +58,9 @@ One easy way to confirm this diagnosis is to paste your current license key into
 
 ## Replace the Expired License
 
-The Gloo Edge Enterprise license is installed by default into a Kubernetes `Secret` named `license` in the `gloo-system` namespace. If that is the case for your installation, then you can use a simple bash script to replace it by patching the `license` secret:
+If you're a new user whose trial license has expired, contact your Solo.io Account Executive for a fresh one, or fill out [this form](https://lp.solo.io/request-trial).
+
+The Gloo Edge Enterprise license is installed by default into a Kubernetes `Secret` named `license` in the `gloo-system` namespace. If that is the case for your installation, then you can use a simple bash script to replace the expired key by patching the `license` secret:
 
 ```bash
 GLOO_KEY=your-new-enterprise-key-string
