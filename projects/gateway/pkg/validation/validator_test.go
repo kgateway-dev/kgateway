@@ -382,7 +382,7 @@ var _ = Describe("Validator", func() {
 				utils.Measure(context.TODO(), mValidConfig, -1)
 			})
 			It("returns 1 when there are no validation errors", func() {
-				vc.validate = acceptProxy
+				vc.validateProxy = acceptProxy
 
 				us := samples.SimpleUpstream()
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
@@ -398,7 +398,7 @@ var _ = Describe("Validator", func() {
 				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(1))
 			})
 			It("returns 0 when there are validation errors", func() {
-				vc.validate = failProxy
+				vc.validateProxy = failProxy
 
 				us := samples.SimpleUpstream()
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
@@ -415,7 +415,7 @@ var _ = Describe("Validator", func() {
 			})
 			It("returns 0 when there are validation warnings and allowWarnings is false", func() {
 				v.allowWarnings = false
-				vc.validate = warnProxy
+				vc.validateProxy = warnProxy
 
 				us := samples.SimpleUpstream()
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
@@ -432,7 +432,7 @@ var _ = Describe("Validator", func() {
 			})
 			It("returns 1 when there are validation warnings and allowWarnings is true", func() {
 				v.allowWarnings = true
-				vc.validate = warnProxy
+				vc.validateProxy = warnProxy
 
 				us := samples.SimpleUpstream()
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
@@ -448,7 +448,7 @@ var _ = Describe("Validator", func() {
 				Expect(rows[0].Data.(*view.LastValueData).Value).To(BeEquivalentTo(1))
 			})
 			It("does not affect metrics when dryRun is true", func() {
-				vc.validate = failProxy
+				vc.validateProxy = failProxy
 
 				us := samples.SimpleUpstream()
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
