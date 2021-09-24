@@ -641,9 +641,7 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 
 	if errs != nil {
 		logger.Debugf("Rejected Upstream %v: %v", us.GetMetadata().Ref(), errs)
-		if !dryRun {
-			utils2.MeasureZero(ctx, mValidConfig)
-		}
+		// TODO(mitchaman): Set metric to indicate the config is invalid
 		return &Reports{
 			ProxyReports:    &proxyReports,
 			UpstreamReports: &upstreamReports,
@@ -651,9 +649,7 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 	}
 
 	logger.Debugf("Accepted Upstream %v", us.GetMetadata().Ref())
-	if !dryRun {
-		utils2.MeasureOne(ctx, mValidConfig)
-	}
+	// TODO(mitchaman): Set metric to indicate the config is valid
 
 	return &Reports{ProxyReports: &proxyReports, UpstreamReports: &upstreamReports}, nil
 }
