@@ -118,9 +118,10 @@ A validation report represents the warnings/errors produced during a single tran
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `resourceRef` | [.core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
-| `warnings` | `[]string` |  |
-| `errors` | `[]string` |  |
+| `resourceRef` | [.core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  A way to refer to resources in different namespaces by including the name and namespace of the resource in this `resourceRef`.
+- `|
+| `warnings` | `[]string` |  The warnings that are returned for the resource. Warnings do not necessarily prevent an operation from happening, but might require action.  |
+| `errors` | `[]string` | The errors that are returned for the resource. You cannot modify the resource until the errors are resolved. For help troubleshooting, see the [Debug guide]({{< versioned_link_path fromRoot="/operations/debugging_gloo/" >}}). |
 
 
 
