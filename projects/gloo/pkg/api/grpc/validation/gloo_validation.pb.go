@@ -474,7 +474,7 @@ func (x *GlooValidationServiceResponse) GetValidationReports() []*ValidationRepo
 	return nil
 }
 
-// A validation report represents the warnings/errors produced during a single translation loop of a proxy
+// A validation report represents the warnings and errors that produced during a single translation loop of a proxy. If no warnings or errors are produced, the report is empty.
 type ValidationReport struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
