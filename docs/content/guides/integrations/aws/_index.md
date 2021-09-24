@@ -44,7 +44,7 @@ The [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-ba
 
 
 
-### [Legacy] The Kubernetes (in-tree) Cloud controller
+### Legacy controller: The in-tree Kubernetes Cloud controller
 
 {{% notice note %}}
 Today, it's not clear for how long the community will keep supporting the legacy cloud controller. We strongly recommend you migrate to the [AWS Load Balancer Controller]({{% versioned_link_path fromRoot="/guides/integrations/aws/#new-aws-load-balancer-controller" %}}).
@@ -60,7 +60,7 @@ The most commonly used AWS annotations used with Gloo Edge are:
 * `service.beta.kubernetes.io/aws-load-balancer-ssl-cert` - If specified, AWS ELB's configured listener uses TLS/HTTPS with the provided certificate. Value is a valid certificate ARN from AWS Certificate Manager or AWS IAM, e.g. `arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012`.
 
 
-### [NEW] AWS Load Balancer Controller
+### Recommended controller: AWS Load Balancer Controller
 
 While you will find official instructions on their [website](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/deploy/installation/), here is a quick way of getting started.
 
