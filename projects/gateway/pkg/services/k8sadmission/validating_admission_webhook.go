@@ -412,8 +412,6 @@ func (wh *gatewayValidationWebhook) validate(
 			return wh.validateRouteTable(ctx, rawJson, dryRun)
 		}
 	case gloov1.UpstreamGVK:
-		// DO_NOT_SUBMIT: Revert logging
-		contextutils.LoggerFrom(ctx).Infof("mitchaman - Upstream GVK: %s", rawJson)
 		return wh.validateUpstream(ctx, rawJson, dryRun, isDelete)
 	}
 	return &validation.Reports{}, nil
