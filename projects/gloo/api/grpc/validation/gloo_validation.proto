@@ -60,7 +60,7 @@ message NotifyOnResyncResponse {
 * If the report contains no errors, the (sub-)resource is valid.
 */
 message ProxyReport {
-    repeated ListenerReport listener_reports = 2;
+    repeated ListenerReport listener_reports = 1;
 }
 
 message ListenerReport {

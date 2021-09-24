@@ -175,15 +175,15 @@ func (v *validator) deleteFromLocalSnapshot(resource resources.Resource) {
 	}
 }
 
-func (v *validator) validateSnapshotThreadSafe(ctx context.Context, apply applyResource, dryRun bool, upstreams []*gloov1.Upstream) (*Reports, error) {
+func (v *validator) validateSnapshotThreadSafe(ctx context.Context, apply applyResource, dryRun bool) (*Reports, error) {
 	// thread-safe implementation of validateSnapshot
 	v.lock.Lock()
 	defer v.lock.Unlock()
 
-	return v.validateSnapshot(ctx, apply, dryRun, upstreams)
+	return v.validateSnapshot(ctx, apply, dryRun)
 }
 
-func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, dryRun bool, upstreams []*gloov1.Upstream) (*Reports, error) {
+func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, dryRun bool) (*Reports, error) {
 	// validate that a snapshot can be modified
 	// should be called within a lock
 	//
@@ -250,8 +250,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		err := retry.Do(func() error {
 			rpt, err := v.validationClient.Validate(ctx,
 				&validation.GlooValidationServiceRequest{
-					Proxy:     proxy,
-					Upstreams: upstreams,
+					Proxy: proxy,
 				})
 			glooValidationResponse = rpt
 			return err
@@ -427,9 +426,9 @@ func (v *validator) validateVirtualServiceInternal(ctx context.Context, vs *v1.V
 	}
 
 	if acquireLock {
-		return v.validateSnapshotThreadSafe(ctx, apply, dryRun, nil)
+		return v.validateSnapshotThreadSafe(ctx, apply, dryRun)
 	} else {
-		return v.validateSnapshot(ctx, apply, dryRun, nil)
+		return v.validateSnapshot(ctx, apply, dryRun)
 	}
 }
 
@@ -509,9 +508,9 @@ func (v *validator) validateRouteTableInternal(ctx context.Context, rt *v1.Route
 	}
 
 	if acquireLock {
-		return v.validateSnapshotThreadSafe(ctx, apply, dryRun, nil)
+		return v.validateSnapshotThreadSafe(ctx, apply, dryRun)
 	} else {
-		return v.validateSnapshot(ctx, apply, dryRun, nil)
+		return v.validateSnapshot(ctx, apply, dryRun)
 	}
 }
 
@@ -591,9 +590,9 @@ func (v *validator) validateGatewayInternal(ctx context.Context, gw *v1.Gateway,
 	}
 
 	if acquireLock {
-		return v.validateSnapshotThreadSafe(ctx, apply, dryRun, nil)
+		return v.validateSnapshotThreadSafe(ctx, apply, dryRun)
 	} else {
-		return v.validateSnapshot(ctx, apply, dryRun, nil)
+		return v.validateSnapshot(ctx, apply, dryRun)
 	}
 }
 
