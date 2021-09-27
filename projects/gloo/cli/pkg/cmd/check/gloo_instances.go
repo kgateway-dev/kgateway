@@ -43,7 +43,7 @@ func CheckMulticlusterResources(opts *options.Options) {
 		return
 	}
 	glooInstances := glooInstanceList.Items
-	if len(glooInstances) < 0 {
+	if len(glooInstances) < 1 {
 		// No Gloo Instance CRD exist, meaning that none are registered.
 		return
 	}
