@@ -261,7 +261,11 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 			Proxy: proxy,
 		})
 		if err != nil {
-			return nil, err
+			err = errors.Wrapf(err, "failed to communicate with Gloo validation server")
+			if !v.ignoreProxyValidationFailure {
+				errs = multierr.Append(errs, err)
+			}
+			continue
 		}
 
 		if len(glooValidationResponse.GetValidationReports()) != 1 {
