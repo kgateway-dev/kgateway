@@ -38,6 +38,13 @@ type Reports struct {
 	UpstreamReports *UpstreamReports
 }
 
+func (r *Reports) GetProxies() []*gloov1.Proxy {
+	if r == nil || r.Proxies == nil {
+		return []*gloov1.Proxy{}
+	}
+	return r.Proxies
+}
+
 type ProxyReports []*validation.ProxyReport
 type UpstreamReports []*validation.ResourceReport
 

@@ -346,7 +346,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 			AdmissionResponse: &v1beta1.AdmissionResponse{
 				Allowed: true,
 			},
-			Proxies: reports.Proxies,
+			Proxies: reports.GetProxies(),
 		}
 	}
 
@@ -368,7 +368,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 				Details: details,
 			},
 		},
-		Proxies: reports.Proxies,
+		Proxies: reports.GetProxies(),
 	}
 }
 
