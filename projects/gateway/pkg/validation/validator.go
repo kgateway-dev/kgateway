@@ -254,6 +254,8 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 			continue
 		}
 
+		proxies = append(proxies, proxy)
+
 		// validate the proxy with gloo
 		var glooValidationResponse *validation.GlooValidationServiceResponse
 		err := retry.Do(func() error {
@@ -289,7 +291,6 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 
 		proxyReport := glooValidationResponse.GetValidationReports()[0].GetProxyReport()
 		proxyReports = append(proxyReports, proxyReport)
-		proxies = []*gloov1.Proxy{glooValidationResponse.GetValidationReports()[0].GetProxy()}
 		if err := validationutils.GetProxyError(proxyReport); err != nil {
 			errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
 			continue
