@@ -661,7 +661,6 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 	}
 
 	if errs != nil {
-		logger.Debugf("Rejected Upstream %v: %v", us.GetMetadata().Ref(), errs)
 		// TODO(mitchaman): Set metric to indicate the config is invalid
 		return &Reports{
 			ProxyReports:    &proxyReports,
@@ -706,7 +705,6 @@ func (v *validator) sendGlooValidationServiceRequest(
 		}
 	}
 
-	logger.Infof("mitchaman - Received response from gloo validation service: %v", response)
 	return response, nil
 }
 

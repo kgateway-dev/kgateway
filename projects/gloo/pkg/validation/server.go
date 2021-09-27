@@ -211,6 +211,9 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 
 // updates the given snapshot with the resources from the request
 func applyRequestToSnapshot(snap *v1.ApiSnapshot, req *validation.GlooValidationServiceRequest) {
+	// TODO: This will be ok for validating a single upstream change, but when we support a list of upstreams,
+	//  it may be worth it to populate a map of upstreams, and then match by key, instead of having to loop
+	//  over upstreams each time
 	for _, us := range req.GetUpstreams() {
 		usRef := us.GetMetadata().Ref()
 
@@ -225,9 +228,9 @@ func applyRequestToSnapshot(snap *v1.ApiSnapshot, req *validation.GlooValidation
 		}
 		if !isUpdate {
 			snap.Upstreams = append(snap.Upstreams, us)
-			snap.Upstreams.Sort()
 		}
 	}
+	snap.Upstreams.Sort()
 }
 
 func convertToValidationReport(proxyReport *validation.ProxyReport, resourceReports reporter.ResourceReports, proxy *v1.Proxy) *validation.ValidationReport {

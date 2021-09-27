@@ -253,7 +253,6 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 			admissionReview.Response.UID = review.Request.UID
 		}
 	}
-	logger.Debugf("Returning AdmissionResponse: %s", admissionReview.Response)
 
 	resp, err := json.Marshal(admissionReview)
 	if err != nil {
