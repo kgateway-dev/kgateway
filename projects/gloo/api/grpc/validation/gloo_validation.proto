@@ -40,6 +40,9 @@ message GlooValidationServiceResponse {
 message ValidationReport {
     ProxyReport proxy_report = 1;
     repeated ResourceReport upstream_reports = 2;
+
+    // The proxy for this translation loop
+    Proxy proxy = 3;
 }
 
 message ResourceReport {

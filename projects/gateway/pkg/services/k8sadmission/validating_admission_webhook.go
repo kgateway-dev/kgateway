@@ -328,9 +328,6 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	}
 
 	reports, validationErrs := wh.validate(ctx, gvk, ref, req.Object.Raw, isDelete, dryRun)
-	if reports == nil {
-		reports = &validation.Reports{ProxyReports: &validation.ProxyReports{}}
-	}
 
 	hasUnmarshalErr := false
 	if validationErrs != nil {
@@ -349,6 +346,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 			AdmissionResponse: &v1beta1.AdmissionResponse{
 				Allowed: true,
 			},
+			Proxies: reports.Proxies,
 		}
 	}
 
@@ -370,6 +368,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 				Details: details,
 			},
 		},
+		Proxies: reports.Proxies,
 	}
 }
 

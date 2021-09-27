@@ -165,6 +165,16 @@ func (m *ValidationReport) Equal(that interface{}) bool {
 
 	}
 
+	if h, ok := interface{}(m.GetProxy()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetProxy()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetProxy(), target.GetProxy()) {
+			return false
+		}
+	}
+
 	return true
 }
 

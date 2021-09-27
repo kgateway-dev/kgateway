@@ -95,6 +95,7 @@ the report is empty.
 ```yaml
 "proxyReport": .gloo.solo.io.ProxyReport
 "upstreamReports": []gloo.solo.io.ResourceReport
+"proxy": .gloo.solo.io.Proxy
 
 ```
 
@@ -102,6 +103,7 @@ the report is empty.
 | ----- | ---- | ----------- | 
 | `proxyReport` | [.gloo.solo.io.ProxyReport](../gloo_validation.proto.sk/#proxyreport) |  |
 | `upstreamReports` | [[]gloo.solo.io.ResourceReport](../gloo_validation.proto.sk/#resourcereport) |  |
+| `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) | The proxy for this translation loop. |
 
 
 

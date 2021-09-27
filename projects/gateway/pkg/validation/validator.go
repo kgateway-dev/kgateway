@@ -33,6 +33,7 @@ import (
 )
 
 type Reports struct {
+	Proxies         []*gloov1.Proxy
 	ProxyReports    *ProxyReports
 	UpstreamReports *UpstreamReports
 }
@@ -220,6 +221,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 	var (
 		errs         error
 		proxyReports ProxyReports
+		proxies      []*gloov1.Proxy
 	)
 	for _, proxyName := range proxyNames {
 		gatewayList := gatewaysByProxy[proxyName]
@@ -280,6 +282,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 
 		proxyReport := glooValidationResponse.GetValidationReports()[0].GetProxyReport()
 		proxyReports = append(proxyReports, proxyReport)
+		proxies = []*gloov1.Proxy{glooValidationResponse.GetValidationReports()[0].GetProxy()}
 		if err := validationutils.GetProxyError(proxyReport); err != nil {
 			errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
 			continue
@@ -297,7 +300,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		if !dryRun {
 			utils2.MeasureZero(ctx, mValidConfig)
 		}
-		return &Reports{ProxyReports: &proxyReports}, errors.Wrapf(errs, "validating %T %v", resource, ref)
+		return &Reports{ProxyReports: &proxyReports, Proxies: proxies}, errors.Wrapf(errs, "validating %T %v", resource, ref)
 	}
 
 	contextutils.LoggerFrom(ctx).Debugf("Accepted %T %v", resource, ref)
@@ -310,11 +313,12 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		apply(v.latestSnapshot)
 	}
 
-	return &Reports{ProxyReports: &proxyReports}, nil
+	return &Reports{ProxyReports: &proxyReports, Proxies: proxies}, nil
 }
 
 func (v *validator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (*Reports, *multierror.Error) {
 	var (
+		proxies      []*gloov1.Proxy
 		proxyReports = ProxyReports{}
 		errs         = &multierror.Error{}
 	)
@@ -333,6 +337,9 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 			// for each resource, as we process incrementally, storing new state in memory as we go
 			proxyReports = append(proxyReports, report)
 		}
+		for _, proxy := range itemProxyReports.Proxies {
+			proxies = append(proxies, proxy)
+		}
 	}
 
 	if dryRun {
@@ -341,7 +348,7 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 		v.latestSnapshot = &originalSnapshot
 	}
 
-	return &Reports{ProxyReports: &proxyReports}, errs
+	return &Reports{ProxyReports: &proxyReports, Proxies: proxies}, errs
 }
 
 func (v *validator) processItem(ctx context.Context, item unstructured.Unstructured) (*Reports, error) {
@@ -612,6 +619,7 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 		errs            error
 		proxyReports    ProxyReports
 		upstreamReports UpstreamReports
+		proxies         []*gloov1.Proxy
 	)
 	for _, report := range response.GetValidationReports() {
 		// Append proxy errors
@@ -637,6 +645,11 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 				}
 			}
 		}
+
+		// Append proxies
+		if report.GetProxy() != nil {
+			proxies = append(proxies, report.GetProxy())
+		}
 	}
 
 	if errs != nil {
@@ -645,13 +658,14 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 		return &Reports{
 			ProxyReports:    &proxyReports,
 			UpstreamReports: &upstreamReports,
+			Proxies:         proxies,
 		}, errors.Wrapf(errs, "validating %T %v", us, us.GetMetadata().Ref())
 	}
 
 	logger.Debugf("Accepted Upstream %v", us.GetMetadata().Ref())
 	// TODO(mitchaman): Set metric to indicate the config is valid
 
-	return &Reports{ProxyReports: &proxyReports, UpstreamReports: &upstreamReports}, nil
+	return &Reports{ProxyReports: &proxyReports, UpstreamReports: &upstreamReports, Proxies: proxies}, nil
 }
 
 func (v *validator) ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*Reports, error) {

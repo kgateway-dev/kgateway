@@ -201,7 +201,7 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 		s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
 		routeErrorToWarnings(resourceReports, proxyReport)
 
-		validationReports = append(validationReports, convertToValidationReport(proxyReport, resourceReports))
+		validationReports = append(validationReports, convertToValidationReport(proxyReport, resourceReports, proxy))
 	}
 
 	return &validation.GlooValidationServiceResponse{
@@ -230,7 +230,7 @@ func applyRequestToSnapshot(snap *v1.ApiSnapshot, req *validation.GlooValidation
 	}
 }
 
-func convertToValidationReport(proxyReport *validation.ProxyReport, resourceReports reporter.ResourceReports) *validation.ValidationReport {
+func convertToValidationReport(proxyReport *validation.ProxyReport, resourceReports reporter.ResourceReports, proxy *v1.Proxy) *validation.ValidationReport {
 	var upstreamReports []*validation.ResourceReport
 
 	for resource, report := range resourceReports {
@@ -248,6 +248,7 @@ func convertToValidationReport(proxyReport *validation.ProxyReport, resourceRepo
 	return &validation.ValidationReport{
 		ProxyReport:     proxyReport,
 		UpstreamReports: upstreamReports,
+		Proxy:           proxy,
 	}
 }
 
