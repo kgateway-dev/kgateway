@@ -38,7 +38,7 @@ This guide shows how to configure these different elements and demonstrates the 
 
 As explained above, it's best to have your upstream API start failing health checks once it receives a termination signal. Talking Envoy side, you can add retries, health checks and outlier detection as shown below:
 
-```yaml
+{{< highlight yaml "hl_lines=9 19" >}}
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
@@ -63,11 +63,11 @@ spec:
     interval: 10s
   # ----- Help with consistency between the Kubernetes control-plane and the Gloo control-plane ------
   ignoreHealthOnHostRemoval: true
-```
+{{< /highlight >}}
 
 Reties are set at the route level:
 
-```yaml
+{{< highlight yaml "hl_lines=17" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -88,7 +88,7 @@ spec:
         retryOn: 'connect-failure,5xx'
         numRetries: 3
         perTryTimeout: '3s'
-```
+{{< /highlight >}}
 
 ### Envoy Listener options
 
@@ -96,7 +96,7 @@ First, you want to know when exactly Gloo Edge is ready to route client requests
 
 While `glooctl check` will help you check some fundamentals, this command will not show if the _gateway-proxy_ is listening to new connections. Only its internal engine - Envoy - knows about that.
 
-It's fair to quickly remember here that Envoy can be listening to multiple hosts and ports simultaneously. For that to happen, you need to define different `Gateways` and `VirtualServices`. If you want to better understand how these objects work together, please check out this [article]({{% versioned_link_path fromRoot="/installation/advanced_configuration/multi-gw-deployment/" %}}).
+It's fair to quickly remember here that Envoy can be listening to multiple hosts and ports simultaneously. For that to happen, you need to define different `VirtualServices` and `Gateways`. If you want to better understand how these objects work together, please check out this [article]({{% versioned_link_path fromRoot="/installation/advanced_configuration/multi-gw-deployment/" %}}).
 
 Once you have these `Gateways` and `VirtualServices` configured, Gloo Edge will generate `Proxy` _Custom Resources_ that will, in turn, generate Envoy **Listeners**, **Routes**, and more. From this point, Envoy is ready to accept new connections. 
 
@@ -165,14 +165,14 @@ service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2" 
 service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2" # 2-10
 service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10" # 10 or 30
 service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/envoy-hc" # Envoy HC filter
-service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "HTTPS"
-service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "traffic-port"
+service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "HTTPS" # https://github.com/kubernetes/cloud-provider-aws/blob/ddfe0df3ce630bbf01ea2368c9ad816429e35c2b/pkg/providers/v1/aws.go#L189
+service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "traffic-port" # https://github.com/kubernetes/cloud-provider-aws/blob/ddfe0df3ce630bbf01ea2368c9ad816429e35c2b/pkg/providers/v1/aws.go#L196
 service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "6" # 6 is the minimum
 ```
 
 ## Demo
 
-The demo is based on the following Helm values and also the `VirtualService` and `Upstream` described above in this article:
+The demo is based on the following Helm values and also the `VirtualService` and `Upstream` described above in this article.
 
 ```yaml
 gloo:
@@ -237,6 +237,7 @@ gloo:
           initialDelaySeconds: 5
           periodSeconds: 5
       
+      # define the path for the Envoy health check filter
       gatewaySettings:
         customHttpsGateway:
           options:
@@ -268,7 +269,7 @@ kubectl -n gloo-system rollout restart deploy/gateway-proxy
 
 **Tests results**
 
-```bash
+{{< highlight bash "hl_lines=42" >}}
 Summary:
   Total:	94.9843 secs
   Slowest:	0.1653 secs
@@ -311,8 +312,7 @@ Details (average, fastest, slowest):
 
 Status code distribution:
   [200]	3796 responses
-
-```
+{{< /highlight >}}
 
 The results show good results and no errors.
 
@@ -330,7 +330,7 @@ helm upgrade -n gloo-system gloo glooe/gloo-ee --version=1.8.13
 
 **Tests results**
 
-```bash
+{{< highlight bash "hl_lines=42" >}}
 Summary:
   Total:	272.1894 secs
   Slowest:	0.5088 secs
@@ -377,7 +377,7 @@ Status code distribution:
 Error distribution:
   [28]	Get "https://18.194.157.177/headers": context deadline exceeded (Client.Timeout exceeded while awaiting headers)
   [14]	Get "https://18.194.157.177/headers": dial tcp 18.194.157.177:443: i/o timeout (Client.Timeout exceeded while awaiting headers)
-```
+{{< /highlight >}}
 
 There are a few client-side connection errors left. You can potentially tackle them with a client-side retry logic, or with server-side larger deployments. Also, advanced policies like `PodDisruptionBudget` can help to reduce this kind of downtime:
 
