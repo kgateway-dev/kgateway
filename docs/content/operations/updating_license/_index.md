@@ -12,7 +12,7 @@ The license key is stored as a Kubernetes secret in the cluster. When the key ex
 When you first install Gloo Edge in your cluster, confirm the license key expiration date with your Account Representative, such as in **30 days**. Then, set a reminder for before the license key expires, and complete these steps, such as on Day 30, so that your Gloo Edge pods do not crash.
 {{% /notice %}}
 
-## Diagnose the Problem
+## Confirm that your license expired
 
 Whether you're a prospective user using a trial license or a full Gloo Edge subscriber, this license can expire. When it does, you may see certain Gloo Edge pods start to display errors that are new to you.
 
