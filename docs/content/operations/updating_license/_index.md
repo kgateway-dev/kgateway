@@ -51,7 +51,7 @@ Error: 11 errors occurred:
 * xds metrics check was skipped due to an error in checking deployments
 ```
 
-But if you take a look at the logs for the failing `observability` deployment, they give us a more precise diagnosis:
+Finally, to get a more precise diagnosis, look at the logs for the failing `observability` deployment.
 
 ```bash
 % kubectl logs deploy/observability -n gloo-system
