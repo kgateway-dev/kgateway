@@ -4,19 +4,19 @@ weight: 25
 description: Properly configure Gloo Edge and your Load-Balancer to minimize the downtime when bouncing Envoy proxies.
 ---
 
-
+Configure Gloo Edge and your load balancer to minimize downtime when bouncing Envoy proxies.
 ## Principles
 
 With distributed systems come reliability patterns that are best to implement.
 
 As services cannot guess the state of their neighborhood, they must implement some mechanisms like health checks, retries, failover, and more.
 
-If you want to know more about theses principles, please watch out this video:
+If you want to know more about theses reliability principles, please watch this video:
 <p style="text-align: center">
 <iframe width="560" height="315" src="https://www.youtube.com/embed/xYFx0a0W9_E" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 </p>
 
-To implement these principles, you might want to configure your load-balancer to do accurate health checks but also the Kubernetes service representing the Envoy proxy and, of course, Envoy itself. 
+To implement these principles, you can configure health checking for your load balancer, the Kubernetes service for the Envoy proxy, and the Envoy proxy itself. 
 
 ![Overview]({{< versioned_link_path fromRoot="/img/0dt-overview.png" >}})
 
@@ -25,7 +25,7 @@ From right to left:
   - the API should start failing health checks once it receives a SIGTERM signal, and also it should start draining connections gracefully
   - Envoy should be configured with health checks, retries, and outlier detection on these upstreams
 - **A** - Depending on your load balancer and network setup, the health check can reach either the Kubernetes nodes or the Kubernetes pods. Keep in mind these rules of thumb:
-  - Cloud LB health checks to the same node should end in the same pod. You can use either a **DaemonSet** with host port or you use Kubernetes **affinity** policies to have at most one Envoy proxy on each node + `ExternalTrafficPolicy: local`
+  - Cloud LB health checks to the same node should end in the same pod. You can use either a **DaemonSet** with host port or you use Kubernetes **affinity** policies to have at most one Envoy proxy on each node, with the `ExternalTrafficPolicy: local` setting in the Envoy proxy deployment.
   - configure the health check filter on Envoy. More details below and also in the dedicated [documentation page](/guides/traffic_management/request_processing/health_checks/). Configure the readiness probe accordingly
   - enable the shutdown hook on the Envoy pods. Configure this hook to fail LB health checks once it gets a termination signal
 
@@ -102,7 +102,7 @@ Once you have these `Gateways` and `VirtualServices` configured, Gloo Edge will 
 
 The goal here is to know when these [Envoy Listener](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listeners) are ready. Luckily, Envoy comes with a handy [Health Check filter](/guides/traffic_management/request_processing/health_checks/) which helps with that.
 
-Example with Helm values:
+For example, you can add the following `healthCheck` setting to your Helm configuration file. Then, upgrade your Helm installation of Gloo Edge to set up health checking for the Envoy proxy.
 
 ```yaml
 gloo:
@@ -118,7 +118,7 @@ gloo:
 
 ## Configuring the Kubernetes probes
 
-As explained above, you need have Envoy to handle shutdown signals gracefully. For that, you leverage the Kubernetes preStop hook as shown in the following example:
+As explained above, you need have Envoy to handle shutdown signals gracefully. For that, you leverage the Kubernetes `PreStop` hook as shown in the following example:
 
 ```yaml
 gloo:
@@ -146,7 +146,7 @@ gloo:
 
 ## Configuring a NLB
 
-In this guide, you will configure an AWS **N**etwork **L**oad **B**alancer. You will need the **AWS Load Balancer Controller**, which brings the annotations-driven configuration to the next level. More rationales are exposed in this article: [Integration with AWS ELBs]({{% versioned_link_path fromRoot="/guides/integrations/aws/" %}})
+In this guide, you will configure an AWS Network Load Balancer (NLB). You will need the AWS Load Balancer Controller (ALBC), which brings the annotations-driven configuration to the next level. For more information, see this article: [Integration with AWS ELBs]({{% versioned_link_path fromRoot="/guides/integrations/aws/" %}})
 
 With the ALBC (AWS Load Balancer Controller), you will need these special annotations so that the NLB is internet-facing and uses the _instance mode_:
 
@@ -161,18 +161,20 @@ Here is an example of how to configure the LB health checks so that they target 
 
 ```yaml
 # Health checks
-service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2" # 2-20
+service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2" # Number of retries before failing. Values can be 2-20
 service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2" # 2-10
-service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10" # 10 or 30
+service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10" # 10s or 30s
 service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/envoy-hc" # Envoy HC filter
 service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "HTTPS"
 service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "traffic-port"
-service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "6" # 6 is the minimum
+service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "6" # 6s is the minimum
 ```
 
 ## Demo
 
 The demo is based on the following Helm values and also the `VirtualService` and `Upstream` described above in this article:
+
+Update your Helm configuration to enable the Envoy health checks and the extra annotations for an ALBC.
 
 ```yaml
 gloo:
@@ -226,7 +228,7 @@ gloo:
         terminationGracePeriodSeconds: 7 # kill the pod after this delay, gives room to the preStop hook
         gracefulShutdown:
           enabled: true
-          sleepTimeSeconds: 5 # tells envoy to fail healtchecks and sleep 5 seconds
+          sleepTimeSeconds: 5 # tells Envoy to fail healthchecks and sleep 5 seconds
         probes: true
         customReadinessProbe:
           httpGet:
