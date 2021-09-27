@@ -88,6 +88,7 @@ var _ = Describe("Validation Server", func() {
 					{
 						ProxyReport:     validation.MakeReport(proxy),
 						UpstreamReports: []*validationgrpc.ResourceReport{},
+						Proxy:           proxy,
 					},
 				},
 			}))
