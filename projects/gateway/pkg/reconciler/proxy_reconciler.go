@@ -120,6 +120,7 @@ func (s *proxyReconciler) addProxyValidationResults(ctx context.Context, proxies
 			logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
 		}
 
+		// We only sent one proxy in the GlooValidationServiceRequest - we should only get one report back in response.
 		if len(glooValidationResponse.GetValidationReports()) != 1 {
 			return errors.Errorf("Expected Gloo validation response to contain 1 report, but contained %d", len(glooValidationResponse.GetValidationReports()))
 		}
