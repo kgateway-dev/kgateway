@@ -18,7 +18,7 @@ If you want to know more about theses principles, please watch out this video:
 
 To implement these principles, you might want to configure your load-balancer to do accurate health checks but also the Kubernetes service representing the Envoy proxy and, of course, Envoy itself. 
 
-![Overview](/img/0dt-overview.png)
+![Overview]({{< versioned_link_path fromRoot="/img/0dt-overview.png" >}})
 
 From right to left:
 - **B** - Envoy is not _immediately_ aware of the state of the Kubernetes liveness & readiness probes that are set on an upstream API. So, here are two recommendations:
@@ -260,7 +260,7 @@ kubectl -n gloo-system rollout restart deploy/gateway-proxy
 
 **Grafana dashboards**
 
-![kubectl rollout restart](/img/0dt-grafana-results-rollout-restart.png)
+![kubectl rollout restart]({{< versioned_link_path fromRoot="/img/0dt-grafana-results-rollout-restart.png" >}})
 
 
 **Tests results**
