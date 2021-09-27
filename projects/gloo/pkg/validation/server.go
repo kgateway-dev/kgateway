@@ -253,6 +253,9 @@ func convertToValidationReport(proxyReport *validation.ProxyReport, resourceRepo
 }
 
 func getErrors(err error) []string {
+	if err == nil {
+		return []string{}
+	}
 	switch err.(type) {
 	case *multierror.Error:
 		var errorStrings []string
@@ -260,9 +263,6 @@ func getErrors(err error) []string {
 			errorStrings = append(errorStrings, e.Error())
 		}
 		return errorStrings
-	}
-	if err == nil {
-		return []string{}
 	}
 	return []string{err.Error()}
 }
