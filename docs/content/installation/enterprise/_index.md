@@ -14,7 +14,7 @@ Note: For certain providers with more strict multi-tenant security, like OpenShi
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 
 {{% notice note %}}
-To install Gloo Edge Enterprise you need a License Key. If you don't have one already, you may request one [here](https://www.solo.io/products/gloo/#enterprise-trial).
+To install Gloo Edge Enterprise, you need a license key. If you don't have one already, you may request a trial license key [here](https://www.solo.io/products/gloo/#enterprise-trial).
 {{% /notice %}}
 
 {{% notice info %}}
