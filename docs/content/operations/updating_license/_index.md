@@ -6,6 +6,12 @@ weight: 50
 
 Gloo Edge Enterprise requires a time-limited license key in order to fully operate. You initially provide this license at installation time, as described [here]({{< versioned_link_path fromRoot="/installation/enterprise/" >}}).
 
+The license key is stored as a Kubernetes secret in the cluster. When the key expires, the pods that mount the secret might crash. To update the license key, patch the secret and restart the Gloo Edge deployments.
+
+{{% notice tip %}}
+When you first install Gloo Edge in your cluster, confirm the license key expiration date with your Account Representative, such as in **30 days**. Then, set a reminder for before the license key expires, and complete these steps, such as on Day 30, so that your Gloo Edge pods do not crash.
+{{% /notice %}}
+
 ## Diagnose the Problem
 
 Whether you're a prospective user using a trial license or a full Gloo Edge subscriber, this license can expire. When it does, you may see certain Gloo Edge pods start to display errors that are new to you.
