@@ -219,6 +219,7 @@ gloo:
           service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "traffic-port"
           service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "6" # 6 is the minimum
         
+      # set up node anti-affinity for the gateway-proxies
       antiAffinity: true
 
       podTemplate:
@@ -246,13 +247,15 @@ gloo:
 
 ```
 
-**Long-lived test**
+Long-lived test:
 
 ```bash
 hey -disable-keepalive -c 4 -q 10 --cpus 1 -z 30m -m GET -t 1 $(glooctl proxy url --port https)/headers
 ```
 
-**Gateway rollout**
+### Testing a deployment rollout restart
+
+Gateway rollout:
 
 ```bash
 kubectl -n gloo-system rollout restart deploy/gateway-proxy
@@ -313,7 +316,80 @@ Status code distribution:
 
 The results show good results and no errors.
 
+### Testing Helm upgrade
+
+You can observe similar nice results during an upgrade:
+
+```bash
+helm upgrade -n gloo-system gloo glooe/gloo-ee --version=1.8.13
+```
+
+**Grafana dashboards**
+
+![kubectl rollout restart]({{< versioned_link_path fromRoot="/img/0dt-grafana-results-helm-upgrade.png" >}})
+
+**Tests results**
+
+```bash
+Summary:
+  Total:	272.1894 secs
+  Slowest:	0.5088 secs
+  Fastest:	0.0699 secs
+  Average:	0.0849 secs
+  Requests/sec:	38.1793
+
+  Total data:	2525400 bytes
+  Size/request:	244 bytes
+
+Response time histogram:
+  0.070 [1]	|
+  0.114 [10163]	|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  0.158 [117]	|
+  0.202 [14]	|
+  0.245 [14]	|
+  0.289 [8]	|
+  0.333 [12]	|
+  0.377 [17]	|
+  0.421 [0]	|
+  0.465 [0]	|
+  0.509 [4]	|
 
 
+Latency distribution:
+  10% in 0.0769 secs
+  25% in 0.0794 secs
+  50% in 0.0822 secs
+  75% in 0.0862 secs
+  90% in 0.0910 secs
+  95% in 0.0955 secs
+  99% in 0.1409 secs
+
+Details (average, fastest, slowest):
+  DNS+dialup:	0.0557 secs, 0.0699 secs, 0.5088 secs
+  DNS-lookup:	0.0000 secs, 0.0000 secs, 0.0000 secs
+  req write:	0.0001 secs, 0.0000 secs, 0.0015 secs
+  resp wait:	0.0290 secs, 0.0231 secs, 0.2643 secs
+  resp read:	0.0001 secs, 0.0000 secs, 0.0034 secs
+
+Status code distribution:
+  [200]	10350 responses
+
+Error distribution:
+  [28]	Get "https://18.194.157.177/headers": context deadline exceeded (Client.Timeout exceeded while awaiting headers)
+  [14]	Get "https://18.194.157.177/headers": dial tcp 18.194.157.177:443: i/o timeout (Client.Timeout exceeded while awaiting headers)
+```
+
+There are a few client-side connection errors left. You can potentially tackle them with a client-side retry logic, or with server-side larger deployments. Also, advanced policies like `PodDisruptionBudget` can help to reduce this kind of downtime:
+
+```yaml
+gloo:
+  gatewayProxies:
+    gatewayProxy:
+      kind:
+        deployment:
+          replicas: 5
+      podDisruptionBudget:
+        maxUnavailable: 1
+```
 
 
