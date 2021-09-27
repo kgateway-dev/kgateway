@@ -18,9 +18,7 @@ To install Gloo Edge Enterprise, you need a license key. If you don't have one a
 {{% /notice %}}
 
 {{% notice info %}}
-Each Key is typically valid for **30 days**. You can request a new key if your current key has expired.
-The License Key is required only during the installation process. Once you install, a `secret` will be created to hold
-your unique key.
+Each trial license key is typically valid for **30 days**. You can request a new key if your current key has expired. When the license key expires, you can request a new license key by contacting your Account Representative or filling out [this form](https://lp.solo.io/request-trial). You must provide the license key during the installation process. When you install Gloo Edge, a Kubernetes secret is created to store the license key. When the key is about to expire, see [Updating Enterprise Licenses]({{< versioned_link_path fromRoot="/operations/updating_license/" >}}).
 {{% /notice %}}
 
 Before starting installation, please ensure that you've prepared your Kubernetes cluster per the community

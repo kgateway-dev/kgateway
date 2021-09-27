@@ -16,11 +16,11 @@ When you first install Gloo Edge in your cluster, confirm the license key expira
 
 Whether you're a prospective user using a trial license or a full Gloo Edge subscriber, this license can expire. When it does, you may see certain Gloo Edge pods start to display errors that are new to you.
 
-From the [k9s](https://k9scli.io/) display below, you can see that certain `gloo-system` pods fall into a `CrashLoopBackoff` state.
+For example, from the following [k9s](https://k9scli.io/) display, you can see that certain `gloo-system` pods fall into a `CrashLoopBackoff` state.
 
 ![k9s Display with Expired License]({{% versioned_link_path fromRoot="/img/k9s-license-expired.png" %}})
 
-Following up with `glooctl check` confirms that there's something wrong, but it doesn't precisely point its finger at the root cause of the problem.
+Next, you can use `glooctl check` to confirm that the deployments have errors.
 
 ```bash
 % glooctl check
