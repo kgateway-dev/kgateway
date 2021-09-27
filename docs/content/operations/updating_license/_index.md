@@ -58,7 +58,7 @@ Finally, to get a more precise diagnosis, look at the logs for the failing `obse
 {"level":"fatal","ts":1628879186.1552186,"logger":"observability","caller":"cmd/main.go:24","msg":"License is invalid or expired, crashing - license expired","version":"1.8.0","stacktrace":"main.main\n\t/workspace/solo-projects/projects/observability/cmd/main.go:24\nruntime.main\n\t/usr/local/go/src/runtime/proc.go:225"}
 ```
 
-One easy way to confirm this diagnosis is to paste your current license key into the [jwt.io debugger](http://jwt.io). Note that the date indicated by the `exp` header is in the past.
+You can confirm that the license key is expired by copying and pasting your current license key into the [jwt.io debugger](http://jwt.io). Note that the date indicated by the `exp` header is in the past.
 
 ![jwt.io Confirms Expired License]({{% versioned_link_path fromRoot="/img/jwt-io-license-expired.png" %}})
 
