@@ -269,12 +269,9 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		}
 
 		if len(glooValidationResponse.GetValidationReports()) != 1 {
+			// This was likely caused by a development error
 			err := GlooValidationResponseLengthError(glooValidationResponse)
-			if v.ignoreProxyValidationFailure {
-				contextutils.LoggerFrom(ctx).Error(err)
-			} else {
-				errs = multierr.Append(errs, err)
-			}
+			errs = multierr.Append(errs, err)
 			continue
 		}
 
@@ -614,31 +611,22 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 
 	var (
 		errs            error
-		proxyReports    ProxyReports
 		upstreamReports UpstreamReports
 		proxies         []*gloov1.Proxy
 	)
 	for _, report := range response.GetValidationReports() {
-		// Append proxy errors
-		proxyReports = append(proxyReports, report.GetProxyReport())
-		if err := validationutils.GetProxyError(report.GetProxyReport()); err != nil {
-			errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
-		}
-		if warnings := validationutils.GetProxyWarning(report.GetProxyReport()); !v.allowWarnings && len(warnings) > 0 {
-			for _, warning := range warnings {
-				errs = multierr.Append(errs, errors.New(warning))
-			}
-		}
-
 		// Append upstream errors
 		for _, usRpt := range report.GetUpstreamReports() {
-			upstreamReports = append(upstreamReports, usRpt)
-			if err := resourceReportToMultiErr(usRpt); err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Upstream with Gloo validation server"))
-			}
-			if warnings := usRpt.GetWarnings(); !v.allowWarnings && len(warnings) > 0 {
-				for _, warning := range warnings {
-					errs = multierr.Append(errs, errors.New(warning))
+			// Only care about the upstream from the request
+			if usRpt.GetResourceRef().Equal(us.GetMetadata().Ref()) {
+				upstreamReports = append(upstreamReports, usRpt)
+				if err := resourceReportToMultiErr(usRpt); err != nil {
+					errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Upstream with Gloo validation server"))
+				}
+				if warnings := usRpt.GetWarnings(); !v.allowWarnings && len(warnings) > 0 {
+					for _, warning := range warnings {
+						errs = multierr.Append(errs, errors.New(warning))
+					}
 				}
 			}
 		}
@@ -652,7 +640,7 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 	if errs != nil {
 		// TODO(mitchaman): Set metric to indicate the config is invalid
 		return &Reports{
-			ProxyReports:    &proxyReports,
+			ProxyReports:    &ProxyReports{},
 			UpstreamReports: &upstreamReports,
 			Proxies:         proxies,
 		}, errors.Wrapf(errs, "validating %T %v", us, us.GetMetadata().Ref())
@@ -661,7 +649,7 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 	logger.Debugf("Accepted Upstream %v", us.GetMetadata().Ref())
 	// TODO(mitchaman): Set metric to indicate the config is valid
 
-	return &Reports{ProxyReports: &proxyReports, UpstreamReports: &upstreamReports, Proxies: proxies}, nil
+	return &Reports{ProxyReports: &ProxyReports{}, UpstreamReports: &upstreamReports, Proxies: proxies}, nil
 }
 
 func (v *validator) ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*Reports, error) {
