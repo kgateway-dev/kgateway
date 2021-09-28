@@ -7,4 +7,4 @@ changelog:
    description: Bump the version of solo-kit to get codegen with v1 CRDs.
    dependencyOwner: solo-io
    dependencyRepo: solo-kit
-   dependencyTag: 
+   dependencyTag: v0.24.0
