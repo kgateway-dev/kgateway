@@ -262,7 +262,9 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		})
 		if err != nil {
 			err = errors.Wrapf(err, "failed to communicate with Gloo validation server")
-			if !v.ignoreProxyValidationFailure {
+			if v.ignoreProxyValidationFailure {
+				contextutils.LoggerFrom(ctx).Error(err)
+			} else {
 				errs = multierr.Append(errs, err)
 			}
 			continue
@@ -326,13 +328,15 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 		var itemProxyReports, err = v.processItem(ctx, item)
 
 		errs = multierror.Append(errs, err)
-		for _, report := range *itemProxyReports.ProxyReports {
-			// ok to return final proxy reports as the latest result includes latest proxy calculated
-			// for each resource, as we process incrementally, storing new state in memory as we go
-			proxyReports = append(proxyReports, report)
-		}
-		for _, proxy := range itemProxyReports.Proxies {
-			proxies = append(proxies, proxy)
+		if itemProxyReports != nil && itemProxyReports.ProxyReports != nil {
+			for _, report := range *itemProxyReports.ProxyReports {
+				// ok to return final proxy reports as the latest result includes latest proxy calculated
+				// for each resource, as we process incrementally, storing new state in memory as we go
+				proxyReports = append(proxyReports, report)
+			}
+			for _, proxy := range itemProxyReports.Proxies {
+				proxies = append(proxies, proxy)
+			}
 		}
 	}
 
