@@ -605,7 +605,11 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 		Upstreams: []*gloov1.Upstream{us},
 	})
 	if err != nil {
-		return nil, err
+		if v.ignoreProxyValidationFailure {
+			logger.Error(err)
+		} else {
+			return &Reports{}, err
+		}
 	}
 	logger.Debugf("Got response from GlooValidationService: %s", response.String())
 
@@ -673,16 +677,7 @@ func (v *validator) sendGlooValidationServiceRequest(
 		retry.Attempts(4),
 		retry.Delay(250*time.Millisecond),
 	)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to communicate with Gloo validation server")
-		if v.ignoreProxyValidationFailure {
-			logger.Error(err)
-		} else {
-			return nil, err
-		}
-	}
-
-	return response, nil
+	return response, err
 }
 
 func proxiesForVirtualService(gwList v1.GatewayList, vs *v1.VirtualService) []string {
