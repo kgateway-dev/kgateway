@@ -1707,7 +1707,6 @@ var _ = Describe("Kube2e: gateway", func() {
 	Context("tests for the validation server", func() {
 		testValidation := func(yaml, expectedErr string) {
 			out, err := install.KubectlApplyOut([]byte(yaml))
-			fmt.Printf("out: %v, err: %v", out, err)
 			if expectedErr == "" {
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				err = install.KubectlDelete([]byte(yaml))
