@@ -8,20 +8,33 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	glooinstancev1 "github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1"
 	"github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1/types"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-
-	glooinstancev1 "github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1"
 )
 
 func CheckMulticlusterResources(opts *options.Options) {
+	// check if the gloo fed deployment exists
+	client := helpers.MustKubeClient()
+	_, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).Get(opts.Top.Ctx, "gloo-fed", metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			printer.AppendMessage("Skipping Gloo Instance check -- Gloo Federation not detected")
+		} else {
+			fmt.Printf("Warning: could not get Gloo Fed deployment: %v. Skipping Gloo Instance check.\n", err)
+		}
+		return
+	}
+
 	cfg, err := config.GetConfigWithContext("")
 	if err != nil {
 		fmt.Printf("Warning: could not get kubernetes config to check multicluster resources: %v. "+
@@ -40,11 +53,6 @@ func CheckMulticlusterResources(opts *options.Options) {
 			return
 		}
 		fmt.Printf("Warning: could not list Gloo Instances: %v\n", err)
-		return
-	}
-	glooInstances := glooInstanceList.Items
-	if len(glooInstances) < 1 {
-		// No Gloo Instance CRD exist, meaning that none are registered.
 		return
 	}
 	printer.AppendMessage("\nDetected Gloo Federation!")
@@ -147,7 +155,7 @@ func toGlooInstance(unstr unstructured.Unstructured) (glooinstancev1.GlooInstanc
 	if err != nil {
 		return glooinstancev1.GlooInstance{}, err
 	}
-	objectMeta := &v1.ObjectMeta{}
+	objectMeta := &metav1.ObjectMeta{}
 	if err := json.Unmarshal(metadataBytes, objectMeta); err != nil {
 		return glooinstancev1.GlooInstance{}, err
 	}
