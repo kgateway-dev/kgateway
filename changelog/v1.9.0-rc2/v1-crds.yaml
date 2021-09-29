@@ -1,0 +1,10 @@
+changelog:
+ - type: NEW_FEATURE
+   issueLink: https://github.com/solo-io/gloo/issues/4304
+   resolvesIssue: false
+   description: Generate CRDs using kubernetes v1 API instead of v1beta1 which will be removed in k8s 1.22.
+ - type: DEPENDENCY_BUMP
+   description: Bump the version of solo-kit to get codegen with v1 CRDs.
+   dependencyOwner: solo-io
+   dependencyRepo: solo-kit
+   dependencyTag: v0.24.0
