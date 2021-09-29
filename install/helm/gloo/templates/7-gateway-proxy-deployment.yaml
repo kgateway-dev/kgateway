@@ -6,9 +6,15 @@
 {{- $settings := .Values.settings }}
 {{- $isUpgrade := .Values.gateway.upgrade }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
-{{- range $name, $spec := .Values.gatewayProxies }}
+{{- range $name, $gatewaySpec := .Values.gatewayProxies }}
+{{- $spec := $gatewaySpec -}}
 {{ if not $.Values.settings.helm2 }}
-{{- $spec = deepCopy $spec | mergeOverwrite (deepCopy $gatewayProxy) -}}
+{{- $spec = deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
+  {{- if not (empty $gatewaySpec.podTemplate) }}
+  {{- if not (empty $gatewaySpec.podTemplate.nodeSelector) }}
+  {{- $_ := set $spec.podTemplate "nodeSelector" $gatewaySpec.podTemplate.nodeSelector }}
+  {{- end }}
+  {{- end }}
 {{- end}}
 {{- $image := $spec.podTemplate.image }}
 {{- if $global }}
