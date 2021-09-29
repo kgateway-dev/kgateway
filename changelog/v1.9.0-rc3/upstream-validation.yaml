@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5173
+    resolvesIssue: false
+    description: Validate upstreams as part of the gRPC validation service.

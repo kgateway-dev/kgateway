@@ -83,7 +83,15 @@ var _ = Describe("Validation Server", func() {
 			_ = s.Sync(context.TODO(), params.Snapshot)
 			rpt, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{Proxy: proxy})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(rpt).To(matchers.MatchProto(&validationgrpc.GlooValidationServiceResponse{ProxyReport: validation.MakeReport(proxy)}))
+			Expect(rpt).To(matchers.MatchProto(&validationgrpc.GlooValidationServiceResponse{
+				ValidationReports: []*validationgrpc.ValidationReport{
+					{
+						ProxyReport:     validation.MakeReport(proxy),
+						UpstreamReports: []*validationgrpc.ResourceReport{},
+						Proxy:           proxy,
+					},
+				},
+			}))
 		})
 		It("updates the proxy report when sanitization causes a change", func() {
 			proxy := params.Snapshot.Proxies[0]
@@ -103,8 +111,8 @@ var _ = Describe("Validation Server", func() {
 			s := NewValidator(context.TODO(), translator, xdsSanitizer)
 			_ = s.Sync(context.TODO(), params.Snapshot)
 			rpt, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{Proxy: proxy})
-			routeError := rpt.GetProxyReport().GetListenerReports()[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0].GetErrors()
-			routeWarning := rpt.GetProxyReport().GetListenerReports()[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0].GetWarnings()
+			routeError := rpt.GetValidationReports()[0].GetProxyReport().GetListenerReports()[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0].GetErrors()
+			routeWarning := rpt.GetValidationReports()[0].GetProxyReport().GetListenerReports()[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0].GetWarnings()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routeError).To(BeEmpty())
 			Expect(routeWarning[0].Reason).To(Equal("no destination type specified"))

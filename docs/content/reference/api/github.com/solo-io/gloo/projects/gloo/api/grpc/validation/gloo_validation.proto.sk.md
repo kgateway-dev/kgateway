@@ -13,6 +13,8 @@ weight: 5
 
 - [GlooValidationServiceRequest](#gloovalidationservicerequest)
 - [GlooValidationServiceResponse](#gloovalidationserviceresponse)
+- [ValidationReport](#validationreport)
+- [ResourceReport](#resourcereport)
 - [NotifyOnResyncRequest](#notifyonresyncrequest)
 - [NotifyOnResyncResponse](#notifyonresyncresponse)
 - [ProxyReport](#proxyreport)
@@ -53,12 +55,14 @@ weight: 5
 
 ```yaml
 "proxy": .gloo.solo.io.Proxy
+"upstreams": []gloo.solo.io.Upstream
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) |  |
+| `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) | If a proxy is provided in the request, the response will contain only the report for that proxy. If no proxy is provided, the response will contain a report for each proxy in the Gloo API snapshot. |
+| `upstreams` | [[]gloo.solo.io.Upstream](../../../v1/upstream.proto.sk/#upstream) |  |
 
 
 
@@ -69,13 +73,58 @@ weight: 5
 
 
 ```yaml
+"validationReports": []gloo.solo.io.ValidationReport
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `validationReports` | [[]gloo.solo.io.ValidationReport](../gloo_validation.proto.sk/#validationreport) |  |
+
+
+
+
+---
+### ValidationReport
+
+ 
+A validation report represents the warnings and errors that produced during
+a single translation loop of a proxy. If no warnings or errors are produced,
+the report is empty.
+
+```yaml
 "proxyReport": .gloo.solo.io.ProxyReport
+"upstreamReports": []gloo.solo.io.ResourceReport
+"proxy": .gloo.solo.io.Proxy
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `proxyReport` | [.gloo.solo.io.ProxyReport](../gloo_validation.proto.sk/#proxyreport) |  |
+| `upstreamReports` | [[]gloo.solo.io.ResourceReport](../gloo_validation.proto.sk/#resourcereport) |  |
+| `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) | The proxy for this translation loop. |
+
+
+
+
+---
+### ResourceReport
+
+
+
+```yaml
+"resourceRef": .core.solo.io.ResourceRef
+"warnings": []string
+"errors": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `resourceRef` | [.core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A way to refer to resources in different namespaces by including the name and namespace of the resource in this `resourceRef`. |
+| `warnings` | `[]string` | The warnings that are returned for the resource. Warnings do not necessarily prevent an operation from happening, but might require action. |
+| `errors` | `[]string` | The errors that are returned for the resource. You cannot modify the resource until the errors are resolved. For help troubleshooting, see the [Debug guide]({{< versioned_link_path fromRoot="/operations/debugging_gloo/" >}}). |
 
 
 

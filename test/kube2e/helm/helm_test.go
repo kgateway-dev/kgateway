@@ -7,7 +7,7 @@ import (
 
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
-	v1beta12 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/solo-io/skv2/codegen/util"
 
@@ -142,7 +142,7 @@ var _ = Describe("Kube2e: helm", func() {
 
 	Context("applies all CRD manifests without an error", func() {
 
-		var crdsByFileName = map[string]v1beta12.CustomResourceDefinition{}
+		var crdsByFileName = map[string]v1.CustomResourceDefinition{}
 
 		BeforeEach(func() {
 			err := filepath.Walk(crdDir, func(crdFile string, info os.FileInfo, err error) error {
