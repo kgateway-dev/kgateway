@@ -1,6 +1,6 @@
 ---
 title: Canary Upgrade (1.9.0+)
-weight: 5
+weight: 30
 description: Upgrading Gloo Edge with a canary workflow
 ---
 
