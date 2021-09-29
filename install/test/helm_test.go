@@ -951,7 +951,7 @@ var _ = Describe("Helm Test", func() {
 						proxyNames = []string{defaults.GatewayProxyName}
 					)
 
-					FIt("does not overwrite nodeSelectors specified for custom gateway proxy", func () {
+					It("does not overwrite nodeSelectors specified for custom gateway proxy", func () {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.podTemplate.nodeSelector.default=true",
@@ -967,7 +967,7 @@ var _ = Describe("Helm Test", func() {
 						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom":"true"}))
 					})
 
-					FIt("uses default nodeSelectors for custom gateway proxy when none is specified", func () {
+					It("uses default nodeSelectors for custom gateway proxy when none is specified", func () {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.podTemplate.nodeSelector.default=true",
@@ -983,7 +983,7 @@ var _ = Describe("Helm Test", func() {
 						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default":"true"}))
 					})
 
-					FIt("uses appropriate nodeSelectors for custom gateway proxies depending on whether any is specified", func () {
+					It("uses appropriate nodeSelectors for custom gateway proxies depending on whether any is specified", func () {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								// unspecifiedGatewayProxy should get the default nodeSelector
