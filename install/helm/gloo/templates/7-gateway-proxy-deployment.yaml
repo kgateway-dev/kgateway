@@ -9,7 +9,9 @@
 {{- $settings := .Values.settings }}
 {{- $isUpgrade := .Values.gateway.upgrade }}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy -}}
-{{- $_ := unset $gatewayProxy.podTemplate "nodeSelector" -}}
+{{- if not (empty $gatewaySpec.podTemplate.nodeSelector) }}
+  {{- $_ := unset $gatewayProxy.podTemplate "nodeSelector" -}}
+{{- end }}
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{- $image := $spec.podTemplate.image }}
 {{- if $global }}

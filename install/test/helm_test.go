@@ -951,6 +951,38 @@ var _ = Describe("Helm Test", func() {
 						proxyNames = []string{defaults.GatewayProxyName}
 					)
 
+					FIt("does not overwrite nodeSelectors specified for custom gateway proxy", func () {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.nodeSelector.default=true",
+								//anotherGatewayProxy should have its own nodeSelector and not the default
+								"gatewayProxies.anotherGatewayProxy.podTemplate.nodeSelector.custom=true",
+							},
+						})
+						gwpUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
+						gwp, err := kuberesource.ConvertUnstructured(gwpUns)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(gwp).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
+						gwpStr := *gwp.(*appsv1.Deployment)
+						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom":"true"}))
+					})
+
+					FIt("does not overwrite nodeSelectors specified for custom gateway proxy", func () {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.nodeSelector.default=true",
+								//anotherGatewayProxy should get the default nodeSelector
+								"gatewayProxies.anotherGatewayProxy.loopbackAddress=127.0.0.1",
+							},
+						})
+						gwpUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
+						gwp, err := kuberesource.ConvertUnstructured(gwpUns)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(gwp).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
+						gwpStr := *gwp.(*appsv1.Deployment)
+						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default":"true"}))
+					})
+
 					It("renders with http/https gateways by default", func() {
 						prepareMakefile(namespace, helmValues{})
 						gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName)
