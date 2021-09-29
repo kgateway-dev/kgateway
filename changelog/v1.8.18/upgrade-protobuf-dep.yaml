@@ -1,0 +1,3 @@
+changelog:
+  - type: FIX
+    description: Update github.com/gogo/protobuf to v1.3.2 for CVE-2021-3121
