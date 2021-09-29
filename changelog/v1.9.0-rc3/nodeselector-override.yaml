@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: |
+      Ensure nodeSelectors set for custom gateway-proxy services are not overwritten
+      by default gateway-proxy nodeSelectors
+    issueLink: https://github.com/solo-io/gloo/issues/5286
+    resolvesIssue: true
