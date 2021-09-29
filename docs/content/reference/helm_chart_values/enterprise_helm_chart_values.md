@@ -8,6 +8,13 @@ The table below describes all the values that you can override in your custom va
 chart for Enterprise Gloo Edge. More information on using a Helm chart to install the Gloo Edge can be found 
 [here]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-on-kubernetes-with-helm" %}}).
 
+{{% notice warning %}}
+Because the Gloo Edge Enterprise Helm chart uses the open source chart as a dependency, 
+you must add the `gloo.` prefix to all open source Gloo Edge chart values.
+
+This applies to all values except for `global.*`. For example, when you install Gloo Edge Enterprise, `gateway.certGenJob.enabled` must be changed to `gloo.gateway.certGenJob.enabled`, but `global.glooRbac.create` remains unchanged.
+{{% /notice %}}
+
 {{< readfile file="static/content/glooe-values.docgen" markdown="true" >}}
 
 ## Helm Chart KubeResourceOverrides
