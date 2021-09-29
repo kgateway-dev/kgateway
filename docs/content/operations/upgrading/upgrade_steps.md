@@ -23,10 +23,10 @@ The general upgrade process involves preparing to upgrade and then upgrading two
 
 Prepare to upgrade by reviewing information about the version, dependencies, and deployment environment.
 
-### Preparation substep 1: Familiarize yourself with information about the version that you want to upgrade to.
+### Familiarize yourself with information about the version that you want to upgrade to.
 
 1. Make sure you understand the [Changelog entry types]({{% versioned_link_path fromRoot="/reference/changelogchangelog_types/" %}}). 
-2. Check the changelogs for the type of Gloo Edge deployment that you have. Focus especially on any **Breaking Changes** that might require a different upgrade procedure.
+2. Check the changelogs for the type of Gloo Edge deployment that you have. Focus especially on any **Breaking Changes** that might require a different upgrade procedure. For Gloo Edge Enterprise, you might also review the open source changelogs because most of the proto definitions are open source. For more information, see the following enterprise-only section on understanding the open source dependencies.
    * [Open source changelogs]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}})
    * [Enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}})
 3. Review the version-specific upgrade docs.
@@ -35,11 +35,10 @@ Prepare to upgrade by reviewing information about the version, dependencies, and
    * [1.7.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.7.0/" >}})
 4. If you still aren't sure about the version upgrade impact, scan our [Frequently-asked questions]({{% versioned_link_path fromRoot="/operations/upgrading/faq/" %}}). Also, feel free to post in the `#gloo` or `#gloo-enterprise` channels of our [public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path. 
 
-### Preparation substep 2 (Enterprise-only): Understand the open source dependencies.
+### Enterprise-only: Understand the open source dependencies.
 
-Keep in mind that Gloo Edge Enterprise pulls in Gloo Edge Open Source as a dependency. As such, although the major and minor version numbers are the same for open source and enterprise, their patch versions often differ.
+Keep in mind that Gloo Edge Enterprise pulls in Gloo Edge Open Source as a dependency. Although the major and minor version numbers are the same for open source and enterprise, their patch versions often differ.
 For example, open source might use version `x.y.a` but enterprise uses version `x.y.b`. Because of the differing patch versions, you might notice different output when checking your version with `glooctl version`. If you are unfamiliar with these versioning concepts, see [Semantic versioning](https://semver.org/).
-
 
 Example of differing open source and enterprise versions for Gloo Edge:
 
@@ -52,15 +51,7 @@ Server: {"type":"Gateway","enterprise":true,"kubernetes":...,{"Tag":"{{< readfil
 # which pulls in Gloo Edge Open Source version {{< readfile file="static/content/geoss_version_latest.md" markdown="true">}} as a dependency.
 ```
 
-For Gloo Edge Open Source, you only need to review the version changes in the
-[open source changelogs]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}}). 
-
-For Gloo Edge Enterprise, you review the
-[enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}). Additionally, you might need to review Gloo Edge Open Source versions that are included as a dependency in Gloo Edge Enterprise, as most of the proto
-definitions are open source. Changes to the open source version are listed as **Dependency Bumps**, and significant
-changes might be listed as **Breaking Changes** in the [changelogs]({{% versioned_link_path fromRoot="/reference/changelog/changelog_types/" %}}).
-
-### Preparation substep 3: Consider settings to avoid downtime.
+### Consider settings to avoid downtime.
 
 You might deploy Gloo Edge in Kubernetes environments that use the Kubernetes load balancer, or in non-Kubernetes environments. Depending on your setup, you can take additional steps to avoid downtime during the upgrade process.
 
@@ -72,9 +63,6 @@ If upgrading from version 1.9.0 or later, use a [Canary upgrade]({{< versioned_l
 {{% /notice %}}
 
 ## Step 2: Upgrade glooctl
-
-After upgrading a component, run `glooctl check` immediately afterwards. This command
-scans and reports back any Gloo Edge problems to you. If a problem is reported by `glooctl check`, Gloo Edge might not work properly or Envoy might not get the updated configuration.
 
 {{% notice note %}}
 Install or upgrade to a version of `glooctl` that matches the version of the Gloo Edge server components in your cluster. Because `glooctl` can create resources in your cluster, such as with commands like `glooctl add route`, you might have errors in Gloo Edge if you create resources with an older version of `glooctl`.
@@ -89,11 +77,11 @@ You can upgrade `glooctl` in the following ways:
 You can use the `glooctl upgrade` command to download the latest binary. For more options, run `glooctl upgrade --help`. For example, you might use the `--release` flag, which can be useful to control which version you run.
 
 
-1. Review the client and server versions of `glooctl`. Notice the client version {{< readfile file="static/content/geoss_version_n-1.md" markdown="true">}} for `glooctl` does not match the server version {{< readfile file="static/content/geoss_version_latest.md" markdown="true">}} of Gloo Edge that runs in the cluster.
+1. Review the client and server versions of `glooctl`. 
    ```bash
    glooctl version
    ```
-   Example output:
+   Example output: Notice that the client version {{< readfile file="static/content/geoss_version_n-1.md" markdown="true">}} for `glooctl` does not match the server version {{< readfile file="static/content/geoss_version_latest.md" markdown="true">}} of Gloo Edge that runs in the cluster.
    ```bash
    Client: {"version":"{{< readfile file="static/content/geoss_version_n-1.md" markdown="true">}}"}
    Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"gateway","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"gloo","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
@@ -107,16 +95,16 @@ You can use the `glooctl upgrade` command to download the latest binary. For mor
    downloading glooctl-darwin-amd64 from release tag v{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}
    successfully downloaded and installed glooctl version v{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}} to /usr/local/bin/glooctl
    ```   
-3. Confirm that the version is upgraded. Notice the client version is now {{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}.
+3. Confirm that the version is upgraded.
    ```bash
    glooctl version
    ```
-   Example output:
+   Example output: Notice that the client version is now {{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}.
    ```bash
    Client: {"version":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}"}
    Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"gateway","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"gloo","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
    ```
-4. Check that your Gloo Edge components are **OK**.
+4. Check that your Gloo Edge components are **OK**. If a problem is reported by `glooctl check`, Gloo Edge might not work properly or Envoy might not get the updated configuration.
    ```bash
    glooctl check
    ```
@@ -179,10 +167,9 @@ Newer versions can add CRDs that Helm upgrades cannot handle seamlessly. Instead
 
 The following steps assume that you already installed Gloo Edge as a Helm release in the `gloo-system` namespace, and have set the Kubernetes context to the cluster.
 
-
-**Gloo Edge Open Source example:**
-
 1. Upgrade the Helm release.
+
+   **Gloo Edge Open Source example:**
    ```shell script
    ~ > helm upgrade -n gloo-system gloo gloo/gloo --version=v{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}
    Release "gloo" has been upgraded. Happy Helming!
@@ -193,15 +180,8 @@ The following steps assume that you already installed Gloo Edge as a Helm releas
    REVISION: 2
    TEST SUITE: None
    ```
-2. Verify that Gloo Edge has the upgraded version.
-   ```shell script
-   ~ > kubectl -n gloo-system get pod -l gloo=gloo -ojsonpath='{.items[0].spec.containers[0].image}'
-   quay.io/solo-io/gloo:{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}
-   ```
 
-**Gloo Edge Enterprise example:**
-
-1. Upgrade the Helm release.
+   **Gloo Edge Enterprise example:**
    ```shell script
    ~ > helm upgrade -n gloo-system gloo glooe/gloo-ee --version=v{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}
    Release "gloo" has been upgraded. Happy Helming!
@@ -215,5 +195,21 @@ The following steps assume that you already installed Gloo Edge as a Helm releas
 2. Verify that Gloo Edge has the upgraded version.
    ```shell script
    ~ > kubectl -n gloo-system get pod -l gloo=gloo -ojsonpath='{.items[0].spec.containers[0].image}'
-   quay.io/solo-io/gloo:{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}
+   quay.io/solo-io/gloo:{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}
+   ```
+3. Check that your Gloo Edge components are **OK**. If a problem is reported by `glooctl check`, Gloo Edge might not work properly or Envoy might not get the updated configuration.
+   ```bash
+   glooctl check
+   ```
+   Example output:
+   ```bash
+   Checking deployments... OK
+   Checking pods... OK
+   Checking upstreams... OK
+   Checking upstream groups... OK
+   Checking secrets... OK
+   Checking virtual services... OK
+   Checking gateways... OK
+   Checking proxies... OK
+   No problems detected.
    ```
