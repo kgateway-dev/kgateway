@@ -210,7 +210,7 @@ report itself as ready.
     - To enable liveness and readiness probes, specify `gatewayProxies.gatewayProxy.podTemplate.probes=true` in your Helm installation.
 If you are running Gloo Edge Enterprise, you'll need to prefix that Helm values key with `"gloo."`; e.g. `gloo.gatewayProxies.gatewayProxy.podTemplate.probes=true`.
 * **Configure your load balancer correctly**
-    - If you are running Gloo Edge behind a load balancer, be sure to configure your load balancer properly to consume the readiness probe mentioned above.
+    - If you are running Gloo Edge behind a load balancer, be sure to configure your load balancer properly to consume the Envoy [health check filter]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/health_checks/" %}}).
 
 ### Upstream health checks
 
