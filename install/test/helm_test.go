@@ -951,7 +951,7 @@ var _ = Describe("Helm Test", func() {
 						proxyNames = []string{defaults.GatewayProxyName}
 					)
 
-					It("does not overwrite nodeSelectors specified for custom gateway proxy", func () {
+					It("does not overwrite nodeSelectors specified for custom gateway proxy", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.podTemplate.nodeSelector.default=true",
@@ -964,10 +964,10 @@ var _ = Describe("Helm Test", func() {
 						Expect(err).NotTo(HaveOccurred())
 						Expect(gwp).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
 						gwpStr := *gwp.(*appsv1.Deployment)
-						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom":"true"}))
+						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom": "true"}))
 					})
 
-					It("uses default nodeSelectors for custom gateway proxy when none is specified", func () {
+					It("uses default nodeSelectors for custom gateway proxy when none is specified", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.podTemplate.nodeSelector.default=true",
@@ -980,10 +980,10 @@ var _ = Describe("Helm Test", func() {
 						Expect(err).NotTo(HaveOccurred())
 						Expect(gwp).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
 						gwpStr := *gwp.(*appsv1.Deployment)
-						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default":"true"}))
+						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default": "true"}))
 					})
 
-					It("uses appropriate nodeSelectors for custom gateway proxies depending on whether any is specified", func () {
+					It("uses appropriate nodeSelectors for custom gateway proxies depending on whether any is specified", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								// unspecifiedGatewayProxy should get the default nodeSelector
@@ -1000,21 +1000,21 @@ var _ = Describe("Helm Test", func() {
 						Expect(err).NotTo(HaveOccurred())
 						Expect(unspecified).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
 						unspecifiedStr := *unspecified.(*appsv1.Deployment)
-						Expect(unspecifiedStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default":"true"}))
+						Expect(unspecifiedStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default": "true"}))
 
 						specifiedUns := testManifest.ExpectCustomResource("Deployment", namespace, "specified-gateway-proxy")
 						specified, err := kuberesource.ConvertUnstructured(specifiedUns)
 						Expect(err).NotTo(HaveOccurred())
 						Expect(specified).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
 						specifiedStr := *specified.(*appsv1.Deployment)
-						Expect(specifiedStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom":"true"}))
+						Expect(specifiedStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom": "true"}))
 
 						gwpUns := testManifest.ExpectCustomResource("Deployment", namespace, "gateway-proxy")
 						gwp, err := kuberesource.ConvertUnstructured(gwpUns)
 						Expect(err).NotTo(HaveOccurred())
 						Expect(gwp).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
 						gwpStr := *gwp.(*appsv1.Deployment)
-						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default":"true"}))
+						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"default": "true"}))
 					})
 
 					It("renders with http/https gateways by default", func() {
