@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Update github.com/gogo/protobuf to v1.3.2 for CVE-2021-3121
+    issueLink: https://github.com/solo-io/gloo/issues/5406
+    resolvesIssue: false
