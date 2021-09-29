@@ -33,23 +33,23 @@ Prepare to upgrade by reviewing information about the version, dependencies, and
    * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.9.0/" >}})
    * [1.8.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.8.0/" >}})
    * [1.7.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.7.0/" >}})
-4. If you still aren't sure about the version upgrade impact, scan our [Frequently-asked questions]({{% versioned_link_path fromRoot="/operations/upgrading/faq/" %}}). Also, feel free to post in the `#gloo` or `#gloo-enterprise` rooms of our [public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path. 
+4. If you still aren't sure about the version upgrade impact, scan our [Frequently-asked questions]({{% versioned_link_path fromRoot="/operations/upgrading/faq/" %}}). Also, feel free to post in the `#gloo` or `#gloo-enterprise` channels of our [public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path. 
 
 ### Preparation substep 2 (Enterprise-only): Understand the open source dependencies.
 
 Keep in mind that Gloo Edge Enterprise pulls in Gloo Edge Open Source as a dependency. As such, although the major and minor version numbers are the same for open source and enterprise, their patch versions often differ.
-For example, open source might use version `x.y.a` but enterprise uses version `x.y.b`. Because of the differing patch versions, you might notice different output when checking your version with `glooctl version`. If you are unfamiliar with these versioning concepts, see the  versioning, see [Semantic versioning](https://semver.org/).
+For example, open source might use version `x.y.a` but enterprise uses version `x.y.b`. Because of the differing patch versions, you might notice different output when checking your version with `glooctl version`. If you are unfamiliar with these versioning concepts, see [Semantic versioning](https://semver.org/).
 
 
 Example of differing open source and enterprise versions for Gloo Edge:
 
 ```bash
 ~ > glooctl version # snipped some content for brevity
-Client: {"version":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}"} # glooctl is built from Gloo Edge Open Source, so the open source version is returned
+Client: {"version":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}"}
 Server: {"type":"Gateway","enterprise":true,"kubernetes":...,{"Tag":"{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}","Name":"grpcserver-ee","Registry":"quay.io/solo-io"},...,{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"discovery","Registry":"quay.io/solo-io"},...}
 
 # The API server runs the Gloo Edge Enterprise version {{< readfile file="static/content/gee_version_latest.md" markdown="true">}},
-# which has pulled in Gloo Edge Open Source version {{< readfile file="static/content/geoss_version_latest.md" markdown="true">}} as a dependency.
+# which pulls in Gloo Edge Open Source version {{< readfile file="static/content/geoss_version_latest.md" markdown="true">}} as a dependency.
 ```
 
 For Gloo Edge Open Source, you only need to review the version changes in the
