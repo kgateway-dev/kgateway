@@ -12,7 +12,7 @@ The basic Gloo Edge upgrade process is not suitable in environments where downti
 
 The general upgrade process involves preparing to upgrade and then upgrading two main components, the `glooctl` CLI and the `gloo` components that are deployed in your cluster.
 
-1.  Prepare to upgrade.
+1.  [Prepare to upgrade](#step-1-prepare-to-upgrade).
     1.  Review the version changelogs.
     2.  **Enterprise-only**: Understand the open source dependencies.
     3.  Consider settings to avoid downtime.
@@ -21,12 +21,14 @@ The general upgrade process involves preparing to upgrade and then upgrading two
 
 ## Step 1: Prepare to upgrade
 
+Prepare to upgrade by reviewing information about the version, dependencies, and deployment environment.
+
 ### Preparation substep 1: Familiarize yourself with information about the version that you want to upgrade to.
 
 1. Make sure you understand the [Changelog entry types]({{% versioned_link_path fromRoot="/reference/changelogchangelog_types/" %}}). 
-2. Check the changelogs for the type of Gloo Edge deployment that you have. Focus especially on any **breaking changes**that might require a different upgrade procedure.
-   * [Open source]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}})
-   * [Enterprise]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}})
+2. Check the changelogs for the type of Gloo Edge deployment that you have. Focus especially on any **Breaking Changes** that might require a different upgrade procedure.
+   * [Open source changelogs]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}})
+   * [Enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}})
 3. Review the version-specific upgrade docs.
    * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.9.0/" >}})
    * [1.8.0+]({{< versioned_link_path fromRoot="/operations/upgrading/1.8.0/" >}})
@@ -62,7 +64,7 @@ changes might be listed as **Breaking Changes** in the [changelogs]({{% versione
 
 You might deploy Gloo Edge in Kubernetes environments that use the Kubernetes load balancer, or in non-Kubernetes environments. Depending on your setup, you can take additional steps to avoid downtime during the upgrade process.
 
-* **Kubernetes**: Enable Envoy readiness and liveness probes during the upgrade. When these probes are set, Kubernetes sends requests only to the healthy Envoy proxy during the upgrade process, which helps to prevent potential downtime. The probes are not enabled in default installations because they can lead to timeouts or other poor getting started experiences. 
+* **Kubernetes**: Enable [Envoy readiness and liveness probes]({{< versioned_link_path fromRoot="/operations/production_deployment/#enable-health-checks" >}}) during the upgrade. When these probes are set, Kubernetes sends requests only to the healthy Envoy proxy during the upgrade process, which helps to prevent potential downtime. The probes are not enabled in default installations because they can lead to timeouts or other poor getting started experiences. 
 * **Non-Kubernetes**: Configure [health checks]({{< versioned_link_path fromRoot="/guides/traffic_management/request_processing/health_checks" >}}) on Envoy. Then, configure your load balancer to leverage these health checks, so that requests stop going to Envoy when it begins draining connections.
 
 {{% notice tip %}}
