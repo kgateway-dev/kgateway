@@ -1,20 +1,19 @@
-package k8sadmisssion
+package k8sadmission
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-
-	"github.com/hashicorp/go-multierror"
-
-	"github.com/ghodss/yaml"
-
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/ghodss/yaml"
+	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway/pkg/validation"
+	validation2 "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -23,6 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -49,6 +49,22 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 
 	gateway := defaults.DefaultGateway("namespace")
 	vs := defaults.DefaultVirtualService("namespace", "vs")
+	upstream := &gloov1.Upstream{
+		Metadata: &core.Metadata{
+			Name:      "us",
+			Namespace: "namespace",
+		},
+		UpstreamType: &gloov1.Upstream_Static{
+			Static: &static.UpstreamSpec{
+				Hosts: []*static.Host{
+					{
+						Addr: "localhost",
+						Port: 12345,
+					},
+				},
+			},
+		},
+	}
 
 	unstructuredList := unstructured.UnstructuredList{
 		Object: map[string]interface{}{
@@ -66,17 +82,20 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		wh.webhookNamespace = routeTable.Metadata.Namespace
 
 		if !valid {
-			mv.fValidateList = func(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (validation.ProxyReports, *multierror.Error) {
-				return proxyReports(), &multierror.Error{Errors: []error{fmt.Errorf(errMsg)}}
+			mv.fValidateList = func(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (*validation.Reports, *multierror.Error) {
+				return reports(), &multierror.Error{Errors: []error{fmt.Errorf(errMsg)}}
 			}
-			mv.fValidateGateway = func(ctx context.Context, gw *v1.Gateway, dryRun bool) (validation.ProxyReports, error) {
-				return proxyReports(), fmt.Errorf(errMsg)
+			mv.fValidateGateway = func(ctx context.Context, gw *v1.Gateway, dryRun bool) (*validation.Reports, error) {
+				return reports(), fmt.Errorf(errMsg)
 			}
-			mv.fValidateVirtualService = func(ctx context.Context, vs *v1.VirtualService, dryRun bool) (validation.ProxyReports, error) {
-				return proxyReports(), fmt.Errorf(errMsg)
+			mv.fValidateVirtualService = func(ctx context.Context, vs *v1.VirtualService, dryRun bool) (*validation.Reports, error) {
+				return reports(), fmt.Errorf(errMsg)
 			}
-			mv.fValidateRouteTable = func(ctx context.Context, rt *v1.RouteTable, dryRun bool) (validation.ProxyReports, error) {
-				return proxyReports(), fmt.Errorf(errMsg)
+			mv.fValidateRouteTable = func(ctx context.Context, rt *v1.RouteTable, dryRun bool) (*validation.Reports, error) {
+				return reports(), fmt.Errorf(errMsg)
+			}
+			mv.fValidateUpstream = func(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*validation.Reports, error) {
+				return reports(), fmt.Errorf(errMsg)
 			}
 		}
 		req, err := makeReviewRequest(srv.URL, crd, gvk, v1beta1.Create, resource)
@@ -106,6 +125,8 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		Entry("invalid route table", false, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), routeTable),
 		Entry("valid unstructured list", true, nil, ListGVK, unstructuredList),
 		Entry("invalid unstructured list", false, nil, ListGVK, unstructuredList),
+		Entry("valid upstream", true, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), upstream),
+		Entry("invalid upstream", false, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), upstream),
 	)
 
 	Context("invalid yaml", func() {
@@ -142,8 +163,8 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 
 	Context("returns proxies", func() {
 		It("returns proxy if requested", func() {
-			mv.fValidateGateway = func(ctx context.Context, gw *v1.Gateway, dryRun bool) (validation.ProxyReports, error) {
-				return proxyReports(), fmt.Errorf(errMsg)
+			mv.fValidateGateway = func(ctx context.Context, gw *v1.Gateway, dryRun bool) (*validation.Reports, error) {
+				return reports(), fmt.Errorf(errMsg)
 			}
 
 			req, err := makeReviewRequestWithProxies(srv.URL, v1.GatewayCrd, gateway.GroupVersionKind(), v1beta1.Create, gateway, true)
@@ -158,8 +179,6 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 
 			Expect(review.Response.Allowed).To(BeFalse())
 			Expect(review.Response.Result).ToNot(BeNil())
-			Expect(review.Proxies).To(HaveLen(1))
-			Expect(review.Proxies[0]).To(ContainSubstring("listener-::-8080"))
 		})
 	})
 
@@ -300,12 +319,14 @@ func parseReviewResponse(resp *http.Response) (*AdmissionReviewWithProxies, erro
 
 type mockValidator struct {
 	fSync                         func(context.Context, *v1.ApiSnapshot) error
-	fValidateList                 func(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (validation.ProxyReports, *multierror.Error)
-	fValidateGateway              func(ctx context.Context, gw *v1.Gateway, dryRun bool) (validation.ProxyReports, error)
-	fValidateVirtualService       func(ctx context.Context, vs *v1.VirtualService, dryRun bool) (validation.ProxyReports, error)
+	fValidateList                 func(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (*validation.Reports, *multierror.Error)
+	fValidateGateway              func(ctx context.Context, gw *v1.Gateway, dryRun bool) (*validation.Reports, error)
+	fValidateVirtualService       func(ctx context.Context, vs *v1.VirtualService, dryRun bool) (*validation.Reports, error)
 	fValidateDeleteVirtualService func(ctx context.Context, vs *core.ResourceRef, dryRun bool) error
-	fValidateRouteTable           func(ctx context.Context, rt *v1.RouteTable, dryRun bool) (validation.ProxyReports, error)
+	fValidateRouteTable           func(ctx context.Context, rt *v1.RouteTable, dryRun bool) (*validation.Reports, error)
 	fValidateDeleteRouteTable     func(ctx context.Context, rt *core.ResourceRef, dryRun bool) error
+	fValidateUpstream             func(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*validation.Reports, error)
+	fValidateDeleteUpstream       func(ctx context.Context, us *core.ResourceRef, dryRun bool) (*validation.Reports, error)
 }
 
 func (v *mockValidator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
@@ -315,23 +336,23 @@ func (v *mockValidator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	return v.fSync(ctx, snap)
 }
 
-func (v *mockValidator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (validation.ProxyReports, *multierror.Error) {
+func (v *mockValidator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (*validation.Reports, *multierror.Error) {
 	if v.fValidateList == nil {
-		return proxyReports(), nil
+		return reports(), nil
 	}
 	return v.fValidateList(ctx, ul, dryRun)
 }
 
-func (v *mockValidator) ValidateGateway(ctx context.Context, gw *v1.Gateway, dryRun bool) (validation.ProxyReports, error) {
+func (v *mockValidator) ValidateGateway(ctx context.Context, gw *v1.Gateway, dryRun bool) (*validation.Reports, error) {
 	if v.fValidateGateway == nil {
-		return proxyReports(), nil
+		return reports(), nil
 	}
 	return v.fValidateGateway(ctx, gw, dryRun)
 }
 
-func (v *mockValidator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (validation.ProxyReports, error) {
+func (v *mockValidator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (*validation.Reports, error) {
 	if v.fValidateVirtualService == nil {
-		return proxyReports(), nil
+		return reports(), nil
 	}
 	return v.fValidateVirtualService(ctx, vs, dryRun)
 }
@@ -343,9 +364,9 @@ func (v *mockValidator) ValidateDeleteVirtualService(ctx context.Context, vs *co
 	return v.fValidateDeleteVirtualService(ctx, vs, dryRun)
 }
 
-func (v *mockValidator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (validation.ProxyReports, error) {
+func (v *mockValidator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (*validation.Reports, error) {
 	if v.fValidateRouteTable == nil {
-		return proxyReports(), nil
+		return reports(), nil
 	}
 	return v.fValidateRouteTable(ctx, rt, dryRun)
 }
@@ -357,15 +378,26 @@ func (v *mockValidator) ValidateDeleteRouteTable(ctx context.Context, rt *core.R
 	return v.fValidateDeleteRouteTable(ctx, rt, dryRun)
 }
 
-func proxyReports() validation.ProxyReports {
-	return validation.ProxyReports{
-		{
-			Metadata: &core.Metadata{
-				Name:      "listener-::-8080",
-				Namespace: "gloo-system",
+func (v *mockValidator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*validation.Reports, error) {
+	if v.fValidateUpstream == nil {
+		return reports(), nil
+	}
+	return v.fValidateUpstream(ctx, us, dryRun)
+}
+
+func (v *mockValidator) ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*validation.Reports, error) {
+	if v.fValidateDeleteUpstream == nil {
+		return reports(), nil
+	}
+	return v.fValidateDeleteUpstream(ctx, us, dryRun)
+}
+
+func reports() *validation.Reports {
+	return &validation.Reports{
+		ProxyReports: &validation.ProxyReports{
+			&validation2.ProxyReport{
+				ListenerReports: nil,
 			},
-		}: {
-			ListenerReports: nil,
 		},
 	}
 }

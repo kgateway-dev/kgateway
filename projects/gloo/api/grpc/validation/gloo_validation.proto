@@ -1,8 +1,16 @@
 syntax = "proto3";
+
 package gloo.solo.io;
+
+import "extproto/ext.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto";
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
+option (extproto.equal_all) = true;
+option (extproto.hash_all) = true;
 
 // The gloo validation service validates gloo resources for clients against current snapshot resources
 service GlooValidationService {
@@ -15,11 +23,41 @@ service GlooValidationService {
 }
 
 message GlooValidationServiceRequest {
+    // If a proxy is provided in the request, the response will contain only the report for that proxy.
+    // If no proxy is provided, the response will contain a report for each proxy in the Gloo API snapshot.
     gloo.solo.io.Proxy proxy = 1;
+
+    repeated gloo.solo.io.Upstream upstreams = 2;
 }
 
 message GlooValidationServiceResponse {
+    repeated ValidationReport validation_reports = 1;
+}
+
+// A validation report represents the warnings and errors that produced during
+// a single translation loop of a proxy. If no warnings or errors are produced,
+// the report is empty.
+message ValidationReport {
     ProxyReport proxy_report = 1;
+    repeated ResourceReport upstream_reports = 2;
+
+    // The proxy for this translation loop
+    Proxy proxy = 3;
+}
+
+message ResourceReport {
+    // A way to refer to resources in different namespaces by including the
+    // name and namespace of the resource in this `resourceRef`.
+    core.solo.io.ResourceRef resource_ref = 1;
+
+    // The warnings that are returned for the resource. Warnings do not
+    // necessarily prevent an operation from happening, but might require action.
+    repeated string warnings = 2;
+
+    // The errors that are returned for the resource. You cannot modify the
+    // resource until the errors are resolved. For help troubleshooting, see the
+    // [Debug guide]({{< versioned_link_path fromRoot="/operations/debugging_gloo/" >}}).
+    repeated string errors = 3;
 }
 
 message NotifyOnResyncRequest {

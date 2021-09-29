@@ -20,7 +20,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmisssion"
+	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmission"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	testutils "github.com/solo-io/k8s-utils/testutils/kube"
@@ -203,7 +203,7 @@ var _ = Describe("Robustness tests", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// required to prevent gateway webhook from rejecting
-			virtualService.Metadata.Annotations = map[string]string{k8sadmisssion.SkipValidationKey: k8sadmisssion.SkipValidationValue}
+			virtualService.Metadata.Annotations = map[string]string{k8sadmission.SkipValidationKey: k8sadmission.SkipValidationValue}
 
 			virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, &gatewayv1.Route{
 				Matchers: []*matchers.Matcher{{
