@@ -43,7 +43,7 @@ For example, open source might use version `x.y.a` but enterprise uses version `
 Example of differing open source and enterprise versions for Gloo Edge:
 
 ```bash
-~ > glooctl version # snipped some content for brevity
+~ > glooctl version
 Client: {"version":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}"}
 Server: {"type":"Gateway","enterprise":true,"kubernetes":...,{"Tag":"{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}","Name":"grpcserver-ee","Registry":"quay.io/solo-io"},...,{"Tag":"{{< readfile file="static/content/geoss_version_latest.md" markdown="true">}}","Name":"discovery","Registry":"quay.io/solo-io"},...}
 
