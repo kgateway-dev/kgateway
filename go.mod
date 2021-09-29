@@ -26,7 +26,7 @@ require (
 	github.com/go-swagger/go-swagger v0.21.0
 	github.com/go-test/deep v1.0.4 // indirect
 	github.com/gogo/googleapis v1.3.1
-	github.com/gogo/protobuf v1.3.1
+	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
 	github.com/google/go-github v17.0.0+incompatible
