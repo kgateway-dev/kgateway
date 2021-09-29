@@ -15,7 +15,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmisssion"
+	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmission"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gatewayvalidation "github.com/solo-io/gloo/projects/gateway/pkg/validation"
@@ -329,8 +329,8 @@ func RunGateway(opts translator.Opts) error {
 			}
 		}
 
-		validationWebhook, err := k8sadmisssion.NewGatewayValidatingWebhook(
-			k8sadmisssion.NewWebhookConfig(
+		validationWebhook, err := k8sadmission.NewGatewayValidatingWebhook(
+			k8sadmission.NewWebhookConfig(
 				ctx,
 				validationSyncer,
 				opts.WatchNamespaces,

@@ -28,6 +28,10 @@ webhooks:
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
     resources: ["*"]
+  - operations: [ "CREATE", "UPDATE" ]{{/* TODO(mitchaman): Implement deletes */}}
+    apiGroups: ["gloo.solo.io"]
+    apiVersions: ["v1"]
+    resources: ["upstreams"]{{/* TODO(https://github.com/solo-io/gloo/issues/2797): Extend to all gloo resources */}}
   sideEffects: None
   matchPolicy: Exact
   admissionReviewVersions:
