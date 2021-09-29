@@ -27,7 +27,7 @@ require (
 	github.com/go-swagger/go-swagger v0.21.0
 	github.com/go-test/deep v1.0.4 // indirect
 	github.com/gogo/googleapis v1.3.1
-	github.com/gogo/protobuf v1.3.1
+	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
 	github.com/google/go-github v17.0.0+incompatible
@@ -90,7 +90,7 @@ require (
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
-	golang.org/x/tools v0.0.0-20201027213030-631220838841
+	golang.org/x/tools v0.0.0-20210106214847-113979e3529a
 	google.golang.org/genproto v0.0.0-20201019141844-1ed22bb0c154
 	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.25.0
