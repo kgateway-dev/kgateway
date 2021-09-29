@@ -33,7 +33,7 @@ Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`
 Each upstream type is handled by a corresponding Gloo plugin. (plugins currently need to be compiled into Gloo)
 
 ```yaml
-"status": .core.solo.io.Status
+"namespacedStatuses": .core.solo.io.NamespacedStatuses
 "metadata": .core.solo.io.Metadata
 "discoveryMetadata": .gloo.solo.io.DiscoveryMetadata
 "sslConfig": .gloo.solo.io.UpstreamSslConfig
@@ -54,13 +54,13 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 "initialStreamWindowSize": .google.protobuf.UInt32Value
 "initialConnectionWindowSize": .google.protobuf.UInt32Value
 "httpProxyHostname": .google.protobuf.StringValue
-"ignoreHealthOnHostRemoval": bool
+"ignoreHealthOnHostRemoval": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of the resource. Status is read-only by clients, and set by gloo during validation. |
+| `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gloo during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `discoveryMetadata` | [.gloo.solo.io.DiscoveryMetadata](../upstream.proto.sk/#discoverymetadata) | Upstreams and their configuration can be automatically by Gloo Discovery if this upstream is created or modified by Discovery, metadata about the operation will be placed here. |
 | `sslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk/#upstreamsslconfig) | SslConfig contains the options necessary to configure an upstream to use TLS origination. |
@@ -81,7 +81,7 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `initialStreamWindowSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | (UInt32Value) Initial stream-level flow-control window size. Valid values range from 65535 (2^16 - 1, HTTP/2 default) to 2147483647 (2^31 - 1, HTTP/2 maximum) and defaults to 268435456 (256 * 1024 * 1024). NOTE: 65535 is the initial window size from HTTP/2 spec. We only support increasing the default window size now, so it’s also the minimum. This field also acts as a soft limit on the number of bytes Envoy will buffer per-stream in the HTTP/2 codec buffers. Once the buffer reaches this pointer, watermark callbacks will fire to stop the flow of data to the codec buffers. Requires UseHttp2 to be true to be acknowledged. |
 | `initialConnectionWindowSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | (UInt32Value) Similar to initial_stream_window_size, but for connection-level flow-control window. Currently, this has the same minimum/maximum/default as initial_stream_window_size. Requires UseHttp2 to be true to be acknowledged. |
 | `httpProxyHostname` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Tells envoy that the upstream is an HTTP proxy (e.g., another proxy in a DMZ) that supports HTTP Connect. This configuration sets the hostname used as part of the HTTP Connect request. For example, setting to: host.com:443 and making a request routed to the upstream such as `curl <envoy>:<port>/v1` would result in the following request: CONNECT host.com:443 HTTP/1.1 host: host.com:443 GET /v1 HTTP/1.1 host: <envoy>:<port> user-agent: curl/7.64.1 accept: */* Note: if setting this field to a hostname rather than IP:PORT, you may want to also set `host_rewrite` on the route. |
-| `ignoreHealthOnHostRemoval` | `bool` | (bool) If set to true, Envoy will ignore the health value of a host when processing its removal from service discovery. This means that if active health checking is used, Envoy will not wait for the endpoint to go unhealthy before removing it. |
+| `ignoreHealthOnHostRemoval` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | (bool) If set to true, Envoy will ignore the health value of a host when processing its removal from service discovery. This means that if active health checking is used, Envoy will not wait for the endpoint to go unhealthy before removing it. |
 
 
 

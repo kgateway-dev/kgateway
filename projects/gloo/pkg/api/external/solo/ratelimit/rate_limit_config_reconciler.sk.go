@@ -24,9 +24,9 @@ func rateLimitConfigsToResources(list RateLimitConfigList) resources.ResourceLis
 	return resourceList
 }
 
-func NewRateLimitConfigReconciler(client RateLimitConfigClient) RateLimitConfigReconciler {
+func NewRateLimitConfigReconciler(client RateLimitConfigClient, statusSetter resources.StatusSetter) RateLimitConfigReconciler {
 	return &rateLimitConfigReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

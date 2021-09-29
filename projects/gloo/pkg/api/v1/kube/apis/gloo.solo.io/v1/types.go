@@ -141,8 +141,8 @@ type Proxy struct {
 
 	// Spec defines the implementation of this definition.
 	// +optional
-	Spec   api.Proxy   `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
-	Status core.Status `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+	Spec   api.Proxy               `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Status core.NamespacedStatuses `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 func (o *Proxy) MarshalJSON() ([]byte, error) {
@@ -151,7 +151,7 @@ func (o *Proxy) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "status")
+	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
@@ -177,9 +177,9 @@ func (o *Proxy) UnmarshalJSON(data []byte) error {
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
 	}
-	if spec.Status != nil {
-		o.Status = *spec.Status
-		o.Spec.Status = nil
+	if spec.GetNamespacedStatuses() != nil {
+		o.Status = *spec.NamespacedStatuses
+		o.Spec.NamespacedStatuses = nil
 	}
 
 	return nil
@@ -261,8 +261,8 @@ type Settings struct {
 
 	// Spec defines the implementation of this definition.
 	// +optional
-	Spec   api.Settings `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
-	Status core.Status  `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+	Spec   api.Settings            `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Status core.NamespacedStatuses `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 func (o *Settings) MarshalJSON() ([]byte, error) {
@@ -271,7 +271,7 @@ func (o *Settings) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "status")
+	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
@@ -297,9 +297,9 @@ func (o *Settings) UnmarshalJSON(data []byte) error {
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
 	}
-	if spec.Status != nil {
-		o.Status = *spec.Status
-		o.Spec.Status = nil
+	if spec.GetNamespacedStatuses() != nil {
+		o.Status = *spec.NamespacedStatuses
+		o.Spec.NamespacedStatuses = nil
 	}
 
 	return nil
@@ -324,8 +324,8 @@ type Upstream struct {
 
 	// Spec defines the implementation of this definition.
 	// +optional
-	Spec   api.Upstream `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
-	Status core.Status  `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+	Spec   api.Upstream            `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Status core.NamespacedStatuses `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 func (o *Upstream) MarshalJSON() ([]byte, error) {
@@ -334,7 +334,7 @@ func (o *Upstream) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "status")
+	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
@@ -360,9 +360,9 @@ func (o *Upstream) UnmarshalJSON(data []byte) error {
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
 	}
-	if spec.Status != nil {
-		o.Status = *spec.Status
-		o.Spec.Status = nil
+	if spec.GetNamespacedStatuses() != nil {
+		o.Status = *spec.NamespacedStatuses
+		o.Spec.NamespacedStatuses = nil
 	}
 
 	return nil
@@ -387,8 +387,8 @@ type UpstreamGroup struct {
 
 	// Spec defines the implementation of this definition.
 	// +optional
-	Spec   api.UpstreamGroup `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
-	Status core.Status       `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+	Spec   api.UpstreamGroup       `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Status core.NamespacedStatuses `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
 func (o *UpstreamGroup) MarshalJSON() ([]byte, error) {
@@ -397,7 +397,7 @@ func (o *UpstreamGroup) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	delete(spec, "metadata")
-	delete(spec, "status")
+	delete(spec, "namespacedStatuses")
 	asMap := map[string]interface{}{
 		"metadata":   o.ObjectMeta,
 		"apiVersion": o.TypeMeta.APIVersion,
@@ -423,9 +423,9 @@ func (o *UpstreamGroup) UnmarshalJSON(data []byte) error {
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
 	}
-	if spec.Status != nil {
-		o.Status = *spec.Status
-		o.Spec.Status = nil
+	if spec.GetNamespacedStatuses() != nil {
+		o.Status = *spec.NamespacedStatuses
+		o.Spec.NamespacedStatuses = nil
 	}
 
 	return nil

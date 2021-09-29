@@ -6,6 +6,9 @@ import (
 	"io/ioutil"
 	"regexp"
 
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
 	"github.com/solo-io/gloo/test/kube2e"
 
 	kubeutils "github.com/solo-io/k8s-utils/testutils/kube"
@@ -14,7 +17,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/client-go/rest"
 
 	. "github.com/onsi/ginkgo"
@@ -109,11 +111,9 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Wait for Virtual Service to be accepted
-		Eventually(func() bool {
-			vs, err := virtualServiceClient.Read(defaults.GlooSystem, "default", clients.ReadOpts{})
-			Expect(err).NotTo(HaveOccurred())
-			return vs.Status.GetState() == core.Status_Accepted
-		}, "15s", "0.5s").Should(BeTrue())
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return virtualServiceClient.Read(defaults.GlooSystem, "default", clients.ReadOpts{})
+		})
 
 		// Find gateway-proxy pod name
 		gatewayProxyPodName = kubeutils.FindPodNameByLabel(cfg, ctx, defaults.GlooSystem, "gloo=gateway-proxy")

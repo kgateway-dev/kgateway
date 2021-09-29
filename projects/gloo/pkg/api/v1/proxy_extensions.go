@@ -16,8 +16,8 @@ func (p *Proxy) MarshalSpec() (v1.Spec, error) {
 	return compress.MarshalSpec(p)
 }
 
-func (p *Proxy) UnmarshalStatus(status v1.Status) error {
-	return compress.UnmarshalStatus(p, status)
+func (p *Proxy) UnmarshalStatus(status v1.Status, unmarshaler resources.StatusUnmarshaler) error {
+	return compress.UnmarshalStatus(p, status, unmarshaler)
 }
 
 func (p *Proxy) MarshalStatus() (v1.Status, error) {

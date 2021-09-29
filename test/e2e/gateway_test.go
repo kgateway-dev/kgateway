@@ -8,6 +8,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/errors"
+
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -162,19 +166,17 @@ var _ = Describe("Gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Create a virtual service with a route pointing to the above service
-				vs := getTrivialVirtualServiceForService("gloo-system", kubeutils.FromKubeMeta(svc.ObjectMeta).Ref(), uint32(svc.Spec.Ports[0].Port))
+				vs := getTrivialVirtualServiceForService("gloo-system", kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
 				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
 				// Wait for proxy to be accepted
 				var proxy *gloov1.Proxy
-				Eventually(func() bool {
+				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+					var err error
 					proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-					if err != nil {
-						return false
-					}
-					return proxy.GetStatus().GetState() == core.Status_Accepted
-				}, "100s", "0.1s").Should(BeTrue())
+					return proxy, err
+				})
 
 				// Verify that the proxy has the expected route
 				Expect(proxy.Listeners).To(HaveLen(2))
@@ -213,7 +215,7 @@ var _ = Describe("Gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Create a trivial, working service with a route pointing to the above service
-				vs1 := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta).Ref(), uint32(svc.Spec.Ports[0].Port))
+				vs1 := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
 				vs1.VirtualHost.Domains = []string{"vs1"}
 				vs1.Metadata.Name = "vs1"
 				_, err = testClients.VirtualServiceClient.Write(vs1, clients.WriteOpts{})
@@ -221,16 +223,13 @@ var _ = Describe("Gateway", func() {
 
 				// Wait for proxy to be accepted
 				var proxy *gloov1.Proxy
-				Eventually(func() bool {
+				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 					proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-					if err != nil {
-						return false
-					}
-					return proxy.GetStatus().GetState() == core.Status_Accepted
-				}, "60s", "2s").Should(BeTrue(), "first virtualservice should be accepted")
+					return proxy, err
+				})
 
 				// Create a second vs with a bad authconfig
-				vs2 := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta).Ref(), uint32(svc.Spec.Ports[0].Port))
+				vs2 := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
 				vs2.VirtualHost.Domains = []string{"vs2"}
 				vs2.Metadata.Name = "vs2"
 				vs2.VirtualHost.Options = &gloov1.VirtualHostOptions{
@@ -249,51 +248,51 @@ var _ = Describe("Gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Check that virtualservice is reporting an error because of missing authconfig:
-				Eventually(func() bool {
-					vs, err := testClients.VirtualServiceClient.Read(writeNamespace, "vs2", clients.ReadOpts{})
-					if err != nil {
-						return false
-					}
+				gloohelpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
+					return testClients.VirtualServiceClient.Read(writeNamespace, "vs2", clients.ReadOpts{})
+				})
 
-					return vs.GetStatus().GetState() == core.Status_Rejected
-				}, "30s", "1s").Should(BeTrue(), fmt.Sprintf("second virtualservice should be rejected due to missing authconfig"))
+				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+					return testClients.GatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				})
 
-				Consistently(func() bool {
-					gateway, err := testClients.GatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-					if err != nil {
-						return false
-					}
-					return gateway.GetStatus().GetState() == core.Status_Accepted
-				}, "10s", "0.1s").Should(BeTrue(), "gateway should not have any errors from a bad VS")
-
-				Eventually(func() bool {
+				By("second virtualservice should not end up in the proxy (bad config)")
+				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 					proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 					if err != nil {
-						return false
+						return nil, err
 					}
 					nonSslListener := getNonSSLListener(proxy)
+					vhostCount := len(nonSslListener.GetHttpListener().VirtualHosts)
+					if vhostCount == 1 {
+						return proxy, nil
+					}
 
-					return proxy.GetStatus().GetState() == core.Status_Accepted && len(nonSslListener.GetHttpListener().VirtualHosts) == 1
-				}, "10s", "0.1s").Should(BeTrue(), "second virtualservice should not end up in the proxy (bad config)")
+					return nil, errors.Errorf("non-ssl listener virtual hosts: expected 1, found %d ", vhostCount)
+				})
 
 				// Create a third trivial vs with valid config
-				vs3 := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta).Ref(), uint32(svc.Spec.Ports[0].Port))
+				vs3 := getTrivialVirtualServiceForService(defaults.GlooSystem, kubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref(), uint32(svc.Spec.Ports[0].Port))
 				vs3.Metadata.Name = "vs3"
 				vs3.VirtualHost.Domains = []string{"vs3"}
 				_, err = testClients.VirtualServiceClient.Write(vs3, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
 				// Wait for proxy to be accepted
-				Eventually(func() bool {
+				By("third virtualservice should end up in the proxy (good config)")
+				gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 					proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 					if err != nil {
-						return false
-
+						return nil, err
 					}
 					nonSslListener := getNonSSLListener(proxy)
+					vhostCount := len(nonSslListener.GetHttpListener().VirtualHosts)
+					if vhostCount == 2 {
+						return proxy, nil
+					}
 
-					return proxy.GetStatus().GetState() == core.Status_Accepted && len(nonSslListener.GetHttpListener().VirtualHosts) == 2
-				}, "10s", "0.1s").Should(BeTrue(), "third virtualservice should end up in the proxy (good config)")
+					return nil, errors.Errorf("non-ssl listener virtual hosts: expected 2, found %d ", vhostCount)
+				})
 
 				// Verify that the proxy is as expected (2 functional virtualservices)
 				Expect(proxy.Listeners).To(HaveLen(2))

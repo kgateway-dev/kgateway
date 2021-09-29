@@ -3,14 +3,31 @@ package compress_test
 import (
 	"encoding/json"
 
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var _ = Describe("Compress", func() {
+
+	var (
+		statusClient      resources.StatusClient
+		statusUnmarshaler *statusutils.NamespacedStatusesUnmarshaler
+	)
+
+	BeforeEach(func() {
+		ns := gloostatusutils.GetStatusReporterNamespaceOrDefault("default")
+		statusUnmarshaler = statusutils.NewNamespacedStatusesUnmarshaler(ns, protoutils.UnmarshalMapToProto)
+		statusClient = gloostatusutils.GetStatusClientForNamespace(ns)
+	})
 
 	Context("spec", func() {
 		It("should  not compress spec when not annotated", func() {
@@ -89,15 +106,16 @@ var _ = Describe("Compress", func() {
 					Name:        "foo",
 					Annotations: map[string]string{"gloo.solo.io/compress": "true"},
 				},
-				Status: &core.Status{State: core.Status_Accepted},
 			}
+			statusClient.SetStatus(p, &core.Status{State: core.Status_Accepted})
+
 			status, err := MarshalStatus(p)
 			Expect(err).NotTo(HaveOccurred())
 
 			p2 := &v1.Proxy{}
-			err = UnmarshalStatus(p2, status)
+			err = UnmarshalStatus(p2, status, statusUnmarshaler)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(p.Status).To(BeEquivalentTo(p2.Status))
+			Expect(p.GetNamespacedStatuses()).To(BeEquivalentTo(p2.GetNamespacedStatuses()))
 		})
 
 		It("should not compress status even when annotated", func() {
@@ -105,8 +123,9 @@ var _ = Describe("Compress", func() {
 				Metadata: &core.Metadata{
 					Name: "foo",
 				},
-				Status: &core.Status{State: core.Status_Accepted},
 			}
+			statusClient.SetStatus(p, &core.Status{State: core.Status_Accepted})
+
 			status1, err := MarshalStatus(p)
 			Expect(err).NotTo(HaveOccurred())
 			p.Metadata.Annotations = map[string]string{"gloo.solo.io/compress": "true"}

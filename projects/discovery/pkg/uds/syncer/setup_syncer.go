@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"github.com/solo-io/gloo/pkg/utils"
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
@@ -70,7 +71,9 @@ func RunUDS(opts bootstrap.Opts) error {
 
 	errs := make(chan error)
 
-	uds := discovery.NewUpstreamDiscovery(watchNamespaces, opts.WriteNamespace, upstreamClient, discoveryPlugins)
+	statusClient := gloostatusutils.GetStatusClientForNamespace(opts.StatusReporterNamespace)
+
+	uds := discovery.NewUpstreamDiscovery(watchNamespaces, opts.WriteNamespace, upstreamClient, statusClient, discoveryPlugins)
 	// TODO(ilackarms) expose discovery options
 	udsErrs, err := uds.StartUds(watchOpts, discovery.Opts{})
 	if err != nil {

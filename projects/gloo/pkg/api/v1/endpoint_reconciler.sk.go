@@ -24,9 +24,9 @@ func endpointsToResources(list EndpointList) resources.ResourceList {
 	return resourceList
 }
 
-func NewEndpointReconciler(client EndpointClient) EndpointReconciler {
+func NewEndpointReconciler(client EndpointClient, statusSetter resources.StatusSetter) EndpointReconciler {
 	return &endpointReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

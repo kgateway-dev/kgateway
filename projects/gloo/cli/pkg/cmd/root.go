@@ -35,7 +35,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func App(opts *options.Options, preRunFuncs []PreRunFunc, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
+func App(opts *options.Options, preRunFuncs []RunnableCommand, postRunFuncs []RunnableCommand, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 
 	app := &cobra.Command{
 		Use:   "glooctl",
@@ -46,6 +46,14 @@ func App(opts *options.Options, preRunFuncs []PreRunFunc, optionsFunc ...cliutil
 			// persistent pre run is be called after flag parsing
 			// since this is the root of the cli app, it will be called regardless of the particular subcommand used
 			for _, optFunc := range preRunFuncs {
+				if err := optFunc(opts, cmd); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+			for _, optFunc := range postRunFuncs {
 				if err := optFunc(opts, cmd); err != nil {
 					return err
 				}
@@ -118,14 +126,17 @@ func GlooCli() *cobra.Command {
 		)
 	}
 
-	preRunFuncs := []PreRunFunc{
+	preRunFuncs := []RunnableCommand{
 		// should make sure to read the config file first
 		ReadConfigFile,
 		prerun.SetKubeConfigEnv,
+		prerun.SetPodNamespaceEnv,
 		prerun.VersionMismatchWarning,
 	}
 
-	return App(opts, preRunFuncs, optionsFunc)
+	var postRunFuncs []RunnableCommand
+
+	return App(opts, preRunFuncs, postRunFuncs, optionsFunc)
 }
 
-type PreRunFunc func(*options.Options, *cobra.Command) error
+type RunnableCommand func(*options.Options, *cobra.Command) error

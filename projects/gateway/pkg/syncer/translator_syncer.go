@@ -40,14 +40,14 @@ type translatorSyncer struct {
 	managedProxyLabels map[string]string
 }
 
-func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyWatcher, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator) v1.ApiSyncer {
+func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyWatcher, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator, statusClient resources.StatusClient) v1.ApiSyncer {
 	t := &translatorSyncer{
 		writeNamespace:  writeNamespace,
 		reporter:        reporter,
 		proxyWatcher:    proxyWatcher,
 		proxyReconciler: proxyReconciler,
 		translator:      translator,
-		statusSyncer:    newStatusSyncer(writeNamespace, proxyWatcher, reporter),
+		statusSyncer:    newStatusSyncer(writeNamespace, proxyWatcher, reporter, statusClient),
 		managedProxyLabels: map[string]string{
 			"created_by": "gateway",
 		},
@@ -130,16 +130,18 @@ type statusSyncer struct {
 
 	proxyWatcher   gloov1.ProxyWatcher
 	writeNamespace string
+	statusClient   resources.StatusClient
 	syncNeeded     chan struct{}
 }
 
-func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, reporter reporter.StatusReporter) statusSyncer {
+func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, reporter reporter.StatusReporter, statusClient resources.StatusClient) statusSyncer {
 	return statusSyncer{
 		proxyToLastStatus:       map[string]reportsAndStatus{},
 		currentGeneratedProxies: nil,
 		reporter:                reporter,
 		proxyWatcher:            proxyWatcher,
 		writeNamespace:          writeNamespace,
+		statusClient:            statusClient,
 		syncNeeded:              make(chan struct{}, 1),
 	}
 }
@@ -205,7 +207,7 @@ func (s *statusSyncer) watchProxiesFromChannel(ctx context.Context, proxies <-ch
 				return nil
 			}
 
-			currentHash, err := hashStatuses(proxyList)
+			currentHash, err := s.hashStatuses(proxyList)
 			if err != nil {
 				logger.DPanicw("error while hashing, this should never happen", zap.Error(err))
 			}
@@ -223,10 +225,10 @@ func (s *statusSyncer) watchProxiesFromChannel(ctx context.Context, proxies <-ch
 	}
 }
 
-func hashStatuses(proxyList gloov1.ProxyList) (uint64, error) {
+func (s *statusSyncer) hashStatuses(proxyList gloov1.ProxyList) (uint64, error) {
 	statuses := make([]interface{}, 0, len(proxyList))
 	for _, proxy := range proxyList {
-		statuses = append(statuses, proxy.GetStatus())
+		statuses = append(statuses, s.statusClient.GetStatus(proxy))
 	}
 	return hashutils.HashAllSafe(nil, statuses...)
 }
@@ -237,7 +239,8 @@ func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
 	for _, proxy := range list {
 		ref := proxy.GetMetadata().Ref()
 		refKey := gloo_translator.UpstreamToClusterName(ref)
-		status := proxy.GetStatus()
+		status := s.statusClient.GetStatus(proxy)
+
 		if current, ok := s.proxyToLastStatus[refKey]; ok {
 			current.Status = status
 			s.proxyToLastStatus[refKey] = current
@@ -336,7 +339,7 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		// this may be different than the status on the snapshot, as the snapshot doesn't get updated
 		// on status changes.
 		if status, ok := localInputResourceLastStatus[inputResource]; ok {
-			clonedInputResource.SetStatus(status)
+			s.statusClient.SetStatus(clonedInputResource, status)
 		}
 		if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
 			errs = multierror.Append(errs, err)

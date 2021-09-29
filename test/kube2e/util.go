@@ -142,7 +142,6 @@ func getSnapOut(metricsPort string) string {
 
 func UpdateDisableTransformationValidationSetting(ctx context.Context, shouldDisable bool, installNamespace string) {
 	UpdateSettings(func(settings *v1.Settings) {
-		Expect(settings.GetGateway()).NotTo(BeNil())
 		Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
 		settings.GetGateway().GetValidation().DisableTransformationValidation = &wrappers.BoolValue{Value: shouldDisable}
 	}, ctx, installNamespace)
@@ -151,7 +150,6 @@ func UpdateDisableTransformationValidationSetting(ctx context.Context, shouldDis
 // enable/disable strict validation
 func UpdateAlwaysAcceptSetting(ctx context.Context, alwaysAccept bool, installNamespace string) {
 	UpdateSettings(func(settings *v1.Settings) {
-		Expect(settings.GetGateway()).NotTo(BeNil())
 		Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
 		settings.GetGateway().GetValidation().AlwaysAccept = &wrappers.BoolValue{Value: alwaysAccept}
 	}, ctx, installNamespace)
@@ -166,7 +164,6 @@ func UpdateRestEdsSetting(ctx context.Context, enableRestEds bool, installNamesp
 
 func UpdateReplaceInvalidRoutes(ctx context.Context, replaceInvalidRoutes bool, installNamespace string) {
 	UpdateSettings(func(settings *v1.Settings) {
-		Expect(settings.GetGloo()).NotTo(BeNil())
 		Expect(settings.GetGloo().GetInvalidConfigPolicy()).NotTo(BeNil())
 		settings.GetGloo().GetInvalidConfigPolicy().ReplaceInvalidRoutes = replaceInvalidRoutes
 	}, ctx, installNamespace)

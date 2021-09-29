@@ -117,7 +117,7 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 
 	snapshotVersion, err := GetSnapshotVersion(certs)
 	if err != nil {
-		contextutils.LoggerFrom(ctx).Info("Error getting snapshot version", zap.Error(err))
+		contextutils.LoggerFrom(ctx).Info("error getting snapshot version", zap.Error(err))
 		return err
 	}
 	contextutils.LoggerFrom(ctx).Infof("Updating SDS config. sdsClient is %s. Snapshot version is %s", s.sdsClient, snapshotVersion)

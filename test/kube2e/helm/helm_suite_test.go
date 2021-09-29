@@ -7,7 +7,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
-	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/go-utils/log"
 
@@ -22,6 +23,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
@@ -39,7 +41,7 @@ func TestHelm(t *testing.T) {
 
 var testHelper *helper.SoloTestHelper
 var ctx, cancel = context.WithCancel(context.Background())
-
+var namespace = defaults.GlooSystem
 var _ = BeforeSuite(StartTestHelper)
 var _ = AfterSuite(TearDownTestHelper)
 
@@ -47,11 +49,13 @@ func StartTestHelper() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 
-	randomNumber := time.Now().Unix() % 10000
+	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
+	Expect(err).NotTo(HaveOccurred())
+
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
-		defaults.InstallNamespace = "helm-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
+		defaults.InstallNamespace = namespace
 		defaults.Verbose = true
 		return defaults
 	})
@@ -77,6 +81,8 @@ func StartTestHelper() {
 }
 
 func TearDownTestHelper() {
+	err := os.Unsetenv(statusutils.PodNamespaceEnvName)
+	Expect(err).NotTo(HaveOccurred())
 	if os.Getenv("TEAR_DOWN") == "true" {
 		Expect(testHelper).ToNot(BeNil())
 		err := testHelper.UninstallGloo()

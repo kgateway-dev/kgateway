@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -85,6 +87,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		upstreamClient          gloov1.UpstreamClient
 		proxyClient             gloov1.ProxyClient
 		serviceClient           skkube.ServiceClient
+		statusClient            resources.StatusClient
 	)
 
 	BeforeEach(func() {
@@ -182,6 +185,8 @@ var _ = Describe("Kube2e: gateway", func() {
 		kubeCoreCache, err := kubecache.NewKubeCoreCache(ctx, kubeClient)
 		Expect(err).NotTo(HaveOccurred())
 		serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
+
+		statusClient = gloostatusutils.GetStatusClientForNamespace(testHelper.InstallNamespace)
 	})
 
 	AfterEach(func() {
@@ -218,9 +223,9 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
-			Eventually(func() (*gatewayv1.Gateway, error) {
+			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
-			}, "15s", "0.5s").Should(Not(BeNil()))
+			})
 
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",
@@ -277,8 +282,9 @@ var _ = Describe("Kube2e: gateway", func() {
 						return err
 					}
 
-					if status := proxy.GetStatus(); status.GetState() != core.Status_Accepted {
-						return eris.Errorf("unexpected proxy state: %v. Reason: %v", status.GetState(), status.GetReason())
+					proxyStatus := statusClient.GetStatus(proxy)
+					if proxyStatus.GetState() != core.Status_Accepted {
+						return eris.Errorf("unexpected proxy state: %v. Reason: %v", proxyStatus, proxyStatus.GetReason())
 					}
 
 					for _, l := range proxy.Listeners {
@@ -588,7 +594,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				invalidVs.VirtualHost = validVh
 				validVs.VirtualHost = invalidVh
 
-				virtualServiceReconciler := gatewayv1.NewVirtualServiceReconciler(virtualServiceClient)
+				virtualServiceReconciler := gatewayv1.NewVirtualServiceReconciler(virtualServiceClient, statusClient)
 				err = virtualServiceReconciler.Reconcile(testHelper.InstallNamespace, gatewayv1.VirtualServiceList{validVs, invalidVs}, nil, clients.ListOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
@@ -1297,8 +1303,9 @@ var _ = Describe("Kube2e: gateway", func() {
 					return err
 				}
 
-				if status := proxy.GetStatus(); status.GetState() != core.Status_Accepted {
-					return eris.Errorf("unexpected proxy state: %v. Reason: %v", status.GetState(), status.GetReason())
+				proxyStatus := statusClient.GetStatus(proxy)
+				if proxyStatus.GetState() != core.Status_Accepted {
+					return eris.Errorf("unexpected proxy state: %v. Reason: %v", proxyStatus.GetState(), proxyStatus.GetReason())
 				}
 
 				for _, l := range proxy.Listeners {
@@ -1378,7 +1385,8 @@ var _ = Describe("Kube2e: gateway", func() {
 					return nil, err
 				}
 
-				if status := proxy.GetStatus(); status.GetState() != core.Status_Accepted {
+				proxyStatus := statusClient.GetStatus(proxy)
+				if proxyStatus.GetState() != core.Status_Accepted {
 					return nil, eris.New("proxy not in accepted state")
 				}
 

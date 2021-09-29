@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/jobs/pkg/run"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 	"github.com/spf13/cobra"
 )
 
@@ -36,7 +37,7 @@ func cmd(ctx context.Context) *cobra.Command {
 
 	pFlags := cmd.PersistentFlags()
 
-	podNamespace := os.Getenv("POD_NAMESPACE")
+	podNamespace := os.Getenv(statusutils.PodNamespaceEnvName)
 
 	pFlags.StringVar(&opts.SvcName, "svc-name", "",
 		"name of the service for which to generate the certs")

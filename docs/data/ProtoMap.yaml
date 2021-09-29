@@ -71,6 +71,9 @@ apis:
   core.solo.io.Metadata:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/v1/metadata.proto.sk/#Metadata
     package: core.solo.io
+  core.solo.io.NamespacedStatuses:
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/v1/status.proto.sk/#NamespacedStatuses
+    package: core.solo.io
   core.solo.io.Resource:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/v1/solo-kit.proto.sk/#Resource
     package: core.solo.io
@@ -910,6 +913,9 @@ apis:
     package: ratelimit.api.solo.io
   ratelimit.api.solo.io.RateLimitActions:
     relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitActions
+    package: ratelimit.api.solo.io
+  ratelimit.api.solo.io.RateLimitConfigNamespacedStatuses:
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitConfigNamespacedStatuses
     package: ratelimit.api.solo.io
   ratelimit.api.solo.io.RateLimitConfigSpec:
     relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitConfigSpec

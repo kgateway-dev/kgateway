@@ -24,9 +24,9 @@ func gatewaysToResources(list GatewayList) resources.ResourceList {
 	return resourceList
 }
 
-func NewGatewayReconciler(client GatewayClient) GatewayReconciler {
+func NewGatewayReconciler(client GatewayClient, statusSetter resources.StatusSetter) GatewayReconciler {
 	return &gatewayReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 

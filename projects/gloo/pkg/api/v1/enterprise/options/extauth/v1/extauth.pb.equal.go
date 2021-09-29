@@ -46,12 +46,12 @@ func (m *AuthConfig) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetStatus()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetStatus()) {
+	if h, ok := interface{}(m.GetNamespacedStatuses()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetNamespacedStatuses()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetStatus(), target.GetStatus()) {
+		if !proto.Equal(m.GetNamespacedStatuses(), target.GetNamespacedStatuses()) {
 			return false
 		}
 	}

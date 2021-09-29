@@ -130,9 +130,10 @@ message VirtualService {
     // and can be changed after creating the resource.
     string display_name = 3 [(extproto.skip_hashing) = true];
 
-    // Status indicates the validation status of this resource.
-    // Status is read-only by clients, and set by gloo during validation
-    core.solo.io.Status status = 6 [(extproto.skip_hashing) = true];
+    reserved 6;
+    // NamespacedStatuses indicates the validation status of this resource.
+    // NamespacedStatuses is read-only by clients, and set by gateway during validation
+    core.solo.io.NamespacedStatuses namespaced_statuses = 8 [(extproto.skip_hashing) = true];
 
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 7;

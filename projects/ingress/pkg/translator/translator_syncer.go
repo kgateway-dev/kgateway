@@ -12,6 +12,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
 type translatorSyncer struct {
@@ -26,17 +27,20 @@ type translatorSyncer struct {
 	// only relevant when requireIngressClass is true.
 	// defaults to 'gloo'
 	customIngressClass string
+
+	statusClient resources.StatusClient
 }
 
-func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error, requireIngressClass bool, customIngressClass string) v1.TranslatorSyncer {
+func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error, requireIngressClass bool, customIngressClass string, statusClient resources.StatusClient) v1.TranslatorSyncer {
 	return &translatorSyncer{
 		writeNamespace:      writeNamespace,
 		writeErrs:           writeErrs,
 		proxyClient:         proxyClient,
 		ingressClient:       ingressClient,
-		proxyReconciler:     gloov1.NewProxyReconciler(proxyClient),
+		proxyReconciler:     gloov1.NewProxyReconciler(proxyClient, statusClient),
 		requireIngressClass: requireIngressClass,
 		customIngressClass:  customIngressClass,
+		statusClient:        statusClient,
 	}
 }
 
@@ -69,7 +73,9 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		desiredResources = gloov1.ProxyList{proxy}
 	}
 
-	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, utils.TransitionFunction, clients.ListOpts{
+	proxyTransitionFunction := utils.TransitionFunction(s.statusClient)
+
+	if err := s.proxyReconciler.Reconcile(s.writeNamespace, desiredResources, proxyTransitionFunction, clients.ListOpts{
 		Ctx:      ctx,
 		Selector: labels,
 	}); err != nil {

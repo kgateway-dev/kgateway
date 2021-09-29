@@ -5,6 +5,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	extauthExt "github.com/solo-io/gloo/projects/gloo/pkg/syncer/extauth"
 	ratelimitExt "github.com/solo-io/gloo/projects/gloo/pkg/syncer/ratelimit"
@@ -231,15 +233,16 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 	}
 
 	return translator.Opts{
-		GlooNamespace:      meta.GetNamespace(),
-		WriteNamespace:     runOptions.NsToWrite,
-		WatchNamespaces:    runOptions.NsToWatch,
-		Gateways:           f,
-		VirtualServices:    f,
-		RouteTables:        f,
-		VirtualHostOptions: f,
-		RouteOptions:       f,
-		Proxies:            f,
+		GlooNamespace:           meta.GetNamespace(),
+		WriteNamespace:          runOptions.NsToWrite,
+		WatchNamespaces:         runOptions.NsToWatch,
+		StatusReporterNamespace: statusutils.GetStatusReporterNamespaceOrDefault(defaults.GlooSystem),
+		Gateways:                f,
+		VirtualServices:         f,
+		RouteTables:             f,
+		VirtualHostOptions:      f,
+		RouteOptions:            f,
+		Proxies:                 f,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: time.Minute,
@@ -283,17 +286,18 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 	}
 
 	return bootstrap.Opts{
-		Settings:          runOptions.Settings,
-		WriteNamespace:    runOptions.NsToWrite,
-		Upstreams:         f,
-		UpstreamGroups:    f,
-		Proxies:           f,
-		Secrets:           f,
-		Artifacts:         f,
-		AuthConfigs:       f,
-		RateLimitConfigs:  f,
-		KubeServiceClient: newServiceClient(ctx, f, runOptions),
-		WatchNamespaces:   runOptions.NsToWatch,
+		Settings:                runOptions.Settings,
+		WriteNamespace:          runOptions.NsToWrite,
+		StatusReporterNamespace: statusutils.GetStatusReporterNamespaceOrDefault(defaults.GlooSystem),
+		Upstreams:               f,
+		UpstreamGroups:          f,
+		Proxies:                 f,
+		Secrets:                 f,
+		Artifacts:               f,
+		AuthConfigs:             f,
+		RateLimitConfigs:        f,
+		KubeServiceClient:       newServiceClient(ctx, f, runOptions),
+		WatchNamespaces:         runOptions.NsToWatch,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: time.Second / 10,

@@ -3,6 +3,10 @@ package helpers
 import (
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/statusutils"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	errors "github.com/rotisserie/eris"
@@ -27,10 +31,16 @@ func EventuallyResourceWarning(getter InputResourceGetter, intervals ...interfac
 	EventuallyResourceStatusMatchesState(1, getter, core.Status_Warning, intervals...)
 }
 
+func EventuallyResourceRejected(getter InputResourceGetter, intervals ...interface{}) {
+	EventuallyResourceStatusMatchesState(1, getter, core.Status_Rejected, intervals...)
+}
+
 func EventuallyResourceStatusMatchesState(offset int, getter InputResourceGetter, desiredStatusState core.Status_State, intervals ...interface{}) {
 	statusStateMatcher := gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
 		"State": gomega.Equal(desiredStatusState),
 	})
+
+	statusClient := statusutils.GetStatusClientFromEnvOrDefault(defaults.GlooSystem)
 
 	timeoutInterval, pollingInterval := getTimeoutAndPollingIntervalsOrDefault(intervals...)
 	gomega.EventuallyWithOffset(offset+1, func() (core.Status, error) {
@@ -39,11 +49,12 @@ func EventuallyResourceStatusMatchesState(offset int, getter InputResourceGetter
 			return core.Status{}, errors.Wrapf(err, "failed to get resource")
 		}
 
-		if resource.GetStatus() == nil {
+		status := statusClient.GetStatus(resource)
+		if status == nil {
 			return core.Status{}, errors.Wrapf(err, "waiting for %v status to be non-nil", resource.GetMetadata().GetName())
 		}
 
-		return *resource.GetStatus(), nil
+		return *status, nil
 	}, timeoutInterval, pollingInterval).Should(statusStateMatcher)
 }
 

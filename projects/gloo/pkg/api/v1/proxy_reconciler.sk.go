@@ -24,9 +24,9 @@ func proxysToResources(list ProxyList) resources.ResourceList {
 	return resourceList
 }
 
-func NewProxyReconciler(client ProxyClient) ProxyReconciler {
+func NewProxyReconciler(client ProxyClient, statusSetter resources.StatusSetter) ProxyReconciler {
 	return &proxyReconciler{
-		base: reconcile.NewReconciler(client.BaseClient()),
+		base: reconcile.NewReconciler(client.BaseClient(), statusSetter),
 	}
 }
 
