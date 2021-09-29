@@ -109,7 +109,7 @@ func (s *proxyReconciler) addProxyValidationResults(ctx context.Context, proxies
 
 	for proxy, reports := range proxiesToWrite {
 
-		proxyRpt, err := s.proxyValidator.Validate(ctx, &validation.GlooValidationServiceRequest{
+		glooValidationResponse, err := s.proxyValidator.Validate(ctx, &validation.GlooValidationServiceRequest{
 			Proxy: proxy,
 		})
 		if err != nil {
@@ -120,8 +120,13 @@ func (s *proxyReconciler) addProxyValidationResults(ctx context.Context, proxies
 			logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.GetMetadata().Ref()), zap.Error(validateErr))
 		}
 
+		// We only sent one proxy in the GlooValidationServiceRequest - we should only get one report back in response.
+		if len(glooValidationResponse.GetValidationReports()) != 1 {
+			return errors.Errorf("Expected Gloo validation response to contain 1 report, but contained %d", len(glooValidationResponse.GetValidationReports()))
+		}
+
 		// add the proxy validation result to the existing resource reports
-		if err := reporting.AddProxyValidationResult(reports, proxy, proxyRpt.GetProxyReport()); err != nil {
+		if err := reporting.AddProxyValidationResult(reports, proxy, glooValidationResponse.GetValidationReports()[0].GetProxyReport()); err != nil {
 			// should never happen
 			return err
 		}

@@ -1782,6 +1782,19 @@ spec:
 `,
 					expectedErr: gwtranslator.MissingPrefixErr.Error(),
 				},
+				{
+					resourceYaml: `
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: invalid-upstream
+  namespace: gloo-system
+spec:
+  static:
+    hosts:
+      - addr: ~
+`, expectedErr: "The Upstream \"invalid-upstream\" is invalid: spec.static.hosts.addr: Invalid value: \"null\": spec.static.hosts.addr in body must be of type string: \"null\"",
+				},
 			} {
 				testValidation(tc.resourceYaml, tc.expectedErr)
 			}

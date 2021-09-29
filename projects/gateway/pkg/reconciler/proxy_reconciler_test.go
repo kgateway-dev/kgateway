@@ -75,7 +75,11 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		validationClient.EXPECT().Validate(ctx, gomock.Any()).DoAndReturn(
 			func(_ context.Context, req *validation.GlooValidationServiceRequest) (*validation.GlooValidationServiceResponse, error) {
 				return &validation.GlooValidationServiceResponse{
-					ProxyReport: validationutils.MakeReport(req.Proxy),
+					ValidationReports: []*validation.ValidationReport{
+						{
+							ProxyReport: validationutils.MakeReport(req.Proxy),
+						},
+					},
 				}, nil
 			}).AnyTimes()
 

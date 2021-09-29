@@ -32,7 +32,21 @@ import (
 	"go.uber.org/zap"
 )
 
-type ProxyReports map[*gloov1.Proxy]*validation.ProxyReport
+type Reports struct {
+	Proxies         []*gloov1.Proxy
+	ProxyReports    *ProxyReports
+	UpstreamReports *UpstreamReports
+}
+
+func (r *Reports) GetProxies() []*gloov1.Proxy {
+	if r == nil || r.Proxies == nil {
+		return []*gloov1.Proxy{}
+	}
+	return r.Proxies
+}
+
+type ProxyReports []*validation.ProxyReport
+type UpstreamReports []*validation.ResourceReport
 
 var (
 	NotReadyErr = errors.Errorf("validation is not yet available. Waiting for first snapshot")
@@ -48,6 +62,10 @@ var (
 		return errors.Wrapf(err, unmarshalErrMsg)
 	}
 
+	GlooValidationResponseLengthError = func(resp *validation.GlooValidationServiceResponse) error {
+		return errors.Errorf("Expected Gloo validation response to contain 1 report, but contained %d", len(resp.GetValidationReports()))
+	}
+
 	mValidConfig = utils2.MakeGauge("validation.gateway.solo.io/valid_config", "A boolean indicating whether gloo config is valid")
 )
 
@@ -60,12 +78,14 @@ var _ Validator = &validator{}
 
 type Validator interface {
 	v1.ApiSyncer
-	ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (ProxyReports, *multierror.Error)
-	ValidateGateway(ctx context.Context, gw *v1.Gateway, dryRun bool) (ProxyReports, error)
-	ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (ProxyReports, error)
+	ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (*Reports, *multierror.Error)
+	ValidateGateway(ctx context.Context, gw *v1.Gateway, dryRun bool) (*Reports, error)
+	ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (*Reports, error)
 	ValidateDeleteVirtualService(ctx context.Context, vs *core.ResourceRef, dryRun bool) error
-	ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (ProxyReports, error)
+	ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (*Reports, error)
 	ValidateDeleteRouteTable(ctx context.Context, rt *core.ResourceRef, dryRun bool) error
+	ValidateUpstream(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*Reports, error)
+	ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*Reports, error)
 }
 
 type validator struct {
@@ -163,7 +183,7 @@ func (v *validator) deleteFromLocalSnapshot(resource resources.Resource) {
 	}
 }
 
-func (v *validator) validateSnapshotThreadSafe(ctx context.Context, apply applyResource, dryRun bool) (ProxyReports, error) {
+func (v *validator) validateSnapshotThreadSafe(ctx context.Context, apply applyResource, dryRun bool) (*Reports, error) {
 	// thread-safe implementation of validateSnapshot
 	v.lock.Lock()
 	defer v.lock.Unlock()
@@ -171,7 +191,7 @@ func (v *validator) validateSnapshotThreadSafe(ctx context.Context, apply applyR
 	return v.validateSnapshot(ctx, apply, dryRun)
 }
 
-func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, dryRun bool) (ProxyReports, error) {
+func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, dryRun bool) (*Reports, error) {
 	// validate that a snapshot can be modified
 	// should be called within a lock
 	//
@@ -207,7 +227,8 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 
 	var (
 		errs         error
-		proxyReports ProxyReports = map[*gloov1.Proxy]*validation.ProxyReport{}
+		proxyReports ProxyReports
+		proxies      []*gloov1.Proxy
 	)
 	for _, proxyName := range proxyNames {
 		gatewayList := gatewaysByProxy[proxyName]
@@ -233,16 +254,12 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 			continue
 		}
 
+		proxies = append(proxies, proxy)
+
 		// validate the proxy with gloo
-		var proxyReport *validation.GlooValidationServiceResponse
-		err := retry.Do(func() error {
-			rpt, err := v.validationClient.Validate(ctx, &validation.GlooValidationServiceRequest{Proxy: proxy})
-			proxyReport = rpt
-			return err
-		},
-			retry.Attempts(4),
-			retry.Delay(250*time.Millisecond),
-		)
+		glooValidationResponse, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
+			Proxy: proxy,
+		})
 		if err != nil {
 			err = errors.Wrapf(err, "failed to communicate with Gloo validation server")
 			if v.ignoreProxyValidationFailure {
@@ -253,12 +270,20 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 			continue
 		}
 
-		proxyReports[proxy] = proxyReport.GetProxyReport()
-		if err := validationutils.GetProxyError(proxyReport.GetProxyReport()); err != nil {
+		if len(glooValidationResponse.GetValidationReports()) != 1 {
+			// This was likely caused by a development error
+			err := GlooValidationResponseLengthError(glooValidationResponse)
+			errs = multierr.Append(errs, err)
+			continue
+		}
+
+		proxyReport := glooValidationResponse.GetValidationReports()[0].GetProxyReport()
+		proxyReports = append(proxyReports, proxyReport)
+		if err := validationutils.GetProxyError(proxyReport); err != nil {
 			errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
 			continue
 		}
-		if warnings := validationutils.GetProxyWarning(proxyReport.GetProxyReport()); !v.allowWarnings && len(warnings) > 0 {
+		if warnings := validationutils.GetProxyWarning(proxyReport); !v.allowWarnings && len(warnings) > 0 {
 			for _, warning := range warnings {
 				errs = multierr.Append(errs, errors.New(warning))
 			}
@@ -271,7 +296,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		if !dryRun {
 			utils2.MeasureZero(ctx, mValidConfig)
 		}
-		return proxyReports, errors.Wrapf(errs, "validating %T %v", resource, ref)
+		return &Reports{ProxyReports: &proxyReports, Proxies: proxies}, errors.Wrapf(errs, "validating %T %v", resource, ref)
 	}
 
 	contextutils.LoggerFrom(ctx).Debugf("Accepted %T %v", resource, ref)
@@ -284,11 +309,12 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		apply(v.latestSnapshot)
 	}
 
-	return proxyReports, nil
+	return &Reports{ProxyReports: &proxyReports, Proxies: proxies}, nil
 }
 
-func (v *validator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (ProxyReports, *multierror.Error) {
+func (v *validator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (*Reports, *multierror.Error) {
 	var (
+		proxies      []*gloov1.Proxy
 		proxyReports = ProxyReports{}
 		errs         = &multierror.Error{}
 	)
@@ -302,10 +328,15 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 		var itemProxyReports, err = v.processItem(ctx, item)
 
 		errs = multierror.Append(errs, err)
-		for proxy, report := range itemProxyReports {
-			// ok to return final proxy reports as the latest result includes latest proxy calculated
-			// for each resource, as we process incrementally, storing new state in memory as we go
-			proxyReports[proxy] = report
+		if itemProxyReports != nil && itemProxyReports.ProxyReports != nil {
+			for _, report := range *itemProxyReports.ProxyReports {
+				// ok to return final proxy reports as the latest result includes latest proxy calculated
+				// for each resource, as we process incrementally, storing new state in memory as we go
+				proxyReports = append(proxyReports, report)
+			}
+			for _, proxy := range itemProxyReports.Proxies {
+				proxies = append(proxies, proxy)
+			}
 		}
 	}
 
@@ -315,10 +346,10 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 		v.latestSnapshot = &originalSnapshot
 	}
 
-	return proxyReports, errs
+	return &Reports{ProxyReports: &proxyReports, Proxies: proxies}, errs
 }
 
-func (v *validator) processItem(ctx context.Context, item unstructured.Unstructured) (ProxyReports, error) {
+func (v *validator) processItem(ctx context.Context, item unstructured.Unstructured) (*Reports, error) {
 	// process a single change in a list of changes
 	//
 	// when calling the specific internal validate method, dryRun and acquireLock are always false:
@@ -326,7 +357,7 @@ func (v *validator) processItem(ctx context.Context, item unstructured.Unstructu
 	// 	acquireLock=false: the entire list of changes are called within a single lock
 	gv, err := schema.ParseGroupVersion(item.GetAPIVersion())
 	if err != nil {
-		return ProxyReports{}, err
+		return &Reports{ProxyReports: &ProxyReports{}}, err
 	}
 
 	itemGvk := schema.GroupVersionKind{
@@ -337,7 +368,7 @@ func (v *validator) processItem(ctx context.Context, item unstructured.Unstructu
 
 	jsonBytes, err := item.MarshalJSON()
 	if err != nil {
-		return ProxyReports{}, err
+		return &Reports{ProxyReports: &ProxyReports{}}, err
 	}
 
 	switch itemGvk {
@@ -346,7 +377,7 @@ func (v *validator) processItem(ctx context.Context, item unstructured.Unstructu
 			gw v1.Gateway
 		)
 		if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, &gw); unmarshalErr != nil {
-			return ProxyReports{}, WrappedUnmarshalErr(unmarshalErr)
+			return &Reports{ProxyReports: &ProxyReports{}}, WrappedUnmarshalErr(unmarshalErr)
 		}
 		return v.validateGatewayInternal(ctx, &gw, false, false)
 	case v1.VirtualServiceGVK:
@@ -354,7 +385,7 @@ func (v *validator) processItem(ctx context.Context, item unstructured.Unstructu
 			vs v1.VirtualService
 		)
 		if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, &vs); unmarshalErr != nil {
-			return ProxyReports{}, WrappedUnmarshalErr(unmarshalErr)
+			return &Reports{ProxyReports: &ProxyReports{}}, WrappedUnmarshalErr(unmarshalErr)
 		}
 		return v.validateVirtualServiceInternal(ctx, &vs, false, false)
 	case v1.RouteTableGVK:
@@ -362,19 +393,22 @@ func (v *validator) processItem(ctx context.Context, item unstructured.Unstructu
 			rt v1.RouteTable
 		)
 		if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, &rt); unmarshalErr != nil {
-			return ProxyReports{}, WrappedUnmarshalErr(unmarshalErr)
+			return &Reports{ProxyReports: &ProxyReports{}}, WrappedUnmarshalErr(unmarshalErr)
 		}
 		return v.validateRouteTableInternal(ctx, &rt, false, false)
+
+	case gloov1.UpstreamGVK:
+		// TODO(mitchaman): Handle upstreams
 	}
 	// should not happen
-	return ProxyReports{}, errors.Errorf("Unknown group/version/kind, %v", itemGvk)
+	return &Reports{ProxyReports: &ProxyReports{}}, errors.Errorf("Unknown group/version/kind, %v", itemGvk)
 }
 
-func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (ProxyReports, error) {
+func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (*Reports, error) {
 	return v.validateVirtualServiceInternal(ctx, vs, dryRun, true)
 }
 
-func (v *validator) validateVirtualServiceInternal(ctx context.Context, vs *v1.VirtualService, dryRun, acquireLock bool) (ProxyReports, error) {
+func (v *validator) validateVirtualServiceInternal(ctx context.Context, vs *v1.VirtualService, dryRun, acquireLock bool) (*Reports, error) {
 	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, *core.ResourceRef) {
 		vsRef := vs.GetMetadata().Ref()
 
@@ -450,11 +484,11 @@ func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef *cor
 	return nil
 }
 
-func (v *validator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (ProxyReports, error) {
+func (v *validator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (*Reports, error) {
 	return v.validateRouteTableInternal(ctx, rt, dryRun, true)
 }
 
-func (v *validator) validateRouteTableInternal(ctx context.Context, rt *v1.RouteTable, dryRun, acquireLock bool) (ProxyReports, error) {
+func (v *validator) validateRouteTableInternal(ctx context.Context, rt *v1.RouteTable, dryRun, acquireLock bool) (*Reports, error) {
 	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, *core.ResourceRef) {
 		rtRef := rt.GetMetadata().Ref()
 
@@ -532,11 +566,11 @@ func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef *core.Re
 	return nil
 }
 
-func (v *validator) ValidateGateway(ctx context.Context, gw *v1.Gateway, dryRun bool) (ProxyReports, error) {
+func (v *validator) ValidateGateway(ctx context.Context, gw *v1.Gateway, dryRun bool) (*Reports, error) {
 	return v.validateGatewayInternal(ctx, gw, dryRun, true)
 }
 
-func (v *validator) validateGatewayInternal(ctx context.Context, gw *v1.Gateway, dryRun, acquireLock bool) (ProxyReports, error) {
+func (v *validator) validateGatewayInternal(ctx context.Context, gw *v1.Gateway, dryRun, acquireLock bool) (*Reports, error) {
 	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, *core.ResourceRef) {
 		gwRef := gw.GetMetadata().Ref()
 
@@ -565,6 +599,89 @@ func (v *validator) validateGatewayInternal(ctx context.Context, gw *v1.Gateway,
 	} else {
 		return v.validateSnapshot(ctx, apply, dryRun)
 	}
+}
+
+func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*Reports, error) {
+	logger := contextutils.LoggerFrom(ctx)
+	response, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
+		// Sending a nil proxy causes the upstream to be translated with all proxies in gloo's snapshot
+		Proxy:     nil,
+		Upstreams: []*gloov1.Upstream{us},
+	})
+	if err != nil {
+		if v.ignoreProxyValidationFailure {
+			logger.Error(err)
+		} else {
+			return &Reports{}, err
+		}
+	}
+	logger.Debugf("Got response from GlooValidationService: %s", response.String())
+
+	var (
+		errs            error
+		upstreamReports UpstreamReports
+		proxies         []*gloov1.Proxy
+	)
+	for _, report := range response.GetValidationReports() {
+		// Append upstream errors
+		for _, usRpt := range report.GetUpstreamReports() {
+			// Only care about the upstream from the request
+			if usRpt.GetResourceRef().Equal(us.GetMetadata().Ref()) {
+				upstreamReports = append(upstreamReports, usRpt)
+				if err := resourceReportToMultiErr(usRpt); err != nil {
+					errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Upstream with Gloo validation server"))
+				}
+				if warnings := usRpt.GetWarnings(); !v.allowWarnings && len(warnings) > 0 {
+					for _, warning := range warnings {
+						errs = multierr.Append(errs, errors.New(warning))
+					}
+				}
+			}
+		}
+
+		// Append proxies
+		if report.GetProxy() != nil {
+			proxies = append(proxies, report.GetProxy())
+		}
+	}
+
+	if errs != nil {
+		// TODO(mitchaman): Set metric to indicate the config is invalid
+		return &Reports{
+			ProxyReports:    &ProxyReports{},
+			UpstreamReports: &upstreamReports,
+			Proxies:         proxies,
+		}, errors.Wrapf(errs, "validating %T %v", us, us.GetMetadata().Ref())
+	}
+
+	logger.Debugf("Accepted Upstream %v", us.GetMetadata().Ref())
+	// TODO(mitchaman): Set metric to indicate the config is valid
+
+	return &Reports{ProxyReports: &ProxyReports{}, UpstreamReports: &upstreamReports, Proxies: proxies}, nil
+}
+
+func (v *validator) ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*Reports, error) {
+	// TODO(mitchaman): This function should never be called as long as 5-gateway-validation-webhook-configuration.yaml
+	//  isn't specifying the DELETE operation for upstreams
+	panic("implement me")
+}
+
+func (v *validator) sendGlooValidationServiceRequest(
+	ctx context.Context,
+	req *validation.GlooValidationServiceRequest,
+) (*validation.GlooValidationServiceResponse, error) {
+	logger := contextutils.LoggerFrom(ctx)
+	logger.Debugf("Sending request to GlooValidationService: %s", req.String())
+	var response *validation.GlooValidationServiceResponse
+	err := retry.Do(func() error {
+		rpt, err := v.validationClient.Validate(ctx, req)
+		response = rpt
+		return err
+	},
+		retry.Attempts(4),
+		retry.Delay(250*time.Millisecond),
+	)
+	return response, err
 }
 
 func proxiesForVirtualService(gwList v1.GatewayList, vs *v1.VirtualService) []string {
@@ -681,4 +798,12 @@ func gatewayListContainsVirtualService(gwList v1.GatewayList, vs *v1.VirtualServ
 	}
 
 	return false
+}
+
+func resourceReportToMultiErr(resourceRpt *validation.ResourceReport) error {
+	var multiErr error
+	for _, errStr := range resourceRpt.GetErrors() {
+		multiErr = multierr.Append(multiErr, errors.New(errStr))
+	}
+	return multiErr
 }

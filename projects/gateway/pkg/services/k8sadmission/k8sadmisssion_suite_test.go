@@ -1,4 +1,4 @@
-package k8sadmisssion_test
+package k8sadmission_test
 
 import (
 	"os"
