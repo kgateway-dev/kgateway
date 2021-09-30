@@ -13,6 +13,8 @@ weight: 5
 
 - [GlooValidationServiceRequest](#gloovalidationservicerequest)
 - [GlooValidationServiceResponse](#gloovalidationserviceresponse)
+- [ModifiedResources](#modifiedresources)
+- [DeletedResources](#deletedresources)
 - [ValidationReport](#validationreport)
 - [ResourceReport](#resourcereport)
 - [NotifyOnResyncRequest](#notifyonresyncrequest)
@@ -55,14 +57,16 @@ weight: 5
 
 ```yaml
 "proxy": .gloo.solo.io.Proxy
-"upstreams": []gloo.solo.io.Upstream
+"modifiedResources": .gloo.solo.io.ModifiedResources
+"deletedResources": .gloo.solo.io.DeletedResources
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) | If a proxy is provided in the request, the response will contain only the report for that proxy. If no proxy is provided, the response will contain a report for each proxy in the Gloo API snapshot. |
-| `upstreams` | [[]gloo.solo.io.Upstream](../../../v1/upstream.proto.sk/#upstream) |  |
+| `modifiedResources` | [.gloo.solo.io.ModifiedResources](../gloo_validation.proto.sk/#modifiedresources) |  Only one of `modifiedResources` or `deletedResources` can be set. |
+| `deletedResources` | [.gloo.solo.io.DeletedResources](../gloo_validation.proto.sk/#deletedresources) |  Only one of `deletedResources` or `modifiedResources` can be set. |
 
 
 
@@ -80,6 +84,40 @@ weight: 5
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `validationReports` | [[]gloo.solo.io.ValidationReport](../gloo_validation.proto.sk/#validationreport) |  |
+
+
+
+
+---
+### ModifiedResources
+
+
+
+```yaml
+"upstreams": []gloo.solo.io.Upstream
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `upstreams` | [[]gloo.solo.io.Upstream](../../../v1/upstream.proto.sk/#upstream) |  |
+
+
+
+
+---
+### DeletedResources
+
+
+
+```yaml
+"upstreamRefs": []core.solo.io.ResourceRef
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `upstreamRefs` | [[]core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 
 
 

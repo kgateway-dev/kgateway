@@ -25,13 +25,28 @@ service GlooValidationService {
 message GlooValidationServiceRequest {
     // If a proxy is provided in the request, the response will contain only the report for that proxy.
     // If no proxy is provided, the response will contain a report for each proxy in the Gloo API snapshot.
-    gloo.solo.io.Proxy proxy = 1;
+    Proxy proxy = 1;
 
-    repeated gloo.solo.io.Upstream upstreams = 2;
+    // Each validation request can either be a create/modify request or a delete request for one or more resources.
+    // For deletions, we only pass in the resource refs.
+    oneof resources {
+        ModifiedResources modified_resources = 2;
+        DeletedResources deleted_resources = 3;
+    }
 }
 
 message GlooValidationServiceResponse {
     repeated ValidationReport validation_reports = 1;
+}
+
+message ModifiedResources {
+    repeated Upstream upstreams = 1;
+    // TODO when we support other resource types, add them here
+}
+
+message DeletedResources {
+    repeated core.solo.io.ResourceRef upstream_refs = 1;
+    // TODO when we support other resource types, add them here
 }
 
 // A validation report represents the warnings and errors that produced during

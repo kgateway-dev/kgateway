@@ -5,22 +5,20 @@ import (
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/solo-io/gloo/pkg/utils/syncutil"
-	"go.uber.org/zap/zapcore"
-
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/go-utils/hashutils"
-
-	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap"
-
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/hashutils"
+	sk_resources "github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 )
 
@@ -211,33 +209,24 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 
 // updates the given snapshot with the resources from the request
 func applyRequestToSnapshot(snap *v1.ApiSnapshot, req *validation.GlooValidationServiceRequest) {
-	// TODO: This will be ok for validating a single upstream change, but when we support a list of upstreams,
-	//  it may be worth it to populate a map of upstreams, and then match by key, instead of having to loop
-	//  over upstreams each time
-	for _, us := range req.GetUpstreams() {
-		usRef := us.GetMetadata().Ref()
-
-		var isUpdate bool
-		for i, existingUs := range snap.Upstreams {
-			if existingUs.GetMetadata().Ref().Equal(usRef) {
-				// replace the existing upstream in the snapshot
-				snap.Upstreams[i] = us
-				isUpdate = true
-				break
-			}
-		}
-		if !isUpdate {
-			snap.Upstreams = append(snap.Upstreams, us)
-		}
+	if req.GetModifiedResources() != nil {
+		existingUpstreams := snap.Upstreams.AsResources()
+		modifiedUpstreams := utils.UpstreamsToResourceList(req.GetModifiedResources().GetUpstreams())
+		mergedUpstreams := utils.MergeResourceLists(existingUpstreams, modifiedUpstreams)
+		snap.Upstreams = utils.ResourceListToUpstreamList(mergedUpstreams)
+	} else if req.GetDeletedResources() != nil {
+		existingUpstreams := snap.Upstreams.AsResources()
+		deletedUpstreamRefs := req.GetDeletedResources().GetUpstreamRefs()
+		finalUpstreams := utils.DeleteResources(existingUpstreams, deletedUpstreamRefs)
+		snap.Upstreams = utils.ResourceListToUpstreamList(finalUpstreams)
 	}
-	snap.Upstreams.Sort()
 }
 
 func convertToValidationReport(proxyReport *validation.ProxyReport, resourceReports reporter.ResourceReports, proxy *v1.Proxy) *validation.ValidationReport {
 	var upstreamReports []*validation.ResourceReport
 
 	for resource, report := range resourceReports {
-		switch resources.Kind(resource) {
+		switch sk_resources.Kind(resource) {
 		case "*v1.Upstream":
 			upstreamReports = append(upstreamReports, &validation.ResourceReport{
 				ResourceRef: resource.GetMetadata().Ref(),

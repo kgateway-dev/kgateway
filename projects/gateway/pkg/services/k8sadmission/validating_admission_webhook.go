@@ -491,17 +491,18 @@ func (wh *gatewayValidationWebhook) validateUpstream(ctx context.Context, rawJso
 		reports *validation.Reports
 		err     error
 	)
-	if err := protoutils.UnmarshalResource(rawJson, &us); err != nil {
-		return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
-	}
-	if skipValidationCheck(us.GetMetadata().GetAnnotations()) {
-		return nil, nil
-	}
+
 	if isDelete {
 		if reports, err = wh.validator.ValidateDeleteUpstream(ctx, us.GetMetadata().Ref(), dryRun); err != nil {
-			return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", us)}}
+			return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T deletion failed", us)}}
 		}
 	} else {
+		if err := protoutils.UnmarshalResource(rawJson, &us); err != nil {
+			return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
+		}
+		if skipValidationCheck(us.GetMetadata().GetAnnotations()) {
+			return nil, nil
+		}
 		if reports, err = wh.validator.ValidateUpstream(ctx, &us, dryRun); err != nil {
 			return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", us)}}
 		}

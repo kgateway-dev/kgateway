@@ -401,6 +401,9 @@ apis:
   gloo.solo.io.ConsulServiceDestination:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#ConsulServiceDestination
     package: gloo.solo.io
+  gloo.solo.io.DeletedResources:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#DeletedResources
+    package: gloo.solo.io
   gloo.solo.io.Destination:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Destination
     package: gloo.solo.io
@@ -478,6 +481,9 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.LocalityLbEndpoints:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/failover.proto.sk/#LocalityLbEndpoints
+    package: gloo.solo.io
+  gloo.solo.io.ModifiedResources:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#ModifiedResources
     package: gloo.solo.io
   gloo.solo.io.MultiDestination:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#MultiDestination
