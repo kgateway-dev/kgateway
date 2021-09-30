@@ -410,7 +410,7 @@ func (wh *gatewayValidationWebhook) validate(
 			return wh.validateRouteTable(ctx, rawJson, dryRun)
 		}
 	case gloov1.UpstreamGVK:
-		return wh.validateUpstream(ctx, rawJson, dryRun, isDelete)
+		return wh.validateUpstream(ctx, rawJson, ref, dryRun, isDelete)
 	}
 	return &validation.Reports{}, nil
 }
@@ -485,7 +485,7 @@ func (wh *gatewayValidationWebhook) validateRouteTable(ctx context.Context, rawJ
 	return reports, nil
 }
 
-func (wh *gatewayValidationWebhook) validateUpstream(ctx context.Context, rawJson []byte, dryRun bool, isDelete bool) (*validation.Reports, *multierror.Error) {
+func (wh *gatewayValidationWebhook) validateUpstream(ctx context.Context, rawJson []byte, ref *core.ResourceRef, dryRun bool, isDelete bool) (*validation.Reports, *multierror.Error) {
 	var (
 		us      gloov1.Upstream
 		reports *validation.Reports
@@ -493,7 +493,7 @@ func (wh *gatewayValidationWebhook) validateUpstream(ctx context.Context, rawJso
 	)
 
 	if isDelete {
-		if reports, err = wh.validator.ValidateDeleteUpstream(ctx, us.GetMetadata().Ref(), dryRun); err != nil {
+		if reports, err = wh.validator.ValidateDeleteUpstream(ctx, ref, dryRun); err != nil {
 			return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T deletion failed", us)}}
 		}
 	} else {
