@@ -130,6 +130,7 @@ gloo:
           ## values below will only work with the "AWS Load Balancer Controller". Not with the default k8s in-tree controller
           service.beta.kubernetes.io/aws-load-balancer-type: "external" # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/nlb/#configuration
           service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/nlb/
+          service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "instance" # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/nlb/#instance-mode_1
           ...
 ```
 
@@ -369,7 +370,7 @@ gloo:
         extraAnnotations:
           service.beta.kubernetes.io/aws-load-balancer-type: "external" # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/nlb/#configuration
           service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/nlb/
-          service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "instance" # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/nlb/#ip-mode_1
+          service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "instance" # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/nlb/#instance-mode_1
           service.beta.kubernetes.io/aws-load-balancer-additional-resource-tags: "x-via-lb-type=external"
           service.beta.kubernetes.io/aws-load-balancer-ip-address-type: "ipv4" # service.beta.kubernetes.io/aws-load-balancer-ip-address-type: ipv4
 

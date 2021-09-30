@@ -19,6 +19,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"google.golang.org/grpc"
 )
@@ -170,6 +171,9 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 	snapCopy := s.latestSnapshot.Clone()
 	s.lock.RUnlock()
 
+	// update the snapshot copy with the resources from the request
+	applyRequestToSnapshot(&snapCopy, req)
+
 	ctx = contextutils.WithLogger(ctx, "proxy-validator")
 
 	params := plugins.Params{Ctx: ctx, Snapshot: &snapCopy}
@@ -177,18 +181,93 @@ func (s *validator) Validate(ctx context.Context, req *validation.GlooValidation
 	logger := contextutils.LoggerFrom(ctx)
 
 	logger.Infof("received proxy validation request")
-	xdsSnapshot, resourceReports, report, err := s.translator.Translate(params, req.GetProxy())
-	if err != nil {
-		logger.Errorw("failed to validate proxy", zap.Error(err))
-		return nil, err
+
+	var validationReports []*validation.ValidationReport
+	var proxiesToValidate v1.ProxyList
+	if req.GetProxy() != nil {
+		proxiesToValidate = v1.ProxyList{req.GetProxy()}
+	} else {
+		// if no proxy was passed in, call translate for all proxies in snapshot
+		proxiesToValidate = snapCopy.Proxies
+	}
+	for _, proxy := range proxiesToValidate {
+		xdsSnapshot, resourceReports, proxyReport, err := s.translator.Translate(params, proxy)
+		if err != nil {
+			logger.Errorw("failed to validate proxy", zap.Error(err))
+			return nil, err
+		}
+
+		// Sanitize routes before sending report to gateway
+		s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
+		routeErrorToWarnings(resourceReports, proxyReport)
+
+		validationReports = append(validationReports, convertToValidationReport(proxyReport, resourceReports, proxy))
 	}
 
-	// Sanitize routes before sending report to gateway
-	s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
-	routeErrorToWarnings(resourceReports, report)
+	return &validation.GlooValidationServiceResponse{
+		ValidationReports: validationReports,
+	}, nil
+}
 
-	logger.Infof("proxy validation report result: %v", report.String())
-	return &validation.GlooValidationServiceResponse{ProxyReport: report}, nil
+// updates the given snapshot with the resources from the request
+func applyRequestToSnapshot(snap *v1.ApiSnapshot, req *validation.GlooValidationServiceRequest) {
+	// TODO: This will be ok for validating a single upstream change, but when we support a list of upstreams,
+	//  it may be worth it to populate a map of upstreams, and then match by key, instead of having to loop
+	//  over upstreams each time
+	for _, us := range req.GetUpstreams() {
+		usRef := us.GetMetadata().Ref()
+
+		var isUpdate bool
+		for i, existingUs := range snap.Upstreams {
+			if existingUs.GetMetadata().Ref().Equal(usRef) {
+				// replace the existing upstream in the snapshot
+				snap.Upstreams[i] = us
+				isUpdate = true
+				break
+			}
+		}
+		if !isUpdate {
+			snap.Upstreams = append(snap.Upstreams, us)
+		}
+	}
+	snap.Upstreams.Sort()
+}
+
+func convertToValidationReport(proxyReport *validation.ProxyReport, resourceReports reporter.ResourceReports, proxy *v1.Proxy) *validation.ValidationReport {
+	var upstreamReports []*validation.ResourceReport
+
+	for resource, report := range resourceReports {
+		switch resources.Kind(resource) {
+		case "*v1.Upstream":
+			upstreamReports = append(upstreamReports, &validation.ResourceReport{
+				ResourceRef: resource.GetMetadata().Ref(),
+				Warnings:    report.Warnings,
+				Errors:      getErrors(report.Errors),
+			})
+		}
+		// TODO add other resources types here
+	}
+
+	return &validation.ValidationReport{
+		ProxyReport:     proxyReport,
+		UpstreamReports: upstreamReports,
+		Proxy:           proxy,
+	}
+}
+
+func getErrors(err error) []string {
+	if err == nil {
+		return []string{}
+	}
+	switch err.(type) {
+	case *multierror.Error:
+		var errorStrings []string
+		for _, e := range err.(*multierror.Error).Errors {
+			errorStrings = append(errorStrings, e.Error())
+		}
+		return errorStrings
+	}
+	return []string{err.Error()}
 }
 
 // Update the validation report so that route errors that were changed into warnings during sanitization
