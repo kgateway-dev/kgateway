@@ -135,6 +135,8 @@ replace (
 	github.com/pseudomuto/protoc-gen-doc => github.com/pseudomuto/protoc-gen-doc v1.0.0
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
+
+	google.golang.org/grpc => google.golang.org/grpc v1.36.0
 )
 
 exclude (
