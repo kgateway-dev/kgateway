@@ -621,16 +621,7 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 	}
 	logger.Debugf("Got response from GlooValidationService: %s", response.String())
 
-	reports, errs := v.getReportsFromGlooValidationResponse(response)
-	if errs != nil {
-		// TODO(mitchaman): Set metric to indicate the config is invalid
-		return reports, errors.Wrapf(errs, "validating %T %v", us, us.GetMetadata().Ref())
-	}
-
-	logger.Debugf("Accepted Upstream %v", us.GetMetadata().Ref())
-	// TODO(mitchaman): Set metric to indicate the config is valid
-
-	return reports, nil
+	return v.getReportsFromGlooValidationResponse(response)
 }
 
 func (v *validator) ValidateDeleteUpstream(ctx context.Context, upstreamRef *core.ResourceRef, dryRun bool) (*Reports, error) {
@@ -653,21 +644,11 @@ func (v *validator) ValidateDeleteUpstream(ctx context.Context, upstreamRef *cor
 	}
 	logger.Debugf("Got response from GlooValidationService: %s", response.String())
 
-	reports, errs := v.getReportsFromGlooValidationResponse(response)
-	if errs != nil {
-		// TODO(mitchaman): Set metric to indicate the config is invalid
-		return reports, errors.Wrapf(errs, "validating deletion of upstream %v", upstreamRef)
-	}
-
-	logger.Debugf("Accepted Upstream deletion %v", upstreamRef)
-	// TODO(mitchaman): Set metric to indicate the config is valid
-
-	return reports, nil
+	return v.getReportsFromGlooValidationResponse(response)
 }
 
 // Converts the GlooValidationServiceResponse into Reports.
-func (v *validator) getReportsFromGlooValidationResponse(
-	validationResponse *validation.GlooValidationServiceResponse) (*Reports, error) {
+func (v *validator) getReportsFromGlooValidationResponse(validationResponse *validation.GlooValidationServiceResponse) (*Reports, error) {
 
 	var (
 		errs            error
