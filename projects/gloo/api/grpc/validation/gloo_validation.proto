@@ -27,11 +27,13 @@ message GlooValidationServiceRequest {
     // If no proxy is provided, the response will contain a report for each proxy in the Gloo API snapshot.
     Proxy proxy = 1;
 
+    reserved 2;
+
     // Each validation request can either be a create/modify request or a delete request for one or more resources.
     // For deletions, we only pass in the resource refs.
     oneof resources {
-        ModifiedResources modified_resources = 2;
-        DeletedResources deleted_resources = 3;
+        ModifiedResources modified_resources = 3;
+        DeletedResources deleted_resources = 4;
     }
 }
 
