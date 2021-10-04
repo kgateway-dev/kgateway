@@ -221,9 +221,7 @@ curl -verbose --location --insecure --header "Host: gloo.example.com" $(glooctl 
 ## NLB with TLS offloading
 
 If you want to leverage the AWS NLB integration with managed Certificate service (ACM), then terminating the TLS connection at the NLB makes sense. 
-
-In the example below, you will configure the NLB with a x509 certificate and, optionally, with extra attributes so that Gloo Edge can redirect to HTTPS if client connections are using HTTP.
-
+In the example below, you will configure the NLB with a x509 certificate and have it proxying requests to Gloo Edge on the HTTP Gateway:
 
 ```yaml
 gloo:
@@ -237,38 +235,47 @@ gloo:
           # NEW AWS Load Balancer Controller
           service.beta.kubernetes.io/aws-load-balancer-type: "external"
           service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
-          service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:xxxxxxxxxx"
-          service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
-          service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+          service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "instance"
+          service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:xxxxxxxxxx" # the ARN of your x509 certificate
+          service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443" # enable TLS on this port
+          service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http # will not originate HTTPS connection to the backend
           
         httpPort: 80
-        httpsFirst: true
+        httpsFirst: true # workaround for the NLB health check, as explained later
         httpsPort: 443
         type: LoadBalancer
+      # **Method A** for proxying from port 443 to port 8080
+      podTemplate: 
+        # the HTTPS traffic reaching the NLB will be routed to the HTTP Gateway
+        httpsPort: 8080
 ```
 
-From that point, the NLB will be configured to listen to both on ports 80 and 443. For the port 443 (HTTPS), a certificate will be exposed by the NLB. 
+The setup above shows how the HTTPS traffic reaching the NLB is redirected to Gloo Edge over port 8080. Also, the NLB will be configured to listen to both on ports 80 and 443. For the port 443 (HTTPS), a certificate will be exposed by the NLB. 
 
+{{% notice info %}}
+**httpsFirst field**: For Kubernetes version 1.14 or later, you change the order of the ports in the Kubernetes service with the `httpsFirst: true` field so that the NLB health checks work. For more information, see the [Kubernetes issue](https://github.com/solo-io/gloo/issues/2571).
+{{% /notice %}}
 
 ### Disabling the Gloo Edge HTTPS Gateway
 
-In this setup, you can disable the HTTPS Gateway (Envoy Listener) in Gloo Edge using `disableHttpsGateway` (since Gloo v1.8).
-
-Before Gloo 1.8, there was a trick to have the NLB health checks working by changing the order of the ports in the Kubernetes service, using this attribute: `httpsFirst: true`
-
-The setup below shows how the HTTPS traffic reaching the NLB is redirected to Gloo Edge over port 8080. And traffic reaching the NLB on port 8443 will be refused since there is no active Envoy listener behind the NLB.
+If you route all the traffic to the HTTP port of Envoy, then you can disable the HTTPS Gateway (Envoy Listener) in Gloo Edge using `disableHttpsGateway` (since Gloo v1.8). The traffic reaching the NLB on port 8443 will be refused since there is no active Envoy listener behind the NLB.
 
 ```yaml
-gatewayProxies:
-  gatewayProxy:
-    service:
-      # Set the http port to 443 (instead of 80) since we are terminating tls at the proxy and are
-      # not performing a tls passthrough, we need the backing port be http 8080
-      httpPort: 443       # HTTP backing port is 8080
-      # To prevent conflicts with the above change we are making the https port match its default backing port
-      httpsPort: 8443     # HTTPS backing port is 8443
-      httpsFirst: true # set the HTTPS port as the first element in the Kubernetes service, otherwise Health checks will fail
-
+gloo:
+  gatewayProxies:
+    gatewayProxy:
+      gatewaySettings:
+        # disable the Gloo HTTPS Gateway
+        disableHttpsGateway: true
+      service:
+        # The "Method B" shown below is an alternative to the routing configuration explained in the previous paragraph, called "Method A".
+        # **Method B**
+        # Set the http port to 443 (instead of 80) since we are terminating tls at the proxy and are
+        # not performing a tls passthrough, we need the backing port be http 8080
+        httpPort: 443       # HTTP backing port is 8080
+        # To prevent conflicts with the above change we are making the https port match its default backing port
+        httpsPort: 8443     # HTTPS backing port is 8443
+        httpsFirst: true # set the HTTPS port as the first element in the Kubernetes service, otherwise Health checks will fail
 ```
 
 ### HTTPS redirect
