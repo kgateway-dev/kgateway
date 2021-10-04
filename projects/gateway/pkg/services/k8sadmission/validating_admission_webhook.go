@@ -410,7 +410,11 @@ func (wh *gatewayValidationWebhook) validate(
 			return wh.validateRouteTable(ctx, rawJson, dryRun)
 		}
 	case gloov1.UpstreamGVK:
-		return wh.validateUpstream(ctx, rawJson, ref, dryRun, isDelete)
+		if isDelete {
+			return &validation.Reports{}, &multierror.Error{Errors: []error{wh.validator.ValidateDeleteUpstream(ctx, ref, dryRun)}}
+		} else {
+			return wh.validateUpstream(ctx, rawJson, dryRun)
+		}
 	}
 	return &validation.Reports{}, nil
 }
@@ -485,27 +489,20 @@ func (wh *gatewayValidationWebhook) validateRouteTable(ctx context.Context, rawJ
 	return reports, nil
 }
 
-func (wh *gatewayValidationWebhook) validateUpstream(ctx context.Context, rawJson []byte, ref *core.ResourceRef, dryRun bool, isDelete bool) (*validation.Reports, *multierror.Error) {
+func (wh *gatewayValidationWebhook) validateUpstream(ctx context.Context, rawJson []byte, dryRun bool) (*validation.Reports, *multierror.Error) {
 	var (
 		us      gloov1.Upstream
 		reports *validation.Reports
 		err     error
 	)
-
-	if isDelete {
-		if reports, err = wh.validator.ValidateDeleteUpstream(ctx, ref, dryRun); err != nil {
-			return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T deletion failed", us)}}
-		}
-	} else {
-		if err := protoutils.UnmarshalResource(rawJson, &us); err != nil {
-			return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
-		}
-		if skipValidationCheck(us.GetMetadata().GetAnnotations()) {
-			return nil, nil
-		}
-		if reports, err = wh.validator.ValidateUpstream(ctx, &us, dryRun); err != nil {
-			return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", us)}}
-		}
+	if err := protoutils.UnmarshalResource(rawJson, &us); err != nil {
+		return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
+	}
+	if skipValidationCheck(us.GetMetadata().GetAnnotations()) {
+		return nil, nil
+	}
+	if reports, err = wh.validator.ValidateUpstream(ctx, &us, dryRun); err != nil {
+		return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", us)}}
 	}
 	return reports, nil
 }

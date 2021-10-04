@@ -85,7 +85,7 @@ type Validator interface {
 	ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (*Reports, error)
 	ValidateDeleteRouteTable(ctx context.Context, rt *core.ResourceRef, dryRun bool) error
 	ValidateUpstream(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*Reports, error)
-	ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*Reports, error)
+	ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) error
 }
 
 type validator struct {
@@ -624,7 +624,7 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 	return v.getReportsFromGlooValidationResponse(response)
 }
 
-func (v *validator) ValidateDeleteUpstream(ctx context.Context, upstreamRef *core.ResourceRef, dryRun bool) (*Reports, error) {
+func (v *validator) ValidateDeleteUpstream(ctx context.Context, upstreamRef *core.ResourceRef, dryRun bool) error {
 	response, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
 		// Sending a nil proxy causes the remaining upstreams to be translated with all proxies in gloo's snapshot
 		Proxy: nil,
@@ -639,17 +639,17 @@ func (v *validator) ValidateDeleteUpstream(ctx context.Context, upstreamRef *cor
 		if v.ignoreProxyValidationFailure {
 			logger.Error(err)
 		} else {
-			return &Reports{}, err
+			return err
 		}
 	}
 	logger.Debugf("Got response from GlooValidationService: %s", response.String())
 
-	return v.getReportsFromGlooValidationResponse(response)
+	_, err = v.getReportsFromGlooValidationResponse(response)
+	return err
 }
 
 // Converts the GlooValidationServiceResponse into Reports.
 func (v *validator) getReportsFromGlooValidationResponse(validationResponse *validation.GlooValidationServiceResponse) (*Reports, error) {
-
 	var (
 		errs            error
 		upstreamReports UpstreamReports
