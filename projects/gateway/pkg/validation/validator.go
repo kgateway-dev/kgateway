@@ -621,7 +621,7 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 	}
 	logger.Debugf("Got response from GlooValidationService: %s", response.String())
 
-	reports, errs := v.getReportsFromGlooValidationResponse(response, us.GetMetadata().Ref())
+	reports, errs := v.getReportsFromGlooValidationResponse(response)
 	if errs != nil {
 		// TODO(mitchaman): Set metric to indicate the config is invalid
 		return reports, errors.Wrapf(errs, "validating %T %v", us, us.GetMetadata().Ref())
@@ -653,7 +653,7 @@ func (v *validator) ValidateDeleteUpstream(ctx context.Context, upstreamRef *cor
 	}
 	logger.Debugf("Got response from GlooValidationService: %s", response.String())
 
-	reports, errs := v.getReportsFromGlooValidationResponse(response, nil)
+	reports, errs := v.getReportsFromGlooValidationResponse(response)
 	if errs != nil {
 		// TODO(mitchaman): Set metric to indicate the config is invalid
 		return reports, errors.Wrapf(errs, "validating deletion of upstream %v", upstreamRef)
@@ -666,10 +666,8 @@ func (v *validator) ValidateDeleteUpstream(ctx context.Context, upstreamRef *cor
 }
 
 // Converts the GlooValidationServiceResponse into Reports.
-// If upstreamRef is provided, only includes the upstream reports for that upstream; otherwise includes all upstream reports.
 func (v *validator) getReportsFromGlooValidationResponse(
-	validationResponse *validation.GlooValidationServiceResponse,
-	upstreamRef *core.ResourceRef) (*Reports, error) {
+	validationResponse *validation.GlooValidationServiceResponse) (*Reports, error) {
 
 	var (
 		errs            error
@@ -679,15 +677,13 @@ func (v *validator) getReportsFromGlooValidationResponse(
 	for _, report := range validationResponse.GetValidationReports() {
 		// Append upstream errors
 		for _, usRpt := range report.GetUpstreamReports() {
-			if upstreamRef == nil || usRpt.GetResourceRef().Equal(upstreamRef) {
-				upstreamReports = append(upstreamReports, usRpt)
-				if err := resourceReportToMultiErr(usRpt); err != nil {
-					errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Upstream with Gloo validation server"))
-				}
-				if warnings := usRpt.GetWarnings(); !v.allowWarnings && len(warnings) > 0 {
-					for _, warning := range warnings {
-						errs = multierr.Append(errs, errors.New(warning))
-					}
+			upstreamReports = append(upstreamReports, usRpt)
+			if err := resourceReportToMultiErr(usRpt); err != nil {
+				errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Upstream with Gloo validation server"))
+			}
+			if warnings := usRpt.GetWarnings(); !v.allowWarnings && len(warnings) > 0 {
+				for _, warning := range warnings {
+					errs = multierr.Append(errs, errors.New(warning))
 				}
 			}
 		}
