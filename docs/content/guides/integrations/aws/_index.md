@@ -236,12 +236,12 @@ gloo:
           service.beta.kubernetes.io/aws-load-balancer-type: "external"
           service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
           service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "instance"
-          service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:xxxxxxxxxx" # the ARN of you x509 certificate
+          service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:xxxxxxxxxx" # the ARN of your x509 certificate
           service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443" # enable TLS on this port
           service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http # will not originate HTTPS connection to the backend
           
         httpPort: 80
-        httpsFirst: true # hack for the NLB health check, explained hereafter
+        httpsFirst: true # workaround for the NLB health check, as explained later
         httpsPort: 443
         type: LoadBalancer
       # **Method A** for proxying from port 443 to port 8080
@@ -253,7 +253,7 @@ gloo:
 The setup above shows how the HTTPS traffic reaching the NLB is redirected to Gloo Edge over port 8080. Also, the NLB will be configured to listen to both on ports 80 and 443. For the port 443 (HTTPS), a certificate will be exposed by the NLB. 
 
 {{% notice info %}}
-Up until this Kubernetes [issue](https://github.com/solo-io/gloo/issues/2571) was solved, there was a trick to have the NLB health checks working by changing the order of the ports in the Kubernetes service, using this attribute: `httpsFirst: true`
+**httpsFirst field**: For Kubernetes version 1.14 or later, you change the order of the ports in the Kubernetes service with the `httpsFirst: true` field so that the NLB health checks work. For more information, see the [Kubernetes issue](https://github.com/solo-io/gloo/issues/2571).
 {{% /notice %}}
 
 ### Disabling the Gloo Edge HTTPS Gateway
