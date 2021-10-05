@@ -6,7 +6,7 @@ Name|Version|License
 [aws/aws-sdk-go](https://github.com/aws/aws-sdk-go)|v1.34.9|Apache License 2.0
 [udpa/go](https://github.com/cncf/udpa)|v0.0.0-20201120205902-5459f2c99403|Apache License 2.0
 [cratonica/2goarray](https://github.com/cratonica/2goarray)|v0.0.0-20190331194516-514510793eaa|MIT License
-[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.9.9-0.20210511190911-87d352569d55|Apache License 2.0
+[envoyproxy/go-control-plane](https://github.com/envoyproxy/go-control-plane)|v0.9.9-0.20210512163311-63b5d3c536b0|Apache License 2.0
 [envoyproxy/protoc-gen-validate](https://github.com/envoyproxy/protoc-gen-validate)|v0.4.1|Apache License 2.0
 [fgrosse/zaptest](https://github.com/fgrosse/zaptest)|v1.1.0|MIT License
 [form3tech-oss/jwt-go](https://github.com/form3tech-oss/jwt-go)|v3.2.3+incompatible|MIT License
@@ -48,7 +48,7 @@ Name|Version|License
 [x/sync](https://golang.org/x/sync)|v0.0.0-20210220032951-036812b2e83c|BSD 3-clause "New" or "Revised" License
 [x/tools](https://golang.org/x/tools)|v0.1.5|BSD 3-clause "New" or "Revised" License
 [google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20210219173056-d891e3cb3b5b|Apache License 2.0
-[google.golang.org/grpc](https://google.golang.org/grpc)|v1.36.0|Apache License 2.0
+[google.golang.org/grpc](https://google.golang.org/grpc)|v1.40.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.25.0|BSD 3-clause "New" or "Revised" License
 [AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
 [helm/v3](https://helm.sh/helm/v3)|v3.4.2|Apache License 2.0

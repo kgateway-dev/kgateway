@@ -18,7 +18,7 @@ require (
 	github.com/docker/cli v20.10.0-beta1.0.20201029214301-1d20b15adc38+incompatible // indirect
 	github.com/docker/docker v20.10.3+incompatible // indirect
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e // indirect
-	github.com/envoyproxy/go-control-plane v0.9.9-0.20210511190911-87d352569d55
+	github.com/envoyproxy/go-control-plane v0.9.9-0.20210512163311-63b5d3c536b0
 	github.com/envoyproxy/protoc-gen-validate v0.4.1
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/fgrosse/zaptest v1.1.0
@@ -98,7 +98,7 @@ require (
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	golang.org/x/tools v0.1.5
 	google.golang.org/genproto v0.0.0-20210219173056-d891e3cb3b5b
-	google.golang.org/grpc v1.36.0
+	google.golang.org/grpc v1.40.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/ini.v1 v1.56.0 // indirect
