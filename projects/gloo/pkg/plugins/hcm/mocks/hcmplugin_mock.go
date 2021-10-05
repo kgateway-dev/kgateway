@@ -14,30 +14,30 @@ import (
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
-// MockHcmPlugin is a mock of HcmPlugin interface
+// MockHcmPlugin is a mock of HcmPlugin interface.
 type MockHcmPlugin struct {
 	ctrl     *gomock.Controller
 	recorder *MockHcmPluginMockRecorder
 }
 
-// MockHcmPluginMockRecorder is the mock recorder for MockHcmPlugin
+// MockHcmPluginMockRecorder is the mock recorder for MockHcmPlugin.
 type MockHcmPluginMockRecorder struct {
 	mock *MockHcmPlugin
 }
 
-// NewMockHcmPlugin creates a new mock instance
+// NewMockHcmPlugin creates a new mock instance.
 func NewMockHcmPlugin(ctrl *gomock.Controller) *MockHcmPlugin {
 	mock := &MockHcmPlugin{ctrl: ctrl}
 	mock.recorder = &MockHcmPluginMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockHcmPlugin) EXPECT() *MockHcmPluginMockRecorder {
 	return m.recorder
 }
 
-// Init mocks base method
+// Init mocks base method.
 func (m *MockHcmPlugin) Init(arg0 plugins.InitParams) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Init", arg0)
@@ -45,13 +45,13 @@ func (m *MockHcmPlugin) Init(arg0 plugins.InitParams) error {
 	return ret0
 }
 
-// Init indicates an expected call of Init
+// Init indicates an expected call of Init.
 func (mr *MockHcmPluginMockRecorder) Init(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockHcmPlugin)(nil).Init), arg0)
 }
 
-// ProcessHcmSettings mocks base method
+// ProcessHcmSettings mocks base method.
 func (m *MockHcmPlugin) ProcessHcmSettings(arg0 *v1.ApiSnapshot, arg1 *envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager, arg2 *hcm.HttpConnectionManagerSettings) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProcessHcmSettings", arg0, arg1, arg2)
@@ -59,7 +59,7 @@ func (m *MockHcmPlugin) ProcessHcmSettings(arg0 *v1.ApiSnapshot, arg1 *envoy_ext
 	return ret0
 }
 
-// ProcessHcmSettings indicates an expected call of ProcessHcmSettings
+// ProcessHcmSettings indicates an expected call of ProcessHcmSettings.
 func (mr *MockHcmPluginMockRecorder) ProcessHcmSettings(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessHcmSettings", reflect.TypeOf((*MockHcmPlugin)(nil).ProcessHcmSettings), arg0, arg1, arg2)

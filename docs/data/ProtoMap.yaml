@@ -59,6 +59,12 @@ apis:
   core.skv2.solo.io.ObjectRef:
     relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#ObjectRef
     package: core.skv2.solo.io
+  core.skv2.solo.io.ObjectRefList:
+    relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#ObjectRefList
+    package: core.skv2.solo.io
+  core.skv2.solo.io.ObjectSelector:
+    relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#ObjectSelector
+    package: core.skv2.solo.io
   core.skv2.solo.io.Status:
     relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#Status
     package: core.skv2.solo.io

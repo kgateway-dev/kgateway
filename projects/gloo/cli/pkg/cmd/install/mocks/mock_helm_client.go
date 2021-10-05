@@ -13,30 +13,30 @@ import (
 	cli "helm.sh/helm/v3/pkg/cli"
 )
 
-// MockHelmClient is a mock of HelmClient interface
+// MockHelmClient is a mock of HelmClient interface.
 type MockHelmClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockHelmClientMockRecorder
 }
 
-// MockHelmClientMockRecorder is the mock recorder for MockHelmClient
+// MockHelmClientMockRecorder is the mock recorder for MockHelmClient.
 type MockHelmClientMockRecorder struct {
 	mock *MockHelmClient
 }
 
-// NewMockHelmClient creates a new mock instance
+// NewMockHelmClient creates a new mock instance.
 func NewMockHelmClient(ctrl *gomock.Controller) *MockHelmClient {
 	mock := &MockHelmClient{ctrl: ctrl}
 	mock.recorder = &MockHelmClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockHelmClient) EXPECT() *MockHelmClientMockRecorder {
 	return m.recorder
 }
 
-// DownloadChart mocks base method
+// DownloadChart mocks base method.
 func (m *MockHelmClient) DownloadChart(arg0 string) (*chart.Chart, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadChart", arg0)
@@ -45,13 +45,13 @@ func (m *MockHelmClient) DownloadChart(arg0 string) (*chart.Chart, error) {
 	return ret0, ret1
 }
 
-// DownloadChart indicates an expected call of DownloadChart
+// DownloadChart indicates an expected call of DownloadChart.
 func (mr *MockHelmClientMockRecorder) DownloadChart(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadChart", reflect.TypeOf((*MockHelmClient)(nil).DownloadChart), arg0)
 }
 
-// NewInstall mocks base method
+// NewInstall mocks base method.
 func (m *MockHelmClient) NewInstall(arg0, arg1 string, arg2 bool) (install.HelmInstallation, *cli.EnvSettings, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NewInstall", arg0, arg1, arg2)
@@ -61,13 +61,13 @@ func (m *MockHelmClient) NewInstall(arg0, arg1 string, arg2 bool) (install.HelmI
 	return ret0, ret1, ret2
 }
 
-// NewInstall indicates an expected call of NewInstall
+// NewInstall indicates an expected call of NewInstall.
 func (mr *MockHelmClientMockRecorder) NewInstall(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewInstall", reflect.TypeOf((*MockHelmClient)(nil).NewInstall), arg0, arg1, arg2)
 }
 
-// NewUninstall mocks base method
+// NewUninstall mocks base method.
 func (m *MockHelmClient) NewUninstall(arg0 string) (install.HelmUninstallation, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NewUninstall", arg0)
@@ -76,13 +76,13 @@ func (m *MockHelmClient) NewUninstall(arg0 string) (install.HelmUninstallation, 
 	return ret0, ret1
 }
 
-// NewUninstall indicates an expected call of NewUninstall
+// NewUninstall indicates an expected call of NewUninstall.
 func (mr *MockHelmClientMockRecorder) NewUninstall(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewUninstall", reflect.TypeOf((*MockHelmClient)(nil).NewUninstall), arg0)
 }
 
-// ReleaseExists mocks base method
+// ReleaseExists mocks base method.
 func (m *MockHelmClient) ReleaseExists(arg0, arg1 string) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReleaseExists", arg0, arg1)
@@ -91,13 +91,13 @@ func (m *MockHelmClient) ReleaseExists(arg0, arg1 string) (bool, error) {
 	return ret0, ret1
 }
 
-// ReleaseExists indicates an expected call of ReleaseExists
+// ReleaseExists indicates an expected call of ReleaseExists.
 func (mr *MockHelmClientMockRecorder) ReleaseExists(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReleaseExists", reflect.TypeOf((*MockHelmClient)(nil).ReleaseExists), arg0, arg1)
 }
 
-// ReleaseList mocks base method
+// ReleaseList mocks base method.
 func (m *MockHelmClient) ReleaseList(arg0 string) (install.HelmReleaseListRunner, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReleaseList", arg0)
@@ -106,7 +106,7 @@ func (m *MockHelmClient) ReleaseList(arg0 string) (install.HelmReleaseListRunner
 	return ret0, ret1
 }
 
-// ReleaseList indicates an expected call of ReleaseList
+// ReleaseList indicates an expected call of ReleaseList.
 func (mr *MockHelmClientMockRecorder) ReleaseList(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReleaseList", reflect.TypeOf((*MockHelmClient)(nil).ReleaseList), arg0)
