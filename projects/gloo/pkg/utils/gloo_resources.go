@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"sort"
+
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	sk_resources "github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -20,12 +22,14 @@ func MergeResourceLists(existingResources sk_resources.ResourceList, modifiedRes
 	}
 
 	// convert map back into a list
-	resourceList := make(sk_resources.ResourceList, len(resourceMap))
+	var resourceList sk_resources.ResourceList
 	for _, resource := range resourceMap {
 		resourceList = append(resourceList, resource)
 	}
 
-	resourceList.Sort()
+	sort.SliceStable(resourceList, func(i, j int) bool {
+		return resourceList[i].GetMetadata().Less(resourceList[j].GetMetadata())
+	})
 	return resourceList
 }
 
@@ -45,7 +49,9 @@ func DeleteResources(existingResources sk_resources.ResourceList, refsToDelete [
 		}
 	}
 
-	resourceList.Sort()
+	sort.SliceStable(resourceList, func(i, j int) bool {
+		return resourceList[i].GetMetadata().Less(resourceList[j].GetMetadata())
+	})
 	return resourceList
 }
 
