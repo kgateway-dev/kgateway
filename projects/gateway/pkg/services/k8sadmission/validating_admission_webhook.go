@@ -399,19 +399,28 @@ func (wh *gatewayValidationWebhook) validate(
 		return wh.validateGateway(ctx, rawJson, dryRun)
 	case gwv1.VirtualServiceGVK:
 		if isDelete {
-			return &validation.Reports{}, &multierror.Error{Errors: []error{wh.validator.ValidateDeleteVirtualService(ctx, ref, dryRun)}}
+			err := wh.validator.ValidateDeleteVirtualService(ctx, ref, dryRun)
+			if err != nil {
+				return &validation.Reports{}, &multierror.Error{Errors: []error{err}}
+			}
 		} else {
 			return wh.validateVirtualService(ctx, rawJson, dryRun)
 		}
 	case gwv1.RouteTableGVK:
 		if isDelete {
-			return &validation.Reports{}, &multierror.Error{Errors: []error{wh.validator.ValidateDeleteRouteTable(ctx, ref, dryRun)}}
+			err := wh.validator.ValidateDeleteRouteTable(ctx, ref, dryRun)
+			if err != nil {
+				return &validation.Reports{}, &multierror.Error{Errors: []error{err}}
+			}
 		} else {
 			return wh.validateRouteTable(ctx, rawJson, dryRun)
 		}
 	case gloov1.UpstreamGVK:
 		if isDelete {
-			return &validation.Reports{}, &multierror.Error{Errors: []error{wh.validator.ValidateDeleteUpstream(ctx, ref, dryRun)}}
+			err := wh.validator.ValidateDeleteUpstream(ctx, ref, dryRun)
+			if err != nil {
+				return &validation.Reports{}, &multierror.Error{Errors: []error{err}}
+			}
 		} else {
 			return wh.validateUpstream(ctx, rawJson, dryRun)
 		}
