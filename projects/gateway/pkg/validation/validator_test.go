@@ -15,6 +15,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/go-utils/testutils"
@@ -46,6 +47,125 @@ var _ = Describe("Validator", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	Context("validating gloo resources", func() {
+		Context("upstreams", func() {
+			It("accepts an upstream when validation succeeds", func() {
+				vc.validate = acceptProxy
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				reports, err := v.ValidateUpstream(context.TODO(), us, false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(*(reports.ProxyReports)).To(HaveLen(1))
+				proxyReport := (*reports.ProxyReports)[0]
+				warnings := validationutils.GetProxyWarning(proxyReport)
+				errors := validationutils.GetProxyError(proxyReport)
+				Expect(warnings).To(BeEmpty())
+				Expect(errors).NotTo(HaveOccurred())
+			})
+			It("rejects an upstream when validation fails", func() {
+				vc.validate = failProxy
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				reports, err := v.ValidateUpstream(context.TODO(), us, false)
+				Expect(err).To(HaveOccurred())
+				Expect(*(reports.ProxyReports)).To(HaveLen(1))
+				proxyReport := (*reports.ProxyReports)[0]
+				errors := validationutils.GetProxyError(proxyReport)
+				Expect(errors).To(HaveOccurred())
+			})
+			It("accepts an upstream when there is a validation warning and allowWarnings is true", func() {
+				vc.validate = warnProxy
+				v.allowWarnings = true
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				reports, err := v.ValidateUpstream(context.TODO(), us, false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(*(reports.ProxyReports)).To(HaveLen(1))
+				proxyReport := (*reports.ProxyReports)[0]
+				warnings := validationutils.GetProxyWarning(proxyReport)
+				Expect(warnings).NotTo(BeEmpty())
+			})
+			It("rejects an upstream when there is a validation warning and allowWarnings is false", func() {
+				vc.validate = warnProxy
+				v.allowWarnings = false
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				reports, err := v.ValidateUpstream(context.TODO(), us, false)
+				Expect(err).To(HaveOccurred())
+				Expect(*(reports.ProxyReports)).To(HaveLen(1))
+				proxyReport := (*reports.ProxyReports)[0]
+				warnings := validationutils.GetProxyWarning(proxyReport)
+				Expect(warnings).NotTo(BeEmpty())
+			})
+
+			It("accepts an upstream deletion when validation succeeds", func() {
+				vc.validate = acceptProxy
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				ref := us.GetMetadata().Ref()
+				err = v.ValidateDeleteUpstream(context.TODO(), ref, false)
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("rejects an upstream deletion when validation fails", func() {
+				vc.validate = failProxy
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				ref := us.GetMetadata().Ref()
+				err = v.ValidateDeleteUpstream(context.TODO(), ref, false)
+				Expect(err).To(HaveOccurred())
+			})
+			It("accepts an upstream deletion when there is a validation warning and allowWarnings is true", func() {
+				vc.validate = warnProxy
+				v.allowWarnings = true
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				ref := us.GetMetadata().Ref()
+				err = v.ValidateDeleteUpstream(context.TODO(), ref, false)
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("rejects an upstream deletion when there is a validation warning and allowWarnings is false", func() {
+				vc.validate = warnProxy
+				v.allowWarnings = false
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				ref := us.GetMetadata().Ref()
+				err = v.ValidateDeleteUpstream(context.TODO(), ref, false)
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
 	Context("validating a route table", func() {
 		Context("proxy validation accepted", func() {
 			It("accepts the rt", func() {
@@ -989,36 +1109,69 @@ func (c *mockValidationClient) Validate(ctx context.Context, in *validation.Gloo
 }
 
 func acceptProxy(ctx context.Context, in *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error) {
+	var proxies []*gloov1.Proxy
+	if in.Proxy != nil {
+		proxies = []*gloov1.Proxy{in.Proxy}
+	} else {
+		proxies = samples.SimpleGlooSnapshot().Proxies
+	}
+
+	var validationReports []*validation.ValidationReport
+	for _, proxy := range proxies {
+		proxyReport := validationutils.MakeReport(proxy)
+		validationReports = append(validationReports, &validation.ValidationReport{
+			Proxy:       proxy,
+			ProxyReport: proxyReport,
+		})
+	}
 	return &validation.GlooValidationServiceResponse{
-		ValidationReports: []*validation.ValidationReport{
-			{
-				ProxyReport: validationutils.MakeReport(in.Proxy),
-			},
-		},
+		ValidationReports: validationReports,
 	}, nil
 }
 
 func failProxy(ctx context.Context, in *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error) {
-	rpt := validationutils.MakeReport(in.Proxy)
-	validationutils.AppendListenerError(rpt.ListenerReports[0], validation.ListenerReport_Error_SSLConfigError, "you should try harder next time")
+	var proxies []*gloov1.Proxy
+	if in.Proxy != nil {
+		proxies = []*gloov1.Proxy{in.Proxy}
+	} else {
+		proxies = samples.SimpleGlooSnapshot().Proxies
+	}
+
+	var validationReports []*validation.ValidationReport
+	for _, proxy := range proxies {
+		proxyReport := validationutils.MakeReport(proxy)
+		validationutils.AppendListenerError(proxyReport.ListenerReports[0], validation.ListenerReport_Error_SSLConfigError, "you should try harder next time")
+
+		validationReports = append(validationReports, &validation.ValidationReport{
+			Proxy:       proxy,
+			ProxyReport: proxyReport,
+		})
+	}
 	return &validation.GlooValidationServiceResponse{
-		ValidationReports: []*validation.ValidationReport{
-			{
-				ProxyReport: rpt,
-			},
-		},
+		ValidationReports: validationReports,
 	}, nil
 }
 
 func warnProxy(ctx context.Context, in *validation.GlooValidationServiceRequest, opts ...grpc.CallOption) (*validation.GlooValidationServiceResponse, error) {
-	rpt := validationutils.MakeReport(in.Proxy)
-	validationutils.AppendRouteWarning(rpt.ListenerReports[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0], validation.RouteReport_Warning_InvalidDestinationWarning, "you should try harder next time")
+	var proxies []*gloov1.Proxy
+	if in.Proxy != nil {
+		proxies = []*gloov1.Proxy{in.Proxy}
+	} else {
+		proxies = samples.SimpleGlooSnapshot().Proxies
+	}
+
+	var validationReports []*validation.ValidationReport
+	for _, proxy := range proxies {
+		proxyReport := validationutils.MakeReport(proxy)
+		validationutils.AppendRouteWarning(proxyReport.ListenerReports[0].GetHttpListenerReport().GetVirtualHostReports()[0].GetRouteReports()[0], validation.RouteReport_Warning_InvalidDestinationWarning, "you should try harder next time")
+
+		validationReports = append(validationReports, &validation.ValidationReport{
+			Proxy:       proxy,
+			ProxyReport: proxyReport,
+		})
+	}
 	return &validation.GlooValidationServiceResponse{
-		ValidationReports: []*validation.ValidationReport{
-			{
-				ProxyReport: rpt,
-			},
-		},
+		ValidationReports: validationReports,
 	}, nil
 }
 

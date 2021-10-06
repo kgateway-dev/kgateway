@@ -653,6 +653,7 @@ func (v *validator) getReportsFromGlooValidationResponse(validationResponse *val
 	var (
 		errs            error
 		upstreamReports UpstreamReports
+		proxyReports    ProxyReports
 		proxies         []*gloov1.Proxy
 	)
 	for _, report := range validationResponse.GetValidationReports() {
@@ -669,13 +670,24 @@ func (v *validator) getReportsFromGlooValidationResponse(validationResponse *val
 			}
 		}
 
-		// Append proxies
+		// Append proxies and proxy reports
 		if report.GetProxy() != nil {
 			proxies = append(proxies, report.GetProxy())
 		}
+		if proxyReport := report.GetProxyReport(); proxyReport != nil {
+			proxyReports = append(proxyReports, report.GetProxyReport())
+			if err := validationutils.GetProxyError(proxyReport); err != nil {
+				errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
+			}
+			if warnings := validationutils.GetProxyWarning(proxyReport); !v.allowWarnings && len(warnings) > 0 {
+				for _, warning := range warnings {
+					errs = multierr.Append(errs, errors.New(warning))
+				}
+			}
+		}
 	}
 	return &Reports{
-		ProxyReports:    &ProxyReports{},
+		ProxyReports:    &proxyReports,
 		UpstreamReports: &upstreamReports,
 		Proxies:         proxies,
 	}, errs
