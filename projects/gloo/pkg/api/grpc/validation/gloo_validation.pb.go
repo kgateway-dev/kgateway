@@ -370,11 +370,11 @@ type GlooValidationServiceRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// If a proxy is provided in the request, the response will contain only the report for that proxy.
+	// Optional. If a proxy is provided in the request, the response will contain only the report for that proxy.
 	// If no proxy is provided, the response will contain a report for each proxy in the Gloo API snapshot.
 	Proxy *v1.Proxy `protobuf:"bytes,1,opt,name=proxy,proto3" json:"proxy,omitempty"`
 	// Each validation request can either be a create/modify request or a delete request for one or more resources.
-	// For deletions, we only pass in the resource refs.
+	// For deletions, we pass in the resource refs rather than the full resources.
 	//
 	// Types that are assignable to Resources:
 	//	*GlooValidationServiceRequest_ModifiedResources
@@ -447,10 +447,12 @@ type isGlooValidationServiceRequest_Resources interface {
 }
 
 type GlooValidationServiceRequest_ModifiedResources struct {
+	// Resources to be created or modified.
 	ModifiedResources *ModifiedResources `protobuf:"bytes,2,opt,name=modified_resources,json=modifiedResources,proto3,oneof"`
 }
 
 type GlooValidationServiceRequest_DeletedResources struct {
+	// Resources to be deleted.
 	DeletedResources *DeletedResources `protobuf:"bytes,3,opt,name=deleted_resources,json=deletedResources,proto3,oneof"`
 }
 
@@ -463,6 +465,8 @@ type GlooValidationServiceResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// This list contains a validation report for each proxy that was translated and validated with the proposed
+	// Gloo API snapshot.
 	ValidationReports []*ValidationReport `protobuf:"bytes,1,rep,name=validation_reports,json=validationReports,proto3" json:"validation_reports,omitempty"`
 }
 
@@ -510,6 +514,7 @@ type ModifiedResources struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Optional, a list of the upstreams to create or modify.
 	Upstreams []*v1.Upstream `protobuf:"bytes,1,rep,name=upstreams,proto3" json:"upstreams,omitempty"` // TODO when we support other resource types, add them here
 }
 
@@ -557,6 +562,7 @@ type DeletedResources struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Optional, a list of the upstreams to delete.
 	UpstreamRefs []*core.ResourceRef `protobuf:"bytes,1,rep,name=upstream_refs,json=upstreamRefs,proto3" json:"upstream_refs,omitempty"` // TODO when we support other resource types, add them here
 }
 
@@ -600,16 +606,17 @@ func (x *DeletedResources) GetUpstreamRefs() []*core.ResourceRef {
 }
 
 // A validation report represents the warnings and errors that produced during
-// a single translation loop of a proxy. If no warnings or errors are produced,
-// the report is empty.
+// a single translation loop of a proxy.
 type ValidationReport struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ProxyReport     *ProxyReport      `protobuf:"bytes,1,opt,name=proxy_report,json=proxyReport,proto3" json:"proxy_report,omitempty"`
+	// The report for this proxy, including any warnings or errors in its sub-resources.
+	ProxyReport *ProxyReport `protobuf:"bytes,1,opt,name=proxy_report,json=proxyReport,proto3" json:"proxy_report,omitempty"`
+	// The reports for all upstreams that were translated with this proxy.
 	UpstreamReports []*ResourceReport `protobuf:"bytes,2,rep,name=upstream_reports,json=upstreamReports,proto3" json:"upstream_reports,omitempty"`
-	// The proxy for this translation loop
+	// The proxy for this translation loop.
 	Proxy *v1.Proxy `protobuf:"bytes,3,opt,name=proxy,proto3" json:"proxy,omitempty"`
 }
 
