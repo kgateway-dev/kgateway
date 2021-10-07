@@ -56,21 +56,43 @@ func (m *GlooValidationServiceRequest) Equal(that interface{}) bool {
 		}
 	}
 
-	if len(m.GetUpstreams()) != len(target.GetUpstreams()) {
-		return false
-	}
-	for idx, v := range m.GetUpstreams() {
+	switch m.Resources.(type) {
 
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetUpstreams()[idx]) {
+	case *GlooValidationServiceRequest_ModifiedResources:
+		if _, ok := target.Resources.(*GlooValidationServiceRequest_ModifiedResources); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetModifiedResources()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetModifiedResources()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetUpstreams()[idx]) {
+			if !proto.Equal(m.GetModifiedResources(), target.GetModifiedResources()) {
 				return false
 			}
 		}
 
+	case *GlooValidationServiceRequest_DeletedResources:
+		if _, ok := target.Resources.(*GlooValidationServiceRequest_DeletedResources); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetDeletedResources()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetDeletedResources()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetDeletedResources(), target.GetDeletedResources()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Resources != target.Resources {
+			return false
+		}
 	}
 
 	return true
@@ -108,6 +130,88 @@ func (m *GlooValidationServiceResponse) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(v, target.GetValidationReports()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ModifiedResources) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ModifiedResources)
+	if !ok {
+		that2, ok := that.(ModifiedResources)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetUpstreams()) != len(target.GetUpstreams()) {
+		return false
+	}
+	for idx, v := range m.GetUpstreams() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetUpstreams()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetUpstreams()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *DeletedResources) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*DeletedResources)
+	if !ok {
+		that2, ok := that.(DeletedResources)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetUpstreamRefs()) != len(target.GetUpstreamRefs()) {
+		return false
+	}
+	for idx, v := range m.GetUpstreamRefs() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetUpstreamRefs()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetUpstreamRefs()[idx]) {
 				return false
 			}
 		}

@@ -77,7 +77,7 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 
 	errMsg := "didn't say the magic word"
 
-	DescribeTable("accepts valid admission requests, rejects bad ones", func(valid bool, crd crd.Crd, gvk schema.GroupVersionKind, resource interface{}) {
+	DescribeTable("accepts valid admission requests, rejects bad ones", func(valid bool, crd crd.Crd, gvk schema.GroupVersionKind, op v1beta1.Operation, resourceOrRef interface{}) {
 		// not critical to these tests, but this isn't ever supposed to be null or empty.
 		wh.webhookNamespace = routeTable.Metadata.Namespace
 
@@ -91,14 +91,23 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 			mv.fValidateVirtualService = func(ctx context.Context, vs *v1.VirtualService, dryRun bool) (*validation.Reports, error) {
 				return reports(), fmt.Errorf(errMsg)
 			}
+			mv.fValidateDeleteVirtualService = func(ctx context.Context, vs *core.ResourceRef, dryRun bool) error {
+				return fmt.Errorf(errMsg)
+			}
 			mv.fValidateRouteTable = func(ctx context.Context, rt *v1.RouteTable, dryRun bool) (*validation.Reports, error) {
 				return reports(), fmt.Errorf(errMsg)
+			}
+			mv.fValidateDeleteRouteTable = func(ctx context.Context, rt *core.ResourceRef, dryRun bool) error {
+				return fmt.Errorf(errMsg)
 			}
 			mv.fValidateUpstream = func(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*validation.Reports, error) {
 				return reports(), fmt.Errorf(errMsg)
 			}
+			mv.fValidateDeleteUpstream = func(ctx context.Context, us *core.ResourceRef, dryRun bool) error {
+				return fmt.Errorf(errMsg)
+			}
 		}
-		req, err := makeReviewRequest(srv.URL, crd, gvk, v1beta1.Create, resource)
+		req, err := makeReviewRequest(srv.URL, crd, gvk, op, resourceOrRef)
 
 		res, err := srv.Client().Do(req)
 		Expect(err).NotTo(HaveOccurred())
@@ -117,16 +126,22 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 			Expect(review.Proxies).To(BeEmpty())
 		}
 	},
-		Entry("valid gateway", true, v1.GatewayCrd, v1.GatewayCrd.GroupVersionKind(), gateway),
-		Entry("invalid gateway", false, v1.GatewayCrd, v1.GatewayCrd.GroupVersionKind(), gateway),
-		Entry("valid virtual service", true, v1.VirtualServiceCrd, v1.VirtualServiceCrd.GroupVersionKind(), vs),
-		Entry("invalid virtual service", false, v1.VirtualServiceCrd, v1.VirtualServiceCrd.GroupVersionKind(), vs),
-		Entry("valid route table", true, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), routeTable),
-		Entry("invalid route table", false, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), routeTable),
-		Entry("valid unstructured list", true, nil, ListGVK, unstructuredList),
-		Entry("invalid unstructured list", false, nil, ListGVK, unstructuredList),
-		Entry("valid upstream", true, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), upstream),
-		Entry("invalid upstream", false, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), upstream),
+		Entry("valid gateway", true, v1.GatewayCrd, v1.GatewayCrd.GroupVersionKind(), v1beta1.Create, gateway),
+		Entry("invalid gateway", false, v1.GatewayCrd, v1.GatewayCrd.GroupVersionKind(), v1beta1.Create, gateway),
+		Entry("valid virtual service", true, v1.VirtualServiceCrd, v1.VirtualServiceCrd.GroupVersionKind(), v1beta1.Create, vs),
+		Entry("invalid virtual service", false, v1.VirtualServiceCrd, v1.VirtualServiceCrd.GroupVersionKind(), v1beta1.Create, vs),
+		Entry("valid virtual service deletion", true, v1.VirtualServiceCrd, v1.VirtualServiceCrd.GroupVersionKind(), v1beta1.Delete, vs.GetMetadata().Ref()),
+		Entry("invalid virtual service deletion", false, v1.VirtualServiceCrd, v1.VirtualServiceCrd.GroupVersionKind(), v1beta1.Delete, vs.GetMetadata().Ref()),
+		Entry("valid route table", true, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Create, routeTable),
+		Entry("invalid route table", false, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Create, routeTable),
+		Entry("valid route table deletion", true, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Delete, routeTable.GetMetadata().Ref()),
+		Entry("invalid route table deletion", false, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Delete, routeTable.GetMetadata().Ref()),
+		Entry("valid unstructured list", true, nil, ListGVK, v1beta1.Create, unstructuredList),
+		Entry("invalid unstructured list", false, nil, ListGVK, v1beta1.Create, unstructuredList),
+		Entry("valid upstream", true, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Create, upstream),
+		Entry("invalid upstream", false, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Create, upstream),
+		Entry("valid upstream deletion", true, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Delete, upstream.GetMetadata().Ref()),
+		Entry("invalid upstream deletion", false, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Delete, upstream.GetMetadata().Ref()),
 	)
 
 	Context("invalid yaml", func() {
@@ -231,6 +246,11 @@ func makeReviewRequest(url string, crd crd.Crd, gvk schema.GroupVersionKind, ope
 
 func makeReviewRequestWithProxies(url string, crd crd.Crd, gvk schema.GroupVersionKind, operation v1beta1.Operation, resource interface{}, returnProxies bool) (*http.Request, error) {
 
+	if operation == v1beta1.Delete {
+		ref := resource.(*core.ResourceRef)
+		return makeReviewRequestRawJsonEncoded(url, gvk, operation, ref.GetName(), ref.GetNamespace(), nil, returnProxies)
+	}
+
 	switch typedResource := resource.(type) {
 	case unstructured.UnstructuredList:
 		jsonBytes, err := typedResource.MarshalJSON()
@@ -326,7 +346,7 @@ type mockValidator struct {
 	fValidateRouteTable           func(ctx context.Context, rt *v1.RouteTable, dryRun bool) (*validation.Reports, error)
 	fValidateDeleteRouteTable     func(ctx context.Context, rt *core.ResourceRef, dryRun bool) error
 	fValidateUpstream             func(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*validation.Reports, error)
-	fValidateDeleteUpstream       func(ctx context.Context, us *core.ResourceRef, dryRun bool) (*validation.Reports, error)
+	fValidateDeleteUpstream       func(ctx context.Context, us *core.ResourceRef, dryRun bool) error
 }
 
 func (v *mockValidator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
@@ -385,9 +405,9 @@ func (v *mockValidator) ValidateUpstream(ctx context.Context, us *gloov1.Upstrea
 	return v.fValidateUpstream(ctx, us, dryRun)
 }
 
-func (v *mockValidator) ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*validation.Reports, error) {
+func (v *mockValidator) ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) error {
 	if v.fValidateDeleteUpstream == nil {
-		return reports(), nil
+		return nil
 	}
 	return v.fValidateDeleteUpstream(ctx, us, dryRun)
 }

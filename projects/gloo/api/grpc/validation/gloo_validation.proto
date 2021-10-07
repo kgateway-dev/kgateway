@@ -23,25 +23,48 @@ service GlooValidationService {
 }
 
 message GlooValidationServiceRequest {
-    // If a proxy is provided in the request, the response will contain only the report for that proxy.
+    // Optional. If a proxy is provided in the request, the response will contain only the report for that proxy.
     // If no proxy is provided, the response will contain a report for each proxy in the Gloo API snapshot.
-    gloo.solo.io.Proxy proxy = 1;
+    Proxy proxy = 1;
 
-    repeated gloo.solo.io.Upstream upstreams = 2;
+    // Each validation request can either be a create/modify request or a delete request for one or more resources.
+    // For deletions, we pass in the resource refs rather than the full resources.
+    oneof resources {
+        // Resources to be created or modified.
+        ModifiedResources modified_resources = 2;
+        // Resources to be deleted.
+        DeletedResources deleted_resources = 3;
+    }
 }
 
 message GlooValidationServiceResponse {
+    // This list contains a validation report for each proxy that was translated and validated with the proposed
+    // Gloo API snapshot.
     repeated ValidationReport validation_reports = 1;
 }
 
+message ModifiedResources {
+    // Optional, a list of the upstreams to create or modify.
+    repeated Upstream upstreams = 1;
+    // TODO when we support other resource types, add them here
+}
+
+message DeletedResources {
+    // Optional, a list of the upstreams to delete.
+    repeated core.solo.io.ResourceRef upstream_refs = 1;
+    // TODO when we support other resource types, add them here
+}
+
 // A validation report represents the warnings and errors that produced during
-// a single translation loop of a proxy. If no warnings or errors are produced,
-// the report is empty.
+// a single translation loop of a proxy.
 message ValidationReport {
+    // The report for this proxy, including any warnings or errors in its sub-resources.
     ProxyReport proxy_report = 1;
+
+    // The reports for all upstreams that were translated with this proxy.
     repeated ResourceReport upstream_reports = 2;
 
-    // The proxy for this translation loop
+    // The proxy for this translation loop.
     Proxy proxy = 3;
 }
 

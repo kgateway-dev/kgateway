@@ -2974,7 +2974,7 @@ webhooks:
        apiGroups: ["gateway.solo.io"]
        apiVersions: ["v1"]
        resources: ["*"]
-     - operations: [ "CREATE", "UPDATE" ]
+     - operations: [ "CREATE", "UPDATE", "DELETE" ]
        apiGroups: ["gloo.solo.io"]
        apiVersions: ["v1"]
        resources: ["upstreams"]

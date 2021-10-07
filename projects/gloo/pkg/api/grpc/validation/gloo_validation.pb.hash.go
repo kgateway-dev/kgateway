@@ -58,6 +58,110 @@ func (m *GlooValidationServiceRequest) Hash(hasher hash.Hash64) (uint64, error) 
 		}
 	}
 
+	switch m.Resources.(type) {
+
+	case *GlooValidationServiceRequest_ModifiedResources:
+
+		if h, ok := interface{}(m.GetModifiedResources()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("ModifiedResources")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetModifiedResources(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("ModifiedResources")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *GlooValidationServiceRequest_DeletedResources:
+
+		if h, ok := interface{}(m.GetDeletedResources()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("DeletedResources")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetDeletedResources(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("DeletedResources")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *GlooValidationServiceResponse) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation.GlooValidationServiceResponse")); err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetValidationReports() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *ModifiedResources) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation.ModifiedResources")); err != nil {
+		return 0, err
+	}
+
 	for _, v := range m.GetUpstreams() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
@@ -86,7 +190,7 @@ func (m *GlooValidationServiceRequest) Hash(hasher hash.Hash64) (uint64, error) 
 }
 
 // Hash function
-func (m *GlooValidationServiceResponse) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *DeletedResources) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -94,11 +198,11 @@ func (m *GlooValidationServiceResponse) Hash(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation.GlooValidationServiceResponse")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation.DeletedResources")); err != nil {
 		return 0, err
 	}
 
-	for _, v := range m.GetValidationReports() {
+	for _, v := range m.GetUpstreamRefs() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("")); err != nil {
