@@ -45,7 +45,7 @@ func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev
 					return err
 				}
 
-				if currentValue.CanSet() {
+				if fieldValue.IsValid() && currentValue.CanSet() && currentValue.IsZero() {
 					currentValue.Set(fieldValue)
 				}
 			}
