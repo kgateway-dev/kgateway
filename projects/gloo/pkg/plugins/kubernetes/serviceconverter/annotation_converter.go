@@ -18,6 +18,7 @@ var ExcludedFields = map[string]bool{
 	"NamespacedStatuses": true,
 	"Metadata":           true,
 	"DiscoveryMetadata":  true,
+	"UpstreamType":       true,
 }
 
 type GeneralServiceConverter struct{}
@@ -39,7 +40,9 @@ func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev
 			if field.PkgPath == "" && !ExcludedFields[field.Name] {
 				fieldValue := getAttr(&spec, field.Name)
 				currentValue := getAttr(us, field.Name)
-				if fieldValue.IsValid() && currentValue != fieldValue {
+
+				// If there isn't preexisting config at this field, write the provided config
+				if fieldValue.IsValid() && currentValue.IsZero() && currentValue != fieldValue {
 					currentValue.Set(fieldValue)
 				}
 			}
