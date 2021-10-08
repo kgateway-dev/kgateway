@@ -934,6 +934,16 @@ func (m *Settings_DiscoveryOptions) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetGeneralAnnotationUpstreamConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetGeneralAnnotationUpstreamConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetGeneralAnnotationUpstreamConfig(), target.GetGeneralAnnotationUpstreamConfig()) {
+			return false
+		}
+	}
+
 	return true
 }
 
