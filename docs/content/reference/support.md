@@ -22,9 +22,9 @@ The recommended version for helm clients is v3.0 or greater, but helm v2 will al
 
 | Gloo Edge | Kubernetes | Envoy | Helm | Istio |
 |------|----------|---------|--------|------|
-| 1.8.x | 1.19, 1.20, 1.21 | v3 xDS API | >= 3.0 | 1.7, 1.8 |
-| 1.7.x | 1.19, 1.20, 1.21 | v3 xDS API | >= 3.0 | 1.7, 1.8 |
-| 1.6.x | 1.19, 1.20, 1.21| v2 xDS API, v3 xDS API  | >= 3.0 | 1.7, 1.8 |
+| 1.9.x | 1.19 - 1.22 | v3 xDS API | >= 3.0 | 1.7 - 1.11 |
+| 1.8.x | 1.19 - 1.21 | v3 xDS API | >= 3.0 | 1.7 - 1.8 |
+| 1.7.x | 1.19 - 1.21 | v3 xDS API | >= 3.0 | 1.7 - 1.8 |
 
 
 

@@ -6,6 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -25,6 +28,7 @@ import (
 	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/test/matchers"
 	"google.golang.org/grpc"
 )
@@ -117,6 +121,107 @@ var _ = Describe("Validation Server", func() {
 			Expect(routeError).To(BeEmpty())
 			Expect(routeWarning[0].Reason).To(Equal("no destination type specified"))
 		})
+		It("upstream validation succeeds", func() {
+			proxy1 := params.Snapshot.Proxies[0]
+			proxy2 := &v1.Proxy{
+				Metadata: &core.Metadata{
+					Name:      "proxy2",
+					Namespace: "gloo-system",
+				},
+			}
+			params.Snapshot.Proxies = v1.ProxyList{proxy1, proxy2}
+
+			s := NewValidator(context.TODO(), translator, xdsSanitizer)
+			_ = s.Sync(context.TODO(), params.Snapshot)
+			resp, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{
+				Resources: &validationgrpc.GlooValidationServiceRequest_ModifiedResources{
+					ModifiedResources: &validationgrpc.ModifiedResources{
+						Upstreams: []*v1.Upstream{samples.SimpleUpstream()},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// should create a report for each proxy
+			Expect(resp.ValidationReports).To(HaveLen(2))
+			report1 := resp.ValidationReports[0]
+			Expect(report1.GetProxy()).To(matchers.MatchProto(proxy1))
+			Expect(validation.GetProxyWarning(report1.GetProxyReport())).To(BeEmpty())
+			Expect(validation.GetProxyError(report1.GetProxyReport())).NotTo(HaveOccurred())
+			report2 := resp.ValidationReports[1]
+			Expect(report2.GetProxy()).To(matchers.MatchProto(proxy2))
+			Expect(validation.GetProxyWarning(report2.GetProxyReport())).To(BeEmpty())
+			Expect(validation.GetProxyError(report2.GetProxyReport())).NotTo(HaveOccurred())
+		})
+		It("upstream validation fails", func() {
+			// having no upstreams in the snapshot should cause translation to fail due to a proxy from the snapshot
+			// referencing the "test" upstream. this should cause any new upstreams we try to apply to be rejected
+			params.Snapshot.Upstreams = v1.UpstreamList{}
+
+			s := NewValidator(context.TODO(), translator, xdsSanitizer)
+			_ = s.Sync(context.TODO(), params.Snapshot)
+			resp, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{
+				Resources: &validationgrpc.GlooValidationServiceRequest_ModifiedResources{
+					ModifiedResources: &validationgrpc.ModifiedResources{
+						Upstreams: []*v1.Upstream{
+							{
+								Metadata: &core.Metadata{Name: "other-upstream", Namespace: "other-namespace"},
+							},
+						},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(resp.ValidationReports).To(HaveLen(1))
+			proxyReport := resp.ValidationReports[0].GetProxyReport()
+			warnings := validation.GetProxyWarning(proxyReport)
+			errors := validation.GetProxyError(proxyReport)
+			Expect(warnings).To(HaveLen(1))
+			Expect(errors).To(HaveOccurred())
+		})
+		It("upstream deletion validation succeeds", func() {
+			// deleting an upstream that is not being used should succeed
+			s := NewValidator(context.TODO(), translator, xdsSanitizer)
+			_ = s.Sync(context.TODO(), params.Snapshot)
+			resp, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{
+				Resources: &validationgrpc.GlooValidationServiceRequest_DeletedResources{
+					DeletedResources: &validationgrpc.DeletedResources{
+						UpstreamRefs: []*core.ResourceRef{
+							{Name: "unused-upstream", Namespace: "gloo-system"},
+						},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.ValidationReports).To(HaveLen(1))
+			proxyReport := resp.ValidationReports[0].GetProxyReport()
+			warnings := validation.GetProxyWarning(proxyReport)
+			errors := validation.GetProxyError(proxyReport)
+			Expect(warnings).To(HaveLen(0))
+			Expect(errors).NotTo(HaveOccurred())
+		})
+		It("upstream deletion validation fails", func() {
+			// trying to delete an upstream that is being referenced by a proxy should cause an error
+			s := NewValidator(context.TODO(), translator, xdsSanitizer)
+			_ = s.Sync(context.TODO(), params.Snapshot)
+			resp, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{
+				Resources: &validationgrpc.GlooValidationServiceRequest_DeletedResources{
+					DeletedResources: &validationgrpc.DeletedResources{
+						UpstreamRefs: []*core.ResourceRef{
+							{Name: "test", Namespace: "gloo-system"},
+						},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.ValidationReports).To(HaveLen(1))
+			proxyReport := resp.ValidationReports[0].GetProxyReport()
+			warnings := validation.GetProxyWarning(proxyReport)
+			errors := validation.GetProxyError(proxyReport)
+			Expect(warnings).To(HaveLen(1))
+			Expect(errors).To(HaveOccurred())
+		})
 	})
 
 	Context("Watch Sync Notifications", func() {
@@ -162,18 +267,20 @@ var _ = Describe("Validation Server", func() {
 
 			var notifications []*validationgrpc.NotifyOnResyncResponse
 			var l sync.Mutex
-			var desiredErr string
+			var desiredErrCode codes.Code
 
 			// watch notifications
 			go func() {
 				defer GinkgoRecover()
 				for {
 					notification, err := stream.Recv()
-					if desiredErr == "" {
+					if desiredErrCode == 0 {
 						Expect(err).To(BeNil())
 					} else {
 						Expect(err).NotTo(BeNil())
-						Expect(err.Error()).To(ContainSubstring(desiredErr))
+						st, ok := status.FromError(err)
+						Expect(ok).To(BeTrue())
+						Expect(st.Code()).To(Equal(desiredErrCode))
 						continue
 					}
 					l.Lock()
@@ -220,7 +327,7 @@ var _ = Describe("Validation Server", func() {
 			Eventually(getNotifications, time.Second).Should(HaveLen(5))
 
 			// test close
-			desiredErr = "transport is closing"
+			desiredErrCode = codes.Unavailable
 			srv.Stop()
 
 			// create jitter by changing upstreams

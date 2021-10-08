@@ -13,6 +13,8 @@ weight: 5
 
 - [GlooValidationServiceRequest](#gloovalidationservicerequest)
 - [GlooValidationServiceResponse](#gloovalidationserviceresponse)
+- [ModifiedResources](#modifiedresources)
+- [DeletedResources](#deletedresources)
 - [ValidationReport](#validationreport)
 - [ResourceReport](#resourcereport)
 - [NotifyOnResyncRequest](#notifyonresyncrequest)
@@ -55,14 +57,16 @@ weight: 5
 
 ```yaml
 "proxy": .gloo.solo.io.Proxy
-"upstreams": []gloo.solo.io.Upstream
+"modifiedResources": .gloo.solo.io.ModifiedResources
+"deletedResources": .gloo.solo.io.DeletedResources
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) | If a proxy is provided in the request, the response will contain only the report for that proxy. If no proxy is provided, the response will contain a report for each proxy in the Gloo API snapshot. |
-| `upstreams` | [[]gloo.solo.io.Upstream](../../../v1/upstream.proto.sk/#upstream) |  |
+| `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) | Optional. If a proxy is provided in the request, the response will contain only the report for that proxy. If no proxy is provided, the response will contain a report for each proxy in the Gloo API snapshot. |
+| `modifiedResources` | [.gloo.solo.io.ModifiedResources](../gloo_validation.proto.sk/#modifiedresources) | Resources to be created or modified. Only one of `modifiedResources` or `deletedResources` can be set. |
+| `deletedResources` | [.gloo.solo.io.DeletedResources](../gloo_validation.proto.sk/#deletedresources) | Resources to be deleted. Only one of `deletedResources` or `modifiedResources` can be set. |
 
 
 
@@ -79,7 +83,41 @@ weight: 5
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `validationReports` | [[]gloo.solo.io.ValidationReport](../gloo_validation.proto.sk/#validationreport) |  |
+| `validationReports` | [[]gloo.solo.io.ValidationReport](../gloo_validation.proto.sk/#validationreport) | This list contains a validation report for each proxy that was translated and validated with the proposed Gloo API snapshot. |
+
+
+
+
+---
+### ModifiedResources
+
+
+
+```yaml
+"upstreams": []gloo.solo.io.Upstream
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `upstreams` | [[]gloo.solo.io.Upstream](../../../v1/upstream.proto.sk/#upstream) | Optional, a list of the upstreams to create or modify. |
+
+
+
+
+---
+### DeletedResources
+
+
+
+```yaml
+"upstreamRefs": []core.solo.io.ResourceRef
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `upstreamRefs` | [[]core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Optional, a list of the upstreams to delete. |
 
 
 
@@ -89,8 +127,7 @@ weight: 5
 
  
 A validation report represents the warnings and errors that produced during
-a single translation loop of a proxy. If no warnings or errors are produced,
-the report is empty.
+a single translation loop of a proxy.
 
 ```yaml
 "proxyReport": .gloo.solo.io.ProxyReport
@@ -101,8 +138,8 @@ the report is empty.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `proxyReport` | [.gloo.solo.io.ProxyReport](../gloo_validation.proto.sk/#proxyreport) |  |
-| `upstreamReports` | [[]gloo.solo.io.ResourceReport](../gloo_validation.proto.sk/#resourcereport) |  |
+| `proxyReport` | [.gloo.solo.io.ProxyReport](../gloo_validation.proto.sk/#proxyreport) | The report for this proxy, including any warnings or errors in its sub-resources. |
+| `upstreamReports` | [[]gloo.solo.io.ResourceReport](../gloo_validation.proto.sk/#resourcereport) | The reports for all upstreams that were translated with this proxy. |
 | `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) | The proxy for this translation loop. |
 
 

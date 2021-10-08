@@ -85,7 +85,7 @@ type Validator interface {
 	ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (*Reports, error)
 	ValidateDeleteRouteTable(ctx context.Context, rt *core.ResourceRef, dryRun bool) error
 	ValidateUpstream(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*Reports, error)
-	ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*Reports, error)
+	ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) error
 }
 
 type validator struct {
@@ -602,12 +602,16 @@ func (v *validator) validateGatewayInternal(ctx context.Context, gw *v1.Gateway,
 }
 
 func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*Reports, error) {
-	logger := contextutils.LoggerFrom(ctx)
 	response, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
 		// Sending a nil proxy causes the upstream to be translated with all proxies in gloo's snapshot
-		Proxy:     nil,
-		Upstreams: []*gloov1.Upstream{us},
+		Proxy: nil,
+		Resources: &validation.GlooValidationServiceRequest_ModifiedResources{
+			ModifiedResources: &validation.ModifiedResources{
+				Upstreams: []*gloov1.Upstream{us},
+			},
+		},
 	})
+	logger := contextutils.LoggerFrom(ctx)
 	if err != nil {
 		if v.ignoreProxyValidationFailure {
 			logger.Error(err)
@@ -617,53 +621,76 @@ func (v *validator) ValidateUpstream(ctx context.Context, us *gloov1.Upstream, d
 	}
 	logger.Debugf("Got response from GlooValidationService: %s", response.String())
 
+	return v.getReportsFromGlooValidationResponse(response)
+}
+
+func (v *validator) ValidateDeleteUpstream(ctx context.Context, upstreamRef *core.ResourceRef, dryRun bool) error {
+	response, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
+		// Sending a nil proxy causes the remaining upstreams to be translated with all proxies in gloo's snapshot
+		Proxy: nil,
+		Resources: &validation.GlooValidationServiceRequest_DeletedResources{
+			DeletedResources: &validation.DeletedResources{
+				UpstreamRefs: []*core.ResourceRef{upstreamRef},
+			},
+		},
+	})
+	logger := contextutils.LoggerFrom(ctx)
+	if err != nil {
+		if v.ignoreProxyValidationFailure {
+			logger.Error(err)
+		} else {
+			return err
+		}
+	}
+	logger.Debugf("Got response from GlooValidationService: %s", response.String())
+
+	_, err = v.getReportsFromGlooValidationResponse(response)
+	return err
+}
+
+// Converts the GlooValidationServiceResponse into Reports.
+func (v *validator) getReportsFromGlooValidationResponse(validationResponse *validation.GlooValidationServiceResponse) (*Reports, error) {
 	var (
 		errs            error
 		upstreamReports UpstreamReports
+		proxyReports    ProxyReports
 		proxies         []*gloov1.Proxy
 	)
-	for _, report := range response.GetValidationReports() {
+	for _, report := range validationResponse.GetValidationReports() {
 		// Append upstream errors
 		for _, usRpt := range report.GetUpstreamReports() {
-			// Only care about the upstream from the request
-			if usRpt.GetResourceRef().Equal(us.GetMetadata().Ref()) {
-				upstreamReports = append(upstreamReports, usRpt)
-				if err := resourceReportToMultiErr(usRpt); err != nil {
-					errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Upstream with Gloo validation server"))
-				}
-				if warnings := usRpt.GetWarnings(); !v.allowWarnings && len(warnings) > 0 {
-					for _, warning := range warnings {
-						errs = multierr.Append(errs, errors.New(warning))
-					}
+			upstreamReports = append(upstreamReports, usRpt)
+			if err := resourceReportToMultiErr(usRpt); err != nil {
+				errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Upstream with Gloo validation server"))
+			}
+			if warnings := usRpt.GetWarnings(); !v.allowWarnings && len(warnings) > 0 {
+				for _, warning := range warnings {
+					errs = multierr.Append(errs, errors.New(warning))
 				}
 			}
 		}
 
-		// Append proxies
+		// Append proxies and proxy reports
 		if report.GetProxy() != nil {
 			proxies = append(proxies, report.GetProxy())
 		}
+		if proxyReport := report.GetProxyReport(); proxyReport != nil {
+			proxyReports = append(proxyReports, report.GetProxyReport())
+			if err := validationutils.GetProxyError(proxyReport); err != nil {
+				errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
+			}
+			if warnings := validationutils.GetProxyWarning(proxyReport); !v.allowWarnings && len(warnings) > 0 {
+				for _, warning := range warnings {
+					errs = multierr.Append(errs, errors.New(warning))
+				}
+			}
+		}
 	}
-
-	if errs != nil {
-		// TODO(mitchaman): Set metric to indicate the config is invalid
-		return &Reports{
-			ProxyReports:    &ProxyReports{},
-			UpstreamReports: &upstreamReports,
-			Proxies:         proxies,
-		}, errors.Wrapf(errs, "validating %T %v", us, us.GetMetadata().Ref())
-	}
-
-	logger.Debugf("Accepted Upstream %v", us.GetMetadata().Ref())
-	// TODO(mitchaman): Set metric to indicate the config is valid
-
-	return &Reports{ProxyReports: &ProxyReports{}, UpstreamReports: &upstreamReports, Proxies: proxies}, nil
-}
-
-func (v *validator) ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) (*Reports, error) {
-	// TODO(mitchaman): This function should never be called as long as 5-gateway-validation-webhook-configuration.yaml
-	//  isn't specifying the DELETE operation for upstreams
-	panic("implement me")
+	return &Reports{
+		ProxyReports:    &proxyReports,
+		UpstreamReports: &upstreamReports,
+		Proxies:         proxies,
+	}, errs
 }
 
 func (v *validator) sendGlooValidationServiceRequest(
