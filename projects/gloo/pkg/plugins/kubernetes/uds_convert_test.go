@@ -23,7 +23,7 @@ var (
 	uc *KubeUpstreamConverter
 )
 
-var _ = FDescribe("UdsConvert", func() {
+var _ = Describe("UdsConvert", func() {
 	BeforeEach(func() {
 		uc = DefaultUpstreamConverter()
 	})
@@ -96,159 +96,171 @@ var _ = FDescribe("UdsConvert", func() {
 
 		Describe("Upstream Config when Annotations Exist", func() {
 
-			Context("Using General Purpose Annotation Conversion", func() {
+			It("Should create upstream with use_http2=true when annotation exists", testSetUseHttp2Converter)
 
-				It("Should create upstream with use_http2=true when annotation exists", testSetUseHttp2Converter)
-
-				Describe("Should create upstream with SSL Config when annotations exist", testSetSslConfig)
-
-				DescribeTable("should create upstream with appropriate config when annotations are present", func(annotations map[string]string, expectedCfg *v1.Upstream) {
-					svc := &kubev1.Service{
-						Spec: kubev1.ServiceSpec{},
-						ObjectMeta: metav1.ObjectMeta{
-							Annotations: annotations,
-						},
+			It("General annotation converter should not override SetUseHttp2Converter", func() {
+				svc := &kubev1.Service{
+					Spec: kubev1.ServiceSpec{},
+				}
+				svc.Annotations = make(map[string]string)
+				svc.Annotations[serviceconverter.GlooH2Annotation] = "true"
+				svc.Annotations[serviceconverter.GlooAnnotationPrefix] = `{
+					"spec": {
+						"use_http2": false
 					}
-					svc.Name = "test"
-					svc.Namespace = "test"
+				}`
+				svc.Name = "test"
+				svc.Namespace = "test"
 
-					port := kubev1.ServicePort{
-						Port: 123,
-					}
+				port := kubev1.ServicePort{
+					Port: 123,
+				}
+				up := uc.CreateUpstream(context.TODO(), svc, port)
+				Expect(up.GetUseHttp2().GetValue()).To(BeTrue())
+			})
 
-					up := uc.CreateUpstream(context.TODO(), svc, port)
-					// Set the values of field which the general service converter doesn't modify to nil
-					for fieldName, _ := range serviceconverter.ExcludedFields {
-						currentStruct := reflect.ValueOf(up).Elem()
-						field := currentStruct.FieldByName(fieldName)
-						field.Set(reflect.Zero(field.Type()))
-					}
-					upstreamConfigJson, err := json.Marshal(up)
-					Expect(err).To(Not(HaveOccurred()))
-					expectedCfgJson, err := json.Marshal(expectedCfg)
-					Expect(err).To(Not(HaveOccurred()))
-					Expect(upstreamConfigJson).To(Equal(expectedCfgJson))
-				},
-					Entry("Using SetHttp2Converter", map[string]string{
-						serviceconverter.GlooAnnotationPrefix: `{
-							"spec": {
-								"use_http2": true
-							}
-						}`,
-					}, &v1.Upstream{
-						UseHttp2: &wrappers.BoolValue{
-							Value: true,
-						},
-					}),
-					Entry("using ssl secret", map[string]string{
-						serviceconverter.GlooAnnotationPrefix: `{
-							"spec": {
-								"ssl_config": {
-									"secret_ref": {
-										"name": "mysecret",
-										"namespace": "test"
-									}
+			Describe("Should create upstream with SSL Config when annotations exist", testSetSslConfig)
+
+			DescribeTable("should create upstream with appropriate config when annotations are present", func(annotations map[string]string, expectedCfg *v1.Upstream) {
+				svc := &kubev1.Service{
+					Spec: kubev1.ServiceSpec{},
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: annotations,
+					},
+				}
+				svc.Name = "test"
+				svc.Namespace = "test"
+
+				port := kubev1.ServicePort{
+					Port: 123,
+				}
+
+				up := uc.CreateUpstream(context.TODO(), svc, port)
+				// Set the values of field which the general service converter doesn't modify to nil
+				for fieldName, _ := range serviceconverter.ExcludedFields {
+					currentStruct := reflect.ValueOf(up).Elem()
+					field := currentStruct.FieldByName(fieldName)
+					field.Set(reflect.Zero(field.Type()))
+				}
+				upstreamConfigJson, err := json.Marshal(up)
+				Expect(err).To(Not(HaveOccurred()))
+				expectedCfgJson, err := json.Marshal(expectedCfg)
+				Expect(err).To(Not(HaveOccurred()))
+				Expect(upstreamConfigJson).To(Equal(expectedCfgJson))
+			},
+				Entry("Using SetHttp2Converter", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"spec": {
+							"use_http2": true
+						}
+					}`,
+				}, &v1.Upstream{
+					UseHttp2: &wrappers.BoolValue{
+						Value: true,
+					},
+				}),
+				Entry("using ssl secret", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"spec": {
+							"ssl_config": {
+								"secret_ref": {
+									"name": "mysecret",
+									"namespace": "test"
 								}
 							}
-						}`,
-					}, &v1.Upstream{
-						SslConfig: &v1.UpstreamSslConfig{
-							SslSecrets: &v1.UpstreamSslConfig_SecretRef{
-								SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test"},
-							},
+						}
+					}`,
+				}, &v1.Upstream{
+					SslConfig: &v1.UpstreamSslConfig{
+						SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test"},
 						},
-					}),
-					Entry("using ssl files", map[string]string{
-						serviceconverter.GlooAnnotationPrefix: `{
-							"spec": {
-								"ssl_config": {
-									"ssl_files": {
-										"tls_cert": "cert",
-										"tls_key": "key",
-										"root_ca": "ca"
-									}
+					},
+				}),
+				Entry("using ssl files", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"spec": {
+							"ssl_config": {
+								"ssl_files": {
+									"tls_cert": "cert",
+									"tls_key": "key",
+									"root_ca": "ca"
 								}
 							}
-						}`,
-					}, &v1.Upstream{
-						SslConfig: &v1.UpstreamSslConfig{
-							SslSecrets: &v1.UpstreamSslConfig_SslFiles{
-								SslFiles: &v1.SSLFiles{
-									TlsCert: "cert",
-									TlsKey:  "key",
-									RootCa:  "ca",
-								},
+						}
+					}`,
+				}, &v1.Upstream{
+					SslConfig: &v1.UpstreamSslConfig{
+						SslSecrets: &v1.UpstreamSslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "cert",
+								TlsKey:  "key",
+								RootCa:  "ca",
 							},
 						},
-					}),
-					Entry("Using InitialStreamWindowSize", map[string]string{
-						serviceconverter.GlooAnnotationPrefix: `{
-							"spec": {
-								"initial_stream_window_size": 2048
+					},
+				}),
+				Entry("Using InitialStreamWindowSize", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"spec": {
+							"initial_stream_window_size": 2048
+						}
+					}`,
+				}, &v1.Upstream{
+					InitialStreamWindowSize: &wrappers.UInt32Value{
+						Value: 2048,
+					},
+				}),
+				Entry("Using HttpProxyHostname", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"spec": {
+							"http_proxy_hostname": "test"
+						}
+					}`,
+				}, &v1.Upstream{
+					HttpProxyHostname: &wrappers.StringValue{
+						Value: "test",
+					},
+				}),
+				Entry("Using IgnoreHealthOnHostRemoval", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"spec": {
+							"ignore_health_on_host_removal": true
+						}
+					}`,
+				}, &v1.Upstream{
+					IgnoreHealthOnHostRemoval: &wrappers.BoolValue{
+						Value: true,
+					},
+				}),
+				Entry("Using CircuitBreakers", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"spec": {
+							"circuit_breakers": {
+								"max_connections": 2048,
+								"max_pending_requests": 2048,
+								"max_requests": 2048,
+								"max_retries": 2048
 							}
-						}`,
-					}, &v1.Upstream{
-						InitialStreamWindowSize: &wrappers.UInt32Value{
+						}
+					}`,
+				}, &v1.Upstream{
+					CircuitBreakers: &v1.CircuitBreakerConfig{
+						MaxConnections: &wrappers.UInt32Value{
 							Value: 2048,
 						},
-					}),
-					Entry("Using HttpProxyHostname", map[string]string{
-						serviceconverter.GlooAnnotationPrefix: `{
-							"spec": {
-								"http_proxy_hostname": "test"
-							}
-						}`,
-					}, &v1.Upstream{
-						HttpProxyHostname: &wrappers.StringValue{
-							Value: "test",
+						MaxPendingRequests: &wrappers.UInt32Value{
+							Value: 2048,
 						},
-					}),
-					Entry("Using IgnoreHealthOnHostRemoval", map[string]string{
-						serviceconverter.GlooAnnotationPrefix: `{
-							"spec": {
-								"ignore_health_on_host_removal": true
-							}
-						}`,
-					}, &v1.Upstream{
-						IgnoreHealthOnHostRemoval: &wrappers.BoolValue{
-							Value: true,
+						MaxRequests: &wrappers.UInt32Value{
+							Value: 2048,
 						},
-					}),
-					Entry("Using CircuitBreakers", map[string]string{
-						serviceconverter.GlooAnnotationPrefix: `{
-							"spec": {
-								"circuit_breakers": {
-									"max_connections": 2048,
-									"max_pending_requests": 2048,
-									"max_requests": 2048,
-									"max_retries": 2048
-								}
-							}
-						}`,
-					}, &v1.Upstream{
-						CircuitBreakers: &v1.CircuitBreakerConfig{
-							MaxConnections: &wrappers.UInt32Value{
-								Value: 2048,
-							},
-							MaxPendingRequests: &wrappers.UInt32Value{
-								Value: 2048,
-							},
-							MaxRequests: &wrappers.UInt32Value{
-								Value: 2048,
-							},
-							MaxRetries: &wrappers.UInt32Value{
-								Value: 2048,
-							},
+						MaxRetries: &wrappers.UInt32Value{
+							Value: 2048,
 						},
-					}),
-				)
-			})
-
-			Context("Using Default Annotation Conversion", func() {
-				It("Should create upstream with use_http2=true when annotation exists", testSetUseHttp2Converter)
-
-				Describe("Should create upstream with SSL Config when annotations exist", testSetSslConfig)
-			})
+					},
+				}),
+			)
 		})
 	})
 })
