@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	AdditionalServiceConverters = append(AdditionalServiceConverters, &GeneralServiceConverter{})
+	DefaultServiceConverters = append(DefaultServiceConverters, &GeneralServiceConverter{})
 }
 
 const GlooAnnotationPrefix = "gloo.solo.io/UpstreamConfig"

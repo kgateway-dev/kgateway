@@ -49,11 +49,6 @@ func NewPlugin(kube kubernetes.Interface, kubeCoreCache corecache.KubeCoreCache)
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.settings = params.Settings
-
-	if uc, ok := p.UpstreamConverter.(*KubeUpstreamConverter); ok {
-		enableAnnotationUpstreamConfig := p.settings.Discovery.GeneralAnnotationUpstreamConfig.Value
-		uc.InitServiceConverters(enableAnnotationUpstreamConfig)
-	}
 	return nil
 }
 

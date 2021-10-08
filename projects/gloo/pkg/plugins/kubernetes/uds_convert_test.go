@@ -97,9 +97,6 @@ var _ = FDescribe("UdsConvert", func() {
 		Describe("Upstream Config when Annotations Exist", func() {
 
 			Context("Using General Purpose Annotation Conversion", func() {
-				BeforeEach(func() {
-					uc.InitServiceConverters(true)
-				})
 
 				It("Should create upstream with use_http2=true when annotation exists", testSetUseHttp2Converter)
 

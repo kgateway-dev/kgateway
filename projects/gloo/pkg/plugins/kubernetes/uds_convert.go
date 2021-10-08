@@ -34,12 +34,6 @@ type KubeUpstreamConverter struct {
 	serviceConverters []serviceconverter.ServiceConverter
 }
 
-func (uc *KubeUpstreamConverter) InitServiceConverters(fullConversion bool) {
-	if fullConversion {
-		uc.serviceConverters = append(uc.serviceConverters, serviceconverter.AdditionalServiceConverters...)
-	}
-}
-
 func (uc *KubeUpstreamConverter) UpstreamsForService(ctx context.Context, svc *kubev1.Service) v1.UpstreamList {
 	var upstreams v1.UpstreamList
 	for _, port := range svc.Spec.Ports {

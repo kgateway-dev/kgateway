@@ -24,7 +24,10 @@ var http2PortNames = []string{
 type UseHttp2Converter struct{}
 
 func (u *UseHttp2Converter) ConvertService(svc *kubev1.Service, port kubev1.ServicePort, us *v1.Upstream) error {
-	us.UseHttp2 = useHttp2(svc, port)
+	useHttp2Setting := useHttp2(svc, port)
+	if useHttp2Setting != nil {
+		us.UseHttp2 = useHttp2Setting
+	}
 	return nil
 }
 
