@@ -3,14 +3,11 @@ package serviceconverter
 import (
 	"reflect"
 
+	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	kubev1 "k8s.io/api/core/v1"
 )
-
-func init() {
-	DefaultServiceConverters = append(DefaultServiceConverters, &GeneralServiceConverter{})
-}
 
 const GlooAnnotationPrefix = "gloo.solo.io/UpstreamConfig"
 
@@ -38,11 +35,17 @@ func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev
 			field := specType.Field(i)
 			// if field is exported and not explicitly excluded, consider setting it on the upstream
 			if field.PkgPath == "" && !ExcludedFields[field.Name] {
-				fieldValue := getAttr(&spec, field.Name)
-				currentValue := getAttr(us, field.Name)
+				fieldValue, err := getAttr(&spec, field.Name)
+				if err != nil {
+					return err
+				}
 
-				// If there isn't preexisting config at this field, write the provided config
-				if fieldValue.IsValid() && currentValue.IsZero() && currentValue != fieldValue {
+				currentValue, err := getAttr(us, field.Name)
+				if err != nil {
+					return err
+				}
+
+				if currentValue.CanSet() {
 					currentValue.Set(fieldValue)
 				}
 			}
@@ -52,15 +55,15 @@ func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev
 	return nil
 }
 
-func getAttr(obj interface{}, fieldName string) reflect.Value {
+func getAttr(obj interface{}, fieldName string) (reflect.Value, error) {
 	pointToStruct := reflect.ValueOf(obj) // addressable
 	curStruct := pointToStruct.Elem()
 	if curStruct.Kind() != reflect.Struct {
-		panic("not struct")
+		return reflect.ValueOf(nil), errors.Errorf("Error: not struct")
 	}
 	curField := curStruct.FieldByName(fieldName) // type: reflect.Value
 	if !curField.IsValid() {
-		panic("not found:" + fieldName)
+		return reflect.ValueOf(nil), errors.Errorf("Error: not found:" + fieldName)
 	}
-	return curField
+	return curField, nil
 }
