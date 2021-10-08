@@ -14,3 +14,4 @@ type ServiceConverter interface {
 // the default annotation converters that will be used
 // these are initialized at runtime
 var DefaultServiceConverters []ServiceConverter
+var AdditionalServiceConverters []ServiceConverter
