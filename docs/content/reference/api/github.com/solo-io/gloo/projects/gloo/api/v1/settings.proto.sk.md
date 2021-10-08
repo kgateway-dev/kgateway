@@ -272,14 +272,12 @@ This option determines the root of the directory tree used to this end.
 
 ```yaml
 "fdsMode": .gloo.solo.io.Settings.DiscoveryOptions.FdsMode
-"generalAnnotationUpstreamConfig": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `fdsMode` | [.gloo.solo.io.Settings.DiscoveryOptions.FdsMode](../settings.proto.sk/#fdsmode) |  |
-| `generalAnnotationUpstreamConfig` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When enabled, services can fully specify the configuration of the associated discovered upstream via an annotation with key set to gloo.solo.io/UpstreamConfig and value set to the desired config as JSON, E.G.: gloo.solo.io/UpstreamConfig: `{"spec": {"use_http2": true}}`. |
 
 
 

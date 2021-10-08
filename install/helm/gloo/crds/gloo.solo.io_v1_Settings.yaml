@@ -110,9 +110,6 @@ spec:
                   fdsMode:
                     type: string
                     x-kubernetes-int-or-string: true
-                  generalAnnotationUpstreamConfig:
-                    nullable: true
-                    type: boolean
                 type: object
               discoveryNamespace:
                 type: string
