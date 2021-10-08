@@ -30,7 +30,11 @@ func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev
 			return err
 		}
 
-		for _, field := range reflect.VisibleFields(reflect.TypeOf(spec)) {
+		// iterate over fields in upstream spec
+		specType := reflect.TypeOf(spec)
+		numFields := specType.NumField()
+		for i := 0; i < numFields; i++ {
+			field := specType.Field(i)
 			// if field is exported and not explicitly excluded, consider setting it on the upstream
 			if field.PkgPath == "" && !ExcludedFields[field.Name] {
 				fieldValue := getAttr(&spec, field.Name)
