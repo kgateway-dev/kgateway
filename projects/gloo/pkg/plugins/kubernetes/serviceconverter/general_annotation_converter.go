@@ -15,6 +15,7 @@ func init() {
 
 const GlooAnnotationPrefix = "gloo.solo.io/UpstreamConfig"
 
+// The GeneralServiceConverter does not write config to these fields, because we expect them to be written to elsewhere.
 var ExcludedFields = map[string]bool{
 	"NamespacedStatuses": true,
 	"Metadata":           true,
@@ -25,33 +26,35 @@ var ExcludedFields = map[string]bool{
 type GeneralServiceConverter struct{}
 
 func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev1.ServicePort, us *v1.Upstream) error {
-	if upstreamConfigJson, ok := svc.Annotations[GlooAnnotationPrefix]; ok {
-		var spec v1.Upstream
+	upstreamConfigJson, ok := svc.Annotations[GlooAnnotationPrefix]
+	if !ok {
+		return nil
+	}
 
-		if err := protoutils.UnmarshalResource([]byte(upstreamConfigJson), &spec); err != nil {
-			return err
-		}
+	var spec v1.Upstream
+	if err := protoutils.UnmarshalResource([]byte(upstreamConfigJson), &spec); err != nil {
+		return err
+	}
 
-		// iterate over fields in upstream spec
-		specType := reflect.TypeOf(spec)
-		numFields := specType.NumField()
-		for i := 0; i < numFields; i++ {
-			field := specType.Field(i)
-			// if field is exported and not explicitly excluded, consider setting it on the upstream
-			if field.PkgPath == "" && !ExcludedFields[field.Name] {
-				fieldValue, err := getAttr(&spec, field.Name)
-				if err != nil {
-					return err
-				}
+	// iterate over fields in upstream spec
+	specType := reflect.TypeOf(spec)
+	numFields := specType.NumField()
+	for i := 0; i < numFields; i++ {
+		field := specType.Field(i)
+		// if field is exported and not explicitly excluded, consider setting it on the upstream
+		if field.PkgPath == "" && !ExcludedFields[field.Name] {
+			fieldValue, err := getAttr(&spec, field.Name)
+			if err != nil {
+				return err
+			}
 
-				currentValue, err := getAttr(us, field.Name)
-				if err != nil {
-					return err
-				}
+			currentValue, err := getAttr(us, field.Name)
+			if err != nil {
+				return err
+			}
 
-				if fieldValue.IsValid() && currentValue.CanSet() && currentValue.IsZero() {
-					currentValue.Set(fieldValue)
-				}
+			if fieldValue.IsValid() && currentValue.CanSet() && currentValue.IsZero() {
+				currentValue.Set(fieldValue)
 			}
 		}
 	}
