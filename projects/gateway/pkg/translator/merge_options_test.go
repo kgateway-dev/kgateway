@@ -111,32 +111,4 @@ var _ = Describe("MergeOptions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(actual).To(Equal(expected))
 	})
-
-	It("Merges Top Level Upstream Fields", func() {
-		dst := &v1.Upstream{
-			UseHttp2: &wrappers.BoolValue{
-				Value: true,
-			},
-		}
-		src := &v1.Upstream{
-			UseHttp2: &wrappers.BoolValue{
-				Value: false,
-			},
-			InitialStreamWindowSize: &wrappers.UInt32Value{
-				Value: 2048,
-			},
-		}
-		expected := &v1.Upstream{
-			UseHttp2: &wrappers.BoolValue{
-				Value: true,
-			},
-			InitialStreamWindowSize: &wrappers.UInt32Value{
-				Value: 2048,
-			},
-		}
-
-		actual, err := MergeUpstreams(dst, src)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(actual).To(Equal(expected))
-	})
 })

@@ -4,7 +4,6 @@ import (
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -44,47 +43,6 @@ func mergeVirtualHostOptions(dst, src *v1.VirtualHostOptions) (*v1.VirtualHostOp
 
 	for i := 0; i < dstValue.NumField(); i++ {
 		dstField, srcField := dstValue.Field(i), srcValue.Field(i)
-		shallowMerge(dstField, srcField, false)
-	}
-
-	return dst, nil
-}
-
-// Merges the fields of src into dst.
-// The fields in dst that have non-zero values will not be overwritten.
-func MergeUpstreams(dst, src *v1.Upstream) (*v1.Upstream, error) {
-	output, err := mergeStructs(reflect.Indirect(reflect.ValueOf(dst)), reflect.Indirect(reflect.ValueOf(src)))
-	if err != nil {
-		return nil, err
-	}
-
-	outputInterface := output.Interface().(v1.Upstream)
-
-	return &outputInterface, err
-}
-
-// Merges the fields of src into dst.
-// The fields in dst that have non-zero values will not be overwritten.
-func mergeStructs(dst, src reflect.Value) (reflect.Value, error) {
-	dstType := dst.Type()
-	srcType := src.Type()
-
-	if dstType != srcType {
-		return reflect.Zero(dstType), eris.Errorf("Cannot merge values of different types.")
-	}
-
-	if src == reflect.Zero(dstType) {
-		return dst, nil
-	}
-
-	if dst == reflect.Zero(dstType) {
-		newDst := reflect.New(srcType)
-		reflect.Copy(newDst, src)
-		return newDst, nil
-	}
-
-	for i := 0; i < dst.NumField(); i++ {
-		dstField, srcField := dst.Field(i), src.Field(i)
 		shallowMerge(dstField, srcField, false)
 	}
 
