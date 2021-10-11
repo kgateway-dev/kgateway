@@ -49,6 +49,8 @@ func mergeVirtualHostOptions(dst, src *v1.VirtualHostOptions) (*v1.VirtualHostOp
 	return dst, nil
 }
 
+// Merges the fields of src into dst.
+// The fields in dst that have non-zero values will not be overwritten.
 func MergeUpstreams(dst, src *v1.Upstream) (*v1.Upstream, error) {
 	if src == nil {
 		return dst, nil
