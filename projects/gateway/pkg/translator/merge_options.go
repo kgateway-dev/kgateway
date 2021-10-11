@@ -73,10 +73,6 @@ func mergeStructs(dst, src reflect.Value) (reflect.Value, error) {
 		return reflect.Zero(dstType), eris.Errorf("Cannot merge values of different types.")
 	}
 
-	if dst.Kind() != reflect.Struct {
-		return reflect.Zero(dstType), eris.Errorf("Cannot merge non-struct values.")
-	}
-
 	if src == reflect.Zero(dstType) {
 		return dst, nil
 	}
