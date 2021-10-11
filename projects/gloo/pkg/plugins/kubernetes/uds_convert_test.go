@@ -98,7 +98,7 @@ var _ = Describe("UdsConvert", func() {
 
 			It("Should create upstream with use_http2=true when annotation exists", testSetUseHttp2Converter)
 
-			It("General annotation converter should not override SetUseHttp2Converter", func() {
+			It("General annotation converter should override SetUseHttp2Converter", func() {
 				svc := &kubev1.Service{
 					Spec: kubev1.ServiceSpec{},
 				}
@@ -116,7 +116,7 @@ var _ = Describe("UdsConvert", func() {
 					Port: 123,
 				}
 				up := uc.CreateUpstream(context.TODO(), svc, port)
-				Expect(up.GetUseHttp2().GetValue()).To(BeTrue())
+				Expect(up.GetUseHttp2().GetValue()).To(BeFalse())
 			})
 
 			Describe("Should create upstream with SSL Config when annotations exist", testSetSslConfig)

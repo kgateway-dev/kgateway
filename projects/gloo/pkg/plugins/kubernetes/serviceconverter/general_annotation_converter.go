@@ -30,7 +30,6 @@ func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev
 }
 
 // Merges the fields of src into dst.
-// The fields in dst that have non-zero values will not be overwritten.
 func mergeUpstreams(dst, src *v1.Upstream) (*v1.Upstream, error) {
 	if src == nil {
 		return dst, nil
@@ -45,7 +44,7 @@ func mergeUpstreams(dst, src *v1.Upstream) (*v1.Upstream, error) {
 	for i := 0; i < dstValue.NumField(); i++ {
 		dstField, srcField := dstValue.Field(i), srcValue.Field(i)
 
-		if srcField.IsValid() && dstField.CanSet() && !isEmptyValue(srcField) && isEmptyValue(dstField) {
+		if srcField.IsValid() && dstField.CanSet() && !isEmptyValue(srcField) {
 			dstField.Set(srcField)
 		}
 	}
