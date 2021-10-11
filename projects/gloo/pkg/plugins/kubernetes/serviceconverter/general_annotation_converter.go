@@ -7,10 +7,6 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 )
 
-func init() {
-	DefaultServiceConverters = append(DefaultServiceConverters, &GeneralServiceConverter{})
-}
-
 const GlooAnnotationPrefix = "gloo.solo.io/UpstreamConfig"
 
 type GeneralServiceConverter struct{}

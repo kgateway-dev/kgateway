@@ -10,7 +10,3 @@ import (
 type ServiceConverter interface {
 	ConvertService(svc *kubev1.Service, port kubev1.ServicePort, us *v1.Upstream) error
 }
-
-// the default annotation converters that will be used
-// these are initialized at runtime
-var DefaultServiceConverters []ServiceConverter

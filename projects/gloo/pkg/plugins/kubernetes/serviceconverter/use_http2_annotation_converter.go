@@ -8,10 +8,6 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 )
 
-func init() {
-	DefaultServiceConverters = append(DefaultServiceConverters, &UseHttp2Converter{})
-}
-
 const GlooH2Annotation = "gloo.solo.io/h2_service"
 
 var http2PortNames = []string{
@@ -24,10 +20,7 @@ var http2PortNames = []string{
 type UseHttp2Converter struct{}
 
 func (u *UseHttp2Converter) ConvertService(svc *kubev1.Service, port kubev1.ServicePort, us *v1.Upstream) error {
-	useHttp2Setting := useHttp2(svc, port)
-	if useHttp2Setting != nil {
-		us.UseHttp2 = useHttp2Setting
-	}
+	us.UseHttp2 = useHttp2(svc, port)
 	return nil
 }
 
