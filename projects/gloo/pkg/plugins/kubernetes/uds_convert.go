@@ -27,9 +27,6 @@ type UpstreamConverter interface {
 func DefaultUpstreamConverter() *KubeUpstreamConverter {
 	kuc := new(KubeUpstreamConverter)
 	kuc.serviceConverters = serviceconverter.DefaultServiceConverters
-
-	serviceconverter.InitServiceConverters()
-
 	return kuc
 }
 
