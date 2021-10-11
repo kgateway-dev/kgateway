@@ -49,6 +49,25 @@ func mergeVirtualHostOptions(dst, src *v1.VirtualHostOptions) (*v1.VirtualHostOp
 	return dst, nil
 }
 
+func MergeUpstreams(dst, src *v1.Upstream) (*v1.Upstream, error) {
+	if src == nil {
+		return dst, nil
+	}
+
+	if dst == nil {
+		return proto.Clone(src).(*v1.Upstream), nil
+	}
+
+	dstValue, srcValue := reflect.ValueOf(dst).Elem(), reflect.ValueOf(src).Elem()
+
+	for i := 0; i < dstValue.NumField(); i++ {
+		dstField, srcField := dstValue.Field(i), srcValue.Field(i)
+		shallowMerge(dstField, srcField, false)
+	}
+
+	return dst, nil
+}
+
 // Sets dst to the value of src, if src is non-zero and dest is zero-valued or overwrite=true.
 func shallowMerge(dst, src reflect.Value, overwrite bool) {
 	if !src.IsValid() {

@@ -136,8 +136,15 @@ var _ = Describe("UdsConvert", func() {
 				}
 
 				up := uc.CreateUpstream(context.TODO(), svc, port)
-				// Set the values of field which the general service converter doesn't modify to nil
-				for fieldName, _ := range serviceconverter.ExcludedFields {
+
+				// Unset the values of fields which are written to by other (i.e., not service converter) modules
+				var excludedFields = map[string]bool{
+					"NamespacedStatuses": true,
+					"Metadata":           true,
+					"DiscoveryMetadata":  true,
+					"UpstreamType":       true,
+				}
+				for fieldName, _ := range excludedFields {
 					currentStruct := reflect.ValueOf(up).Elem()
 					field := currentStruct.FieldByName(fieldName)
 					field.Set(reflect.Zero(field.Type()))
