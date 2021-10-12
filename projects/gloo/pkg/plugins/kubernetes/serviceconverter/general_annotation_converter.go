@@ -24,13 +24,13 @@ func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev
 		return err
 	}
 
-	mergeUpstreams(us, &spec)
+	mergeUpstreams(&spec, us)
 
 	return nil
 }
 
 // Merges the fields of src into dst.
-func mergeUpstreams(dst, src *v1.Upstream) (*v1.Upstream, error) {
+func mergeUpstreams(src, dst *v1.Upstream) (*v1.Upstream, error) {
 	if src == nil {
 		return dst, nil
 	}
