@@ -24,7 +24,7 @@ func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev
 		return err
 	}
 
-	us, err := mergeUpstreams(&spec, us)
+	err := mergeUpstreams(&spec, us)
 	if err != nil {
 		return err
 	}
@@ -33,13 +33,14 @@ func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev
 }
 
 // Merges the fields of src into dst.
-func mergeUpstreams(src, dst *v1.Upstream) (*v1.Upstream, error) {
+func mergeUpstreams(src, dst *v1.Upstream) error {
 	if src == nil {
-		return dst, nil
+		return nil
 	}
 
 	if dst == nil {
-		return proto.Clone(src).(*v1.Upstream), nil
+		dst = proto.Clone(src).(*v1.Upstream)
+		return nil
 	}
 
 	dstValue, srcValue := reflect.ValueOf(dst).Elem(), reflect.ValueOf(src).Elem()
@@ -52,7 +53,7 @@ func mergeUpstreams(src, dst *v1.Upstream) (*v1.Upstream, error) {
 		}
 	}
 
-	return dst, nil
+	return nil
 }
 
 // From src/pkg/encoding/json/encode.go.
