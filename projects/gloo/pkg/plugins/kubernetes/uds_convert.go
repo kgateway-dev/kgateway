@@ -26,17 +26,8 @@ type UpstreamConverter interface {
 
 func DefaultUpstreamConverter() *KubeUpstreamConverter {
 	kuc := new(KubeUpstreamConverter)
-	kuc.serviceConverters = DefaultServiceConverters()
+	kuc.serviceConverters = serviceconverter.DefaultServiceConverters
 	return kuc
-}
-
-func DefaultServiceConverters() []serviceconverter.ServiceConverter {
-	return []serviceconverter.ServiceConverter{
-		&serviceconverter.UseHttp2Converter{},
-		&serviceconverter.UseSslConverter{},
-		// The General Service Converter is applied last, and is capable of overriding settings applied by prior converters
-		&serviceconverter.GeneralServiceConverter{},
-	}
 }
 
 type KubeUpstreamConverter struct {
