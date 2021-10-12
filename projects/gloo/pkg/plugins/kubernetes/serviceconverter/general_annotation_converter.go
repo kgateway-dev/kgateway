@@ -24,7 +24,10 @@ func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev
 		return err
 	}
 
-	mergeUpstreams(&spec, us)
+	us, err := mergeUpstreams(&spec, us)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
