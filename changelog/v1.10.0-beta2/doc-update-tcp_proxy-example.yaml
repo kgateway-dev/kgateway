@@ -1,0 +1,4 @@
+changelog:
+   - type: NON_USER_FACING
+     issueLink: https://github.com/solo-io/gloo/issues/5458
+     description: Modify Gateway CR for 'TCP Proxy' example in doc. The wrong configuration lead the Gateway status to '2'. 
