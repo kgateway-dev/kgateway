@@ -90,7 +90,7 @@ spec:
       destination:
         single:
           upstream:
-            name: gloo-system-tcp-echo-1025
+            name: default-tcp-echo-1025
             namespace: gloo-system
   useProxyProto: false
 EOF
