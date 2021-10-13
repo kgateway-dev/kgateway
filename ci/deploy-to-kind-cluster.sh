@@ -7,6 +7,14 @@ CLUSTER_NAME="${CLUSTER_NAME:-kind}"
 CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.17.17@sha256:66f1d0d91a88b8a001811e2f1054af60eef3b669a9a74f9b6db871f2f1eeed00}"
 # The version used to tag images
 VERSION="${VERSION:-0.0.0-kind}"
+# Automatically (lazily) determine OS type
+if [[ $OSTYPE == 'darwin'* ]]; then
+  OS='darwin'
+else
+  OS='linux'
+fi
+# Offer a default value for type of installation
+KUBE2E_TESTS="${KUBE2E_TESTS:-eds}"  # If 'KUBE2E_TESTS' not set or null, use 'eds'.
 
 # 1. Create a kind cluster (or skip creation if a cluster with name=CLUSTER_NAME already exists)
 # This config is roughly based on: https://kind.sigs.k8s.io/docs/user/ingress/
@@ -59,12 +67,12 @@ VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make push-kind-images
 VERSION=$VERSION make build-test-chart
 
 # 4. Build the gloo command line tool, ensuring we have one in the `_output` folder
-make glooctl-linux-amd64
+make glooctl-$OS-amd64
 
 # 5. Install additional resources used for particular KUBE2E tests
 if [ "$KUBE2E_TESTS" = "eds" ]; then
   echo "Installing Gloo Edge"
-  _output/glooctl-linux-amd64 install gateway --file "_test/gloo-$VERSION".tgz
+  _output/glooctl-$OS-amd64 install gateway --file "_test/gloo-$VERSION".tgz
 
   kubectl -n gloo-system rollout status deployment gloo --timeout=2m || true
   kubectl -n gloo-system rollout status deployment discovery --timeout=2m || true
@@ -73,7 +81,7 @@ if [ "$KUBE2E_TESTS" = "eds" ]; then
 
   echo "Installing Hello World example"
   kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
-  _output/glooctl-linux-amd64 add route \
+  _output/glooctl-$OS-amd64 add route \
     --path-exact /all-pets \
     --dest-name default-petstore-8080 \
     --prefix-rewrite /api/pets
