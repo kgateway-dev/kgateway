@@ -112,12 +112,16 @@ weight: 5
 
 ```yaml
 "upstreamRefs": []core.solo.io.ResourceRef
+"secretRefs": []core.solo.io.ResourceRef
+"artifactRefs": []core.solo.io.ResourceRef
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `upstreamRefs` | [[]core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Optional, a list of the upstreams to delete. |
+| `secretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Optional, a list of the secrets to delete. |
+| `artifactRefs` | [[]core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Optional, a list of the artifacts to delete. |
 
 
 
@@ -132,6 +136,8 @@ a single translation loop of a proxy.
 ```yaml
 "proxyReport": .gloo.solo.io.ProxyReport
 "upstreamReports": []gloo.solo.io.ResourceReport
+"secretReports": []gloo.solo.io.ResourceReport
+"artifactReports": []gloo.solo.io.ResourceReport
 "proxy": .gloo.solo.io.Proxy
 
 ```
@@ -140,6 +146,8 @@ a single translation loop of a proxy.
 | ----- | ---- | ----------- | 
 | `proxyReport` | [.gloo.solo.io.ProxyReport](../gloo_validation.proto.sk/#proxyreport) | The report for this proxy, including any warnings or errors in its sub-resources. |
 | `upstreamReports` | [[]gloo.solo.io.ResourceReport](../gloo_validation.proto.sk/#resourcereport) | The reports for all upstreams that were translated with this proxy. |
+| `secretReports` | [[]gloo.solo.io.ResourceReport](../gloo_validation.proto.sk/#resourcereport) | The reports for all secrets that were translated with this proxy. |
+| `artifactReports` | [[]gloo.solo.io.ResourceReport](../gloo_validation.proto.sk/#resourcereport) | The reports for all artifacts that were translated with this proxy. |
 | `proxy` | [.gloo.solo.io.Proxy](../../../v1/proxy.proto.sk/#proxy) | The proxy for this translation loop. |
 
 

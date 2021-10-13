@@ -215,15 +215,28 @@ func applyRequestToSnapshot(snap *v1.ApiSnapshot, req *validation.GlooValidation
 		mergedUpstreams := utils.MergeResourceLists(existingUpstreams, modifiedUpstreams)
 		snap.Upstreams = utils.ResourceListToUpstreamList(mergedUpstreams)
 	} else if req.GetDeletedResources() != nil {
+		// Upstreams
 		existingUpstreams := snap.Upstreams.AsResources()
 		deletedUpstreamRefs := req.GetDeletedResources().GetUpstreamRefs()
 		finalUpstreams := utils.DeleteResources(existingUpstreams, deletedUpstreamRefs)
 		snap.Upstreams = utils.ResourceListToUpstreamList(finalUpstreams)
+		// Secrets
+		existingSecrets := snap.Secrets.AsResources()
+		deletedSecretRefs := req.GetDeletedResources().GetSecretRefs()
+		finalSecrets := utils.DeleteResources(existingSecrets, deletedSecretRefs)
+		snap.Secrets = utils.ResourceListToSecretList(finalSecrets)
+		// Artifacts
+		existingArtifacts := snap.Artifacts.AsResources()
+		deletedArtifactRefs := req.GetDeletedResources().GetArtifactRefs()
+		finalArtifacts := utils.DeleteResources(existingArtifacts, deletedArtifactRefs)
+		snap.Artifacts = utils.ResourceListToArtifactList(finalArtifacts)
 	}
 }
 
 func convertToValidationReport(proxyReport *validation.ProxyReport, resourceReports reporter.ResourceReports, proxy *v1.Proxy) *validation.ValidationReport {
 	var upstreamReports []*validation.ResourceReport
+	var secretReports []*validation.ResourceReport
+	var artifactReports []*validation.ResourceReport
 
 	for resource, report := range resourceReports {
 		switch sk_resources.Kind(resource) {
@@ -233,13 +246,27 @@ func convertToValidationReport(proxyReport *validation.ProxyReport, resourceRepo
 				Warnings:    report.Warnings,
 				Errors:      getErrors(report.Errors),
 			})
+		case "*v1.Secret":
+			secretReports = append(secretReports, &validation.ResourceReport{
+				ResourceRef: resource.GetMetadata().Ref(),
+				Warnings:    report.Warnings,
+				Errors:      getErrors(report.Errors),
+			})
+		case "*v1.Artifact":
+			artifactReports = append(artifactReports, &validation.ResourceReport{
+				ResourceRef: resource.GetMetadata().Ref(),
+				Warnings:    report.Warnings,
+				Errors:      getErrors(report.Errors),
+			})
+			// TODO add other resources types here
 		}
-		// TODO add other resources types here
 	}
 
 	return &validation.ValidationReport{
 		ProxyReport:     proxyReport,
 		UpstreamReports: upstreamReports,
+		SecretReports:   secretReports,
+		ArtifactReports: artifactReports,
 		Proxy:           proxy,
 	}
 }

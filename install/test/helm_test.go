@@ -2978,6 +2978,10 @@ webhooks:
        apiGroups: ["gloo.solo.io"]
        apiVersions: ["v1"]
        resources: ["upstreams"]
+     - operations: [ "DELETE" ]
+       apiGroups: ["gloo.solo.io"]
+       apiVersions: ["v1"]
+       resources: [ "secrets", "artifacts" ]
    sideEffects: None
    matchPolicy: Exact
    admissionReviewVersions:

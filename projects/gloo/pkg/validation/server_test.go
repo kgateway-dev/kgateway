@@ -222,6 +222,44 @@ var _ = Describe("Validation Server", func() {
 			Expect(warnings).To(HaveLen(1))
 			Expect(errors).To(HaveOccurred())
 		})
+		It("secret deletion validation succeeds", func() {
+			// deleting a secret that is not being used should succeed
+			s := NewValidator(context.TODO(), translator, xdsSanitizer)
+			_ = s.Sync(context.TODO(), params.Snapshot)
+			resp, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{
+				Resources: &validationgrpc.GlooValidationServiceRequest_DeletedResources{
+					DeletedResources: &validationgrpc.DeletedResources{
+						SecretRefs: []*core.ResourceRef{
+							{Name: "unused-secret", Namespace: "gloo-system"},
+						},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.ValidationReports).To(HaveLen(1))
+			proxyReport := resp.ValidationReports[0].GetProxyReport()
+			warnings := validation.GetProxyWarning(proxyReport)
+			errors := validation.GetProxyError(proxyReport)
+			Expect(warnings).To(HaveLen(0))
+			Expect(errors).NotTo(HaveOccurred())
+		})
+		It("secret deletion validation fails", func() {
+			// trying to delete a secret that is being referenced by a proxy should cause an error
+			s := NewValidator(context.TODO(), translator, xdsSanitizer)
+			_ = s.Sync(context.TODO(), params.Snapshot)
+			resp, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{
+				Resources: &validationgrpc.GlooValidationServiceRequest_DeletedResources{
+					DeletedResources: &validationgrpc.DeletedResources{
+						SecretRefs: []*core.ResourceRef{
+							{Name: "secret", Namespace: "gloo-system"},
+						},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.ValidationReports).To(HaveLen(1))
+			Expect(resp.ValidationReports[0].UpstreamReports).To(HaveLen(1))
+		})
 	})
 
 	Context("Watch Sync Notifications", func() {
