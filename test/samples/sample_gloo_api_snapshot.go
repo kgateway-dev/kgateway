@@ -64,9 +64,9 @@ func SimpleSecret() *v1.Secret {
 		},
 		Kind: &v1.Secret_Tls{
 			Tls: &v1.TlsSecret{
-				CertChain: "cert-chain",
+				CertChain:  "cert-chain",
 				PrivateKey: "private-key",
-				RootCa: "root-ca",
+				RootCa:     "root-ca",
 			},
 		},
 	}
