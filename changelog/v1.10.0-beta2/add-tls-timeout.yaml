@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5438
+    resolvesIssue: true
+    description: TLS handshake timeout is now configurable.
