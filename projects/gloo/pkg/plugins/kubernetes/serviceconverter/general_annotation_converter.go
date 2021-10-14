@@ -9,7 +9,7 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 )
 
-const GlooAnnotationPrefix = "gloo.solo.io/UpstreamConfig"
+const GlooAnnotationPrefix = "gloo.solo.io/upstream_config"
 
 type GeneralServiceConverter struct{}
 
