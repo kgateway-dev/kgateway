@@ -3,14 +3,30 @@ title: Discovered Upstream Configuration via Annotations
 weight: 101
 ---
 
-Gloo will look for discovered Upstream configuration in the annotations of any Services it identifies. Creating a Service which has an annotation with `"gloo.solo.io/UpstreamConfig"` as its key, and Upstream configuration as JSON as its value will apply the Upstream configuration to the discovered Upstream.
+Gloo Edge looks for discovered upstream configuration in the annotations of any Kubernetes service that it identifies. For Gloo Edge to discover the upstream configuration, include an annotation in the service in a key-value format. The key is `gloo.solo.io/upstream_config` and the value is the upstream configuration, formatted as JSON.
 
 For example, we can set the initial stream window size on the discovered upstream using the a modified version of the pet store manifest provided in the parent document:
 
-{{< tabs >}}
-{{< tab name="kubectl" codelang="yaml">}}
+{{< highlight yaml "hl_lines=7" >}}
 kubectl apply -f - <<EOF
 # petstore service
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    gloo.solo.io/upstream_config: '{"spec": {"initial_stream_window_size": 2048}}'
+  name: petstore
+  namespace: default
+  labels:
+    service: petstore
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+  selector:
+    app: petstore
+---
+#petstore deployment 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,32 +50,21 @@ spec:
         ports:
         - containerPort: 8080
           name: http
----
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    gloo.solo.io/upstream_config: '{"spec": {"initial_stream_window_size": 2048}}'
-  name: petstore
-  namespace: default
-  labels:
-    service: petstore
-spec:
-  ports:
-  - port: 8080
-    protocol: TCP
-  selector:
-    app: petstore
 EOF
-{{< /tabs >}}
+{{< /highlight >}}
 
-Let's look at the yaml output for this upstream from Kubernetes:
+Now that you created the pet store app, check for the discovered upstream. In the output of the following command, note the upstream with the namespace, name, and port of the service , `default-petstore-8080`. 
+
+    kubectl get upstreams -n gloo-system
+
+Review the upstream to make sure that the configuration from the Kubernetes service was picked up in the upstream.
+
 
 ```shell
 kubectl get upstream -n gloo-system default-petstore-8080 -oyaml
 ```
 
-```yaml
+{{< highlight yaml "hl_lines=5, 25" >}}
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
@@ -91,6 +96,6 @@ status:
     default:
       reportedBy: gloo
       state: 1
-```
+{{< /highlight >}}
 
-As you can see, our configuration has set `spec.initialStreamWindowSize` on the discovered upstream! 
+As you can see, the configuration set the `spec.initialStreamWindowSize` to `2048` on the discovered upstream! 
