@@ -105,9 +105,7 @@ var _ = Describe("UdsConvert", func() {
 				svc.Annotations = make(map[string]string)
 				svc.Annotations[serviceconverter.GlooH2Annotation] = "true"
 				svc.Annotations[serviceconverter.GlooAnnotationPrefix] = `{
-					"spec": {
-						"use_http2": false
-					}
+					"use_http2": false
 				}`
 				svc.Name = "test"
 				svc.Namespace = "test"
@@ -157,9 +155,7 @@ var _ = Describe("UdsConvert", func() {
 			},
 				Entry("Using SetHttp2Converter", map[string]string{
 					serviceconverter.GlooAnnotationPrefix: `{
-						"spec": {
-							"use_http2": true
-						}
+						"use_http2": true
 					}`,
 				}, &v1.Upstream{
 					UseHttp2: &wrappers.BoolValue{
@@ -168,12 +164,10 @@ var _ = Describe("UdsConvert", func() {
 				}),
 				Entry("using ssl secret", map[string]string{
 					serviceconverter.GlooAnnotationPrefix: `{
-						"spec": {
-							"ssl_config": {
-								"secret_ref": {
-									"name": "mysecret",
-									"namespace": "test"
-								}
+						"ssl_config": {
+							"secret_ref": {
+								"name": "mysecret",
+								"namespace": "test"
 							}
 						}
 					}`,
@@ -186,13 +180,11 @@ var _ = Describe("UdsConvert", func() {
 				}),
 				Entry("using ssl files", map[string]string{
 					serviceconverter.GlooAnnotationPrefix: `{
-						"spec": {
-							"ssl_config": {
-								"ssl_files": {
-									"tls_cert": "cert",
-									"tls_key": "key",
-									"root_ca": "ca"
-								}
+						"ssl_config": {
+							"ssl_files": {
+								"tls_cert": "cert",
+								"tls_key": "key",
+								"root_ca": "ca"
 							}
 						}
 					}`,
@@ -209,9 +201,7 @@ var _ = Describe("UdsConvert", func() {
 				}),
 				Entry("Using InitialStreamWindowSize", map[string]string{
 					serviceconverter.GlooAnnotationPrefix: `{
-						"spec": {
-							"initial_stream_window_size": 2048
-						}
+						"initial_stream_window_size": 2048
 					}`,
 				}, &v1.Upstream{
 					InitialStreamWindowSize: &wrappers.UInt32Value{
@@ -220,9 +210,7 @@ var _ = Describe("UdsConvert", func() {
 				}),
 				Entry("Using HttpProxyHostname", map[string]string{
 					serviceconverter.GlooAnnotationPrefix: `{
-						"spec": {
-							"http_proxy_hostname": "test"
-						}
+						"http_proxy_hostname": "test"
 					}`,
 				}, &v1.Upstream{
 					HttpProxyHostname: &wrappers.StringValue{
@@ -231,9 +219,7 @@ var _ = Describe("UdsConvert", func() {
 				}),
 				Entry("Using IgnoreHealthOnHostRemoval", map[string]string{
 					serviceconverter.GlooAnnotationPrefix: `{
-						"spec": {
-							"ignore_health_on_host_removal": true
-						}
+						"ignore_health_on_host_removal": true
 					}`,
 				}, &v1.Upstream{
 					IgnoreHealthOnHostRemoval: &wrappers.BoolValue{
@@ -242,13 +228,11 @@ var _ = Describe("UdsConvert", func() {
 				}),
 				Entry("Using CircuitBreakers", map[string]string{
 					serviceconverter.GlooAnnotationPrefix: `{
-						"spec": {
-							"circuit_breakers": {
-								"max_connections": 2048,
-								"max_pending_requests": 2048,
-								"max_requests": 2048,
-								"max_retries": 2048
-							}
+						"circuit_breakers": {
+							"max_connections": 2048,
+							"max_pending_requests": 2048,
+							"max_requests": 2048,
+							"max_retries": 2048
 						}
 					}`,
 				}, &v1.Upstream{

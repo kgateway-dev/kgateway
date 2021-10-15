@@ -507,7 +507,7 @@ var _ = Describe("Happy path", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						svc.Annotations = map[string]string{
-							"gloo.solo.io/upstream_config": "{\"spec\": {\"initial_stream_window_size\": 2048}}",
+							"gloo.solo.io/upstream_config": "{\"initial_stream_window_size\": 2048}",
 						}
 						svc, err = kubeClient.CoreV1().Services(namespace).Update(ctx, svc, metav1.UpdateOptions{})
 						Expect(err).NotTo(HaveOccurred())

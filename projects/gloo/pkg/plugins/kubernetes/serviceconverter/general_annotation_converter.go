@@ -1,6 +1,7 @@
 package serviceconverter
 
 import (
+	"encoding/json"
 	"reflect"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -19,12 +20,17 @@ func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev
 		return nil
 	}
 
-	spec := v1.Upstream{}
-	if err := protoutils.UnmarshalResource([]byte(upstreamConfigJson), &spec); err != nil {
+	var upstreamConfigMap map[string]interface{}
+	if err := json.Unmarshal([]byte(upstreamConfigJson), &upstreamConfigMap); err != nil {
 		return err
 	}
 
-	mergeUpstreams(&spec, us)
+	upstreamConfig := v1.Upstream{}
+	if err := protoutils.UnmarshalMap(upstreamConfigMap, &upstreamConfig); err != nil {
+		return err
+	}
+
+	mergeUpstreams(&upstreamConfig, us)
 	return nil
 }
 
