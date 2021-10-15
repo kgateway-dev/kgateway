@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3717
+    resolvesIssue: true
+    description: Expand annotation-based configuration for discovered upstreams to respect all Upstream config options.

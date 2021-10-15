@@ -9,10 +9,6 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 )
 
-func init() {
-	DefaultServiceConverters = append(DefaultServiceConverters, &UseSslConverter{})
-}
-
 /*
 The values for these annotations can be provided in one of two ways:
 
