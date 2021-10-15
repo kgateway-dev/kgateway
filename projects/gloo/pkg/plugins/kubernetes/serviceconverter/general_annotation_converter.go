@@ -13,17 +13,13 @@ const GlooAnnotationPrefix = "gloo.solo.io/upstream_config"
 
 type GeneralServiceConverter struct{}
 
-var (
-	spec v1.Upstream
-)
-
 func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev1.ServicePort, us *v1.Upstream) error {
 	upstreamConfigJson, ok := svc.Annotations[GlooAnnotationPrefix]
 	if !ok {
 		return nil
 	}
 
-	spec = v1.Upstream{}
+	spec := v1.Upstream{}
 	if err := protoutils.UnmarshalResource([]byte(upstreamConfigJson), &spec); err != nil {
 		return err
 	}
@@ -47,10 +43,14 @@ func mergeUpstreams(src, dst *v1.Upstream) {
 
 	for i := 0; i < dstValue.NumField(); i++ {
 		dstField, srcField := dstValue.Field(i), srcValue.Field(i)
-		fieldName := reflect.Indirect(reflect.ValueOf(dst)).Type().Field(i).Name
 
-		if srcField.IsValid() && dstField.CanSet() && !srcField.IsZero() && fieldName != "Metadata" && fieldName != "NamespacedStatuses" {
-			dstField.Set(srcField)
+		if srcField.IsValid() && dstField.CanSet() && !srcField.IsZero() {
+			fieldName := reflect.Indirect(reflect.ValueOf(dst)).Type().Field(i).Name
+			// Information critical to proper UDS operation is contained in these fields,
+			// so do not allow this serviceconverter to overwrite them.
+			if fieldName != "Metadata" && fieldName != "DiscoveryMetadata" && fieldName != "NamespacedStatuses" {
+				dstField.Set(srcField)
+			}
 		}
 	}
 }
