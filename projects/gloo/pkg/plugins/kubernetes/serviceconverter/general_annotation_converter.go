@@ -23,6 +23,7 @@ func (s *GeneralServiceConverter) ConvertService(svc *kubev1.Service, port kubev
 		return nil
 	}
 
+	spec = v1.Upstream{}
 	if err := protoutils.UnmarshalResource([]byte(upstreamConfigJson), &spec); err != nil {
 		return err
 	}

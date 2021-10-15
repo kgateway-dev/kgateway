@@ -521,7 +521,7 @@ var _ = Describe("Happy path", func() {
 						TestUpstreamReachable()
 						upstream, err := getUpstream()
 						Expect(err).NotTo(HaveOccurred())
-						Expect(upstream.GetInitialStreamWindowSize()).To(Equal(&wrappers.UInt32Value{Value: 2048}))
+						Expect(int(upstream.GetInitialStreamWindowSize().GetValue())).To(Equal(2048))
 					})
 
 					It("correctly routes requests to a service destination", func() {
