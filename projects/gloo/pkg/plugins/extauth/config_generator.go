@@ -264,8 +264,8 @@ func GenerateEnvoyConfigForFilter(settings *extauthv1.Settings, upstreams v1.Ups
 				ServerUri: httpURI,
 				// Trim suffix, as request path always starts with /, and we want to avoid a double /
 				PathPrefix:            strings.TrimSuffix(httpService.GetPathPrefix(), "/"),
-				AuthorizationRequest:  translateRequest(httpService.GetRequest()),
-				AuthorizationResponse: translateResponse(httpService.GetResponse()),
+				AuthorizationRequest:  translateRequest(httpService.GetRequest(), httpService.GetMatchType()),
+				AuthorizationResponse: translateResponse(httpService.GetResponse(), httpService.GetMatchType()),
 			},
 		}
 	}
@@ -295,25 +295,25 @@ func GenerateEnvoyConfigForFilter(settings *extauthv1.Settings, upstreams v1.Ups
 	return cfg, nil
 }
 
-func translateRequest(in *extauthv1.HttpService_Request) *envoyauth.AuthorizationRequest {
+func translateRequest(in *extauthv1.HttpService_Request, matchType extauthv1.HttpService_MatchType) *envoyauth.AuthorizationRequest {
 	if in == nil {
 		return nil
 	}
 
 	return &envoyauth.AuthorizationRequest{
-		AllowedHeaders: translateListMatcher(in.GetAllowedHeaders()),
+		AllowedHeaders: translateListMatcher(in.GetAllowedHeaders(), matchType),
 		HeadersToAdd:   convertHeadersToAdd(in.GetHeadersToAdd()),
 	}
 }
 
-func translateResponse(in *extauthv1.HttpService_Response) *envoyauth.AuthorizationResponse {
+func translateResponse(in *extauthv1.HttpService_Response, matchType extauthv1.HttpService_MatchType) *envoyauth.AuthorizationResponse {
 	if in == nil {
 		return nil
 	}
 
 	return &envoyauth.AuthorizationResponse{
-		AllowedUpstreamHeaders: translateListMatcher(in.GetAllowedUpstreamHeaders()),
-		AllowedClientHeaders:   translateListMatcher(in.GetAllowedClientHeaders()),
+		AllowedUpstreamHeaders: translateListMatcher(in.GetAllowedUpstreamHeaders(), matchType),
+		AllowedClientHeaders:   translateListMatcher(in.GetAllowedClientHeaders(), matchType),
 	}
 }
 
@@ -345,18 +345,32 @@ func translateStatusOnError(statusOnError uint32) (*envoytype.HttpStatus, error)
 	return &envoytype.HttpStatus{Code: envoytype.StatusCode(int32(statusOnError))}, nil
 }
 
-func translateListMatcher(in []string) *envoymatcher.ListStringMatcher {
+func translateListMatcher(in []string, matchType extauthv1.HttpService_MatchType) *envoymatcher.ListStringMatcher {
 	if len(in) == 0 {
 		return nil
 	}
 	var lsm envoymatcher.ListStringMatcher
 
 	for _, pattern := range in {
-		lsm.Patterns = append(lsm.GetPatterns(), &envoymatcher.StringMatcher{
-			MatchPattern: &envoymatcher.StringMatcher_Exact{
-				Exact: pattern,
-			},
-		})
+		switch matchType {
+		case extauthv1.HttpService_REGEX:
+			lsm.Patterns = append(lsm.GetPatterns(), &envoymatcher.StringMatcher{
+				MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
+					SafeRegex: &envoymatcher.RegexMatcher{
+						Regex: pattern,
+						EngineType: &envoymatcher.RegexMatcher_GoogleRe2{
+							GoogleRe2: &envoymatcher.RegexMatcher_GoogleRE2{},
+						},
+					},
+				},
+			})
+		default:
+			lsm.Patterns = append(lsm.GetPatterns(), &envoymatcher.StringMatcher{
+				MatchPattern: &envoymatcher.StringMatcher_Exact{
+					Exact: pattern,
+				},
+			})
+		}
 	}
 
 	return &lsm
