@@ -316,6 +316,7 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 								PathPrefix: "/foo",
 								Request: &extauthv1.HttpService_Request{
 									AllowedHeaders: []string{"allowed-header"},
+									AllowedHeadersRegex: []string{"allowed-header-regex*"},
 									HeadersToAdd:   map[string]string{"header": "add"},
 								},
 								Response: &extauthv1.HttpService_Response{
@@ -334,6 +335,13 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 										AllowedHeaders: &envoymatcher.ListStringMatcher{
 											Patterns: []*envoymatcher.StringMatcher{{
 												MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: "allowed-header"},
+											}, {
+												MatchPattern: &envoymatcher.StringMatcher_SafeRegex{SafeRegex: &envoymatcher.RegexMatcher{
+													Regex: "allowed-header-regex*",
+													EngineType: &envoymatcher.RegexMatcher_GoogleRe2{
+														GoogleRe2: &envoymatcher.RegexMatcher_GoogleRE2{},
+													},
+												}},
 											}},
 										},
 										HeadersToAdd: []*envoycore.HeaderValue{{
