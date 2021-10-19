@@ -357,11 +357,6 @@ func (m *HttpService) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetMatchType())
-	if err != nil {
-		return 0, err
-	}
-
 	return hasher.Sum64(), nil
 }
 
@@ -2175,9 +2170,12 @@ func (m *HttpService_Request) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetMatchType())
-	if err != nil {
-		return 0, err
+	for _, v := range m.GetAllowedHeadersRegex() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil

@@ -163,7 +163,9 @@ message HttpService {
         // client request of the same key will be overridden.
         map<string, string> headers_to_add = 2;
 
-        MatchType match_type =3;
+        // Headers that match these regex patterns will be copied from the incoming request
+        // to the request going to the auth server.
+        repeated string allowed_headers_regex = 3;
     }
     Request request = 2;
 
@@ -179,12 +181,6 @@ message HttpService {
         repeated string allowed_client_headers = 2;
     }
     Response response = 3;
-
-    enum MatchType {
-        EXACT = 0;
-        REGEX = 1;
-    }
-    MatchType match_type = 4;
 }
 
 // Configuration for buffering the request data.

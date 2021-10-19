@@ -128,9 +128,6 @@ spec:
                     type: boolean
                   httpService:
                     properties:
-                      matchType:
-                        type: string
-                        x-kubernetes-int-or-string: true
                       pathPrefix:
                         type: string
                       request:
@@ -139,13 +136,14 @@ spec:
                             items:
                               type: string
                             type: array
+                          allowedHeadersRegex:
+                            items:
+                              type: string
+                            type: array
                           headersToAdd:
                             additionalProperties:
                               type: string
                             type: object
-                          matchType:
-                            type: string
-                            x-kubernetes-int-or-string: true
                         type: object
                       response:
                         properties:
@@ -355,9 +353,6 @@ spec:
                       type: boolean
                     httpService:
                       properties:
-                        matchType:
-                          type: string
-                          x-kubernetes-int-or-string: true
                         pathPrefix:
                           type: string
                         request:
@@ -366,13 +361,14 @@ spec:
                               items:
                                 type: string
                               type: array
+                            allowedHeadersRegex:
+                              items:
+                                type: string
+                              type: array
                             headersToAdd:
                               additionalProperties:
                                 type: string
                               type: object
-                            matchType:
-                              type: string
-                              x-kubernetes-int-or-string: true
                           type: object
                         response:
                           properties:

@@ -301,10 +301,6 @@ func (m *HttpService) Equal(that interface{}) bool {
 		}
 	}
 
-	if m.GetMatchType() != target.GetMatchType() {
-		return false
-	}
-
 	return true
 }
 
@@ -1916,8 +1912,15 @@ func (m *HttpService_Request) Equal(that interface{}) bool {
 
 	}
 
-	if m.GetMatchType() != target.GetMatchType() {
+	if len(m.GetAllowedHeadersRegex()) != len(target.GetAllowedHeadersRegex()) {
 		return false
+	}
+	for idx, v := range m.GetAllowedHeadersRegex() {
+
+		if strings.Compare(v, target.GetAllowedHeadersRegex()[idx]) != 0 {
+			return false
+		}
+
 	}
 
 	return true

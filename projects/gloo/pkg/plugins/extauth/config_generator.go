@@ -2,9 +2,10 @@ package extauth
 
 import (
 	"context"
-	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/regexutils"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
