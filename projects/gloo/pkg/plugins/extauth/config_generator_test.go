@@ -315,9 +315,9 @@ var _ = Describe("ExtAuthzConfigGenerator", func() {
 							HttpService: &extauthv1.HttpService{
 								PathPrefix: "/foo",
 								Request: &extauthv1.HttpService_Request{
-									AllowedHeaders: []string{"allowed-header"},
+									AllowedHeaders:      []string{"allowed-header"},
 									AllowedHeadersRegex: []string{"allowed-header-regex*"},
-									HeadersToAdd:   map[string]string{"header": "add"},
+									HeadersToAdd:        map[string]string{"header": "add"},
 								},
 								Response: &extauthv1.HttpService_Response{
 									AllowedClientHeaders:   []string{"allowed-client-header"},

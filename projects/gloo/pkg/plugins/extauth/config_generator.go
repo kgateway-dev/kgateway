@@ -355,7 +355,7 @@ func translateListMatcher(in []string) *envoymatcher.ListStringMatcher {
 	var lsm envoymatcher.ListStringMatcher
 
 	for _, pattern := range in {
-		lsm.Patterns = append(lsm.Patterns, &envoymatcher.StringMatcher{
+		lsm.Patterns = append(lsm.GetPatterns(), &envoymatcher.StringMatcher{
 			MatchPattern: &envoymatcher.StringMatcher_Exact{
 				Exact: pattern,
 			},
@@ -372,7 +372,7 @@ func translateListMatcherRegex(in []string) *envoymatcher.ListStringMatcher {
 
 	var lsm envoymatcher.ListStringMatcher
 	for _, pattern := range in {
-		lsm.Patterns = append(lsm.Patterns, &envoymatcher.StringMatcher{
+		lsm.Patterns = append(lsm.GetPatterns(), &envoymatcher.StringMatcher{
 			MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
 				SafeRegex: regexutils.NewRegex(context.Background(), pattern),
 			},
@@ -386,7 +386,7 @@ func combineLSMs(lsms ...*envoymatcher.ListStringMatcher) *envoymatcher.ListStri
 	var outLSM envoymatcher.ListStringMatcher
 	for _, inLSM := range lsms {
 		if inLSM != nil {
-			outLSM.Patterns = append(outLSM.Patterns, inLSM.Patterns...)
+			outLSM.Patterns = append(outLSM.GetPatterns(), inLSM.GetPatterns()...)
 		}
 	}
 	return &outLSM
