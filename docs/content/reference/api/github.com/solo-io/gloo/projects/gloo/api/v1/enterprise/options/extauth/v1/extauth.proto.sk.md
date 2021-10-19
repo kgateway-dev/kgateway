@@ -19,6 +19,7 @@ weight: 5
 - [HttpService](#httpservice)
 - [Request](#request)
 - [Response](#response)
+- [MatchType](#matchtype)
 - [BufferSettings](#buffersettings)
 - [CustomAuth](#customauth)
 - [AuthPlugin](#authplugin)
@@ -220,6 +221,7 @@ Describes the transport protocol version to use when connecting to the ext auth 
 "pathPrefix": string
 "request": .enterprise.gloo.solo.io.HttpService.Request
 "response": .enterprise.gloo.solo.io.HttpService.Response
+"matchType": .enterprise.gloo.solo.io.HttpService.MatchType
 
 ```
 
@@ -228,6 +230,7 @@ Describes the transport protocol version to use when connecting to the ext auth 
 | `pathPrefix` | `string` | Sets a prefix to the value of authorization request header *Path*. |
 | `request` | [.enterprise.gloo.solo.io.HttpService.Request](../extauth.proto.sk/#request) |  |
 | `response` | [.enterprise.gloo.solo.io.HttpService.Response](../extauth.proto.sk/#response) |  |
+| `matchType` | [.enterprise.gloo.solo.io.HttpService.MatchType](../extauth.proto.sk/#matchtype) |  |
 
 
 
@@ -240,6 +243,7 @@ Describes the transport protocol version to use when connecting to the ext auth 
 ```yaml
 "allowedHeaders": []string
 "headersToAdd": map<string, string>
+"matchType": .enterprise.gloo.solo.io.HttpService.MatchType
 
 ```
 
@@ -247,6 +251,7 @@ Describes the transport protocol version to use when connecting to the ext auth 
 | ----- | ---- | ----------- | 
 | `allowedHeaders` | `[]string` | These headers will be copied from the incoming request to the request going to the auth server. Note that in addition to the user's supplied matchers: 1. *Host*, *Method*, *Path* and *Content-Length* are automatically included to the list. 2. *Content-Length* will be set to 0 and the request to the authorization service will not have a message body. |
 | `headersToAdd` | `map<string, string>` | These headers that will be included to the request to authorization service. Note that client request of the same key will be overridden. |
+| `matchType` | [.enterprise.gloo.solo.io.HttpService.MatchType](../extauth.proto.sk/#matchtype) |  |
 
 
 
@@ -266,6 +271,19 @@ Describes the transport protocol version to use when connecting to the ext auth 
 | ----- | ---- | ----------- | 
 | `allowedUpstreamHeaders` | `[]string` | When this is set, authorization response headers that have a header in this list will be added to the original client request and sent to the upstream. Note that coexistent headers will be overridden. |
 | `allowedClientHeaders` | `[]string` | When this is set, authorization response headers in this list will be added to the client's response when the auth request is denied. Note that when this list is *not* set, all the authorization response headers, except *Authority (Host)* will be in the response to the client. When a header is included in this list, *Path*, *Status*, *Content-Length*, *WWW-Authenticate* and *Location* are automatically added. |
+
+
+
+
+---
+### MatchType
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `EXACT` |  |
+| `REGEX` |  |
 
 
 

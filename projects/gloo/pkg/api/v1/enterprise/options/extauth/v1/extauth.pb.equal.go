@@ -301,6 +301,10 @@ func (m *HttpService) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetMatchType() != target.GetMatchType() {
+		return false
+	}
+
 	return true
 }
 

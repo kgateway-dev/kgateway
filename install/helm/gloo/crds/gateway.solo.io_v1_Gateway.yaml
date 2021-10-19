@@ -198,6 +198,9 @@ spec:
                             type: boolean
                           httpService:
                             properties:
+                              matchType:
+                                type: string
+                                x-kubernetes-int-or-string: true
                               pathPrefix:
                                 type: string
                               request:
@@ -210,6 +213,9 @@ spec:
                                     additionalProperties:
                                       type: string
                                     type: object
+                                  matchType:
+                                    type: string
+                                    x-kubernetes-int-or-string: true
                                 type: object
                               response:
                                 properties:
