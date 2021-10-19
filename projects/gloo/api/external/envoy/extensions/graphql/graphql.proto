@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package solo.io.envoy.config.filter.http.graphql.v2;
+package envoy.config.filter.http.graphql.v2;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/graphql/v2";
 
@@ -154,7 +154,7 @@ message ResponseTemplate {
 // data-plane API
 // TODO(kdorosh): implement me
 message RESTResolver {
-  config.core.v3.HttpUri server_uri = 1;
+  .solo.io.envoy.config.core.v3.HttpUri server_uri = 1;
   // configuration used to compose the outgoing request to a REST API
   RequestTemplate request_transform = 2;
   // pre-execution engine transformations
