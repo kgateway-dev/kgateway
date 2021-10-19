@@ -33,6 +33,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/pr
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/graphql/v2/graphql.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/regex.proto";
 
@@ -383,6 +384,9 @@ message RouteOptions {
     // Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-regex-rewrite)
     // for more details about the `regex_rewrite` attribute
     .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute regex_rewrite = 27;
+
+    // Enterprise-Only. If configured, requests will be handled by graphql rather than router filter.
+    .solo.io.envoy.config.filter.http.graphql.v2.GraphQLRouteConfig graphql = 28;
 }
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
 message DestinationSpec {

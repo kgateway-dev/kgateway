@@ -865,6 +865,16 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetGraphql()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetGraphql()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetGraphql(), target.GetGraphql()) {
+			return false
+		}
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:
