@@ -6,8 +6,6 @@ import "extproto/ext.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto";
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
-import "projects/gloo/api/v1/artifact.proto";
-import "projects/gloo/api/v1/secret.proto";
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation";
 
@@ -56,8 +54,6 @@ message DeletedResources {
     repeated core.solo.io.ResourceRef upstream_refs = 1;
     // Optional, a list of the secrets to delete.
     repeated core.solo.io.ResourceRef secret_refs = 2;
-    // Optional, a list of the artifacts to delete.
-    repeated core.solo.io.ResourceRef artifact_refs = 3;
     // TODO when we support other resource types, add them here
 }
 
@@ -69,12 +65,6 @@ message ValidationReport {
 
     // The reports for all upstreams that were translated with this proxy.
     repeated ResourceReport upstream_reports = 2;
-
-    // The reports for all secrets that were translated with this proxy.
-    repeated ResourceReport secret_reports = 4;
-
-    // The reports for all artifacts that were translated with this proxy.
-    repeated ResourceReport artifact_reports = 5;
 
     // The proxy for this translation loop.
     Proxy proxy = 3;

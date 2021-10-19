@@ -258,7 +258,19 @@ var _ = Describe("Validation Server", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.ValidationReports).To(HaveLen(1))
-			Expect(resp.ValidationReports[0].UpstreamReports).To(HaveLen(1))
+
+			upstreamReports := resp.ValidationReports[0].GetUpstreamReports()
+			Expect(upstreamReports).To(HaveLen(1))
+
+			// Verify the report is for the upstream we expect
+			usRef := upstreamReports[0].GetResourceRef()
+			Expect(usRef.GetNamespace()).To(Equal("gloo-system"))
+			Expect(usRef.GetName()).To(Equal("test"))
+
+			// Verify report contains a warning for the secret we removed
+			warnings := upstreamReports[0].GetWarnings()
+			Expect(warnings).To(HaveLen(1))
+			Expect(warnings[0]).To(ContainSubstring("SSL secret not found: list did not find secret gloo-system.secret"))
 		})
 	})
 

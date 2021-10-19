@@ -78,11 +78,3 @@ func ResourceListToSecretList(resourceList sk_resources.ResourceList) gloov1.Sec
 	}
 	return secretList
 }
-
-func ResourceListToArtifactList(resourceList sk_resources.ResourceList) gloov1.ArtifactList {
-	var artifactList gloov1.ArtifactList
-	for _, resource := range resourceList {
-		artifactList = append(artifactList, resource.(*gloov1.Artifact))
-	}
-	return artifactList
-}

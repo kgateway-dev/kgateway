@@ -235,23 +235,6 @@ func (m *DeletedResources) Equal(that interface{}) bool {
 
 	}
 
-	if len(m.GetArtifactRefs()) != len(target.GetArtifactRefs()) {
-		return false
-	}
-	for idx, v := range m.GetArtifactRefs() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetArtifactRefs()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetArtifactRefs()[idx]) {
-				return false
-			}
-		}
-
-	}
-
 	return true
 }
 
@@ -297,40 +280,6 @@ func (m *ValidationReport) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(v, target.GetUpstreamReports()[idx]) {
-				return false
-			}
-		}
-
-	}
-
-	if len(m.GetSecretReports()) != len(target.GetSecretReports()) {
-		return false
-	}
-	for idx, v := range m.GetSecretReports() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetSecretReports()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetSecretReports()[idx]) {
-				return false
-			}
-		}
-
-	}
-
-	if len(m.GetArtifactReports()) != len(target.GetArtifactReports()) {
-		return false
-	}
-	for idx, v := range m.GetArtifactReports() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetArtifactReports()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetArtifactReports()[idx]) {
 				return false
 			}
 		}

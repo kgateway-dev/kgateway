@@ -77,12 +77,6 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 			},
 		},
 	}
-	artifact := &gloov1.Artifact{
-		Metadata: &core.Metadata{
-			Name:      "artifact",
-			Namespace: "namespace",
-		},
-	}
 
 	unstructuredList := unstructured.UnstructuredList{
 		Object: map[string]interface{}{
@@ -127,9 +121,6 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 			mv.fValidateDeleteSecret = func(ctx context.Context, secret *core.ResourceRef, dryRun bool) error {
 				return fmt.Errorf(errMsg)
 			}
-			mv.fValidateDeleteArtifact = func(ctx context.Context, secret *core.ResourceRef, dryRun bool) error {
-				return fmt.Errorf(errMsg)
-			}
 		}
 		req, err := makeReviewRequest(srv.URL, crd, gvk, op, resourceOrRef)
 
@@ -168,8 +159,6 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		Entry("invalid upstream deletion", false, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Delete, upstream.GetMetadata().Ref()),
 		Entry("valid secret deletion", true, gloov1.SecretCrd, gloov1.SecretCrd.GroupVersionKind(), v1beta1.Delete, secret.GetMetadata().Ref()),
 		Entry("invalid secret deletion", false, gloov1.SecretCrd, gloov1.SecretCrd.GroupVersionKind(), v1beta1.Delete, secret.GetMetadata().Ref()),
-		Entry("valid artifact deletion", true, gloov1.ArtifactCrd, gloov1.ArtifactCrd.GroupVersionKind(), v1beta1.Delete, artifact.GetMetadata().Ref()),
-		Entry("invalid artifact deletion", false, gloov1.ArtifactCrd, gloov1.ArtifactCrd.GroupVersionKind(), v1beta1.Delete, artifact.GetMetadata().Ref()),
 	)
 
 	Context("invalid yaml", func() {
@@ -376,7 +365,6 @@ type mockValidator struct {
 	fValidateUpstream             func(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*validation.Reports, error)
 	fValidateDeleteUpstream       func(ctx context.Context, us *core.ResourceRef, dryRun bool) error
 	fValidateDeleteSecret         func(ctx context.Context, secret *core.ResourceRef, dryRun bool) error
-	fValidateDeleteArtifact       func(ctx context.Context, artifact *core.ResourceRef, dryRun bool) error
 }
 
 func (v *mockValidator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
@@ -447,13 +435,6 @@ func (v *mockValidator) ValidateDeleteSecret(ctx context.Context, secret *core.R
 		return nil
 	}
 	return v.fValidateDeleteSecret(ctx, secret, dryRun)
-}
-
-func (v *mockValidator) ValidateDeleteArtifact(ctx context.Context, artifact *core.ResourceRef, dryRun bool) error {
-	if v.fValidateDeleteArtifact == nil {
-		return nil
-	}
-	return v.fValidateDeleteArtifact(ctx, artifact, dryRun)
 }
 
 func reports() *validation.Reports {

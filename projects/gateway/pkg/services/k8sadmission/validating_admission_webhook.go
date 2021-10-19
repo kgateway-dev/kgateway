@@ -425,17 +425,9 @@ func (wh *gatewayValidationWebhook) validate(
 			return wh.validateUpstream(ctx, rawJson, dryRun)
 		}
 	case gloov1.SecretGVK:
-		// We only support validation of secret deletions
+		// We only support validation of secrets for DELETE operations
 		if isDelete {
 			err := wh.validator.ValidateDeleteSecret(ctx, ref, dryRun)
-			if err != nil {
-				return &validation.Reports{}, &multierror.Error{Errors: []error{err}}
-			}
-		}
-	case gloov1.ArtifactGVK:
-		// We only support validation of artifact deletions
-		if isDelete {
-			err := wh.validator.ValidateDeleteArtifact(ctx, ref, dryRun)
 			if err != nil {
 				return &validation.Reports{}, &multierror.Error{Errors: []error{err}}
 			}

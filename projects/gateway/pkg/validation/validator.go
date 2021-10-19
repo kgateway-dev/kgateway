@@ -36,8 +36,6 @@ type Reports struct {
 	Proxies         []*gloov1.Proxy
 	ProxyReports    *ProxyReports
 	UpstreamReports *UpstreamReports
-	SecretReports   *SecretReports
-	ArtifactReports *ArtifactReports
 }
 
 func (r *Reports) GetProxies() []*gloov1.Proxy {
@@ -49,8 +47,6 @@ func (r *Reports) GetProxies() []*gloov1.Proxy {
 
 type ProxyReports []*validation.ProxyReport
 type UpstreamReports []*validation.ResourceReport
-type SecretReports []*validation.ResourceReport
-type ArtifactReports []*validation.ResourceReport
 
 var (
 	NotReadyErr = errors.Errorf("validation is not yet available. Waiting for first snapshot")
@@ -91,7 +87,6 @@ type Validator interface {
 	ValidateUpstream(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*Reports, error)
 	ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) error
 	ValidateDeleteSecret(ctx context.Context, secret *core.ResourceRef, dryRun bool) error
-	ValidateDeleteArtifact(ctx context.Context, artifact *core.ResourceRef, dryRun bool) error
 }
 
 type validator struct {
@@ -678,37 +673,11 @@ func (v *validator) ValidateDeleteSecret(ctx context.Context, secretRef *core.Re
 	return err
 }
 
-func (v *validator) ValidateDeleteArtifact(ctx context.Context, artifactRef *core.ResourceRef, dryRun bool) error {
-	response, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
-		// Sending a nil proxy causes the remaining upstreams to be translated with all proxies in gloo's snapshot
-		Proxy: nil,
-		Resources: &validation.GlooValidationServiceRequest_DeletedResources{
-			DeletedResources: &validation.DeletedResources{
-				ArtifactRefs: []*core.ResourceRef{artifactRef},
-			},
-		},
-	})
-	logger := contextutils.LoggerFrom(ctx)
-	if err != nil {
-		if v.ignoreProxyValidationFailure {
-			logger.Error(err)
-		} else {
-			return err
-		}
-	}
-	logger.Debugf("Got response from GlooValidationService: %s", response.String())
-
-	_, err = v.getReportsFromGlooValidationResponse(response)
-	return err
-}
-
 // Converts the GlooValidationServiceResponse into Reports.
 func (v *validator) getReportsFromGlooValidationResponse(validationResponse *validation.GlooValidationServiceResponse) (*Reports, error) {
 	var (
 		errs            error
 		upstreamReports UpstreamReports
-		secretReports   SecretReports
-		artifactReports ArtifactReports
 		proxyReports    ProxyReports
 		proxies         []*gloov1.Proxy
 	)
@@ -720,32 +689,6 @@ func (v *validator) getReportsFromGlooValidationResponse(validationResponse *val
 				errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Upstream with Gloo validation server"))
 			}
 			if warnings := usRpt.GetWarnings(); !v.allowWarnings && len(warnings) > 0 {
-				for _, warning := range warnings {
-					errs = multierr.Append(errs, errors.New(warning))
-				}
-			}
-		}
-
-		// Append secret errors
-		for _, secretRpt := range report.GetSecretReports() {
-			secretReports = append(secretReports, secretRpt)
-			if err := resourceReportToMultiErr(secretRpt); err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Secret with Gloo validation server"))
-			}
-			if warnings := secretRpt.GetWarnings(); !v.allowWarnings && len(warnings) > 0 {
-				for _, warning := range warnings {
-					errs = multierr.Append(errs, errors.New(warning))
-				}
-			}
-		}
-
-		// Append artifact errors
-		for _, artifactRpt := range report.GetArtifactReports() {
-			artifactReports = append(artifactReports, artifactRpt)
-			if err := resourceReportToMultiErr(artifactRpt); err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Artifact with Gloo validation server"))
-			}
-			if warnings := artifactRpt.GetWarnings(); !v.allowWarnings && len(warnings) > 0 {
 				for _, warning := range warnings {
 					errs = multierr.Append(errs, errors.New(warning))
 				}
@@ -771,8 +714,6 @@ func (v *validator) getReportsFromGlooValidationResponse(validationResponse *val
 	return &Reports{
 		ProxyReports:    &proxyReports,
 		UpstreamReports: &upstreamReports,
-		SecretReports:   &secretReports,
-		ArtifactReports: &artifactReports,
 		Proxies:         proxies,
 	}, errs
 }

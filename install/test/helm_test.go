@@ -2981,7 +2981,7 @@ webhooks:
      - operations: [ "DELETE" ]
        apiGroups: ["gloo.solo.io"]
        apiVersions: ["v1"]
-       resources: [ "secrets", "artifacts" ]
+       resources: ["secrets"]
    sideEffects: None
    matchPolicy: Exact
    admissionReviewVersions:
