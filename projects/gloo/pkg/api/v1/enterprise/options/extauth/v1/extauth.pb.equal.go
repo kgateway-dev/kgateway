@@ -1912,6 +1912,10 @@ func (m *HttpService_Request) Equal(that interface{}) bool {
 
 	}
 
+	if m.GetMatchType() != target.GetMatchType() {
+		return false
+	}
+
 	return true
 }
 

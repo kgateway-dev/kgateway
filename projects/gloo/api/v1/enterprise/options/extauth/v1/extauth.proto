@@ -162,6 +162,13 @@ message HttpService {
         // These headers that will be included to the request to authorization service. Note that
         // client request of the same key will be overridden.
         map<string, string> headers_to_add = 2;
+
+
+        enum MatchType {
+            EXACT = 0;
+            REGEX = 1;
+        }
+        MatchType match_type =3;
     }
     Request request = 2;
 
