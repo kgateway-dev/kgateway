@@ -1,6 +1,8 @@
 package extauth
 
 import (
+	"context"
+	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	"strings"
 	"time"
 
@@ -356,12 +358,7 @@ func translateListMatcher(in []string, matchType extauthv1.HttpService_MatchType
 		case extauthv1.HttpService_REGEX:
 			lsm.Patterns = append(lsm.GetPatterns(), &envoymatcher.StringMatcher{
 				MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
-					SafeRegex: &envoymatcher.RegexMatcher{
-						Regex: pattern,
-						EngineType: &envoymatcher.RegexMatcher_GoogleRe2{
-							GoogleRe2: &envoymatcher.RegexMatcher_GoogleRE2{},
-						},
-					},
+					SafeRegex: regexutils.NewRegex(context.Background(), pattern),
 				},
 			})
 		default:
