@@ -354,20 +354,22 @@ func translateListMatcher(in []string, matchType extauthv1.HttpService_MatchType
 	var lsm envoymatcher.ListStringMatcher
 
 	for _, pattern := range in {
+		var sm *envoymatcher.StringMatcher
 		switch matchType {
 		case extauthv1.HttpService_REGEX:
-			lsm.Patterns = append(lsm.GetPatterns(), &envoymatcher.StringMatcher{
+			sm = &envoymatcher.StringMatcher{
 				MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
 					SafeRegex: regexutils.NewRegex(context.Background(), pattern),
 				},
-			})
+			}
 		default:
-			lsm.Patterns = append(lsm.GetPatterns(), &envoymatcher.StringMatcher{
+			sm = &envoymatcher.StringMatcher{
 				MatchPattern: &envoymatcher.StringMatcher_Exact{
 					Exact: pattern,
 				},
-			})
+			}
 		}
+		lsm.Patterns = append(lsm.Patterns, sm)
 	}
 
 	return &lsm
