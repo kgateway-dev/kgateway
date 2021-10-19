@@ -651,7 +651,7 @@ func (v *validator) ValidateDeleteUpstream(ctx context.Context, upstreamRef *cor
 
 func (v *validator) ValidateDeleteSecret(ctx context.Context, secretRef *core.ResourceRef, dryRun bool) error {
 	response, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
-		// Sending a nil proxy causes the remaining upstreams to be translated with all proxies in gloo's snapshot
+		// Sending a nil proxy causes the remaining secrets to be translated with all proxies in gloo's snapshot
 		Proxy: nil,
 		Resources: &validation.GlooValidationServiceRequest_DeletedResources{
 			DeletedResources: &validation.DeletedResources{
