@@ -109,6 +109,16 @@ func (m *SslConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetTransportSocketConnectTimeout()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTransportSocketConnectTimeout()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTransportSocketConnectTimeout(), target.GetTransportSocketConnectTimeout()) {
+			return false
+		}
+	}
+
 	switch m.SslSecrets.(type) {
 
 	case *SslConfig_SecretRef:

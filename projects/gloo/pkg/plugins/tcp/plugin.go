@@ -7,6 +7,7 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -200,13 +201,14 @@ func (p *Plugin) computerTcpFilterChain(
 	if err != nil {
 		return nil, InvalidSecretsError(err, listener.GetName())
 	}
-	return p.newSslFilterChain(downstreamConfig, sslConfig.GetSniDomains(), listenerFilters), nil
+	return p.newSslFilterChain(downstreamConfig, sslConfig.GetSniDomains(), listenerFilters, sslConfig.GetTransportSocketConnectTimeout()), nil
 }
 
 func (p *Plugin) newSslFilterChain(
 	downstreamConfig *envoyauth.DownstreamTlsContext,
 	sniDomains []string,
 	listenerFilters []*envoy_config_listener_v3.Filter,
+	timeout *duration.Duration,
 ) *envoy_config_listener_v3.FilterChain {
 
 	// copy listenerFilter so we can modify filter chain later without changing the filters on all of them!
@@ -224,6 +226,7 @@ func (p *Plugin) newSslFilterChain(
 			Name:       wellknown.TransportSocketTls,
 			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(downstreamConfig)},
 		},
+		TransportSocketConnectTimeout: timeout,
 	}
 }
 
