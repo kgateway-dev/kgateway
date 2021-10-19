@@ -218,6 +218,23 @@ func (m *DeletedResources) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetSecretRefs()) != len(target.GetSecretRefs()) {
+		return false
+	}
+	for idx, v := range m.GetSecretRefs() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSecretRefs()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSecretRefs()[idx]) {
+				return false
+			}
+		}
+
+	}
+
 	return true
 }
 

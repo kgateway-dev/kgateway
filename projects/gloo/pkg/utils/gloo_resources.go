@@ -70,3 +70,11 @@ func ResourceListToUpstreamList(resourceList sk_resources.ResourceList) gloov1.U
 	}
 	return upstreamList
 }
+
+func ResourceListToSecretList(resourceList sk_resources.ResourceList) gloov1.SecretList {
+	var secretList gloov1.SecretList
+	for _, resource := range resourceList {
+		secretList = append(secretList, resource.(*gloov1.Secret))
+	}
+	return secretList
+}

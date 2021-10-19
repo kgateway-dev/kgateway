@@ -32,6 +32,10 @@ webhooks:
     apiGroups: ["gloo.solo.io"]
     apiVersions: ["v1"]
     resources: ["upstreams"]{{/* TODO(https://github.com/solo-io/gloo/issues/2797): Extend to all gloo resources */}}
+  - operations: [ "DELETE" ]
+    apiGroups: ["gloo.solo.io"]
+    apiVersions: ["v1"]
+    resources: ["secrets"]
   sideEffects: None
   matchPolicy: Exact
   admissionReviewVersions:

@@ -29,8 +29,52 @@ func SimpleUpstream() *v1.Upstream {
 	}
 }
 
+func UpstreamWithSecret(secret *v1.Secret) *v1.Upstream {
+	return &v1.Upstream{
+		Metadata: &core.Metadata{
+			Name:      "test",
+			Namespace: "gloo-system",
+		},
+		UpstreamType: &v1.Upstream_Static{
+			Static: &static.UpstreamSpec{
+				Hosts: []*static.Host{
+					{
+						Addr: "Test",
+						Port: 124,
+					},
+				},
+			},
+		},
+		SslConfig: &v1.UpstreamSslConfig{
+			SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+				SecretRef: &core.ResourceRef{
+					Name:      secret.GetMetadata().GetName(),
+					Namespace: secret.GetMetadata().GetNamespace(),
+				},
+			},
+		},
+	}
+}
+
+func SimpleSecret() *v1.Secret {
+	return &v1.Secret{
+		Metadata: &core.Metadata{
+			Name:      "secret",
+			Namespace: "gloo-system",
+		},
+		Kind: &v1.Secret_Tls{
+			Tls: &v1.TlsSecret{
+				CertChain:  "cert-chain",
+				PrivateKey: "private-key",
+				RootCa:     "root-ca",
+			},
+		},
+	}
+}
+
 func SimpleGlooSnapshot() *v1.ApiSnapshot {
-	us := SimpleUpstream()
+	secret := SimpleSecret()
+	us := UpstreamWithSecret(secret)
 	routes := []*v1.Route{{
 		Action: &v1.Route_RouteAction{
 			RouteAction: &v1.RouteAction{
@@ -99,6 +143,7 @@ func SimpleGlooSnapshot() *v1.ApiSnapshot {
 	return &v1.ApiSnapshot{
 		Proxies:   []*v1.Proxy{proxy},
 		Upstreams: []*v1.Upstream{us},
+		Secrets:   []*v1.Secret{secret},
 	}
 }
 
