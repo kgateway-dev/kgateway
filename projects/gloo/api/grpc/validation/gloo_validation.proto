@@ -52,6 +52,8 @@ message ModifiedResources {
 message DeletedResources {
     // Optional, a list of the upstreams to delete.
     repeated core.solo.io.ResourceRef upstream_refs = 1;
+    // Optional, a list of the secrets to delete.
+    repeated core.solo.io.ResourceRef secret_refs = 2;
     // TODO when we support other resource types, add them here
 }
 

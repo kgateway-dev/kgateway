@@ -502,6 +502,28 @@ var _ = Describe("Happy path", func() {
 						TestUpstreamReachable()
 					})
 
+					It("should create appropriate config for discovered service", func() {
+						up, err := getUpstream()
+						Expect(err).NotTo(HaveOccurred())
+
+						svc.Annotations = map[string]string{
+							"gloo.solo.io/upstream_config": "{\"initial_stream_window_size\": 2048}",
+						}
+						svc, err = kubeClient.CoreV1().Services(namespace).Update(ctx, svc, metav1.UpdateOptions{})
+						Expect(err).NotTo(HaveOccurred())
+
+						proxycli := testClients.ProxyClient
+						proxy := getTrivialProxyForUpstream(namespace, envoyPort, up.Metadata.Ref())
+						var opts clients.WriteOpts
+						_, err = proxycli.Write(proxy, opts)
+						Expect(err).NotTo(HaveOccurred())
+
+						TestUpstreamReachable()
+						upstream, err := getUpstream()
+						Expect(err).NotTo(HaveOccurred())
+						Expect(int(upstream.GetInitialStreamWindowSize().GetValue())).To(Equal(2048))
+					})
+
 					It("correctly routes requests to a service destination", func() {
 						svcRef := skkubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref()
 						svcPort := svc.Spec.Ports[0].Port

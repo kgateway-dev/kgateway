@@ -5170,6 +5170,8 @@ spec:
                               tlsKey:
                                 type: string
                             type: object
+                          transportSocketConnectTimeout:
+                            type: string
                           verifySubjectAltName:
                             items:
                               type: string
@@ -6573,6 +6575,8 @@ spec:
                                       tlsKey:
                                         type: string
                                     type: object
+                                  transportSocketConnectTimeout:
+                                    type: string
                                   verifySubjectAltName:
                                     items:
                                       type: string

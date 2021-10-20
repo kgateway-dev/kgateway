@@ -112,12 +112,14 @@ weight: 5
 
 ```yaml
 "upstreamRefs": []core.solo.io.ResourceRef
+"secretRefs": []core.solo.io.ResourceRef
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `upstreamRefs` | [[]core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Optional, a list of the upstreams to delete. |
+| `secretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Optional, a list of the secrets to delete. |
 
 
 

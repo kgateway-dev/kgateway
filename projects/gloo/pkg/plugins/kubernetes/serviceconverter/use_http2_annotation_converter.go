@@ -8,10 +8,6 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 )
 
-func init() {
-	DefaultServiceConverters = append(DefaultServiceConverters, &UseHttp2Converter{})
-}
-
 const GlooH2Annotation = "gloo.solo.io/h2_service"
 
 var http2PortNames = []string{

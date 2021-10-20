@@ -19,6 +19,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"github.com/solo-io/solo-kit/test/matchers"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 var _ = Describe("Plugin", func() {
@@ -276,6 +277,44 @@ var _ = Describe("Plugin", func() {
 			Expect(cluster.Cluster).To(Equal(""))
 		})
 
+		It("should propagate proided `transport_socket_connect_timeout` to Envoy", func() {
+			sslConfig := &v1.SslConfig{
+				SslSecrets: &v1.SslConfig_SecretRef{
+					SecretRef: &core.ResourceRef{
+						Name:      "name",
+						Namespace: "namespace",
+					},
+				},
+				SniDomains: []string{"hello.world"},
+				TransportSocketConnectTimeout: &durationpb.Duration{
+					Seconds: 3,
+					Nanos:   0,
+				},
+			}
+
+			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
+				Name: "one",
+				Destination: &v1.TcpHost_TcpAction{
+					Destination: &v1.TcpHost_TcpAction_ForwardSniClusterName{
+						ForwardSniClusterName: &empty.Empty{},
+					},
+				},
+				SslConfig: sslConfig,
+			})
+
+			sslTranslator.EXPECT().
+				ResolveDownstreamSslConfig(snap.Secrets, sslConfig).
+				Return(&envoyauth.DownstreamTlsContext{}, nil)
+
+			p := NewPlugin(sslTranslator)
+			filterChains, err := p.ProcessListenerFilterChain(plugins.Params{Snapshot: snap}, in)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(filterChains).To(HaveLen(1))
+
+			Expect(filterChains[0].TransportSocketConnectTimeout.Seconds).To(Equal(int64(3)))
+			Expect(filterChains[0].TransportSocketConnectTimeout.Nanos).To(Equal(int32(0)))
+		})
 	})
 
 })

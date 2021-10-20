@@ -222,6 +222,56 @@ var _ = Describe("Validation Server", func() {
 			Expect(warnings).To(HaveLen(1))
 			Expect(errors).To(HaveOccurred())
 		})
+		It("secret deletion validation succeeds", func() {
+			// deleting a secret that is not being used should succeed
+			s := NewValidator(context.TODO(), translator, xdsSanitizer)
+			_ = s.Sync(context.TODO(), params.Snapshot)
+			resp, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{
+				Resources: &validationgrpc.GlooValidationServiceRequest_DeletedResources{
+					DeletedResources: &validationgrpc.DeletedResources{
+						SecretRefs: []*core.ResourceRef{
+							{Name: "unused-secret", Namespace: "gloo-system"},
+						},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.ValidationReports).To(HaveLen(1))
+			proxyReport := resp.ValidationReports[0].GetProxyReport()
+			warnings := validation.GetProxyWarning(proxyReport)
+			errors := validation.GetProxyError(proxyReport)
+			Expect(warnings).To(HaveLen(0))
+			Expect(errors).NotTo(HaveOccurred())
+		})
+		It("secret deletion validation fails", func() {
+			// trying to delete a secret that is being referenced by a proxy should cause an error
+			s := NewValidator(context.TODO(), translator, xdsSanitizer)
+			_ = s.Sync(context.TODO(), params.Snapshot)
+			resp, err := s.Validate(context.TODO(), &validationgrpc.GlooValidationServiceRequest{
+				Resources: &validationgrpc.GlooValidationServiceRequest_DeletedResources{
+					DeletedResources: &validationgrpc.DeletedResources{
+						SecretRefs: []*core.ResourceRef{
+							{Name: "secret", Namespace: "gloo-system"},
+						},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.ValidationReports).To(HaveLen(1))
+
+			upstreamReports := resp.ValidationReports[0].GetUpstreamReports()
+			Expect(upstreamReports).To(HaveLen(1))
+
+			// Verify the report is for the upstream we expect
+			usRef := upstreamReports[0].GetResourceRef()
+			Expect(usRef.GetNamespace()).To(Equal("gloo-system"))
+			Expect(usRef.GetName()).To(Equal("test"))
+
+			// Verify report contains a warning for the secret we removed
+			warnings := upstreamReports[0].GetWarnings()
+			Expect(warnings).To(HaveLen(1))
+			Expect(warnings[0]).To(ContainSubstring("SSL secret not found: list did not find secret gloo-system.secret"))
+		})
 	})
 
 	Context("Watch Sync Notifications", func() {

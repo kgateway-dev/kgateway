@@ -215,10 +215,16 @@ func applyRequestToSnapshot(snap *v1.ApiSnapshot, req *validation.GlooValidation
 		mergedUpstreams := utils.MergeResourceLists(existingUpstreams, modifiedUpstreams)
 		snap.Upstreams = utils.ResourceListToUpstreamList(mergedUpstreams)
 	} else if req.GetDeletedResources() != nil {
+		// Upstreams
 		existingUpstreams := snap.Upstreams.AsResources()
 		deletedUpstreamRefs := req.GetDeletedResources().GetUpstreamRefs()
 		finalUpstreams := utils.DeleteResources(existingUpstreams, deletedUpstreamRefs)
 		snap.Upstreams = utils.ResourceListToUpstreamList(finalUpstreams)
+		// Secrets
+		existingSecrets := snap.Secrets.AsResources()
+		deletedSecretRefs := req.GetDeletedResources().GetSecretRefs()
+		finalSecrets := utils.DeleteResources(existingSecrets, deletedSecretRefs)
+		snap.Secrets = utils.ResourceListToSecretList(finalSecrets)
 	}
 }
 
