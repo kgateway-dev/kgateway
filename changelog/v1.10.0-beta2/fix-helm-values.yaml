@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Fix helm chart values documentation. change `gloo.gatewayProxies.NAME.gatewaySettings.options` to `gloo.gatewayProxies.NAME.gatewaySettings.gatewayOptions` and `gloo.gatewayProxies.gatewayProxy.gatewaySettings.options` to gloo.gatewayProxies.gatewayProxy.gatewaySettings.gatewayOptions

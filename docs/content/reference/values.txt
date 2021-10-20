@@ -430,14 +430,14 @@
 |gatewayProxies.NAME.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
 |gatewayProxies.NAME.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
 |gatewayProxies.NAME.gatewaySettings.accessLoggingService.access_log[]|interface|||
-|gatewayProxies.NAME.gatewaySettings.options.access_logging_service.access_log[]|interface|||
-|gatewayProxies.NAME.gatewaySettings.options.extensions.configs.NAME.fields.NAME|interface|||
-|gatewayProxies.NAME.gatewaySettings.options.per_connection_buffer_limit_bytes.value|uint32|||
-|gatewayProxies.NAME.gatewaySettings.options.socket_options[].description|string|||
-|gatewayProxies.NAME.gatewaySettings.options.socket_options[].level|int64|||
-|gatewayProxies.NAME.gatewaySettings.options.socket_options[].name|int64|||
-|gatewayProxies.NAME.gatewaySettings.options.socket_options[]|interface|||
-|gatewayProxies.NAME.gatewaySettings.options.socket_options[].state|int32|||
+|gatewayProxies.NAME.gatewaySettings.gatewayOptions.access_logging_service.access_log[]|interface|||
+|gatewayProxies.NAME.gatewaySettings.gatewayOptions.extensions.configs.NAME.fields.NAME|interface|||
+|gatewayProxies.NAME.gatewaySettings.gatewayOptions.per_connection_buffer_limit_bytes.value|uint32|||
+|gatewayProxies.NAME.gatewaySettings.gatewayOptions.socket_options[].description|string|||
+|gatewayProxies.NAME.gatewaySettings.gatewayOptions.socket_options[].level|int64|||
+|gatewayProxies.NAME.gatewaySettings.gatewayOptions.socket_options[].name|int64|||
+|gatewayProxies.NAME.gatewaySettings.gatewayOptions.socket_options[]|interface|||
+|gatewayProxies.NAME.gatewaySettings.gatewayOptions.socket_options[].state|int32|||
 |gatewayProxies.NAME.gatewaySettings.httpGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.gatewaySettings.httpsGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.gatewaySettings.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
@@ -596,14 +596,14 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
 |gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
 |gatewayProxies.gatewayProxy.gatewaySettings.accessLoggingService.access_log[]|interface|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.access_logging_service.access_log[]|interface|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.extensions.configs.NAME.fields.NAME|interface|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.per_connection_buffer_limit_bytes.value|uint32|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.socket_options[].description|string|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.socket_options[].level|int64|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.socket_options[].name|int64|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.socket_options[]|interface|||
-|gatewayProxies.gatewayProxy.gatewaySettings.options.socket_options[].state|int32|||
+|gatewayProxies.gatewayProxy.gatewaySettings.gatewayOptions.access_logging_service.access_log[]|interface|||
+|gatewayProxies.gatewayProxy.gatewaySettings.gatewayOptions.extensions.configs.NAME.fields.NAME|interface|||
+|gatewayProxies.gatewayProxy.gatewaySettings.gatewayOptions.per_connection_buffer_limit_bytes.value|uint32|||
+|gatewayProxies.gatewayProxy.gatewaySettings.gatewayOptions.socket_options[].description|string|||
+|gatewayProxies.gatewayProxy.gatewaySettings.gatewayOptions.socket_options[].level|int64|||
+|gatewayProxies.gatewayProxy.gatewaySettings.gatewayOptions.socket_options[].name|int64|||
+|gatewayProxies.gatewayProxy.gatewaySettings.gatewayOptions.socket_options[]|interface|||
+|gatewayProxies.gatewayProxy.gatewaySettings.gatewayOptions.socket_options[].state|int32|||
 |gatewayProxies.gatewayProxy.gatewaySettings.httpGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.gatewaySettings.httpsGatewayKubeOverride.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.gatewaySettings.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
