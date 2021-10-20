@@ -304,8 +304,10 @@ func translateRequest(in *extauthv1.HttpService_Request) *envoyauth.Authorizatio
 	}
 
 	return &envoyauth.AuthorizationRequest{
-		AllowedHeaders: combineLSMs(translateListMatcher(in.GetAllowedHeaders()), translateListMatcherRegex(in.GetAllowedHeadersRegex())),
-		HeadersToAdd:   convertHeadersToAdd(in.GetHeadersToAdd()),
+		AllowedHeaders: combineListStringMatchers(
+			translateListMatcher(in.GetAllowedHeaders()),
+			translateListMatcherRegex(in.GetAllowedHeadersRegex())),
+		HeadersToAdd: convertHeadersToAdd(in.GetHeadersToAdd()),
 	}
 }
 
@@ -369,8 +371,8 @@ func translateListMatcherRegex(in []string) *envoymatcher.ListStringMatcher {
 	if len(in) == 0 {
 		return nil
 	}
-
 	var lsm envoymatcher.ListStringMatcher
+
 	for _, pattern := range in {
 		lsm.Patterns = append(lsm.GetPatterns(), &envoymatcher.StringMatcher{
 			MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
@@ -382,7 +384,7 @@ func translateListMatcherRegex(in []string) *envoymatcher.ListStringMatcher {
 	return &lsm
 }
 
-func combineLSMs(lsms ...*envoymatcher.ListStringMatcher) *envoymatcher.ListStringMatcher {
+func combineListStringMatchers(lsms ...*envoymatcher.ListStringMatcher) *envoymatcher.ListStringMatcher {
 	var outLSM envoymatcher.ListStringMatcher
 	for _, inLSM := range lsms {
 		if inLSM != nil {
