@@ -1912,6 +1912,17 @@ func (m *HttpService_Request) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetAllowedHeadersRegex()) != len(target.GetAllowedHeadersRegex()) {
+		return false
+	}
+	for idx, v := range m.GetAllowedHeadersRegex() {
+
+		if strings.Compare(v, target.GetAllowedHeadersRegex()[idx]) != 0 {
+			return false
+		}
+
+	}
+
 	return true
 }
 

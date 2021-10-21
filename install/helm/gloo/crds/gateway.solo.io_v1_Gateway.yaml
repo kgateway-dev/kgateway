@@ -206,6 +206,10 @@ spec:
                                     items:
                                       type: string
                                     type: array
+                                  allowedHeadersRegex:
+                                    items:
+                                      type: string
+                                    type: array
                                   headersToAdd:
                                     additionalProperties:
                                       type: string
