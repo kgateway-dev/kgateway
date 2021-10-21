@@ -527,7 +527,7 @@ Filter Route config. Routes that have this config will execute graphql queries, 
 make it to the router filter. i.e. this filter will terminate the request for these routes.
 
 ```yaml
-"schema": .solo.io.envoy.config.core.v3.DataSource
+"schema": string
 "enableIntrospection": bool
 "resolutions": []enterprise.gloo.solo.io.Resolution
 
@@ -535,7 +535,7 @@ make it to the router filter. i.e. this filter will terminate the request for th
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `schema` | [.solo.io.envoy.config.core.v3.DataSource](../../../../../../external/envoy/config/core/v3/base.proto.sk/#datasource) | Schema to use in string format. |
+| `schema` | `string` | Schema to use in string format. |
 | `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults ot false. |
 | `resolutions` | [[]enterprise.gloo.solo.io.Resolution](../graphql.proto.sk/#resolution) | The resolver map to use to resovle the schema. |
 
