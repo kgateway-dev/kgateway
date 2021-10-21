@@ -696,6 +696,26 @@ func (m *GraphQLExtendedSchema) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetNamespacedStatuses()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetNamespacedStatuses()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetNamespacedStatuses(), target.GetNamespacedStatuses()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetMetadata()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMetadata()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMetadata(), target.GetMetadata()) {
+			return false
+		}
+	}
+
 	if strings.Compare(m.GetSchema(), target.GetSchema()) != 0 {
 		return false
 	}

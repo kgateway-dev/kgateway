@@ -8,6 +8,7 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	graphql_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -91,36 +92,39 @@ type ApiEmitter interface {
 	Upstream() UpstreamClient
 	AuthConfig() enterprise_gloo_solo_io.AuthConfigClient
 	RateLimitConfig() github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient
+	GraphQLExtendedSchema() graphql_gloo_solo_io.GraphQLExtendedSchemaClient
 }
 
-func NewApiEmitter(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, rateLimitConfigClient github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient) ApiEmitter {
-	return NewApiEmitterWithEmit(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient, authConfigClient, rateLimitConfigClient, make(chan struct{}))
+func NewApiEmitter(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, rateLimitConfigClient github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient, graphQLExtendedSchemaClient graphql_gloo_solo_io.GraphQLExtendedSchemaClient) ApiEmitter {
+	return NewApiEmitterWithEmit(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient, authConfigClient, rateLimitConfigClient, graphQLExtendedSchemaClient, make(chan struct{}))
 }
 
-func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, rateLimitConfigClient github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient, emit <-chan struct{}) ApiEmitter {
+func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, rateLimitConfigClient github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient, graphQLExtendedSchemaClient graphql_gloo_solo_io.GraphQLExtendedSchemaClient, emit <-chan struct{}) ApiEmitter {
 	return &apiEmitter{
-		artifact:        artifactClient,
-		endpoint:        endpointClient,
-		proxy:           proxyClient,
-		upstreamGroup:   upstreamGroupClient,
-		secret:          secretClient,
-		upstream:        upstreamClient,
-		authConfig:      authConfigClient,
-		rateLimitConfig: rateLimitConfigClient,
-		forceEmit:       emit,
+		artifact:              artifactClient,
+		endpoint:              endpointClient,
+		proxy:                 proxyClient,
+		upstreamGroup:         upstreamGroupClient,
+		secret:                secretClient,
+		upstream:              upstreamClient,
+		authConfig:            authConfigClient,
+		rateLimitConfig:       rateLimitConfigClient,
+		graphQLExtendedSchema: graphQLExtendedSchemaClient,
+		forceEmit:             emit,
 	}
 }
 
 type apiEmitter struct {
-	forceEmit       <-chan struct{}
-	artifact        ArtifactClient
-	endpoint        EndpointClient
-	proxy           ProxyClient
-	upstreamGroup   UpstreamGroupClient
-	secret          SecretClient
-	upstream        UpstreamClient
-	authConfig      enterprise_gloo_solo_io.AuthConfigClient
-	rateLimitConfig github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient
+	forceEmit             <-chan struct{}
+	artifact              ArtifactClient
+	endpoint              EndpointClient
+	proxy                 ProxyClient
+	upstreamGroup         UpstreamGroupClient
+	secret                SecretClient
+	upstream              UpstreamClient
+	authConfig            enterprise_gloo_solo_io.AuthConfigClient
+	rateLimitConfig       github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient
+	graphQLExtendedSchema graphql_gloo_solo_io.GraphQLExtendedSchemaClient
 }
 
 func (c *apiEmitter) Register() error {
@@ -146,6 +150,9 @@ func (c *apiEmitter) Register() error {
 		return err
 	}
 	if err := c.rateLimitConfig.Register(); err != nil {
+		return err
+	}
+	if err := c.graphQLExtendedSchema.Register(); err != nil {
 		return err
 	}
 	return nil
@@ -181,6 +188,10 @@ func (c *apiEmitter) AuthConfig() enterprise_gloo_solo_io.AuthConfigClient {
 
 func (c *apiEmitter) RateLimitConfig() github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient {
 	return c.rateLimitConfig
+}
+
+func (c *apiEmitter) GraphQLExtendedSchema() graphql_gloo_solo_io.GraphQLExtendedSchemaClient {
+	return c.graphQLExtendedSchema
 }
 
 func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error) {
@@ -263,6 +274,14 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	rateLimitConfigChan := make(chan rateLimitConfigListWithNamespace)
 
 	var initialRateLimitConfigList github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList
+	/* Create channel for GraphQLExtendedSchema */
+	type graphQLExtendedSchemaListWithNamespace struct {
+		list      graphql_gloo_solo_io.GraphQLExtendedSchemaList
+		namespace string
+	}
+	graphQLExtendedSchemaChan := make(chan graphQLExtendedSchemaListWithNamespace)
+
+	var initialGraphQLExtendedSchemaList graphql_gloo_solo_io.GraphQLExtendedSchemaList
 
 	currentSnapshot := ApiSnapshot{}
 
@@ -411,6 +430,24 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, rateLimitConfigErrs, namespace+"-ratelimitconfigs")
 		}(namespace)
+		/* Setup namespaced watch for GraphQLExtendedSchema */
+		{
+			graphqlSchemas, err := c.graphQLExtendedSchema.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial GraphQLExtendedSchema list")
+			}
+			initialGraphQLExtendedSchemaList = append(initialGraphQLExtendedSchemaList, graphqlSchemas...)
+		}
+		graphQLExtendedSchemaNamespacesChan, graphQLExtendedSchemaErrs, err := c.graphQLExtendedSchema.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting GraphQLExtendedSchema watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, graphQLExtendedSchemaErrs, namespace+"-graphqlSchemas")
+		}(namespace)
 
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
@@ -490,6 +527,15 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 						return
 					case rateLimitConfigChan <- rateLimitConfigListWithNamespace{list: rateLimitConfigList, namespace: namespace}:
 					}
+				case graphQLExtendedSchemaList, ok := <-graphQLExtendedSchemaNamespacesChan:
+					if !ok {
+						return
+					}
+					select {
+					case <-ctx.Done():
+						return
+					case graphQLExtendedSchemaChan <- graphQLExtendedSchemaListWithNamespace{list: graphQLExtendedSchemaList, namespace: namespace}:
+					}
 				}
 			}
 		}(namespace)
@@ -510,6 +556,8 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	currentSnapshot.AuthConfigs = initialAuthConfigList.Sort()
 	/* Initialize snapshot for Ratelimitconfigs */
 	currentSnapshot.Ratelimitconfigs = initialRateLimitConfigList.Sort()
+	/* Initialize snapshot for GraphqlSchemas */
+	currentSnapshot.GraphqlSchemas = initialGraphQLExtendedSchemaList.Sort()
 
 	snapshots := make(chan *ApiSnapshot)
 	go func() {
@@ -549,6 +597,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		upstreamsByNamespace := make(map[string]UpstreamList)
 		authConfigsByNamespace := make(map[string]enterprise_gloo_solo_io.AuthConfigList)
 		ratelimitconfigsByNamespace := make(map[string]github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList)
+		graphqlSchemasByNamespace := make(map[string]graphql_gloo_solo_io.GraphQLExtendedSchemaList)
 		defer func() {
 			close(snapshots)
 			// we must wait for done before closing the error chan,
@@ -743,6 +792,28 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 					rateLimitConfigList = append(rateLimitConfigList, ratelimitconfigs...)
 				}
 				currentSnapshot.Ratelimitconfigs = rateLimitConfigList.Sort()
+			case graphQLExtendedSchemaNamespacedList, ok := <-graphQLExtendedSchemaChan:
+				if !ok {
+					return
+				}
+				record()
+
+				namespace := graphQLExtendedSchemaNamespacedList.namespace
+
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"graph_ql_extended_schema",
+					mApiResourcesIn,
+				)
+
+				// merge lists by namespace
+				graphqlSchemasByNamespace[namespace] = graphQLExtendedSchemaNamespacedList.list
+				var graphQLExtendedSchemaList graphql_gloo_solo_io.GraphQLExtendedSchemaList
+				for _, graphqlSchemas := range graphqlSchemasByNamespace {
+					graphQLExtendedSchemaList = append(graphQLExtendedSchemaList, graphqlSchemas...)
+				}
+				currentSnapshot.GraphqlSchemas = graphQLExtendedSchemaList.Sort()
 			}
 		}
 	}()

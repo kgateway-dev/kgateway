@@ -34,7 +34,7 @@ func (m *PathSegment) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.PathSegment")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.PathSegment")); err != nil {
 		return 0, err
 	}
 
@@ -67,7 +67,7 @@ func (m *ValueProvider) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.ValueProvider")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.ValueProvider")); err != nil {
 		return 0, err
 	}
 
@@ -131,7 +131,7 @@ func (m *JsonKeyValue) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.JsonKeyValue")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.JsonKeyValue")); err != nil {
 		return 0, err
 	}
 
@@ -171,7 +171,7 @@ func (m *JsonNode) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.JsonNode")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.JsonNode")); err != nil {
 		return 0, err
 	}
 
@@ -211,7 +211,7 @@ func (m *RequestTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.RequestTemplate")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.RequestTemplate")); err != nil {
 		return 0, err
 	}
 
@@ -331,7 +331,7 @@ func (m *ResponseTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.ResponseTemplate")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.ResponseTemplate")); err != nil {
 		return 0, err
 	}
 
@@ -347,7 +347,7 @@ func (m *RESTResolver) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.RESTResolver")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.RESTResolver")); err != nil {
 		return 0, err
 	}
 
@@ -407,7 +407,7 @@ func (m *RESTResolverCP) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.RESTResolverCP")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.RESTResolverCP")); err != nil {
 		return 0, err
 	}
 
@@ -449,7 +449,7 @@ func (m *SubgraphResolver) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.SubgraphResolver")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.SubgraphResolver")); err != nil {
 		return 0, err
 	}
 
@@ -469,7 +469,7 @@ func (m *ConstantResolver) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.ConstantResolver")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.ConstantResolver")); err != nil {
 		return 0, err
 	}
 
@@ -485,7 +485,7 @@ func (m *AbstractTypeResolver) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.AbstractTypeResolver")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.AbstractTypeResolver")); err != nil {
 		return 0, err
 	}
 
@@ -501,7 +501,7 @@ func (m *Query) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.Query")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.Query")); err != nil {
 		return 0, err
 	}
 
@@ -537,7 +537,7 @@ func (m *QueryMatcher) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.QueryMatcher")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.QueryMatcher")); err != nil {
 		return 0, err
 	}
 
@@ -579,7 +579,7 @@ func (m *Resolution) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.Resolution")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.Resolution")); err != nil {
 		return 0, err
 	}
 
@@ -663,7 +663,7 @@ func (m *GraphQLConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.GraphQLConfig")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.GraphQLConfig")); err != nil {
 		return 0, err
 	}
 
@@ -679,8 +679,28 @@ func (m *GraphQLExtendedSchema) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.GraphQLExtendedSchema")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.GraphQLExtendedSchema")); err != nil {
 		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetMetadata()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Metadata")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetMetadata(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Metadata")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	if _, err = hasher.Write([]byte(m.GetSchema())); err != nil {
@@ -728,7 +748,7 @@ func (m *ValueProvider_GraphQLArgExtraction) Hash(hasher hash.Hash64) (uint64, e
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.ValueProvider_GraphQLArgExtraction")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.ValueProvider_GraphQLArgExtraction")); err != nil {
 		return 0, err
 	}
 
@@ -772,7 +792,7 @@ func (m *ValueProvider_TypedValueProvider) Hash(hasher hash.Hash64) (uint64, err
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.ValueProvider_TypedValueProvider")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.ValueProvider_TypedValueProvider")); err != nil {
 		return 0, err
 	}
 
@@ -831,7 +851,7 @@ func (m *ValueProvider_TypedValueProvider_GraphQLParentExtraction) Hash(hasher h
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.ValueProvider_TypedValueProvider_GraphQLParentExtraction")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.ValueProvider_TypedValueProvider_GraphQLParentExtraction")); err != nil {
 		return 0, err
 	}
 
@@ -871,7 +891,7 @@ func (m *JsonKeyValue_JsonValue) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.JsonKeyValue_JsonValue")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.JsonKeyValue_JsonValue")); err != nil {
 		return 0, err
 	}
 
@@ -935,7 +955,7 @@ func (m *RESTResolverCP_OpenApi) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.RESTResolverCP_OpenApi")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.RESTResolverCP_OpenApi")); err != nil {
 		return 0, err
 	}
 
@@ -1035,7 +1055,7 @@ func (m *RESTResolverCP_OpenApi_RemoteSource) Hash(hasher hash.Hash64) (uint64, 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.RESTResolverCP_OpenApi_RemoteSource")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.RESTResolverCP_OpenApi_RemoteSource")); err != nil {
 		return 0, err
 	}
 
@@ -1090,7 +1110,7 @@ func (m *RESTResolverCP_OpenApi_SelectQueryOrMutationField) Hash(hasher hash.Has
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.RESTResolverCP_OpenApi_SelectQueryOrMutationField")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.RESTResolverCP_OpenApi_SelectQueryOrMutationField")); err != nil {
 		return 0, err
 	}
 
@@ -1118,7 +1138,7 @@ func (m *QueryMatcher_FieldMatcher) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.QueryMatcher_FieldMatcher")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.QueryMatcher_FieldMatcher")); err != nil {
 		return 0, err
 	}
 

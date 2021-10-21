@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package enterprise.gloo.solo.io;
+package graphql.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1";
 
@@ -19,7 +19,6 @@ import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 import "validate/validate.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/http_uri.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/extension.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
 import "google/protobuf/empty.proto";
 
@@ -303,13 +302,20 @@ message GraphQLExtendedSchema {
   option (core.solo.io.resource).short_name = "gqlschema";
   option (core.solo.io.resource).plural_name = "graphql_schemas";
 
+  // NamespacedStatuses indicates the validation status of this resource.
+  // NamespacedStatuses is read-only by clients, and set by gloo during validation
+  core.solo.io.NamespacedStatuses namespaced_statuses = 1 [(extproto.skip_hashing) = true];
+
+  // Metadata contains the object metadata for this resource
+  core.solo.io.Metadata metadata = 2;
+
   // Schema to use in string format.
-  string schema = 1;
+  string schema = 3;
   // Do we enable introspection for the schema? general recommendation is to disable this for production
   // and hence it defaults ot false.
-  bool enable_introspection = 2;
+  bool enable_introspection = 4;
   // The resolver map to use to resovle the schema.
-  repeated Resolution resolutions = 3;
+  repeated Resolution resolutions = 5;
   // In the future, we will support persistent queries, this will be a map of query id to query.
   //    map<string, Query> presistent_queries = 3;
   // when we support persistent queries, we may want to use them exclusivly, for predictable
