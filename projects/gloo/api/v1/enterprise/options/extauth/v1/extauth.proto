@@ -162,6 +162,10 @@ message HttpService {
         // These headers that will be included to the request to authorization service. Note that
         // client request of the same key will be overridden.
         map<string, string> headers_to_add = 2;
+
+        // Headers that match these regex patterns will be copied from the incoming request
+        // to the request going to the auth server.
+        repeated string allowed_headers_regex = 3;
     }
     Request request = 2;
 
