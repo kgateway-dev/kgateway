@@ -136,6 +136,10 @@ spec:
                             items:
                               type: string
                             type: array
+                          allowedHeadersRegex:
+                            items:
+                              type: string
+                            type: array
                           headersToAdd:
                             additionalProperties:
                               type: string
@@ -354,6 +358,10 @@ spec:
                         request:
                           properties:
                             allowedHeaders:
+                              items:
+                                type: string
+                              type: array
+                            allowedHeadersRegex:
                               items:
                                 type: string
                               type: array
