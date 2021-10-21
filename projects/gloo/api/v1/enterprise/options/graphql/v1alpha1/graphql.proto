@@ -8,6 +8,14 @@ option java_package = "io.envoyproxy.envoy.config.filter.http.graphql.v2";
 option java_outer_classname = "GraphQLFilterProto";
 option java_multiple_files = true;
 
+import "extproto/ext.proto";
+option (extproto.equal_all) = true;
+option (extproto.hash_all) = true;
+
+import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
+import "github.com/solo-io/solo-kit/api/v1/status.proto";
+import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
+
 import "validate/validate.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/http_uri.proto";
@@ -291,8 +299,12 @@ message GraphQLConfig {
 // Filter Route config. Routes that have this config will execute graphql queries, and will not
 // make it to the router filter. i.e. this filter will terminate the request for these routes.
 message GraphQLExtendedSchema {
+
+  option (core.solo.io.resource).short_name = "gqlschema";
+  option (core.solo.io.resource).plural_name = "graphql_schemas";
+
   // Schema to use in string format.
-  .solo.io.envoy.config.core.v3.DataSource schema = 1;
+  string schema = 1;
   // Do we enable introspection for the schema? general recommendation is to disable this for production
   // and hence it defaults ot false.
   bool enable_introspection = 2;
