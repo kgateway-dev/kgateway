@@ -36,6 +36,8 @@ func MarkHeaders(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route, out *e
 	// Since destination is not known at runtime, headers can not be added using this function for a ClusterHeader destination
 	case *v1.RouteAction_ClusterHeader:
 		return nil
+	case *v1.RouteAction_GraphqlSchemaRef:
+		return nil
 	}
 
 	err = errors.Errorf("unexpected destination type %v", reflect.TypeOf(inAction.GetDestination()).Name())

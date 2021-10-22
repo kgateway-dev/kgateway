@@ -73,6 +73,8 @@ func MarkPerFilterConfig(
 	// intentionally ignored because destination is not specified at runtime, so perFilterConfig is useless
 	case *v1.RouteAction_ClusterHeader:
 		return nil
+	case *v1.RouteAction_GraphqlSchemaRef:
+		return nil
 	}
 
 	err = errors.Errorf("unexpected destination type %v", reflect.TypeOf(inAction.GetDestination()).Name())
