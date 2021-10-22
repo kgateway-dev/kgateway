@@ -390,6 +390,8 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 			ClusterHeader: in.GetClusterHeader(),
 		}
 		return nil
+	case *v1.RouteAction_GraphqlSchemaRef:
+		return nil // skip, since we will configure graphql filter to override router filter
 	}
 	return errors.Errorf("unknown upstream destination type")
 }
