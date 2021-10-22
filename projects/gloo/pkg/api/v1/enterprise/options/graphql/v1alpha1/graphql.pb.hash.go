@@ -671,7 +671,7 @@ func (m *GraphQLConfig) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *GraphQLExtendedSchema) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *GraphQLSchema) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -679,7 +679,7 @@ func (m *GraphQLExtendedSchema) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.GraphQLExtendedSchema")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1.GraphQLSchema")); err != nil {
 		return 0, err
 	}
 

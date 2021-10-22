@@ -108,7 +108,7 @@ func (c *apiSimpleEmitter) Snapshots(ctx context.Context) (<-chan *ApiSnapshot, 
 						currentSnapshot.AuthConfigs = append(currentSnapshot.AuthConfigs, typed)
 					case *github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfig:
 						currentSnapshot.Ratelimitconfigs = append(currentSnapshot.Ratelimitconfigs, typed)
-					case *graphql_gloo_solo_io.GraphQLExtendedSchema:
+					case *graphql_gloo_solo_io.GraphQLSchema:
 						currentSnapshot.GraphqlSchemas = append(currentSnapshot.GraphqlSchemas, typed)
 					default:
 						select {

@@ -297,7 +297,7 @@ message GraphQLConfig {
 
 // Filter Route config. Routes that have this config will execute graphql queries, and will not
 // make it to the router filter. i.e. this filter will terminate the request for these routes.
-message GraphQLExtendedSchema {
+message GraphQLSchema {
 
   option (core.solo.io.resource).short_name = "gqlschema";
   option (core.solo.io.resource).plural_name = "graphql_schemas";

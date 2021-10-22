@@ -456,7 +456,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		return err
 	}
 
-	graphqlSchemaClient, err := v1alpha1.NewGraphQLExtendedSchemaClient(watchOpts.Ctx, opts.GraphQLSchemas)
+	graphqlSchemaClient, err := v1alpha1.NewGraphQLSchemaClient(watchOpts.Ctx, opts.GraphQLSchemas)
 	if err != nil {
 		return err
 	}

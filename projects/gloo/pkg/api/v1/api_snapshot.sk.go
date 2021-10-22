@@ -26,7 +26,7 @@ type ApiSnapshot struct {
 	Upstreams        UpstreamList
 	AuthConfigs      enterprise_gloo_solo_io.AuthConfigList
 	Ratelimitconfigs github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList
-	GraphqlSchemas   graphql_gloo_solo_io.GraphQLExtendedSchemaList
+	GraphqlSchemas   graphql_gloo_solo_io.GraphQLSchemaList
 }
 
 func (s ApiSnapshot) Clone() ApiSnapshot {

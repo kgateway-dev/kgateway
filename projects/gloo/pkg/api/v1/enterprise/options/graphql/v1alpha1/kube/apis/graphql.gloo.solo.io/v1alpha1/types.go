@@ -20,18 +20,18 @@ type metaOnly struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resourceName=graphqlschemas
 // +genclient
-type GraphQLExtendedSchema struct {
+type GraphQLSchema struct {
 	v1.TypeMeta `json:",inline"`
 	// +optional
 	v1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
 	// Spec defines the implementation of this definition.
 	// +optional
-	Spec   api.GraphQLExtendedSchema `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
-	Status core.NamespacedStatuses   `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+	Spec   api.GraphQLSchema       `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	Status core.NamespacedStatuses `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
 
-func (o *GraphQLExtendedSchema) MarshalJSON() ([]byte, error) {
+func (o *GraphQLSchema) MarshalJSON() ([]byte, error) {
 	spec, err := protoutils.MarshalMap(&o.Spec)
 	if err != nil {
 		return nil, err
@@ -48,17 +48,17 @@ func (o *GraphQLExtendedSchema) MarshalJSON() ([]byte, error) {
 	return json.Marshal(asMap)
 }
 
-func (o *GraphQLExtendedSchema) UnmarshalJSON(data []byte) error {
+func (o *GraphQLSchema) UnmarshalJSON(data []byte) error {
 	var metaOnly metaOnly
 	if err := json.Unmarshal(data, &metaOnly); err != nil {
 		return err
 	}
-	var spec api.GraphQLExtendedSchema
+	var spec api.GraphQLSchema
 	if err := protoutils.UnmarshalResource(data, &spec); err != nil {
 		return err
 	}
 	spec.Metadata = nil
-	*o = GraphQLExtendedSchema{
+	*o = GraphQLSchema{
 		ObjectMeta: metaOnly.ObjectMeta,
 		TypeMeta:   metaOnly.TypeMeta,
 		Spec:       spec,
@@ -72,10 +72,10 @@ func (o *GraphQLExtendedSchema) UnmarshalJSON(data []byte) error {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// GraphQLExtendedSchemaList is a collection of GraphQLExtendedSchemas.
-type GraphQLExtendedSchemaList struct {
+// GraphQLSchemaList is a collection of GraphQLSchemas.
+type GraphQLSchemaList struct {
 	v1.TypeMeta `json:",inline"`
 	// +optional
 	v1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-	Items       []GraphQLExtendedSchema `json:"items" protobuf:"bytes,2,rep,name=items"`
+	Items       []GraphQLSchema `json:"items" protobuf:"bytes,2,rep,name=items"`
 }

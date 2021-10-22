@@ -35,7 +35,7 @@ weight: 5
 - [FieldMatcher](#fieldmatcher)
 - [Resolution](#resolution)
 - [GraphQLConfig](#graphqlconfig)
-- [GraphQLExtendedSchema](#graphqlextendedschema) **Top-Level Resource**
+- [GraphQLSchema](#graphqlschema) **Top-Level Resource**
   
 
 
@@ -520,7 +520,7 @@ Filter Listener config. Empty as the filter must be configured on the route leve
 
 
 ---
-### GraphQLExtendedSchema
+### GraphQLSchema
 
  
 Filter Route config. Routes that have this config will execute graphql queries, and will not

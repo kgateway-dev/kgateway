@@ -6,7 +6,7 @@
   "resource_groups": {
     "enterprise.gloo.solo.io": [
       {
-        "name": "GraphQLExtendedSchema",
+        "name": "GraphQLSchema",
         "package": "graphql.gloo.solo.io"
       }
     ]

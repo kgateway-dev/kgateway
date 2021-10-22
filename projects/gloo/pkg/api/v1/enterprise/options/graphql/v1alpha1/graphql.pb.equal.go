@@ -676,14 +676,14 @@ func (m *GraphQLConfig) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *GraphQLExtendedSchema) Equal(that interface{}) bool {
+func (m *GraphQLSchema) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*GraphQLExtendedSchema)
+	target, ok := that.(*GraphQLSchema)
 	if !ok {
-		that2, ok := that.(GraphQLExtendedSchema)
+		that2, ok := that.(GraphQLSchema)
 		if ok {
 			target = &that2
 		} else {
