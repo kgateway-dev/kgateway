@@ -21,16 +21,7 @@ weight: 5
 - [JsonValue](#jsonvalue)
 - [JsonNode](#jsonnode)
 - [RequestTemplate](#requesttemplate)
-- [ResponseTemplate](#responsetemplate)
 - [RESTResolver](#restresolver)
-- [RESTResolverCP](#restresolvercp)
-- [OpenApi](#openapi)
-- [RemoteSource](#remotesource)
-- [SelectQueryOrMutationField](#selectqueryormutationfield)
-- [SubgraphResolver](#subgraphresolver)
-- [ConstantResolver](#constantresolver)
-- [AbstractTypeResolver](#abstracttyperesolver)
-- [Query](#query)
 - [QueryMatcher](#querymatcher)
 - [FieldMatcher](#fieldmatcher)
 - [Resolution](#resolution)
@@ -51,7 +42,6 @@ weight: 5
 
  
 used to reference into json structures by key(s)
-TODO(kdorosh): implement me
 
 ```yaml
 "key": string
@@ -70,9 +60,7 @@ TODO(kdorosh): implement me
 ---
 ### ValueProvider
 
- 
-TODO(kdorosh): do we want to support regex and subgroups?
-TODO(kdorosh): implement me
+
 
 ```yaml
 "graphqlArg": .graphql.gloo.solo.io.ValueProvider.GraphQLArgExtraction
@@ -123,7 +111,7 @@ TODO(kdorosh): implement me
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `type` | [.graphql.gloo.solo.io.ValueProvider.TypedValueProvider.Type](../graphql.proto.sk/#type) | Type that the value will be coerced into. For example if the extracted value is "9", and type is INT, this value will be cast to an int type. |
-| `graphqlParent` | [.graphql.gloo.solo.io.ValueProvider.TypedValueProvider.GraphQLParentExtraction](../graphql.proto.sk/#graphqlparentextraction) | Fetch value from the graphql_parent of the current field. todo(sai) - figure out behaviour when no parent (root query / mutation). Only one of `graphqlParent`, `header`, or `value` can be set. |
+| `graphqlParent` | [.graphql.gloo.solo.io.ValueProvider.TypedValueProvider.GraphQLParentExtraction](../graphql.proto.sk/#graphqlparentextraction) | Fetch value from the graphql_parent of the current field. Only one of `graphqlParent`, `header`, or `value` can be set. |
 | `header` | `string` | Fetches the request/response header's value. If not found, uses empty string. Only one of `header`, `graphqlParent`, or `value` can be set. |
 | `value` | `string` | inline value, use as provided rather than extracting from another source. Only one of `value`, `graphqlParent`, or `header` can be set. |
 
@@ -206,7 +194,6 @@ if empty, defaults to string. similar to typeUrl in other envoy config
 
  
 Represents a typed JSON structure
-TODO(kdorosh): implement me
 
 ```yaml
 "keyValues": []graphql.gloo.solo.io.JsonKeyValue
@@ -225,7 +212,6 @@ TODO(kdorosh): implement me
 
  
 Defines a configuration for generating outgoing requests for a resolver.
-TODO(kdorosh): implement me
 
 ```yaml
 "headers": map<string, .graphql.gloo.solo.io.ValueProvider>
@@ -244,28 +230,10 @@ TODO(kdorosh): implement me
 
 
 ---
-### ResponseTemplate
-
- 
-Defines a response transformation template.
-TODO(kdorosh): implement me (steal most logic from transformations code)
-
-```yaml
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-
-
-
-
----
 ### RESTResolver
 
  
 data-plane API
-TODO(kdorosh): implement me
 
 ```yaml
 "serverUri": .solo.io.envoy.config.core.v3.HttpUri
@@ -278,164 +246,7 @@ TODO(kdorosh): implement me
 | ----- | ---- | ----------- | 
 | `serverUri` | [.solo.io.envoy.config.core.v3.HttpUri](../../../../../../external/envoy/config/core/v3/http_uri.proto.sk/#httpuri) |  |
 | `requestTransform` | [.graphql.gloo.solo.io.RequestTemplate](../graphql.proto.sk/#requesttemplate) | configuration used to compose the outgoing request to a REST API. |
-| `spanName` | `string` | pre-execution engine transformations Request flow: GraphQL request -> request_transform (instantiate REST request) -> REST API resp -> pre_execution_transform -> execution engine -> complete GraphQL field response TODO(kdorosh): revist in follow up ResponseTemplate pre_execution_transform = 3;. |
-
-
-
-
----
-### RESTResolverCP
-
- 
-control-plane API
-TODO(kdorosh): implement me
-
-```yaml
-"openapi": .graphql.gloo.solo.io.RESTResolverCP.OpenApi
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `openapi` | [.graphql.gloo.solo.io.RESTResolverCP.OpenApi](../graphql.proto.sk/#openapi) | TODO(kdorosh): finish openapi api. |
-
-
-
-
----
-### OpenApi
-
-
-
-```yaml
-"inline": string
-"headers": map<string, string>
-"baseUrl": string
-"queryParams": map<string, string>
-"selections": []graphql.gloo.solo.io.RESTResolverCP.OpenApi.SelectQueryOrMutationField
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `inline` | `string` |  |
-| `headers` | `map<string, string>` | Use this attribute to set request headers to your REST service. ":method" and ":path" will result in errors, as all permutations of supported method/paths will be discovered as part of the OAS. |
-| `baseUrl` | `string` | Specifies the URL on which all paths will be based on. Overrides the server object in the OAS. |
-| `queryParams` | `map<string, string>` | query search parameters to add to the API calls. |
-| `selections` | [[]graphql.gloo.solo.io.RESTResolverCP.OpenApi.SelectQueryOrMutationField](../graphql.proto.sk/#selectqueryormutationfield) | By default, GET requests become GraphQL queries and POST requests become mutations. By selecting certain endpoints, you can flip this default for those endpoints. |
-
-
-
-
----
-### RemoteSource
-
-
-
-```yaml
-"remoteFile": string
-"urlEndpoint": string
-"schemaHeaders": map<string, string>
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `remoteFile` | `string` |  Only one of `remoteFile` or `urlEndpoint` can be set. |
-| `urlEndpoint` | `string` |  Only one of `urlEndpoint` or `remoteFile` can be set. |
-| `schemaHeaders` | `map<string, string>` | set headers for the HTTP request to fetch your openapi schema. |
-
-
-
-
----
-### SelectQueryOrMutationField
-
- 
-TODO(kdorosh): allow regex?
-
-```yaml
-"title": string
-"path": string
-"method": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `title` | `string` | OAS title. |
-| `path` | `string` |  |
-| `method` | `string` |  |
-
-
-
-
----
-### SubgraphResolver
-
- 
-TODO(yuval): implement a resolver for schema stiching
-
-```yaml
-"cluster": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `cluster` | `string` |  |
-
-
-
-
----
-### ConstantResolver
-
- 
-a resolver that can return a result that is a constant function of its arguments.
-TODO(kdorosh) do we even want to implement this (so far leaning no)
-
-```yaml
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-
-
-
-
----
-### AbstractTypeResolver
-
- 
-Resolve an abstract type (union or interface) to a real type.
-When implemented, this message will be a field in the Resolution message.
-
-```yaml
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-
-
-
-
----
-### Query
-
- 
-When we'll support prepared queries, this will be the type containing the query.
-
-```yaml
-"query": .solo.io.envoy.config.core.v3.DataSource
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `query` | [.solo.io.envoy.config.core.v3.DataSource](../../../../../../external/envoy/config/core/v3/base.proto.sk/#datasource) |  |
+| `spanName` | `string` |  |
 
 
 
@@ -523,8 +334,10 @@ Filter Listener config. Empty as the filter must be configured on the route leve
 ### GraphQLSchema
 
  
-Filter Route config. Routes that have this config will execute graphql queries, and will not
-make it to the router filter. i.e. this filter will terminate the request for these routes.
+Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change.
+User-facing CR config for resolving client requests to graphql schemas.
+Routes that have this config will execute graphql queries, and will not make it to the router filter. i.e. this
+filter will terminate the request for these routes.
 
 ```yaml
 "namespacedStatuses": .core.solo.io.NamespacedStatuses
@@ -540,8 +353,8 @@ make it to the router filter. i.e. this filter will terminate the request for th
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gloo during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `schema` | `string` | Schema to use in string format. |
-| `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults ot false. |
-| `resolutions` | [[]graphql.gloo.solo.io.Resolution](../graphql.proto.sk/#resolution) | The resolver map to use to resovle the schema. |
+| `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults to false. |
+| `resolutions` | [[]graphql.gloo.solo.io.Resolution](../graphql.proto.sk/#resolution) | The resolver map to use to resolve the schema. |
 
 
 

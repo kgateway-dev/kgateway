@@ -22,10 +22,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
 import "google/protobuf/empty.proto";
 
-// Ideas for Resolvers, these are NOT IMPLEMENTED yet:
-
 // used to reference into json structures by key(s)
-// TODO(kdorosh): implement me
 message PathSegment {
   oneof segment {
     option (validate.required) = true;
@@ -34,8 +31,6 @@ message PathSegment {
   }
 }
 
-// TODO(kdorosh): do we want to support regex and subgroups?
-// TODO(kdorosh): implement me
 message ValueProvider {
 
   message GraphQLArgExtraction {
@@ -68,7 +63,6 @@ message ValueProvider {
     Type type = 1;
     oneof val_provider {
       // Fetch value from the graphql_parent of the current field.
-      // todo(sai) - figure out behaviour when no parent (root query / mutation)
       GraphQLParentExtraction graphql_parent = 2;
       // Fetches the request/response header's value. If not found, uses empty string
       string header = 3;
@@ -98,7 +92,6 @@ message JsonKeyValue {
 }
 
 // Represents a typed JSON structure
-// TODO(kdorosh): implement me
 message JsonNode {
   // if keys repeat, the latest one replaces any earlier values associated
   // with that key.
@@ -111,7 +104,6 @@ message JsonNode {
 }
 
 // Defines a configuration for generating outgoing requests for a resolver.
-// TODO(kdorosh): implement me
 message RequestTemplate {
   // Use this attribute to set request headers to your REST service. It consists of a
   // map of strings to value providers. The string key determines the name of the
@@ -135,132 +127,16 @@ message RequestTemplate {
     // empty string key can be used to signal parsing the value as json and using it
     // as the whole json body.
     JsonNode json = 3;
-
-    // Apply a template to the body
-    // TODO(kdorosh): do we want in first iteration? Can easily be invalid json,
-    // e.g. unescaped " (we can solve for this in control plane?)
-    //InjaTemplate body = 3;
   }
 }
 
-// Defines a response transformation template.
-// TODO(kdorosh): implement me (steal most logic from transformations code)
-message ResponseTemplate {
-  // TODO(kdorosh): in a follow up
-  // modify json as it came back before execution. we're not sure what the
-  // use cases here might be, hence doing in a follow up.
-  //
-  // Theoretical use cases:
-  // - snake to camel case
-  // - renaming fields (why?) aliasing is handled in graphql execution.cc
-
-  // // Upserts the fields by key name.
-  // map<string, JsonNode> fields = 1;
-}
-
 // data-plane API
-// TODO(kdorosh): implement me
 message RESTResolver {
   .solo.io.envoy.config.core.v3.HttpUri server_uri = 1;
   // configuration used to compose the outgoing request to a REST API
   RequestTemplate request_transform = 2;
-  // pre-execution engine transformations
-  //
-  // Request flow: GraphQL request -> request_transform (instantiate REST request) ->
-  // REST API resp -> pre_execution_transform -> execution engine ->
-  // complete GraphQL field response
-  //
-  // TODO(kdorosh): revist in follow up
-  //ResponseTemplate pre_execution_transform = 3;
   string span_name = 4;
 }
-
-// control-plane API
-// TODO(kdorosh): implement me
-message RESTResolverCP {
-
-  message OpenApi {
-
-    message RemoteSource {
-      oneof remote_src {
-        string remote_file = 1;
-        string url_endpoint = 2;
-      }
-      // set headers for the HTTP request to fetch your openapi schema.
-      map<string, string> schema_headers = 3;
-    }
-
-    // always parsed as yaml
-    oneof source {
-      string inline = 1; // for local testing only, since this otherwise not "discovered"
-
-      // TODO(kdorosh): implement me
-      //RemoteSource remote = 2;
-
-      // TODO(kdorosh): implement me
-      // string local_file = 3;
-
-      // TODO(kdorosh):
-      // consider envoy.config.core.v3.DataSource but this does not support remote files
-    }
-
-    // Use this attribute to set request headers to your REST service.
-    // ":method" and ":path" will result in errors, as all permutations
-    // of supported method/paths will be discovered as part of the OAS.
-    map<string, string> headers = 2;
-
-    // Specifies the URL on which all paths will be based on.
-    // Overrides the server object in the OAS.
-    string base_url = 3;
-
-    // query search parameters to add to the API calls.
-    map<string, string> query_params = 4;
-
-    // TODO(kdorosh): allow regex?
-    message SelectQueryOrMutationField {
-      // OAS title
-      string title = 1;
-      string path = 2;
-      string method = 3;
-    }
-
-    // By default, GET requests become GraphQL queries and POST requests become mutations.
-    // By selecting certain endpoints, you can flip this default for those endpoints.
-    repeated SelectQueryOrMutationField selections = 5;
-  }
-
-  oneof discovered_schema {
-    // TODO(kdorosh): finish openapi api
-    OpenApi openapi = 1;
-    // TODO(kdorosh): json schema api?
-  }
-}
-
-// TODO(yuval): implement a resolver for schema stiching
-message SubgraphResolver {
-  string cluster = 1;
-}
-
-// a resolver that can return a result that is a constant function of its arguments.
-// TODO(kdorosh) do we even want to implement this (so far leaning no)
-message ConstantResolver {
-  // TODO(kdorosh): what was the idea here?
-  //InjaTemplate result = 1;
-}
-
-// Resolve an abstract type (union or interface) to a real type.
-// When implemented, this message will be a field in the Resolution message.
-message AbstractTypeResolver {
-  // TODO: add me
-}
-
-
-// When we'll support prepared queries, this will be the type containing the query.
-message Query {
-  .solo.io.envoy.config.core.v3.DataSource query = 1;
-}
-
-///////// END OF NOT IMPLMENTED CODE
 
 message QueryMatcher {
   message FieldMatcher {
@@ -295,8 +171,10 @@ message GraphQLConfig {
 
 }
 
-// Filter Route config. Routes that have this config will execute graphql queries, and will not
-// make it to the router filter. i.e. this filter will terminate the request for these routes.
+// Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change.
+// User-facing CR config for resolving client requests to graphql schemas.
+// Routes that have this config will execute graphql queries, and will not make it to the router filter. i.e. this
+// filter will terminate the request for these routes.
 message GraphQLSchema {
 
   option (core.solo.io.resource).short_name = "gqlschema";
@@ -312,12 +190,12 @@ message GraphQLSchema {
   // Schema to use in string format.
   string schema = 3;
   // Do we enable introspection for the schema? general recommendation is to disable this for production
-  // and hence it defaults ot false.
+  // and hence it defaults to false.
   bool enable_introspection = 4;
-  // The resolver map to use to resovle the schema.
+  // The resolver map to use to resolve the schema.
   repeated Resolution resolutions = 5;
   // In the future, we will support persistent queries, this will be a map of query id to query.
-  //    map<string, Query> presistent_queries = 3;
+  //    map<string, Query> persistent_queries = 3;
   // when we support persistent queries, we may want to use them exclusivly, for predictable
   // operations. (i.e. no surprise mega query from a client).
   // bool only_persistent_queries = 4;
