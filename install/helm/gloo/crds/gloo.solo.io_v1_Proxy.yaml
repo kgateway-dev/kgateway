@@ -2186,6 +2186,13 @@ spec:
                                           format: int32
                                           type: integer
                                       type: object
+                                    graphqlSchemaRef:
+                                      properties:
+                                        name:
+                                          type: string
+                                        namespace:
+                                          type: string
+                                      type: object
                                     matchers:
                                       items:
                                         properties:
