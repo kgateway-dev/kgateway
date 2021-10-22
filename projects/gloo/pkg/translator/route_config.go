@@ -668,6 +668,8 @@ func ValidateRouteDestinations(snap *v1.ApiSnapshot, action *v1.RouteAction) err
 	// Cluster Header can not be validated because the cluster name is not provided till runtime
 	case *v1.RouteAction_ClusterHeader:
 		return validateClusterHeader(action.GetClusterHeader())
+	case *v1.RouteAction_GraphqlSchemaRef:
+		// TODO(kdorosh)
 	}
 	return errors.Errorf("must specify either 'singleDestination', 'multipleDestinations' or 'upstreamGroup' for action")
 }
