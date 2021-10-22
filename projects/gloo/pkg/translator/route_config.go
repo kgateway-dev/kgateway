@@ -391,6 +391,10 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 		}
 		return nil
 	case *v1.RouteAction_GraphqlSchemaRef:
+		// isn't used but set a bogus cluster so envoy will still work
+		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
+			Cluster: "local-1_default", //TODO(kdorosh) needs to exist! we need a dummy cluster
+		}
 		return nil // skip, since we will configure graphql filter to override router filter
 	}
 	return errors.Errorf("unknown upstream destination type")
