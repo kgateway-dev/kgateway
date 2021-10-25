@@ -390,12 +390,6 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 			ClusterHeader: in.GetClusterHeader(),
 		}
 		return nil
-	case *v1.RouteAction_GraphqlSchemaRef:
-		// isn't used but set a bogus cluster so envoy will still work
-		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{
-			Cluster: "local-1_default", //TODO(kdorosh) needs to exist! we need a dummy cluster
-		}
-		return nil // skip, since we will configure graphql filter to override router filter
 	}
 	return errors.Errorf("unknown upstream destination type")
 }
@@ -672,8 +666,6 @@ func ValidateRouteDestinations(snap *v1.ApiSnapshot, action *v1.RouteAction) err
 	// Cluster Header can not be validated because the cluster name is not provided till runtime
 	case *v1.RouteAction_ClusterHeader:
 		return validateClusterHeader(action.GetClusterHeader())
-	case *v1.RouteAction_GraphqlSchemaRef:
-		return nil // TODO(kdorosh)
 	}
 	return errors.Errorf("must specify either 'singleDestination', 'multipleDestinations' or 'upstreamGroup' for action")
 }

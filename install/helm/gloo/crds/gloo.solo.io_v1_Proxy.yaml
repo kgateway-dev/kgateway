@@ -3711,13 +3711,6 @@ spec:
                                       properties:
                                         clusterHeader:
                                           type: string
-                                        graphqlSchemaRef:
-                                          properties:
-                                            name:
-                                              type: string
-                                            namespace:
-                                              type: string
-                                          type: object
                                         multi:
                                           properties:
                                             destinations:

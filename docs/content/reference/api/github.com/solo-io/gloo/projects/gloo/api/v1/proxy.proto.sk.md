@@ -275,17 +275,15 @@ RouteActions are used to route matched requests to upstreams.
 "multi": .gloo.solo.io.MultiDestination
 "upstreamGroup": .core.solo.io.ResourceRef
 "clusterHeader": string
-"graphqlSchemaRef": .core.solo.io.ResourceRef
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `single` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) | Use SingleDestination to route to a single upstream. Only one of `single`, `multi`, `upstreamGroup`, `clusterHeader`, or `graphqlSchemaRef` can be set. |
-| `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk/#multidestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight). Only one of `multi`, `single`, `upstreamGroup`, `clusterHeader`, or `graphqlSchemaRef` can be set. |
-| `upstreamGroup` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Use a reference to an upstream group for routing. Only one of `upstreamGroup`, `single`, `multi`, `clusterHeader`, or `graphqlSchemaRef` can be set. |
-| `clusterHeader` | `string` | Envoy will determine the cluster to route to by reading the value of the HTTP header named by cluster_header from the request headers. If the header is not found or the referenced cluster does not exist, Envoy will return a 404 response. Avoid using this whenever possible, it does not allow for custom filter configuration based on Virtual Host. Only one of `clusterHeader`, `single`, `multi`, `upstreamGroup`, or `graphqlSchemaRef` can be set. |
-| `graphqlSchemaRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change. A reference to a GraphQLSchema CR. Resolution of the client request to upstream(s) will be delegated to the resolution policies defined in the GraphQLSchema CR. If configured, the graphql filter will operate instead of the envoy router filter, so configuration (such as retries) that applies to the router filter will not be applied. Only one of `graphqlSchemaRef`, `single`, `multi`, `upstreamGroup`, or `clusterHeader` can be set. |
+| `single` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) | Use SingleDestination to route to a single upstream. Only one of `single`, `multi`, `upstreamGroup`, or `clusterHeader` can be set. |
+| `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk/#multidestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight). Only one of `multi`, `single`, `upstreamGroup`, or `clusterHeader` can be set. |
+| `upstreamGroup` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Use a reference to an upstream group for routing. Only one of `upstreamGroup`, `single`, `multi`, or `clusterHeader` can be set. |
+| `clusterHeader` | `string` | Envoy will determine the cluster to route to by reading the value of the HTTP header named by cluster_header from the request headers. If the header is not found or the referenced cluster does not exist, Envoy will return a 404 response. Avoid using this whenever possible, it does not allow for custom filter configuration based on Virtual Host. Only one of `clusterHeader`, `single`, `multi`, or `upstreamGroup` can be set. |
 
 
 
