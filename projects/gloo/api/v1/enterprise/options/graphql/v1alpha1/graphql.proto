@@ -197,7 +197,7 @@ message GraphQLConfig {
 // configure the routes to point to these schema CRs.
 message GraphQLSchema {
 
-  option (core.solo.io.resource).short_name = "gqlschema";
+  option (core.solo.io.resource).short_name = "gqls";
   option (core.solo.io.resource).plural_name = "graphql_schemas";
 
   // NamespacedStatuses indicates the validation status of this resource.

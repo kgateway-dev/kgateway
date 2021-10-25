@@ -157,7 +157,7 @@ var (
 		GraphQLSchemaGVK.Group,
 		GraphQLSchemaGVK.Version,
 		GraphQLSchemaGVK.Kind,
-		"gqlschema",
+		"gqls",
 		false,
 		&GraphQLSchema{})
 )
