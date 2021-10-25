@@ -31,6 +31,7 @@ message PathSegment {
   }
 }
 
+// In the future we may add support for regex and subgroups
 message ValueProvider {
 
   message GraphQLArgExtraction {
@@ -43,14 +44,20 @@ message ValueProvider {
     repeated PathSegment path = 2;
   }
 
+  // Does not do type coercion, but instead if the type does not match the
+  // expected primitive type we throw an error.
+  // In the future we may add support for type coercion.
+  message GraphQLParentExtraction {
+    // Fetches the value in the graphql parent at this key. The value will
+    // always be accepted since the parent object is not strongly-typed.
+    // If the key is invalid, returns null.
+    repeated PathSegment path = 1;
+  }
+
   message TypedValueProvider {
-    message GraphQLParentExtraction {
-      // Fetches the value in the graphql parent at this key. The value will
-      // always be accepted since the parent object is not strongly-typed.
-      // If the key is invalid, returns null.
-      repeated PathSegment path = 1;
-    }
-    // if empty, defaults to string. similar to typeUrl in other envoy config
+    // Type that the value will be coerced into.
+    // For example if the extracted value is "9", and type is INT,
+    // this value will be cast to an int type.
     enum Type {
       STRING = 0;
       INT = 1;
@@ -62,12 +69,10 @@ message ValueProvider {
     // this value will be cast to an int type.
     Type type = 1;
     oneof val_provider {
-      // Fetch value from the graphql_parent of the current field.
-      GraphQLParentExtraction graphql_parent = 2;
       // Fetches the request/response header's value. If not found, uses empty string
-      string header = 3;
+      string header = 2;
       // inline value, use as provided rather than extracting from another source
-      string value = 4;
+      string value = 3;
     }
   }
 
@@ -75,18 +80,28 @@ message ValueProvider {
     // type inferred from schema, no need to provide it.
     GraphQLArgExtraction graphql_arg = 1;
     TypedValueProvider typed_provider = 2;
+    // Fetch value from the graphql_parent of the current field.
+    GraphQLParentExtraction graphql_parent = 3;
   }
 }
 
 message JsonKeyValue {
+  message JsonValueList {
+    repeated JsonValue values = 1;
+  }
+
   message JsonValue {
     oneof json_val {
       JsonNode node = 1;
       ValueProvider value_provider = 2;
+      JsonValueList list = 3;
     }
   }
+
+  // PARTIALLY IMPLEMENTED
   // if empty, the value will be parsed as json and replace the entire
-  // previously-parsed json value
+  // previously-parsed json value --> this part is only needed for gRPC
+  // and thus not implemented yet
   string key = 1;
   JsonValue value = 2;
 }
@@ -118,7 +133,8 @@ message RequestTemplate {
   // value set to the :path header in `headers`.
   //
   // Interpolation is done in envoy rather than the control plane to prevent escaped
-  // character issues.
+  // character issues. Additionally, we may be providing values not known until
+  // the request is being executed (e.g., graphql parent info).
   map<string, ValueProvider> query_params = 2;
 
   // implementation specific, gRPC will want gRPC message and struct to instantiate
@@ -130,8 +146,9 @@ message RequestTemplate {
   }
 }
 
-// data-plane API
+// control-plane API
 message RESTResolver {
+  // TODO(kdorosh) make this an upstream ref?
   .solo.io.envoy.config.core.v3.HttpUri server_uri = 1;
   // configuration used to compose the outgoing request to a REST API
   RequestTemplate request_transform = 2;
@@ -175,6 +192,9 @@ message GraphQLConfig {
 // User-facing CR config for resolving client requests to graphql schemas.
 // Routes that have this config will execute graphql queries, and will not make it to the router filter. i.e. this
 // filter will terminate the request for these routes.
+// Note: while users can provide this configuration manually, the eventual UX will
+// be to generate the Executable Schema CRs from other sources and just have users
+// configure the routes to point to these schema CRs.
 message GraphQLSchema {
 
   option (core.solo.io.resource).short_name = "gqlschema";
@@ -196,7 +216,7 @@ message GraphQLSchema {
   repeated Resolution resolutions = 5;
   // In the future, we will support persistent queries, this will be a map of query id to query.
   //    map<string, Query> persistent_queries = 3;
-  // when we support persistent queries, we may want to use them exclusivly, for predictable
+  // when we support persistent queries, we may want to use them exclusively, for predictable
   // operations. (i.e. no surprise mega query from a client).
   // bool only_persistent_queries = 4;
 

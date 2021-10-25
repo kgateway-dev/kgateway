@@ -14,10 +14,11 @@ weight: 5
 - [PathSegment](#pathsegment)
 - [ValueProvider](#valueprovider)
 - [GraphQLArgExtraction](#graphqlargextraction)
-- [TypedValueProvider](#typedvalueprovider)
 - [GraphQLParentExtraction](#graphqlparentextraction)
+- [TypedValueProvider](#typedvalueprovider)
 - [Type](#type)
 - [JsonKeyValue](#jsonkeyvalue)
+- [JsonValueList](#jsonvaluelist)
 - [JsonValue](#jsonvalue)
 - [JsonNode](#jsonnode)
 - [RequestTemplate](#requesttemplate)
@@ -60,18 +61,21 @@ used to reference into json structures by key(s)
 ---
 ### ValueProvider
 
-
+ 
+In the future we may add support for regex and subgroups
 
 ```yaml
 "graphqlArg": .graphql.gloo.solo.io.ValueProvider.GraphQLArgExtraction
 "typedProvider": .graphql.gloo.solo.io.ValueProvider.TypedValueProvider
+"graphqlParent": .graphql.gloo.solo.io.ValueProvider.GraphQLParentExtraction
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `graphqlArg` | [.graphql.gloo.solo.io.ValueProvider.GraphQLArgExtraction](../graphql.proto.sk/#graphqlargextraction) | type inferred from schema, no need to provide it. Only one of `graphqlArg` or `typedProvider` can be set. |
-| `typedProvider` | [.graphql.gloo.solo.io.ValueProvider.TypedValueProvider](../graphql.proto.sk/#typedvalueprovider) |  Only one of `typedProvider` or `graphqlArg` can be set. |
+| `graphqlArg` | [.graphql.gloo.solo.io.ValueProvider.GraphQLArgExtraction](../graphql.proto.sk/#graphqlargextraction) | type inferred from schema, no need to provide it. Only one of `graphqlArg`, `typedProvider`, or `graphqlParent` can be set. |
+| `typedProvider` | [.graphql.gloo.solo.io.ValueProvider.TypedValueProvider](../graphql.proto.sk/#typedvalueprovider) |  Only one of `typedProvider`, `graphqlArg`, or `graphqlParent` can be set. |
+| `graphqlParent` | [.graphql.gloo.solo.io.ValueProvider.GraphQLParentExtraction](../graphql.proto.sk/#graphqlparentextraction) | Fetch value from the graphql_parent of the current field. Only one of `graphqlParent`, `graphqlArg`, or `typedProvider` can be set. |
 
 
 
@@ -96,32 +100,12 @@ used to reference into json structures by key(s)
 
 
 ---
-### TypedValueProvider
-
-
-
-```yaml
-"type": .graphql.gloo.solo.io.ValueProvider.TypedValueProvider.Type
-"graphqlParent": .graphql.gloo.solo.io.ValueProvider.TypedValueProvider.GraphQLParentExtraction
-"header": string
-"value": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `type` | [.graphql.gloo.solo.io.ValueProvider.TypedValueProvider.Type](../graphql.proto.sk/#type) | Type that the value will be coerced into. For example if the extracted value is "9", and type is INT, this value will be cast to an int type. |
-| `graphqlParent` | [.graphql.gloo.solo.io.ValueProvider.TypedValueProvider.GraphQLParentExtraction](../graphql.proto.sk/#graphqlparentextraction) | Fetch value from the graphql_parent of the current field. Only one of `graphqlParent`, `header`, or `value` can be set. |
-| `header` | `string` | Fetches the request/response header's value. If not found, uses empty string. Only one of `header`, `graphqlParent`, or `value` can be set. |
-| `value` | `string` | inline value, use as provided rather than extracting from another source. Only one of `value`, `graphqlParent`, or `header` can be set. |
-
-
-
-
----
 ### GraphQLParentExtraction
 
-
+ 
+Does not do type coercion, but instead if the type does not match the
+expected primitive type we throw an error.
+In the future we may add support for type coercion.
 
 ```yaml
 "path": []graphql.gloo.solo.io.PathSegment
@@ -136,10 +120,33 @@ used to reference into json structures by key(s)
 
 
 ---
+### TypedValueProvider
+
+
+
+```yaml
+"type": .graphql.gloo.solo.io.ValueProvider.TypedValueProvider.Type
+"header": string
+"value": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `type` | [.graphql.gloo.solo.io.ValueProvider.TypedValueProvider.Type](../graphql.proto.sk/#type) | Type that the value will be coerced into. For example if the extracted value is "9", and type is INT, this value will be cast to an int type. |
+| `header` | `string` | Fetches the request/response header's value. If not found, uses empty string. Only one of `header` or `value` can be set. |
+| `value` | `string` | inline value, use as provided rather than extracting from another source. Only one of `value` or `header` can be set. |
+
+
+
+
+---
 ### Type
 
  
-if empty, defaults to string. similar to typeUrl in other envoy config
+Type that the value will be coerced into.
+For example if the extracted value is "9", and type is INT,
+this value will be cast to an int type.
 
 | Name | Description |
 | ----- | ----------- | 
@@ -164,8 +171,25 @@ if empty, defaults to string. similar to typeUrl in other envoy config
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `key` | `string` | if empty, the value will be parsed as json and replace the entire previously-parsed json value. |
+| `key` | `string` | PARTIALLY IMPLEMENTED if empty, the value will be parsed as json and replace the entire previously-parsed json value --> this part is only needed for gRPC and thus not implemented yet. |
 | `value` | [.graphql.gloo.solo.io.JsonKeyValue.JsonValue](../graphql.proto.sk/#jsonvalue) |  |
+
+
+
+
+---
+### JsonValueList
+
+
+
+```yaml
+"values": []graphql.gloo.solo.io.JsonKeyValue.JsonValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `values` | [[]graphql.gloo.solo.io.JsonKeyValue.JsonValue](../graphql.proto.sk/#jsonvalue) |  |
 
 
 
@@ -178,13 +202,15 @@ if empty, defaults to string. similar to typeUrl in other envoy config
 ```yaml
 "node": .graphql.gloo.solo.io.JsonNode
 "valueProvider": .graphql.gloo.solo.io.ValueProvider
+"list": .graphql.gloo.solo.io.JsonKeyValue.JsonValueList
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `node` | [.graphql.gloo.solo.io.JsonNode](../graphql.proto.sk/#jsonnode) |  Only one of `node` or `valueProvider` can be set. |
-| `valueProvider` | [.graphql.gloo.solo.io.ValueProvider](../graphql.proto.sk/#valueprovider) |  Only one of `valueProvider` or `node` can be set. |
+| `node` | [.graphql.gloo.solo.io.JsonNode](../graphql.proto.sk/#jsonnode) |  Only one of `node`, `valueProvider`, or `list` can be set. |
+| `valueProvider` | [.graphql.gloo.solo.io.ValueProvider](../graphql.proto.sk/#valueprovider) |  Only one of `valueProvider`, `node`, or `list` can be set. |
+| `list` | [.graphql.gloo.solo.io.JsonKeyValue.JsonValueList](../graphql.proto.sk/#jsonvaluelist) |  Only one of `list`, `node`, or `valueProvider` can be set. |
 
 
 
@@ -223,7 +249,7 @@ Defines a configuration for generating outgoing requests for a resolver.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `headers` | `map<string, .graphql.gloo.solo.io.ValueProvider>` | Use this attribute to set request headers to your REST service. It consists of a map of strings to value providers. The string key determines the name of the resulting header, the value provided will be the value. at least need ":method" and ":path". |
-| `queryParams` | `map<string, .graphql.gloo.solo.io.ValueProvider>` | Use this attribute to set query parameters to your REST service. It consists of a map of strings to value providers. The string key determines the name of the query param, the provided value will be the value. This value is appended to any value set to the :path header in `headers`. Interpolation is done in envoy rather than the control plane to prevent escaped character issues. |
+| `queryParams` | `map<string, .graphql.gloo.solo.io.ValueProvider>` | Use this attribute to set query parameters to your REST service. It consists of a map of strings to value providers. The string key determines the name of the query param, the provided value will be the value. This value is appended to any value set to the :path header in `headers`. Interpolation is done in envoy rather than the control plane to prevent escaped character issues. Additionally, we may be providing values not known until the request is being executed (e.g., graphql parent info). |
 | `json` | [.graphql.gloo.solo.io.JsonNode](../graphql.proto.sk/#jsonnode) | json representation of outgoing body. empty string key can be used to signal parsing the value as json and using it as the whole json body. |
 
 
@@ -233,7 +259,7 @@ Defines a configuration for generating outgoing requests for a resolver.
 ### RESTResolver
 
  
-data-plane API
+control-plane API
 
 ```yaml
 "serverUri": .solo.io.envoy.config.core.v3.HttpUri
@@ -244,7 +270,7 @@ data-plane API
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `serverUri` | [.solo.io.envoy.config.core.v3.HttpUri](../../../../../../external/envoy/config/core/v3/http_uri.proto.sk/#httpuri) |  |
+| `serverUri` | [.solo.io.envoy.config.core.v3.HttpUri](../../../../../../external/envoy/config/core/v3/http_uri.proto.sk/#httpuri) | TODO(kdorosh) make this an upstream ref?. |
 | `requestTransform` | [.graphql.gloo.solo.io.RequestTemplate](../graphql.proto.sk/#requesttemplate) | configuration used to compose the outgoing request to a REST API. |
 | `spanName` | `string` |  |
 
@@ -338,6 +364,9 @@ Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha an
 User-facing CR config for resolving client requests to graphql schemas.
 Routes that have this config will execute graphql queries, and will not make it to the router filter. i.e. this
 filter will terminate the request for these routes.
+Note: while users can provide this configuration manually, the eventual UX will
+be to generate the Executable Schema CRs from other sources and just have users
+configure the routes to point to these schema CRs.
 
 ```yaml
 "namespacedStatuses": .core.solo.io.NamespacedStatuses

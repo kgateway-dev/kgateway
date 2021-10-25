@@ -129,6 +129,21 @@ func (m *ValueProvider) Equal(that interface{}) bool {
 			}
 		}
 
+	case *ValueProvider_GraphqlParent:
+		if _, ok := target.Provider.(*ValueProvider_GraphqlParent); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGraphqlParent()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGraphqlParent()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGraphqlParent(), target.GetGraphqlParent()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.Provider != target.Provider {
@@ -608,6 +623,47 @@ func (m *ValueProvider_GraphQLArgExtraction) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *ValueProvider_GraphQLParentExtraction) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ValueProvider_GraphQLParentExtraction)
+	if !ok {
+		that2, ok := that.(ValueProvider_GraphQLParentExtraction)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetPath()) != len(target.GetPath()) {
+		return false
+	}
+	for idx, v := range m.GetPath() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPath()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetPath()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
 func (m *ValueProvider_TypedValueProvider) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -633,21 +689,6 @@ func (m *ValueProvider_TypedValueProvider) Equal(that interface{}) bool {
 	}
 
 	switch m.ValProvider.(type) {
-
-	case *ValueProvider_TypedValueProvider_GraphqlParent:
-		if _, ok := target.ValProvider.(*ValueProvider_TypedValueProvider_GraphqlParent); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetGraphqlParent()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetGraphqlParent()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetGraphqlParent(), target.GetGraphqlParent()) {
-				return false
-			}
-		}
 
 	case *ValueProvider_TypedValueProvider_Header:
 		if _, ok := target.ValProvider.(*ValueProvider_TypedValueProvider_Header); !ok {
@@ -678,14 +719,14 @@ func (m *ValueProvider_TypedValueProvider) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *ValueProvider_TypedValueProvider_GraphQLParentExtraction) Equal(that interface{}) bool {
+func (m *JsonKeyValue_JsonValueList) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*ValueProvider_TypedValueProvider_GraphQLParentExtraction)
+	target, ok := that.(*JsonKeyValue_JsonValueList)
 	if !ok {
-		that2, ok := that.(ValueProvider_TypedValueProvider_GraphQLParentExtraction)
+		that2, ok := that.(JsonKeyValue_JsonValueList)
 		if ok {
 			target = &that2
 		} else {
@@ -698,17 +739,17 @@ func (m *ValueProvider_TypedValueProvider_GraphQLParentExtraction) Equal(that in
 		return false
 	}
 
-	if len(m.GetPath()) != len(target.GetPath()) {
+	if len(m.GetValues()) != len(target.GetValues()) {
 		return false
 	}
-	for idx, v := range m.GetPath() {
+	for idx, v := range m.GetValues() {
 
 		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetPath()[idx]) {
+			if !h.Equal(target.GetValues()[idx]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetPath()[idx]) {
+			if !proto.Equal(v, target.GetValues()[idx]) {
 				return false
 			}
 		}
@@ -767,6 +808,21 @@ func (m *JsonKeyValue_JsonValue) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetValueProvider(), target.GetValueProvider()) {
+				return false
+			}
+		}
+
+	case *JsonKeyValue_JsonValue_List:
+		if _, ok := target.JsonVal.(*JsonKeyValue_JsonValue_List); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetList()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetList()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetList(), target.GetList()) {
 				return false
 			}
 		}

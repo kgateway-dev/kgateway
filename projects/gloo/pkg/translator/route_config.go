@@ -340,6 +340,10 @@ func (t *translatorInstance) setAction(
 			},
 		}
 
+		//out.Action = &envoy_config_route_v3.Route_NonForwardingAction{
+		//	NonForwardingAction: &envoy_config_route_v3.NonForwardingAction{},
+		//}
+
 		// TODO(kdorosh) should this work based on how we built envoy?
 		//out.Action = &envoy_config_route_v3.Route_DirectResponse{
 		//	DirectResponse: &envoy_config_route_v3.DirectResponseAction{
