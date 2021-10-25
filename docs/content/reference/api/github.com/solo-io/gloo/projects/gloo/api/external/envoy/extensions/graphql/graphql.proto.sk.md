@@ -14,21 +14,16 @@ weight: 5
 - [PathSegment](#pathsegment)
 - [ValueProvider](#valueprovider)
 - [GraphQLArgExtraction](#graphqlargextraction)
-- [TypedValueProvider](#typedvalueprovider)
 - [GraphQLParentExtraction](#graphqlparentextraction)
+- [TypedValueProvider](#typedvalueprovider)
 - [Type](#type)
 - [JsonKeyValue](#jsonkeyvalue)
+- [JsonValueList](#jsonvaluelist)
 - [JsonValue](#jsonvalue)
 - [JsonNode](#jsonnode)
 - [RequestTemplate](#requesttemplate)
 - [ResponseTemplate](#responsetemplate)
 - [RESTResolver](#restresolver)
-- [RESTResolverCP](#restresolvercp)
-- [OpenApi](#openapi)
-- [RemoteSource](#remotesource)
-- [SelectQueryOrMutationField](#selectqueryormutationfield)
-- [SubgraphResolver](#subgraphresolver)
-- [ConstantResolver](#constantresolver)
 - [AbstractTypeResolver](#abstracttyperesolver)
 - [Query](#query)
 - [QueryMatcher](#querymatcher)
@@ -51,7 +46,6 @@ weight: 5
 
  
 used to reference into json structures by key(s)
-TODO(kdorosh): implement me
 
 ```yaml
 "key": string
@@ -71,19 +65,20 @@ TODO(kdorosh): implement me
 ### ValueProvider
 
  
-TODO(kdorosh): do we want to support regex and subgroups?
-TODO(kdorosh): implement me
+In the future we may add support for regex and subgroups
 
 ```yaml
 "graphqlArg": .envoy.config.filter.http.graphql.v2.ValueProvider.GraphQLArgExtraction
 "typedProvider": .envoy.config.filter.http.graphql.v2.ValueProvider.TypedValueProvider
+"graphqlParent": .envoy.config.filter.http.graphql.v2.ValueProvider.GraphQLParentExtraction
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `graphqlArg` | [.envoy.config.filter.http.graphql.v2.ValueProvider.GraphQLArgExtraction](../graphql.proto.sk/#graphqlargextraction) | type inferred from schema, no need to provide it. Only one of `graphqlArg` or `typedProvider` can be set. |
-| `typedProvider` | [.envoy.config.filter.http.graphql.v2.ValueProvider.TypedValueProvider](../graphql.proto.sk/#typedvalueprovider) |  Only one of `typedProvider` or `graphqlArg` can be set. |
+| `graphqlArg` | [.envoy.config.filter.http.graphql.v2.ValueProvider.GraphQLArgExtraction](../graphql.proto.sk/#graphqlargextraction) | type inferred from schema, no need to provide it. Only one of `graphqlArg`, `typedProvider`, or `graphqlParent` can be set. |
+| `typedProvider` | [.envoy.config.filter.http.graphql.v2.ValueProvider.TypedValueProvider](../graphql.proto.sk/#typedvalueprovider) |  Only one of `typedProvider`, `graphqlArg`, or `graphqlParent` can be set. |
+| `graphqlParent` | [.envoy.config.filter.http.graphql.v2.ValueProvider.GraphQLParentExtraction](../graphql.proto.sk/#graphqlparentextraction) | Fetch value from the graphql_parent of the current field. Only one of `graphqlParent`, `graphqlArg`, or `typedProvider` can be set. |
 
 
 
@@ -108,32 +103,12 @@ TODO(kdorosh): implement me
 
 
 ---
-### TypedValueProvider
-
-
-
-```yaml
-"type": .envoy.config.filter.http.graphql.v2.ValueProvider.TypedValueProvider.Type
-"graphqlParent": .envoy.config.filter.http.graphql.v2.ValueProvider.TypedValueProvider.GraphQLParentExtraction
-"header": string
-"value": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `type` | [.envoy.config.filter.http.graphql.v2.ValueProvider.TypedValueProvider.Type](../graphql.proto.sk/#type) | Type that the value will be coerced into. For example if the extracted value is "9", and type is INT, this value will be cast to an int type. |
-| `graphqlParent` | [.envoy.config.filter.http.graphql.v2.ValueProvider.TypedValueProvider.GraphQLParentExtraction](../graphql.proto.sk/#graphqlparentextraction) | Fetch value from the graphql_parent of the current field. todo(sai) - figure out behaviour when no parent (root query / mutation). Only one of `graphqlParent`, `header`, or `value` can be set. |
-| `header` | `string` | Fetches the request/response header's value. If not found, uses empty string. Only one of `header`, `graphqlParent`, or `value` can be set. |
-| `value` | `string` | inline value, use as provided rather than extracting from another source. Only one of `value`, `graphqlParent`, or `header` can be set. |
-
-
-
-
----
 ### GraphQLParentExtraction
 
-
+ 
+Does not do type coercion, but instead if the type does not match the
+expected primitive type we throw an error.
+In the future we may add support for type coercion.
 
 ```yaml
 "path": []envoy.config.filter.http.graphql.v2.PathSegment
@@ -148,10 +123,33 @@ TODO(kdorosh): implement me
 
 
 ---
+### TypedValueProvider
+
+
+
+```yaml
+"type": .envoy.config.filter.http.graphql.v2.ValueProvider.TypedValueProvider.Type
+"header": string
+"value": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `type` | [.envoy.config.filter.http.graphql.v2.ValueProvider.TypedValueProvider.Type](../graphql.proto.sk/#type) | Type that the value will be coerced into. For example if the extracted value is "9", and type is INT, this value will be cast to an int type. |
+| `header` | `string` | Fetches the request/response header's value. If not found, uses empty string. Only one of `header` or `value` can be set. |
+| `value` | `string` | inline value, use as provided rather than extracting from another source. Only one of `value` or `header` can be set. |
+
+
+
+
+---
 ### Type
 
  
-if empty, defaults to string. similar to typeUrl in other envoy config
+Type that the value will be coerced into.
+For example if the extracted value is "9", and type is INT,
+this value will be cast to an int type.
 
 | Name | Description |
 | ----- | ----------- | 
@@ -176,8 +174,25 @@ if empty, defaults to string. similar to typeUrl in other envoy config
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `key` | `string` | if empty, the value will be parsed as json and replace the entire previously-parsed json value. |
+| `key` | `string` | PARTIALLY IMPLEMENTED if empty, the value will be parsed as json and replace the entire previously-parsed json value --> this part is only needed for gRPC and thus not implemented yet. |
 | `value` | [.envoy.config.filter.http.graphql.v2.JsonKeyValue.JsonValue](../graphql.proto.sk/#jsonvalue) |  |
+
+
+
+
+---
+### JsonValueList
+
+
+
+```yaml
+"values": []envoy.config.filter.http.graphql.v2.JsonKeyValue.JsonValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `values` | [[]envoy.config.filter.http.graphql.v2.JsonKeyValue.JsonValue](../graphql.proto.sk/#jsonvalue) |  |
 
 
 
@@ -190,13 +205,15 @@ if empty, defaults to string. similar to typeUrl in other envoy config
 ```yaml
 "node": .envoy.config.filter.http.graphql.v2.JsonNode
 "valueProvider": .envoy.config.filter.http.graphql.v2.ValueProvider
+"list": .envoy.config.filter.http.graphql.v2.JsonKeyValue.JsonValueList
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `node` | [.envoy.config.filter.http.graphql.v2.JsonNode](../graphql.proto.sk/#jsonnode) |  Only one of `node` or `valueProvider` can be set. |
-| `valueProvider` | [.envoy.config.filter.http.graphql.v2.ValueProvider](../graphql.proto.sk/#valueprovider) |  Only one of `valueProvider` or `node` can be set. |
+| `node` | [.envoy.config.filter.http.graphql.v2.JsonNode](../graphql.proto.sk/#jsonnode) |  Only one of `node`, `valueProvider`, or `list` can be set. |
+| `valueProvider` | [.envoy.config.filter.http.graphql.v2.ValueProvider](../graphql.proto.sk/#valueprovider) |  Only one of `valueProvider`, `node`, or `list` can be set. |
+| `list` | [.envoy.config.filter.http.graphql.v2.JsonKeyValue.JsonValueList](../graphql.proto.sk/#jsonvaluelist) |  Only one of `list`, `node`, or `valueProvider` can be set. |
 
 
 
@@ -206,7 +223,6 @@ if empty, defaults to string. similar to typeUrl in other envoy config
 
  
 Represents a typed JSON structure
-TODO(kdorosh): implement me
 
 ```yaml
 "keyValues": []envoy.config.filter.http.graphql.v2.JsonKeyValue
@@ -225,7 +241,6 @@ TODO(kdorosh): implement me
 
  
 Defines a configuration for generating outgoing requests for a resolver.
-TODO(kdorosh): implement me
 
 ```yaml
 "headers": map<string, .envoy.config.filter.http.graphql.v2.ValueProvider>
@@ -237,7 +252,7 @@ TODO(kdorosh): implement me
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `headers` | `map<string, .envoy.config.filter.http.graphql.v2.ValueProvider>` | Use this attribute to set request headers to your REST service. It consists of a map of strings to value providers. The string key determines the name of the resulting header, the value provided will be the value. at least need ":method" and ":path". |
-| `queryParams` | `map<string, .envoy.config.filter.http.graphql.v2.ValueProvider>` | Use this attribute to set query parameters to your REST service. It consists of a map of strings to value providers. The string key determines the name of the query param, the provided value will be the value. This value is appended to any value set to the :path header in `headers`. Interpolation is done in envoy rather than the control plane to prevent escaped character issues. |
+| `queryParams` | `map<string, .envoy.config.filter.http.graphql.v2.ValueProvider>` | Use this attribute to set query parameters to your REST service. It consists of a map of strings to value providers. The string key determines the name of the query param, the provided value will be the value. This value is appended to any value set to the :path header in `headers`. Interpolation is done in envoy rather than the control plane to prevent escaped character issues. Additionally, we may be providing values not known until the request is being executed (e.g., graphql parent info). |
 | `json` | [.envoy.config.filter.http.graphql.v2.JsonNode](../graphql.proto.sk/#jsonnode) | json representation of outgoing body. empty string key can be used to signal parsing the value as json and using it as the whole json body. |
 
 
@@ -247,8 +262,8 @@ TODO(kdorosh): implement me
 ### ResponseTemplate
 
  
+NOT IMPLEMENTED
 Defines a response transformation template.
-TODO(kdorosh): implement me (steal most logic from transformations code)
 
 ```yaml
 
@@ -263,9 +278,7 @@ TODO(kdorosh): implement me (steal most logic from transformations code)
 ---
 ### RESTResolver
 
- 
-data-plane API
-TODO(kdorosh): implement me
+
 
 ```yaml
 "serverUri": .solo.io.envoy.config.core.v3.HttpUri
@@ -278,129 +291,7 @@ TODO(kdorosh): implement me
 | ----- | ---- | ----------- | 
 | `serverUri` | [.solo.io.envoy.config.core.v3.HttpUri](../../../config/core/v3/http_uri.proto.sk/#httpuri) |  |
 | `requestTransform` | [.envoy.config.filter.http.graphql.v2.RequestTemplate](../graphql.proto.sk/#requesttemplate) | configuration used to compose the outgoing request to a REST API. |
-| `spanName` | `string` | pre-execution engine transformations Request flow: GraphQL request -> request_transform (instantiate REST request) -> REST API resp -> pre_execution_transform -> execution engine -> complete GraphQL field response TODO(kdorosh): revist in follow up ResponseTemplate pre_execution_transform = 3;. |
-
-
-
-
----
-### RESTResolverCP
-
- 
-control-plane API
-TODO(kdorosh): implement me
-
-```yaml
-"openapi": .envoy.config.filter.http.graphql.v2.RESTResolverCP.OpenApi
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `openapi` | [.envoy.config.filter.http.graphql.v2.RESTResolverCP.OpenApi](../graphql.proto.sk/#openapi) | TODO(kdorosh): finish openapi api. |
-
-
-
-
----
-### OpenApi
-
-
-
-```yaml
-"inline": string
-"headers": map<string, string>
-"baseUrl": string
-"queryParams": map<string, string>
-"selections": []envoy.config.filter.http.graphql.v2.RESTResolverCP.OpenApi.SelectQueryOrMutationField
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `inline` | `string` |  |
-| `headers` | `map<string, string>` | Use this attribute to set request headers to your REST service. ":method" and ":path" will result in errors, as all permutations of supported method/paths will be discovered as part of the OAS. |
-| `baseUrl` | `string` | Specifies the URL on which all paths will be based on. Overrides the server object in the OAS. |
-| `queryParams` | `map<string, string>` | query search parameters to add to the API calls. |
-| `selections` | [[]envoy.config.filter.http.graphql.v2.RESTResolverCP.OpenApi.SelectQueryOrMutationField](../graphql.proto.sk/#selectqueryormutationfield) | By default, GET requests become GraphQL queries and POST requests become mutations. By selecting certain endpoints, you can flip this default for those endpoints. |
-
-
-
-
----
-### RemoteSource
-
-
-
-```yaml
-"remoteFile": string
-"urlEndpoint": string
-"schemaHeaders": map<string, string>
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `remoteFile` | `string` |  Only one of `remoteFile` or `urlEndpoint` can be set. |
-| `urlEndpoint` | `string` |  Only one of `urlEndpoint` or `remoteFile` can be set. |
-| `schemaHeaders` | `map<string, string>` | set headers for the HTTP request to fetch your openapi schema. |
-
-
-
-
----
-### SelectQueryOrMutationField
-
- 
-TODO(kdorosh): allow regex?
-
-```yaml
-"title": string
-"path": string
-"method": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `title` | `string` | OAS title. |
-| `path` | `string` |  |
-| `method` | `string` |  |
-
-
-
-
----
-### SubgraphResolver
-
- 
-TODO(yuval): implement a resolver for schema stiching
-
-```yaml
-"cluster": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `cluster` | `string` |  |
-
-
-
-
----
-### ConstantResolver
-
- 
-a resolver that can return a result that is a constant function of its arguments.
-TODO(kdorosh) do we even want to implement this (so far leaning no)
-
-```yaml
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
+| `spanName` | `string` | pre-execution engine transformations Request flow: GraphQL request -> request_transform (instantiate REST request) -> REST API resp -> pre_execution_transform -> execution engine -> complete GraphQL field response ResponseTemplate pre_execution_transform = 3;. |
 
 
 
@@ -409,6 +300,7 @@ TODO(kdorosh) do we even want to implement this (so far leaning no)
 ### AbstractTypeResolver
 
  
+NOT IMPLEMENTED
 Resolve an abstract type (union or interface) to a real type.
 When implemented, this message will be a field in the Resolution message.
 
@@ -426,6 +318,7 @@ When implemented, this message will be a field in the Resolution message.
 ### Query
 
  
+NOT IMPLEMENTED
 When we'll support prepared queries, this will be the type containing the query.
 
 ```yaml
@@ -534,8 +427,8 @@ make it to the router filter. i.e. this filter will terminate the request for th
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `schema` | [.solo.io.envoy.config.core.v3.DataSource](../../../config/core/v3/base.proto.sk/#datasource) | Schema to use in string format. |
-| `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults ot false. |
-| `resolutions` | [[]envoy.config.filter.http.graphql.v2.Resolution](../graphql.proto.sk/#resolution) | The resolver map to use to resovle the schema. |
+| `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults to false. |
+| `resolutions` | [[]envoy.config.filter.http.graphql.v2.Resolution](../graphql.proto.sk/#resolution) | The resolver map to use to resolve the schema. |
 
 
 
