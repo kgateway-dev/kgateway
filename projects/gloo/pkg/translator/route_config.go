@@ -332,6 +332,76 @@ func (t *translatorInstance) setAction(
 			}
 		}
 
+	case *v1.Route_GraphqlSchemaRef:
+
+		out.Action = &envoy_config_route_v3.Route_Route{
+			Route: &envoy_config_route_v3.RouteAction{
+				ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{Cluster: "local-1_default"}, // needs to be a real cluster, TODO(kdorosh) fixme
+			},
+		}
+
+		// TODO(kdorosh) should this work based on how we built envoy?
+		//out.Action = &envoy_config_route_v3.Route_DirectResponse{
+		//	DirectResponse: &envoy_config_route_v3.DirectResponseAction{
+		//		Status: 200, // unused
+		//		Body: &envoy_config_core_v3.DataSource{
+		//			Specifier: &envoy_config_core_v3.DataSource_InlineString{InlineString: "unused, graphql overtakes router filter"},
+		//		},
+		//	},
+		//}
+
+		// Needed so graphql plugin runs
+		//TODO(kdorosh) refactor to DRY
+		// run the plugins for RoutePlugin
+		for _, plug := range t.plugins {
+			routePlugin, ok := plug.(plugins.RoutePlugin)
+			if !ok {
+				continue
+			}
+
+			upgradeableRoutePlugin, ok := plug.(plugins.Upgradable)
+			if !ok || upgradeableRoutePlugin.PluginName() != "graphql" {
+				continue
+			}
+
+			if err := routePlugin.ProcessRoute(params, in, out); err != nil {
+				// plugins can return errors on missing upstream/upstream group
+				// we only want to report errors that are plugin-specific
+				// missing upstream(group) should produce a warning above
+				if isWarningErr(err) {
+					continue
+				}
+				validation.AppendRouteError(routeReport,
+					validationapi.RouteReport_Error_ProcessingError,
+					fmt.Sprintf("%T: %v", routePlugin, err.Error()),
+					out.GetName(),
+				)
+			}
+		}
+
+		// run the plugins for RouteActionPlugin
+		//for _, plug := range t.plugins {
+		//	routeActionPlugin, ok := plug.(plugins.RouteActionPlugin)
+		//	if !ok || in.GetRouteAction() == nil || out.GetRoute() == nil {
+		//		continue
+		//	}
+		//	raParams := plugins.RouteActionParams{
+		//		RouteParams: params,
+		//		Route:       in,
+		//	}
+		//	if err := routeActionPlugin.ProcessRouteAction(raParams, in.GetRouteAction(), out.GetRoute()); err != nil {
+		//		// same as above
+		//		if isWarningErr(err) {
+		//			continue
+		//		}
+		//		validation.AppendRouteError(routeReport,
+		//			validationapi.RouteReport_Error_ProcessingError,
+		//			err.Error(),
+		//			out.GetName(),
+		//		)
+		//	}
+		//}
+
 	case *v1.Route_RedirectAction:
 		out.Action = &envoy_config_route_v3.Route_Redirect{
 			Redirect: &envoy_config_route_v3.RedirectAction{
