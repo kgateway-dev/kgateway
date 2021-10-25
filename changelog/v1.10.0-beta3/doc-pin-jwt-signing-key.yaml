@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Explain how to fix a value for the JWT signing key that is used in the OIDC policy (state parameter).
