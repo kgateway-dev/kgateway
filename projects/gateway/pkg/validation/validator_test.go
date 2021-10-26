@@ -165,6 +165,83 @@ var _ = Describe("Validator", func() {
 				Expect(err).To(HaveOccurred())
 			})
 		})
+
+		Context("secrets", func() {
+			It("accepts a secret deletion when validation succeeds", func() {
+				vc.validate = acceptProxy
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				secret := &gloov1.Secret{
+					Metadata: &core.Metadata{
+						Name:      "secret",
+						Namespace: "namespace",
+					},
+				}
+				ref := secret.GetMetadata().Ref()
+				err = v.ValidateDeleteSecret(context.TODO(), ref, false)
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("rejects a secret deletion when validation fails", func() {
+				vc.validate = failProxy
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				secret := &gloov1.Secret{
+					Metadata: &core.Metadata{
+						Name:      "secret",
+						Namespace: "namespace",
+					},
+				}
+				ref := secret.GetMetadata().Ref()
+				err = v.ValidateDeleteSecret(context.TODO(), ref, false)
+				Expect(err).To(HaveOccurred())
+			})
+			It("accepts a secret deletion when there is a validation warning and allowWarnings is true", func() {
+				vc.validate = warnProxy
+				v.allowWarnings = true
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				secret := &gloov1.Secret{
+					Metadata: &core.Metadata{
+						Name:      "secret",
+						Namespace: "namespace",
+					},
+				}
+				ref := secret.GetMetadata().Ref()
+				err = v.ValidateDeleteSecret(context.TODO(), ref, false)
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("rejects a secret deletion when there is a validation warning and allowWarnings is false", func() {
+				vc.validate = warnProxy
+				v.allowWarnings = false
+
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				secret := &gloov1.Secret{
+					Metadata: &core.Metadata{
+						Name:      "secret",
+						Namespace: "namespace",
+					},
+				}
+				ref := secret.GetMetadata().Ref()
+				err = v.ValidateDeleteSecret(context.TODO(), ref, false)
+				Expect(err).To(HaveOccurred())
+			})
+		})
 	})
 	Context("validating a route table", func() {
 		Context("proxy validation accepted", func() {

@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5317
+    resolvesIssue: true
+    description: Add regex allowed headers in extauth httpService.

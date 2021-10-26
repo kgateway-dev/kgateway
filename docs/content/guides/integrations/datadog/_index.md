@@ -195,6 +195,8 @@ And update it to the following:
 
 Then save the change. The Envoy pod will update within a few seconds with the new configuration settings. Datadog should now be able to collect metrics from any Envoy pods using the `/metrics` path.
 
+If you'd prefer to manage the `route.prefix_rewrite` setting from Helm rather than directly editing the ConfigMap, then use the value `gatewayProxies.gatewayProxy.stats.routePrefixRewrite` as documented [here]({{% versioned_link_path fromRoot="/reference/helm_chart_values/" %}}).
+
 ---
 
 ## Validate the configuration

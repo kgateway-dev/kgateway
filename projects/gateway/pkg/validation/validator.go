@@ -86,6 +86,7 @@ type Validator interface {
 	ValidateDeleteRouteTable(ctx context.Context, rt *core.ResourceRef, dryRun bool) error
 	ValidateUpstream(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*Reports, error)
 	ValidateDeleteUpstream(ctx context.Context, us *core.ResourceRef, dryRun bool) error
+	ValidateDeleteSecret(ctx context.Context, secret *core.ResourceRef, dryRun bool) error
 }
 
 type validator struct {
@@ -631,6 +632,30 @@ func (v *validator) ValidateDeleteUpstream(ctx context.Context, upstreamRef *cor
 		Resources: &validation.GlooValidationServiceRequest_DeletedResources{
 			DeletedResources: &validation.DeletedResources{
 				UpstreamRefs: []*core.ResourceRef{upstreamRef},
+			},
+		},
+	})
+	logger := contextutils.LoggerFrom(ctx)
+	if err != nil {
+		if v.ignoreProxyValidationFailure {
+			logger.Error(err)
+		} else {
+			return err
+		}
+	}
+	logger.Debugf("Got response from GlooValidationService: %s", response.String())
+
+	_, err = v.getReportsFromGlooValidationResponse(response)
+	return err
+}
+
+func (v *validator) ValidateDeleteSecret(ctx context.Context, secretRef *core.ResourceRef, dryRun bool) error {
+	response, err := v.sendGlooValidationServiceRequest(ctx, &validation.GlooValidationServiceRequest{
+		// Sending a nil proxy causes the remaining secrets to be translated with all proxies in gloo's snapshot
+		Proxy: nil,
+		Resources: &validation.GlooValidationServiceRequest_DeletedResources{
+			DeletedResources: &validation.DeletedResources{
+				SecretRefs: []*core.ResourceRef{secretRef},
 			},
 		},
 	})

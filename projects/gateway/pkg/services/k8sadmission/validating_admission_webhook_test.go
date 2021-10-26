@@ -23,6 +23,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -62,6 +63,17 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 						Port: 12345,
 					},
 				},
+			},
+		},
+	}
+	secret := &gloov1.Secret{
+		Metadata: &core.Metadata{
+			Name:      "secret",
+			Namespace: "namespace",
+		},
+		Kind: &gloov1.Secret_Oauth{
+			Oauth: &extauth.OauthSecret{
+				ClientSecret: "thisisasecret",
 			},
 		},
 	}
@@ -106,6 +118,9 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 			mv.fValidateDeleteUpstream = func(ctx context.Context, us *core.ResourceRef, dryRun bool) error {
 				return fmt.Errorf(errMsg)
 			}
+			mv.fValidateDeleteSecret = func(ctx context.Context, secret *core.ResourceRef, dryRun bool) error {
+				return fmt.Errorf(errMsg)
+			}
 		}
 		req, err := makeReviewRequest(srv.URL, crd, gvk, op, resourceOrRef)
 
@@ -142,6 +157,8 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		Entry("invalid upstream", false, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Create, upstream),
 		Entry("valid upstream deletion", true, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Delete, upstream.GetMetadata().Ref()),
 		Entry("invalid upstream deletion", false, gloov1.UpstreamCrd, gloov1.UpstreamCrd.GroupVersionKind(), v1beta1.Delete, upstream.GetMetadata().Ref()),
+		Entry("valid secret deletion", true, gloov1.SecretCrd, gloov1.SecretCrd.GroupVersionKind(), v1beta1.Delete, secret.GetMetadata().Ref()),
+		Entry("invalid secret deletion", false, gloov1.SecretCrd, gloov1.SecretCrd.GroupVersionKind(), v1beta1.Delete, secret.GetMetadata().Ref()),
 	)
 
 	Context("invalid yaml", func() {
@@ -347,6 +364,7 @@ type mockValidator struct {
 	fValidateDeleteRouteTable     func(ctx context.Context, rt *core.ResourceRef, dryRun bool) error
 	fValidateUpstream             func(ctx context.Context, us *gloov1.Upstream, dryRun bool) (*validation.Reports, error)
 	fValidateDeleteUpstream       func(ctx context.Context, us *core.ResourceRef, dryRun bool) error
+	fValidateDeleteSecret         func(ctx context.Context, secret *core.ResourceRef, dryRun bool) error
 }
 
 func (v *mockValidator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
@@ -410,6 +428,13 @@ func (v *mockValidator) ValidateDeleteUpstream(ctx context.Context, us *core.Res
 		return nil
 	}
 	return v.fValidateDeleteUpstream(ctx, us, dryRun)
+}
+
+func (v *mockValidator) ValidateDeleteSecret(ctx context.Context, secret *core.ResourceRef, dryRun bool) error {
+	if v.fValidateDeleteSecret == nil {
+		return nil
+	}
+	return v.fValidateDeleteSecret(ctx, secret, dryRun)
 }
 
 func reports() *validation.Reports {

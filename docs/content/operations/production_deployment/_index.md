@@ -187,6 +187,16 @@ You can scale up the `gateway-proxies` Envoy instances by using a Deployment or 
 
 You can also scale up the ExtAuth service. Typically, one to two instances are sufficient.
 
+If you have multiple instances of the ExtAuth server, you might want to use the same JWT signing key in the OIDC policy for each instance. To reuse the JWT signing key, you must update your Helm configuration file with the following global extension.
+
+```yaml
+global:
+  extensions:
+    extAuth:
+      signingKey:
+        key: abcdef
+```
+
 ## Horizontally scaling the control plane
 
 *DO NOT* scale the control plane components, such as the Gateway deployment, the Gloo deployment or the Discovery deployment. Scaling these components provides no benefit and can lead to race conditions.

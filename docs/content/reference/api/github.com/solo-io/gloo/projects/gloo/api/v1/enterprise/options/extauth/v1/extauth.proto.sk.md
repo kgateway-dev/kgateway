@@ -240,6 +240,7 @@ Describes the transport protocol version to use when connecting to the ext auth 
 ```yaml
 "allowedHeaders": []string
 "headersToAdd": map<string, string>
+"allowedHeadersRegex": []string
 
 ```
 
@@ -247,6 +248,7 @@ Describes the transport protocol version to use when connecting to the ext auth 
 | ----- | ---- | ----------- | 
 | `allowedHeaders` | `[]string` | These headers will be copied from the incoming request to the request going to the auth server. Note that in addition to the user's supplied matchers: 1. *Host*, *Method*, *Path* and *Content-Length* are automatically included to the list. 2. *Content-Length* will be set to 0 and the request to the authorization service will not have a message body. |
 | `headersToAdd` | `map<string, string>` | These headers that will be included to the request to authorization service. Note that client request of the same key will be overridden. |
+| `allowedHeadersRegex` | `[]string` | Headers that match these regex patterns will be copied from the incoming request to the request going to the auth server. |
 
 
 
