@@ -1,6 +1,7 @@
 package extauth
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -301,8 +303,10 @@ func translateRequest(in *extauthv1.HttpService_Request) *envoyauth.Authorizatio
 	}
 
 	return &envoyauth.AuthorizationRequest{
-		AllowedHeaders: translateListMatcher(in.GetAllowedHeaders()),
-		HeadersToAdd:   convertHeadersToAdd(in.GetHeadersToAdd()),
+		AllowedHeaders: combineListStringMatchers(
+			translateListMatcher(in.GetAllowedHeaders()),
+			translateListMatcherRegex(in.GetAllowedHeadersRegex())),
+		HeadersToAdd: convertHeadersToAdd(in.GetHeadersToAdd()),
 	}
 }
 
@@ -360,6 +364,33 @@ func translateListMatcher(in []string) *envoymatcher.ListStringMatcher {
 	}
 
 	return &lsm
+}
+
+func translateListMatcherRegex(in []string) *envoymatcher.ListStringMatcher {
+	if len(in) == 0 {
+		return nil
+	}
+	var lsm envoymatcher.ListStringMatcher
+
+	for _, pattern := range in {
+		lsm.Patterns = append(lsm.GetPatterns(), &envoymatcher.StringMatcher{
+			MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
+				SafeRegex: regexutils.NewRegex(context.Background(), pattern),
+			},
+		})
+	}
+
+	return &lsm
+}
+
+func combineListStringMatchers(lsms ...*envoymatcher.ListStringMatcher) *envoymatcher.ListStringMatcher {
+	var outLSM envoymatcher.ListStringMatcher
+	for _, inLSM := range lsms {
+		if inLSM != nil {
+			outLSM.Patterns = append(outLSM.GetPatterns(), inLSM.GetPatterns()...)
+		}
+	}
+	return &outLSM
 }
 
 func convertHeadersToAdd(headersToAddMap map[string]string) []*envoycore.HeaderValue {
