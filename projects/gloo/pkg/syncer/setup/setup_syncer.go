@@ -804,6 +804,11 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		return bootstrap.Opts{}, err
 	}
 
+	graphqlSchemaFactory, err := bootstrap.ConfigFactoryForSettings(params, v1alpha1.GraphQLSchemaCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
 	return bootstrap.Opts{
 		Upstreams:         upstreamFactory,
 		KubeServiceClient: kubeServiceClient,
@@ -813,6 +818,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		Artifacts:         artifactFactory,
 		AuthConfigs:       authConfigFactory,
 		RateLimitConfigs:  rateLimitConfigFactory,
+		GraphQLSchemas:    graphqlSchemaFactory,
 		KubeCoreCache:     kubeCoreCache,
 	}, nil
 }
