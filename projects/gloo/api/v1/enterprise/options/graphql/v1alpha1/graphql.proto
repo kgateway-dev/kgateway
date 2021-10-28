@@ -15,11 +15,10 @@ option (extproto.hash_all) = true;
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
 import "validate/validate.proto";
 
-import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/http_uri.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
 import "google/protobuf/empty.proto";
 
 // used to reference into json structures by key(s)
@@ -148,8 +147,7 @@ message RequestTemplate {
 
 // control-plane API
 message RESTResolver {
-  // TODO(kdorosh) make this an upstream ref?
-  .solo.io.envoy.config.core.v3.HttpUri server_uri = 1;
+  core.solo.io.ResourceRef upstream_ref = 1;
   // configuration used to compose the outgoing request to a REST API
   RequestTemplate request_transform = 2;
   string span_name = 4;
@@ -182,10 +180,6 @@ message Resolution {
     google.protobuf.Empty default_resolver = 2;
     RESTResolver rest_resolver = 3;
   }
-}
-// Filter Listener config. Empty as the filter must be configured on the route level.
-message GraphQLConfig {
-
 }
 
 // Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change.

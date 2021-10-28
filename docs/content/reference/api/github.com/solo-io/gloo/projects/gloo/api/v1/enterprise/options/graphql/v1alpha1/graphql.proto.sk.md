@@ -26,7 +26,6 @@ weight: 5
 - [QueryMatcher](#querymatcher)
 - [FieldMatcher](#fieldmatcher)
 - [Resolution](#resolution)
-- [GraphQLConfig](#graphqlconfig)
 - [GraphQLSchema](#graphqlschema) **Top-Level Resource**
   
 
@@ -262,7 +261,7 @@ Defines a configuration for generating outgoing requests for a resolver.
 control-plane API
 
 ```yaml
-"serverUri": .solo.io.envoy.config.core.v3.HttpUri
+"upstreamRef": .core.solo.io.ResourceRef
 "requestTransform": .graphql.gloo.solo.io.RequestTemplate
 "spanName": string
 
@@ -270,7 +269,7 @@ control-plane API
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `serverUri` | [.solo.io.envoy.config.core.v3.HttpUri](../../../../../../external/envoy/config/core/v3/http_uri.proto.sk/#httpuri) | TODO(kdorosh) make this an upstream ref?. |
+| `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 | `requestTransform` | [.graphql.gloo.solo.io.RequestTemplate](../graphql.proto.sk/#requesttemplate) | configuration used to compose the outgoing request to a REST API. |
 | `spanName` | `string` |  |
 
@@ -336,22 +335,6 @@ if a field with the same name does not exist in the parent, null will be used.
 | `matcher` | [.graphql.gloo.solo.io.QueryMatcher](../graphql.proto.sk/#querymatcher) | Match an object type and field. |
 | `defaultResolver` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) |  Only one of `defaultResolver` or `restResolver` can be set. |
 | `restResolver` | [.graphql.gloo.solo.io.RESTResolver](../graphql.proto.sk/#restresolver) |  Only one of `restResolver` or `defaultResolver` can be set. |
-
-
-
-
----
-### GraphQLConfig
-
- 
-Filter Listener config. Empty as the filter must be configured on the route level.
-
-```yaml
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
 
 
 

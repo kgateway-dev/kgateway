@@ -794,9 +794,6 @@ apis:
   google.rpc.Status:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/rpc/status.proto.sk/#Status
     package: google.rpc
-  graphql.gloo.solo.io.GraphQLConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GraphQLConfig
-    package: graphql.gloo.solo.io
   graphql.gloo.solo.io.GraphQLSchema:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GraphQLSchema
     package: graphql.gloo.solo.io

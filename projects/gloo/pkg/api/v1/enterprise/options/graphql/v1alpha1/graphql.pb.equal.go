@@ -336,12 +336,12 @@ func (m *RESTResolver) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetServerUri()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetServerUri()) {
+	if h, ok := interface{}(m.GetUpstreamRef()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUpstreamRef()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetServerUri(), target.GetServerUri()) {
+		if !proto.Equal(m.GetUpstreamRef(), target.GetUpstreamRef()) {
 			return false
 		}
 	}
@@ -479,30 +479,6 @@ func (m *Resolution) Equal(that interface{}) bool {
 		if m.Resolver != target.Resolver {
 			return false
 		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *GraphQLConfig) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*GraphQLConfig)
-	if !ok {
-		that2, ok := that.(GraphQLConfig)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
 	}
 
 	return true
