@@ -115,4 +115,9 @@ message HttpConnectionManagerSettings {
     // The :ref:`http_connection_manager.path_with_escaped_slashes_action_sampling<config_http_conn_man_runtime_path_with_escaped_slashes_action_enabled>` runtime
     // variable can be used to apply the action to a portion of all requests.
     PathWithEscapedSlashesAction path_with_escaped_slashes_action = 26;
+ 
+    // The maximum number of headers. If unconfigured, the default
+    // maximum number of request headers allowed is 100. Requests that exceed this limit will receive
+    // a 431 response for HTTP/1.x and cause a stream reset for HTTP/2.
+    google.protobuf.UInt32Value max_headers_count = 28;
 }

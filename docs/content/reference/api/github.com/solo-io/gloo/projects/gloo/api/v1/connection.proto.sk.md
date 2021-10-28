@@ -15,6 +15,7 @@ weight: 5
 - [TcpKeepAlive](#tcpkeepalive)
 - [HttpProtocolOptions](#httpprotocoloptions)
 - [HeadersWithUnderscoresAction](#headerswithunderscoresaction)
+- [CodecType](#codectype)
   
 
 
@@ -37,6 +38,7 @@ Fine tune the settings for connections to an upstream
 "tcpKeepalive": .gloo.solo.io.ConnectionConfig.TcpKeepAlive
 "perConnectionBufferLimitBytes": .google.protobuf.UInt32Value
 "commonHttpProtocolOptions": .gloo.solo.io.ConnectionConfig.HttpProtocolOptions
+"codecType": .gloo.solo.io.ConnectionConfig.CodecType
 
 ```
 
@@ -47,6 +49,7 @@ Fine tune the settings for connections to an upstream
 | `tcpKeepalive` | [.gloo.solo.io.ConnectionConfig.TcpKeepAlive](../connection.proto.sk/#tcpkeepalive) | Configure OS-level tcp keepalive checks. |
 | `perConnectionBufferLimitBytes` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Soft limit on size of the cluster’s connections read and write buffers. If unspecified, an implementation defined default is applied (1MiB). For more info, see the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/cluster.proto#cluster). |
 | `commonHttpProtocolOptions` | [.gloo.solo.io.ConnectionConfig.HttpProtocolOptions](../connection.proto.sk/#httpprotocoloptions) | Additional options when handling HTTP requests upstream. These options will be applicable to both HTTP1 and HTTP2 requests. |
+| `codecType` | [.gloo.solo.io.ConnectionConfig.CodecType](../connection.proto.sk/#codectype) | Supplies the type of codec that the connection manager should use. |
 
 
 
@@ -112,6 +115,20 @@ characters.
 | `ALLOW` | Allow headers with underscores. This is the default behavior. |
 | `REJECT_REQUEST` | Reject client request. HTTP/1 requests are rejected with the 400 status. HTTP/2 requests end with the stream reset. The "httpN.requests_rejected_with_underscores_in_headers" counter is incremented for each rejected request. |
 | `DROP_HEADER` | Drop the header with name containing underscores. The header is dropped before the filter chain is invoked and as such filters will not see dropped headers. The "httpN.dropped_headers_with_underscores" is incremented for each dropped header. |
+
+
+
+
+---
+### CodecType
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `AUTO` | For every new connection, the connection manager will determine which codec to use. This mode supports both ALPN for TLS listeners as well as protocol inference for plaintext listeners. If ALPN data is available, it is preferred, otherwise protocol inference is used. In almost all cases, this is the right option to choose for this setting. |
+| `HTTP1` | The connection manager will assume that the client is speaking HTTP/1.1. |
+| `HTTP2` | The connection manager will assume that the client is speaking HTTP/2 (Envoy does not require HTTP/2 to take place over TLS or to use ALPN. Prior knowledge is allowed). |
 
 
 

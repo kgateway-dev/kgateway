@@ -231,6 +231,16 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetMaxHeadersCount()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMaxHeadersCount()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMaxHeadersCount(), target.GetMaxHeadersCount()) {
+			return false
+		}
+	}
+
 	return true
 }
 

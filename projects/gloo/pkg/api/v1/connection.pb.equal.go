@@ -90,6 +90,10 @@ func (m *ConnectionConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetCodecType() != target.GetCodecType() {
+		return false
+	}
+
 	return true
 }
 

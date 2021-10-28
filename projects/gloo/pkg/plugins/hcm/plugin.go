@@ -142,6 +142,13 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 		cfg.GetCommonHttpProtocolOptions().MaxStreamDuration = hcmSettings.GetMaxStreamDuration()
 	}
 
+	if hcmSettings.GetMaxHeadersCount() != nil {
+		if cfg.GetCommonHttpProtocolOptions() == nil {
+			cfg.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
+		}
+		cfg.GetCommonHttpProtocolOptions().MaxHeadersCount = hcmSettings.GetMaxHeadersCount()
+	}
+
 	// allowed upgrades
 	protocolUpgrades := hcmSettings.GetUpgrades()
 

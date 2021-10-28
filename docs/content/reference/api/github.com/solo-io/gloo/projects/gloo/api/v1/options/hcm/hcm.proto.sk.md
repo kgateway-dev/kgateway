@@ -59,6 +59,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 "maxStreamDuration": .google.protobuf.Duration
 "serverHeaderTransformation": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ServerHeaderTransformation
 "pathWithEscapedSlashesAction": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.PathWithEscapedSlashesAction
+"maxHeadersCount": .google.protobuf.UInt32Value
 
 ```
 
@@ -89,6 +90,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `maxStreamDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |
 | `serverHeaderTransformation` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ServerHeaderTransformation](../hcm.proto.sk/#serverheadertransformation) | For an explanation of the settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto.html#envoy-v3-api-enum-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-serverheadertransformation. |
 | `pathWithEscapedSlashesAction` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.PathWithEscapedSlashesAction](../hcm.proto.sk/#pathwithescapedslashesaction) | Action to take when request URL path contains escaped slash sequences (%2F, %2f, %5C and %5c). The default value can be overridden by the :ref:`http_connection_manager.path_with_escaped_slashes_action<config_http_conn_man_runtime_path_with_escaped_slashes_action>` runtime variable. The :ref:`http_connection_manager.path_with_escaped_slashes_action_sampling<config_http_conn_man_runtime_path_with_escaped_slashes_action_enabled>` runtime variable can be used to apply the action to a portion of all requests. |
+| `maxHeadersCount` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The maximum number of headers. If unconfigured, the default maximum number of request headers allowed is 100. Requests that exceed this limit will receive a 431 response for HTTP/1.x and cause a stream reset for HTTP/2. |
 
 
 
