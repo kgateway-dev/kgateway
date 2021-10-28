@@ -3,6 +3,7 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/5509
     resolvesIssue: true
     description: >-
-      Introduce a new `GraphQLSchema` CR (k8s custom resource) that allows users to send GraphQL requests to Gloo Edge
-      API gateway and resolves those requests according to schemas and resolvers defined on the CR. Add a new `Route`
-      type called `graphql_schema_ref` that refers routs to the graphql configuration necessary to resolve the request.
+      Enterprise-Only: Introduce a new `GraphQLSchema` CR (k8s custom resource) and API that allows users to send
+      GraphQL requests to the Gloo Edge API gateway and resolves those requests according to schemas and resolvers
+      defined on the CR. Add a new `Route` type called `graphql_schema_ref` that refers routs to the graphql
+      configuration necessary to resolve the request. The API introduced here is only implemented in enterprise.
