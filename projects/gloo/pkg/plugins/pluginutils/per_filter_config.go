@@ -48,6 +48,10 @@ func MarkPerFilterConfig(
 	filterName string,
 	perFilterConfig PerFilterConfigFunc,
 ) error {
+	if out.GetDirectResponse() != nil {
+		// e.g., graphql schema uses direct response and then overtakes router config. no need to configure anything
+		return nil
+	}
 	inAction, outAction, err := getRouteActions(in, out)
 	if err != nil {
 		return err
