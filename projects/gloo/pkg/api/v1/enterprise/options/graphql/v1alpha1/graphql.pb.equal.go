@@ -444,21 +444,6 @@ func (m *Resolution) Equal(that interface{}) bool {
 
 	switch m.Resolver.(type) {
 
-	case *Resolution_DefaultResolver:
-		if _, ok := target.Resolver.(*Resolution_DefaultResolver); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetDefaultResolver()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetDefaultResolver()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetDefaultResolver(), target.GetDefaultResolver()) {
-				return false
-			}
-		}
-
 	case *Resolution_RestResolver:
 		if _, ok := target.Resolver.(*Resolution_RestResolver); !ok {
 			return false

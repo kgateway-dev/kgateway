@@ -325,7 +325,6 @@ if a field with the same name does not exist in the parent, null will be used.
 
 ```yaml
 "matcher": .graphql.gloo.solo.io.QueryMatcher
-"defaultResolver": .google.protobuf.Empty
 "restResolver": .graphql.gloo.solo.io.RESTResolver
 
 ```
@@ -333,8 +332,7 @@ if a field with the same name does not exist in the parent, null will be used.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `matcher` | [.graphql.gloo.solo.io.QueryMatcher](../graphql.proto.sk/#querymatcher) | Match an object type and field. |
-| `defaultResolver` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) |  Only one of `defaultResolver` or `restResolver` can be set. |
-| `restResolver` | [.graphql.gloo.solo.io.RESTResolver](../graphql.proto.sk/#restresolver) |  Only one of `restResolver` or `defaultResolver` can be set. |
+| `restResolver` | [.graphql.gloo.solo.io.RESTResolver](../graphql.proto.sk/#restresolver) |  |
 
 
 
@@ -366,7 +364,7 @@ configure the routes to point to these schema CRs.
 | `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `schema` | `string` | Schema to use in string format. |
 | `enableIntrospection` | `bool` | Do we enable introspection for the schema? general recommendation is to disable this for production and hence it defaults to false. |
-| `resolutions` | [[]graphql.gloo.solo.io.Resolution](../graphql.proto.sk/#resolution) | The resolver map to use to resolve the schema. |
+| `resolutions` | [[]graphql.gloo.solo.io.Resolution](../graphql.proto.sk/#resolution) | The resolver map to use to resolve the schema. Omitted fields will use the default resolver, which looks for a field with that name in the parent's object, and errors if the field cannot be found. |
 
 
 
