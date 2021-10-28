@@ -263,10 +263,6 @@ type JsonKeyValue struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// PARTIALLY IMPLEMENTED
-	// if empty, the value will be parsed as json and replace the entire
-	// previously-parsed json value --> this part is only needed for gRPC
-	// and thus not implemented yet
 	Key   string                  `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	Value *JsonKeyValue_JsonValue `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }

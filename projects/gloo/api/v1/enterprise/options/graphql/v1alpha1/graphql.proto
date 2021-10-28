@@ -97,10 +97,6 @@ message JsonKeyValue {
     }
   }
 
-  // PARTIALLY IMPLEMENTED
-  // if empty, the value will be parsed as json and replace the entire
-  // previously-parsed json value --> this part is only needed for gRPC
-  // and thus not implemented yet
   string key = 1;
   JsonValue value = 2;
 }
@@ -209,16 +205,4 @@ message GraphQLSchema {
   // Omitted fields will use the default resolver, which looks for a field with that name in the parent's object,
   // and errors if the field cannot be found.
   repeated Resolution resolutions = 5;
-  // In the future, we will support persistent queries, this will be a map of query id to query.
-  //    map<string, Query> persistent_queries = 3;
-  // when we support persistent queries, we may want to use them exclusively, for predictable
-  // operations. (i.e. no surprise mega query from a client).
-  // bool only_persistent_queries = 4;
-
-  // key is either:
-  // Type
-  // or
-  // Type.Field where the latter takes precedence.
-  // ??consider  Type and Type.Field **MUST** be in the schema ??
-  // missing resolvers will yield error in the response
 }

@@ -170,7 +170,7 @@ this value will be cast to an int type.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `key` | `string` | PARTIALLY IMPLEMENTED if empty, the value will be parsed as json and replace the entire previously-parsed json value --> this part is only needed for gRPC and thus not implemented yet. |
+| `key` | `string` |  |
 | `value` | [.graphql.gloo.solo.io.JsonKeyValue.JsonValue](../graphql.proto.sk/#jsonvalue) |  |
 
 
