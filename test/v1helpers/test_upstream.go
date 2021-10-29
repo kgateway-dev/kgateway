@@ -30,6 +30,7 @@ import (
 
 type ReceivedRequest struct {
 	Method      string
+	Headers     map[string][]string
 	URL         *url.URL
 	Body        []byte
 	Host        string
@@ -152,9 +153,9 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 		} else if body != nil {
 			_, _ = rw.Write(body)
 		}
-
 		rr.Host = r.Host
 		rr.URL = r.URL
+		rr.Headers = r.Header
 
 		bodyChan <- &rr
 	}
