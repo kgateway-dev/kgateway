@@ -86,11 +86,9 @@ spec:
         headers:
           ':method':
             typedProvider:
-              type: STRING
               value: 'GET'
           ':path':
             typedProvider:
-              type: STRING
               value: '/api/pets'
       upstreamRef:
         name: default-petstore-8080
