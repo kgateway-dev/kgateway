@@ -88,10 +88,6 @@ spec:
             typedProvider:
               type: STRING
               value: 'GET'
-          ':authority':
-            typedProvider:
-              type: STRING
-              value: 'localhost:8080'
           ':path':
             typedProvider:
               type: STRING
