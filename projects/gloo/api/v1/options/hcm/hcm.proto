@@ -120,4 +120,23 @@ message HttpConnectionManagerSettings {
     // maximum number of request headers allowed is 100. Requests that exceed this limit will receive
     // a 431 response for HTTP/1.x and cause a stream reset for HTTP/2.
     google.protobuf.UInt32Value max_headers_count = 28;
+
+    enum CodecType {
+        // For every new connection, the connection manager will determine which
+        // codec to use. This mode supports both ALPN for TLS listeners as well as
+        // protocol inference for plaintext listeners. If ALPN data is available, it
+        // is preferred, otherwise protocol inference is used. In almost all cases,
+        // this is the right option to choose for this setting.
+        AUTO = 0;
+
+        // The connection manager will assume that the client is speaking HTTP/1.1.
+        HTTP1 = 1;
+
+        // The connection manager will assume that the client is speaking HTTP/2
+        // (Envoy does not require HTTP/2 to take place over TLS or to use ALPN.
+        // Prior knowledge is allowed).
+        HTTP2 = 2;
+    }
+    // Supplies the type of codec that the connection manager should use.
+    CodecType codec_type = 29; 
 }

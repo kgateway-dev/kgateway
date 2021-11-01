@@ -102,6 +102,7 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 	cfg.PreserveExternalRequestId = hcmSettings.GetPreserveExternalRequestId()
 	cfg.ServerHeaderTransformation = envoyhttp.HttpConnectionManager_ServerHeaderTransformation(hcmSettings.GetServerHeaderTransformation())
 	cfg.PathWithEscapedSlashesAction = envoyhttp.HttpConnectionManager_PathWithEscapedSlashesAction(hcmSettings.GetPathWithEscapedSlashesAction())
+	cfg.CodecType = envoyhttp.HttpConnectionManager_CodecType(hcmSettings.GetCodecType())
 
 	if hcmSettings.GetAcceptHttp_10() {
 		cfg.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{
