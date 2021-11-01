@@ -71,7 +71,7 @@ spec:
           ':path':
             typedProvider:
               type: STRING
-              value: '/api-pets'
+              value: '/api/pets'
       upstreamRef:
         name: default-petstore-8080
         namespace: gloo-system
@@ -85,7 +85,7 @@ curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"qu
 
 And we should get the following response:
 ```shell
-TODO
+{"data":{"pets":[{"name":"Dog"},{"name":"Cat"}]}}
 ```
 
 The rest request returned to our graphql server returned the following json:
