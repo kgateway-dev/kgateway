@@ -17,7 +17,16 @@ internal network.
 ## Why GraphQL in an API Gateway?
 API gateways solve the problem of exposing multiple microservices with perhaps differing implementations from a single
 location, scheme, and by talking to a single team/owner. GraphQL integrates beautifully with API gateways by exposing
-your API without versioning and allowing clients to interact.
+your API without versioning and allowing clients to interact with backend APIs on their own terms. Developers are
+enabled to leverage GraphQL's improved documentation flows to increase developer productivity. Best of all, you can
+continue to mix and match your GraphQL graph with your pre-existing REST routes, so you can test the tradeoffs and
+migrate between the two at a pace that makes sense in your organization.
+
+Gloo Edge specifically solves the problems other API gateways face when exposing GraphQL services by allowing users
+to configure GraphQL at the route level. API Gateways are often used to rate-limit, authorize/authenticate, and inject
+other centralized edge networking logic at the route level, but most GraphQL servers are exposed as a single endpoint
+within an internal network. Thus, it is impossible to add route-level customizations to most GraphQL servers exposed
+behind API Gateways, unless that logic is embedded into the API gateway, as it is with Gloo Edge.
 
 ## Example: GraphQL with Gloo Edge
 
