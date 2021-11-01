@@ -47,7 +47,3 @@ The federated configuration data is stored in the following Custom Resource type
 Each of these CRDs closely corresponds to the local version of Gloo Edge resources like Gateways, Upstreams, and Virtual Services.
 
 Gloo Edge Federation also includes a role-based access control framework to enable granular control over access to the resources controlled by Gloo Edge Federation. Users and groups can be associated with roles that grant them the ability to execute a limited set of actions on a particular resource. Gloo Edge Federation’s RBAC model closely resembles the Kubernetes model for service accounts, roles, and role bindings.
-
-## Next Steps
-
-Now that you have an idea of how Gloo Edge Federation is structured and the features it enables, we recommend taking it for a test drive using our [Gloo Edge Federation getting started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}).

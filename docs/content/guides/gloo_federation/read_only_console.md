@@ -15,9 +15,7 @@ To successfully follow this guide, you will need the following software availabl
 * [Kind](https://kind.sigs.k8s.io/) - Required if using the `glooctl` federation demo environment
 * Docker - Required if using the `glooctl` federation demo environment
 
-In this guide we are going to use the Gloo Edge Federation environment available from the `glooctl demo federation` command. You can follow the directions in the [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}) to set up the demonstration environment. Otherwise, you will need at least one Kubernetes cluster running Gloo Edge Enterprise and Gloo Edge Federation.
-
-For the purposes of this example, we have two clusters `local` and `remote`. The local cluster is also running Gloo Edge Federation in addition to Gloo Edge Enterprise. The kubectl context for the local cluster is `kind-local` and the remote cluster is `kind-remote`.
+You will need at least one Kubernetes cluster running Gloo Edge Enterprise and Gloo Edge Federation. For the purposes of this example, we have two clusters `local` and `remote`. The local cluster is also running Gloo Edge Federation in addition to Gloo Edge Enterprise. The kubectl context for the local cluster is `kind-local` and the remote cluster is `kind-remote`.
 
 ## Configure access to the console
 
