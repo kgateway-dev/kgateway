@@ -17,6 +17,10 @@ your API without versioning and allowing clients to interact.
 
 ## How to use GraphQL with Gloo Edge
 
+```shell
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
+```
+
 To use GraphQL to resolve requests in Gloo Edge, we need to define a `Route` that has a `grahqp_schema_ref` as the
 destination. We can do this using the following `VirtualService` as seen below.
 
@@ -47,32 +51,45 @@ kind: GraphQLSchema
 metadata:
   name: gql
   namespace: gloo-system
-resolutions:
-- Resolver:
-  RestResolver:
-  request_transform:
-  OutgoingBody: null
-  upstream_ref:
-  name: local-1
-  namespace: default
-  matcher:
-  Match:
-  FieldMatcher:
-  field: field1
-  type: Query
-- Resolver:
-  RestResolver:
-  upstream_ref:
-  name: local-2
-  namespace: default
-  matcher:
-  Match:
-  FieldMatcher:
-  field: child
-  type: SimpleType
-  schema: "\n\t\t      schema { query: Query }\n\t\t      input Map {\n\t\t        a:
-  Int!\n\t\t      }\n\t\t      type Query {\n\t\t        field1(intArg: Int!, boolArg:
-  Boolean!, floatArg: Float!, stringArg: String!, mapArg: Map!, listArg: [Int!]!):
-  SimpleType\n\t\t      }\n\t\t      type SimpleType {\n\t\t        simple: String\n\t\t
-  \       child: String\n\t\t      }\n"
+spec:
+  resolutions:
+  - matcher:
+      fieldMatcher:
+        type: Query
+        field: pets
+    restResolver:
+      requestTransform:
+        headers:
+          ':method':
+            typedProvider:
+              type: STRING
+              value: 'GET'
+          ':authority':
+            typedProvider:
+              type: STRING
+              value: 'localhost:8080'
+          ':path':
+            typedProvider:
+              type: STRING
+              value: '/api-pets'
+      upstreamRef:
+        name: default-petstore-8080
+        namespace: gloo-system
+  schema: "schema { query: Query } type Query { pets: [Pet] } type Pet { name: String }"
 {{< /highlight >}}
+
+Now we can make requests to our endpoint and see them resolved by envoy:
+```shell
+curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query":"{pets{name}}"}'
+```
+
+And we should get the following response:
+```shell
+TODO
+```
+
+The rest request returned to our graphql server returned the following json:
+```json
+[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+```
+note that in our response we trimmed this to only the fields we queried for! (the name) 
