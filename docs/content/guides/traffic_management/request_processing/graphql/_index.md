@@ -110,4 +110,6 @@ Remember that the REST request returned to our graphql server was the following 
 ```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
-Note that in our response we trimmed this to only the fields we queried for! (the name)
+Here we can see one advantage of using GraphQL over querying the upstream directly. We issued a GraphQL query for only the name of the pets, and though the upstream could return a lot more data, GraphQL was able to filter out only the data which was relevant to our query. In this case, we queried for the names of the pets, and we got back only the names of the pets. 
+
+Read more about the advantages of using GraphQL [here](https://www.apollographql.com/docs/intro/benefits/#graphql-provides-declarative-efficient-data-fetching).
