@@ -349,16 +349,6 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 		}
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetServerHeaderTransformation())
-	if err != nil {
-		return 0, err
-	}
-
-	err = binary.Write(hasher, binary.LittleEndian, m.GetPathWithEscapedSlashesAction())
-	if err != nil {
-		return 0, err
-	}
-
 	if h, ok := interface{}(m.GetMaxHeadersCount()).(safe_hasher.SafeHasher); ok {
 		if _, err = hasher.Write([]byte("MaxHeadersCount")); err != nil {
 			return 0, err
@@ -377,6 +367,16 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 				return 0, err
 			}
 		}
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetServerHeaderTransformation())
+	if err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetPathWithEscapedSlashesAction())
+	if err != nil {
+		return 0, err
 	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetCodecType())

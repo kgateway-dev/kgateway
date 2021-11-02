@@ -74,7 +74,10 @@ message HttpConnectionManagerSettings {
 
     // For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
     google.protobuf.Duration max_connection_duration = 23;
+     // For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
     google.protobuf.Duration max_stream_duration = 24;
+     // For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
+    google.protobuf.UInt32Value max_headers_count = 28;
 
     // For an explanation of the settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto.html#envoy-v3-api-enum-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-serverheadertransformation
     ServerHeaderTransformation server_header_transformation = 25;
@@ -115,11 +118,6 @@ message HttpConnectionManagerSettings {
     // The :ref:`http_connection_manager.path_with_escaped_slashes_action_sampling<config_http_conn_man_runtime_path_with_escaped_slashes_action_enabled>` runtime
     // variable can be used to apply the action to a portion of all requests.
     PathWithEscapedSlashesAction path_with_escaped_slashes_action = 26;
- 
-    // The maximum number of headers. If unconfigured, the default
-    // maximum number of request headers allowed is 100. Requests that exceed this limit will receive
-    // a 431 response for HTTP/1.x and cause a stream reset for HTTP/2.
-    google.protobuf.UInt32Value max_headers_count = 28;
 
     enum CodecType {
         // For every new connection, the connection manager will determine which
