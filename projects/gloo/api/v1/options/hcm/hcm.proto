@@ -77,7 +77,7 @@ message HttpConnectionManagerSettings {
      // For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
     google.protobuf.Duration max_stream_duration = 24;
      // For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
-    google.protobuf.UInt32Value max_headers_count = 28;
+    google.protobuf.UInt32Value max_headers_count = 27;
 
     // For an explanation of the settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto.html#envoy-v3-api-enum-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-serverheadertransformation
     ServerHeaderTransformation server_header_transformation = 25;
@@ -136,5 +136,6 @@ message HttpConnectionManagerSettings {
         HTTP2 = 2;
     }
     // Supplies the type of codec that the connection manager should use.
-    CodecType codec_type = 29; 
+    // See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#extensions-filters-network-http-connection-manager-v3-httpconnectionmanager
+    CodecType codec_type = 28;
 }
