@@ -127,9 +127,6 @@ spec:
                 type: object
               connectionConfig:
                 properties:
-                  codecType:
-                    type: string
-                    x-kubernetes-int-or-string: true
                   commonHttpProtocolOptions:
                     properties:
                       headersWithUnderscoresAction:
