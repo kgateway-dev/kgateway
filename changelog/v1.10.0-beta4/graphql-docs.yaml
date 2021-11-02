@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5509
+    resolvesIssue: false
+    description: >-
+      Add docs for GraphQL in Gloo Edge, after testing locally. Update a handful of lines of code in e2e test utils
+      to be used in enterprise e2e tests. This includes adding headers to `ReceivedRequest` struct as well as a small
+      bug fix to the test util for setting the body on the received request.
