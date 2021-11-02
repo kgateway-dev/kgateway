@@ -24,12 +24,13 @@ Gloo Edge Enterprise version `1.5.0-beta4` or later is required to use failover.
 
 An example Helm override file for installing Gloo Edge with failover is:
 ```yaml
-gatewayProxies:
-  gatewayProxy:
-    failover:
-      enabled: true
-    service:
-      type: NodePort
+gloo:
+  gatewayProxies:
+    gatewayProxy:
+      failover:
+        enabled: true
+      service:
+        type: NodePort
 ```
 
 An example helm command to upgrade Gloo Edge is:
