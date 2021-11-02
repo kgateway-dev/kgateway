@@ -20,7 +20,7 @@ For the purposes of this example, we have two clusters `local` and `remote`. The
 
 ### Upgrading Gloo Edge to use failover
 
-Gloo Edge Enterprise version `1.5.0-beta4` or later is required to use failover. You can enable failover by setting following Helm value: `gatewayProxies.NAME.failover.enabled=true`.
+Gloo Edge Enterprise version `1.5.0-beta4` or later is required to use failover. You can enable failover by setting following Helm value: `gloo.gatewayProxies.NAME.failover.enabled=true`.
 
 An example Helm override file for installing Gloo Edge with failover is:
 ```yaml
@@ -34,7 +34,7 @@ gatewayProxies:
 
 An example helm command to upgrade Gloo Edge is:
 ```
-helm upgrade gloo gloo/gloo --namespace gloo-system --values enable-failover.yaml
+helm upgrade gloo glooe/gloo-ee --namespace gloo-system --values enable-failover.yaml
 ```
 
 ## Configure Gloo Edge for Failover
