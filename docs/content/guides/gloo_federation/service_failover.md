@@ -18,6 +18,12 @@ You will also need two Kubernetes clusters running Gloo Edge Enterprise and an i
 
 For the purposes of this example, we have two clusters `local` and `remote`. The local cluster is also running Gloo Edge Federation in addition to Gloo Edge Enterprise. The kubectl context for the local cluster is `gloo-fed` and the remote cluster is `gloo-fed-2`.
 
+<!--federation demo hidden for now
+{{% notice tip %}}
+Want to spin up a demo environment to quickly validate the federation process? Try out the [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}).
+{{% /notice%}}
+-->
+
 ### Upgrading Gloo Edge to use failover
 
 Gloo Edge Enterprise version `1.5.0-beta4` or later is required to use failover. You can enable failover by setting following Helm value: `gloo.gatewayProxies.NAME.failover.enabled=true`.

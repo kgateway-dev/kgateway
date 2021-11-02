@@ -17,6 +17,12 @@ To successfully follow this guide, you will need the following software availabl
 
 You will need at least one Kubernetes cluster running Gloo Edge Enterprise and Gloo Edge Federation. For the purposes of this example, we have two clusters `local` and `remote`. The local cluster is also running Gloo Edge Federation in addition to Gloo Edge Enterprise. The kubectl context for the local cluster is `kind-local` and the remote cluster is `kind-remote`.
 
+<!--federation demo hidden for now
+{{% notice tip %}}
+Want to spin up a demo environment to quickly validate the federation process? Try out the [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}).
+{{% /notice%}}
+-->
+
 ## Configure access to the console
 
 The Gloo Edge Federation console is exposed by the `gloo-fed-console` service running in the `gloo-system` namespace. The console is available on port 8090. In a production scenario, you could choose to create a new service exposing the console on an IP address available outside the cluster. For our example, we are going to port-forward the service to the local IP address of the machine running the demonstration environment.

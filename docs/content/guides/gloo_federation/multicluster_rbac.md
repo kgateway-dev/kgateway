@@ -17,6 +17,12 @@ To successfully follow this Multicluster RBAC guide, you will need the following
 
 You will need at least one Kubernetes cluster running Gloo Edge Enterprise and Gloo Edge Federation. For the purposes of this example, we have two clusters `local` and `remote`. The local cluster is also running Gloo Edge Federation in addition to Gloo Edge Enterprise. The kubectl context for the local cluster is `kind-local` and the remote cluster is `kind-remote`.
 
+<!--federation demo hidden for now
+{{% notice tip %}}
+Want to spin up a demo environment to quickly validate the federation process? Try out the [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}).
+{{% /notice%}}
+-->
+
 ## Enable Multicluster RBAC
 
 Multicluster RBAC can be enabled during Gloo Edge Federation installation by overriding the `enableMultiClusterRbac` value in the helm chart to `true`. To do so, you would run the following `glooctl` command:
