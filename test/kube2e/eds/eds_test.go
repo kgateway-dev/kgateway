@@ -1,35 +1,12 @@
 package eds_test
 
 import (
-	"context"
-	"fmt"
-	"io/ioutil"
-	"regexp"
-
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-
-	"github.com/solo-io/gloo/test/kube2e"
-
-	kubeutils "github.com/solo-io/k8s-utils/testutils/kube"
-
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	"k8s.io/client-go/rest"
-
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
-	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	utils "github.com/solo-io/k8s-utils/kubeutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
 var _ = Describe("endpoint discovery (EDS) works", func() {
 
+	/* commented temporarily until the test flake documented in https://github.com/solo-io/gloo/issues/5149 is resolved
 	var (
 		ctx    context.Context
 		cancel context.CancelFunc
@@ -172,5 +149,6 @@ var _ = Describe("endpoint discovery (EDS) works", func() {
 			Expect(failures).To(BeEmpty())
 		})
 	})
+	*/
 
 })

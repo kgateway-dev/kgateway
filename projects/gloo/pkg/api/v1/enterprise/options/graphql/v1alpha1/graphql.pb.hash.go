@@ -71,6 +71,10 @@ func (m *ValueProvider) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte(m.GetProviderTemplate())); err != nil {
+		return 0, err
+	}
+
 	switch m.Provider.(type) {
 
 	case *ValueProvider_GraphqlArg:

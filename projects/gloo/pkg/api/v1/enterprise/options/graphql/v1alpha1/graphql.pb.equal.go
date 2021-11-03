@@ -97,6 +97,10 @@ func (m *ValueProvider) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetProviderTemplate(), target.GetProviderTemplate()) != 0 {
+		return false
+	}
+
 	switch m.Provider.(type) {
 
 	case *ValueProvider_GraphqlArg:
