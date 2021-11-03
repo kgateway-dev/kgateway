@@ -71,6 +71,7 @@ In the future we may add support for regex and subgroups
 "graphqlArg": .envoy.config.filter.http.graphql.v2.ValueProvider.GraphQLArgExtraction
 "typedProvider": .envoy.config.filter.http.graphql.v2.ValueProvider.TypedValueProvider
 "graphqlParent": .envoy.config.filter.http.graphql.v2.ValueProvider.GraphQLParentExtraction
+"providerTemplate": string
 
 ```
 
@@ -79,6 +80,7 @@ In the future we may add support for regex and subgroups
 | `graphqlArg` | [.envoy.config.filter.http.graphql.v2.ValueProvider.GraphQLArgExtraction](../graphql.proto.sk/#graphqlargextraction) | type inferred from schema, no need to provide it. Only one of `graphqlArg`, `typedProvider`, or `graphqlParent` can be set. |
 | `typedProvider` | [.envoy.config.filter.http.graphql.v2.ValueProvider.TypedValueProvider](../graphql.proto.sk/#typedvalueprovider) |  Only one of `typedProvider`, `graphqlArg`, or `graphqlParent` can be set. |
 | `graphqlParent` | [.envoy.config.filter.http.graphql.v2.ValueProvider.GraphQLParentExtraction](../graphql.proto.sk/#graphqlparentextraction) | Fetch value from the graphql_parent of the current field. Only one of `graphqlParent`, `graphqlArg`, or `typedProvider` can be set. |
+| `providerTemplate` | `string` | If non-empty, the template to interpolate the extracted value into. For example, if the string is /api/pets/{}/name and the extracted value 123 is the pet ID will then the extracted value is /api/pets/123/name Use {} as the interpolation character (even repeated) regardless of the type of the provided value. |
 
 
 

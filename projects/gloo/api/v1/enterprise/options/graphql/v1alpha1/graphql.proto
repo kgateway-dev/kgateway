@@ -82,6 +82,13 @@ message ValueProvider {
     // Fetch value from the graphql_parent of the current field.
     GraphQLParentExtraction graphql_parent = 3;
   }
+
+  // If non-empty, the template to interpolate the extracted value into.
+  // For example, if the string is /api/pets/{}/name and the extracted value 123 is the pet
+  // ID will then the extracted value is /api/pets/123/name
+  // Use {} as the interpolation character (even repeated) regardless of the type of the
+  // provided value.
+  string provider_template = 4;
 }
 
 message JsonKeyValue {
