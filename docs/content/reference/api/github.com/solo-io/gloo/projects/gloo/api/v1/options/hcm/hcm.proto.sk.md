@@ -16,6 +16,7 @@ weight: 5
 - [ForwardClientCertDetails](#forwardclientcertdetails)
 - [ServerHeaderTransformation](#serverheadertransformation)
 - [PathWithEscapedSlashesAction](#pathwithescapedslashesaction)
+- [CodecType](#codectype)
   
 
 
@@ -57,8 +58,10 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 "upgrades": []protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
 "maxConnectionDuration": .google.protobuf.Duration
 "maxStreamDuration": .google.protobuf.Duration
+"maxHeadersCount": .google.protobuf.UInt32Value
 "serverHeaderTransformation": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ServerHeaderTransformation
 "pathWithEscapedSlashesAction": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.PathWithEscapedSlashesAction
+"codecType": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CodecType
 
 ```
 
@@ -86,9 +89,11 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `preserveExternalRequestId` | `bool` |  |
 | `upgrades` | [[]protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig](../../protocol_upgrade/protocol_upgrade.proto.sk/#protocolupgradeconfig) | HttpConnectionManager configuration for protocol upgrade requests. Note: WebSocket upgrades are enabled by default on the HTTP Connection Manager and must be explicitly disabled. |
 | `maxConnectionDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions. |
-| `maxStreamDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |
+| `maxStreamDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions. |
+| `maxHeadersCount` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions. |
 | `serverHeaderTransformation` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ServerHeaderTransformation](../hcm.proto.sk/#serverheadertransformation) | For an explanation of the settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto.html#envoy-v3-api-enum-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-serverheadertransformation. |
 | `pathWithEscapedSlashesAction` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.PathWithEscapedSlashesAction](../hcm.proto.sk/#pathwithescapedslashesaction) | Action to take when request URL path contains escaped slash sequences (%2F, %2f, %5C and %5c). The default value can be overridden by the :ref:`http_connection_manager.path_with_escaped_slashes_action<config_http_conn_man_runtime_path_with_escaped_slashes_action>` runtime variable. The :ref:`http_connection_manager.path_with_escaped_slashes_action_sampling<config_http_conn_man_runtime_path_with_escaped_slashes_action_enabled>` runtime variable can be used to apply the action to a portion of all requests. |
+| `codecType` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.CodecType](../hcm.proto.sk/#codectype) | Supplies the type of codec that the connection manager should use. See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#extensions-filters-network-http-connection-manager-v3-httpconnectionmanager. |
 
 
 
@@ -162,6 +167,20 @@ This operation occurs before URL normalization and the merge slashes transformat
 | `REJECT_REQUEST` | Reject client request with the 400 status. gRPC requests will be rejected with the INTERNAL (13) error code. The "httpN.downstream_rq_failed_path_normalization" counter is incremented for each rejected request. |
 | `UNESCAPE_AND_REDIRECT` | Unescape %2F and %5C sequences and redirect request to the new path if these sequences were present. Redirect occurs after path normalization and merge slashes transformations if they were configured. NOTE: gRPC requests will be rejected with the INTERNAL (13) error code. This option minimizes possibility of path confusion exploits by forcing request with unescaped slashes to traverse all parties: downstream client, intermediate proxies, Envoy and upstream server. The "httpN.downstream_rq_redirected_with_normalized_path" counter is incremented for each redirected request. |
 | `UNESCAPE_AND_FORWARD` | Unescape %2F and %5C sequences. Note: this option should not be enabled if intermediaries perform path based access control as it may lead to path confusion vulnerabilities. |
+
+
+
+
+---
+### CodecType
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `AUTO` | For every new connection, the connection manager will determine which codec to use. This mode supports both ALPN for TLS listeners as well as protocol inference for plaintext listeners. If ALPN data is available, it is preferred, otherwise protocol inference is used. In almost all cases, this is the right option to choose for this setting. |
+| `HTTP1` | The connection manager will assume that the client is speaking HTTP/1.1. |
+| `HTTP2` | The connection manager will assume that the client is speaking HTTP/2 (Envoy does not require HTTP/2 to take place over TLS or to use ALPN. Prior knowledge is allowed). |
 
 
 

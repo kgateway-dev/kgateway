@@ -102,6 +102,7 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 	cfg.PreserveExternalRequestId = hcmSettings.GetPreserveExternalRequestId()
 	cfg.ServerHeaderTransformation = envoyhttp.HttpConnectionManager_ServerHeaderTransformation(hcmSettings.GetServerHeaderTransformation())
 	cfg.PathWithEscapedSlashesAction = envoyhttp.HttpConnectionManager_PathWithEscapedSlashesAction(hcmSettings.GetPathWithEscapedSlashesAction())
+	cfg.CodecType = envoyhttp.HttpConnectionManager_CodecType(hcmSettings.GetCodecType())
 
 	if hcmSettings.GetAcceptHttp_10() {
 		cfg.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{
@@ -140,6 +141,13 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 			cfg.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
 		}
 		cfg.GetCommonHttpProtocolOptions().MaxStreamDuration = hcmSettings.GetMaxStreamDuration()
+	}
+
+	if hcmSettings.GetMaxHeadersCount() != nil {
+		if cfg.GetCommonHttpProtocolOptions() == nil {
+			cfg.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
+		}
+		cfg.GetCommonHttpProtocolOptions().MaxHeadersCount = hcmSettings.GetMaxHeadersCount()
 	}
 
 	// allowed upgrades
