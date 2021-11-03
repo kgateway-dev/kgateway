@@ -39,56 +39,56 @@ Note that any `/GET` requests to `/api/pets` of this service return the followin
 ```
 
 1. Create a virtual service that defines a `Route` with a `graphqlSchemaRef` as the
-destination. In this example, all traffic to `/graphql` is handled by the GraphQL server in the Envoy proxy.
-   {{< highlight yaml "hl_lines=12-16" >}}
-   cat << EOF | kubectl apply -f -
-   apiVersion: gateway.solo.io/v1
-   kind: VirtualService
-   metadata:
-     name: 'default'
-     namespace: 'gloo-system'
-   spec:
-     virtualHost:
-       domains:
-       - '*'
-       routes:
-       - matchers:
-          - prefix: '/graphql'
-         graphqlSchemaRef:
-           name: 'gql'
-           namespace: 'gloo-system'
-   EOF
-   {{< /highlight >}}
+destination. In this example, all traffic to `/graphql` is handled by the GraphQL server in the Envoy proxy. 
+{{< highlight yaml "hl_lines=12-16" >}}
+cat << EOF | kubectl apply -f -
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: 'default'
+  namespace: 'gloo-system'
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matchers:
+       - prefix: '/graphql'
+      graphqlSchemaRef:
+        name: 'gql'
+        namespace: 'gloo-system'
+EOF
+{{< /highlight >}}
 
 2. Create the `GraphQLSchema` CR, which contains the schema and information required to resolve it.
-   {{< highlight yaml "hl_lines=25-25" >}}
-   cat << EOF | kubectl apply -f -
-   apiVersion: graphql.gloo.solo.io/v1alpha1
-   kind: GraphQLSchema
-   metadata:
-     name: gql
-     namespace: gloo-system
-   spec:
-     resolutions:
-     - matcher:
-         fieldMatcher:
-           type: Query
-           field: pets
-       restResolver:
-         requestTransform:
-           headers:
-             ':method':
-               typedProvider:
-                 value: 'GET'
-             ':path':
-               typedProvider:
-                 value: '/api/pets'
-         upstreamRef:
-           name: default-petstore-8080
-           namespace: gloo-system
-     schema: "schema { query: Query } type Query { pets: [Pet] } type Pet { name: String }"
-   EOF
-   {{< /highlight >}}
+{{< highlight yaml "hl_lines=25-25" >}}
+cat << EOF | kubectl apply -f -
+apiVersion: graphql.gloo.solo.io/v1alpha1
+kind: GraphQLSchema
+metadata:
+  name: gql
+  namespace: gloo-system
+spec:
+  resolutions:
+  - matcher:
+      fieldMatcher:
+        type: Query
+        field: pets
+    restResolver:
+      requestTransform:
+        headers:
+          ':method':
+            typedProvider:
+              value: 'GET'
+          ':path':
+            typedProvider:
+              value: '/api/pets'
+      upstreamRef:
+        name: default-petstore-8080
+        namespace: gloo-system
+  schema: "schema { query: Query } type Query { pets: [Pet] } type Pet { name: String }"
+EOF
+{{< /highlight >}}
 
 3. Send a request to the endpoint to verify that the request is successfully resolved by Envoy.
    ```shell
