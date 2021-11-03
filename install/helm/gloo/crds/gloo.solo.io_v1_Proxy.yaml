@@ -344,6 +344,9 @@ spec:
                               properties:
                                 acceptHttp10:
                                   type: boolean
+                                codecType:
+                                  type: string
+                                  x-kubernetes-int-or-string: true
                                 defaultHostForHttp10:
                                   type: string
                                 delayedCloseTimeout:
@@ -360,6 +363,11 @@ spec:
                                   type: string
                                 maxConnectionDuration:
                                   type: string
+                                maxHeadersCount:
+                                  maximum: 4294967295
+                                  minimum: 0
+                                  nullable: true
+                                  type: integer
                                 maxRequestHeadersKb:
                                   maximum: 4294967295
                                   minimum: 0

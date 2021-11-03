@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5437
+    resolvesIssue: true
+    description: Add codec_type support for upstreams and max_headers_count for downstreams.
