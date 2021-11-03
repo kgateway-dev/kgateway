@@ -15,7 +15,7 @@ service and configure Gloo Edge to use it to secure your Virtual Services.
 
 In this guide we will see how to create such a custom external auth service. For simplicity, we will implement an HTTP 
 service. With minor adjustments, you should be able to use the contents of this guide to deploy a gRPC server that implements
-the Envoy spec for an [external authorization server](https://github.com/envoyproxy/envoy/blob/master/api/envoy/service/auth/v2/external_auth.proto).
+the Envoy spec for an [external authorization server](https://github.com/envoyproxy/envoy/blob/main/api/envoy/service/auth/v3/external_auth.proto).
 
 ## Setup
 {{< readfile file="/static/content/setup_notes" markdown="true">}}

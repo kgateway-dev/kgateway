@@ -1,3 +1,4 @@
+<!--federation demo hidden for now
 ---
 title: Getting Started
 description: Getting started with Gloo Edge Federation
@@ -257,3 +258,4 @@ kind delete cluster --name remote
 ## Next Steps
 
 Now that you've had a chance to investigate some of the features of Gloo Edge Federation, now might be a good time to read a bit more about the [concepts]({{% versioned_link_path fromRoot="/introduction/gloo_federation/" %}}) behind Gloo Edge Federation or you can try [installing]({{% versioned_link_path fromRoot="/installation/gloo_federation/" %}}) it in your own environment.
+-->

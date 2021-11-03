@@ -10,20 +10,39 @@ When an Upstream fails or becomes unhealthy, Gloo Edge Federation can automatica
 
 To successfully follow this Service Failover guide, you will need the following software available and configured on your system.
 
-* Kubectl - Used to execute commands against the clusters
-* Glooctl - Used to register the Kubernetes clusters with Gloo Edge Federation
-* openssl  - Generates certificates to enable mTLS between multiple Gloo Edge instances
+* `kubectl` - Used to execute commands against the clusters
+* `glooctl` - Used to register the Kubernetes clusters with Gloo Edge Federation
+* `openssl`  - Generates certificates to enable mTLS between multiple Gloo Edge instances
 
-You will also need two Kubernetes clusters running Gloo Edge Enterprise and an installation of Gloo Edge Federation with both clusters registered. You can use [kind](https://kind.sigs.k8s.io/) to deploy local clusters on Docker, or select one of [many other deployment options]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) for Gloo Edge on Kubernetes. 
-
-If you wish to quickly spin up the entire environment and validate the process, you can jump into our [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}). It builds two clusters using kind and takes care of setting up the entire Gloo Edge Federation and Service Failover environment.
+You will also need two Kubernetes clusters running Gloo Edge Enterprise and an installation of Gloo Edge Federation with both clusters registered. You can use [kind](https://kind.sigs.k8s.io/) to deploy local clusters on Docker, or select one of [many other deployment options]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) for Gloo Edge on Kubernetes.
 
 For the purposes of this example, we have two clusters `local` and `remote`. The local cluster is also running Gloo Edge Federation in addition to Gloo Edge Enterprise. The kubectl context for the local cluster is `gloo-fed` and the remote cluster is `gloo-fed-2`.
 
-{{% notice note %}}
-Gloo Edge Enterprise version >= 1.5.0-beta4 is needed for failover.
-If you are using the demo command, that uses the latest version by default.
-{{% /notice %}}
+<!--federation demo hidden for now
+{{% notice tip %}}
+Want to spin up a demo environment to quickly validate the federation process? Try out the [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}).
+{{% /notice%}}
+-->
+
+### Upgrading Gloo Edge to use failover
+
+Gloo Edge Enterprise version `1.5.0-beta4` or later is required to use failover. You can enable failover by setting following Helm value: `gloo.gatewayProxies.NAME.failover.enabled=true`.
+
+An example Helm override file for installing Gloo Edge with failover is:
+```yaml
+gloo:
+  gatewayProxies:
+    gatewayProxy:
+      failover:
+        enabled: true
+      service:
+        type: NodePort
+```
+
+An example helm command to upgrade Gloo Edge is:
+```
+helm upgrade gloo glooe/gloo-ee --namespace gloo-system --values enable-failover.yaml
+```
 
 ## Configure Gloo Edge for Failover
 
