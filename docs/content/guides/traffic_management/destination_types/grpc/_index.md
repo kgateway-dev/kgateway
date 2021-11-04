@@ -241,6 +241,8 @@ spec:
             namespace: gloo-system
 {{< /highlight >}}
 
+{{% notice warning %}} If using a port number that isn't 443, you will need to include the domain with port appended as well. For more, see https://github.com/solo-io/gloo/issues/3505 {{% /notice %}}
+
 Now if we try to list the items again:
 
 ```bash
