@@ -36,8 +36,8 @@ The bootstrap config is the portion of Envoy's config that is applied when an En
 That means that you must either apply this configuration through Helm values during installation or that you must edit the proxy's config map and restart the pod.
 We describe both methods below.
 
-**Option 1: Set the tracing cluster through helm values:**
-
+{{< tabs >}}
+{{< tab name="helm">}}
 {{< highlight yaml "hl_lines=4-16" >}}
 gatewayProxies:
   gatewayProxy:
@@ -54,19 +54,22 @@ gatewayProxies:
                   address:
                     socket_address:
                       address: zipkin
-                      port_value: 1234
+                      port_value: 9411
 {{< /highlight >}}
 
 When you install Gloo Edge using these Helm values, Envoy will be configured with the tracing cluster you specified.
+{{< /tab >}}
 
-**Option 2: Set the tracing cluster by editing the config map:**
+{{< tab name="configmap">}}
 
 First, edit the config map pertaining to your proxy. This should be `gateway-proxy-envoy-config` in the `gloo-system` namespace.
 
 ```bash
 kubectl edit configmap -n gloo-system gateway-proxy-envoy-config
 ```
-Apply the tracing cluster changes. A sample Zipkin configuration is shown below.
+Apply the tracing cluster changes. 
+
+A sample Zipkin configuration is shown here:
 
 {{< highlight yaml "hl_lines=25-36">}}
 apiVersion: v1
@@ -104,7 +107,7 @@ data:
                   address:
                     socket_address:
                       address: zipkin
-                      port_value: 1234
+                      port_value: 9411
 {{< /highlight >}}
 
 To apply the bootstrap config to Envoy we need to restart the process. An easy way to do this is with `kubectl rollout restart`.
@@ -115,16 +118,22 @@ kubectl rollout restart deployment [deployment_name]
 
 When the `gateway-proxy` pod restarts it should have the new trace cluster config.
 
+{{< /tab >}}
+{{< /tabs >}}
+
 ##### 2. Configure a tracing provider
 
 For a list of supported tracing providers, and the configuration that they expect, please see Envoy's documentation on [trace provider configuration](https://www.envoyproxy.io/docs/envoy/v1.13.1/api-v2/config/trace/v2/trace.proto#config-trace-v2-tracing-http).
 For demonstration purposes, we show how to configure a *zipkin* trace provider below.
 
-**Option 1 (Preferred): Set the tracing provider on a dynamic listener:**
 
-You can enable tracing on a listener-by-listener basis. Please see [the tracing listener docs]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/http_connection_manager/#tracing" %}}) for details on how to enable tracing on a listener.
+{{< tabs >}}
+{{< tab name="(Preferred) Dynamic Listener">}}
 
-**Option 2: Set the tracing provider by editing the config map:**
+You can enable tracing on a listener-by-listener basis. Please see [the tracing listener docs]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/http_connection_manager/#tracing" %}}) for details on how to enable tracing on a listener. Note that we have configured a _cluster_ in step 1 which we will refer to by `clusterName`.
+
+{{< /tab >}}
+{{< tab name="configmap">}}
 
 First, edit the config map pertaining to your proxy. This should be `gateway-proxy-envoy-config` in the `gloo-system` namespace.
 
@@ -179,7 +188,11 @@ kubectl rollout restart deployment [deployment_name]
 
 When the `gateway-proxy` pod restarts it should have the new trace provider config.
 
-Note: This provider configuration will only be applied to the static listeners that are defined in the bootstrap config. If you need to support tracing on dynamically created listeners, follow the steps outlined in Option 1.
+{{% notice note %}}
+This provider configuration will only be applied to the static listeners that are defined in the bootstrap config. If you need to support tracing on dynamically created listeners, follow the steps in the "Dynamic Listener" tab.
+{{% /notice %}}
+{{< /tab >}}
+{{< /tabs >}}
 
 ##### 3. (Optional) Annotate routes with descriptors
 
