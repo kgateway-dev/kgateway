@@ -67,7 +67,9 @@ First, edit the config map pertaining to your proxy. This should be `gateway-pro
 ```bash
 kubectl edit configmap -n gloo-system gateway-proxy-envoy-config
 ```
-Apply the tracing cluster changes. A sample Zipkin configuration is shown below.
+Apply the tracing cluster changes. 
+
+A sample Zipkin configuration is shown here:
 
 {{< highlight yaml "hl_lines=25-36">}}
 apiVersion: v1
@@ -131,7 +133,7 @@ For demonstration purposes, we show how to configure a *zipkin* trace provider b
 You can enable tracing on a listener-by-listener basis. Please see [the tracing listener docs]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/http_connection_manager/#tracing" %}}) for details on how to enable tracing on a listener. Note that we have configured a _cluster_ in step 1 which we will refer to by `clusterName`.
 
 {{< /tab >}}
-{{< tab name="configmap"">}}
+{{< tab name="configmap">}}
 
 First, edit the config map pertaining to your proxy. This should be `gateway-proxy-envoy-config` in the `gloo-system` namespace.
 
@@ -186,7 +188,9 @@ kubectl rollout restart deployment [deployment_name]
 
 When the `gateway-proxy` pod restarts it should have the new trace provider config.
 
-Note: This provider configuration will only be applied to the static listeners that are defined in the bootstrap config. If you need to support tracing on dynamically created listeners, follow the steps outlined in Option 1.
+{{% notice note %}}
+This provider configuration will only be applied to the static listeners that are defined in the bootstrap config. If you need to support tracing on dynamically created listeners, follow the steps in the "Dynamic Listener" tab.
+{{% /notice %}}
 {{< /tab >}}
 {{< /tabs >}}
 

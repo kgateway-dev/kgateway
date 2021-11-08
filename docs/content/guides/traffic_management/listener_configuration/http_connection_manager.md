@@ -16,9 +16,9 @@ You can configure the Http Connection Manager on a listener to enable or disable
 
 One of the fields in the HTTP Connection Manager Plugin is `tracing`. This specifies the listener-specific tracing configuration.
 
-For notes on configuring and using tracing with Gloo Edge, please see the [tracing setup docs.]({{% versioned_link_path fromRoot="/guides/observability/tracing/" %}})
+For documentation on configuring and using tracing with Gloo Edge, please see the [tracing setup docs.]({{% versioned_link_path fromRoot="/guides/observability/tracing/" %}})
 
-A tracing upstream or cluster can be specified using `collectorUpstreamRef` or `clusterName` respectively. The tracing configuration fields of the Gateway Custom Resource (CR) are highlighted below.
+A tracing upstream or cluster can be specified using `collectorUpstreamRef` or `clusterName` respectively. The tracing configuration fields of the Gateway Custom Resource (CR) are highlighted here:
 
 {{< tabs >}}
 {{< tab name="collectorUpstreamRef">}}
