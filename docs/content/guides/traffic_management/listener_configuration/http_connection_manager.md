@@ -12,17 +12,18 @@ The HTTP Connection Manager lets you refine the behavior of Envoy for each liste
 
 You can configure the Http Connection Manager on a listener to enable or disable websocket upgrades. See the [Websocket]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/websockets/" %}}) documentation for more. 
 
-### Tracing
+## Tracing
 
 One of the fields in the HTTP Connection Manager Plugin is `tracing`. This specifies the listener-specific tracing configuration.
 
-For notes on configuring and using tracing with Gloo Edge, please see the [tracing setup docs.]({{% versioned_link_path fromRoot="/guides/observability/tracing/" %}})
+For documentation on configuring and using tracing with Gloo Edge, please see the [tracing setup docs.]({{% versioned_link_path fromRoot="/guides/observability/tracing/" %}})
 
-The tracing configuration fields of the Gateway Custom Resource (CR) are highlighted below.
+A tracing upstream or cluster can be specified using `collectorUpstreamRef` or `clusterName` respectively. The tracing configuration fields of the Gateway Custom Resource (CR) are highlighted here:
 
-**Option 1: Using an upstream ref:**
+{{< tabs >}}
+{{< tab name="collectorUpstreamRef">}}
 
-{{< highlight yaml "hl_lines=10-21" >}}
+{{< highlight yaml "hl_lines=10-20" >}}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata: # collapsed for brevity
@@ -46,9 +47,9 @@ spec:
 status: # collapsed for brevity
 {{< /highlight >}}
 
-**Option 2: Using a cluster name:**
-
-{{< highlight yaml "hl_lines=10-19" >}}
+{{< /tab >}}
+{{< tab name="clusterName">}}
+{{< highlight yaml "hl_lines=10-18" >}}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata: # collapsed for brevity
@@ -74,6 +75,8 @@ status: # collapsed for brevity
 If you provide an invalid clusterName, the error will not show up in Gloo.
 However, if you are using Gloo Edge Enterprise you can use our [observability]({{% versioned_link_path fromRoot="/guides/observability" %}}) features to track the `glooe.solo.io/xds/outofsync` statistic
 {{% /notice %}}
+{{< /tab >}}
+{{< /tabs >}}
 
 ### Advanced listener configuration
 
