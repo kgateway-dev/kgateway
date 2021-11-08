@@ -309,7 +309,7 @@ type GatewayProxy struct {
 	Kind                           *GatewayProxyKind            `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
 	PodTemplate                    *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
 	ConfigMap                      *ConfigMap                   `json:"configMap,omitempty"`
-	CustomStaticLayer              interface{}                  `json:"customStaticLayer,omitempty" desc:"static layer configuration (global overrides for envoy behavior) defined in envoy bootstrap yaml"`
+	CustomStaticLayer              interface{}                  `json:"customStaticLayer,omitempty" desc:"Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime"`
 	GlobalDownstreamMaxConnections *uint32                      `json:"globalDownstreamMaxConnections,omitempty" desc:"the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine"`
 	HealthyPanicThreshold          *int8                        `json:"healthyPanicThreshold,omitempty" desc:"the percentage of healthy hosts required to load balance based on health status of hosts"`
 	Service                        *GatewayProxyService         `json:"service,omitempty"`

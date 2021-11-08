@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5481
+    resolvesIssue: true
+    description: >-
+      Update helm customstaticlayer variable to be more descriptive hopefully making it easier to use.
+      
