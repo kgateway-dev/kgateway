@@ -296,6 +296,7 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 		Artifacts:               f,
 		AuthConfigs:             f,
 		RateLimitConfigs:        f,
+		GraphQLSchemas:          f,
 		KubeServiceClient:       newServiceClient(ctx, f, runOptions),
 		WatchNamespaces:         runOptions.NsToWatch,
 		WatchOpts: clients.WatchOpts{

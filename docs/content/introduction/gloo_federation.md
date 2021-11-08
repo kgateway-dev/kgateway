@@ -48,6 +48,8 @@ Each of these CRDs closely corresponds to the local version of Gloo Edge resourc
 
 Gloo Edge Federation also includes a role-based access control framework to enable granular control over access to the resources controlled by Gloo Edge Federation. Users and groups can be associated with roles that grant them the ability to execute a limited set of actions on a particular resource. Gloo Edge Federation’s RBAC model closely resembles the Kubernetes model for service accounts, roles, and role bindings.
 
+<!--federation demo hidden for now
 ## Next Steps
 
-Now that you have an idea of how Gloo Edge Federation is structured and the features it enables, we recommend taking it for a test drive using our [Gloo Edge Federation getting started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}).
+Want to spin up a demo environment to quickly validate the federation process? Try out the [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}).
+-->

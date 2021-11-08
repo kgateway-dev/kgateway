@@ -1,0 +1,16 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5509
+    resolvesIssue: false
+    description: >-
+      Add fix docs so copy / paste works, as it was broken by https://github.com/solo-io/gloo/pull/5529
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/1796
+    resolvesIssue: false
+    description: >-
+      Expose a new API to interpolate value provided, which is needed for graphql openapi to schema translation
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5149
+    resolvesIssue: false
+    description: >-
+      Temporarily comment out test that flakes often until we can fix it

@@ -419,6 +419,10 @@ func convertSimpleAction(simpleRoute *gatewayv1.Route) (*gloov1.Route, error) {
 	case *gatewayv1.Route_DelegateAction:
 		// Should never happen
 		return nil, errors.New("internal error: expected simple route action but found delegation!")
+	case *gatewayv1.Route_GraphqlSchemaRef:
+		glooRoute.Action = &gloov1.Route_GraphqlSchemaRef{
+			GraphqlSchemaRef: action.GraphqlSchemaRef,
+		}
 	default:
 		return nil, NoActionErr
 	}

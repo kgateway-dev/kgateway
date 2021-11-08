@@ -24,14 +24,16 @@ import (
 var _ = Describe("Kube2e: helm", func() {
 
 	var (
-		crdDir             = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
-		chartUri           string
-		rlcCrdName         = "ratelimitconfigs.ratelimit.solo.io"
-		rlcCrdTemplateName = filepath.Join(crdDir, "ratelimit_config.yaml")
-		vhoCrdName         = "virtualhostoptions.gateway.solo.io"
-		vhoCrdTemplateName = filepath.Join(crdDir, "gateway.solo.io_v1_VirtualHostOption.yaml")
-		rtoCrdName         = "routeoptions.gateway.solo.io"
-		rtoCrdTemplateName = filepath.Join(crdDir, "gateway.solo.io_v1_RouteOption.yaml")
+		crdDir                    = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
+		chartUri                  string
+		rlcCrdName                = "ratelimitconfigs.ratelimit.solo.io"
+		rlcCrdTemplateName        = filepath.Join(crdDir, "ratelimit_config.yaml")
+		graphQlSchemaCrdName      = "graphqlschemas.graphql.gloo.solo.io"
+		graphQlSchemaTemplateName = filepath.Join(crdDir, "graphql_schema.yaml")
+		vhoCrdName                = "virtualhostoptions.gateway.solo.io"
+		vhoCrdTemplateName        = filepath.Join(crdDir, "gateway.solo.io_v1_VirtualHostOption.yaml")
+		rtoCrdName                = "routeoptions.gateway.solo.io"
+		rtoCrdTemplateName        = filepath.Join(crdDir, "gateway.solo.io_v1_RouteOption.yaml")
 
 		ctx    context.Context
 		cancel context.CancelFunc
@@ -54,6 +56,13 @@ var _ = Describe("Kube2e: helm", func() {
 			outputBytes := runAndCleanCommand("kubectl", "get", "crd", rlcCrdName)
 			return string(outputBytes)
 		}, "5s", "1s").Should(ContainSubstring(rlcCrdName))
+
+		By("apply new `GraphQLSchema` CRD")
+		runAndCleanCommand("kubectl", "apply", "-f", graphQlSchemaTemplateName)
+		Eventually(func() string {
+			outputBytes := runAndCleanCommand("kubectl", "get", "crd", graphQlSchemaCrdName)
+			return string(outputBytes)
+		}, "5s", "1s").Should(ContainSubstring(graphQlSchemaCrdName))
 
 		By("apply new `VirtualHostOption` CRD")
 		runAndCleanCommand("kubectl", "apply", "-f", vhoCrdTemplateName)

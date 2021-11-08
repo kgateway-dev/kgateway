@@ -242,6 +242,45 @@ apis:
   envoy.config.filter.http.aws_lambda.v2.AWSLambdaProtocolExtension:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto.sk/#AWSLambdaProtocolExtension
     package: envoy.config.filter.http.aws_lambda.v2
+  envoy.config.filter.http.graphql.v2.AbstractTypeResolver:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#AbstractTypeResolver
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.GraphQLConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#GraphQLConfig
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.GraphQLRouteConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#GraphQLRouteConfig
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.JsonKeyValue:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#JsonKeyValue
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.JsonNode:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#JsonNode
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.PathSegment:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#PathSegment
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.Query:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#Query
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.QueryMatcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#QueryMatcher
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.RESTResolver:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#RESTResolver
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.RequestTemplate:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#RequestTemplate
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.Resolution:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#Resolution
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.ResponseTemplate:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#ResponseTemplate
+    package: envoy.config.filter.http.graphql.v2
+  envoy.config.filter.http.graphql.v2.ValueProvider:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/graphql.proto.sk/#ValueProvider
+    package: envoy.config.filter.http.graphql.v2
   envoy.config.filter.http.modsecurity.v2.AuditLogging:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/#AuditLogging
     package: envoy.config.filter.http.modsecurity.v2
@@ -755,6 +794,33 @@ apis:
   google.rpc.Status:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/rpc/status.proto.sk/#Status
     package: google.rpc
+  graphql.gloo.solo.io.GraphQLSchema:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#GraphQLSchema
+    package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.JsonKeyValue:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#JsonKeyValue
+    package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.JsonNode:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#JsonNode
+    package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.PathSegment:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#PathSegment
+    package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.QueryMatcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#QueryMatcher
+    package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.RESTResolver:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#RESTResolver
+    package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.RequestTemplate:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#RequestTemplate
+    package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.Resolution:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#Resolution
+    package: graphql.gloo.solo.io
+  graphql.gloo.solo.io.ValueProvider:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1alpha1/graphql.proto.sk/#ValueProvider
+    package: graphql.gloo.solo.io
   grpc.options.gloo.solo.io.DestinationSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto.sk/#DestinationSpec
     package: grpc.options.gloo.solo.io

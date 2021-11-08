@@ -565,6 +565,21 @@ func (m *Route) Equal(that interface{}) bool {
 			}
 		}
 
+	case *Route_GraphqlSchemaRef:
+		if _, ok := target.Action.(*Route_GraphqlSchemaRef); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGraphqlSchemaRef()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGraphqlSchemaRef()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGraphqlSchemaRef(), target.GetGraphqlSchemaRef()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.Action != target.Action {

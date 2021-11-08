@@ -47,6 +47,10 @@
       {
         "name": "RateLimitConfig",
         "package": "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+      },
+      {
+        "name": "GraphQLSchema",
+        "package": "graphql.gloo.solo.io"
       }
     ],
     "eds.gloo.solo.io": [

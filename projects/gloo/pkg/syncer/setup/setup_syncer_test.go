@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	v1alpha12 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1alpha1"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
@@ -210,6 +212,7 @@ var _ = Describe("SetupSyncer", func() {
 					gatewayv1.GatewayCrd,
 					extauthv1.AuthConfigCrd,
 					v1alpha1.RateLimitConfigCrd,
+					v1alpha12.GraphQLSchemaCrd,
 				}
 
 				for _, crdToRegister := range crdsToRegister {

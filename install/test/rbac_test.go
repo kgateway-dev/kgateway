@@ -215,6 +215,11 @@ var _ = Describe("RBAC Test", func() {
 								Verbs:     []string{"get", "list", "watch", "update"},
 							},
 							{
+								APIGroups: []string{"graphql.gloo.solo.io"},
+								Resources: []string{"graphqlschemas", "graphqlschemas/status"},
+								Verbs:     []string{"get", "list", "watch", "update"},
+							},
+							{
 								APIGroups: []string{""},
 								Resources: []string{"configmaps"},
 								Verbs:     []string{"get", "update"},

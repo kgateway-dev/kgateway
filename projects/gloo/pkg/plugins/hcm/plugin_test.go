@@ -98,6 +98,8 @@ var _ = Describe("Plugin", func() {
 			},
 			MaxConnectionDuration:        prototime.DurationToProto(time.Hour),
 			MaxStreamDuration:            prototime.DurationToProto(time.Hour),
+			MaxHeadersCount:              &wrappers.UInt32Value{Value: 5},
+			CodecType:                    1,
 			ServerHeaderTransformation:   hcm.HttpConnectionManagerSettings_OVERWRITE,
 			PathWithEscapedSlashesAction: hcm.HttpConnectionManagerSettings_REJECT_REQUEST,
 		}
@@ -161,6 +163,9 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.CommonHttpProtocolOptions.IdleTimeout).To(MatchProto(hcms.IdleTimeout))
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxConnectionDuration()).To(MatchProto(hcms.MaxConnectionDuration))
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxStreamDuration()).To(MatchProto(hcms.MaxStreamDuration))
+		Expect(cfg.CommonHttpProtocolOptions.GetMaxHeadersCount()).To(MatchProto(hcms.MaxHeadersCount))
+		Expect(cfg.GetCodecType()).To(Equal(envoyhttp.HttpConnectionManager_HTTP1))
+
 		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_OVERWRITE))
 		Expect(cfg.GetPathWithEscapedSlashesAction()).To(Equal(envoyhttp.HttpConnectionManager_REJECT_REQUEST))
 

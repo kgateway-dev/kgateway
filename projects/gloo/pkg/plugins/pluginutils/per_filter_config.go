@@ -48,6 +48,10 @@ func MarkPerFilterConfig(
 	filterName string,
 	perFilterConfig PerFilterConfigFunc,
 ) error {
+	if in.GetRouteAction() == nil {
+		// nothing to configure
+		return nil
+	}
 	inAction, outAction, err := getRouteActions(in, out)
 	if err != nil {
 		return err

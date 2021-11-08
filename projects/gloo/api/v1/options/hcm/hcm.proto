@@ -74,7 +74,10 @@ message HttpConnectionManagerSettings {
 
     // For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
     google.protobuf.Duration max_connection_duration = 23;
+     // For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
     google.protobuf.Duration max_stream_duration = 24;
+     // For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
+    google.protobuf.UInt32Value max_headers_count = 27;
 
     // For an explanation of the settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto.html#envoy-v3-api-enum-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-serverheadertransformation
     ServerHeaderTransformation server_header_transformation = 25;
@@ -115,4 +118,24 @@ message HttpConnectionManagerSettings {
     // The :ref:`http_connection_manager.path_with_escaped_slashes_action_sampling<config_http_conn_man_runtime_path_with_escaped_slashes_action_enabled>` runtime
     // variable can be used to apply the action to a portion of all requests.
     PathWithEscapedSlashesAction path_with_escaped_slashes_action = 26;
+
+    enum CodecType {
+        // For every new connection, the connection manager will determine which
+        // codec to use. This mode supports both ALPN for TLS listeners as well as
+        // protocol inference for plaintext listeners. If ALPN data is available, it
+        // is preferred, otherwise protocol inference is used. In almost all cases,
+        // this is the right option to choose for this setting.
+        AUTO = 0;
+
+        // The connection manager will assume that the client is speaking HTTP/1.1.
+        HTTP1 = 1;
+
+        // The connection manager will assume that the client is speaking HTTP/2
+        // (Envoy does not require HTTP/2 to take place over TLS or to use ALPN.
+        // Prior knowledge is allowed).
+        HTTP2 = 2;
+    }
+    // Supplies the type of codec that the connection manager should use.
+    // See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#extensions-filters-network-http-connection-manager-v3-httpconnectionmanager
+    CodecType codec_type = 28;
 }

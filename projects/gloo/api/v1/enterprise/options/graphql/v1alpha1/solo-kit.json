@@ -1,0 +1,14 @@
+{
+  "name": "graphql.gloo.solo.io",
+  "version": "v1alpha1",
+  "gen_kube_types": true,
+  "gen_kube_validation_schemas": false,
+  "resource_groups": {
+    "enterprise.gloo.solo.io": [
+      {
+        "name": "GraphQLSchema",
+        "package": "graphql.gloo.solo.io"
+      }
+    ]
+  }
+}
