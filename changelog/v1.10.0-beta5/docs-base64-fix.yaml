@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update base64 commands for macOS vs. Linux options.

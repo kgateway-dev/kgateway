@@ -95,9 +95,14 @@ which is responsible for generating our binary descriptors and writing them out 
 
 Next we need to configure our `Gateway` to handle gRPC to JSON transcoding using our generated descriptors. Since yaml can't handle binary data, we need to encode the binary descriptor set for our gRPC service in base64 (standard encoding). From the root of the Gloo Edge repo:
 
-```shell script
+{{< tabs >}}
+{{< tab name="macOS" codelang="shell" >}}
 cat docs/examples/grpc-json-transcoding/bookstore/descriptors/proto.pb | base64
-```
+{{< /tab >}}
+{{< tab name="Linux" codelang="shell">}}
+cat docs/examples/grpc-json-transcoding/bookstore/descriptors/proto.pb | base64 -w 0
+{{< /tab >}}
+{{< /tabs >}}
 
 Taking the output from that, we can now configure our gateway (`kubectl apply` this gateway) using the base64 encoded descriptor and setting it on `spec.httpGateway.options.grpc_json_transcoder.proto_descriptor_bin`:
 
