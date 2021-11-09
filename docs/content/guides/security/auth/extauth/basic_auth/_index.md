@@ -174,7 +174,7 @@ Authorization: basic <base64_encoded_credentials>
 
 To encode the credentials, just run:
 
-```shell script
+```shell
 echo -n "user:password" | base64
 ```
 
