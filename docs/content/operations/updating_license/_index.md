@@ -73,6 +73,10 @@ GLOO_KEY=your-new-enterprise-key-string
 echo $GLOO_KEY | base64 | read output;kubectl patch secret license -n gloo-system -p="{\"data\":{\"license-key\": \"$output\"}}" -v=1
 ```
 
+{{% notice note %}}
+Make sure that the base64 encoding does not add new lines. If new lines are added, trim the new lines by running the command again with the `-w 0` option.
+{{% /notice %}}
+
 If successful, this script should respond with: `secret/license patched`.
 
 ## Verify the New License
