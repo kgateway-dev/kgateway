@@ -174,14 +174,9 @@ Authorization: basic <base64_encoded_credentials>
 
 To encode the credentials, just run:
 
-{{< tabs >}}
-{{< tab name="macOS" codelang="shell" >}}
+```shell
 echo -n "user:password" | base64
-{{< /tab >}}
-{{< tab name="Linux" codelang="shell">}}
-echo -n "user:password" | base64 -w 0
-{{< /tab >}}
-{{< /tabs >}}
+```
 
 This outputs `dXNlcjpwYXNzd29yZA==`. Let's include the header with this value in our request:
 
