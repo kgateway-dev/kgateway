@@ -191,7 +191,12 @@ var _ = Describe("Ssl", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cfg.CommonTlsContext.AlpnProtocols).To(Equal([]string{"h2", "http/1.1"}))
 		})
-
+		It("should set alpn empty for downstream config", func() {
+			downstreamCfg.AlpnProtocols = []string{"allow_empty"}
+			cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfg.CommonTlsContext.AlpnProtocols).To(Equal([]string{}))
+		})
 		It("should set alpn for downstream config", func() {
 			downstreamCfg.AlpnProtocols = []string{"test"}
 			cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
