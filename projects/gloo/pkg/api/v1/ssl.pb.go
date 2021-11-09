@@ -104,6 +104,7 @@ type SslConfig struct {
 	Parameters           *SslParameters `protobuf:"bytes,6,opt,name=parameters,proto3" json:"parameters,omitempty"`
 	// Set Application Level Protocol Negotiation
 	// If empty, defaults to ["h2", "http/1.1"].
+	// As an advanced option you may use ["allow_empty"] to avoid defaults and set alpn to have no alpn set (ie pass empty slice).
 	AlpnProtocols []string `protobuf:"bytes,7,rep,name=alpn_protocols,json=alpnProtocols,proto3" json:"alpn_protocols,omitempty"`
 	// If the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default.
 	// Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA.

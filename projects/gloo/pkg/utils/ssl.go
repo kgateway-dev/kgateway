@@ -7,6 +7,7 @@ import (
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -71,9 +72,13 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 	if common.GetValidationContextType() != nil {
 		requireClientCert = &wrappers.BoolValue{Value: !dc.GetOneWayTls().GetValue()}
 	}
+
 	// default alpn for downstreams.
 	if len(common.GetAlpnProtocols()) == 0 {
 		common.AlpnProtocols = []string{"h2", "http/1.1"}
+	} else if len(common.GetAlpnProtocols()) == 1 && common.GetAlpnProtocols()[0] == constants.AllowEmpty { // allow override for advanced usage to set to a dangerous setting
+		common.AlpnProtocols = []string{}
+
 	}
 
 	out := &envoyauth.DownstreamTlsContext{

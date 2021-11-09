@@ -33,6 +33,7 @@ message SslConfig {
 
     // Set Application Level Protocol Negotiation
     // If empty, defaults to ["h2", "http/1.1"].
+    // As an advanced option you may use ["allow_empty"] to avoid defaults and set alpn to have no alpn set (ie pass empty slice).
     repeated string alpn_protocols = 7;
 
     // If the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default.

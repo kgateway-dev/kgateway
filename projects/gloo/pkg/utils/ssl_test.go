@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	. "github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -191,7 +192,12 @@ var _ = Describe("Ssl", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cfg.CommonTlsContext.AlpnProtocols).To(Equal([]string{"h2", "http/1.1"}))
 		})
-
+		It("should set alpn empty for downstream config", func() {
+			downstreamCfg.AlpnProtocols = []string{constants.AllowEmpty}
+			cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfg.CommonTlsContext.AlpnProtocols).To(Equal([]string{}))
+		})
 		It("should set alpn for downstream config", func() {
 			downstreamCfg.AlpnProtocols = []string{"test"}
 			cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
