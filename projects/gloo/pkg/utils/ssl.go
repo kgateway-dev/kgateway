@@ -76,7 +76,7 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 	// default alpn for downstreams.
 	if len(common.GetAlpnProtocols()) == 0 {
 		common.AlpnProtocols = []string{"h2", "http/1.1"}
-	} else if len(common.GetAlpnProtocols()) == 1 && common.GetAlpnProtocols()[0] == constants.AllowEnabled { // allow override for advanced usage to set to a dangerous setting
+	} else if len(common.GetAlpnProtocols()) == 1 && common.GetAlpnProtocols()[0] == constants.AllowEmpty { // allow override for advanced usage to set to a dangerous setting
 		common.AlpnProtocols = []string{}
 
 	}
