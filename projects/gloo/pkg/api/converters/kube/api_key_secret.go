@@ -54,7 +54,7 @@ func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 		}
 
 		glooSecret := &v1.Secret{
-			Metadata: kubeutils.FromKubeMeta(secret.ObjectMeta),
+			Metadata: kubeutils.FromKubeMeta(secret.ObjectMeta, true),
 			Kind: &v1.Secret_ApiKey{
 				ApiKey: apiKeySecret,
 			},

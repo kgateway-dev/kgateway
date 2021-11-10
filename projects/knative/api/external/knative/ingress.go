@@ -11,7 +11,7 @@ import (
 type Ingress v1alpha1.Ingress
 
 func (p *Ingress) GetMetadata() *core.Metadata {
-	return kubeutils.FromKubeMeta(p.ObjectMeta)
+	return kubeutils.FromKubeMeta(p.ObjectMeta, true)
 }
 
 func (p *Ingress) SetMetadata(meta *core.Metadata) {
