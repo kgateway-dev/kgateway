@@ -4,3 +4,6 @@ changelog:
     dependencyRepo: solo-kit
     dependencyTag: v0.20.4
     description: Pull in Solo-kit changes that allow us to ignore ownerReferences
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/4790
+    description: Remove ownerReference mapping for upstreams created by UDS

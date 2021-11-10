@@ -1,4 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/4790
-    description: Remove ownerReference mapping for upstreams created by UDS
