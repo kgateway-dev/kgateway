@@ -272,12 +272,14 @@ This option determines the root of the directory tree used to this end.
 
 ```yaml
 "fdsMode": .gloo.solo.io.Settings.DiscoveryOptions.FdsMode
+"udsEnabled": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `fdsMode` | [.gloo.solo.io.Settings.DiscoveryOptions.FdsMode](../settings.proto.sk/#fdsmode) |  |
+| `udsEnabled` | `bool` |  |
 
 
 

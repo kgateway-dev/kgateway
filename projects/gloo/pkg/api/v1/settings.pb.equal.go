@@ -934,6 +934,10 @@ func (m *Settings_DiscoveryOptions) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetUdsEnabled() != target.GetUdsEnabled() {
+		return false
+	}
+
 	return true
 }
 

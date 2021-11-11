@@ -110,6 +110,8 @@ spec:
                   fdsMode:
                     type: string
                     x-kubernetes-int-or-string: true
+                  udsEnabled:
+                    type: boolean
                 type: object
               discoveryNamespace:
                 type: string
