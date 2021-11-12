@@ -148,7 +148,6 @@ message Matcher {
     repeated solo.io.envoy.config.core.v3.CidrRange prefix_ranges = 2;
 }
 
-message
 // Expressions to define which virtual services to select
 // Example:
 // expressions:
