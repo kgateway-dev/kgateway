@@ -84,7 +84,7 @@ EOF
 ```
 
 Finally, we'll install Gloo Edge Enterprise with Helm. Be sure to update the value for the license key.
-Using `update --install` will update an existing installation and install it if it doesn't exist
+Include the `--install` flag to upgrade the existing installation or install a new release if one does not already exist.
 
 ```bash
 helm update --install gloo glooe/gloo-ee --namespace gloo-system \
