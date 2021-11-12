@@ -128,6 +128,8 @@ message ListenerReport {
         HttpListenerReport http_listener_report = 3;
         // report for the tcp listener
         TcpListenerReport tcp_listener_report = 4;
+        //report for the hybrid listener
+        HybridListenerReport hybrid_listener_report = 5;
     }
 }
 
@@ -243,4 +245,16 @@ message TcpHostReport {
 
     // errors on the tcp host
     repeated Error errors = 2;
+}
+
+message HybridListenerReport {
+    // map key should uniquely identify MatchedListenerReport by matcher
+    map<string,MatchedListenerReport> matched_listener_reports = 1;
+}
+
+message MatchedListenerReport {
+    oneof ListenerReportType {
+        HttpListenerReport http_listener_report = 1;
+        TcpListenerReport tcp_listener_report = 2;
+    }
 }

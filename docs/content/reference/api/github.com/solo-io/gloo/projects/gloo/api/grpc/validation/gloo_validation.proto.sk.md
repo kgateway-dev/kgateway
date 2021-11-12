@@ -40,6 +40,8 @@ weight: 5
 - [TcpHostReport](#tcphostreport)
 - [Error](#error)
 - [Type](#type)
+- [HybridListenerReport](#hybridlistenerreport)
+- [MatchedListenerReport](#matchedlistenerreport)
   
 
 
@@ -229,14 +231,16 @@ If the report contains no errors, the (sub-)resource is valid.
 "errors": []gloo.solo.io.ListenerReport.Error
 "httpListenerReport": .gloo.solo.io.HttpListenerReport
 "tcpListenerReport": .gloo.solo.io.TcpListenerReport
+"hybridListenerReport": .gloo.solo.io.HybridListenerReport
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `errors` | [[]gloo.solo.io.ListenerReport.Error](../gloo_validation.proto.sk/#error) | errors on top-level config of the listener. |
-| `httpListenerReport` | [.gloo.solo.io.HttpListenerReport](../gloo_validation.proto.sk/#httplistenerreport) | report for the http listener. Only one of `httpListenerReport` or `tcpListenerReport` can be set. |
-| `tcpListenerReport` | [.gloo.solo.io.TcpListenerReport](../gloo_validation.proto.sk/#tcplistenerreport) | report for the tcp listener. Only one of `tcpListenerReport` or `httpListenerReport` can be set. |
+| `httpListenerReport` | [.gloo.solo.io.HttpListenerReport](../gloo_validation.proto.sk/#httplistenerreport) | report for the http listener. Only one of `httpListenerReport`, `tcpListenerReport`, or `hybridListenerReport` can be set. |
+| `tcpListenerReport` | [.gloo.solo.io.TcpListenerReport](../gloo_validation.proto.sk/#tcplistenerreport) | report for the tcp listener. Only one of `tcpListenerReport`, `httpListenerReport`, or `hybridListenerReport` can be set. |
+| `hybridListenerReport` | [.gloo.solo.io.HybridListenerReport](../gloo_validation.proto.sk/#hybridlistenerreport) | report for the hybrid listener. Only one of `hybridListenerReport`, `httpListenerReport`, or `tcpListenerReport` can be set. |
 
 
 
@@ -566,6 +570,42 @@ error types for tcp host config
 | `NameNotUniqueError` |  |
 | `InvalidDestinationError` |  |
 | `ProcessingError` |  |
+
+
+
+
+---
+### HybridListenerReport
+
+
+
+```yaml
+"matchedListenerReports": map<string, .gloo.solo.io.MatchedListenerReport>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `matchedListenerReports` | `map<string, .gloo.solo.io.MatchedListenerReport>` | map key should uniquely identify MatchedListenerReport by matcher. |
+
+
+
+
+---
+### MatchedListenerReport
+
+
+
+```yaml
+"httpListenerReport": .gloo.solo.io.HttpListenerReport
+"tcpListenerReport": .gloo.solo.io.TcpListenerReport
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `httpListenerReport` | [.gloo.solo.io.HttpListenerReport](../gloo_validation.proto.sk/#httplistenerreport) |  Only one of `httpListenerReport` or `tcpListenerReport` can be set. |
+| `tcpListenerReport` | [.gloo.solo.io.TcpListenerReport](../gloo_validation.proto.sk/#tcplistenerreport) |  Only one of `tcpListenerReport` or `httpListenerReport` can be set. |
 
 
 

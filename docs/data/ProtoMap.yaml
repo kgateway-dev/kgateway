@@ -506,6 +506,9 @@ apis:
   gloo.solo.io.HybridListener:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#HybridListener
     package: gloo.solo.io
+  gloo.solo.io.HybridListenerReport:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#HybridListenerReport
+    package: gloo.solo.io
   gloo.solo.io.Kubernetes:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/version/version.proto.sk/#Kubernetes
     package: gloo.solo.io
@@ -535,6 +538,9 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.MatchedListener:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#MatchedListener
+    package: gloo.solo.io
+  gloo.solo.io.MatchedListenerReport:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#MatchedListenerReport
     package: gloo.solo.io
   gloo.solo.io.Matcher:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Matcher
