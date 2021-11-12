@@ -20,6 +20,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/subset.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto";
 
 /*
 A Proxy is a container for the entire set of configuration that will to be applied to one or more Proxy instances.
@@ -79,6 +80,8 @@ message Listener {
 
         // contains configuration options for Gloo's TCP-level features
         TcpListener tcp_listener = 5;
+
+        HybridListener hybrid_listener = 11;
     }
 
     // SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port.
@@ -163,6 +166,25 @@ message HttpListener {
     HttpListenerOptions options = 2;
     // prefix for addressing envoy stats for the http connection manager
     string stat_prefix = 3;
+}
+
+message HybridListener {
+    repeated MatchedListener matched_listeners = 1;
+}
+
+message MatchedListener {
+    Matcher matcher = 1;
+
+    oneof ListenerType {
+        HttpListener http_listener = 2;
+        TcpListener tcp_listener = 3;
+    }
+}
+
+message Matcher {
+    gloo.solo.io.SslConfig ssl_config = 1;
+
+    repeated .solo.io.envoy.config.core.v3.CidrRange prefix_ranges = 2;
 }
 
 /*
