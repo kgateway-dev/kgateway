@@ -289,6 +289,6 @@ Set up Zipkin tracing in a [local Kind cluster]({{< versioned_link_path fromRoot
         "Labels": {}
     }
 ]
-```
+{{< /highlight >}}
 
 3. Configure a [tracing cluster]({{< versioned_link_path fromRoot="/guides/observability/tracing/#1-configure-a-tracing-cluster" >}}) with the IP address of Zipkin, such as `172.18.0.2` in this example.
