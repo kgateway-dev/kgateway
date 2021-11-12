@@ -232,7 +232,10 @@ Set up Zipkin tracing in a [local Kind cluster]({{< versioned_link_path fromRoot
     docker run --network=kind -itd --name zipkin -p 9411:9411 openzipkin/zipkin
     ```
 
-Run `docker network inspect kind` to ensure both zipkin and zipkin-tracing-control-plane are in the kind network.
+2. Verify that both `zipkin` and `zipkin-tracing-control-plane` are in your local Kind cluster network.
+     ```shell
+     docker network inspect kind
+     ```
 ```json
 [
     {
