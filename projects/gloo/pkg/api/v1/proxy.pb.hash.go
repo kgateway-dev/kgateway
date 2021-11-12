@@ -617,7 +617,7 @@ func (m *Matcher) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	for _, v := range m.GetPrefixRanges() {
+	for _, v := range m.GetSourcePrefixRanges() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("")); err != nil {

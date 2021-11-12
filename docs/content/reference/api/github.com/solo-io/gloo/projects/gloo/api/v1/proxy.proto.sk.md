@@ -252,14 +252,14 @@ Some traffic policies can be configured to work both on the listener and virtual
 
 ```yaml
 "sslConfig": .gloo.solo.io.SslConfig
-"prefixRanges": []solo.io.envoy.config.core.v3.CidrRange
+"sourcePrefixRanges": []solo.io.envoy.config.core.v3.CidrRange
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `sslConfig` | [.gloo.solo.io.SslConfig](../ssl.proto.sk/#sslconfig) |  |
-| `prefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../external/envoy/config/core/v3/address.proto.sk/#cidrrange) |  |
+| `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../external/envoy/config/core/v3/address.proto.sk/#cidrrange) |  |
 
 
 

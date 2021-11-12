@@ -160,14 +160,14 @@ and the routing configuration to upstreams that are reachable via a specific por
 
 ```yaml
 "sslConfig": .gloo.solo.io.SslConfig
-"prefixRanges": []solo.io.envoy.config.core.v3.CidrRange
+"sourcePrefixRanges": []solo.io.envoy.config.core.v3.CidrRange
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk/#sslconfig) |  |
-| `prefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../../../gloo/api/external/envoy/config/core/v3/address.proto.sk/#cidrrange) |  |
+| `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../../../gloo/api/external/envoy/config/core/v3/address.proto.sk/#cidrrange) |  |
 
 
 

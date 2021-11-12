@@ -1280,7 +1280,7 @@ spec:
                           type: object
                         matcher:
                           properties:
-                            prefixRanges:
+                            sourcePrefixRanges:
                               items:
                                 properties:
                                   addressPrefix:

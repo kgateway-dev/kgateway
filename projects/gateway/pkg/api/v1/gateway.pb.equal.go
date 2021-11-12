@@ -455,17 +455,17 @@ func (m *Matcher) Equal(that interface{}) bool {
 		}
 	}
 
-	if len(m.GetPrefixRanges()) != len(target.GetPrefixRanges()) {
+	if len(m.GetSourcePrefixRanges()) != len(target.GetSourcePrefixRanges()) {
 		return false
 	}
-	for idx, v := range m.GetPrefixRanges() {
+	for idx, v := range m.GetSourcePrefixRanges() {
 
 		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetPrefixRanges()[idx]) {
+			if !h.Equal(target.GetSourcePrefixRanges()[idx]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetPrefixRanges()[idx]) {
+			if !proto.Equal(v, target.GetSourcePrefixRanges()[idx]) {
 				return false
 			}
 		}
