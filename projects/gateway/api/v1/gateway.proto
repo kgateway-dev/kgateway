@@ -17,6 +17,8 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto";
+
 /*
 A Gateway describes a single Listener (bind address:port)
 and the routing configuration to upstreams that are reachable via a specific port on the Gateway Proxy itself.
@@ -143,13 +145,7 @@ message MatchedGateway {
 message Matcher {
     gloo.solo.io.SslConfig ssl_config = 1;
 
-    repeated CidrRange prefix_ranges = 2;
-}
-
-message CidrRange {
-    string address_prefix = 1;
-
-    google.protobuf.UInt32Value prefix_len = 2;
+    repeated solo.io.envoy.config.core.v3.CidrRange prefix_ranges = 2;
 }
 
 message
