@@ -285,4 +285,4 @@ Run `docker network inspect kind` to ensure both zipkin and zipkin-tracing-contr
 ]
 ```
 
-`172.18.0.2` would be the IP to specify as the address for your zipkin cluster [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/#1-configure-a-tracing-cluster)
+3. Configure a [tracing cluster]({{< versioned_link_path fromRoot="/guides/observability/tracing/#1-configure-a-tracing-cluster" >}}) with the IP address of Zipkin, such as `172.18.0.2` in this example.
