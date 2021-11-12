@@ -226,7 +226,7 @@ status: # collapsed for brevity
 {{< /highlight >}}
 
 ##### 4. (Optional) Setting up zipkin locally
-
+Set up Zipkin tracing in a [local Kind cluster]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#kind" >}}) for local troubleshooting and experimentation. 
 `docker run --network=kind -itd --name zipkin -p 9411:9411 openzipkin/zipkin`
 
 Run `docker network inspect kind` to ensure both zipkin and zipkin-tracing-control-plane are in the kind network.
