@@ -236,7 +236,7 @@ Set up Zipkin tracing in a [local Kind cluster]({{< versioned_link_path fromRoot
      ```shell
      docker network inspect kind
      ```
-```json
+{{< highlight json "hl_lines=35">}}
 [
     {
         "Name": "kind",
