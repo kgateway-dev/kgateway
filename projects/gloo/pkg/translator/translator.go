@@ -171,16 +171,31 @@ ClusterLoop:
 
 	proxyRpt := validation.MakeReport(proxy)
 
-	for i, listener := range proxy.GetListeners() {
-		listenerReport := proxyRpt.GetListenerReports()[i]
+	listenerSubsystemTranslatorFactory := NewListenerSubsystemTranslatorFactory(t.plugins, proxy, t.sslConfigTranslator)
 
+	for i, listener := range proxy.GetListeners() {
 		logger.Infof("computing envoy resources for listener: %v", listener.GetName())
 
-		envoyResources := t.computeListenerResources(params, proxy, listener, listenerReport)
-		if envoyResources != nil {
-			listeners = append(listeners, envoyResources.listener)
-			if envoyResources.routeConfig != nil {
-				routeConfigs = append(routeConfigs, envoyResources.routeConfig)
+		listenerReport := proxyRpt.GetListenerReports()[i]
+
+		// TODO: This only needs to happen once, we should move it out of the loop
+		validateListenerPorts(proxy, listenerReport)
+
+		// Select a ListenerTranslator and RouteConfigurationTranslator, based on the type of listener (ie TCP, HTTP, or Hybrid)
+		listenerTranslator, routeConfigurationTranslator := listenerSubsystemTranslatorFactory.GetListenerSubsystemTranslators(listener, listenerReport)
+
+		// 1. Compute RouteConfiguration
+		// This way we call ProcessVirutalHost/ProcessRoute first
+		envoyRouteConfiguration := routeConfigurationTranslator.ComputeRouteConfiguration(params)
+
+		// 2. Compute Listener
+		// This way we evaluate HttpFilters second
+		envoyListener := listenerTranslator.ComputeListener(params)
+
+		if envoyListener != nil {
+			listeners = append(listeners, envoyListener)
+			if len(envoyRouteConfiguration) > 0 {
+				routeConfigs = append(routeConfigs, envoyRouteConfiguration...)
 			}
 		}
 	}
@@ -215,39 +230,6 @@ ClusterLoop:
 	}
 
 	return xdsSnapshot, reports, proxyRpt, nil
-}
-
-// the set of resources returned by one iteration for a single v1.Listener
-// the top level Translate function should aggregate these into a finished snapshot
-type listenerResources struct {
-	routeConfig *envoy_config_route_v3.RouteConfiguration
-	listener    *envoy_config_listener_v3.Listener
-}
-
-func (t *translatorInstance) computeListenerResources(
-	params plugins.Params,
-	proxy *v1.Proxy,
-	listener *v1.Listener,
-	listenerReport *validationapi.ListenerReport,
-) *listenerResources {
-	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
-	params.Ctx = ctx
-	defer span.End()
-
-	rdsName := routeConfigName(listener)
-
-	// Calculate routes before listeners, so that HttpFilters is called after ProcessVirtualHost\ProcessRoute
-	routeConfig := t.computeRouteConfig(params, proxy, listener, rdsName, listenerReport)
-
-	envoyListener := t.computeListener(params, proxy, listener, listenerReport)
-	if envoyListener == nil {
-		return nil
-	}
-
-	return &listenerResources{
-		listener:    envoyListener,
-		routeConfig: routeConfig,
-	}
 }
 
 func (t *translatorInstance) generateXDSSnapshot(
