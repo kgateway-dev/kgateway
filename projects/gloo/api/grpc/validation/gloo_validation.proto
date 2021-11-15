@@ -248,8 +248,8 @@ message TcpHostReport {
 }
 
 message HybridListenerReport {
-    // map key should uniquely identify MatchedListenerReport by matcher
-    map<string,MatchedListenerReport> matched_listener_reports = 1;
+    // order should match that of associated HybridListener
+    repeated MatchedListenerReport matched_listener_reports = 1;
 }
 
 message MatchedListenerReport {

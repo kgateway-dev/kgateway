@@ -580,13 +580,13 @@ error types for tcp host config
 
 
 ```yaml
-"matchedListenerReports": map<string, .gloo.solo.io.MatchedListenerReport>
+"matchedListenerReports": []gloo.solo.io.MatchedListenerReport
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `matchedListenerReports` | `map<string, .gloo.solo.io.MatchedListenerReport>` | map key should uniquely identify MatchedListenerReport by matcher. |
+| `matchedListenerReports` | [[]gloo.solo.io.MatchedListenerReport](../gloo_validation.proto.sk/#matchedlistenerreport) | order should match that of associated HybridListener. |
 
 
 

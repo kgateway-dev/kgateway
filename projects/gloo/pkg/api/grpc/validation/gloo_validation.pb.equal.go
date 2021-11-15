@@ -836,14 +836,14 @@ func (m *HybridListenerReport) Equal(that interface{}) bool {
 	if len(m.GetMatchedListenerReports()) != len(target.GetMatchedListenerReports()) {
 		return false
 	}
-	for k, v := range m.GetMatchedListenerReports() {
+	for idx, v := range m.GetMatchedListenerReports() {
 
 		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetMatchedListenerReports()[k]) {
+			if !h.Equal(target.GetMatchedListenerReports()[idx]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetMatchedListenerReports()[k]) {
+			if !proto.Equal(v, target.GetMatchedListenerReports()[idx]) {
 				return false
 			}
 		}
