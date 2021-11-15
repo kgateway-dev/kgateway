@@ -1,0 +1,9 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: cncf
+    dependencyRepo: containerd
+    dependencyTag: v1.4.11
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: docker
+    dependencyRepo: docker/cli
+    dependencyTag: v20.10.10
