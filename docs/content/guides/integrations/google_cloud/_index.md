@@ -120,7 +120,7 @@ You can `kubectl describe` the resources to see the status.
 
 And in the google cloud console, you will see the new NEGs.
 
-![New NEGs]({{% versioned_link_path fromRoot="/img/new-negs.png" %}})
+![New NEGs]({{% versioned_link_path fromRoot="/img/gcp-lb-new-negs.png" %}})
 
 Since you have deployed three replicas, you can see there are 3 network endpoints per each NEG.
 
@@ -132,7 +132,7 @@ In this article we will show how to setup an external HTTPS LoadBalancer and an 
 
 To instantiate a LoadBalancer in Google Clooud (GCP), you need to create following set of resources:
 
-![GCP Resources]({{% versioned_link_path fromRoot="/img/neg-resources.png" %}})
+![GCP Resources]({{% versioned_link_path fromRoot="/img/gcp-lb-neg-resources.png" %}})
 
 ### External HTTPS LoadBalancer
 
@@ -159,7 +159,7 @@ gcloud compute firewall-rules list --filter="name~gke-$CLUSTER_NAME-[0-9a-z]*"  
 
 In the Gloogle Console, you can find the resource at **VPC Network -> Firewall**. You can filter by the name.
 
-![LB Firewall]({{% versioned_link_path fromRoot="/img/firewall.png" %}})
+![LB Firewall]({{% versioned_link_path fromRoot="/img/gcp-lb-firewall.png" %}})
 
 You need an address for the LoadBalancer:
 
@@ -170,7 +170,7 @@ gcloud compute addresses create my-gloo-edge-loadbalancer-address-https \
 
 In the Gloogle Console, you can find the resource at **VPC Network -> External IP Addresses**. You can filter by the name.
 
-![LB Address]({{% versioned_link_path fromRoot="/img/address.png" %}})
+![LB Address]({{% versioned_link_path fromRoot="/img/gcp-lb-address.png" %}})
 
 A health check:
 
@@ -186,7 +186,7 @@ Notice that you are checking port `8080`. It is important that you have configur
 
 In the Gloogle Console, you can find the resource at **Compute Engine -> Health checks**. You can filter by the name.
 
-![LB HealthCheck]({{% versioned_link_path fromRoot="/img/healthcheck.png" %}})
+![LB HealthCheck]({{% versioned_link_path fromRoot="/img/gcp-lb-healthcheck.png" %}})
 
 A backend service:
 
@@ -199,7 +199,7 @@ gcloud compute backend-services create my-gloo-edge-backend-service-http \
 
 In the Gloogle Console, you can find the resource at **Network Services -> Load Balancing -> Backends tab**. You can filter by the name.
 
-![LB BackEnd Services]({{% versioned_link_path fromRoot="/img/backend.png" %}})
+![LB BackEnd Services]({{% versioned_link_path fromRoot="/img/gcp-lb-backend.png" %}})
 
 
 A URL-map:
@@ -212,7 +212,7 @@ gcloud compute url-maps create my-gloo-edge-loadbalancer-http \
 
 In the Gloogle Console, you can find the resource at **Network Services -> Load Balancing -> Load Balancers tab**. You can filter by the name.
 
-![LB URL Map]({{% versioned_link_path fromRoot="/img/urlmap.png" %}})
+![LB URL Map]({{% versioned_link_path fromRoot="/img/gcp-lb-urlmap.png" %}})
 
 Create a self-signed certificate and a `ssl-certificate`:
 
@@ -244,7 +244,7 @@ This feature belongs to [Load Balancer advanced configuration](https://console.c
 
 You can find the resource at **Network Services -> Load Balancing -> Target Proxies tab**. You can filter by the name.
 
-![LB Forwarding Rules]({{% versioned_link_path fromRoot="/img/targetproxies.png" %}})
+![LB Forwarding Rules]({{% versioned_link_path fromRoot="/img/gcp-lb-targetproxies.png" %}})
 
 A forwarding-rule:
 
@@ -258,7 +258,7 @@ gcloud compute forwarding-rules create my-gloo-edge-loadbalancer-http-content-ru
 
 In the Gloogle Console, you can find the resource at **Network Services -> Load Balancing -> Frontends tab**. You can filter by the name.
 
-![LB Forwarding Rules]({{% versioned_link_path fromRoot="/img/forwardingrules.png" %}})
+![LB Forwarding Rules]({{% versioned_link_path fromRoot="/img/gcp-lb-forwardingrules.png" %}})
 
 And you need to attach the NEG to the backend service:
 
