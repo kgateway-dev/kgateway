@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5324
+    resolvesIssue: false
+    description: Part 1 of a translator refactor which should make it easier to add new GatewayTypes
