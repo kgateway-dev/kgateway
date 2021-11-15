@@ -37,7 +37,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetListenerSubsystemTranslators(lis
 	ListenerTranslator,
 	RouteConfigurationTranslator,
 ) {
-	switch _ := listener.GetListenerType().(type) {
+	switch listener.GetListenerType().(type) {
 	case *v1.Listener_HttpListener:
 		listenerTranslator := &listenerTranslatorInstance{
 			listener: listener,
