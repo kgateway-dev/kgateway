@@ -169,7 +169,11 @@ var _ = Describe("Translator", func() {
 		getPlugins := func() []plugins.Plugin {
 			return registeredPlugins
 		}
-		translator = NewTranslator(glooutils.NewSslConfigTranslator(), settings, getPlugins)
+
+		getPluginRegistry := func() plugins.PluginRegistry {
+			return registry.NewPluginRegistry(getPlugins())
+		}
+		translator = NewTranslator(glooutils.NewSslConfigTranslator(), settings, getPluginRegistry)
 		httpListener := &v1.Listener{
 			Name:        "http-listener",
 			BindAddress: "127.0.0.1",
