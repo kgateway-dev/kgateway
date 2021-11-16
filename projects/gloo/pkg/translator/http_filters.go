@@ -51,16 +51,11 @@ func NewHttpConnectionManager(
 	}
 }
 
-func (t *translatorInstance) computeHttpConnectionManagerFilter(
-	params plugins.Params,
-	listener *v1.HttpListener,
-	rdsName string,
-	httpListenerReport *validationapi.HttpListenerReport,
-) *envoy_config_listener_v3.Filter {
-	httpFilters := t.computeHttpFilters(params, listener, httpListenerReport)
+func (h *httpFilterChainTranslator) computeHttpConnectionManagerFilter(params plugins.Params) *envoy_config_listener_v3.Filter {
+	httpFilters := h.computeHttpFilters(params)
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_http_connection_manager")
 
-	httpConnMgr := NewHttpConnectionManager(listener, httpFilters, rdsName)
+	httpConnMgr := NewHttpConnectionManager(h.listener, httpFilters, h.routeConfigName)
 
 	hcmFilter, err := NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, httpConnMgr)
 	if err != nil {
@@ -69,17 +64,17 @@ func (t *translatorInstance) computeHttpConnectionManagerFilter(
 	return hcmFilter
 }
 
-func (t *translatorInstance) computeHttpFilters(params plugins.Params, listener *v1.HttpListener, httpListenerReport *validationapi.HttpListenerReport) []*envoyhttp.HttpFilter {
+func (h *httpFilterChainTranslator) computeHttpFilters(params plugins.Params) []*envoyhttp.HttpFilter {
 	var httpFilters []plugins.StagedHttpFilter
 	// run the Http Filter Plugins
-	for _, plug := range t.plugins {
+	for _, plug := range h.plugins {
 		filterPlugin, ok := plug.(plugins.HttpFilterPlugin)
 		if !ok {
 			continue
 		}
-		stagedFilters, err := filterPlugin.HttpFilters(params, listener)
+		stagedFilters, err := filterPlugin.HttpFilters(params, h.listener)
 		if err != nil {
-			validation.AppendHTTPListenerError(httpListenerReport, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
+			validation.AppendHTTPListenerError(h.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
 		}
 		for _, httpFilter := range stagedFilters {
 			if httpFilter.HttpFilter == nil {
