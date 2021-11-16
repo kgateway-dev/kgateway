@@ -30,7 +30,7 @@ func (e *emptyListenerTranslator) ComputeListener(params plugins.Params) *envoy_
 }
 
 type listenerTranslatorInstance struct {
-	plugins               []plugins.Plugin
+	plugins               []plugins.ListenerPlugin
 	listener              *v1.Listener
 	report                *validationapi.ListenerReport
 	filterChainTranslator FilterChainTranslator

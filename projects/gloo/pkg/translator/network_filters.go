@@ -1,6 +1,8 @@
 package translator
 
 import (
+	"sort"
+
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -15,9 +17,15 @@ type NetworkFilterTranslator interface {
 var _ NetworkFilterTranslator = new(httpNetworkFilterTranslator)
 
 type httpNetworkFilterTranslator struct {
-	plugins         []plugins.HttpFilterPlugin
-	listener        *v1.HttpListener
-	report          *validationapi.HttpListenerReport
+	// List of HttpFilterPlugins to process
+	plugins []plugins.HttpFilterPlugin
+
+	// A Gloo HttpListener produces a single filter chain, with its own set of NetworkFilters
+	listener *v1.HttpListener
+
+	// The report where warnings/errors are persisted
+	report *validationapi.HttpListenerReport
+	// The name of the RouteConfiguration for the HttpConnectionManager
 	routeConfigName string
 }
 
@@ -51,11 +59,20 @@ func (h *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Param
 	}
 
 	// add the http connection manager filter after all the InAuth Listener Filters
-	httpConnMgr := h.computeHttpConnectionManagerFilter(params)
+	httpConnectionManagerFilter := h.computeHttpConnectionManagerFilter(params)
 	networkFilters = append(networkFilters, plugins.StagedNetworkFilter{
-		NetworkFilter: httpConnMgr,
+		NetworkFilter: httpConnectionManagerFilter,
 		Stage:         plugins.AfterStage(plugins.AuthZStage),
 	})
 
 	return sortNetworkFilters(networkFilters)
+}
+
+func sortNetworkFilters(filters plugins.StagedNetworkFilterList) []*envoy_config_listener_v3.Filter {
+	sort.Sort(filters)
+	var sortedFilters []*envoy_config_listener_v3.Filter
+	for _, filter := range filters {
+		sortedFilters = append(sortedFilters, filter.NetworkFilter)
+	}
+	return sortedFilters
 }

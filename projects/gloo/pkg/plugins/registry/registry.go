@@ -112,17 +112,24 @@ var _ plugins.PluginRegistry = new(pluginRegistry)
 
 type pluginRegistry struct {
 	plugins               []plugins.Plugin
+	listenerPlugins       []plugins.ListenerPlugin
 	tcpFilterChainPlugins []plugins.TcpFilterChainPlugin
 	httpFilterPlugins     []plugins.HttpFilterPlugin
 }
 
 func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 
+	var listenerPlugins []plugins.ListenerPlugin
 	var tcpFilterChainPlugins []plugins.TcpFilterChainPlugin
 	var httpFilterPlugins []plugins.HttpFilterPlugin
 
 	// Process registered plugins once
 	for _, plugin := range registeredPlugins {
+		listenerPlugin, ok := plugin.(plugins.ListenerPlugin)
+		if ok {
+			listenerPlugins = append(listenerPlugins, listenerPlugin)
+		}
+
 		tcpFilterChainPlugin, ok := plugin.(plugins.TcpFilterChainPlugin)
 		if ok {
 			tcpFilterChainPlugins = append(tcpFilterChainPlugins, tcpFilterChainPlugin)
@@ -136,6 +143,7 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 
 	return &pluginRegistry{
 		plugins:               registeredPlugins,
+		listenerPlugins:       listenerPlugins,
 		tcpFilterChainPlugins: tcpFilterChainPlugins,
 		httpFilterPlugins:     httpFilterPlugins,
 	}
@@ -143,6 +151,10 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 
 func (p *pluginRegistry) GetPlugins() []plugins.Plugin {
 	return p.plugins
+}
+
+func (p *pluginRegistry) GetListenerPlugins() []plugins.ListenerPlugin {
+	return p.listenerPlugins
 }
 
 func (p *pluginRegistry) GetTcpFilterChainPlugins() []plugins.TcpFilterChainPlugin {

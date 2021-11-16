@@ -2,7 +2,6 @@ package translator
 
 import (
 	"fmt"
-	"sort"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -26,10 +25,14 @@ var _ FilterChainTranslator = new(tcpFilterChainTranslator)
 var _ FilterChainTranslator = new(httpFilterChainTranslator)
 
 type tcpFilterChainTranslator struct {
-	plugins        []plugins.TcpFilterChainPlugin
+	// List of TcpFilterChainPlugins to process
+	plugins []plugins.TcpFilterChainPlugin
+	// The parent Listener, this is only used to associate errors with the parent resource
 	parentListener *v1.Listener
-	listener       *v1.TcpListener
-	report         *validationapi.TcpListenerReport
+	// The TcpListener used to generate the list of FilterChains
+	listener *v1.TcpListener
+	// The report used to store processing errors
+	report *validationapi.TcpListenerReport
 }
 
 func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*envoy_config_listener_v3.FilterChain {
@@ -94,8 +97,8 @@ func (h *httpFilterChainTranslator) computeFilterChainsFromSslConfig(
 				validationapi.ListenerReport_Error_SSLConfigError, err.Error())
 			continue
 		}
-		filterChain := newSslFilterChain(downstreamConfig, sslConfig.GetSniDomains(), listenerFilters, sslConfig.GetTransportSocketConnectTimeout())
 
+		filterChain := newSslFilterChain(downstreamConfig, sslConfig.GetSniDomains(), listenerFilters, sslConfig.GetTransportSocketConnectTimeout())
 		secureFilterChains = append(secureFilterChains, filterChain)
 	}
 	return secureFilterChains
@@ -175,13 +178,4 @@ func newSslFilterChain(
 		},
 		TransportSocketConnectTimeout: timeout,
 	}
-}
-
-func sortNetworkFilters(filters plugins.StagedNetworkFilterList) []*envoy_config_listener_v3.Filter {
-	sort.Sort(filters)
-	var sortedFilters []*envoy_config_listener_v3.Filter
-	for _, filter := range filters {
-		sortedFilters = append(sortedFilters, filter.NetworkFilter)
-	}
-	return sortedFilters
 }

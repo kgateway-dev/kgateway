@@ -276,6 +276,7 @@ type ResourceGeneratorPlugin interface {
 //	more methods on a PluginRegistry
 type PluginRegistry interface {
 	GetPlugins() []Plugin
+	GetListenerPlugins() []ListenerPlugin
 	GetTcpFilterChainPlugins() []TcpFilterChainPlugin
 	GetHttpFilterPlugins() []HttpFilterPlugin
 }
