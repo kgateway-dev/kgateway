@@ -82,6 +82,11 @@ spec:
           - name: LOG_LEVEL
             value: {{ .Values.discovery.logLevel }}
         {{- end}}
+        {{- if .Values.global.glooStats.serviceMonitor }}
+        ports:
+          - name: http-monitoring
+            containerPort: 9091
+        {{- end }}
       # Pod security context
       {{- if .Values.discovery.deployment.enablePodSecurityContext }}
       securityContext:
@@ -89,11 +94,6 @@ spec:
         fsGroup: {{ printf "%.0f" (float64 .Values.discovery.deployment.fsGroup) }}
         {{- end}}
       {{- end}}
-      {{- if .Values.global.glooStats.serviceMonitor }}
-      ports:
-        - name: http-monitoring
-          containerPort: 9091
-      {{- end }}
 {{- end }}
 {{- end }} {{/* define "discovery.deploymentSpec"*/}}
 
