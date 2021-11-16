@@ -39,7 +39,7 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 
 	// run the tcp filter chain plugins
 	for _, plug := range t.plugins {
-		pluginFilterChains, err := plug.CreateTcpFilterChain(params, t.listener)
+		pluginFilterChains, err := plug.CreateTcpFilterChains(params, t.listener)
 		if err != nil {
 			validation.AppendTCPListenerError(t.report,
 				validationapi.TcpListenerReport_Error_ProcessingError,

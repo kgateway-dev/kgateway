@@ -151,7 +151,7 @@ func (s StagedListenerFilterList) Swap(i, j int) {
 
 type TcpFilterChainPlugin interface {
 	Plugin
-	CreateTcpFilterChain(params Params, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error)
+	CreateTcpFilterChains(params Params, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error)
 }
 
 type HttpFilterPlugin interface {

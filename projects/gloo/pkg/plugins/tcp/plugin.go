@@ -50,7 +50,7 @@ func (p *Plugin) Init(_ plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) CreateTcpFilterChain(params plugins.Params, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error) {
+func (p *Plugin) CreateTcpFilterChains(params plugins.Params, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error) {
 	var filterChains []*envoy_config_listener_v3.FilterChain
 	multiErr := multierror.Error{}
 
