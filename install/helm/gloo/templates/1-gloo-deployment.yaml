@@ -158,6 +158,10 @@ spec:
         - containerPort: 9979
           name: wasm-cache
           protocol: TCP
+        {{- if .Values.global.glooStats.serviceMonitor }}
+        - name: http-monitoring
+          containerPort: 9091
+        {{- end }}
         volumeMounts:
         - name: labels-volume
           mountPath: /etc/gloo
