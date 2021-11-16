@@ -68,7 +68,7 @@ func (p *Plugin) CreateTcpFilterChains(params plugins.Params, in *v1.TcpListener
 
 		listenerFilters = append(listenerFilters, tcpFilters...)
 
-		filterChain, err := p.computerTcpFilterChain(params.Snapshot, listenerFilters, tcpHost)
+		filterChain, err := p.computeTcpFilterChain(params.Snapshot, listenerFilters, tcpHost)
 		if err != nil {
 			multiErr.Errors = append(multiErr.Errors, err)
 			continue
@@ -180,7 +180,7 @@ func (p *Plugin) convertToWeightedCluster(multiDest *v1.MultiDestination) (*envo
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
 // if there is no SSL config on the listener, the envoy listener will have one insecure filter chain
-func (p *Plugin) computerTcpFilterChain(
+func (p *Plugin) computeTcpFilterChain(
 	snap *v1.ApiSnapshot,
 	listenerFilters []*envoy_config_listener_v3.Filter,
 	host *v1.TcpHost,
