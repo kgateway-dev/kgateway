@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
-
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -38,19 +36,19 @@ type Translator interface {
 func NewTranslator(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,
-	getPlugins func() []plugins.Plugin,
+	getPluginRegistry func() plugins.PluginRegistry,
 ) Translator {
-	return NewTranslatorWithHasher(sslConfigTranslator, settings, getPlugins, EnvoyCacheResourcesListToFnvHash)
+	return NewTranslatorWithHasher(sslConfigTranslator, settings, getPluginRegistry, EnvoyCacheResourcesListToFnvHash)
 }
 
 func NewTranslatorWithHasher(
 	sslConfigTranslator utils.SslConfigTranslator,
 	settings *v1.Settings,
-	getPlugins func() []plugins.Plugin,
+	getPluginRegistry func() plugins.PluginRegistry,
 	hasher func(resources []envoycache.Resource) uint64,
 ) Translator {
 	return &translatorFactory{
-		getPlugins:          getPlugins,
+		getPluginRegistry:   getPluginRegistry,
 		settings:            settings,
 		sslConfigTranslator: sslConfigTranslator,
 		hasher:              hasher,
@@ -58,7 +56,7 @@ func NewTranslatorWithHasher(
 }
 
 type translatorFactory struct {
-	getPlugins          func() []plugins.Plugin
+	getPluginRegistry   func() plugins.PluginRegistry
 	settings            *v1.Settings
 	sslConfigTranslator utils.SslConfigTranslator
 	hasher              func(resources []envoycache.Resource) uint64
@@ -69,7 +67,7 @@ func (t *translatorFactory) Translate(
 	proxy *v1.Proxy,
 ) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
 	instance := &translatorInstance{
-		pluginRegistry:      registry.NewPluginRegistry(t.getPlugins()),
+		pluginRegistry:      t.getPluginRegistry(),
 		settings:            t.settings,
 		sslConfigTranslator: t.sslConfigTranslator,
 		hasher:              t.hasher,
@@ -79,7 +77,7 @@ func (t *translatorFactory) Translate(
 
 // a translator instance performs one
 type translatorInstance struct {
-	pluginRegistry      registry.PluginRegistry
+	pluginRegistry      plugins.PluginRegistry
 	settings            *v1.Settings
 	sslConfigTranslator utils.SslConfigTranslator
 	hasher              func(resources []envoycache.Resource) uint64

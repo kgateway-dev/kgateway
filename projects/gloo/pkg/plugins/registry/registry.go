@@ -108,21 +108,7 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 	return globalRegistry(opts).plugins
 }
 
-// A PluginRegistry is used to provide Plugins to relevant translators
-// Historically, all plugins were passed around as an argument, and each translator
-// would iterate over all plugins, and only apply the relevant ones.
-// This interface enables translators to only know of the relevant plugins
-// 	NOTE:
-//	Currently this is only used in the Gloo Translator and somewhat duplicates
-// 	the above registry type. I did this intentionally to limit the scope of the changes.
-// 	I'd like to consolidate these implementations over time, and even pull some of the
-//	plugin reconciliation (between open source and enterprise) into this type.
-type PluginRegistry interface {
-	GetPlugins() []plugins.Plugin
-	GetTcpFilterChainPlugins() []plugins.TcpFilterChainPlugin
-}
-
-var _ PluginRegistry = new(pluginRegistry)
+var _ plugins.PluginRegistry = new(pluginRegistry)
 
 type pluginRegistry struct {
 	plugins []plugins.Plugin

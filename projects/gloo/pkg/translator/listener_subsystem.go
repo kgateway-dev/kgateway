@@ -3,7 +3,7 @@ package translator
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -20,13 +20,13 @@ import (
 // affect how resources are generated, we abstract those implementation details behind abstract translators.
 // The ListenerSubsystemTranslatorFactory returns a ListenerTranslator and RouteConfigurationTranslator for a given Gloo Listener
 type ListenerSubsystemTranslatorFactory struct {
-	pluginRegistry      registry.PluginRegistry
+	pluginRegistry      plugins.PluginRegistry
 	proxy               *v1.Proxy
 	sslConfigTranslator utils.SslConfigTranslator
 }
 
 func NewListenerSubsystemTranslatorFactory(
-	pluginRegistry registry.PluginRegistry,
+	pluginRegistry plugins.PluginRegistry,
 	proxy *v1.Proxy,
 	sslConfigTranslator utils.SslConfigTranslator,
 ) *ListenerSubsystemTranslatorFactory {
