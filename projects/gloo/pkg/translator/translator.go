@@ -222,7 +222,7 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 		validateListenerPorts(proxy, listenerReport)
 
 		// Select a ListenerTranslator and RouteConfigurationTranslator, based on the type of listener (ie TCP, HTTP, or Hybrid)
-		listenerTranslator, routeConfigurationTranslator := listenerSubsystemTranslatorFactory.GetTranslators(listener, listenerReport)
+		listenerTranslator, routeConfigurationTranslator := listenerSubsystemTranslatorFactory.GetTranslators(params.Ctx, listener, listenerReport)
 
 		// 1. Compute RouteConfiguration
 		// This way we call ProcessVirutalHost/ProcessRoute first
