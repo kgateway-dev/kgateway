@@ -103,6 +103,21 @@ func (h *httpFilterChainTranslator) computeNetworkFilters(params plugins.Params)
 		}
 	}
 
+	// Check that we don't refer to nonexistent auth config
+	// TODO (sam-heilbron)
+	// This is a partial duplicate of the open source ExtauthTranslatorSyncer
+	// We should find a single place to define this configuration
+	for _, vHost := range h.listener.GetVirtualHosts() {
+		acRef := vHost.GetOptions().GetExtauth().GetConfigRef()
+		if acRef != nil {
+			if _, err := params.Snapshot.AuthConfigs.Find(acRef.GetNamespace(), acRef.GetName()); err != nil {
+				validation.AppendHTTPListenerError(
+					h.report, validationapi.HttpListenerReport_Error_ProcessingError,
+					"auth config not found: "+acRef.String())
+			}
+		}
+	}
+
 	// add the http connection manager filter after all the InAuth Listener Filters
 	httpConnMgr := h.computeHttpConnectionManagerFilter(params)
 	listenerFilters = append(listenerFilters, plugins.StagedListenerFilter{
