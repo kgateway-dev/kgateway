@@ -25,6 +25,7 @@ type httpNetworkFilterTranslator struct {
 
 	// The report where warnings/errors are persisted
 	report *validationapi.HttpListenerReport
+
 	// The name of the RouteConfiguration for the HttpConnectionManager
 	routeConfigName string
 }

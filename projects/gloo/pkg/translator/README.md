@@ -10,3 +10,14 @@ The Gloo Translator is responsible for converting a Gloo Proxy into an xDS Snaps
 ## Cluster Subsystem Translation
 
 ## Listener Subsystem Translation
+
+*The [Listener subsystem](https://www.envoyproxy.io/docs/envoy/latest/intro/life_of_a_request.html?#high-level-architecture) handles downstream request processing.*
+
+It is composed of:
+1. RouteConfigurations
+2. Listeners
+### RouteConfiguration Translation
+
+
+
+### Listener Translation
