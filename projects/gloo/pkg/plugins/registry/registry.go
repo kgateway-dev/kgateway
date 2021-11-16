@@ -111,14 +111,15 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 var _ plugins.PluginRegistry = new(pluginRegistry)
 
 type pluginRegistry struct {
-	plugins []plugins.Plugin
-
+	plugins               []plugins.Plugin
 	tcpFilterChainPlugins []plugins.TcpFilterChainPlugin
+	httpFilterPlugins     []plugins.HttpFilterPlugin
 }
 
 func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 
 	var tcpFilterChainPlugins []plugins.TcpFilterChainPlugin
+	var httpFilterPlugins []plugins.HttpFilterPlugin
 
 	// Process registered plugins once
 	for _, plugin := range registeredPlugins {
@@ -126,11 +127,17 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 		if ok {
 			tcpFilterChainPlugins = append(tcpFilterChainPlugins, tcpFilterChainPlugin)
 		}
+
+		httpFilterPlugin, ok := plugin.(plugins.HttpFilterPlugin)
+		if ok {
+			httpFilterPlugins = append(httpFilterPlugins, httpFilterPlugin)
+		}
 	}
 
 	return &pluginRegistry{
 		plugins:               registeredPlugins,
 		tcpFilterChainPlugins: tcpFilterChainPlugins,
+		httpFilterPlugins:     httpFilterPlugins,
 	}
 }
 
@@ -140,4 +147,8 @@ func (p *pluginRegistry) GetPlugins() []plugins.Plugin {
 
 func (p *pluginRegistry) GetTcpFilterChainPlugins() []plugins.TcpFilterChainPlugin {
 	return p.tcpFilterChainPlugins
+}
+
+func (p *pluginRegistry) GetHttpFilterPlugins() []plugins.HttpFilterPlugin {
+	return p.httpFilterPlugins
 }

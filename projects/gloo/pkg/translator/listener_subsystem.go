@@ -55,13 +55,15 @@ func (l *ListenerSubsystemTranslatorFactory) GetTranslators(ctx context.Context,
 			report:   listenerReport,
 			plugins:  l.pluginRegistry.GetPlugins(),
 			filterChainTranslator: &httpFilterChainTranslator{
-				plugins:             l.pluginRegistry.GetPlugins(),
 				sslConfigTranslator: l.sslConfigTranslator,
 				parentListener:      listener,
-				listener:            listener.GetHttpListener(),
 				parentReport:        listenerReport,
-				report:              httpListenerReport,
-				routeConfigName:     routeConfigurationName,
+				networkFilterTranslator: &httpNetworkFilterTranslator{
+					plugins:         l.pluginRegistry.GetHttpFilterPlugins(),
+					listener:        listener.GetHttpListener(),
+					report:          httpListenerReport,
+					routeConfigName: routeConfigurationName,
+				},
 			},
 		}
 

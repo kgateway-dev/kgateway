@@ -26,12 +26,10 @@ var _ FilterChainTranslator = new(tcpFilterChainTranslator)
 var _ FilterChainTranslator = new(httpFilterChainTranslator)
 
 type tcpFilterChainTranslator struct {
-	plugins []plugins.TcpFilterChainPlugin
-
+	plugins        []plugins.TcpFilterChainPlugin
 	parentListener *v1.Listener
 	listener       *v1.TcpListener
-
-	report *validationapi.TcpListenerReport
+	report         *validationapi.TcpListenerReport
 }
 
 func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*envoy_config_listener_v3.FilterChain {
@@ -54,66 +52,21 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 }
 
 type httpFilterChainTranslator struct {
-	plugins             []plugins.Plugin
-	sslConfigTranslator sslutils.SslConfigTranslator
-
-	parentListener *v1.Listener
-	listener       *v1.HttpListener
-
-	parentReport *validationapi.ListenerReport
-	report       *validationapi.HttpListenerReport
-
-	routeConfigName string
+	sslConfigTranslator     sslutils.SslConfigTranslator
+	parentListener          *v1.Listener
+	parentReport            *validationapi.ListenerReport
+	networkFilterTranslator NetworkFilterTranslator
 }
 
 func (h *httpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*envoy_config_listener_v3.FilterChain {
 	// generate all the network filters
 	// this includes the HttpConnectionManager, which generates all http filters
-	networkFilters := h.computeNetworkFilters(params)
+	networkFilters := h.networkFilterTranslator.ComputeNetworkFilters(params)
 	if len(networkFilters) == 0 {
 		return nil
 	}
 
 	return h.computeFilterChainsFromSslConfig(params.Snapshot, networkFilters)
-}
-
-func (h *httpFilterChainTranslator) computeNetworkFilters(params plugins.Params) []*envoy_config_listener_v3.Filter {
-	// return if listener has no virtual hosts
-	if len(h.listener.GetVirtualHosts()) == 0 {
-		return nil
-	}
-
-	var networkFilters []plugins.StagedNetworkFilter
-
-	// We used to support a ListenerFilterPlugin interface, which was used to generate
-	// a list of NetworkFilters. That plugin wasn't implemented in the codebase so it
-	// was removed. If we want to support other network filters, we would process
-	// those plugins here.
-
-	// Check that we don't refer to nonexistent auth config
-	// TODO (sam-heilbron)
-	// This is a partial duplicate of the open source ExtauthTranslatorSyncer
-	// We should find a single place to define this configuration
-	for i, vHost := range h.listener.GetVirtualHosts() {
-		acRef := vHost.GetOptions().GetExtauth().GetConfigRef()
-		if acRef != nil {
-			if _, err := params.Snapshot.AuthConfigs.Find(acRef.GetNamespace(), acRef.GetName()); err != nil {
-				validation.AppendVirtualHostError(
-					h.report.GetVirtualHostReports()[i],
-					validationapi.VirtualHostReport_Error_ProcessingError,
-					"auth config not found: "+acRef.String())
-			}
-		}
-	}
-
-	// add the http connection manager filter after all the InAuth Listener Filters
-	httpConnMgr := h.computeHttpConnectionManagerFilter(params)
-	networkFilters = append(networkFilters, plugins.StagedNetworkFilter{
-		NetworkFilter: httpConnMgr,
-		Stage:         plugins.AfterStage(plugins.AuthZStage),
-	})
-
-	return sortNetworkFilters(networkFilters)
 }
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
