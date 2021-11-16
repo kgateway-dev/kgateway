@@ -168,6 +168,8 @@ var _ = Describe("Plugin", func() {
 
 		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_OVERWRITE))
 		Expect(cfg.GetPathWithEscapedSlashesAction()).To(Equal(envoyhttp.HttpConnectionManager_REJECT_REQUEST))
+		Expect(cfg.MergeSlashes).To(Equal(hcms.MergeSlashes))
+		Expect(cfg.NormalizePath).To(Equal(hcms.NormalizePath))
 
 		// Confirm that MockTracingPlugin return the proper value
 		Expect(cfg.Tracing).To(BeNil())
