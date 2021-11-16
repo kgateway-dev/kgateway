@@ -340,7 +340,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 			continue
 		}
 		if err := routePlugin.ProcessRoute(params, in, out); err != nil {
-			// pluginRegistry can return errors on missing upstream/upstream group
+			// plugins can return errors on missing upstream/upstream group
 			// we only want to report errors that are plugin-specific
 			// missing upstream(group) should produce a warning above
 			if isWarningErr(err) {
