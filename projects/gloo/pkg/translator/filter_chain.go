@@ -67,13 +67,14 @@ type httpFilterChainTranslator struct {
 }
 
 func (h *httpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*envoy_config_listener_v3.FilterChain {
-	// run the http filter chain plugins and listener plugins
-	listenerFilters := h.computeNetworkFilters(params)
-	if len(listenerFilters) == 0 {
+	// generate all the network filters
+	// this includes the HttpConnectionManager, which generates all http filters
+	networkFilters := h.computeNetworkFilters(params)
+	if len(networkFilters) == 0 {
 		return nil
 	}
 
-	return h.computeFilterChainsFromSslConfig(params.Snapshot, listenerFilters)
+	return h.computeFilterChainsFromSslConfig(params.Snapshot, networkFilters)
 }
 
 func (h *httpFilterChainTranslator) computeNetworkFilters(params plugins.Params) []*envoy_config_listener_v3.Filter {
@@ -82,23 +83,12 @@ func (h *httpFilterChainTranslator) computeNetworkFilters(params plugins.Params)
 		return nil
 	}
 
-	var listenerFilters []plugins.StagedListenerFilter
-	// run the Listener Filter Plugins
-	for _, plug := range h.plugins {
-		filterPlugin, ok := plug.(plugins.ListenerFilterPlugin)
-		if !ok {
-			continue
-		}
-		stagedFilters, err := filterPlugin.ProcessListenerFilter(params, h.parentListener)
-		if err != nil {
-			validation.AppendListenerError(h.parentReport,
-				validationapi.ListenerReport_Error_ProcessingError,
-				err.Error())
-		}
-		for _, listenerFilter := range stagedFilters {
-			listenerFilters = append(listenerFilters, listenerFilter)
-		}
-	}
+	var networkFilters []plugins.StagedNetworkFilter
+
+	// We used to support a ListenerFilterPlugin interface, which was used to generate
+	// a list of NetworkFilters. That plugin wasn't implemented in the codebase so it
+	// was removed. If we want to support other network filters, we would process
+	// those plugins here.
 
 	// Check that we don't refer to nonexistent auth config
 	// TODO (sam-heilbron)
@@ -118,12 +108,12 @@ func (h *httpFilterChainTranslator) computeNetworkFilters(params plugins.Params)
 
 	// add the http connection manager filter after all the InAuth Listener Filters
 	httpConnMgr := h.computeHttpConnectionManagerFilter(params)
-	listenerFilters = append(listenerFilters, plugins.StagedListenerFilter{
-		ListenerFilter: httpConnMgr,
-		Stage:          plugins.AfterStage(plugins.AuthZStage),
+	networkFilters = append(networkFilters, plugins.StagedNetworkFilter{
+		NetworkFilter: httpConnMgr,
+		Stage:         plugins.AfterStage(plugins.AuthZStage),
 	})
 
-	return sortListenerFilters(listenerFilters)
+	return sortNetworkFilters(networkFilters)
 }
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
@@ -234,11 +224,11 @@ func newSslFilterChain(
 	}
 }
 
-func sortListenerFilters(filters plugins.StagedListenerFilterList) []*envoy_config_listener_v3.Filter {
+func sortNetworkFilters(filters plugins.StagedNetworkFilterList) []*envoy_config_listener_v3.Filter {
 	sort.Sort(filters)
 	var sortedFilters []*envoy_config_listener_v3.Filter
 	for _, filter := range filters {
-		sortedFilters = append(sortedFilters, filter.ListenerFilter)
+		sortedFilters = append(sortedFilters, filter.NetworkFilter)
 	}
 	return sortedFilters
 }
