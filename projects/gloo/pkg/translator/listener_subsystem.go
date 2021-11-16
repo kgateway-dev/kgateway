@@ -3,9 +3,10 @@ package translator
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 )
@@ -19,18 +20,18 @@ import (
 // affect how resources are generated, we abstract those implementation details behind abstract translators.
 // The ListenerSubsystemTranslatorFactory returns a ListenerTranslator and RouteConfigurationTranslator for a given Gloo Listener
 type ListenerSubsystemTranslatorFactory struct {
-	plugins             []plugins.Plugin
+	pluginRegistry      plugins.PluginRegistry
 	proxy               *v1.Proxy
 	sslConfigTranslator utils.SslConfigTranslator
 }
 
 func NewListenerSubsystemTranslatorFactory(
-	plugins []plugins.Plugin,
+	pluginRegistry plugins.PluginRegistry,
 	proxy *v1.Proxy,
 	sslConfigTranslator utils.SslConfigTranslator,
 ) *ListenerSubsystemTranslatorFactory {
 	return &ListenerSubsystemTranslatorFactory{
-		plugins:             plugins,
+		pluginRegistry:      pluginRegistry,
 		proxy:               proxy,
 		sslConfigTranslator: sslConfigTranslator,
 	}
@@ -52,9 +53,9 @@ func (l *ListenerSubsystemTranslatorFactory) GetTranslators(ctx context.Context,
 		listenerTranslator := &listenerTranslatorInstance{
 			listener: listener,
 			report:   listenerReport,
-			plugins:  l.plugins,
+			plugins:  l.pluginRegistry.GetPlugins(),
 			filterChainTranslator: &httpFilterChainTranslator{
-				plugins:             l.plugins,
+				plugins:             l.pluginRegistry.GetPlugins(),
 				sslConfigTranslator: l.sslConfigTranslator,
 				parentListener:      listener,
 				listener:            listener.GetHttpListener(),
@@ -65,7 +66,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetTranslators(ctx context.Context,
 		}
 
 		routeConfigurationTranslator := &httpRouteConfigurationTranslator{
-			plugins:                  l.plugins,
+			plugins:                  l.pluginRegistry.GetPlugins(),
 			proxy:                    l.proxy,
 			parentListener:           listener,
 			listener:                 listener.GetHttpListener(),
@@ -86,9 +87,9 @@ func (l *ListenerSubsystemTranslatorFactory) GetTranslators(ctx context.Context,
 		listenerTranslator := &listenerTranslatorInstance{
 			listener: listener,
 			report:   listenerReport,
-			plugins:  l.plugins,
+			plugins:  l.pluginRegistry.GetPlugins(),
 			filterChainTranslator: &tcpFilterChainTranslator{
-				plugins:        l.plugins,
+				plugins:        l.pluginRegistry.GetTcpFilterChainPlugins(),
 				parentListener: listener,
 				listener:       listener.GetTcpListener(),
 				report:         tcpListenerReport,

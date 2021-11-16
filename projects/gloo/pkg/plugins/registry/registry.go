@@ -107,3 +107,37 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 	return globalRegistry(opts).plugins
 }
+
+var _ plugins.PluginRegistry = new(pluginRegistry)
+
+type pluginRegistry struct {
+	plugins []plugins.Plugin
+
+	tcpFilterChainPlugins []plugins.TcpFilterChainPlugin
+}
+
+func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
+
+	var tcpFilterChainPlugins []plugins.TcpFilterChainPlugin
+
+	// Process registered plugins once
+	for _, plugin := range registeredPlugins {
+		tcpFilterChainPlugin, ok := plugin.(plugins.TcpFilterChainPlugin)
+		if ok {
+			tcpFilterChainPlugins = append(tcpFilterChainPlugins, tcpFilterChainPlugin)
+		}
+	}
+
+	return &pluginRegistry{
+		plugins:               registeredPlugins,
+		tcpFilterChainPlugins: tcpFilterChainPlugins,
+	}
+}
+
+func (p *pluginRegistry) GetPlugins() []plugins.Plugin {
+	return p.plugins
+}
+
+func (p *pluginRegistry) GetTcpFilterChainPlugins() []plugins.TcpFilterChainPlugin {
+	return p.tcpFilterChainPlugins
+}

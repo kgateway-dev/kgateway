@@ -149,10 +149,9 @@ func (s StagedListenerFilterList) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-// Currently only supported for TCP listeners, plan to change this in the future
-type ListenerFilterChainPlugin interface {
+type TcpFilterChainPlugin interface {
 	Plugin
-	ProcessListenerFilterChain(params Params, in *v1.Listener) ([]*envoy_config_listener_v3.FilterChain, error)
+	CreateTcpFilterChains(params Params, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error)
 }
 
 type HttpFilterPlugin interface {
@@ -271,4 +270,16 @@ type ResourceGeneratorPlugin interface {
 		inRouteConfigurations []*envoy_config_route_v3.RouteConfiguration,
 		inListeners []*envoy_config_listener_v3.Listener,
 	) ([]*envoy_config_cluster_v3.Cluster, []*envoy_config_endpoint_v3.ClusterLoadAssignment, []*envoy_config_route_v3.RouteConfiguration, []*envoy_config_listener_v3.Listener, error)
+}
+
+// A PluginRegistry is used to provide Plugins to relevant translators
+// Historically, all plugins were passed around as an argument, and each translator
+// would iterate over all plugins, and only apply the relevant ones.
+// This interface enables translators to only know of the relevant plugins
+// NOTE:
+// 	This is not complete. As translators are modified, we can gradually expose
+//	more methods on a PluginRegistry
+type PluginRegistry interface {
+	GetPlugins() []Plugin
+	GetTcpFilterChainPlugins() []TcpFilterChainPlugin
 }

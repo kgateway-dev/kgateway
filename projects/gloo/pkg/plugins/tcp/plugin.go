@@ -30,15 +30,15 @@ func NewPlugin(sslConfigTranslator utils.SslConfigTranslator) *Plugin {
 }
 
 var (
-	_ plugins.Plugin                    = (*Plugin)(nil)
-	_ plugins.ListenerFilterChainPlugin = (*Plugin)(nil)
+	_ plugins.Plugin               = (*Plugin)(nil)
+	_ plugins.TcpFilterChainPlugin = (*Plugin)(nil)
 
 	NoDestinationTypeError = func(host *v1.TcpHost) error {
 		return eris.Errorf("no destination type was specified for tcp host %v", host)
 	}
 
 	InvalidSecretsError = func(err error, name string) error {
-		return eris.Wrapf(err, "invalid secrets for listener %v", name)
+		return eris.Wrapf(err, "invalid secrets for host %v", name)
 	}
 )
 
@@ -50,21 +50,17 @@ func (p *Plugin) Init(_ plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listener) ([]*envoy_config_listener_v3.FilterChain, error) {
-	tcpListener := in.GetTcpListener()
-	if tcpListener == nil {
-		return nil, nil
-	}
+func (p *Plugin) CreateTcpFilterChains(params plugins.Params, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error) {
 	var filterChains []*envoy_config_listener_v3.FilterChain
 	multiErr := multierror.Error{}
-	for _, tcpHost := range tcpListener.GetTcpHosts() {
 
+	for _, tcpHost := range in.GetTcpHosts() {
 		var listenerFilters []*envoy_config_listener_v3.Filter
-		statPrefix := tcpListener.GetStatPrefix()
+		statPrefix := in.GetStatPrefix()
 		if statPrefix == "" {
 			statPrefix = DefaultTcpStatPrefix
 		}
-		tcpFilters, err := p.tcpProxyFilters(params, tcpHost, tcpListener.GetOptions(), statPrefix)
+		tcpFilters, err := p.tcpProxyFilters(params, tcpHost, in.GetOptions(), statPrefix)
 		if err != nil {
 			multiErr.Errors = append(multiErr.Errors, err)
 			continue
@@ -72,7 +68,7 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 
 		listenerFilters = append(listenerFilters, tcpFilters...)
 
-		filterChain, err := p.computerTcpFilterChain(params.Snapshot, in, listenerFilters, tcpHost)
+		filterChain, err := p.computeTcpFilterChain(params.Snapshot, listenerFilters, tcpHost)
 		if err != nil {
 			multiErr.Errors = append(multiErr.Errors, err)
 			continue
@@ -184,9 +180,8 @@ func (p *Plugin) convertToWeightedCluster(multiDest *v1.MultiDestination) (*envo
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
 // if there is no SSL config on the listener, the envoy listener will have one insecure filter chain
-func (p *Plugin) computerTcpFilterChain(
+func (p *Plugin) computeTcpFilterChain(
 	snap *v1.ApiSnapshot,
-	listener *v1.Listener,
 	listenerFilters []*envoy_config_listener_v3.Filter,
 	host *v1.TcpHost,
 ) (*envoy_config_listener_v3.FilterChain, error) {
@@ -199,7 +194,7 @@ func (p *Plugin) computerTcpFilterChain(
 
 	downstreamConfig, err := p.sslConfigTranslator.ResolveDownstreamSslConfig(snap.Secrets, sslConfig)
 	if err != nil {
-		return nil, InvalidSecretsError(err, listener.GetName())
+		return nil, InvalidSecretsError(err, host.GetName())
 	}
 	return p.newSslFilterChain(downstreamConfig, sslConfig.GetSniDomains(), listenerFilters, sslConfig.GetTransportSocketConnectTimeout()), nil
 }
