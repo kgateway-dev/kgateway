@@ -623,6 +623,13 @@ static_resources:
                   prefix: /config_dump
                 route:
                   cluster: admin_port_cluster
+              - match:
+                  headers:
+                  - exact_match: GET
+                    name: :method
+                  prefix: /clusters
+                route:
+                  cluster: admin_port_cluster
           stat_prefix: read_config
         name: envoy.filters.network.http_connection_manager
     name: read_config_listener
