@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/proxy_protocol"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
@@ -58,6 +59,27 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(out.ListenerFilters).To(HaveLen(0))
+		})
+
+		When("use deprecated and not-deprecated config", func() {
+
+			BeforeEach(func() {
+				in.Options = &v1.ListenerOptions{
+					ProxyProtocol: &proxy_protocol.ProxyProtocol{
+						Rules:                             nil,
+						AllowRequestsWithoutProxyProtocol: false,
+					},
+				}
+			})
+
+			It("allows override by non-deprecated config", func() {
+				err := p.ProcessListener(params, in, out)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(out.ListenerFilters).To(HaveLen(1))
+				Expect(out.ListenerFilters).To(HaveLen(1))
+				Expect(out.ListenerFilters[0].GetName()).To(Equal(wellknown.ProxyProtocol))
+			})
 		})
 
 	})
