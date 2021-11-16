@@ -138,7 +138,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 		RequireTls: envoyRequireTls,
 	}
 
-	// run the VirtualHostPlugins
+	// run the plugins
 	for _, plug := range h.plugins {
 		virtualHostPlugin, ok := plug.(plugins.VirtualHostPlugin)
 		if !ok {
@@ -333,7 +333,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	routeReport *validationapi.RouteReport,
 	in *v1.Route,
 	out *envoy_config_route_v3.Route) {
-	// run the pluginRegistry for RoutePlugin
+	// run the plugins for RoutePlugin
 	for _, plug := range h.plugins {
 		routePlugin, ok := plug.(plugins.RoutePlugin)
 		if !ok {
@@ -354,7 +354,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 		}
 	}
 
-	// run the pluginRegistry for RouteActionPlugin
+	// run the plugins for RouteActionPlugin
 	for _, plug := range h.plugins {
 		routeActionPlugin, ok := plug.(plugins.RouteActionPlugin)
 		if !ok || in.GetRouteAction() == nil || out.GetRoute() == nil {
