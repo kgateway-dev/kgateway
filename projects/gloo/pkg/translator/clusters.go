@@ -63,7 +63,7 @@ func (t *translatorInstance) computeCluster(
 	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.GetMetadata().GetName())
 	out := t.initializeCluster(upstream, upstreamRefKeyToEndpoints, reports, &params.Snapshot.Secrets)
 
-	for _, plug := range t.plugins {
+	for _, plug := range t.pluginRegistry.GetPlugins() {
 		upstreamPlugin, ok := plug.(plugins.UpstreamPlugin)
 		if !ok {
 			continue
@@ -75,7 +75,7 @@ func (t *translatorInstance) computeCluster(
 	}
 	if err := validateCluster(out); err != nil {
 		reports.AddError(upstream, eris.Wrapf(err, "cluster was configured improperly "+
-			"by one or more plugins: %v", out))
+			"by one or more plugin: %v", out))
 	}
 	return out
 }

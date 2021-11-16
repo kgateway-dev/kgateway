@@ -138,7 +138,7 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 		RequireTls: envoyRequireTls,
 	}
 
-	// run the plugins
+	// run the VirtualHostPlugins
 	for _, plug := range h.plugins {
 		virtualHostPlugin, ok := plug.(plugins.VirtualHostPlugin)
 		if !ok {
@@ -333,14 +333,14 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	routeReport *validationapi.RouteReport,
 	in *v1.Route,
 	out *envoy_config_route_v3.Route) {
-	// run the plugins for RoutePlugin
+	// run the pluginRegistry for RoutePlugin
 	for _, plug := range h.plugins {
 		routePlugin, ok := plug.(plugins.RoutePlugin)
 		if !ok {
 			continue
 		}
 		if err := routePlugin.ProcessRoute(params, in, out); err != nil {
-			// plugins can return errors on missing upstream/upstream group
+			// pluginRegistry can return errors on missing upstream/upstream group
 			// we only want to report errors that are plugin-specific
 			// missing upstream(group) should produce a warning above
 			if isWarningErr(err) {
@@ -354,7 +354,7 @@ func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 		}
 	}
 
-	// run the plugins for RouteActionPlugin
+	// run the pluginRegistry for RouteActionPlugin
 	for _, plug := range h.plugins {
 		routeActionPlugin, ok := plug.(plugins.RouteActionPlugin)
 		if !ok || in.GetRouteAction() == nil || out.GetRoute() == nil {

@@ -149,10 +149,9 @@ func (s StagedListenerFilterList) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-// Currently only supported for TCP listeners, plan to change this in the future
-type ListenerFilterChainPlugin interface {
+type TcpFilterChainPlugin interface {
 	Plugin
-	ProcessListenerFilterChain(params Params, in *v1.Listener) ([]*envoy_config_listener_v3.FilterChain, error)
+	CreateTcpFilterChain(params Params, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error)
 }
 
 type HttpFilterPlugin interface {

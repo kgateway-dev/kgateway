@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"hash/fnv"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -67,7 +69,7 @@ func (t *translatorFactory) Translate(
 	proxy *v1.Proxy,
 ) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
 	instance := &translatorInstance{
-		plugins:             t.getPlugins(),
+		pluginRegistry:      registry.NewPluginRegistry(t.getPlugins()),
 		settings:            t.settings,
 		sslConfigTranslator: t.sslConfigTranslator,
 		hasher:              t.hasher,
@@ -77,7 +79,7 @@ func (t *translatorFactory) Translate(
 
 // a translator instance performs one
 type translatorInstance struct {
-	plugins             []plugins.Plugin
+	pluginRegistry      registry.PluginRegistry
 	settings            *v1.Settings
 	sslConfigTranslator utils.SslConfigTranslator
 	hasher              func(resources []envoycache.Resource) uint64
@@ -93,7 +95,7 @@ func (t *translatorInstance) Translate(
 	defer span.End()
 
 	params.Ctx = contextutils.WithLogger(params.Ctx, "translator")
-	for _, p := range t.plugins {
+	for _, p := range t.pluginRegistry.GetPlugins() {
 		if err := p.Init(plugins.InitParams{
 			Ctx:      params.Ctx,
 			Settings: t.settings,
@@ -150,7 +152,7 @@ ClusterLoop:
 				Name:      upstream.GetMetadata().GetName(),
 				Namespace: upstream.GetMetadata().GetNamespace(),
 			}) == c.GetName() {
-				for _, plugin := range t.plugins {
+				for _, plugin := range t.pluginRegistry.GetPlugins() {
 					ep, ok := plugin.(plugins.EndpointPlugin)
 					if ok {
 						if err := ep.ProcessEndpoints(params, upstream, emptyendpointlist); err != nil {
@@ -169,7 +171,7 @@ ClusterLoop:
 	routeConfigs, listeners := t.translateListenerSubsystemComponents(params, proxy, proxyRpt)
 
 	// run Resource Generator Plugins
-	for _, plug := range t.plugins {
+	for _, plug := range t.pluginRegistry.GetPlugins() {
 		resourceGeneratorPlugin, ok := plug.(plugins.ResourceGeneratorPlugin)
 		if !ok {
 			continue
@@ -211,7 +213,7 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 
 	logger := contextutils.LoggerFrom(params.Ctx)
 
-	listenerSubsystemTranslatorFactory := NewListenerSubsystemTranslatorFactory(t.plugins, proxy, t.sslConfigTranslator)
+	listenerSubsystemTranslatorFactory := NewListenerSubsystemTranslatorFactory(t.pluginRegistry, proxy, t.sslConfigTranslator)
 
 	for i, listener := range proxy.GetListeners() {
 		logger.Infof("computing envoy resources for listener: %v", listener.GetName())
