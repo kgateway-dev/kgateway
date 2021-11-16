@@ -33,7 +33,7 @@ func NewListenerSubsystemTranslatorFactory(
 	}
 }
 
-func (l *ListenerSubsystemTranslatorFactory) GetListenerSubsystemTranslators(listener *v1.Listener, listenerReport *validationapi.ListenerReport) (
+func (l *ListenerSubsystemTranslatorFactory) GetTranslators(listener *v1.Listener, listenerReport *validationapi.ListenerReport) (
 	ListenerTranslator,
 	RouteConfigurationTranslator,
 ) {
