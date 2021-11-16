@@ -20,7 +20,7 @@ GCP provides these different types of Load Balancers:
 
 
 {{% notice note %}}
-Google pushed load balancing out to the edge network on front-end servers, as opposed to using the traditional DNS-based approach. Thus, global load-balancing capacity can be behind a single Anycast virtual IPv4 or IPv6 address. This means you can deploy capacity in multiple regions without having to modify the DNS entries or add new load balancer IP address for new regions.
+Google pushed load balancing out to the edge network on front-end servers, as opposed to using the traditional DNS-based approach. Thus, global load-balancing capacity can be behind a single Anycast virtual IPv4 or IPv6 address. This means you can deploy capacity in multiple regions without having to modify the DNS entries or add a new load balancer IP address for new regions.
 {{% /notice %}}
 
 
@@ -192,7 +192,7 @@ Since you have deployed three replicas, you can see there are 3 network endpoint
 
 ##### Configuration in GCP
 
-To instantiate a Load Balancer in Google Clooud (GCP), you need to create following set of resources:
+To instantiate a Load Balancer in Google Cloud (GCP), you need to create following set of resources:
 
 ![GCP Resources]({{% versioned_link_path fromRoot="/img/gcp-lb-neg-resources.png" %}})
 
@@ -218,7 +218,7 @@ If you did not create custom network tags for your nodes, GKE automatically gene
 gcloud compute firewall-rules list --filter="name~gke-$CLUSTER_NAME-[0-9a-z]*"  --format="value(targetTags[0])"
 ```
 
-In the Gloogle Console, you can find the resource at **VPC Network -> Firewall**. You can filter by the name.
+In the Google Console, you can find the resource at **VPC Network -> Firewall**. You can filter by the name.
 
 
 ![LB Firewall]({{% versioned_link_path fromRoot="/img/gcp-lb-firewall.png" %}})
@@ -230,7 +230,7 @@ gcloud compute addresses create my-gloo-edge-loadbalancer-address-nlb \
     --global
 ```
 
-In the Gloogle Console, you can find the resource at **VPC Network -> External IP Addresses**. You can filter by the name.
+In the Google Console, you can find the resource at **VPC Network -> External IP Addresses**. You can filter by the name.
 
 ![LB Address]({{% versioned_link_path fromRoot="/img/gcp-lb-address.png" %}})
 
@@ -239,14 +239,14 @@ A health check:
 ```
 gcloud compute health-checks create tcp my-gloo-edge-nlb-health-check \
     --global \
-    --port 8443 # This is the port for the pod. In the official documentation it imght be wrong
+    --port 8443 # This is the port for the pod. In the official documentation it might be wrong
 ```
 
 {{% notice note %}}
-Notice that you are checking port `8443`. It is important that you have configured the firewall rules accordingly to the configuration you have applied here.
+Notice that you are checking port `8443`. It is important that you have configured the firewall rules according to the configuration you have applied here.
 {{% /notice %}}
 
-In the Gloogle Console, you can find the resource at **Compute Engine -> Health checks**. You can filter by the name.
+In the Google Console, you can find the resource at **Compute Engine -> Health checks**. You can filter by the name.
 
 ![LB HealthCheck]({{% versioned_link_path fromRoot="/img/gcp-lb-healthcheck.png" %}})
 
@@ -259,7 +259,7 @@ gcloud compute backend-services create my-gloo-edge-nlb-backend-service \
     --global
 ```
 
-In the Gloogle Console, you can find the resource at **Network Services -> Load Balancing -> Backends tab**. You can filter by the name.
+In the Google Console, you can find the resource at **Network Services -> Load Balancing -> Backends tab**. You can filter by the name.
 
 ![LB BackEnd Services]({{% versioned_link_path fromRoot="/img/gcp-lb-backend.png" %}})
 
@@ -272,14 +272,14 @@ gcloud compute target-tcp-proxies create my-gloo-edge-nlb-target-proxy \
 ```
 
 {{% notice note %}}
-Notice that there is another objects for HTTP and HTTPS called `target-http-proxies` and `target-https-proxies`.
+Notice that there are other objects for HTTP and HTTPS called `target-http-proxies` and `target-https-proxies`.
 {{% /notice %}}
 
-You can find the resource enabling the **Advanced menu** with in the **Network Services -> Load Balancing**.
+You can find the resource enabling the **Advanced menu** within the **Network Services -> Load Balancing**.
 
 ![LB Forwarding Rules]({{% versioned_link_path fromRoot="/img/gcp-lb-advanced-lb.png" %}})
 
-And then **Target Proxies tab**.
+And then the **Target Proxies tab**.
 
 ![LB Forwarding Rules]({{% versioned_link_path fromRoot="/img/gcp-lb-targetproxies.png" %}})
 
@@ -293,7 +293,7 @@ gcloud compute forwarding-rules create my-gloo-edge-nlb-content-rule \
     --ports=443
 ```
 
-In the Gloogle Console, you can find the resource as part of the **Advanced Menu** at **Network Services -> Load Balancing -> Frontends tab**. You can filter by the name.
+In the Google Console, you can find the resource as part of the **Advanced Menu** at **Network Services -> Load Balancing -> Frontends tab**. You can filter by the name.
 
 ![LB Forwarding Rules]({{% versioned_link_path fromRoot="/img/gcp-lb-forwardingrules.png" %}})
 
@@ -452,7 +452,7 @@ Since you have deployed three replicas, you can see there are 3 network endpoint
 
 ##### Configuration in GCP
 
-To instantiate a Load Balancer in Google Clooud (GCP), you need to create following set of resources:
+To instantiate a Load Balancer in Google Cloud (GCP), you need to create following set of resources:
 
 ![GCP Resources]({{% versioned_link_path fromRoot="/img/gcp-lb-neg-resources.png" %}})
 
@@ -478,7 +478,7 @@ If you did not create custom network tags for your nodes, GKE automatically gene
 gcloud compute firewall-rules list --filter="name~gke-$CLUSTER_NAME-[0-9a-z]*"  --format="value(targetTags[0])"
 ```
 
-In the Gloogle Console, you can find the resource at **VPC Network -> Firewall**. You can filter by the name.
+In the Google Console, you can find the resource at **VPC Network -> Firewall**. You can filter by the name.
 
 ![LB Firewall]({{% versioned_link_path fromRoot="/img/gcp-lb-firewall.png" %}})
 
@@ -489,7 +489,7 @@ gcloud compute addresses create my-gloo-edge-loadbalancer-address-https \
     --global
 ```
 
-In the Gloogle Console, you can find the resource at **VPC Network -> External IP Addresses**. You can filter by the name.
+In the Google Console, you can find the resource at **VPC Network -> External IP Addresses**. You can filter by the name.
 
 ![LB Address]({{% versioned_link_path fromRoot="/img/gcp-lb-address.png" %}})
 
@@ -498,14 +498,14 @@ A health check:
 ```
 gcloud compute health-checks create tcp my-gloo-edge-https-health-check \
     --global \
-    --port 8080 # This is the port for the pod. In the official documentation it imght be wrong
+    --port 8080 # This is the port for the pod. In the official documentation it might be wrong
 ```
 
 {{% notice note %}}
-Notice that you are checking port `8080`. It is important that you have configured the firewall rules accordingly to the configuration you have applied here.
+Notice that you are checking port `8080`. It is important that you have configured the firewall rules according to the configuration you have applied here.
 {{% /notice %}}
 
-In the Gloogle Console, you can find the resource at **Compute Engine -> Health checks**. You can filter by the name.
+In the Google Console, you can find the resource at **Compute Engine -> Health checks**. You can filter by the name.
 
 ![LB HealthCheck]({{% versioned_link_path fromRoot="/img/gcp-lb-healthcheck.png" %}})
 
@@ -518,7 +518,7 @@ gcloud compute backend-services create my-gloo-edge-https-backend-service \
     --global
 ```
 
-In the Gloogle Console, you can find the resource at **Network Services -> Load Balancing -> Backends tab**. You can filter by the name.
+In the Google Console, you can find the resource at **Network Services -> Load Balancing -> Backends tab**. You can filter by the name.
 
 ![LB BackEnd Services]({{% versioned_link_path fromRoot="/img/gcp-lb-backend.png" %}})
 
@@ -531,7 +531,7 @@ gcloud compute url-maps create my-gloo-edge-https-url-map \
     --global
 ```
 
-In the Gloogle Console, you can find the resource at **Network Services -> Load Balancing -> Load Balancers tab**. You can filter by the name.
+In the Google Console, you can find the resource at **Network Services -> Load Balancing -> Load Balancers tab**. You can filter by the name.
 
 ![LB URL Map]({{% versioned_link_path fromRoot="/img/gcp-lb-urlmap.png" %}})
 
@@ -556,7 +556,7 @@ gcloud compute target-https-proxies create my-gloo-edge-https-target-proxy \
 ```
 
 {{% notice note %}}
-Notice that there is another objects for HTTP and TCP called `target-http-proxies` and `target-tcp-proxies`.
+Notice that there are other objects for HTTP and TCP called `target-http-proxies` and `target-tcp-proxies`.
 {{% /notice %}}
 
 You can find the resource at **Network Services -> Load Balancing -> Target Proxies tab**. You can filter by the name.
@@ -573,7 +573,7 @@ gcloud compute forwarding-rules create my-gloo-edge-https-content-rule \
     --ports=443
 ```
 
-In the Gloogle Console, you can find the resource at **Network Services -> Load Balancing -> Frontends tab**. You can filter by the name.
+In the Google Console, you can find the resource at **Network Services -> Load Balancing -> Frontends tab**. You can filter by the name.
 
 ![LB Forwarding Rules]({{% versioned_link_path fromRoot="/img/gcp-lb-forwardingrules.png" %}})
 
