@@ -33,71 +33,76 @@ var (
 	SubsetsMisconfiguredErr = errors.New("route has a subset config, but the upstream does not")
 )
 
-func (t *translatorInstance) computeRouteConfig(
-	params plugins.Params,
-	proxy *v1.Proxy,
-	listener *v1.Listener,
-	routeCfgName string,
-	listenerReport *validationapi.ListenerReport,
-) *envoy_config_route_v3.RouteConfiguration {
-	if listener.GetHttpListener() == nil {
-		return nil
-	}
+type RouteConfigurationTranslator interface {
+	// A Gloo listener may produce multiple filter chains. Each one may contain its own route configuration
+	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_routing#arch-overview-http-routing
+	ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration
+}
 
-	httpListenerReport := listenerReport.GetHttpListenerReport()
-	if httpListenerReport == nil {
-		contextutils.LoggerFrom(params.Ctx).DPanic("internal error: listener report was not http type")
-	}
+var _ RouteConfigurationTranslator = new(emptyRouteConfigurationTranslator)
+var _ RouteConfigurationTranslator = new(httpRouteConfigurationTranslator)
 
-	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_route_config."+routeCfgName)
+type emptyRouteConfigurationTranslator struct {
+}
 
-	virtualHosts := t.computeVirtualHosts(params, proxy, listener, httpListenerReport)
+func (e *emptyRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {
+	return []*envoy_config_route_v3.RouteConfiguration{}
+}
+
+type httpRouteConfigurationTranslator struct {
+	plugins []plugins.Plugin
+	proxy   *v1.Proxy
+
+	parentListener *v1.Listener
+	listener       *v1.HttpListener
+
+	parentReport *validationapi.ListenerReport
+	report       *validationapi.HttpListenerReport
+
+	routeConfigName          string
+	requireTlsOnVirtualHosts bool
+}
+
+func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {
+	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_route_config."+h.routeConfigName)
+
+	virtualHosts := h.computeVirtualHosts(params)
 
 	// validate ssl config if the listener specifies any
-	if err := validateListenerSslConfig(params, listener); err != nil {
-		validation.AppendListenerError(listenerReport,
+	if err := validateListenerSslConfig(params, h.parentListener); err != nil {
+		validation.AppendListenerError(h.parentReport,
 			validationapi.ListenerReport_Error_SSLConfigError,
 			err.Error(),
 		)
 	}
 
-	return &envoy_config_route_v3.RouteConfiguration{
-		Name:                           routeCfgName,
+	return []*envoy_config_route_v3.RouteConfiguration{{
+		Name:                           h.routeConfigName,
 		VirtualHosts:                   virtualHosts,
-		MaxDirectResponseBodySizeBytes: listener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
-	}
+		MaxDirectResponseBodySizeBytes: h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
+	}}
 }
 
-func (t *translatorInstance) computeVirtualHosts(
-	params plugins.Params,
-	proxy *v1.Proxy,
-	listener *v1.Listener,
-	httpListenerReport *validationapi.HttpListenerReport,
-) []*envoy_config_route_v3.VirtualHost {
-	httpListener, ok := listener.GetListenerType().(*v1.Listener_HttpListener)
-	if !ok {
-		return nil
-	}
-	virtualHosts := httpListener.HttpListener.GetVirtualHosts()
-	ValidateVirtualHostDomains(virtualHosts, httpListenerReport)
-	requireTls := len(listener.GetSslConfigurations()) > 0
+func (h *httpRouteConfigurationTranslator) computeVirtualHosts(params plugins.Params) []*envoy_config_route_v3.VirtualHost {
+	virtualHosts := h.listener.GetVirtualHosts()
+	ValidateVirtualHostDomains(virtualHosts, h.report)
+
 	var envoyVirtualHosts []*envoy_config_route_v3.VirtualHost
 	for i, virtualHost := range virtualHosts {
 		vhostParams := plugins.VirtualHostParams{
 			Params:   params,
-			Listener: listener,
-			Proxy:    proxy,
+			Listener: h.parentListener,
+			Proxy:    h.proxy,
 		}
-		vhostReport := httpListenerReport.GetVirtualHostReports()[i]
-		envoyVirtualHosts = append(envoyVirtualHosts, t.computeVirtualHost(vhostParams, virtualHost, requireTls, vhostReport))
+		vhostReport := h.report.GetVirtualHostReports()[i]
+		envoyVirtualHosts = append(envoyVirtualHosts, h.computeVirtualHost(vhostParams, virtualHost, vhostReport))
 	}
 	return envoyVirtualHosts
 }
 
-func (t *translatorInstance) computeVirtualHost(
+func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	params plugins.VirtualHostParams,
 	virtualHost *v1.VirtualHost,
-	requireTls bool,
 	vhostReport *validationapi.VirtualHostReport,
 ) *envoy_config_route_v3.VirtualHost {
 
@@ -113,7 +118,7 @@ func (t *translatorInstance) computeVirtualHost(
 		}
 		routeReport := vhostReport.GetRouteReports()[i]
 		generatedName := fmt.Sprintf("%s-route-%d", virtualHost.GetName(), i)
-		computedRoutes := t.envoyRoutes(routeParams, routeReport, route, generatedName)
+		computedRoutes := h.envoyRoutes(routeParams, routeReport, route, generatedName)
 		envoyRoutes = append(envoyRoutes, computedRoutes...)
 	}
 	domains := virtualHost.GetDomains()
@@ -121,7 +126,7 @@ func (t *translatorInstance) computeVirtualHost(
 		domains = []string{"*"}
 	}
 	var envoyRequireTls envoy_config_route_v3.VirtualHost_TlsRequirementType
-	if requireTls {
+	if h.requireTlsOnVirtualHosts {
 		// TODO (ilackarms): support external-only TLS
 		envoyRequireTls = envoy_config_route_v3.VirtualHost_ALL
 	}
@@ -134,7 +139,7 @@ func (t *translatorInstance) computeVirtualHost(
 	}
 
 	// run the plugins
-	for _, plug := range t.plugins {
+	for _, plug := range h.plugins {
 		virtualHostPlugin, ok := plug.(plugins.VirtualHostPlugin)
 		if !ok {
 			continue
@@ -150,7 +155,7 @@ func (t *translatorInstance) computeVirtualHost(
 	return out
 }
 
-func (t *translatorInstance) envoyRoutes(
+func (h *httpRouteConfigurationTranslator) envoyRoutes(
 	params plugins.RouteParams,
 	routeReport *validationapi.RouteReport,
 	in *v1.Route,
@@ -160,7 +165,7 @@ func (t *translatorInstance) envoyRoutes(
 	out := initRoutes(params, in, routeReport, generatedName)
 
 	for i := range out {
-		t.setAction(params, routeReport, in, out[i])
+		h.setAction(params, routeReport, in, out[i])
 	}
 
 	return out
@@ -228,7 +233,7 @@ func GlooMatcherToEnvoyMatcher(ctx context.Context, matcher *matchers.Matcher) e
 	return match
 }
 
-func (t *translatorInstance) setAction(
+func (h *httpRouteConfigurationTranslator) setAction(
 	params plugins.RouteParams,
 	routeReport *validationapi.RouteReport,
 	in *v1.Route,
@@ -246,7 +251,7 @@ func (t *translatorInstance) setAction(
 		out.Action = &envoy_config_route_v3.Route_Route{
 			Route: &envoy_config_route_v3.RouteAction{},
 		}
-		if err := t.setRouteAction(params, action.RouteAction, out.GetAction().(*envoy_config_route_v3.Route_Route).Route, routeReport, out.GetName()); err != nil {
+		if err := h.setRouteAction(params, action.RouteAction, out.GetAction().(*envoy_config_route_v3.Route_Route).Route, routeReport, out.GetName()); err != nil {
 			if isWarningErr(err) {
 				validation.AppendRouteWarning(routeReport,
 					validationapi.RouteReport_Warning_InvalidDestinationWarning,
@@ -260,7 +265,7 @@ func (t *translatorInstance) setAction(
 				)
 			}
 		}
-		t.runRoutePlugins(params, routeReport, in, out)
+		h.runRoutePlugins(params, routeReport, in, out)
 
 	case *v1.Route_DirectResponseAction:
 		out.Action = &envoy_config_route_v3.Route_DirectResponse{
@@ -272,7 +277,7 @@ func (t *translatorInstance) setAction(
 
 		// DirectResponseAction supports header manipulation, so we want to process the corresponding plugin.
 		// See here: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#route-directresponseaction
-		for _, plug := range t.plugins {
+		for _, plug := range h.plugins {
 			routePlugin, ok := plug.(*headers.Plugin)
 			if !ok {
 				continue
@@ -298,7 +303,7 @@ func (t *translatorInstance) setAction(
 				},
 			},
 		}
-		t.runRoutePlugins(params, routeReport, in, out)
+		h.runRoutePlugins(params, routeReport, in, out)
 
 	case *v1.Route_RedirectAction:
 		out.Action = &envoy_config_route_v3.Route_Redirect{
@@ -323,13 +328,13 @@ func (t *translatorInstance) setAction(
 	}
 }
 
-func (t *translatorInstance) runRoutePlugins(
+func (h *httpRouteConfigurationTranslator) runRoutePlugins(
 	params plugins.RouteParams,
 	routeReport *validationapi.RouteReport,
 	in *v1.Route,
 	out *envoy_config_route_v3.Route) {
 	// run the plugins for RoutePlugin
-	for _, plug := range t.plugins {
+	for _, plug := range h.plugins {
 		routePlugin, ok := plug.(plugins.RoutePlugin)
 		if !ok {
 			continue
@@ -350,7 +355,7 @@ func (t *translatorInstance) runRoutePlugins(
 	}
 
 	// run the plugins for RouteActionPlugin
-	for _, plug := range t.plugins {
+	for _, plug := range h.plugins {
 		routeActionPlugin, ok := plug.(plugins.RouteActionPlugin)
 		if !ok || in.GetRouteAction() == nil || out.GetRoute() == nil {
 			continue
@@ -373,7 +378,7 @@ func (t *translatorInstance) runRoutePlugins(
 	}
 }
 
-func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.RouteAction, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport, routeName string) error {
+func (h *httpRouteConfigurationTranslator) setRouteAction(params plugins.RouteParams, in *v1.RouteAction, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport, routeName string) error {
 	switch dest := in.GetDestination().(type) {
 	case *v1.RouteAction_Single:
 		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_Cluster{}
@@ -387,7 +392,7 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 
 		return checkThatSubsetMatchesUpstream(params.Params, dest.Single)
 	case *v1.RouteAction_Multi:
-		return t.setWeightedClusters(params, dest.Multi, out, routeReport, routeName)
+		return h.setWeightedClusters(params, dest.Multi, out, routeReport, routeName)
 	case *v1.RouteAction_UpstreamGroup:
 		upstreamGroupRef := dest.UpstreamGroup
 		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.GetNamespace(), upstreamGroupRef.GetName())
@@ -401,7 +406,7 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 		md := &v1.MultiDestination{
 			Destinations: upstreamGroup.GetDestinations(),
 		}
-		return t.setWeightedClusters(params, md, out, routeReport, routeName)
+		return h.setWeightedClusters(params, md, out, routeReport, routeName)
 	case *v1.RouteAction_ClusterHeader:
 		// ClusterHeader must use the naming convention {{namespace}}_{{clustername}}
 		out.ClusterSpecifier = &envoy_config_route_v3.RouteAction_ClusterHeader{
@@ -412,7 +417,7 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 	return errors.Errorf("unknown upstream destination type")
 }
 
-func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, multiDest *v1.MultiDestination, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport, routeName string) error {
+func (h *httpRouteConfigurationTranslator) setWeightedClusters(params plugins.RouteParams, multiDest *v1.MultiDestination, out *envoy_config_route_v3.RouteAction, routeReport *validationapi.RouteReport, routeName string) error {
 	clusterSpecifier := &envoy_config_route_v3.RouteAction_WeightedClusters{
 		WeightedClusters: &envoy_config_route_v3.WeightedCluster{},
 	}
@@ -439,7 +444,7 @@ func (t *translatorInstance) setWeightedClusters(params plugins.RouteParams, mul
 		}
 
 		// run the plugins for Weighted Destinations
-		for _, plug := range t.plugins {
+		for _, plug := range h.plugins {
 			weightedDestinationPlugin, ok := plug.(plugins.WeightedDestinationPlugin)
 			if !ok {
 				continue
