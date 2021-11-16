@@ -77,7 +77,10 @@ var _ = Describe("Validation Server", func() {
 		getPlugins := func() []plugins.Plugin {
 			return registeredPlugins
 		}
-		translator = NewTranslator(sslutils.NewSslConfigTranslator(), settings, getPlugins)
+		getPluginRegistry := func() plugins.PluginRegistry {
+			return registry.NewPluginRegistry(getPlugins())
+		}
+		translator = NewTranslator(sslutils.NewSslConfigTranslator(), settings, getPluginRegistry)
 	})
 
 	Context("proxy validation", func() {

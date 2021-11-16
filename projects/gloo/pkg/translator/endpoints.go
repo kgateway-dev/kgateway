@@ -31,7 +31,7 @@ func (t *translatorInstance) computeClusterEndpoints(
 		// if there are any endpoints for this upstream, it's using eds and we need to create a load assignment for it
 		if len(clusterEndpoints) > 0 {
 			loadAssignment := loadAssignmentForUpstream(upstream, clusterEndpoints)
-			for _, plug := range t.plugins {
+			for _, plug := range t.pluginRegistry.GetPlugins() {
 				upstreamPlug, ok := plug.(plugins.EndpointPlugin)
 				if !ok {
 					continue
