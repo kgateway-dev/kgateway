@@ -980,6 +980,9 @@ apis:
   protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto.sk/#ProtocolUpgradeConfig
     package: protocol_upgrade.options.gloo.solo.io
+  proxy_protocol.options.gloo.solo.io.ProxyProtocol:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/proxy_protocol/proxy_protocol.proto.sk/#ProxyProtocol
+    package: proxy_protocol.options.gloo.solo.io
   ratelimit.api.solo.io.Action:
     relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#Action
     package: ratelimit.api.solo.io

@@ -13,6 +13,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/rest/rest.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/proxy_protocol/proxy_protocol.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc_web/grpc_web.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc_json/grpc_json.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto";
@@ -73,6 +74,9 @@ message ListenerOptions {
     // Additional socket options that may not be present in Envoy source code or
     // precompiled binaries.
     repeated .solo.io.envoy.api.v2.core.SocketOption socket_options = 4;
+
+    // Enable ProxyProtocol support for this listener.
+    proxy_protocol.options.gloo.solo.io.ProxyProtocol proxy_protocol = 5;
 }
 
 message RouteConfigurationOptions {
