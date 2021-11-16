@@ -26,7 +26,7 @@ var _ FilterChainTranslator = new(tcpFilterChainTranslator)
 var _ FilterChainTranslator = new(httpFilterChainTranslator)
 
 type tcpFilterChainTranslator struct {
-	plugins []plugins.Plugin
+	plugins []plugins.TcpFilterChainPlugin
 
 	parentListener *v1.Listener
 	listener       *v1.TcpListener
@@ -39,18 +39,15 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 
 	// run the tcp filter chain plugins
 	for _, plug := range t.plugins {
-		listenerPlugin, ok := plug.(plugins.ListenerFilterChainPlugin)
-		if !ok {
-			continue
-		}
-		result, err := listenerPlugin.ProcessListenerFilterChain(params, t.parentListener)
+		pluginFilterChains, err := plug.CreateTcpFilterChains(params, t.listener)
 		if err != nil {
 			validation.AppendTCPListenerError(t.report,
 				validationapi.TcpListenerReport_Error_ProcessingError,
-				err.Error())
+				fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), err.Error()))
 			continue
 		}
-		filterChains = append(filterChains, result...)
+
+		filterChains = append(filterChains, pluginFilterChains...)
 	}
 
 	return filterChains
