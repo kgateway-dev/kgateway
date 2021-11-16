@@ -107,12 +107,13 @@ func (h *httpFilterChainTranslator) computeNetworkFilters(params plugins.Params)
 	// TODO (sam-heilbron)
 	// This is a partial duplicate of the open source ExtauthTranslatorSyncer
 	// We should find a single place to define this configuration
-	for _, vHost := range h.listener.GetVirtualHosts() {
+	for i, vHost := range h.listener.GetVirtualHosts() {
 		acRef := vHost.GetOptions().GetExtauth().GetConfigRef()
 		if acRef != nil {
 			if _, err := params.Snapshot.AuthConfigs.Find(acRef.GetNamespace(), acRef.GetName()); err != nil {
-				validation.AppendHTTPListenerError(
-					h.report, validationapi.HttpListenerReport_Error_ProcessingError,
+				validation.AppendVirtualHostError(
+					h.report.GetVirtualHostReports()[i],
+					validationapi.VirtualHostReport_Error_ProcessingError,
 					"auth config not found: "+acRef.String())
 			}
 		}
