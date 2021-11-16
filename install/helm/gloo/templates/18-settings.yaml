@@ -93,9 +93,12 @@ spec:
       validationServerGrpcMaxSizeBytes: {{ .Values.gateway.validation.validationServerGrpcMaxSizeBytes }}
 {{- end }}
 
-{{- if ne .Values.discovery.fdsMode "" }}
+{{- if .Values.discovery }}
   discovery:
+{{- if ne .Values.discovery.fdsMode "" }}
     fdsMode: {{.Values.discovery.fdsMode}}
+{{- end }}
+    udsEnabled: {{.Values.discovery.udsEnabled}}
 {{- end }}
 
 {{- if .Values.settings.extensions }}

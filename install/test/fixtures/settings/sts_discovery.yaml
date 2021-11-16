@@ -9,6 +9,7 @@ metadata:
 spec:
   discovery:
     fdsMode: WHITELIST
+    udsEnabled: true
   gateway:
     readGatewaysFromAllNamespaces: false
     validation:

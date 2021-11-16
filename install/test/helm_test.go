@@ -2852,6 +2852,7 @@ spec:
       validationServerGrpcMaxSizeBytes: 4000000
   discovery:
     fdsMode: WHITELIST
+    udsEnabled: true
   extauth:
     extauthzServerRef:
       name: test
@@ -3823,6 +3824,16 @@ metadata:
 						})
 						discoveryDeployment.Spec.Template.Spec.SecurityContext = nil
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+					})
+
+					It("allows disabling upstream discovery", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/uds_disabled.yaml", namespace)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"discovery.udsEnabled=false",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
 					Context("pass image pull secrets", func() {
