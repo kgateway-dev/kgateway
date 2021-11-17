@@ -43,6 +43,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetTranslators(ctx context.Context,
 ) {
 	switch listener.GetListenerType().(type) {
 	case *v1.Listener_HttpListener:
+
 		return l.GetHttpListenerTranslators(ctx, listener, listenerReport)
 
 	case *v1.Listener_TcpListener:

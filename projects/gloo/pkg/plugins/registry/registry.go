@@ -118,7 +118,6 @@ type pluginRegistry struct {
 }
 
 func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
-
 	var listenerPlugins []plugins.ListenerPlugin
 	var tcpFilterChainPlugins []plugins.TcpFilterChainPlugin
 	var httpFilterPlugins []plugins.HttpFilterPlugin

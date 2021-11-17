@@ -19,13 +19,10 @@ var _ NetworkFilterTranslator = new(httpNetworkFilterTranslator)
 type httpNetworkFilterTranslator struct {
 	// List of HttpFilterPlugins to process
 	plugins []plugins.HttpFilterPlugin
-
 	// A Gloo HttpListener produces a single filter chain, with its own set of NetworkFilters
 	listener *v1.HttpListener
-
 	// The report where warnings/errors are persisted
 	report *validationapi.HttpListenerReport
-
 	// The name of the RouteConfiguration for the HttpConnectionManager
 	routeConfigName string
 }
