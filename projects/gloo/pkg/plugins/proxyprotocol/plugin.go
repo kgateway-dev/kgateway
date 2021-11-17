@@ -95,8 +95,5 @@ func GenerateProxyProtocolListenerFilter(in *v1.Listener) (*envoy_config_listene
 }
 
 func UsesEnterpriseOnlyFeatures(in *v1.Listener) bool {
-	if in.GetOptions().GetProxyProtocol().GetAllowRequestsWithoutProxyProtocol() {
-		return true
-	}
-	return false
+	return in.GetOptions().GetProxyProtocol().GetAllowRequestsWithoutProxyProtocol()
 }
