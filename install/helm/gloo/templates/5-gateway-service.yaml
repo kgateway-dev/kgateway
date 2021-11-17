@@ -16,6 +16,10 @@ spec:
     protocol: TCP
     # this should map to projects/gateway/pkg/defaults.ValidationWebhookBindPort
     targetPort: 8443
+{{- if .Values.global.glooStats.serviceMonitor }}
+  - name: http-monitoring
+    port: 9091
+{{- end }}
   selector:
     gloo: gateway
 {{- end }} {{/* if .Values.gateway.enabled and .Values.gateway.validation.enabled */}}

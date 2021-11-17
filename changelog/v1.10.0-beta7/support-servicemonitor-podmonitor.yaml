@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/1773
+    resolvesIssue: false
+    description: Add support for generation of Prometheus ServiceMonitor/PodMonitor CRs

@@ -1,0 +1,9 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5532
+    resolvesIssue: true
+    description: Expose merge_slashes envoy setting.
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5526
+    resolvesIssue: true
+    description: Expose normalize_path envoy setting.

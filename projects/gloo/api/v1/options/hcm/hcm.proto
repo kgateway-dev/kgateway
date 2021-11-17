@@ -138,4 +138,12 @@ message HttpConnectionManagerSettings {
     // Supplies the type of codec that the connection manager should use.
     // See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#extensions-filters-network-http-connection-manager-v3-httpconnectionmanager
     CodecType codec_type = 28;
+
+    // Determines if adjacent slashes in the path are merged into one before any processing of requests by HTTP filters or routing.
+    // See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto
+    bool merge_slashes = 29;
+
+    // Should paths be normalized according to RFC 3986 before any processing of requests by HTTP filters or routing?
+    // See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto
+    google.protobuf.BoolValue normalize_path = 30;
 }

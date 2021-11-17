@@ -212,6 +212,13 @@ func AppendHTTPListenerError(httpListenerReport *validation.HttpListenerReport, 
 	})
 }
 
+func AppendTCPListenerError(httpListenerReport *validation.TcpListenerReport, errType validation.TcpListenerReport_Error_Type, reason string) {
+	httpListenerReport.Errors = append(httpListenerReport.GetErrors(), &validation.TcpListenerReport_Error{
+		Type:   errType,
+		Reason: reason,
+	})
+}
+
 func AppendRouteError(routeReport *validation.RouteReport, errType validation.RouteReport_Error_Type, reason string, routeName string) {
 	routeReport.Errors = append(routeReport.GetErrors(), &validation.RouteReport_Error{
 		Type:   errType,
