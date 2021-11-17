@@ -83,6 +83,10 @@ spec:
           - containerPort: {{ .Values.accessLogger.port }}
             name: http
             protocol: TCP
+{{- if .Values.global.glooStats.serviceMonitor }}
+          - name: http-monitoring
+            containerPort: 9091
+{{- end }} {{/* if .Values.global.glooStats.serviceMonitor */}}
 {{- end }} {{/* if and .Values.gateway.enabled .Values.accessLogger.enabled */}}
 {{- end }} {{/* define "accessLogger.deploymentSpec" */}}
 

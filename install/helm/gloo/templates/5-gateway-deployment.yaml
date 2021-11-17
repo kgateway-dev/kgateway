@@ -54,13 +54,18 @@ spec:
 {{ toYaml .Values.gateway.deployment.resources | indent 10}}
 {{- end}}
 
-{{- if .Values.gateway.validation.enabled }}
+{{- if or (.Values.gateway.validation.enabled) (.Values.global.glooStats.serviceMonitor) }}
         ports:
+{{- end}}
+{{- if .Values.gateway.validation.enabled }}
           - containerPort: 8443
             name: https
             protocol: TCP
 {{- end}}
-
+{{- if .Values.global.glooStats.serviceMonitor }}
+          - name: http-monitoring
+            containerPort: 9091
+{{- end }}
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
