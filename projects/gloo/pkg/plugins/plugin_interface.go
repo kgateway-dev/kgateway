@@ -105,47 +105,42 @@ type ListenerPlugin interface {
 	ProcessListener(params Params, in *v1.Listener, out *envoy_config_listener_v3.Listener) error
 }
 
-type ListenerFilterPlugin interface {
-	Plugin
-	ProcessListenerFilter(params Params, in *v1.Listener) ([]StagedListenerFilter, error)
+type StagedNetworkFilter struct {
+	NetworkFilter *envoy_config_listener_v3.Filter
+	Stage         FilterStage
 }
 
-type StagedListenerFilter struct {
-	ListenerFilter *envoy_config_listener_v3.Filter
-	Stage          FilterStage
-}
+type StagedNetworkFilterList []StagedNetworkFilter
 
-type StagedListenerFilterList []StagedListenerFilter
-
-func (s StagedListenerFilterList) Len() int {
+func (s StagedNetworkFilterList) Len() int {
 	return len(s)
 }
 
 // filters by Relative Stage, Weighting, Name, and (to ensure stability) index
-func (s StagedListenerFilterList) Less(i, j int) bool {
+func (s StagedNetworkFilterList) Less(i, j int) bool {
 	switch FilterStageComparison(s[i].Stage, s[j].Stage) {
 	case -1:
 		return true
 	case 1:
 		return false
 	}
-	if s[i].ListenerFilter.GetName() < s[j].ListenerFilter.GetName() {
+	if s[i].NetworkFilter.GetName() < s[j].NetworkFilter.GetName() {
 		return true
 	}
-	if s[i].ListenerFilter.GetName() > s[j].ListenerFilter.GetName() {
+	if s[i].NetworkFilter.GetName() > s[j].NetworkFilter.GetName() {
 		return false
 	}
-	if s[i].ListenerFilter.String() < s[j].ListenerFilter.String() {
+	if s[i].NetworkFilter.String() < s[j].NetworkFilter.String() {
 		return true
 	}
-	if s[i].ListenerFilter.String() > s[j].ListenerFilter.String() {
+	if s[i].NetworkFilter.String() > s[j].NetworkFilter.String() {
 		return false
 	}
 	// ensure stability
 	return i < j
 }
 
-func (s StagedListenerFilterList) Swap(i, j int) {
+func (s StagedNetworkFilterList) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
@@ -281,5 +276,7 @@ type ResourceGeneratorPlugin interface {
 //	more methods on a PluginRegistry
 type PluginRegistry interface {
 	GetPlugins() []Plugin
+	GetListenerPlugins() []ListenerPlugin
 	GetTcpFilterChainPlugins() []TcpFilterChainPlugin
+	GetHttpFilterPlugins() []HttpFilterPlugin
 }

@@ -225,7 +225,7 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 		listenerTranslator, routeConfigurationTranslator := listenerSubsystemTranslatorFactory.GetTranslators(params.Ctx, listener, listenerReport)
 
 		// 1. Compute RouteConfiguration
-		// This way we call ProcessVirutalHost/ProcessRoute first
+		// This way we call ProcessVirtualHost / ProcessRoute first
 		envoyRouteConfiguration := routeConfigurationTranslator.ComputeRouteConfiguration(params)
 
 		// 2. Compute Listener
