@@ -70,16 +70,16 @@ func (l *ListenerSubsystemTranslatorFactory) GetHttpListenerTranslators(ctx cont
 		listener: listener,
 		report:   listenerReport,
 		plugins:  l.pluginRegistry.GetListenerPlugins(),
-		filterChainTranslator: &httpFilterChainTranslator{
-			sslConfigTranslator: l.sslConfigTranslator,
-			parentListener:      listener,
-			parentReport:        listenerReport,
+		filterChainTranslator: &sslDuplicatedFilterChainTranslator{
+			parentReport: listenerReport,
 			networkFilterTranslator: &httpNetworkFilterTranslator{
 				plugins:         l.pluginRegistry.GetHttpFilterPlugins(),
 				listener:        listener.GetHttpListener(),
 				report:          httpListenerReport,
 				routeConfigName: routeConfigurationName,
 			},
+			sslConfigTranslator: l.sslConfigTranslator,
+			sslConfigurations:   mergeSslConfigs(listener.GetSslConfigurations()),
 		},
 	}
 
