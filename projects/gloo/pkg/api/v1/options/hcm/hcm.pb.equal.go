@@ -245,6 +245,20 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetMergeSlashes() != target.GetMergeSlashes() {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetNormalizePath()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetNormalizePath()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetNormalizePath(), target.GetNormalizePath()) {
+			return false
+		}
+	}
+
 	return true
 }
 
