@@ -7,7 +7,13 @@ The Gloo Translator is responsible for converting a Gloo Proxy into an xDS Snaps
 1. Generate an xDS Snapshot
 1. Return the xDS Snapshot, ResourceReports and ProxyReport
 
+## Inputs
+
 ## Cluster Subsystem Translation
+
+### Cluster Translation
+
+### ClusterLoadAssignment Translation
 
 ## Listener Subsystem Translation
 
@@ -16,8 +22,12 @@ The Gloo Translator is responsible for converting a Gloo Proxy into an xDS Snaps
 It is composed of:
 1. RouteConfigurations
 2. Listeners
+
 ### RouteConfiguration Translation
 
 
 
 ### Listener Translation
+
+
+## Outputs
