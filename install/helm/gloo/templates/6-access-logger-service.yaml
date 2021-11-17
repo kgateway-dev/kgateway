@@ -15,6 +15,10 @@ spec:
     targetPort: {{ .Values.accessLogger.port }}
     protocol: TCP
     name: http
+{{- if .Values.global.glooStats.serviceMonitor }}
+  - name: http-monitoring
+    port: 9091
+{{- end }}
   selector:
     app: gloo
     gloo: gateway-proxy-access-logger
