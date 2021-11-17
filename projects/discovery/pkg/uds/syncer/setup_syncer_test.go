@@ -46,7 +46,7 @@ func getSettings(udsEnabled bool) *v1.Settings {
 	return &v1.Settings{
 		// Not necessary for tests to pass, but nice to have to ensure RunUDS() logs correctly
 		Metadata: &core.Metadata{
-			Name: "test-settings",
+			Name:      "test-settings",
 			Namespace: "gloo-system",
 		},
 		Discovery: &v1.Settings_DiscoveryOptions{

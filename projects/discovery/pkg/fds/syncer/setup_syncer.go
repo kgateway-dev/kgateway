@@ -21,8 +21,8 @@ import (
 func RunFDS(opts bootstrap.Opts) error {
 	fdsMode := getFdsMode(opts.Settings)
 	if fdsMode == v1.Settings_DiscoveryOptions_DISABLED {
-		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Function discovery " +
-			"(settings.discovery.fdsMode) disabled. To enable, modify " +
+		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Function discovery "+
+			"(settings.discovery.fdsMode) disabled. To enable, modify "+
 			"gloo.solo.io/Settings - %v", opts.Settings.GetMetadata().Ref())
 		return nil
 	}

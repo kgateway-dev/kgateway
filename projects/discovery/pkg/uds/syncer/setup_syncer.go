@@ -18,8 +18,8 @@ import (
 func RunUDS(opts bootstrap.Opts) error {
 	udsEnabled := GetUdsEnabled(opts.Settings)
 	if !udsEnabled {
-		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Upstream discovery " +
-			"(settings.discovery.udsEnabled) disabled. To enable, modify " +
+		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Upstream discovery "+
+			"(settings.discovery.udsEnabled) disabled. To enable, modify "+
 			"gloo.solo.io/Settings - %v", opts.Settings.GetMetadata().Ref())
 		return nil
 	}
