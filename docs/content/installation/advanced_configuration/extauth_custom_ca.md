@@ -87,7 +87,7 @@ Finally, we'll install Gloo Edge Enterprise with Helm. Be sure to update the val
 Include the `--install` flag to upgrade the existing installation or install a new release if one does not already exist.
 
 ```bash
-helm update --install gloo glooe/gloo-ee --namespace gloo-system \
+helm upgrade --install gloo glooe/gloo-ee --namespace gloo-system \
   --set-string license_key=LICENSE_KEY \
   -f gloo-edge-bring-cert-values.yaml
 ```
