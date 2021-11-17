@@ -16,7 +16,7 @@ Gloo Edge's plugin based architecture makes it easy to extend functionality in a
 - [Function Discovery Plugins](https://github.com/solo-io/gloo/blob/master/projects/discovery/pkg/fds/interface.go#L31): annotate services with information discovered by polling services directly (such as OpenAPI endpoints and gRPC methods).
 - [Routing Plugins](https://github.com/solo-io/gloo/blob/master/projects/gloo/pkg/plugins/plugin_interface.go#L53): customize what happens to requests when they match a route or virtual host
 - [Upstream Plugins](https://github.com/solo-io/gloo/blob/master/projects/gloo/pkg/plugins/plugin_interface.go#L44): customize what happens to requests when they are routed to a service
-- **Operators for Configuration**: Gloo Edge exposes its intermediate language for proxy configuration via the {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}} Custom Resource, allowing operators to leverage Gloo Edge for multiple use cases. [Gloo Edge](https://github.com/solo-io/gloo/tree/master/projects/gateway) and [Sqoop](https://github.com/solo-io/sqoop) provide API Gateway and GraphQL Server functionality respectively, without needing to run in the same process (or even the same container) as Gloo Edge.
+- **Operators for Configuration**: Gloo Edge exposes its intermediate language for proxy configuration via the {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}} Custom Resource, allowing operators to leverage Gloo Edge for multiple use cases. With the optional [Gloo Edge GraphQL module]({{< versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/" >}}), you can set up API gateway and GraphQL server functionality for your apps, without running in the same process (or even the same container) as Gloo Edge.
 
 ## Gloo Edge API Concepts
 
@@ -52,7 +52,7 @@ Gloo Edge's plugin based architecture makes it easy to extend functionality in a
 
   A single proxy CRD contains all the configuration necessary to be applied to an instance of Envoy. In the Gloo Edge system, Proxies are treated as an intermediary representation of config, while user-facing config is imported from simpler, more opinionated resources such as the {{< protobuf name="gateway.solo.io.VirtualService">}} or [Kubernetes Ingress objects](https://kubernetes.io/docs/concepts/services-networking/ingress/).
   
-  For this reason, a standard Gloo Edge deployment contains one or more controllers which programmatically generate and write these CRDs to provide simpler, use-case specific APIs such as API Gateway and Ingress. [Sqoop](https://sqoop.solo.io/) is an advanced controller which creates routing configuration for Gloo Edge from [**GraphQL Schemas**](https://graphql.org/). 
+  For this reason, a standard Gloo Edge deployment contains one or more controllers which programmatically generate and write these CRDs to provide simpler, use-case specific APIs such as API Gateway and Ingress. You can extend these capabilities even more with Gloo Edge modules, such as [Gloo Edge GraphQL]({{< versioned_link_path fromRoot="/guides/traffic_management/request_processing/graphql/" >}}). This optional module is an advanced controller which creates routing configuration for Gloo Edge from [**GraphQL Schemas**](https://graphql.org/).
   
   [Click here for a tutorial providing a simple example utilizing this lower-level Proxy API](example-proxy-controller). This tutorial will walk you through building a Kubernetes controller to automatically configure Gloo Edge without any user interaction](example-proxy-controller.go).
 
