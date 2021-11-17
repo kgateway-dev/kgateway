@@ -224,7 +224,7 @@ type GlooDeployment struct {
 type Discovery struct {
 	Deployment     *DiscoveryDeployment `json:"deployment,omitempty"`
 	FdsMode        *string              `json:"fdsMode,omitempty" desc:"mode for function discovery (blacklist or whitelist). See more info in the settings docs"`
-	UdsEnabled     *bool                `json:"udsEnabled,omitempty" desc:"enable upstream discovery service (default true)."`
+	UdsEnabled     *bool                `json:"udsEnabled,omitempty" desc:"Enable upstream discovery service (default true)."`
 	Enabled        *bool                `json:"enabled,omitempty" desc:"enable Discovery features"`
 	ServiceAccount `json:"serviceAccount,omitempty" `
 	LogLevel       *string `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
