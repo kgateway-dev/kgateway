@@ -49,7 +49,7 @@ func (p *plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 
 	if pp := in.GetOptions().GetProxyProtocol(); pp != nil {
 
-		if pp.AllowRequestsWithoutProxyProtocol {
+		if pp.GetAllowRequestsWithoutProxyProtocol() {
 			return eris.New(ErrEnterpriseOnly)
 		}
 
@@ -57,7 +57,7 @@ func (p *plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		for _, rule := range pp.GetRules() {
 
 			var tlvPresent *envoy_listener_proxy_protocol.ProxyProtocol_KeyValuePair
-			if rule.OnTlvPresent != nil {
+			if rule.GetOnTlvPresent() != nil {
 				tlvPresent = &envoy_listener_proxy_protocol.ProxyProtocol_KeyValuePair{
 					MetadataNamespace: rule.GetOnTlvPresent().GetMetadataNamespace(),
 					Key:               rule.GetOnTlvPresent().GetKey(),
@@ -65,7 +65,7 @@ func (p *plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 			}
 
 			rules = append(rules, &envoy_listener_proxy_protocol.ProxyProtocol_Rule{
-				TlvType:      rule.TlvType,
+				TlvType:      rule.GetTlvType(),
 				OnTlvPresent: tlvPresent,
 			})
 		}
