@@ -45,13 +45,22 @@ func (p *plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		return nil
 	}
 
+	if UsesEnterpriseOnlyFeatures(in) {
+		return eris.New(ErrEnterpriseOnly)
+	}
+
+	listenerFilter, err := GenerateProxyProtocolListenerFilter(in)
+	if err != nil {
+		return err
+	}
+	out.ListenerFilters = append(out.GetListenerFilters(), listenerFilter)
+	return nil
+}
+
+func GenerateProxyProtocolListenerFilter(in *v1.Listener) (*envoy_config_listener_v3.ListenerFilter, error) {
 	envoyProxyProtocol := &envoy_listener_proxy_protocol.ProxyProtocol{}
 
 	if pp := in.GetOptions().GetProxyProtocol(); pp != nil {
-
-		if pp.GetAllowRequestsWithoutProxyProtocol() {
-			return eris.New(ErrEnterpriseOnly)
-		}
 
 		var rules []*envoy_listener_proxy_protocol.ProxyProtocol_Rule
 		for _, rule := range pp.GetRules() {
@@ -74,16 +83,20 @@ func (p *plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 
 	msg, err := utils.MessageToAny(envoyProxyProtocol)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	listenerFilter := &envoy_config_listener_v3.ListenerFilter{
+	return &envoy_config_listener_v3.ListenerFilter{
 		Name: wellknown.ProxyProtocol,
 		ConfigType: &envoy_config_listener_v3.ListenerFilter_TypedConfig{
 			TypedConfig: msg,
 		},
-	}
+	}, nil
+}
 
-	out.ListenerFilters = append(out.GetListenerFilters(), listenerFilter)
-	return nil
+func UsesEnterpriseOnlyFeatures(in *v1.Listener) bool {
+	if in.GetOptions().GetProxyProtocol().GetAllowRequestsWithoutProxyProtocol() {
+		return true
+	}
+	return false
 }
