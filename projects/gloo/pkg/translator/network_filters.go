@@ -45,8 +45,8 @@ func NewHttpListenerNetworkFilterTranslator(
 	routeConfigName string,
 ) *httpNetworkFilterTranslator {
 	return &httpNetworkFilterTranslator{
-		listener:                   listener,
-		report:                     report,
+		listener: listener,
+		report:   report,
 		hcmNetworkFilterTranslator: &hcmNetworkFilterTranslator{
 			plugins:         plugins,
 			hcmPlugins:      hcmPlugins,

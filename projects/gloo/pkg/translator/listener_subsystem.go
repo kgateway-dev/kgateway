@@ -81,10 +81,10 @@ func (l *ListenerSubsystemTranslatorFactory) GetHttpListenerTranslators(ctx cont
 		report:   listenerReport,
 		plugins:  l.pluginRegistry.GetListenerPlugins(),
 		filterChainTranslator: &sslDuplicatedFilterChainTranslator{
-			parentReport: listenerReport,
+			parentReport:            listenerReport,
 			networkFilterTranslator: networkFilterTranslator,
-			sslConfigTranslator: l.sslConfigTranslator,
-			sslConfigurations:   mergeSslConfigs(listener.GetSslConfigurations()),
+			sslConfigTranslator:     l.sslConfigTranslator,
+			sslConfigurations:       mergeSslConfigs(listener.GetSslConfigurations()),
 		},
 	}
 

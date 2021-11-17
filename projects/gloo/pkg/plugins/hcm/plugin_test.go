@@ -23,11 +23,10 @@ var _ = Describe("Plugin", func() {
 		ctx    context.Context
 		cancel context.CancelFunc
 
-		p       *Plugin
+		p            *Plugin
 		pluginParams plugins.Params
-		settings *hcm.HttpConnectionManagerSettings
+		settings     *hcm.HttpConnectionManagerSettings
 	)
-	
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
@@ -86,8 +85,6 @@ var _ = Describe("Plugin", func() {
 			ServerHeaderTransformation:   hcm.HttpConnectionManagerSettings_OVERWRITE,
 			PathWithEscapedSlashesAction: hcm.HttpConnectionManagerSettings_REJECT_REQUEST,
 		}
-
-
 
 		cfg := &envoyhttp.HttpConnectionManager{}
 		err := p.ProcessHcmSettings(pluginParams, settings, cfg)
