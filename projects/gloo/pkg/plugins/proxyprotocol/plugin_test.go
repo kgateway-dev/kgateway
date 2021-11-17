@@ -2,6 +2,7 @@ package proxyprotocol
 
 import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_listener_proxy_protocol "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/proxy_protocol/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -9,6 +10,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/proxy_protocol"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
 var _ = Describe("Plugin", func() {
@@ -66,7 +68,15 @@ var _ = Describe("Plugin", func() {
 			BeforeEach(func() {
 				in.Options = &v1.ListenerOptions{
 					ProxyProtocol: &proxy_protocol.ProxyProtocol{
-						Rules:                             nil,
+						Rules: []*proxy_protocol.ProxyProtocol_Rule{
+							{
+								TlvType: 123,
+								OnTlvPresent: &proxy_protocol.ProxyProtocol_KeyValuePair{
+									MetadataNamespace: "ns",
+									Key:               "key",
+								},
+							},
+						},
 						AllowRequestsWithoutProxyProtocol: false,
 					},
 				}
@@ -79,6 +89,19 @@ var _ = Describe("Plugin", func() {
 				Expect(out.ListenerFilters).To(HaveLen(1))
 				Expect(out.ListenerFilters).To(HaveLen(1))
 				Expect(out.ListenerFilters[0].GetName()).To(Equal(wellknown.ProxyProtocol))
+
+				var msg envoy_listener_proxy_protocol.ProxyProtocol
+				err = translator.ParseTypedConfig(out.ListenerFilters[0], &msg)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(msg.Rules[0].TlvType).To(Equal(uint32(123)))
+				Expect(msg.Rules[0].GetOnTlvPresent().GetKey()).To(Equal("key"))
+				Expect(msg.Rules[0].GetOnTlvPresent().GetMetadataNamespace()).To(Equal("ns"))
+			})
+
+			It("errors on enterprise only config", func() {
+				in.Options.ProxyProtocol.AllowRequestsWithoutProxyProtocol = true
+				err := p.ProcessListener(params, in, out)
+				Expect(err).To(MatchError(ErrEnterpriseOnly))
 			})
 		})
 
