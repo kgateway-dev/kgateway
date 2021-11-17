@@ -55,7 +55,7 @@ var _ = Describe("Plugin", func() {
 				ProviderConfig: nil,
 			},
 		}
-		err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
+		err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
@@ -121,7 +121,7 @@ var _ = Describe("Plugin", func() {
 		hcmSettings := &hcm.HttpConnectionManagerSettings{
 			Tracing: &tracing.ListenerTracingSettings{},
 		}
-		err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
+		err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
@@ -148,7 +148,7 @@ var _ = Describe("Plugin", func() {
 					ProviderConfig: nil,
 				},
 			}
-			err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
+			err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
 			Expect(err).To(BeNil())
 			Expect(cfg.Tracing.Provider).To(BeNil())
 		})
@@ -178,7 +178,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
+				err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
 				Expect(err).NotTo(BeNil())
 			})
 
@@ -209,7 +209,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
+				err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
 				Expect(err).To(BeNil())
 
 				expectedEnvoyConfig := &envoytrace.ZipkinConfig{
@@ -251,7 +251,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
+				err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
 				Expect(err).To(BeNil())
 
 				expectedEnvoyConfig := &envoytrace.ZipkinConfig{
@@ -300,7 +300,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
+				err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
 				Expect(err).NotTo(BeNil())
 			})
 
@@ -328,7 +328,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
+				err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
 				Expect(err).To(BeNil())
 
 				expectedEnvoyConfig := &envoytrace.DatadogConfig{
@@ -364,7 +364,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := p.ProcessHcmSettings(pluginParams.Snapshot, cfg, hcmSettings)
+				err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
 				Expect(err).To(BeNil())
 
 				expectedEnvoyConfig := &envoytrace.DatadogConfig{

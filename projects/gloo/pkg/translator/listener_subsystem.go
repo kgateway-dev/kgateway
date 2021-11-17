@@ -43,7 +43,6 @@ func (l *ListenerSubsystemTranslatorFactory) GetTranslators(ctx context.Context,
 ) {
 	switch listener.GetListenerType().(type) {
 	case *v1.Listener_HttpListener:
-
 		return l.GetHttpListenerTranslators(ctx, listener, listenerReport)
 
 	case *v1.Listener_TcpListener:
@@ -64,7 +63,18 @@ func (l *ListenerSubsystemTranslatorFactory) GetHttpListenerTranslators(ctx cont
 		contextutils.LoggerFrom(ctx).DPanic("internal error: listener report was not http type")
 	}
 
+	// The routeConfigurationName is used to match the RouteConfiguration to an implementation
+	// of the HttpConnectionManager NetworkFilter
 	routeConfigurationName := routeConfigName(listener)
+
+	// This translator produces NetworkFilters
+	// Most notably, this includes the HttpConnectionManager
+	networkFilterTranslator := NewHttpListenerNetworkFilterTranslator(
+		listener.GetHttpListener(),
+		httpListenerReport,
+		l.pluginRegistry.GetHttpFilterPlugins(),
+		l.pluginRegistry.GetHttpConnectionManagerPlugins(),
+		routeConfigurationName)
 
 	listenerTranslator := &listenerTranslatorInstance{
 		listener: listener,
@@ -72,12 +82,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetHttpListenerTranslators(ctx cont
 		plugins:  l.pluginRegistry.GetListenerPlugins(),
 		filterChainTranslator: &sslDuplicatedFilterChainTranslator{
 			parentReport: listenerReport,
-			networkFilterTranslator: &httpNetworkFilterTranslator{
-				plugins:         l.pluginRegistry.GetHttpFilterPlugins(),
-				listener:        listener.GetHttpListener(),
-				report:          httpListenerReport,
-				routeConfigName: routeConfigurationName,
-			},
+			networkFilterTranslator: networkFilterTranslator,
 			sslConfigTranslator: l.sslConfigTranslator,
 			sslConfigurations:   mergeSslConfigs(listener.GetSslConfigurations()),
 		},

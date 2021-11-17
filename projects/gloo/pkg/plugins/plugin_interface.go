@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -149,6 +151,12 @@ type TcpFilterChainPlugin interface {
 	CreateTcpFilterChains(params Params, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error)
 }
 
+// HttpConnectionManager Plugins
+type HttpConnectionManagerPlugin interface {
+	Plugin
+	ProcessHcmSettings(params Params, in *hcm.HttpConnectionManagerSettings, out *envoyhttp.HttpConnectionManager) error
+}
+
 type HttpFilterPlugin interface {
 	Plugin
 	HttpFilters(params Params, listener *v1.HttpListener) ([]StagedHttpFilter, error)
@@ -279,4 +287,5 @@ type PluginRegistry interface {
 	GetListenerPlugins() []ListenerPlugin
 	GetTcpFilterChainPlugins() []TcpFilterChainPlugin
 	GetHttpFilterPlugins() []HttpFilterPlugin
+	GetHttpConnectionManagerPlugins() []HttpConnectionManagerPlugin
 }
