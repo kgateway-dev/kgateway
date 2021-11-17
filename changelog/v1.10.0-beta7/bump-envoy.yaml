@@ -1,0 +1,8 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: 1.19.0-patch3
+    description: >
+      Upgrade envoy-gloo to use upstream envoy.
+    issueLink: https://github.com/solo-io/gloo/issues/5237

@@ -129,6 +129,13 @@ data:
                                      exact_match: GET
                               route:
                                 cluster: admin_port_cluster
+                            - match:
+                                prefix: "/clusters"
+                                headers:
+                                  - name: ":method"
+                                    exact_match: GET
+                              route:
+                                cluster: admin_port_cluster
                     http_filters:
                       - name: envoy.filters.http.router
 {{- end}} {{- /* if $spec.readConfig */}}

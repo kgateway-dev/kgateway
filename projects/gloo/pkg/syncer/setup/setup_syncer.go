@@ -475,7 +475,12 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 	xdsHasher := xds.NewNodeHasher()
+
 	getPlugins := GetPluginsWithExtensions(opts, extensions)
+	getPluginRegistry := func() plugins.PluginRegistry {
+		return registry.NewPluginRegistry(getPlugins())
+	}
+
 	var discoveryPlugins []discovery.DiscoveryPlugin
 	for _, plug := range getPlugins() {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
@@ -546,7 +551,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions, apiEmitte
 		rlReporterClient,
 	)
 
-	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, getPlugins)
+	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, getPluginRegistry)
 
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {

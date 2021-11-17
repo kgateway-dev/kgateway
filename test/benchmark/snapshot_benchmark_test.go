@@ -159,8 +159,11 @@ var _ = Describe("SnapshotBenchmark", func() {
 			getPlugins := func() []plugins.Plugin {
 				return registeredPlugins
 			}
-			fnvTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, getPlugins, translator.EnvoyCacheResourcesListToFnvHash)
-			hashstructureTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, getPlugins, translator.EnvoyCacheResourcesListToHash)
+			getPluginRegistry := func() plugins.PluginRegistry {
+				return registry.NewPluginRegistry(getPlugins())
+			}
+			fnvTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, getPluginRegistry, translator.EnvoyCacheResourcesListToFnvHash)
+			hashstructureTranslator = translator.NewTranslatorWithHasher(glooutils.NewSslConfigTranslator(), settings, getPluginRegistry, translator.EnvoyCacheResourcesListToHash)
 
 			httpListener := &v1.Listener{
 				Name:        "http-listener",

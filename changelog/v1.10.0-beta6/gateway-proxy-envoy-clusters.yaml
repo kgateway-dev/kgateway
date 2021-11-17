@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5447
+    resolvesIssue: false
+    description: Expose the clusters envoy admin endpoint in the gateway-proxy-envoy-config configmap.
