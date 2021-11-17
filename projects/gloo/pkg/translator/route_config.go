@@ -50,15 +50,12 @@ func (e *emptyRouteConfigurationTranslator) ComputeRouteConfiguration(params plu
 }
 
 type httpRouteConfigurationTranslator struct {
-	plugins []plugins.Plugin
-	proxy   *v1.Proxy
-
-	parentListener *v1.Listener
-	listener       *v1.HttpListener
-
-	parentReport *validationapi.ListenerReport
-	report       *validationapi.HttpListenerReport
-
+	plugins                  []plugins.Plugin
+	proxy                    *v1.Proxy
+	parentListener           *v1.Listener
+	listener                 *v1.HttpListener
+	parentReport             *validationapi.ListenerReport
+	report                   *validationapi.HttpListenerReport
 	routeConfigName          string
 	requireTlsOnVirtualHosts bool
 }

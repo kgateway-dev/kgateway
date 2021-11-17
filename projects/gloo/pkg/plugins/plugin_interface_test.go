@@ -95,26 +95,26 @@ var _ = Describe("Plugin", func() {
 
 	It("should order listener filter stages correctly", func() {
 		By("base case")
-		filters := StagedListenerFilterList{
-			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "H"}, DuringStage(RouteStage)},
-			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "G"}, DuringStage(OutAuthStage)},
-			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "F"}, DuringStage(AcceptedStage)},
-			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "E"}, DuringStage(RateLimitStage)},
-			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "D"}, DuringStage(AuthZStage)},
-			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "C"}, DuringStage(AuthNStage)},
-			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "Waf"}, DuringStage(WafStage)},
-			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "B"}, DuringStage(CorsStage)},
-			StagedListenerFilter{&envoy_config_listener_v3.Filter{Name: "A"}, DuringStage(FaultStage)},
+		filters := StagedNetworkFilterList{
+			StagedNetworkFilter{&envoy_config_listener_v3.Filter{Name: "H"}, DuringStage(RouteStage)},
+			StagedNetworkFilter{&envoy_config_listener_v3.Filter{Name: "G"}, DuringStage(OutAuthStage)},
+			StagedNetworkFilter{&envoy_config_listener_v3.Filter{Name: "F"}, DuringStage(AcceptedStage)},
+			StagedNetworkFilter{&envoy_config_listener_v3.Filter{Name: "E"}, DuringStage(RateLimitStage)},
+			StagedNetworkFilter{&envoy_config_listener_v3.Filter{Name: "D"}, DuringStage(AuthZStage)},
+			StagedNetworkFilter{&envoy_config_listener_v3.Filter{Name: "C"}, DuringStage(AuthNStage)},
+			StagedNetworkFilter{&envoy_config_listener_v3.Filter{Name: "Waf"}, DuringStage(WafStage)},
+			StagedNetworkFilter{&envoy_config_listener_v3.Filter{Name: "B"}, DuringStage(CorsStage)},
+			StagedNetworkFilter{&envoy_config_listener_v3.Filter{Name: "A"}, DuringStage(FaultStage)},
 		}
 		sort.Sort(filters)
 		ExpectListenerFilterNameOrder(filters, []string{"A", "B", "Waf", "C", "D", "E", "F", "G", "H"})
 	})
 })
 
-func ExpectListenerFilterNameOrder(filters StagedListenerFilterList, names []string) {
+func ExpectListenerFilterNameOrder(filters StagedNetworkFilterList, names []string) {
 	Expect(len(filters)).To(Equal(len(names)))
 	for i, filter := range filters {
-		Expect(filter.ListenerFilter.Name).To(Equal(names[i]))
+		Expect(filter.NetworkFilter.Name).To(Equal(names[i]))
 	}
 }
 

@@ -11,8 +11,8 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-// The Listener subsystem (https://www.envoyproxy.io/docs/envoy/latest/intro/life_of_a_request.html?highlight=listener#high-level-architecture)
-// handles downstream request processing.
+// The Listener subsystem handles downstream request processing.
+// https://www.envoyproxy.io/docs/envoy/latest/intro/life_of_a_request.html?#high-level-architecture
 // Gloo sends resources to Envoy via xDS. The components of the Listener subsystem that Gloo configures are:
 // 1. Listeners
 // 2. RouteConfiguration
@@ -43,65 +43,83 @@ func (l *ListenerSubsystemTranslatorFactory) GetTranslators(ctx context.Context,
 ) {
 	switch listener.GetListenerType().(type) {
 	case *v1.Listener_HttpListener:
-		httpListenerReport := listenerReport.GetHttpListenerReport()
-		if httpListenerReport == nil {
-			contextutils.LoggerFrom(ctx).DPanic("internal error: listener report was not http type")
-		}
 
-		routeConfigurationName := routeConfigName(listener)
-
-		listenerTranslator := &listenerTranslatorInstance{
-			listener: listener,
-			report:   listenerReport,
-			plugins:  l.pluginRegistry.GetPlugins(),
-			filterChainTranslator: &httpFilterChainTranslator{
-				plugins:             l.pluginRegistry.GetPlugins(),
-				sslConfigTranslator: l.sslConfigTranslator,
-				parentListener:      listener,
-				listener:            listener.GetHttpListener(),
-				parentReport:        listenerReport,
-				report:              httpListenerReport,
-				routeConfigName:     routeConfigurationName,
-			},
-		}
-
-		routeConfigurationTranslator := &httpRouteConfigurationTranslator{
-			plugins:                  l.pluginRegistry.GetPlugins(),
-			proxy:                    l.proxy,
-			parentListener:           listener,
-			listener:                 listener.GetHttpListener(),
-			parentReport:             listenerReport,
-			report:                   httpListenerReport,
-			routeConfigName:          routeConfigurationName,
-			requireTlsOnVirtualHosts: len(listener.GetSslConfigurations()) > 0,
-		}
-
-		return listenerTranslator, routeConfigurationTranslator
+		return l.GetHttpListenerTranslators(ctx, listener, listenerReport)
 
 	case *v1.Listener_TcpListener:
-		tcpListenerReport := listenerReport.GetTcpListenerReport()
-		if tcpListenerReport == nil {
-			contextutils.LoggerFrom(ctx).DPanic("internal error: listener report was not tcp type")
-		}
-
-		listenerTranslator := &listenerTranslatorInstance{
-			listener: listener,
-			report:   listenerReport,
-			plugins:  l.pluginRegistry.GetPlugins(),
-			filterChainTranslator: &tcpFilterChainTranslator{
-				plugins:        l.pluginRegistry.GetTcpFilterChainPlugins(),
-				parentListener: listener,
-				listener:       listener.GetTcpListener(),
-				report:         tcpListenerReport,
-			},
-		}
-		// A TcpListener does not produce any RouteConfiguration
-		routeConfigurationTranslator := &emptyRouteConfigurationTranslator{}
-
-		return listenerTranslator, routeConfigurationTranslator
+		return l.GetTcpListenerTranslators(ctx, listener, listenerReport)
 
 	default:
 		// This case should never occur
 		return &emptyListenerTranslator{}, &emptyRouteConfigurationTranslator{}
 	}
+}
+
+func (l *ListenerSubsystemTranslatorFactory) GetHttpListenerTranslators(ctx context.Context, listener *v1.Listener, listenerReport *validationapi.ListenerReport) (
+	ListenerTranslator,
+	RouteConfigurationTranslator,
+) {
+	httpListenerReport := listenerReport.GetHttpListenerReport()
+	if httpListenerReport == nil {
+		contextutils.LoggerFrom(ctx).DPanic("internal error: listener report was not http type")
+	}
+
+	routeConfigurationName := routeConfigName(listener)
+
+	listenerTranslator := &listenerTranslatorInstance{
+		listener: listener,
+		report:   listenerReport,
+		plugins:  l.pluginRegistry.GetListenerPlugins(),
+		filterChainTranslator: &sslDuplicatedFilterChainTranslator{
+			parentReport: listenerReport,
+			networkFilterTranslator: &httpNetworkFilterTranslator{
+				plugins:         l.pluginRegistry.GetHttpFilterPlugins(),
+				listener:        listener.GetHttpListener(),
+				report:          httpListenerReport,
+				routeConfigName: routeConfigurationName,
+			},
+			sslConfigTranslator: l.sslConfigTranslator,
+			sslConfigurations:   mergeSslConfigs(listener.GetSslConfigurations()),
+		},
+	}
+
+	routeConfigurationTranslator := &httpRouteConfigurationTranslator{
+		plugins:                  l.pluginRegistry.GetPlugins(),
+		proxy:                    l.proxy,
+		parentListener:           listener,
+		listener:                 listener.GetHttpListener(),
+		parentReport:             listenerReport,
+		report:                   httpListenerReport,
+		routeConfigName:          routeConfigurationName,
+		requireTlsOnVirtualHosts: len(listener.GetSslConfigurations()) > 0,
+	}
+
+	return listenerTranslator, routeConfigurationTranslator
+}
+
+func (l *ListenerSubsystemTranslatorFactory) GetTcpListenerTranslators(ctx context.Context, listener *v1.Listener, listenerReport *validationapi.ListenerReport) (
+	ListenerTranslator,
+	RouteConfigurationTranslator,
+) {
+	tcpListenerReport := listenerReport.GetTcpListenerReport()
+	if tcpListenerReport == nil {
+		contextutils.LoggerFrom(ctx).DPanic("internal error: listener report was not tcp type")
+	}
+
+	listenerTranslator := &listenerTranslatorInstance{
+		listener: listener,
+		report:   listenerReport,
+		plugins:  l.pluginRegistry.GetListenerPlugins(),
+		filterChainTranslator: &tcpFilterChainTranslator{
+			plugins:        l.pluginRegistry.GetTcpFilterChainPlugins(),
+			parentListener: listener,
+			listener:       listener.GetTcpListener(),
+			report:         tcpListenerReport,
+		},
+	}
+
+	// A TcpListener does not produce any RouteConfiguration
+	routeConfigurationTranslator := &emptyRouteConfigurationTranslator{}
+
+	return listenerTranslator, routeConfigurationTranslator
 }
