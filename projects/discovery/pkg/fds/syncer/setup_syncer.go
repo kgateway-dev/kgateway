@@ -3,6 +3,7 @@ package syncer
 import (
 	"time"
 
+	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/syncer"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
@@ -19,7 +20,7 @@ import (
 )
 
 func RunFDS(opts bootstrap.Opts) error {
-	fdsMode := getFdsMode(opts.Settings)
+	fdsMode := getFdsMode(&opts)
 	if fdsMode == v1.Settings_DiscoveryOptions_DISABLED {
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Function discovery "+
 			"(settings.discovery.fdsMode) disabled. To enable, modify "+
@@ -108,10 +109,14 @@ func RunFDS(opts bootstrap.Opts) error {
 	return nil
 }
 
-func getFdsMode(settings *v1.Settings) v1.Settings_DiscoveryOptions_FdsMode {
+func getFdsMode(opts *bootstrap.Opts) v1.Settings_DiscoveryOptions_FdsMode {
+	settings := opts.Settings
 	if settings == nil || settings.GetDiscovery() == nil {
 		return v1.Settings_DiscoveryOptions_WHITELIST
 	}
+	// TODO: This should probably be called before RunFDS() is invoked, but the current discovery
+	//  architecture doesn't provide a better location
+	syncerutils.LogIfDiscoveryServiceUnused(opts)
 	return settings.GetDiscovery().GetFdsMode()
 }
 
