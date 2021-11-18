@@ -19,7 +19,6 @@ var _ plugins.Plugin = new(Plugin)
 var _ plugins.HttpConnectionManagerPlugin = new(Plugin)
 
 type Plugin struct {
-	hcmPlugins []HcmPlugin
 }
 
 func (p *Plugin) Init(_ plugins.InitParams) error {
