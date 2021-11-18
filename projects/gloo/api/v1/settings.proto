@@ -176,7 +176,7 @@ message Settings {
         FdsMode fds_mode = 1;
 
         message UdsOptions {
-            // Enable upstream discovery service (default true).
+            // Enable upstream discovery service. Defaults to true.
             bool enabled = 1;
         }
 
