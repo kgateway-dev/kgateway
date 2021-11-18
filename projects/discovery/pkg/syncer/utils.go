@@ -11,8 +11,8 @@ import (
 // be emitted from either UDS or FDS)
 func LogIfDiscoveryServiceUnused(opts *bootstrap.Opts) {
 	settings := opts.Settings
-	udsEnabled := settings.GetDiscovery().GetUdsOptions().GetEnabled()
-	fdsEnabled := settings.GetDiscovery().GetFdsMode() != v1.Settings_DiscoveryOptions_DISABLED
+	udsEnabled := GetUdsEnabled(settings)
+	fdsEnabled := GetFdsEnabled(settings)
 	if !udsEnabled && !fdsEnabled {
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx).
 			Warn("Discovery (discovery.enabled) is enabled, but both UDS " +
@@ -20,4 +20,22 @@ func LogIfDiscoveryServiceUnused(opts *bootstrap.Opts) {
 				"While in this state, the discovery pod will be blocked. Consider disabling " +
 				"discovery, or enabling one of the discovery features.")
 	}
+}
+
+func GetUdsEnabled(settings *v1.Settings) bool {
+	if settings == nil || settings.GetDiscovery() == nil || settings.GetDiscovery().GetUdsOptions() == nil {
+		return true
+	}
+	return settings.GetDiscovery().GetUdsOptions().GetEnabled()
+}
+
+func GetFdsMode(settings *v1.Settings) v1.Settings_DiscoveryOptions_FdsMode {
+	if settings == nil || settings.GetDiscovery() == nil {
+		return v1.Settings_DiscoveryOptions_WHITELIST
+	}
+	return settings.GetDiscovery().GetFdsMode()
+}
+
+func GetFdsEnabled(settings *v1.Settings) bool {
+	return GetFdsMode(settings) != v1.Settings_DiscoveryOptions_DISABLED
 }
