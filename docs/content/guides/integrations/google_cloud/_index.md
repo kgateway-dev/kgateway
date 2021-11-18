@@ -4,6 +4,16 @@ description: Use Gloo Edge to complement Google Cloud load balancers
 weight: 8
 ---
 
+This document shows how to instantiate Google Cloud Load Balancers to complement Gloo Edge.
+
+## Table of Contents
+- [Introduction](#introduction)
+- [Prerequisites](#prerequisites)
+- [Network Load Balancer](#network-load-balancer)
+- [HTTPS Load Balancer](#https-load-balancer)
+
+
+### Introduction
 
 You can use Gloo Edge with a Google Cloud Platform (GCP) Load Balancer, to get get benefits such as failover across availability zones.
 
@@ -24,7 +34,7 @@ Google pushed load balancing out to the edge network on front-end servers, as op
 {{% /notice %}}
 
 
-## Combining with Gloo Edge
+#### Combining with Gloo Edge
 
 Standard load balancers still route the traffic to machine instances where iptables are used to route traffic to individual pods running on these machines. This introduces at least one additional network hop thereby introducing latency in the packet’s journey from load balancer to the pod.
 
@@ -34,16 +44,13 @@ This leads to decreased latency and an increase in throughput when compared to t
 
 ![NEG]({{% versioned_link_path fromRoot="/img/gcp-lb-neg.png" %}})
 
+### Prerequisites
+
 To use container-native load balancing, you must create a cluster with alias IPs enabled. This cluster:
 
 - Must run GKE version 1.16.4 or later.
 - Must be a VPC-native cluster.
 - Must have the HttpLoadBalancing add-on enabled.
-
-This guide describes how you can use Gloo Edge with two of the most common types of GCP load balancers:
-- [Network Load Balancer](#network-load-balancer)
-- [HTTPS Load Balancer](#https-load-balancer)
-
 
 
 ### Network Load Balancer
@@ -155,8 +162,6 @@ gloo:
   gatewayProxies:
     [...]
     gatewayProxy:
-      gatewaySettings:
-        useProxyProto: true
       kind:
         deployment:
           replicas: 3 # You deploy three replicas of the proxy
@@ -415,8 +420,6 @@ gloo:
   gatewayProxies:
     [...]
     gatewayProxy:
-      gatewaySettings:
-        useProxyProto: true
       kind:
         deployment:
           replicas: 3 # You deploy three replicas of the proxy
