@@ -93,6 +93,16 @@ func (m *ListenerOptions) Equal(that interface{}) bool {
 
 	}
 
+	if h, ok := interface{}(m.GetProxyProtocol()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetProxyProtocol()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetProxyProtocol(), target.GetProxyProtocol()) {
+			return false
+		}
+	}
+
 	return true
 }
 

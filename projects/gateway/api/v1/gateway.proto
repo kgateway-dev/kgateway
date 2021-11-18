@@ -46,8 +46,10 @@ message Gateway {
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 7;
 
-    // Enable ProxyProtocol support for this listener
-    google.protobuf.BoolValue use_proxy_proto = 8;
+    // Enable ProxyProtocol support for this listener.
+    // Deprecated: prefer setting the listener option.
+    // If configured, the listener option (filter config) overrides any setting here.
+    google.protobuf.BoolValue use_proxy_proto = 8 [deprecated=true];
 
     // The type of gateway being created
     // HttpGateway creates a listener with an http_connection_manager
