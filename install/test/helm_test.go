@@ -2852,7 +2852,8 @@ spec:
       validationServerGrpcMaxSizeBytes: 4000000
   discovery:
     fdsMode: WHITELIST
-    udsEnabled: true
+    udsOptions:
+      enabled: true
   extauth:
     extauthzServerRef:
       name: test
@@ -3830,7 +3831,7 @@ metadata:
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/uds_disabled.yaml", namespace)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"discovery.udsEnabled=false",
+								"discovery.udsOptions.enabled=false",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))

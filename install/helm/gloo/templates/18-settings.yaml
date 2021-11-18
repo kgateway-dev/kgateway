@@ -98,7 +98,8 @@ spec:
 {{- if ne .Values.discovery.fdsMode "" }}
     fdsMode: {{.Values.discovery.fdsMode}}
 {{- end }}
-    udsEnabled: {{.Values.discovery.udsEnabled}}
+    udsOptions:
+      enabled: {{.Values.discovery.udsOptions.enabled}}
 {{- end }}
 
 {{- if .Values.settings.extensions }}

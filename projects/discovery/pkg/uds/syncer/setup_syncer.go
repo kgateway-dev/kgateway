@@ -19,7 +19,7 @@ func RunUDS(opts bootstrap.Opts) error {
 	udsEnabled := GetUdsEnabled(opts.Settings)
 	if !udsEnabled {
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Upstream discovery "+
-			"(settings.discovery.udsEnabled) disabled. To enable, modify "+
+			"(settings.discovery.udsOptions.enabled) disabled. To enable, modify "+
 			"gloo.solo.io/Settings - %v", opts.Settings.GetMetadata().Ref())
 		return nil
 	}
@@ -116,8 +116,8 @@ func RunUDS(opts bootstrap.Opts) error {
 }
 
 func GetUdsEnabled(settings *v1.Settings) bool {
-	if settings == nil || settings.GetDiscovery() == nil {
+	if settings == nil || settings.GetDiscovery() == nil || settings.GetDiscovery().GetUdsOptions() == nil {
 		return true
 	}
-	return settings.GetDiscovery().GetUdsEnabled()
+	return settings.GetDiscovery().GetUdsOptions().GetEnabled()
 }

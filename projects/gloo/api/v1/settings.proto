@@ -174,7 +174,13 @@ message Settings {
         }
 
         FdsMode fds_mode = 1;
-        bool uds_enabled = 2;
+
+        message UdsOptions {
+            // Enable upstream discovery service (default true).
+            bool enabled = 1;
+        }
+
+        UdsOptions uds_options = 2;
     }
 
     // Options for configuring Gloo's Discovery service

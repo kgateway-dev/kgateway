@@ -20,6 +20,7 @@ weight: 5
 - [Directory](#directory)
 - [KnativeOptions](#knativeoptions)
 - [DiscoveryOptions](#discoveryoptions)
+- [UdsOptions](#udsoptions)
 - [FdsMode](#fdsmode)
 - [ConsulConfiguration](#consulconfiguration)
 - [ServiceDiscoveryOptions](#servicediscoveryoptions)
@@ -272,14 +273,31 @@ This option determines the root of the directory tree used to this end.
 
 ```yaml
 "fdsMode": .gloo.solo.io.Settings.DiscoveryOptions.FdsMode
-"udsEnabled": bool
+"udsOptions": .gloo.solo.io.Settings.DiscoveryOptions.UdsOptions
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `fdsMode` | [.gloo.solo.io.Settings.DiscoveryOptions.FdsMode](../settings.proto.sk/#fdsmode) |  |
-| `udsEnabled` | `bool` |  |
+| `udsOptions` | [.gloo.solo.io.Settings.DiscoveryOptions.UdsOptions](../settings.proto.sk/#udsoptions) |  |
+
+
+
+
+---
+### UdsOptions
+
+
+
+```yaml
+"enabled": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `enabled` | `bool` | Enable upstream discovery service (default true). |
 
 
 

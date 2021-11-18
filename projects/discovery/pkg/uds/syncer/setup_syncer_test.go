@@ -20,11 +20,19 @@ var _ = Describe("UDS setup syncer tests", func() {
 			}
 			Expect(GetUdsEnabled(settings)).To(BeTrue())
 		})
-		It("returns true when settings.discovery.udsEnabled is true", func() {
+		It("returns true when settings.discovery.udsOptions is nil", func() {
+			settings := &v1.Settings{
+				Discovery: &v1.Settings_DiscoveryOptions{
+					UdsOptions: nil,
+				},
+			}
+			Expect(GetUdsEnabled(settings)).To(BeTrue())
+		})
+		It("returns true when settings.discovery.udsOptions.enabled is true", func() {
 			settings := getSettings(true)
 			Expect(GetUdsEnabled(settings)).To(BeTrue())
 		})
-		It("returns false when settings.discovery.udsEnabled is false", func() {
+		It("returns false when settings.discovery.udsOptions.enabled is false", func() {
 			settings := getSettings(false)
 			Expect(GetUdsEnabled(settings)).To(BeFalse())
 		})
@@ -50,7 +58,9 @@ func getSettings(udsEnabled bool) *v1.Settings {
 			Namespace: "gloo-system",
 		},
 		Discovery: &v1.Settings_DiscoveryOptions{
-			UdsEnabled: udsEnabled,
+			UdsOptions: &v1.Settings_DiscoveryOptions_UdsOptions{
+				Enabled: udsEnabled,
+			},
 		},
 	}
 }
