@@ -1,0 +1,10 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5403
+    resolvesIssue: false
+    description: Add support for tlv tags in proxy protocol filter.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5403
+    resolvesIssue: false
+    description: >-
+      Add API for custom proxy protocol filter which supports allowing requests through that do not use proxy protocol.
