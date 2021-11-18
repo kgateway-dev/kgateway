@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Explain how to integrate gloo edge with Load Balancers in provisioned on GCP.
