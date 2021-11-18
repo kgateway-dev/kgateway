@@ -5,7 +5,7 @@ weight: 8
 ---
 
 
-There are many benefits to pairing Gloo Edge with one of Google Cloud (GCP) Load Balancers, including cross availability zone failover.
+You can use Gloo Edge with a Google Cloud Platform (GCP) Load Balancer, to get get benefits such as failover across availability zones.
 
 GCP provides these different types of Load Balancers:
 
