@@ -329,7 +329,7 @@ You should be able to reach the application.
 
 ### HTTPS Load Balancer
 
-To connect a HTTPS Load Balancer, first, you will configure a service in gloo:
+To connect a HTTPS Load Balancer, first, you will configure a Gloo Edge Virtual Service.
 
 ```bash
 kubectl apply -f - << 'EOF' 
