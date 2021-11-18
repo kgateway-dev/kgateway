@@ -40,7 +40,7 @@ To use container-native load balancing, you must create a cluster with alias IPs
 - Must be a VPC-native cluster.
 - Must have the HttpLoadBalancing add-on enabled.
 
-In this article you will deploy the two most common models:
+This guide describes how you can use Gloo Edge with two of the most common types of GCP load balancers:
 - [Network Load Balancer](#network-load-balancer)
 - [HTTPS Load Balancer](#https-load-balancer)
 
