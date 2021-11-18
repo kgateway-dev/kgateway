@@ -7,6 +7,7 @@ weight: 8
 This document shows how to instantiate Google Cloud Load Balancers to complement Gloo Edge.
 
 ## Table of Contents
+
 - [Introduction](#introduction)
 - [Prerequisites](#prerequisites)
 - [Network Load Balancer](#network-load-balancer)
@@ -21,18 +22,16 @@ GCP provides these different types of Load Balancers:
 
 - Global or regional load balancing. Global load balancing means backend endpoints live in multiple regions. Regional load balancing means backend endpoints live in a single region.
 
-- External or Internal. 
-  - External includes: 
+- External or Internal.
+  - External includes:
     - HTTP(S) Load Balancing for HTTP or HTTPS traffic, TCP Proxy for TCP traffic for ports other than 80 and 8080, without SSL offload.
     - SSL Proxy for SSL offload on ports other than 80 or 8080.
     - Network Load Balancing for TCP/UDP traffic.
   - Internal Load Balancing is a proxy-based (Envoy), regional Layer 7 load balancer that enables you to run and scale your services behind an internal IP address.
 
-
 {{% notice note %}}
 Google pushed load balancing out to the edge network on front-end servers, as opposed to using the traditional DNS-based approach. Thus, global load-balancing capacity can be behind a single Anycast virtual IPv4 or IPv6 address. This means you can deploy capacity in multiple regions without having to modify the DNS entries or add a new load balancer IP address for new regions.
 {{% /notice %}}
-
 
 #### Combining with Gloo Edge
 
@@ -51,7 +50,6 @@ To use container-native load balancing, you must create a cluster with alias IPs
 - Must run GKE version 1.16.4 or later.
 - Must be a VPC-native cluster.
 - Must have the HttpLoadBalancing add-on enabled.
-
 
 ### Network Load Balancer
 
@@ -176,13 +174,13 @@ While this example uses a ClusterIP service, all five types of Services support 
 
 With that configuration you can see one resource automatically created:
 
-```
+```bash
 kubectl get svcneg -A
 ```
 
 And you will see:
 
-```
+```text
 NAMESPACE     NAME                                       AGE
 gloo-system   my-gloo-edge-nlb                          1m
 ```
@@ -195,12 +193,11 @@ In the Google Cloud console, you will see the new NEG.
 
 Since you have deployed three replicas, you can see there are 3 network endpoints.
 
-##### Configuration in GCP
+#### Configuration in GCP for NLB
 
 To instantiate a Load Balancer in Google Cloud (GCP), you need to create the following set of resources:
 
 ![GCP Resources]({{% versioned_link_path fromRoot="/img/gcp-lb-neg-resources.png" %}})
-
 
 You need to configure a firewall rule to allow to allow communication between the Load Balancer and the pods in the cluster:
 
@@ -219,18 +216,17 @@ Notice that you are allowing only port `8443` which is the port for gloo-edge ht
 
 If you did not create custom network tags for your nodes, GKE automatically generates tags for you. You can look up these generated tags by running the following command:
 
-```
+```bash
 gcloud compute firewall-rules list --filter="name~gke-$CLUSTER_NAME-[0-9a-z]*"  --format="value(targetTags[0])"
 ```
 
 In the Google Console, you can find the resource at **VPC Network -> Firewall**. You can filter by the name.
 
-
 ![LB Firewall]({{% versioned_link_path fromRoot="/img/gcp-lb-firewall.png" %}})
 
 You need an address for the Load Balancer:
 
-```
+```bash
 gcloud compute addresses create my-gloo-edge-loadbalancer-address-nlb \
     --global
 ```
@@ -241,7 +237,7 @@ In the Google Console, you can find the resource at **VPC Network -> External IP
 
 A health check:
 
-```
+```bash
 gcloud compute health-checks create tcp my-gloo-edge-nlb-health-check \
     --global \
     --port 8443 # This is the port for the pod. In the official documentation it might be wrong
@@ -257,7 +253,7 @@ In the Google Console, you can find the resource at **Compute Engine -> Health c
 
 A backend service:
 
-```
+```bash
 gcloud compute backend-services create my-gloo-edge-nlb-backend-service \
     --protocol=TCP \
     --health-checks my-gloo-edge-nlb-health-check \
@@ -270,7 +266,7 @@ In the Google Console, you can find the resource at **Network Services -> Load B
 
 A target proxy:
 
-```
+```bash
 gcloud compute target-tcp-proxies create my-gloo-edge-nlb-target-proxy \
     --backend-service=my-gloo-edge-nlb-backend-service \
     --proxy-header PROXY_V1
@@ -319,7 +315,6 @@ After adding the Backend Service to the NEG, you will see the Health Check becom
 
 ![NEG Health Checks]({{% versioned_link_path fromRoot="/img/gcp-lb-neg-hc.png" %}})
 
-
 Finally, let's test the connectivity through the Load Balancer:
 
 ```bash
@@ -328,8 +323,7 @@ APP_IP=$(gcloud compute addresses describe my-gloo-edge-loadbalancer-address-nlb
 curl -k https://34.117.34.186/get -H "Host: my-gloo-edge.com"
 ```
 
-You should be able to reach the application.
-
+The application should be accessible through the Load Balancer.
 
 
 ### HTTPS Load Balancer
@@ -410,7 +404,6 @@ kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80
 curl -k -s http://localhost:8080/get -H "Host: my-gloo-edge.com"
 ```
 
-
 Upgrade your Gloo Edge installation with the following Helm `values.yaml` file. This example creates 3 replicas for the default gateway proxy and adds specific GCP annotations.
 
 ```yaml
@@ -434,13 +427,13 @@ While this example uses a ClusterIP service, all five types of Services support 
 
 With that configuration you can see one resource automatically created:
 
-```
+```bash
 kubectl get svcneg -A
 ```
 
 And you will see:
 
-```
+```text
 NAMESPACE     NAME                                       AGE
 gloo-system   my-gloo-edge-https                          1m
 ```
@@ -453,14 +446,13 @@ And, in the google cloud console, you will see the new NEG.
 
 Since you have deployed three replicas, you can see there are 3 network endpoints.
 
-##### Configuration in GCP
+#### Configuration in GCP for HTTPS Load Balancer
 
 To instantiate a Load Balancer in Google Cloud (GCP), you need to create the following set of resources.
 
 ![GCP Resources]({{% versioned_link_path fromRoot="/img/gcp-lb-neg-resources.png" %}})
 
 You need to configure a firewall rule to allow to allow communication between the Load Balancer and the pods in the cluster:
-
 
 ```bash
 gcloud compute firewall-rules create my-gloo-edge-https-fw-allow-health-check-and-proxy \
@@ -477,7 +469,7 @@ Notice that you are allowing only port `8080` which is the port for gloo-edge ht
 
 If you did not create custom network tags for your nodes, GKE automatically generates tags for you. You can look up these generated tags by running the following command:
 
-```
+```bash
 gcloud compute firewall-rules list --filter="name~gke-$CLUSTER_NAME-[0-9a-z]*"  --format="value(targetTags[0])"
 ```
 
@@ -487,7 +479,7 @@ In the Google Console, you can find the resource at **VPC Network -> Firewall**.
 
 You need an address for the Load Balancer:
 
-```
+```bash
 gcloud compute addresses create my-gloo-edge-loadbalancer-address-https \
     --global
 ```
@@ -498,7 +490,7 @@ In the Google Console, you can find the resource at **VPC Network -> External IP
 
 A health check:
 
-```
+```bash
 gcloud compute health-checks create tcp my-gloo-edge-https-health-check \
     --global \
     --port 8080 # This is the port for the pod. In the official documentation it might be wrong
@@ -514,7 +506,7 @@ In the Google Console, you can find the resource at **Compute Engine -> Health c
 
 A backend service:
 
-```
+```bash
 gcloud compute backend-services create my-gloo-edge-https-backend-service \
     --protocol=HTTP \
     --health-checks my-gloo-edge-https-health-check \
@@ -528,7 +520,7 @@ In the Google Console, you can find the resource at **Network Services -> Load B
 
 A URL-map:
 
-```
+```bash
 gcloud compute url-maps create my-gloo-edge-https-url-map \
     --default-service my-gloo-edge-https-backend-service \
     --global
@@ -540,7 +532,7 @@ In the Google Console, you can find the resource at **Network Services -> Load B
 
 Create a self-signed certificate and a `ssl-certificate`:
 
-```
+```bash
 openssl genrsa -out ca.key 2048
 openssl req -x509 -new -nodes -key ca.key -days 100000 -out ca.crt -subj "/CN=*"
 gcloud compute ssl-certificates create my-gloo-edge-https-certificate \
@@ -551,7 +543,7 @@ gcloud compute ssl-certificates create my-gloo-edge-https-certificate \
 
 A target proxy:
 
-```
+```bash
 gcloud compute target-https-proxies create my-gloo-edge-https-target-proxy \
     --url-map=my-gloo-edge-https-url-map \
     --ssl-certificates=my-gloo-edge-https-certificate \
@@ -568,7 +560,7 @@ You can find the resource at **Network Services -> Load Balancing -> Target Prox
 
 A forwarding-rule:
 
-```
+```bash
 gcloud compute forwarding-rules create my-gloo-edge-https-content-rule \
     --address=my-gloo-edge-loadbalancer-address-https \
     --global \
@@ -600,3 +592,5 @@ APP_IP=$(gcloud compute addresses describe my-gloo-edge-loadbalancer-address-htt
 
 curl -k "https://${APP_IP2}/get" -H "Host: my-gloo-edge.com"
 ```
+
+The application should be accessible through the Load Balancer.
