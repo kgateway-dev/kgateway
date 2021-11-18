@@ -32,8 +32,14 @@ var _ = Describe("Plugin", func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
 		p = NewPlugin()
-		pluginParams = plugins.Params{}
+		pluginParams = plugins.Params{
+			Ctx: ctx,
+		}
 		settings = &hcm.HttpConnectionManagerSettings{}
+	})
+
+	AfterEach(func() {
+		cancel()
 	})
 
 	It("copy all settings to hcm filter", func() {

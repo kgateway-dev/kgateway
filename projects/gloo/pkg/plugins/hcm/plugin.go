@@ -26,10 +26,6 @@ func (p *Plugin) Init(_ plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessHcmSettings(params plugins.Params, in *hcm.HttpConnectionManagerSettings, out *envoyhttp.HttpConnectionManager) error {
-	if in == nil {
-		return nil
-	}
-
 	out.UseRemoteAddress = in.GetUseRemoteAddress()
 	out.XffNumTrustedHops = in.GetXffNumTrustedHops()
 	out.SkipXffAppend = in.GetSkipXffAppend()
