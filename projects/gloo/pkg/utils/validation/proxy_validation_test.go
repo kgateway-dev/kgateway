@@ -230,7 +230,7 @@ var _ = Describe("validation utils", func() {
 			httpMatcher := &v1.Matcher{
 				SourcePrefixRanges: []*v3.CidrRange{
 					&v3.CidrRange{
-						AddressPrefix:"http-0",
+						AddressPrefix: "http-0",
 					},
 				},
 			}
