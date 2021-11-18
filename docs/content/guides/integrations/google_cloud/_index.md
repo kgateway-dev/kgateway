@@ -406,7 +406,7 @@ curl -k -s http://localhost:8080/get -H "Host: my-gloo-edge.com"
 ```
 
 
-Upgrade your gloo installation with following attributes in your helm `values.yaml`. This will create 3 replicas for the default gateway proxy and will add specific GCP annotations:
+Upgrade your Gloo Edge installation with the following Helm `values.yaml` file. This example creates 3 replicas for the default gateway proxy and adds specific GCP annotations.
 
 ```yaml
 [...]
