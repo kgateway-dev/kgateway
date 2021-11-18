@@ -15,26 +15,34 @@ var _ = Describe("UDS setup syncer tests", func() {
 			Expect(GetUdsEnabled(nil)).To(BeTrue())
 		})
 		It("returns true when settings.discovery is nil", func() {
-			settings := &v1.Settings{
-				Discovery: nil,
-			}
-			Expect(GetUdsEnabled(settings)).To(BeTrue())
-		})
-		It("returns true when settings.discovery.udsOptions is nil", func() {
-			settings := &v1.Settings{
-				Discovery: &v1.Settings_DiscoveryOptions{
-					UdsOptions: nil,
+			opts := &bootstrap.Opts{
+				Settings: &v1.Settings{
+					Discovery: nil,
 				},
 			}
-			Expect(GetUdsEnabled(settings)).To(BeTrue())
+			Expect(GetUdsEnabled(opts)).To(BeTrue())
+		})
+		It("returns true when settings.discovery.udsOptions is nil", func() {
+			opts := &bootstrap.Opts{
+				Settings: &v1.Settings{
+					Discovery: &v1.Settings_DiscoveryOptions{
+						UdsOptions: nil,
+					},
+				},
+			}
+			Expect(GetUdsEnabled(opts)).To(BeTrue())
 		})
 		It("returns true when settings.discovery.udsOptions.enabled is true", func() {
-			settings := getSettings(true)
-			Expect(GetUdsEnabled(settings)).To(BeTrue())
+			opts := &bootstrap.Opts{
+				Settings: getSettings(true),
+			}
+			Expect(GetUdsEnabled(opts)).To(BeTrue())
 		})
 		It("returns false when settings.discovery.udsOptions.enabled is false", func() {
-			settings := getSettings(false)
-			Expect(GetUdsEnabled(settings)).To(BeFalse())
+			opts := &bootstrap.Opts{
+				Settings: getSettings(false),
+			}
+			Expect(GetUdsEnabled(opts)).To(BeFalse())
 		})
 	})
 
