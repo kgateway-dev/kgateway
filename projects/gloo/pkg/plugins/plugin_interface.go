@@ -40,8 +40,9 @@ type Params struct {
 
 type VirtualHostParams struct {
 	Params
-	Proxy    *v1.Proxy
-	Listener *v1.Listener
+	Proxy        *v1.Proxy
+	Listener     *v1.Listener
+	HttpListener *v1.HttpListener
 }
 
 type RouteParams struct {
