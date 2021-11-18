@@ -1758,7 +1758,7 @@ type Settings_DiscoveryOptions_UdsOptions struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Enable upstream discovery service (default true).
+	// Enable upstream discovery service. Defaults to true.
 	Enabled bool `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
 }
 

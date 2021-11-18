@@ -297,7 +297,7 @@ This option determines the root of the directory tree used to this end.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `enabled` | `bool` | Enable upstream discovery service (default true). |
+| `enabled` | `bool` | Enable upstream discovery service. Defaults to true. |
 
 
 
