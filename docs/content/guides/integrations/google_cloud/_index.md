@@ -184,7 +184,7 @@ gloo-system   my-gloo-edge-nlb                          1m
 
 You can `kubectl describe` the resources to see the status.
 
-And in the google cloud console, you will see the new NEG.
+In the Google Cloud console, you will see the new NEG.
 
 ![New NEGs]({{% versioned_link_path fromRoot="/img/gcp-lb-nlb-negs.png" %}})
 
