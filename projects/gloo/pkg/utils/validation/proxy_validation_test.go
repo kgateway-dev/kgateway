@@ -182,7 +182,7 @@ var _ = Describe("validation utils", func() {
 	})
 
 	var _ = Describe("GetProxyError", func() {
-		It("aggregates the errors at every level", func() {
+		It("aggregates the errors at every level for http listener", func() {
 			rpt := MakeReport(makeProxy(true, false))
 
 			rpt.ListenerReports[1].Errors = append(rpt.ListenerReports[1].Errors,
@@ -218,5 +218,51 @@ var _ = Describe("validation utils", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("VirtualHost Error: DomainsNotUniqueError. Reason: domains not unique; Listener Error: BindPortNotUniqueError. Reason: bind port not unique; HttpListener Error: ProcessingError. Reason: bad http plugin"))
 		})
+		It("aggregates the errors at every level for hybrid listener", func() {
+			rpt := MakeReport(makeProxy(false, false))
+
+			rpt.ListenerReports[1].Errors = append(rpt.ListenerReports[1].Errors,
+				&validation.ListenerReport_Error{
+					Type:   validation.ListenerReport_Error_BindPortNotUniqueError,
+					Reason: "bind port not unique",
+				},
+			)
+			httpMatcher := &v1.Matcher{
+				SourcePrefixRanges: []*v3.CidrRange{
+					&v3.CidrRange{
+						AddressPrefix:"http-0",
+					},
+				},
+			}
+			httpListenerReport := rpt.ListenerReports[2].ListenerTypeReport.(*validation.ListenerReport_HybridListenerReport).HybridListenerReport.MatchedListenerReports[httpMatcher.String()].GetHttpListenerReport()
+			httpListenerReport.Errors = append(httpListenerReport.Errors, &validation.HttpListenerReport_Error{
+				Type:   validation.HttpListenerReport_Error_ProcessingError,
+				Reason: "bad http plugin",
+			})
+
+			virtualHostReport := rpt.ListenerReports[2].ListenerTypeReport.(*validation.ListenerReport_HybridListenerReport).HybridListenerReport.MatchedListenerReports[httpMatcher.String()].GetHttpListenerReport().VirtualHostReports[2]
+
+			virtualHostReport.Errors = append(virtualHostReport.Errors,
+				&validation.VirtualHostReport_Error{
+					Type:   validation.VirtualHostReport_Error_DomainsNotUniqueError,
+					Reason: "domains not unique",
+				},
+			)
+			routeReport := rpt.ListenerReports[2].ListenerTypeReport.(*validation.ListenerReport_HybridListenerReport).HybridListenerReport.MatchedListenerReports[httpMatcher.String()].GetHttpListenerReport().VirtualHostReports[3].RouteReports[2]
+
+			routeReport.Warnings = append(routeReport.Warnings,
+				&validation.RouteReport_Warning{
+					Type:   validation.RouteReport_Warning_InvalidDestinationWarning,
+					Reason: "bad destination",
+				},
+			)
+
+			err := GetProxyError(rpt)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("VirtualHost Error: DomainsNotUniqueError. Reason: domains not unique"))
+			Expect(err.Error()).To(ContainSubstring("Listener Error: BindPortNotUniqueError. Reason: bind port not unique"))
+			Expect(err.Error()).To(ContainSubstring("HttpListener Error: ProcessingError. Reason: bad http plugin"))
+		})
+
 	})
 })

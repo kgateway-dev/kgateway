@@ -172,28 +172,18 @@ func GetProxyError(proxyRpt *validation.ProxyReport) error {
 		}
 		switch listenerType := listener.GetListenerTypeReport().(type) {
 		case *validation.ListenerReport_HttpListenerReport:
-			httpListener := listenerType.HttpListenerReport
-			if err := GetHttpListenerErr(httpListener); err != nil {
-				errs = append(errs, err...)
-			}
-			for _, vhReport := range httpListener.GetVirtualHostReports() {
-				if err := GetVirtualHostErr(vhReport); err != nil {
-					errs = append(errs, err...)
-				}
-				for _, routeReport := range vhReport.GetRouteReports() {
-					if err := GetRouteErr(routeReport); err != nil {
-						errs = append(errs, err...)
-					}
-				}
-			}
+			errs = append(errs, getHttpListenerReportErrs(listenerType.HttpListenerReport)...)
+
 		case *validation.ListenerReport_TcpListenerReport:
-			tcpListener := listenerType.TcpListenerReport
-			if err := GetTcpListenerErr(tcpListener); err != nil {
-				errs = append(errs, err...)
-			}
-			for _, hostReport := range tcpListener.GetTcpHostReports() {
-				if err := GetTcpHostErr(hostReport); err != nil {
-					errs = append(errs, err...)
+			errs = append(errs, getTcpListenerReportErrs(listenerType.TcpListenerReport)...)
+
+		case *validation.ListenerReport_HybridListenerReport:
+			for _, mr := range listenerType.HybridListenerReport.GetMatchedListenerReports() {
+				switch lrt := mr.GetListenerReportType().(type) {
+				case *validation.MatchedListenerReport_HttpListenerReport:
+					errs = append(errs, getHttpListenerReportErrs(lrt.HttpListenerReport)...)
+				case *validation.MatchedListenerReport_TcpListenerReport:
+					errs = append(errs, getTcpListenerReportErrs(lrt.TcpListenerReport)...)
 				}
 			}
 		}
@@ -205,6 +195,41 @@ func GetProxyError(proxyRpt *validation.ProxyReport) error {
 	}
 
 	return combinedErr
+}
+
+func getTcpListenerReportErrs(tcpListenerReport *validation.TcpListenerReport) []error {
+	var errs []error
+
+	if err := GetTcpListenerErr(tcpListenerReport); err != nil {
+		errs = append(errs, err...)
+	}
+	for _, hostReport := range tcpListenerReport.GetTcpHostReports() {
+		if err := GetTcpHostErr(hostReport); err != nil {
+			errs = append(errs, err...)
+		}
+	}
+
+	return errs
+}
+
+func getHttpListenerReportErrs(httpListenerReport *validation.HttpListenerReport) []error {
+	var errs []error
+
+	if err := GetHttpListenerErr(httpListenerReport); err != nil {
+		errs = append(errs, err...)
+	}
+	for _, vhReport := range httpListenerReport.GetVirtualHostReports() {
+		if err := GetVirtualHostErr(vhReport); err != nil {
+			errs = append(errs, err...)
+		}
+		for _, routeReport := range vhReport.GetRouteReports() {
+			if err := GetRouteErr(routeReport); err != nil {
+				errs = append(errs, err...)
+			}
+		}
+	}
+
+	return errs
 }
 
 func GetProxyWarning(proxyRpt *validation.ProxyReport) []string {
