@@ -452,7 +452,7 @@ Since you have deployed three replicas, you can see there are 3 network endpoint
 
 ##### Configuration in GCP
 
-To instantiate a Load Balancer in Google Cloud (GCP), you need to create following set of resources:
+To instantiate a Load Balancer in Google Cloud (GCP), you need to create the following set of resources.
 
 ![GCP Resources]({{% versioned_link_path fromRoot="/img/gcp-lb-neg-resources.png" %}})
 
