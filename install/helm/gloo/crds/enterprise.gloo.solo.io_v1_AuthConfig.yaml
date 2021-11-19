@@ -13,6 +13,7 @@ spec:
     plural: authconfigs
     shortNames:
     - ac
+    - gac
     singular: authconfig
   scope: Namespaced
   versions:
