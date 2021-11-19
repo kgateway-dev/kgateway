@@ -9,8 +9,6 @@ metadata:
 spec:
  discovery:
    fdsMode: WHITELIST
-   udsOptions:
-     enabled: true
  gateway:
    readGatewaysFromAllNamespaces: true
  gloo:

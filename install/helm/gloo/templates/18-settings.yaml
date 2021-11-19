@@ -98,9 +98,11 @@ spec:
 {{- if ne .Values.discovery.fdsMode "" }}
     fdsMode: {{.Values.discovery.fdsMode}}
 {{- end }}
+{{- if .Values.discovery.udsOptions }}
     udsOptions:
-      enabled: {{.Values.discovery.udsOptions.enabled}}
-{{- end }}
+    {{- toYaml .Values.discovery.udsOptions | nindent 6 }}
+{{- end }} {{/* if .Values.discovery.udsOptions */}}
+{{- end }} {{/* if .Values.discovery */}}
 
 {{- if .Values.settings.extensions }}
   extensions:

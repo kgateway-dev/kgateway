@@ -243,7 +243,7 @@ type DiscoveryDeployment struct {
 
 // Configuration options for the Upstream Discovery Service (UDS).
 type UdsOptions struct {
-	Enabled *bool `json:"enabled,omitempty" desc:"Enable upstream discovery service (default true)."`
+	Enabled *bool `json:"enabled,omitempty" desc:"Enable upstream discovery service. Defaults to true."`
 }
 
 type Gateway struct {

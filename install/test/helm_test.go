@@ -2852,8 +2852,6 @@ spec:
       validationServerGrpcMaxSizeBytes: 4000000
   discovery:
     fdsMode: WHITELIST
-    udsOptions:
-      enabled: true
   extauth:
     extauthzServerRef:
       name: test

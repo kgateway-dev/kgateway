@@ -52,8 +52,6 @@ gloo:
 discovery:
   enabled: true
   fdsMode: WHITELIST
-  udsOptions:
-    enabled: true
   serviceAccount: {}
   deployment:
     image:
