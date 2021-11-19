@@ -177,7 +177,7 @@ message Settings {
 
         message UdsOptions {
             // Enable upstream discovery service. Defaults to true.
-            bool enabled = 1;
+            google.protobuf.BoolValue enabled = 1;
         }
 
         UdsOptions uds_options = 2;

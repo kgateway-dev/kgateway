@@ -1190,8 +1190,14 @@ func (m *Settings_DiscoveryOptions_UdsOptions) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetEnabled() != target.GetEnabled() {
-		return false
+	if h, ok := interface{}(m.GetEnabled()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEnabled()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetEnabled(), target.GetEnabled()) {
+			return false
+		}
 	}
 
 	return true

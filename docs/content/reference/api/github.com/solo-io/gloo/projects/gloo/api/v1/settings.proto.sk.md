@@ -291,13 +291,13 @@ This option determines the root of the directory tree used to this end.
 
 
 ```yaml
-"enabled": bool
+"enabled": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `enabled` | `bool` | Enable upstream discovery service. Defaults to true. |
+| `enabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable upstream discovery service. Defaults to true. |
 
 
 

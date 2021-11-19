@@ -1,6 +1,7 @@
 package syncer
 
 import (
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -27,6 +28,16 @@ var _ = Describe("Discovery Syncer Utils Tests", func() {
 			}
 			Expect(GetUdsEnabled(settings)).To(BeTrue())
 		})
+		It("returns true when settings.discovery.udsOptions.enabled is nil", func() {
+			settings := &v1.Settings{
+				Discovery: &v1.Settings_DiscoveryOptions{
+					UdsOptions: &v1.Settings_DiscoveryOptions_UdsOptions{
+						Enabled: nil,
+					},
+				},
+			}
+			Expect(GetUdsEnabled(settings)).To(BeTrue())
+		})
 		It("returns true when settings.discovery.udsOptions.enabled is true", func() {
 			settings := getSettings(true)
 			Expect(GetUdsEnabled(settings)).To(BeTrue())
@@ -49,7 +60,7 @@ func getSettings(udsEnabled bool) *v1.Settings {
 		},
 		Discovery: &v1.Settings_DiscoveryOptions{
 			UdsOptions: &v1.Settings_DiscoveryOptions_UdsOptions{
-				Enabled: udsEnabled,
+				Enabled: &wrappers.BoolValue{Value: udsEnabled},
 			},
 		},
 	}

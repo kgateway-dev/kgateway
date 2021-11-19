@@ -113,6 +113,7 @@ spec:
                   udsOptions:
                     properties:
                       enabled:
+                        nullable: true
                         type: boolean
                     type: object
                 type: object

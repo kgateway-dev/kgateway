@@ -23,10 +23,10 @@ func LogIfDiscoveryServiceUnused(opts *bootstrap.Opts) {
 }
 
 func GetUdsEnabled(settings *v1.Settings) bool {
-	if settings == nil || settings.GetDiscovery() == nil || settings.GetDiscovery().GetUdsOptions() == nil {
+	if settings == nil || settings.GetDiscovery().GetUdsOptions().GetEnabled() == nil {
 		return true
 	}
-	return settings.GetDiscovery().GetUdsOptions().GetEnabled()
+	return settings.GetDiscovery().GetUdsOptions().GetEnabled().GetValue()
 }
 
 func GetFdsMode(settings *v1.Settings) v1.Settings_DiscoveryOptions_FdsMode {
