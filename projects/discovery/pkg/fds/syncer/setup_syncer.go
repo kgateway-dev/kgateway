@@ -28,6 +28,7 @@ func RunFDS(opts bootstrap.Opts) error {
 		if err := syncerutils.ErrorIfDiscoveryServiceUnused(&opts); err != nil {
 			return err
 		}
+		return nil
 	}
 
 	watchOpts := opts.WatchOpts.WithDefaults()
