@@ -12,7 +12,7 @@ import (
 var _ = Describe("UDS setup syncer tests", func() {
 
 	Context("RunUDS", func() {
-		It("returns nil when UDS is disabled", func() {
+		It("returns an error when both UDS and FDS are disabled", func() {
 			opts := bootstrap.Opts{
 				Settings: &v1.Settings{
 					Metadata: &core.Metadata{
@@ -23,10 +23,11 @@ var _ = Describe("UDS setup syncer tests", func() {
 						UdsOptions: &v1.Settings_DiscoveryOptions_UdsOptions{
 							Enabled: &wrappers.BoolValue{Value: false},
 						},
+						FdsMode: v1.Settings_DiscoveryOptions_DISABLED,
 					},
 				},
 			}
-			Expect(RunUDS(opts)).To(BeNil())
+			Expect(RunUDS(opts)).To(HaveOccurred())
 		})
 	})
 

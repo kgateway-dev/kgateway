@@ -25,10 +25,9 @@ func RunFDS(opts bootstrap.Opts) error {
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Function discovery "+
 			"(settings.discovery.fdsMode) disabled. To enable, modify "+
 			"gloo.solo.io/Settings - %v", opts.Settings.GetMetadata().Ref())
-		// TODO: This should probably be called before RunFDS() is invoked, but the current discovery
-		//  architecture doesn't provide a better location
-		syncerutils.LogIfDiscoveryServiceUnused(&opts)
-		return nil
+		if err := syncerutils.ErrorIfDiscoveryServiceUnused(&opts); err != nil {
+			return err
+		}
 	}
 
 	watchOpts := opts.WatchOpts.WithDefaults()

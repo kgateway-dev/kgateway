@@ -22,9 +22,9 @@ func RunUDS(opts bootstrap.Opts) error {
 		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Upstream discovery "+
 			"(settings.discovery.udsOptions.enabled) disabled. To enable, modify "+
 			"gloo.solo.io/Settings - %v", opts.Settings.GetMetadata().Ref())
-		// TODO: This should probably be called before RunUDS() is invoked, but the current discovery
-		//  architecture doesn't provide a better location
-		syncerutils.LogIfDiscoveryServiceUnused(&opts)
+		if err := syncerutils.ErrorIfDiscoveryServiceUnused(&opts); err != nil {
+			return err
+		}
 		return nil
 	}
 	watchOpts := opts.WatchOpts.WithDefaults()
