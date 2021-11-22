@@ -16,7 +16,7 @@ func ErrorIfDiscoveryServiceUnused(opts *bootstrap.Opts) error {
 	if !udsEnabled && !fdsEnabled {
 		return errors.New("discovery (discovery.enabled) is enabled, but both UDS " +
 			"(discovery.udsOptions.enabled) and FDS (discovery.fdsMode) are disabled. " +
-			"While in this state, the discovery pod will be blocked. Consider disabling " +
+			"While in this state, the discovery pod will be no-op. Consider disabling " +
 			"discovery, or enabling one of the discovery features")
 	}
 	return nil
