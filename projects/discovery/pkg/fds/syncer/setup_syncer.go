@@ -3,6 +3,7 @@ package syncer
 import (
 	"time"
 
+	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/syncer"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
@@ -19,10 +20,14 @@ import (
 )
 
 func RunFDS(opts bootstrap.Opts) error {
-	fdsMode := getFdsMode(opts.Settings)
+	fdsMode := syncerutils.GetFdsMode(opts.Settings)
 	if fdsMode == v1.Settings_DiscoveryOptions_DISABLED {
-		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Info("function discovery disabled. to enable, modify "+
-			"gloo.solo.io/Settings %v", opts.Settings.GetMetadata().Ref())
+		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Function discovery "+
+			"(settings.discovery.fdsMode) disabled. To enable, modify "+
+			"gloo.solo.io/Settings - %v", opts.Settings.GetMetadata().Ref())
+		if err := syncerutils.ErrorIfDiscoveryServiceUnused(&opts); err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -105,13 +110,6 @@ func RunFDS(opts bootstrap.Opts) error {
 		}
 	}()
 	return nil
-}
-
-func getFdsMode(settings *v1.Settings) v1.Settings_DiscoveryOptions_FdsMode {
-	if settings == nil || settings.GetDiscovery() == nil {
-		return v1.Settings_DiscoveryOptions_WHITELIST
-	}
-	return settings.GetDiscovery().GetFdsMode()
 }
 
 // TODO: consider using regular solo-kit namespace client instead of KubeNamespace client
