@@ -37,7 +37,7 @@ Google pushed load balancing out to the edge network on front-end servers, as op
 
 Standard load balancers still route the traffic to machine instances where iptables are used to route traffic to individual pods running on these machines. This introduces at least one additional network hop thereby introducing latency in the packet’s journey from load balancer to the pod.
 
-Google introduced Cloud Native Load Balancing with a new data model called Network Endpoint Group (NEG). Instead of routing to the machine and then relying on iptables to route to the pod, with NEGs the traffic goes straight to the pod.
+Google introduced Cloud Native Load Balancing with a data model called Network Endpoint Group (NEG). Instead of routing to the machine and then relying on iptables to route to the pod, with NEGs the traffic goes straight to the pod.
 
 This leads to decreased latency and an increase in throughput when compared to traffic routed with vanilla load balancers.
 
@@ -53,7 +53,7 @@ To use container-native load balancing, you must create a cluster with alias IPs
 
 ### Network Load Balancer
 
-To connect a NLB, first, you will configure a service with SSL enabled.
+To connect a NLB, you do not need to configure a service with SSL enabled. However, in this article you will configure it to secure the communication.
 
 Create a certificate:
 
@@ -85,7 +85,7 @@ metadata:
   labels:
     app: httpbin
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
   - name: http
     port: 80
@@ -195,7 +195,9 @@ Since you have deployed three replicas, you can see there are 3 network endpoint
 
 #### Configuration in GCP for NLB
 
-To instantiate a Load Balancer in Google Cloud (GCP), you need to create the following set of resources:
+When you deploy a Kubernetes Service type `LoadBalancer` on GKE, automatically a Load Balancer is provisioned. However, in this article you will deploy the resources to connect a to NEG.
+
+In the diagram you can see the set of resources which are required and you will create in the following steps.
 
 ![GCP Resources]({{% versioned_link_path fromRoot="/img/gcp-lb-neg-resources.png" %}})
 
@@ -344,7 +346,7 @@ metadata:
   labels:
     app: httpbin
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
   - name: http
     port: 80
@@ -448,7 +450,9 @@ Since you have deployed three replicas, you can see there are 3 network endpoint
 
 #### Configuration in GCP for HTTPS Load Balancer
 
-To instantiate a Load Balancer in Google Cloud (GCP), you need to create the following set of resources.
+When you deploy a Kubernetes Service type `LoadBalancer` on GKE, automatically a Load Balancer is provisioned. However, in this article you will deploy the resources to connect to a NEG.
+
+In the diagram you can see the set of resources which are required and you will create in the following steps.
 
 ![GCP Resources]({{% versioned_link_path fromRoot="/img/gcp-lb-neg-resources.png" %}})
 
