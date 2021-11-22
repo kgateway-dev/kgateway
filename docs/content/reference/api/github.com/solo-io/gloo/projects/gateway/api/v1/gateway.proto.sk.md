@@ -61,7 +61,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 | `options` | [.gloo.solo.io.ListenerOptions](../../../../gloo/api/v1/options.proto.sk/#listeneroptions) | top level optional configuration for all routes on the gateway. |
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gateway during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
-| `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener. |
+| `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener. Deprecated: prefer setting the listener option. If configured, the listener option (filter config) overrides any setting here. |
 | `httpGateway` | [.gateway.solo.io.HttpGateway](../gateway.proto.sk/#httpgateway) |  Only one of `httpGateway`, `tcpGateway`, or `hybridGateway` can be set. |
 | `tcpGateway` | [.gateway.solo.io.TcpGateway](../gateway.proto.sk/#tcpgateway) |  Only one of `tcpGateway`, `httpGateway`, or `hybridGateway` can be set. |
 | `hybridGateway` | [.gateway.solo.io.HybridGateway](../gateway.proto.sk/#hybridgateway) |  Only one of `hybridGateway`, `httpGateway`, or `tcpGateway` can be set. |
