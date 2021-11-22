@@ -305,6 +305,8 @@ spec:
                                           format: int32
                                           type: integer
                                       type: object
+                                    preExpiryRefreshOffset:
+                                      type: string
                                   type: object
                               type: object
                             sessionIdHeaderName:
