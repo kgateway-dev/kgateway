@@ -111,7 +111,6 @@ type hcmNetworkFilterTranslator struct {
 	listener *v1.HttpListener
 	// The report where warnings/errors are persisted
 	report *validationapi.HttpListenerReport
-
 	// List of HttpFilterPlugins to process
 	plugins []plugins.HttpFilterPlugin
 	// List of HttpConnectionManagerPlugins to process
