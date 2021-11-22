@@ -28,9 +28,7 @@ var _ = Describe("Plugin", func() {
 		p            *Plugin
 		pluginParams plugins.Params
 
-		settings     *hcm.HttpConnectionManagerSettings
-		listener     *v1.Listener
-		httpListener *v1.HttpListener
+		settings *hcm.HttpConnectionManagerSettings
 	)
 
 	BeforeEach(func() {
@@ -41,17 +39,21 @@ var _ = Describe("Plugin", func() {
 			Ctx: ctx,
 		}
 		settings = &hcm.HttpConnectionManagerSettings{}
-		httpListener = &v1.HttpListener{
-			Options: &v1.HttpListenerOptions{
-				HttpConnectionManagerSettings: settings,
-			},
-		}
-		listener = &v1.Listener{}
 	})
 
 	AfterEach(func() {
 		cancel()
 	})
+
+	processHcmNetworkFilter := func(cfg *envoyhttp.HttpConnectionManager) error {
+		httpListener := &v1.HttpListener{
+			Options: &v1.HttpListenerOptions{
+				HttpConnectionManagerSettings: settings,
+			},
+		}
+		listener := &v1.Listener{}
+		return p.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+	}
 
 	It("copy all settings to hcm filter", func() {
 		settings = &hcm.HttpConnectionManagerSettings{
@@ -104,7 +106,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		cfg := &envoyhttp.HttpConnectionManager{}
-		err := p.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+		err := processHcmNetworkFilter(cfg)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(cfg.UseRemoteAddress).To(Equal(settings.UseRemoteAddress))
@@ -165,7 +167,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		cfg := &envoyhttp.HttpConnectionManager{}
-		err := p.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+		err := processHcmNetworkFilter(cfg)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_PASS_THROUGH))
@@ -182,7 +184,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("enables websockets by default", func() {
-			err := p.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+			err := processHcmNetworkFilter(cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(len(cfg.GetUpgradeConfigs())).To(Equal(1))
@@ -190,7 +192,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("enables websockets by default with no settings", func() {
-			err := p.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+			err := processHcmNetworkFilter(cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(len(cfg.GetUpgradeConfigs())).To(Equal(1))
@@ -215,7 +217,7 @@ var _ = Describe("Plugin", func() {
 				},
 			}
 
-			err := p.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+			err := processHcmNetworkFilter(cfg)
 			Expect(err).To(MatchError(ContainSubstring("upgrade config websocket is not unique")))
 		})
 

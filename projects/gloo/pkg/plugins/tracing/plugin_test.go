@@ -24,9 +24,6 @@ var _ = Describe("Plugin", func() {
 		plugin       *Plugin
 		pluginParams plugins.Params
 
-		listener     *v1.Listener
-		httpListener *v1.HttpListener
-
 		hcmSettings *hcm.HttpConnectionManagerSettings
 	)
 
@@ -36,13 +33,17 @@ var _ = Describe("Plugin", func() {
 			Snapshot: nil,
 		}
 		hcmSettings = &hcm.HttpConnectionManagerSettings{}
-		httpListener = &v1.HttpListener{
+	})
+
+	processHcmNetworkFilter := func(cfg *envoyhttp.HttpConnectionManager) error {
+		httpListener := &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				HttpConnectionManagerSettings: hcmSettings,
 			},
 		}
-		listener = &v1.Listener{}
-	})
+		listener := &v1.Listener{}
+		return plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+	}
 
 	It("should update listener properly", func() {
 		cfg := &envoyhttp.HttpConnectionManager{}
@@ -76,7 +77,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 
-		err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+		err := processHcmNetworkFilter(cfg)
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
@@ -139,7 +140,7 @@ var _ = Describe("Plugin", func() {
 			Tracing: &tracing.ListenerTracingSettings{},
 		}
 
-		err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+		err := processHcmNetworkFilter(cfg)
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
@@ -162,7 +163,7 @@ var _ = Describe("Plugin", func() {
 					ProviderConfig: nil,
 				},
 			}
-			err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+			err := processHcmNetworkFilter(cfg)
 			Expect(err).To(BeNil())
 			Expect(cfg.Tracing.Provider).To(BeNil())
 		})
@@ -191,7 +192,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+				err := processHcmNetworkFilter(cfg)
 				Expect(err).NotTo(BeNil())
 			})
 
@@ -222,7 +223,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+				err := processHcmNetworkFilter(cfg)
 				Expect(err).To(BeNil())
 
 				expectedEnvoyConfig := &envoytrace.ZipkinConfig{
@@ -262,7 +263,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+				err := processHcmNetworkFilter(cfg)
 				Expect(err).To(BeNil())
 
 				expectedEnvoyConfig := &envoytrace.ZipkinConfig{
@@ -310,7 +311,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+				err := processHcmNetworkFilter(cfg)
 				Expect(err).NotTo(BeNil())
 			})
 
@@ -337,7 +338,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+				err := processHcmNetworkFilter(cfg)
 				Expect(err).To(BeNil())
 
 				expectedEnvoyConfig := &envoytrace.DatadogConfig{
@@ -371,7 +372,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
+				err := processHcmNetworkFilter(cfg)
 				Expect(err).To(BeNil())
 
 				expectedEnvoyConfig := &envoytrace.DatadogConfig{
