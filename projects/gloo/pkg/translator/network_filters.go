@@ -129,8 +129,6 @@ func (h *hcmNetworkFilterTranslator) ComputeNetworkFilter(params plugins.Params)
 	httpConnectionManager.HttpFilters = h.computeHttpFilters(params)
 
 	// 3. Allow any HCM plugins to make their changes, with respect to any changes the core plugin made
-	// We could move these plugins out of the main plugin registry and define their behavior directly here
-	// I opted to leave them as is, to reduce the scope of this change
 	for _, hcmPlugin := range h.hcmPlugins {
 		if err := hcmPlugin.ProcessHcmNetworkFilter(params, h.parentListener, h.listener, httpConnectionManager); err != nil {
 			validation.AppendHTTPListenerError(h.report,

@@ -47,6 +47,11 @@ func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, parentListener *
 	return err
 }
 
+// The AccessLogging plugin configures access logging for envoy, regardless of whether it will be applied to
+// an HttpConnectionManager or TcpProxy NetworkFilter. We have exposed HttpConnectionManagerPlugins to enable
+// fine grained configuration of the HCM across multiple plugins. However, the TCP proxy is still configured
+// by the TCP plugin only. To keep our access logging translation in a single place, we expose this function
+// and the Tcp plugin calls out to it.
 func ProcessAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoyal.AccessLog) ([]*envoyal.AccessLog, error) {
 	results := make([]*envoyal.AccessLog, 0, len(service.GetAccessLog()))
 	for _, al := range service.GetAccessLog() {
