@@ -99,7 +99,6 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 	if opts.Consul.ConsulWatcher != nil {
 		reg.plugins = append(reg.plugins, consul.NewPlugin(opts.Consul.ConsulWatcher, &consul.ConsulDnsResolver{DnsAddress: opts.Consul.DnsServer}, opts.Consul.DnsPollingInterval))
 	}
-	hcmPlugin.RegisterHcmPlugins(reg.plugins)
 
 	return reg
 }
@@ -111,16 +110,18 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 var _ plugins.PluginRegistry = new(pluginRegistry)
 
 type pluginRegistry struct {
-	plugins               []plugins.Plugin
-	listenerPlugins       []plugins.ListenerPlugin
-	tcpFilterChainPlugins []plugins.TcpFilterChainPlugin
-	httpFilterPlugins     []plugins.HttpFilterPlugin
+	plugins                      []plugins.Plugin
+	listenerPlugins              []plugins.ListenerPlugin
+	tcpFilterChainPlugins        []plugins.TcpFilterChainPlugin
+	httpFilterPlugins            []plugins.HttpFilterPlugin
+	httpConnectionManagerPlugins []plugins.HttpConnectionManagerPlugin
 }
 
 func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 	var listenerPlugins []plugins.ListenerPlugin
 	var tcpFilterChainPlugins []plugins.TcpFilterChainPlugin
 	var httpFilterPlugins []plugins.HttpFilterPlugin
+	var httpConnectionManagerPlugins []plugins.HttpConnectionManagerPlugin
 
 	// Process registered plugins once
 	for _, plugin := range registeredPlugins {
@@ -138,13 +139,19 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 		if ok {
 			httpFilterPlugins = append(httpFilterPlugins, httpFilterPlugin)
 		}
+
+		httpConnectionManagerPlugin, ok := plugin.(plugins.HttpConnectionManagerPlugin)
+		if ok {
+			httpConnectionManagerPlugins = append(httpConnectionManagerPlugins, httpConnectionManagerPlugin)
+		}
 	}
 
 	return &pluginRegistry{
-		plugins:               registeredPlugins,
-		listenerPlugins:       listenerPlugins,
-		tcpFilterChainPlugins: tcpFilterChainPlugins,
-		httpFilterPlugins:     httpFilterPlugins,
+		plugins:                      registeredPlugins,
+		listenerPlugins:              listenerPlugins,
+		tcpFilterChainPlugins:        tcpFilterChainPlugins,
+		httpFilterPlugins:            httpFilterPlugins,
+		httpConnectionManagerPlugins: httpConnectionManagerPlugins,
 	}
 }
 
@@ -162,4 +169,8 @@ func (p *pluginRegistry) GetTcpFilterChainPlugins() []plugins.TcpFilterChainPlug
 
 func (p *pluginRegistry) GetHttpFilterPlugins() []plugins.HttpFilterPlugin {
 	return p.httpFilterPlugins
+}
+
+func (p *pluginRegistry) GetHttpConnectionManagerPlugins() []plugins.HttpConnectionManagerPlugin {
+	return p.httpConnectionManagerPlugins
 }

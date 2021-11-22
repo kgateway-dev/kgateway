@@ -43,7 +43,6 @@ func (l *ListenerSubsystemTranslatorFactory) GetTranslators(ctx context.Context,
 ) {
 	switch listener.GetListenerType().(type) {
 	case *v1.Listener_HttpListener:
-
 		return l.GetHttpListenerTranslators(ctx, listener, listenerReport)
 
 	case *v1.Listener_TcpListener:
@@ -64,25 +63,46 @@ func (l *ListenerSubsystemTranslatorFactory) GetHttpListenerTranslators(ctx cont
 		contextutils.LoggerFrom(ctx).DPanic("internal error: listener report was not http type")
 	}
 
+	// The routeConfigurationName is used to match the RouteConfiguration
+	// to an implementation of the HttpConnectionManager NetworkFilter
+	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/rds#config-http-conn-man-rds
 	routeConfigurationName := routeConfigName(listener)
 
-	listenerTranslator := &listenerTranslatorInstance{
-		listener: listener,
-		report:   listenerReport,
-		plugins:  l.pluginRegistry.GetListenerPlugins(),
-		filterChainTranslator: &sslDuplicatedFilterChainTranslator{
-			parentReport: listenerReport,
-			networkFilterTranslator: &httpNetworkFilterTranslator{
-				plugins:         l.pluginRegistry.GetHttpFilterPlugins(),
-				listener:        listener.GetHttpListener(),
-				report:          httpListenerReport,
-				routeConfigName: routeConfigurationName,
-			},
-			sslConfigTranslator: l.sslConfigTranslator,
-			sslConfigurations:   mergeSslConfigs(listener.GetSslConfigurations()),
-		},
+	// This translator produces NetworkFilters
+	// Most notably, this includes the HttpConnectionManager NetworkFilter
+	networkFilterTranslator := NewHttpListenerNetworkFilterTranslator(
+		listener,
+		listener.GetHttpListener(),
+		httpListenerReport,
+		l.pluginRegistry.GetHttpFilterPlugins(),
+		l.pluginRegistry.GetHttpConnectionManagerPlugins(),
+		routeConfigurationName)
+
+	// This translator produces FilterChains
+	// For an HttpGateway we first build a set of NetworkFilters.
+	// Then, for each SslConfiguration that was found on that HttpGateway,
+	// we create a replica of the FilterChain, just with a different FilterChainMatcher
+	filterChainTranslator := &sslDuplicatedFilterChainTranslator{
+		parentReport:            listenerReport,
+		networkFilterTranslator: networkFilterTranslator,
+		sslConfigTranslator:     l.sslConfigTranslator,
+		sslConfigurations:       mergeSslConfigs(listener.GetSslConfigurations()),
 	}
 
+	// This translator produces a single Listener
+	listenerTranslator := &listenerTranslatorInstance{
+		listener:              listener,
+		report:                listenerReport,
+		plugins:               l.pluginRegistry.GetListenerPlugins(),
+		filterChainTranslator: filterChainTranslator,
+	}
+
+	// This translator produces a single RouteConfiguration
+	// We produce the same number of RouteConfigurations as we do
+	// unique instances of the HttpConnectionManager NetworkFilter
+	// Since an HttpGateway can only be configured with a single set
+	// of configuration for the HttpConnectionManager, we only produce
+	// a single RouteConfiguration
 	routeConfigurationTranslator := &httpRouteConfigurationTranslator{
 		plugins:                  l.pluginRegistry.GetPlugins(),
 		proxy:                    l.proxy,
@@ -106,16 +126,22 @@ func (l *ListenerSubsystemTranslatorFactory) GetTcpListenerTranslators(ctx conte
 		contextutils.LoggerFrom(ctx).DPanic("internal error: listener report was not tcp type")
 	}
 
+	// This translator produces FilterChains
+	// Our current TcpFilterChainPlugins have a 1-many relationship,
+	// meaning that a single TcpListener produces many FilterChains
+	filterChainTranslator := &tcpFilterChainTranslator{
+		plugins:        l.pluginRegistry.GetTcpFilterChainPlugins(),
+		parentListener: listener,
+		listener:       listener.GetTcpListener(),
+		report:         tcpListenerReport,
+	}
+
+	// This translator produces a single Listener
 	listenerTranslator := &listenerTranslatorInstance{
-		listener: listener,
-		report:   listenerReport,
-		plugins:  l.pluginRegistry.GetListenerPlugins(),
-		filterChainTranslator: &tcpFilterChainTranslator{
-			plugins:        l.pluginRegistry.GetTcpFilterChainPlugins(),
-			parentListener: listener,
-			listener:       listener.GetTcpListener(),
-			report:         tcpListenerReport,
-		},
+		listener:              listener,
+		report:                listenerReport,
+		plugins:               l.pluginRegistry.GetListenerPlugins(),
+		filterChainTranslator: filterChainTranslator,
 	}
 
 	// A TcpListener does not produce any RouteConfiguration

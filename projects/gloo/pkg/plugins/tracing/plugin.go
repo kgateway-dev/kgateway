@@ -12,10 +12,8 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	hcmp "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -29,7 +27,7 @@ func NewPlugin() *Plugin {
 }
 
 var _ plugins.Plugin = new(Plugin)
-var _ hcmp.HcmPlugin = new(Plugin)
+var _ plugins.HttpConnectionManagerPlugin = new(Plugin)
 var _ plugins.RoutePlugin = new(Plugin)
 
 type Plugin struct {
@@ -40,18 +38,15 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 // Manage the tracing portion of the HCM settings
-func (p *Plugin) ProcessHcmSettings(
-	snapshot *v1.ApiSnapshot,
-	cfg *envoyhttp.HttpConnectionManager,
-	hcmSettings *hcm.HttpConnectionManagerSettings,
-) error {
+func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
 
 	// only apply tracing config to the listener is using the HCM plugin
-	if hcmSettings == nil {
+	in := listener.GetOptions().GetHttpConnectionManagerSettings()
+	if in == nil {
 		return nil
 	}
 
-	tracingSettings := hcmSettings.GetTracing()
+	tracingSettings := in.GetTracing()
 	if tracingSettings == nil {
 		return nil
 	}
@@ -63,7 +58,7 @@ func (p *Plugin) ProcessHcmSettings(
 	trCfg.CustomTags = customTags
 	trCfg.Verbose = tracingSettings.GetVerbose()
 
-	tracingProvider, err := processEnvoyTracingProvider(snapshot, tracingSettings)
+	tracingProvider, err := processEnvoyTracingProvider(params.Snapshot, tracingSettings)
 	if err != nil {
 		return err
 	}
@@ -81,7 +76,7 @@ func (p *Plugin) ProcessHcmSettings(
 		trCfg.RandomSampling = envoySimplePercent(oneHundredPercent)
 		trCfg.OverallSampling = envoySimplePercent(oneHundredPercent)
 	}
-	cfg.Tracing = trCfg
+	out.Tracing = trCfg
 	return nil
 }
 
