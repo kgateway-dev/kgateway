@@ -1,5 +1,5 @@
 ---
-title: Traffic Management
+title: Traffic management
 weight: 20
 ---
 
@@ -161,7 +161,7 @@ In a route delegation, a prefix of the main Virtual Service can be delegated to 
 
 ## Traffic processing
 
-Gloo Edge can also alter requests before sending them to a destination, including **Transformation**, **Fault Injection**, response header editing, and **Prefix Rewrite**. The ability to edit requests on the fly gives Gloo Edge the power to specify the proper parameters for a function or transform and error check incoming requests before passing them along.
+Gloo Edge can also alter requests before sending them to a destination, including transformations, fault injections, response header editing, and prefix rewrites. The ability to edit requests on the fly gives Gloo Edge the power to specify the proper parameters for a function or transform and error check incoming requests before passing them along.
 
 For more information, see [Traffic processing]({{% versioned_link_path fromRoot="/introduction/traffic_filter/" %}}).
 

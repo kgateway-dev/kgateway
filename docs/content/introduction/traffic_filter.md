@@ -18,11 +18,21 @@ Review the following types of request processing that you can do, and see the li
 
 ### Transformations
 
-Transformations can be applied to *VirtualHosts*, *Routes*, and *WeightedDestinations*. You might [change the response status]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/change_response_status/" %}}) coming from an Upstream service, [add headers to the body]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/add_headers_to_body/" %}}) of a request, or [add custom attributes]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/enrich_access_logs//" %}}) for your access logs. The guides included in the [Transformations]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/" %}}) section can provide clear examples of how to implement those transformations and more.
+Transformations can be applied to *VirtualHosts*, *Routes*, and *WeightedDestinations* parts of a Gloo Edge Virtual Service custom resource. Example transformations include the following.
+
+* [Change the response status]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/change_response_status/" %}}) coming from an Upstream service.
+* [Add headers to the body]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/add_headers_to_body/" %}}) of a request. 
+* [Add custom attributes]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/enrich_access_logs//" %}}) for your access logs. 
+ 
+For example steps, see the [Transformation guides]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/" %}}).
 
 ### Direct response and redirects
 
-Not all requests should be sent to an Upstream destination. In some cases, the request should be redirected either to another site ([Host Redirect]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/redirect_action/" %}})) or to another Virtual Service in Gloo Edge. You may also wish to redirect clients requesting the HTTP version of a service to the [HTTPS version instead]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/https_redirect/" %}}). Other requests should have a [direct response]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/direct_response_action/" %}}) from the Virtual Service, such as a 404 not found.
+Not all requests should be sent to an Upstream destination. Review the following situations in which you might use a direct response or redirect.
+
+* You want to redirect the response to another website ([Host Redirect]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/redirect_action/" %}})) or to another Virtual Service in Gloo Edge. 
+* You want to redirect clients that request the HTTP version of a service to the [HTTPS version instead]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/https_redirect/" %}}). 
+* You want to return a [direct response]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/direct_response_action/" %}}) from the Virtual Service to the client's request, such as a `404 not found` error message.
 
 ### Faults
 
