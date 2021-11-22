@@ -11,8 +11,10 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	als2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
@@ -50,9 +52,12 @@ func (p *Plugin) Init(_ plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) CreateTcpFilterChains(params plugins.Params, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error) {
+func (p *Plugin) CreateTcpFilterChains(params plugins.Params, parentListener *v1.Listener, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error) {
 	var filterChains []*envoy_config_listener_v3.FilterChain
 	multiErr := multierror.Error{}
+
+	alsSettings := parentListener.GetOptions().GetAccessLoggingService()
+	tcpListenerOptions := in.GetOptions()
 
 	for _, tcpHost := range in.GetTcpHosts() {
 		var listenerFilters []*envoy_config_listener_v3.Filter
@@ -60,7 +65,8 @@ func (p *Plugin) CreateTcpFilterChains(params plugins.Params, in *v1.TcpListener
 		if statPrefix == "" {
 			statPrefix = DefaultTcpStatPrefix
 		}
-		tcpFilters, err := p.tcpProxyFilters(params, tcpHost, in.GetOptions(), statPrefix)
+
+		tcpFilters, err := p.tcpProxyFilters(params, tcpHost, tcpListenerOptions, statPrefix, alsSettings)
 		if err != nil {
 			multiErr.Errors = append(multiErr.Errors, err)
 			continue
@@ -83,6 +89,7 @@ func (p *Plugin) tcpProxyFilters(
 	host *v1.TcpHost,
 	plugins *v1.TcpListenerOptions,
 	statPrefix string,
+	alsSettings *als2.AccessLoggingService,
 ) ([]*envoy_config_listener_v3.Filter, error) {
 
 	cfg := &envoytcp.TcpProxy{
@@ -147,6 +154,12 @@ func (p *Plugin) tcpProxyFilters(
 	default:
 		return nil, NoDestinationTypeError(host)
 	}
+
+	tcpAccessLogConfig, err := als.ProcessAccessLogPlugins(alsSettings, cfg.GetAccessLog())
+	if err != nil {
+		return nil, err
+	}
+	cfg.AccessLog = tcpAccessLogConfig
 
 	tcpFilter, err := translatorutil.NewFilterWithTypedConfig(wellknown.TCPProxy, cfg)
 	if err != nil {

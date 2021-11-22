@@ -1,0 +1,12 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5324
+    resolvesIssue: false
+    description: |
+      Cleanup HttpConnectionManager translation. Previously, the HCM plugin would modify
+      all filter chains on a single listener. Gloo previously only exposed a configuration
+      for a single HCM. As we expose hybrid gateway's, we'll expose multiple HCM config
+      for a single listener.
+      At it's core, this just converted the existing HCM plugin (which copied core config
+      and iterated all HcmPlugins), into a type of HCM plugin, and we have a translator
+      responsible for iterating over all HcmPlugins.
