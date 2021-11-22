@@ -201,6 +201,10 @@ spec:
           hostPort: {{ $spec.podTemplate.httpsPort }}
           {{- end}}
           {{- end}}
+       {{- if .Values.global.glooStats.serviceMonitor }}
+        - name: http-monitoring
+          containerPort: 8081
+       {{- end }}
 {{- with $spec.podTemplate.extraPorts }}
 {{toYaml . | indent 8}}{{- end }}
 {{- if $spec.podTemplate.resources }}

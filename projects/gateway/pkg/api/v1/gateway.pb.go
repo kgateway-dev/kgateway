@@ -125,7 +125,11 @@ type Gateway struct {
 	NamespacedStatuses *core.NamespacedStatuses `protobuf:"bytes,14,opt,name=namespaced_statuses,json=namespacedStatuses,proto3" json:"namespaced_statuses,omitempty"`
 	// Metadata contains the object metadata for this resource
 	Metadata *core.Metadata `protobuf:"bytes,7,opt,name=metadata,proto3" json:"metadata,omitempty"`
-	// Enable ProxyProtocol support for this listener
+	// Enable ProxyProtocol support for this listener.
+	// Deprecated: prefer setting the listener option.
+	// If configured, the listener option (filter config) overrides any setting here.
+	//
+	// Deprecated: Do not use.
 	UseProxyProto *wrappers.BoolValue `protobuf:"bytes,8,opt,name=use_proxy_proto,json=useProxyProto,proto3" json:"use_proxy_proto,omitempty"`
 	// The type of gateway being created
 	// HttpGateway creates a listener with an http_connection_manager
@@ -234,6 +238,7 @@ func (x *Gateway) GetMetadata() *core.Metadata {
 	return nil
 }
 
+// Deprecated: Do not use.
 func (x *Gateway) GetUseProxyProto() *wrappers.BoolValue {
 	if x != nil {
 		return x.UseProxyProto

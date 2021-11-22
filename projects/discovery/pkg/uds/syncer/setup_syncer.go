@@ -3,6 +3,7 @@ package syncer
 import (
 	"github.com/solo-io/gloo/pkg/utils"
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+	syncerutils "github.com/solo-io/gloo/projects/discovery/pkg/syncer"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
@@ -16,6 +17,16 @@ import (
 )
 
 func RunUDS(opts bootstrap.Opts) error {
+	udsEnabled := syncerutils.GetUdsEnabled(opts.Settings)
+	if !udsEnabled {
+		contextutils.LoggerFrom(opts.WatchOpts.Ctx).Infof("Upstream discovery "+
+			"(settings.discovery.udsOptions.enabled) disabled. To enable, modify "+
+			"gloo.solo.io/Settings - %v", opts.Settings.GetMetadata().Ref())
+		if err := syncerutils.ErrorIfDiscoveryServiceUnused(&opts); err != nil {
+			return err
+		}
+		return nil
+	}
 	watchOpts := opts.WatchOpts.WithDefaults()
 	watchOpts.Ctx = contextutils.WithLogger(watchOpts.Ctx, "uds")
 

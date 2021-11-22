@@ -11588,6 +11588,26 @@ spec:
                           minimum: 0
                           nullable: true
                           type: integer
+                        proxyProtocol:
+                          properties:
+                            allowRequestsWithoutProxyProtocol:
+                              type: boolean
+                            rules:
+                              items:
+                                properties:
+                                  onTlvPresent:
+                                    properties:
+                                      key:
+                                        type: string
+                                      metadataNamespace:
+                                        type: string
+                                    type: object
+                                  tlvType:
+                                    format: int32
+                                    type: integer
+                                type: object
+                              type: array
+                          type: object
                         socketOptions:
                           items:
                             properties:

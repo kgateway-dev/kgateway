@@ -88,8 +88,10 @@ message Listener {
     // Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config
     repeated SslConfig ssl_configurations = 6;
 
-    // Enable ProxyProtocol support for this listener
-    google.protobuf.BoolValue use_proxy_proto = 7;
+    // Enable ProxyProtocol support for this listener.
+    // Deprecated: prefer setting the listener option.
+    // If configured, the listener option (filter config) overrides any setting here.
+    google.protobuf.BoolValue use_proxy_proto = 7 [deprecated=true];
 
     // top level options
     ListenerOptions options = 8;
