@@ -61,9 +61,9 @@ You can control the rollout of changes using canary releases or blue-green deplo
 
 ## Filter flow
 
-The order of how Envoy filters traffic impacts how you configure your Gloo Edge resources. Review the following video and diagrams to understand the filter flow in Gloo Edge.
+The order that Envoy applies filters to traffic impacts how you configure your Gloo Edge resources. Review the following video and diagrams to understand the filter flow in Gloo Edge.
 
-For more information configuring traffic filters, see the [Transformation guides]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/" %}}).
+For more information on configuring traffic filters, see the [Transformation guides]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/" %}}).
 
 ### Video overview of the filter flow
 
