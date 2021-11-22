@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -25,7 +27,10 @@ var _ = Describe("Plugin", func() {
 
 		p            *Plugin
 		pluginParams plugins.Params
+
 		settings     *hcm.HttpConnectionManagerSettings
+		listener     *v1.Listener
+		httpListener *v1.HttpListener
 	)
 
 	BeforeEach(func() {
@@ -36,6 +41,12 @@ var _ = Describe("Plugin", func() {
 			Ctx: ctx,
 		}
 		settings = &hcm.HttpConnectionManagerSettings{}
+		httpListener = &v1.HttpListener{
+			Options: &v1.HttpListenerOptions{
+				HttpConnectionManagerSettings: settings,
+			},
+		}
+		listener = &v1.Listener{}
 	})
 
 	AfterEach(func() {
@@ -93,7 +104,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		cfg := &envoyhttp.HttpConnectionManager{}
-		err := p.ProcessHcmSettings(pluginParams, settings, cfg)
+		err := p.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(cfg.UseRemoteAddress).To(Equal(settings.UseRemoteAddress))
@@ -154,7 +165,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		cfg := &envoyhttp.HttpConnectionManager{}
-		err := p.ProcessHcmSettings(pluginParams, settings, cfg)
+		err := p.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_PASS_THROUGH))
@@ -171,8 +182,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("enables websockets by default", func() {
-
-			err := p.ProcessHcmSettings(pluginParams, settings, cfg)
+			err := p.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(len(cfg.GetUpgradeConfigs())).To(Equal(1))
@@ -180,7 +190,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("enables websockets by default with no settings", func() {
-			err := p.ProcessHcmSettings(pluginParams, nil, cfg)
+			err := p.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(len(cfg.GetUpgradeConfigs())).To(Equal(1))
@@ -205,7 +215,7 @@ var _ = Describe("Plugin", func() {
 				},
 			}
 
-			err := p.ProcessHcmSettings(pluginParams, settings, cfg)
+			err := p.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 			Expect(err).To(MatchError(ContainSubstring("upgrade config websocket is not unique")))
 		})
 

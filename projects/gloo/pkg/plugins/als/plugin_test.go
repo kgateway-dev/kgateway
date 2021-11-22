@@ -1,14 +1,15 @@
 package als_test
 
 import (
-	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
+	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/test/matchers"
 
@@ -16,283 +17,228 @@ import (
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
 	envoygrpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
 var _ = Describe("Plugin", func() {
-	var (
-		alsConfig *als.AccessLoggingService
-	)
-	Context("grpc", func() {
+
+	Context("ProcessAccessLogPlugins", func() {
 
 		var (
-			params plugins.Params
-			usRef  *core.ResourceRef
-
-			logName      string
-			extraHeaders []string
+			alsSettings *als.AccessLoggingService
 		)
 
-		var checkConfig = func(al *envoyal.AccessLog) {
-			Expect(al.Name).To(Equal(wellknown.HTTPGRPCAccessLog))
-			var falCfg envoygrpc.HttpGrpcAccessLogConfig
-			err := translatorutil.ParseTypedConfig(al, &falCfg)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
-			Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
-			Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
-			Expect(falCfg.CommonConfig.LogName).To(Equal(logName))
-			envoyGrpc := falCfg.CommonConfig.GetGrpcService().GetEnvoyGrpc()
-			Expect(envoyGrpc).NotTo(BeNil())
-			Expect(envoyGrpc.ClusterName).To(Equal(translatorutil.UpstreamToClusterName(usRef)))
-		}
+		Context("grpc", func() {
 
-		BeforeEach(func() {
-			logName = "test"
-			extraHeaders = []string{"test"}
-			usRef = &core.ResourceRef{
-				Name:      "default",
-				Namespace: "default",
-			}
-			alsConfig = &als.AccessLoggingService{
-				AccessLog: []*als.AccessLog{
-					{
-						OutputDestination: &als.AccessLog_GrpcService{
-							GrpcService: &als.GrpcService{
-								LogName: logName,
-								ServiceRef: &als.GrpcService_StaticClusterName{
-									StaticClusterName: translatorutil.UpstreamToClusterName(usRef),
-								},
-								AdditionalRequestHeadersToLog:   extraHeaders,
-								AdditionalResponseHeadersToLog:  extraHeaders,
-								AdditionalResponseTrailersToLog: extraHeaders,
-							},
-						},
-					},
-				},
-			}
-			params = plugins.Params{
-				Snapshot: &v1.ApiSnapshot{
-					Upstreams: v1.UpstreamList{
+			var (
+				usRef *core.ResourceRef
+
+				logName      string
+				extraHeaders []string
+			)
+
+			BeforeEach(func() {
+				logName = "test"
+				extraHeaders = []string{"test"}
+				usRef = &core.ResourceRef{
+					Name:      "default",
+					Namespace: "default",
+				}
+				alsSettings = &als.AccessLoggingService{
+					AccessLog: []*als.AccessLog{
 						{
-							// UpstreamSpec: nil,
-							Metadata: &core.Metadata{
-								Name:      usRef.Name,
-								Namespace: usRef.Namespace,
+							OutputDestination: &als.AccessLog_GrpcService{
+								GrpcService: &als.GrpcService{
+									LogName: logName,
+									ServiceRef: &als.GrpcService_StaticClusterName{
+										StaticClusterName: translatorutil.UpstreamToClusterName(usRef),
+									},
+									AdditionalRequestHeadersToLog:   extraHeaders,
+									AdditionalResponseHeadersToLog:  extraHeaders,
+									AdditionalResponseTrailersToLog: extraHeaders,
+								},
 							},
 						},
 					},
-				},
-			}
+				}
+			})
+
+			It("works", func() {
+				accessLogConfigs, err := ProcessAccessLogPlugins(alsSettings, nil)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(accessLogConfigs).To(HaveLen(1))
+				alConfig := accessLogConfigs[0]
+
+				Expect(alConfig.Name).To(Equal(wellknown.HTTPGRPCAccessLog))
+				var falCfg envoygrpc.HttpGrpcAccessLogConfig
+				err = translatorutil.ParseTypedConfig(alConfig, &falCfg)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
+				Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
+				Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
+				Expect(falCfg.CommonConfig.LogName).To(Equal(logName))
+				envoyGrpc := falCfg.CommonConfig.GetGrpcService().GetEnvoyGrpc()
+				Expect(envoyGrpc).NotTo(BeNil())
+				Expect(envoyGrpc.ClusterName).To(Equal(translatorutil.UpstreamToClusterName(usRef)))
+			})
+
 		})
-		It("http", func() {
-			hl := &v1.HttpListener{}
 
-			in := &v1.Listener{
-				ListenerType: &v1.Listener_HttpListener{
-					HttpListener: hl,
-				},
-				Options: &v1.ListenerOptions{
-					AccessLoggingService: alsConfig,
-				},
-			}
+		Context("file", func() {
 
-			filters := []*envoy_config_listener_v3.Filter{{
-				Name: wellknown.HTTPConnectionManager,
-			}}
+			var (
+				strFormat, path string
+				jsonFormat      *structpb.Struct
+				fsStrFormat     *als.FileSink_StringFormat
+				fsJsonFormat    *als.FileSink_JsonFormat
+			)
 
-			outl := &envoy_config_listener_v3.Listener{
-				FilterChains: []*envoy_config_listener_v3.FilterChain{{
-					Filters: filters,
-				}},
-			}
+			BeforeEach(func() {
+				strFormat, path = "formatting string", "path"
+				jsonFormat = &structpb.Struct{
+					Fields: map[string]*structpb.Value{},
+				}
+				fsStrFormat = &als.FileSink_StringFormat{
+					StringFormat: strFormat,
+				}
+				fsJsonFormat = &als.FileSink_JsonFormat{
+					JsonFormat: jsonFormat,
+				}
+			})
 
-			p := NewPlugin()
-			err := p.ProcessListener(params, in, outl)
-			Expect(err).NotTo(HaveOccurred())
+			Context("string", func() {
 
-			var cfg envoyhttp.HttpConnectionManager
-			err = translatorutil.ParseTypedConfig(filters[0], &cfg)
-			Expect(err).NotTo(HaveOccurred())
+				BeforeEach(func() {
+					alsSettings = &als.AccessLoggingService{
+						AccessLog: []*als.AccessLog{
+							{
+								OutputDestination: &als.AccessLog_FileSink{
+									FileSink: &als.FileSink{
+										Path:         path,
+										OutputFormat: fsStrFormat,
+									},
+								},
+							},
+						},
+					}
+				})
 
-			Expect(cfg.AccessLog).To(HaveLen(1))
-			al := cfg.AccessLog[0]
-			checkConfig(al)
+				It("works", func() {
+					accessLogConfigs, err := ProcessAccessLogPlugins(alsSettings, nil)
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(accessLogConfigs).To(HaveLen(1))
+					alConfig := accessLogConfigs[0]
+
+					Expect(alConfig.Name).To(Equal(wellknown.FileAccessLog))
+					var falCfg envoyalfile.FileAccessLog
+					err = translatorutil.ParseTypedConfig(alConfig, &falCfg)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(falCfg.Path).To(Equal(path))
+					str := falCfg.GetLogFormat().GetTextFormat()
+					Expect(str).To(Equal(strFormat))
+				})
+
+			})
+
+			Context("json", func() {
+
+				BeforeEach(func() {
+					alsSettings = &als.AccessLoggingService{
+						AccessLog: []*als.AccessLog{
+							{
+								OutputDestination: &als.AccessLog_FileSink{
+									FileSink: &als.FileSink{
+										Path:         path,
+										OutputFormat: fsJsonFormat,
+									},
+								},
+							},
+						},
+					}
+				})
+
+				It("works", func() {
+					accessLogConfigs, err := ProcessAccessLogPlugins(alsSettings, nil)
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(accessLogConfigs).To(HaveLen(1))
+					alConfig := accessLogConfigs[0]
+
+					Expect(alConfig.Name).To(Equal(wellknown.FileAccessLog))
+					var falCfg envoyalfile.FileAccessLog
+					err = translatorutil.ParseTypedConfig(alConfig, &falCfg)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(falCfg.Path).To(Equal(path))
+					jsn := falCfg.GetLogFormat().GetJsonFormat()
+					Expect(jsn).To(matchers.MatchProto(jsonFormat))
+				})
+
+			})
+
 		})
-		It("tcp", func() {
-			tl := &v1.TcpListener{}
-			in := &v1.Listener{
-				ListenerType: &v1.Listener_TcpListener{
-					TcpListener: tl,
-				},
-				Options: &v1.ListenerOptions{
-					AccessLoggingService: alsConfig,
-				},
-			}
 
-			filters := []*envoy_config_listener_v3.Filter{{
-				Name: wellknown.TCPProxy,
-			}}
-
-			outl := &envoy_config_listener_v3.Listener{
-				FilterChains: []*envoy_config_listener_v3.FilterChain{{
-					Filters: filters,
-				}},
-			}
-
-			p := NewPlugin()
-			err := p.ProcessListener(params, in, outl)
-			Expect(err).NotTo(HaveOccurred())
-
-			var cfg envoytcp.TcpProxy
-			err = translatorutil.ParseTypedConfig(filters[0], &cfg)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(cfg.AccessLog).To(HaveLen(1))
-			al := cfg.AccessLog[0]
-			checkConfig(al)
-		})
 	})
 
-	Context("file", func() {
+	Context("ProcessHcmNetworkFilter", func() {
+
 		var (
-			strFormat, path string
-			jsonFormat      *structpb.Struct
-			fsStrFormat     *als.FileSink_StringFormat
-			fsJsonFormat    *als.FileSink_JsonFormat
+			plugin       *Plugin
+			pluginParams plugins.Params
+
+			parentListener *v1.Listener
+			listener       *v1.HttpListener
+
+			envoyHcmConfig *envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager
 		)
 
 		BeforeEach(func() {
-			strFormat, path = "formatting string", "path"
-			jsonFormat = &structpb.Struct{
-				Fields: map[string]*structpb.Value{},
-			}
-			fsStrFormat = &als.FileSink_StringFormat{
-				StringFormat: strFormat,
-			}
-			fsJsonFormat = &als.FileSink_JsonFormat{
-				JsonFormat: jsonFormat,
-			}
+			plugin = NewPlugin()
+			pluginParams = plugins.Params{}
+
+			parentListener = &v1.Listener{}
+			listener = &v1.HttpListener{}
+
+			envoyHcmConfig = &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager{}
 		})
 
-		Context("string", func() {
-
-			var checkConfig = func(al *envoyal.AccessLog) {
-				Expect(al.Name).To(Equal(wellknown.FileAccessLog))
-				var falCfg envoyalfile.FileAccessLog
-				err := translatorutil.ParseTypedConfig(al, &falCfg)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(falCfg.Path).To(Equal(path))
-				str := falCfg.GetLogFormat().GetTextFormat()
-				Expect(str).To(Equal(strFormat))
-			}
+		When("parent listener has no access log settings defined", func() {
 
 			BeforeEach(func() {
-				alsConfig = &als.AccessLoggingService{
-					AccessLog: []*als.AccessLog{
-						{
-							OutputDestination: &als.AccessLog_FileSink{
-								FileSink: &als.FileSink{
-									Path:         path,
-									OutputFormat: fsStrFormat,
-								},
-							},
-						},
-					},
-				}
+				parentListener.Options = nil
 			})
-			It("http", func() {
-				hl := &v1.HttpListener{}
 
-				in := &v1.Listener{
-					ListenerType: &v1.Listener_HttpListener{
-						HttpListener: hl,
-					},
-					Options: &v1.ListenerOptions{
-						AccessLoggingService: alsConfig,
-					},
-				}
-
-				filters := []*envoy_config_listener_v3.Filter{{
-					Name: wellknown.HTTPConnectionManager,
-				}}
-
-				outl := &envoy_config_listener_v3.Listener{
-					FilterChains: []*envoy_config_listener_v3.FilterChain{{
-						Filters: filters,
-					}},
-				}
-
-				p := NewPlugin()
-				err := p.ProcessListener(plugins.Params{}, in, outl)
+			It("does not configure access log config", func() {
+				err := plugin.ProcessHcmNetworkFilter(pluginParams, parentListener, listener, envoyHcmConfig)
 				Expect(err).NotTo(HaveOccurred())
-
-				var cfg envoyhttp.HttpConnectionManager
-				err = translatorutil.ParseTypedConfig(filters[0], &cfg)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(cfg.AccessLog).To(HaveLen(1))
-				al := cfg.AccessLog[0]
-				checkConfig(al)
-			})
-			It("tcp", func() {
-				tl := &v1.TcpListener{}
-				in := &v1.Listener{
-					ListenerType: &v1.Listener_TcpListener{
-						TcpListener: tl,
-					},
-					Options: &v1.ListenerOptions{
-						AccessLoggingService: alsConfig,
-					},
-				}
-
-				filters := []*envoy_config_listener_v3.Filter{{
-					Name: wellknown.TCPProxy,
-				}}
-
-				outl := &envoy_config_listener_v3.Listener{
-					FilterChains: []*envoy_config_listener_v3.FilterChain{{
-						Filters: filters,
-					}},
-				}
-
-				p := NewPlugin()
-				err := p.ProcessListener(plugins.Params{}, in, outl)
-				Expect(err).NotTo(HaveOccurred())
-
-				var cfg envoytcp.TcpProxy
-				err = translatorutil.ParseTypedConfig(filters[0], &cfg)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(cfg.AccessLog).To(HaveLen(1))
-				al := cfg.AccessLog[0]
-				checkConfig(al)
+				Expect(envoyHcmConfig.GetAccessLog()).To(BeNil())
 			})
 
 		})
 
-		Context("json", func() {
-			var checkConfig = func(al *envoyal.AccessLog) {
-				Expect(al.Name).To(Equal(wellknown.FileAccessLog))
-				var falCfg envoyalfile.FileAccessLog
-				err := translatorutil.ParseTypedConfig(al, &falCfg)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(falCfg.Path).To(Equal(path))
-				jsn := falCfg.GetLogFormat().GetJsonFormat()
-				Expect(jsn).To(matchers.MatchProto(jsonFormat))
-			}
+		When("parent listener has access log settings defined", func() {
 
 			BeforeEach(func() {
-				alsConfig = &als.AccessLoggingService{
-					AccessLog: []*als.AccessLog{
-						{
-							OutputDestination: &als.AccessLog_FileSink{
-								FileSink: &als.FileSink{
-									Path:         path,
-									OutputFormat: fsJsonFormat,
+				logName := "test"
+				extraHeaders := []string{"test"}
+				usRef := &core.ResourceRef{
+					Name:      "default",
+					Namespace: "default",
+				}
+				parentListener.Options = &v1.ListenerOptions{
+					AccessLoggingService: &als.AccessLoggingService{
+						AccessLog: []*als.AccessLog{
+							{
+								OutputDestination: &als.AccessLog_GrpcService{
+									GrpcService: &als.GrpcService{
+										LogName: logName,
+										ServiceRef: &als.GrpcService_StaticClusterName{
+											StaticClusterName: translatorutil.UpstreamToClusterName(usRef),
+										},
+										AdditionalRequestHeadersToLog:   extraHeaders,
+										AdditionalResponseHeadersToLog:  extraHeaders,
+										AdditionalResponseTrailersToLog: extraHeaders,
+									},
 								},
 							},
 						},
@@ -300,72 +246,14 @@ var _ = Describe("Plugin", func() {
 				}
 			})
 
-			It("http", func() {
-				hl := &v1.HttpListener{}
-				in := &v1.Listener{
-					ListenerType: &v1.Listener_HttpListener{
-						HttpListener: hl,
-					},
-					Options: &v1.ListenerOptions{
-						AccessLoggingService: alsConfig,
-					},
-				}
-
-				filters := []*envoy_config_listener_v3.Filter{{
-					Name: wellknown.HTTPConnectionManager,
-				}}
-
-				outl := &envoy_config_listener_v3.Listener{
-					FilterChains: []*envoy_config_listener_v3.FilterChain{{
-						Filters: filters,
-					}},
-				}
-
-				p := NewPlugin()
-				err := p.ProcessListener(plugins.Params{}, in, outl)
+			It("does configure access log config", func() {
+				err := plugin.ProcessHcmNetworkFilter(pluginParams, parentListener, listener, envoyHcmConfig)
 				Expect(err).NotTo(HaveOccurred())
-
-				var cfg envoyhttp.HttpConnectionManager
-				err = translatorutil.ParseTypedConfig(filters[0], &cfg)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(cfg.AccessLog).To(HaveLen(1))
-				al := cfg.AccessLog[0]
-				checkConfig(al)
+				Expect(envoyHcmConfig.GetAccessLog()).NotTo(BeNil())
 			})
-			It("tcp", func() {
-				tl := &v1.TcpListener{}
-				in := &v1.Listener{
-					ListenerType: &v1.Listener_TcpListener{
-						TcpListener: tl,
-					},
-					Options: &v1.ListenerOptions{
-						AccessLoggingService: alsConfig,
-					},
-				}
 
-				filters := []*envoy_config_listener_v3.Filter{{
-					Name: wellknown.TCPProxy,
-				}}
-
-				outl := &envoy_config_listener_v3.Listener{
-					FilterChains: []*envoy_config_listener_v3.FilterChain{{
-						Filters: filters,
-					}},
-				}
-
-				p := NewPlugin()
-				err := p.ProcessListener(plugins.Params{}, in, outl)
-				Expect(err).NotTo(HaveOccurred())
-
-				var cfg envoytcp.TcpProxy
-				err = translatorutil.ParseTypedConfig(filters[0], &cfg)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(cfg.AccessLog).To(HaveLen(1))
-				al := cfg.AccessLog[0]
-				checkConfig(al)
-			})
 		})
+
 	})
+
 })

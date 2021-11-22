@@ -34,10 +34,11 @@ type httpNetworkFilterTranslator struct {
 	// The report where warnings/errors are persisted
 	report *validationapi.HttpListenerReport
 	// The implementation for generating the HttpConnectionManager NetworkFilter
-	hcmNetworkFilterTranslator NetworkFilterTranslator
+	hcmNetworkFilterTranslator *hcmNetworkFilterTranslator
 }
 
 func NewHttpListenerNetworkFilterTranslator(
+	parentListener *v1.Listener,
 	listener *v1.HttpListener,
 	report *validationapi.HttpListenerReport,
 	plugins []plugins.HttpFilterPlugin,
@@ -48,10 +49,11 @@ func NewHttpListenerNetworkFilterTranslator(
 		listener: listener,
 		report:   report,
 		hcmNetworkFilterTranslator: &hcmNetworkFilterTranslator{
-			plugins:         plugins,
-			hcmPlugins:      hcmPlugins,
+			parentListener:  parentListener,
 			listener:        listener,
 			report:          report,
+			plugins:         plugins,
+			hcmPlugins:      hcmPlugins,
 			routeConfigName: routeConfigName,
 		},
 	}
@@ -85,15 +87,11 @@ func (n *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Param
 		}
 	}
 
-	hcmNetworkFilters := n.hcmNetworkFilterTranslator.ComputeNetworkFilters(params)
-	if len(hcmNetworkFilters) > 0 {
-		// This should only return a single NetworkFilter
-		// add the http connection manager filter after all the InAuth Listener Filters
-		networkFilters = append(networkFilters, plugins.StagedNetworkFilter{
-			NetworkFilter: hcmNetworkFilters[0],
-			Stage:         plugins.AfterStage(plugins.AuthZStage),
-		})
-	}
+	// add the http connection manager filter after all the InAuth Listener Filters
+	networkFilters = append(networkFilters, plugins.StagedNetworkFilter{
+		NetworkFilter: n.hcmNetworkFilterTranslator.ComputeNetworkFilter(params),
+		Stage:         plugins.AfterStage(plugins.AuthZStage),
+	})
 
 	return sortNetworkFilters(networkFilters)
 }
@@ -108,19 +106,21 @@ func sortNetworkFilters(filters plugins.StagedNetworkFilterList) []*envoy_config
 }
 
 type hcmNetworkFilterTranslator struct {
-	// List of HttpFilterPlugins to process
-	plugins []plugins.HttpFilterPlugin
-	// List of HttpConnectionManagerPlugins to process
-	hcmPlugins []plugins.HttpConnectionManagerPlugin
+	parentListener *v1.Listener
 	// A Gloo HttpListener which contains HttpConnectionManager settings
 	listener *v1.HttpListener
 	// The report where warnings/errors are persisted
 	report *validationapi.HttpListenerReport
+
+	// List of HttpFilterPlugins to process
+	plugins []plugins.HttpFilterPlugin
+	// List of HttpConnectionManagerPlugins to process
+	hcmPlugins []plugins.HttpConnectionManagerPlugin
 	// The name of the RouteConfiguration for the HttpConnectionManager
 	routeConfigName string
 }
 
-func (h *hcmNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Params) []*envoy_config_listener_v3.Filter {
+func (h *hcmNetworkFilterTranslator) ComputeNetworkFilter(params plugins.Params) *envoy_config_listener_v3.Filter {
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_http_connection_manager")
 
 	// 1. Initialize the HCM
@@ -130,9 +130,10 @@ func (h *hcmNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Params
 	httpConnectionManager.HttpFilters = h.computeHttpFilters(params)
 
 	// 3. Allow any HCM plugins to make their changes, with respect to any changes the core plugin made
-	hcmSettings := h.listener.GetOptions().GetHttpConnectionManagerSettings()
-	for _, hp := range h.hcmPlugins {
-		if err := hp.ProcessHcmSettings(params, hcmSettings, httpConnectionManager); err != nil {
+	// We could move these plugins out of the main plugin registry and define their behavior directly here
+	// I opted to leave them as is, to reduce the scope of this change
+	for _, hcmPlugin := range h.hcmPlugins {
+		if err := hcmPlugin.ProcessHcmNetworkFilter(params, h.parentListener, h.listener, httpConnectionManager); err != nil {
 			validation.AppendHTTPListenerError(h.report,
 				validationapi.HttpListenerReport_Error_ProcessingError,
 				err.Error())
@@ -145,7 +146,7 @@ func (h *hcmNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Params
 		panic(errors.Wrapf(err, "failed to convert proto message to struct"))
 	}
 
-	return []*envoy_config_listener_v3.Filter{hcmFilter}
+	return hcmFilter
 }
 
 func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionManager {

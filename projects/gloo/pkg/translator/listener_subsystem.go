@@ -69,8 +69,9 @@ func (l *ListenerSubsystemTranslatorFactory) GetHttpListenerTranslators(ctx cont
 	routeConfigurationName := routeConfigName(listener)
 
 	// This translator produces NetworkFilters
-	// Most notably, this includes the HttpConnectionManager
+	// Most notably, this includes the HttpConnectionManager NetworkFilter
 	networkFilterTranslator := NewHttpListenerNetworkFilterTranslator(
+		listener,
 		listener.GetHttpListener(),
 		httpListenerReport,
 		l.pluginRegistry.GetHttpFilterPlugins(),

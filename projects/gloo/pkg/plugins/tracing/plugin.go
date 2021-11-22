@@ -12,7 +12,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
@@ -39,9 +38,10 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 // Manage the tracing portion of the HCM settings
-func (p *Plugin) ProcessHcmSettings(params plugins.Params, in *hcm.HttpConnectionManagerSettings, out *envoyhttp.HttpConnectionManager) error {
+func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
 
 	// only apply tracing config to the listener is using the HCM plugin
+	in := listener.GetOptions().GetHttpConnectionManagerSettings()
 	if in == nil {
 		return nil
 	}

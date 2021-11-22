@@ -20,13 +20,33 @@ import (
 
 var _ = Describe("Plugin", func() {
 
-	It("should update listener properly", func() {
-		pluginParams := plugins.Params{
+	var (
+		plugin       *Plugin
+		pluginParams plugins.Params
+
+		listener     *v1.Listener
+		httpListener *v1.HttpListener
+
+		hcmSettings *hcm.HttpConnectionManagerSettings
+	)
+
+	BeforeEach(func() {
+		plugin = NewPlugin()
+		pluginParams = plugins.Params{
 			Snapshot: nil,
 		}
-		p := NewPlugin()
+		hcmSettings = &hcm.HttpConnectionManagerSettings{}
+		httpListener = &v1.HttpListener{
+			Options: &v1.HttpListenerOptions{
+				HttpConnectionManagerSettings: hcmSettings,
+			},
+		}
+		listener = &v1.Listener{}
+	})
+
+	It("should update listener properly", func() {
 		cfg := &envoyhttp.HttpConnectionManager{}
-		hcmSettings := &hcm.HttpConnectionManagerSettings{
+		hcmSettings = &hcm.HttpConnectionManagerSettings{
 			Tracing: &tracing.ListenerTracingSettings{
 				RequestHeadersForTags: []string{"header1", "header2"},
 				EnvironmentVariablesForTags: []*tracing.TracingTagEnvironmentVariable{
@@ -55,7 +75,8 @@ var _ = Describe("Plugin", func() {
 				ProviderConfig: nil,
 			},
 		}
-		err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
+
+		err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
@@ -113,15 +134,12 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("should update listener properly - with defaults", func() {
-		pluginParams := plugins.Params{
-			Snapshot: nil,
-		}
-		p := NewPlugin()
 		cfg := &envoyhttp.HttpConnectionManager{}
-		hcmSettings := &hcm.HttpConnectionManagerSettings{
+		hcmSettings = &hcm.HttpConnectionManagerSettings{
 			Tracing: &tracing.ListenerTracingSettings{},
 		}
-		err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
+
+		err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
@@ -138,33 +156,28 @@ var _ = Describe("Plugin", func() {
 	Context("should handle tracing provider config", func() {
 
 		It("when provider config is nil", func() {
-			pluginParams := plugins.Params{
-				Snapshot: nil,
-			}
-			p := NewPlugin()
 			cfg := &envoyhttp.HttpConnectionManager{}
-			hcmSettings := &hcm.HttpConnectionManagerSettings{
+			hcmSettings = &hcm.HttpConnectionManagerSettings{
 				Tracing: &tracing.ListenerTracingSettings{
 					ProviderConfig: nil,
 				},
 			}
-			err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
+			err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 			Expect(err).To(BeNil())
 			Expect(cfg.Tracing.Provider).To(BeNil())
 		})
 
 		Describe("when zipkin provider config", func() {
 			It("references invalid upstream", func() {
-				pluginParams := plugins.Params{
+				pluginParams = plugins.Params{
 					Snapshot: &v1.ApiSnapshot{
 						Upstreams: v1.UpstreamList{
 							// No valid upstreams
 						},
 					},
 				}
-				p := NewPlugin()
 				cfg := &envoyhttp.HttpConnectionManager{}
-				hcmSettings := &hcm.HttpConnectionManagerSettings{
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
 					Tracing: &tracing.ListenerTracingSettings{
 						ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
 							ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
@@ -178,20 +191,20 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
+				err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 				Expect(err).NotTo(BeNil())
 			})
 
 			It("references valid upstream", func() {
 				us := v1.NewUpstream("default", "valid")
-				pluginParams := plugins.Params{
+				pluginParams = plugins.Params{
 					Snapshot: &v1.ApiSnapshot{
 						Upstreams: v1.UpstreamList{us},
 					},
 				}
-				p := NewPlugin()
+
 				cfg := &envoyhttp.HttpConnectionManager{}
-				hcmSettings := &hcm.HttpConnectionManagerSettings{
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
 					Tracing: &tracing.ListenerTracingSettings{
 						ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
 							ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
@@ -209,7 +222,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
+				err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 				Expect(err).To(BeNil())
 
 				expectedEnvoyConfig := &envoytrace.ZipkinConfig{
@@ -233,10 +246,8 @@ var _ = Describe("Plugin", func() {
 			})
 
 			It("references cluster name", func() {
-				pluginParams := plugins.Params{}
-				p := NewPlugin()
 				cfg := &envoyhttp.HttpConnectionManager{}
-				hcmSettings := &hcm.HttpConnectionManagerSettings{
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
 					Tracing: &tracing.ListenerTracingSettings{
 						ProviderConfig: &tracing.ListenerTracingSettings_ZipkinConfig{
 							ZipkinConfig: &envoytrace_gloo.ZipkinConfig{
@@ -251,7 +262,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
+				err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 				Expect(err).To(BeNil())
 
 				expectedEnvoyConfig := &envoytrace.ZipkinConfig{
@@ -277,16 +288,15 @@ var _ = Describe("Plugin", func() {
 
 		Describe("when datadog provider config", func() {
 			It("references invalid upstream", func() {
-				pluginParams := plugins.Params{
+				pluginParams = plugins.Params{
 					Snapshot: &v1.ApiSnapshot{
 						Upstreams: v1.UpstreamList{
 							// No valid upstreams
 						},
 					},
 				}
-				p := NewPlugin()
 				cfg := &envoyhttp.HttpConnectionManager{}
-				hcmSettings := &hcm.HttpConnectionManagerSettings{
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
 					Tracing: &tracing.ListenerTracingSettings{
 						ProviderConfig: &tracing.ListenerTracingSettings_DatadogConfig{
 							DatadogConfig: &envoytrace_gloo.DatadogConfig{
@@ -300,20 +310,19 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
+				err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 				Expect(err).NotTo(BeNil())
 			})
 
 			It("references valid upstream", func() {
 				us := v1.NewUpstream("default", "valid")
-				pluginParams := plugins.Params{
+				pluginParams = plugins.Params{
 					Snapshot: &v1.ApiSnapshot{
 						Upstreams: v1.UpstreamList{us},
 					},
 				}
-				p := NewPlugin()
 				cfg := &envoyhttp.HttpConnectionManager{}
-				hcmSettings := &hcm.HttpConnectionManagerSettings{
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
 					Tracing: &tracing.ListenerTracingSettings{
 						ProviderConfig: &tracing.ListenerTracingSettings_DatadogConfig{
 							DatadogConfig: &envoytrace_gloo.DatadogConfig{
@@ -328,7 +337,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
+				err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 				Expect(err).To(BeNil())
 
 				expectedEnvoyConfig := &envoytrace.DatadogConfig{
@@ -349,10 +358,8 @@ var _ = Describe("Plugin", func() {
 			})
 
 			It("references cluster name", func() {
-				pluginParams := plugins.Params{}
-				p := NewPlugin()
 				cfg := &envoyhttp.HttpConnectionManager{}
-				hcmSettings := &hcm.HttpConnectionManagerSettings{
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
 					Tracing: &tracing.ListenerTracingSettings{
 						ProviderConfig: &tracing.ListenerTracingSettings_DatadogConfig{
 							DatadogConfig: &envoytrace_gloo.DatadogConfig{
@@ -364,7 +371,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
-				err := p.ProcessHcmSettings(pluginParams, hcmSettings, cfg)
+				err := plugin.ProcessHcmNetworkFilter(pluginParams, listener, httpListener, cfg)
 				Expect(err).To(BeNil())
 
 				expectedEnvoyConfig := &envoytrace.DatadogConfig{
@@ -388,10 +395,9 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("should update routes properly", func() {
-		p := NewPlugin()
 		in := &v1.Route{}
 		out := &envoy_config_route_v3.Route{}
-		err := p.ProcessRoute(plugins.RouteParams{}, in, out)
+		err := plugin.ProcessRoute(plugins.RouteParams{}, in, out)
 		Expect(err).NotTo(HaveOccurred())
 
 		inFull := &v1.Route{
@@ -403,7 +409,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 		outFull := &envoy_config_route_v3.Route{}
-		err = p.ProcessRoute(plugins.RouteParams{}, inFull, outFull)
+		err = plugin.ProcessRoute(plugins.RouteParams{}, inFull, outFull)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(outFull.Decorator.Operation).To(Equal("hello"))
 		Expect(outFull.Decorator.Propagate).To(Equal(&wrappers.BoolValue{Value: false}))
@@ -413,10 +419,9 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("should update routes properly - with defaults", func() {
-		p := NewPlugin()
 		in := &v1.Route{}
 		out := &envoy_config_route_v3.Route{}
-		err := p.ProcessRoute(plugins.RouteParams{}, in, out)
+		err := plugin.ProcessRoute(plugins.RouteParams{}, in, out)
 		Expect(err).NotTo(HaveOccurred())
 
 		inFull := &v1.Route{
@@ -432,7 +437,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 		outFull := &envoy_config_route_v3.Route{}
-		err = p.ProcessRoute(plugins.RouteParams{}, inFull, outFull)
+		err = plugin.ProcessRoute(plugins.RouteParams{}, inFull, outFull)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(outFull.Decorator.Operation).To(Equal("hello"))
 		Expect(outFull.Decorator.Propagate).To(BeNil())
