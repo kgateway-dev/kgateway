@@ -45,19 +45,9 @@ func (p *plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 }
 
 func shouldIncludeTlsInspectorListenerFilter(in *v1.Listener) bool {
-	if includeTlsInspectorForListener(in) {
-		return true
-	}
-
-	if includeTlsInspectorForTcpListener(in.GetTcpListener()) {
-		return true
-	}
-
-	if includeTlsInspectorForHybridListener(in.GetHybridListener()) {
-		return true
-	}
-
-	return false
+	return includeTlsInspectorForListener(in) ||
+		includeTlsInspectorForTcpListener(in.GetTcpListener()) ||
+		includeTlsInspectorForHybridListener(in.GetHybridListener())
 }
 
 func includeTlsInspectorForListener(in *v1.Listener) bool {
@@ -80,7 +70,8 @@ func includeTlsInspectorForHybridListener(in *v1.HybridListener) bool {
 		switch matchedListener.GetListenerType().(type) {
 		case *v1.MatchedListener_TcpListener:
 			// If a sub-TCPListener includes ssl config, return true
-			if includeTlsInspectorForTcpListener(matchedListener.GetTcpListener()) {
+			if includeTlsInspectorForTcpListener(matchedListener.GetTcpListener()) ||
+				matchedListener.GetMatcher().GetSslConfig() != nil {
 				return true
 			}
 
