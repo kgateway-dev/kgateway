@@ -3,6 +3,8 @@ package tcp_test
 import (
 	"time"
 
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/golang/mock/gomock"
@@ -24,6 +26,7 @@ import (
 
 var _ = Describe("Plugin", func() {
 	var (
+		listener    *v1.Listener
 		tcpListener *v1.TcpListener
 
 		ctrl          *gomock.Controller
@@ -102,6 +105,7 @@ var _ = Describe("Plugin", func() {
 				IdleTimeout:     prototime.DurationToProto(5 * time.Second),
 				TunnelingConfig: &tcp.TcpProxySettings_TunnelingConfig{Hostname: "proxyhostname"},
 			}
+			listener = &v1.Listener{}
 			tcpListener = &v1.TcpListener{
 				TcpHosts: []*v1.TcpHost{},
 				Options: &v1.TcpListenerOptions{
@@ -109,6 +113,11 @@ var _ = Describe("Plugin", func() {
 				},
 			}
 		})
+
+		createFilterChains := func() ([]*envoy_config_listener_v3.FilterChain, error) {
+			p := NewPlugin(sslTranslator)
+			return p.CreateTcpFilterChains(plugins.Params{Snapshot: snap}, listener, tcpListener)
+		}
 
 		It("can copy over tcp plugin settings", func() {
 			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
@@ -127,8 +136,7 @@ var _ = Describe("Plugin", func() {
 				},
 			})
 
-			p := NewPlugin(sslTranslator)
-			filterChains, err := p.CreateTcpFilterChains(plugins.Params{Snapshot: snap}, tcpListener)
+			filterChains, err := createFilterChains()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filterChains).To(HaveLen(1))
 
@@ -157,8 +165,8 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			})
-			p := NewPlugin(sslTranslator)
-			filterChains, err := p.CreateTcpFilterChains(plugins.Params{Snapshot: snap}, tcpListener)
+
+			filterChains, err := createFilterChains()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filterChains).To(HaveLen(1))
 
@@ -180,8 +188,8 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			})
-			p := NewPlugin(sslTranslator)
-			filterChains, err := p.CreateTcpFilterChains(plugins.Params{Snapshot: snap}, tcpListener)
+
+			filterChains, err := createFilterChains()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filterChains).To(HaveLen(1))
 
@@ -215,8 +223,8 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			})
-			p := NewPlugin(sslTranslator)
-			filterChains, err := p.CreateTcpFilterChains(plugins.Params{Snapshot: snap}, tcpListener)
+
+			filterChains, err := createFilterChains()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filterChains).To(HaveLen(1))
 
@@ -255,8 +263,7 @@ var _ = Describe("Plugin", func() {
 				ResolveDownstreamSslConfig(snap.Secrets, sslConfig).
 				Return(&envoyauth.DownstreamTlsContext{}, nil)
 
-			p := NewPlugin(sslTranslator)
-			filterChains, err := p.CreateTcpFilterChains(plugins.Params{Snapshot: snap}, tcpListener)
+			filterChains, err := createFilterChains()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filterChains).To(HaveLen(1))
 			Expect(filterChains[0].Filters).To(HaveLen(2))
@@ -300,9 +307,7 @@ var _ = Describe("Plugin", func() {
 				ResolveDownstreamSslConfig(snap.Secrets, sslConfig).
 				Return(&envoyauth.DownstreamTlsContext{}, nil)
 
-			p := NewPlugin(sslTranslator)
-			filterChains, err := p.CreateTcpFilterChains(plugins.Params{Snapshot: snap}, tcpListener)
-
+			filterChains, err := createFilterChains()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filterChains).To(HaveLen(1))
 
