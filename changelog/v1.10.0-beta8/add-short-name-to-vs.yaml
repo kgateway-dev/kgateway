@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/5591
+    resolvesIssue: false
+    description: Add another shortname to all crds to not collide with other products like Istio's VS
