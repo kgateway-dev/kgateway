@@ -71,9 +71,7 @@ For more information on configuring traffic filters, see the [Transformation gui
 
 ### Filter flow description
 
-Review the following diagram of how Gloo Edge filters traffic, depending on what you configure.
-
-Notes on the filter policies that you can configure:
+Review the following diagram of how Gloo Edge filters traffic, depending on what you configure. Notes on the filter policies that you can configure:
 * The filters are applied in the order that is shown in the diagram. For example, if you apply both CORS and DLP security filters, a request is processed for CORS first, and then DLP. You cannot change the order.
 * If you add a policy at both the `VirtualService` and `Route` levels, the `Route` policy takes precedence.
 
