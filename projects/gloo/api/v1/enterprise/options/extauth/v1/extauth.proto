@@ -310,6 +310,11 @@ message UserSession {
         // When set, refresh expired id-tokens using the refresh-token. Defaults to true.
         // Explicitly set to false to disable refreshing.
         google.protobuf.BoolValue allow_refreshing = 4;
+        // Specifies a time buffer in which an id-token will be refreshed prior to its
+        // actual expiration. Defaults to 2 seconds. A duration of 0 will only refresh
+        // tokens after they have already expired. To refresh tokens, you must also set
+        // 'allowRefreshing' to 'true'; otherwise, this field is ignored.
+        google.protobuf.Duration pre_expiry_buffer = 5;
     }
 
     // should we fail auth flow when failing to get a session from redis, or allow it to continue,
