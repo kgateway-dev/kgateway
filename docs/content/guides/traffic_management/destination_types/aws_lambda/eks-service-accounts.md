@@ -1,42 +1,100 @@
 ---
-title: AWS Lambda + EKS ServiceAccounts
+title: AWS Lambda with EKS ServiceAccounts
 weight: 101
 description: Using EKS ServiceAccounts with Gloo Edge for AWS Lambda
 ---
 
-# How to use EKS ServiceAccounts to authenticate AWS Lambda requests with Gloo Edge
+AWS offers the ability to associate Kubernetes **Service Accounts** with **IAM Roles**.
+This [AWS article](https://docs.aws.amazon.com/eks/latest/userguide/specify-service-account-role.html) 
+explains the feature in more detail.  
+Gloo Edge supports discovering and invoking **AWS Lambdas** using these projected **Service Accounts**.
 
-AWS offers the ability to associate Kubernetes ServiceAccounts with IAM roles.
-This [blog post](https://aws.amazon.com/blogs/opensource/introducing-fine-grained-iam-roles-service-accounts/) 
-explains the feature in more detail.
+The following list describes the different resources that are involved in this setup:
+* an EKS cluster with an attached IAM **OpenID Provider** (OP) 
+* this OP will generate "WebIdentities" which are reflecting Kubernetes **ServiceAccounts** (SA)
+* these "WebIdentities" can assume (AWS) IAM **Roles**
+* an IAM **Role** is bound to one or more IAM **Policies**
+* IAM **Policies** grant access to AWS resources, AWS **Lambdas** in this case
 
-Gloo Edge Api Gateway now supports discovering and authenticating AWS Lambdas in kubernetes using 
-these projected ServiceAccounts.
+There are many different ways of building these objects, including using the AWS Management Console.
 
-## Configuring EKS cluster to use IAM ServiceAccount roles
 
-The first step to enabling this IAM ServiceAccount roles with Gloo Edge is creating/configuring an EKS
-cluster to use this feature.
+## Configuring an EKS cluster to use an IAM role
 
-A full tutorial can be found [in AWS docs](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html).
+### Step 1: Associate an OpenID Provider to your EKS cluster
+The first step is to associate an OpenID Provider to your EKS cluster. A full tutorial can be found [in AWS docs](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html).
+
 Once the cluster exists and is configured properly, return here for the rest of the tutorial. The service account 
 webhook is available by default in all EKS clusters, even if the workload does not explicitly show up.
 
-Note: The aws role needs to be associated with a policy which has access to the following 4
-Actions for this tutorial to function properly.
+### Step 2: Create an IAM Policy
 
-    * lambda:ListFunctions
-    * lambda:InvokeFunction
-    * lambda:GetFunction
-    * lambda:InvokeAsync
+Create a new IAM Policy which has access to the following four actions for this tutorial to function properly:
 
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "lambda:ListFunctions",
+                "lambda:InvokeFunction",
+                "lambda:GetFunction",
+                "lambda:InvokeAsync"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+### Step 3: Create an IAM Role
+
+Create a new IAM Role with your Policy attached to it. 
+
+Then, you must modify the role's trust policy to enable the WebIdentities (projected ServiceAccount) to assume that Role.
+[Here](https://docs.aws.amazon.com/IAM/latest/UserGuide/roles-managingrole-editing-cli.html) is the documentation for the AWS CLI. The following JSON payload shows an example of trust relationship:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "ec2.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    },
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::<ACCOUNT ID>:oidc-provider/oidc.eks.eu-central-1.amazonaws.com/id/925F6E6153F324A5D32B7517B1C51919"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "oidc.eks.eu-central-1.amazonaws.com/id/925F6E6153F324A5D32B7517B1C51919:sub": [
+            "system:serviceaccount:gloo-system:discovery",
+            "system:serviceaccount:gloo-system:gateway-proxy"
+          ]
+        }
+      }
+    }
+  ]
+}
+```
+
+### Step 4: take note of the ARNs
 After creating this role the following ENV variables need to be set for the remainder of this demo
 
-    * AWS_REGION: The region in which the lambdas are located
-    * AWS_ROLE_ARN: The role ARN of the role created above.
-    * $SECONDARY_AWS_ROLE_ARN(optional): A secondary role arn with lambda access.
+     export REGION=<region> # The region in which the lambdas are located.
+     export AWS_ROLE_ARN=<role-arn> # The Role ARN of the Role created above.
+     export SECONDARY_AWS_ROLE_ARN=<secondary-role-arn> # (Optional): A secondary Role ARN with Lambda access.
 
-The ARN will be of the form: `arn:aws:iam::123456789012:user/Development/product_1234/*`
+The ROle ARN will be of the form: `arn:aws:iam::<AWS ACCOUNT ID>:role/<ROLE NAME>`
 For more info on ARNs see: https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
 
 
@@ -47,36 +105,38 @@ will work exactly the same, with slightly different helm values as specified bel
 
 {{< tabs >}}
 {{< tab name="Open Source" codelang="shell">}}
-helm install gloo https://storage.googleapis.com/solo-public-helm/charts/gloo-1.5.0-beta21.tgz \
+helm install gloo gloo/gloo \
  --namespace gloo-system --create-namespace --values - <<EOF
 settings:
   aws:
     enableServiceAccountCredentials: true
+    stsCredentialsRegion: ${REGION}
 gateway:
   proxyServiceAccount:
     extraAnnotations:
-      eks.amazonaws.com/role-arn: $AWS_ROLE_ARN
+      eks.amazonaws.com/role-arn: ${AWS_ROLE_ARN}
 discovery:
   serviceAccount:
     extraAnnotations:
-      eks.amazonaws.com/role-arn: $AWS_ROLE_ARN
+      eks.amazonaws.com/role-arn: ${AWS_ROLE_ARN}
 EOF
 {{< /tab >}}
 {{< tab name="Enterprise" codelang="shell">}}
-helm install gloo https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-1.5.0-beta8.tgz \
+helm install gloo glooe/gloo-ee \
  --namespace gloo-system --create-namespace --set-string license_key=YOUR_LICENSE_KEY --values - <<EOF
 gloo:
   settings:
     aws:
       enableServiceAccountCredentials: true
+      stsCredentialsRegion: ${REGION}
   gateway:
     proxyServiceAccount:
       extraAnnotations:
-        eks.amazonaws.com/role-arn: "arn:aws:iam::410461945957:role/eksctl-sa-iam-test-addon-iamserviceaccount-d-Role1-1VPIXPWL4TQQM"
+        eks.amazonaws.com/role-arn: ${AWS_ROLE_ARN}
   discovery:
     serviceAccount:
       extraAnnotations:
-        eks.amazonaws.com/role-arn: "arn:aws:iam::410461945957:role/eksctl-sa-iam-test-addon-iamserviceaccount-d-Role1-1VPIXPWL4TQQM"
+        eks.amazonaws.com/role-arn: ${AWS_ROLE_ARN}
 EOF
 {{< /tab >}}
 {{< /tabs >}}
@@ -91,12 +151,12 @@ kubectl rollout status deployment -n gloo-system discovery
 ```
 
 
-## Routing to our Lambda
+## Routing to your Lambda(s)
 
-Now that Gloo Edge is running with our credentials set up, we can go ahead and create our Gloo Edge config to 
-enable routing to our AWS Lambda
+Now that Gloo Edge is running with our credentials set up, you can go ahead and create the Gloo Edge config to enable routing to your AWS Lambdas.
 
-First we need to create our Upstream.
+First create an Upstream CR:
+
 ```yaml
 kubectl apply -f - <<EOF
 apiVersion: gloo.solo.io/v1
@@ -105,8 +165,9 @@ metadata:
   name: lambda
   namespace: gloo-system
 spec:
-  aws:
-    region: $AWS_REGION
+  aws: 
+    region: ${REGION}
+    roleArn: ${AWS_ROLE_ARN}
 EOF
 ```
 
