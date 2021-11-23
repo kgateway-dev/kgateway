@@ -13,6 +13,7 @@ spec:
     plural: upstreamgroups
     shortNames:
     - ug
+    - gug
     singular: upstreamgroup
   scope: Namespaced
   versions:
