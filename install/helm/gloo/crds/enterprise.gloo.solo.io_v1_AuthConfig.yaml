@@ -306,6 +306,8 @@ spec:
                                           format: int32
                                           type: integer
                                       type: object
+                                    preExpiryBuffer:
+                                      type: string
                                   type: object
                               type: object
                             sessionIdHeaderName:
