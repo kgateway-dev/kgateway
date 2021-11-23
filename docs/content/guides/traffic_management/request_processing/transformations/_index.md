@@ -6,6 +6,8 @@ description: Use the Gloo Edge Transformation API to transform requests and resp
 
 One of the core features of any API Gateway is the ability to transform the traffic that it manages. To really enable the decoupling of your services, the API Gateway should be able to mutate requests before forwarding them to your upstream services and do the same with the resulting responses before they reach the downstream clients. Gloo Edge delivers on this promise by providing you with a powerful transformation API.
 
+To review where transformations happen as Gloo Edge filters traffic, see [Traffic processing]({{% versioned_link_path fromRoot="/introduction/traffic_filter/" %}}).
+
 ## Defining a transformation
 Transformations are defined by adding the `transformations` attribute to your Virtual Services. You can define this attribute on three different Virtual Service sub-resources:
  
