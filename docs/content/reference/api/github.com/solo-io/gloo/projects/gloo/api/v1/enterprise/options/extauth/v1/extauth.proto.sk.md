@@ -511,6 +511,7 @@ Deprecated: Prefer OAuth2
 "keyPrefix": string
 "cookieName": string
 "allowRefreshing": .google.protobuf.BoolValue
+"preExpiryBuffer": .google.protobuf.Duration
 
 ```
 
@@ -520,6 +521,7 @@ Deprecated: Prefer OAuth2
 | `keyPrefix` | `string` | Key prefix inside redis. |
 | `cookieName` | `string` | Cookie name to set and store the session id. If empty the default "__session" is used. |
 | `allowRefreshing` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When set, refresh expired id-tokens using the refresh-token. Defaults to true. Explicitly set to false to disable refreshing. |
+| `preExpiryBuffer` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies a time buffer in which an id-token will be refreshed prior to its actual expiration. Defaults to 2 seconds. A duration of 0 will only refresh tokens after they have already expired. To refresh tokens, you must also set 'allowRefreshing' to 'true'; otherwise, this field is ignored. |
 
 
 
