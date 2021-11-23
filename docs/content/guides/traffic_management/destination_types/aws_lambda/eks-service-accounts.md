@@ -90,9 +90,9 @@ Then, you must modify the role's trust policy to enable the WebIdentities (proje
 ### Step 4: take note of the ARNs
 After creating this role the following ENV variables need to be set for the remainder of this demo
 
-    * AWS_REGION: the region in which the lambdas are located
-    * AWS_ROLE_ARN: the Role ARN of the Role created above.
-    * SECONDARY_AWS_ROLE_ARN (optional): a secondary Role ARN with Lambda access.
+     export REGION=<region> # The region in which the lambdas are located.
+     export AWS_ROLE_ARN=<role-arn> # The Role ARN of the Role created above.
+     export SECONDARY_AWS_ROLE_ARN=<secondary-role-arn> # (Optional): A secondary Role ARN with Lambda access.
 
 The ROle ARN will be of the form: `arn:aws:iam::<AWS ACCOUNT ID>:role/<ROLE NAME>`
 For more info on ARNs see: https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
