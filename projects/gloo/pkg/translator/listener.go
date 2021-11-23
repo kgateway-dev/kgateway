@@ -61,11 +61,7 @@ func (l *listenerTranslatorInstance) ComputeListener(params plugins.Params) *env
 	}
 
 	// run the Listener Plugins
-	for _, plug := range l.plugins {
-		listenerPlugin, ok := plug.(plugins.ListenerPlugin)
-		if !ok {
-			continue
-		}
+	for _, listenerPlugin := range l.plugins {
 		if err := listenerPlugin.ProcessListener(params, l.listener, out); err != nil {
 			validation.AppendListenerError(l.report,
 				validationapi.ListenerReport_Error_ProcessingError,

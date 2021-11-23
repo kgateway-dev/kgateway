@@ -209,6 +209,7 @@
 |discovery.deployment.resources.requests.cpu|string||amount of CPUs|
 |discovery.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |discovery.fdsMode|string|WHITELIST|mode for function discovery (blacklist or whitelist). See more info in the settings docs|
+|discovery.udsOptions.enabled|bool||Enable upstream discovery service. Defaults to true.|
 |discovery.enabled|bool|true|enable Discovery features|
 |discovery.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |discovery.serviceAccount.disableAutomount|bool||disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|

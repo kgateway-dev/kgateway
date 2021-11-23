@@ -263,9 +263,10 @@ func getPluginContext(globalSettings bool, authOnVirtualHost, authOnRoute, authO
 		},
 	}
 	virtualHostParams := plugins.VirtualHostParams{
-		Params:   params,
-		Proxy:    proxy,
-		Listener: proxy.Listeners[0],
+		Params:       params,
+		Proxy:        proxy,
+		Listener:     proxy.Listeners[0],
+		HttpListener: proxy.Listeners[0].GetHttpListener(),
 	}
 	routeParams := plugins.RouteParams{
 		VirtualHostParams: virtualHostParams,

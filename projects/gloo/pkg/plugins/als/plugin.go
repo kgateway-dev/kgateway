@@ -3,11 +3,9 @@ package als
 import (
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	envoygrpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -25,7 +23,7 @@ func NewPlugin() *Plugin {
 }
 
 var _ plugins.Plugin = new(Plugin)
-var _ plugins.ListenerPlugin = new(Plugin)
+var _ plugins.HttpConnectionManagerPlugin = new(Plugin)
 
 type Plugin struct {
 }
@@ -34,78 +32,27 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *envoy_config_listener_v3.Listener) error {
-	if in.GetOptions() == nil {
+func (p *Plugin) ProcessHcmNetworkFilter(params plugins.Params, parentListener *v1.Listener, _ *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
+	if out == nil {
 		return nil
 	}
-	alSettings := in.GetOptions()
-	if alSettings.GetAccessLoggingService() == nil {
+	// AccessLog settings are defined on the root listener, and applied to each HCM instance
+	alsSettings := parentListener.GetOptions().GetAccessLoggingService()
+	if alsSettings == nil {
 		return nil
 	}
-	switch listenerType := in.GetListenerType().(type) {
-	case *v1.Listener_HttpListener:
-		if listenerType.HttpListener == nil {
-			return nil
-		}
-		for _, f := range out.GetFilterChains() {
-			for i, filter := range f.GetFilters() {
-				if filter.GetName() == wellknown.HTTPConnectionManager {
-					// get config
-					var hcmCfg envoyhttp.HttpConnectionManager
-					err := translatorutil.ParseTypedConfig(filter, &hcmCfg)
-					// this should never error
-					if err != nil {
-						return err
-					}
 
-					accessLogs := hcmCfg.GetAccessLog()
-					hcmCfg.AccessLog, err = handleAccessLogPlugins(alSettings.GetAccessLoggingService(), accessLogs, params)
-					if err != nil {
-						return err
-					}
-
-					f.GetFilters()[i], err = translatorutil.NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, &hcmCfg)
-					// this should never error
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
-	case *v1.Listener_TcpListener:
-		if listenerType.TcpListener == nil {
-			return nil
-		}
-		for _, f := range out.GetFilterChains() {
-			for i, filter := range f.GetFilters() {
-				if filter.GetName() == wellknown.TCPProxy {
-					// get config
-					var tcpCfg envoytcp.TcpProxy
-					err := translatorutil.ParseTypedConfig(filter, &tcpCfg)
-					// this should never error
-					if err != nil {
-						return err
-					}
-
-					accessLogs := tcpCfg.GetAccessLog()
-					tcpCfg.AccessLog, err = handleAccessLogPlugins(alSettings.GetAccessLoggingService(), accessLogs, params)
-					if err != nil {
-						return err
-					}
-
-					f.GetFilters()[i], err = translatorutil.NewFilterWithTypedConfig(wellknown.TCPProxy, &tcpCfg)
-					// this should never error
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
-	}
-	return nil
+	var err error
+	out.AccessLog, err = ProcessAccessLogPlugins(alsSettings, out.GetAccessLog())
+	return err
 }
 
-func handleAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoyal.AccessLog, params plugins.Params) ([]*envoyal.AccessLog, error) {
+// The AccessLogging plugin configures access logging for envoy, regardless of whether it will be applied to
+// an HttpConnectionManager or TcpProxy NetworkFilter. We have exposed HttpConnectionManagerPlugins to enable
+// fine grained configuration of the HCM across multiple plugins. However, the TCP proxy is still configured
+// by the TCP plugin only. To keep our access logging translation in a single place, we expose this function
+// and the Tcp plugin calls out to it.
+func ProcessAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoyal.AccessLog) ([]*envoyal.AccessLog, error) {
 	results := make([]*envoyal.AccessLog, 0, len(service.GetAccessLog()))
 	for _, al := range service.GetAccessLog() {
 		switch cfgType := al.GetOutputDestination().(type) {
@@ -121,7 +68,7 @@ func handleAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoyal
 			results = append(results, &newAlsCfg)
 		case *als.AccessLog_GrpcService:
 			var cfg envoygrpc.HttpGrpcAccessLogConfig
-			if err := copyGrpcSettings(&cfg, cfgType, params); err != nil {
+			if err := copyGrpcSettings(&cfg, cfgType); err != nil {
 				return nil, err
 			}
 			newAlsCfg, err := translatorutil.NewAccessLogWithConfig(wellknown.HTTPGRPCAccessLog, &cfg)
@@ -135,7 +82,7 @@ func handleAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoyal
 	return logCfg, nil
 }
 
-func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, alsSettings *als.AccessLog_GrpcService, params plugins.Params) error {
+func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, alsSettings *als.AccessLog_GrpcService) error {
 	if alsSettings.GrpcService == nil {
 		return eris.New("grpc service object cannot be nil")
 	}
