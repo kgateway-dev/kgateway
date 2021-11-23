@@ -69,7 +69,7 @@ func (p *Plugin) ProcessVirtualHost(
 ) error {
 
 	// Ext_authz filter is not configured on listener, do nothing
-	if !p.isExtAuthzFilterConfigured(params.Listener.GetHttpListener(), params.Snapshot.Upstreams) {
+	if !p.isExtAuthzFilterConfigured(params.HttpListener, params.Snapshot.Upstreams) {
 		return nil
 	}
 
@@ -91,7 +91,7 @@ func (p *Plugin) ProcessVirtualHost(
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 
 	// Ext_authz filter is not configured on listener, do nothing
-	if !p.isExtAuthzFilterConfigured(params.Listener.GetHttpListener(), params.Snapshot.Upstreams) {
+	if !p.isExtAuthzFilterConfigured(params.HttpListener, params.Snapshot.Upstreams) {
 		return nil
 	}
 
@@ -117,7 +117,7 @@ func (p *Plugin) ProcessWeightedDestination(
 ) error {
 
 	// Ext_authz filter is not configured on listener, do nothing
-	if !p.isExtAuthzFilterConfigured(params.Listener.GetHttpListener(), params.Snapshot.Upstreams) {
+	if !p.isExtAuthzFilterConfigured(params.HttpListener, params.Snapshot.Upstreams) {
 		return nil
 	}
 

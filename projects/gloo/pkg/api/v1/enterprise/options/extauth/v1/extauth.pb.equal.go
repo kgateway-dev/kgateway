@@ -2118,6 +2118,16 @@ func (m *UserSession_RedisSession) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetPreExpiryBuffer()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPreExpiryBuffer()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPreExpiryBuffer(), target.GetPreExpiryBuffer()) {
+			return false
+		}
+	}
+
 	return true
 }
 

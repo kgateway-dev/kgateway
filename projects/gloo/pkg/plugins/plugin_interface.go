@@ -38,8 +38,9 @@ type Params struct {
 
 type VirtualHostParams struct {
 	Params
-	Proxy    *v1.Proxy
-	Listener *v1.Listener
+	Proxy        *v1.Proxy
+	Listener     *v1.Listener
+	HttpListener *v1.HttpListener
 }
 
 type RouteParams struct {
@@ -146,7 +147,13 @@ func (s StagedNetworkFilterList) Swap(i, j int) {
 
 type TcpFilterChainPlugin interface {
 	Plugin
-	CreateTcpFilterChains(params Params, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error)
+	CreateTcpFilterChains(params Params, parentListener *v1.Listener, in *v1.TcpListener) ([]*envoy_config_listener_v3.FilterChain, error)
+}
+
+// HttpConnectionManager Plugins
+type HttpConnectionManagerPlugin interface {
+	Plugin
+	ProcessHcmNetworkFilter(params Params, parentListener *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error
 }
 
 type HttpFilterPlugin interface {
@@ -279,4 +286,5 @@ type PluginRegistry interface {
 	GetListenerPlugins() []ListenerPlugin
 	GetTcpFilterChainPlugins() []TcpFilterChainPlugin
 	GetHttpFilterPlugins() []HttpFilterPlugin
+	GetHttpConnectionManagerPlugins() []HttpConnectionManagerPlugin
 }
