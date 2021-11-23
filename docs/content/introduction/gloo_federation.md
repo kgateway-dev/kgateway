@@ -1,5 +1,5 @@
 ---
-title: Gloo Edge Federation
+title: Gloo Edge federation
 menuTitle: Federation
 weight: 45
 ---
