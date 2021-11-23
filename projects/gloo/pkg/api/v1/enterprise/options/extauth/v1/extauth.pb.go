@@ -3031,7 +3031,8 @@ type UserSession_RedisSession struct {
 	AllowRefreshing *wrappers.BoolValue `protobuf:"bytes,4,opt,name=allow_refreshing,json=allowRefreshing,proto3" json:"allow_refreshing,omitempty"`
 	// Specifies a time buffer in which an id-token will be refreshed prior to its
 	// actual expiration. Defaults to 2 seconds. A duration of 0 will only refresh
-	// tokens after they have already expired.
+	// tokens after they have already expired. To refresh tokens, you must also set
+	// 'allowRefreshing' to 'true'; otherwise, this field is ignored.
 	PreExpiryBuffer *duration.Duration `protobuf:"bytes,5,opt,name=pre_expiry_buffer,json=preExpiryBuffer,proto3" json:"pre_expiry_buffer,omitempty"`
 }
 
