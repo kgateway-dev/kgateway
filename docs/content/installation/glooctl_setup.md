@@ -37,12 +37,12 @@ Server: version undefined, could not find any version of gloo running
 
 #### Update glooctl CLI version
 
-You should always try to use the same minor `glooctl` version as the version of Gloo Edge installed in your cluster, i.e., if you're using Gloo Edge 1.6.x, you should use a 1.6.x release of `glooctl`.
+You should always try to use the same minor `glooctl` version as the version of Gloo Edge installed in your cluster. For example, if you're using Gloo Edge {{< readfile file="static/content/gee_version_latest.md" markdown="true">}}, you should use a {{< readfile file="static/content/gee_version_latest.md" markdown="true">}} release of `glooctl`.
 
 Fortunately, `glooctl` is able to update itself to different versions. To change the version of glooctl you currently have installed, you can run:
 
 ```bash
-glooctl upgrade --release v1.6.0
+glooctl upgrade --release v{{< readfile file="static/content/gee_version_latest.md" markdown="true">}}
 ```
 
 **Note**: The glooctl upgrade command can also be used to roll back your glooctl version to previous releases. This can be convenient if you are using an older version of Gloo Edge and want to use the same verison of glooctl to ensure compatability.
