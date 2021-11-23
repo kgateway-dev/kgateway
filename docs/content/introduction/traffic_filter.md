@@ -73,24 +73,29 @@ For more information on configuring traffic filters, see the [Transformation gui
 
 Review the following diagram of how Gloo Edge filters traffic, depending on what you configure.
 
+Notes on the filter policies that you can configure:
+* The filters are applied in the order that is shown in the diagram. For example, if you apply both CORS and DLP security filters, a request is processed for CORS first, and then DLP. You cannot change the order.
+* If you add a policy at both the `VirtualService` and `Route` levels, the `Route` policy takes precedence.
+
 <figure><img src="{{% versioned_link_path fromRoot="/img/traffic-filter-flow.svg" %}}">
 <figcaption style="text-align:center;font-style:italic">Figure: Filter flow.</figcaption></figure>
 
 1.  **External auth**: When you enable the external authorization and authentication service in Gloo Edge Enterprise, you can secure access to your apps with authentication tools like OIDC, API keys, OAuth2, or OPA. External auth is used to organize the flow in this diagram so that you can quickly see how traffic can be manipulated before or after requiring the client to log in. For more information, see [Authentication and authorization]({{% versioned_link_path fromRoot="/guides/security/auth/" %}}).
-2.  **Before or after external auth**: You can configure several traffic filters before or after a client request is authorized.
+2.  **Before or after external auth**: You can configure several traffic filters either before, after, or both before and after a client request is authorized.
     *  **JWT**: You can verify a JSON web token (JWT) signature, check the claims, and add them to new headers. To set JWT before and/or after external auth, use the `JwtStaged` setting. For more information, see [JWT and access control]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control/" %}}).
     *  **Transformation**: Apply transformation templates to the header or body request. If the body is a JSON payload, you can also extract values from it. The `clearRouteCache` setting clears the route that was initially selected by the HTTP connection manager, with the final route selected when the request reaches the Router filter. To set transformations before and/or after external auth, use the `stagedTransformation` setting. For more information, see [Transformations]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/" %}}).
     *  **Rate limiting**: Rate limiting can take place before or after external auth. You can use the `SetStyle` API to build complex rules for rate limiting. For more information, see [Rate limiting]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/" %}}).
-3.  **Other filters**: Review the information about other filters that you can apply. If you add a policy at both the `VirtualService` and `Route` levels, the `Route` policy takes precedence.
+3.  **Filters only before external auth**: Review the information about other filters that you can apply only before external auth.
     * **Fault**: See the [Faults guide]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/faults/" %}}).
     * **CORS**: See the [Cross-origin resources sharing security guide]({{% versioned_link_path fromRoot="/guides/security/cors/" %}}).
     * **DLP**: See the [Data loss prevention security guide]({{% versioned_link_path fromRoot="/guides/security/data_loss_prevention/" %}}).
     * **WAF**: See the [Web application firewall security guide]({{% versioned_link_path fromRoot="/guides/security/waf/" %}}).
     * **Sanitize**: See the [sanitize proto reference]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/extauth/sanitize.proto.sk/" %}}).
+4.  **Filters only after external auth**: Review the information about other filters that you can apply only after external auth.
     * **RBAC**: Note that the RBAC filter requires the `JwtStaged` filter. See the [RBAC proto reference]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/" %}}).
     * **gRPC-web**: See the [gRPC web guide]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" %}}).
     * **CSRF**: See the [Cross-site request forgery security guide]({{% versioned_link_path fromRoot="/guides/security/csrf/" %}}).
-4.  **Router**: With the router filter, you can configure many different settings before the request reaches your upstream service, such as the following. For more information, see the [route proto reference]({{% versioned_link_path fromRoot="/reference/api/envoy/api/v2/route/route.proto.sk/" %}}).
+5.  **Router**: With the router filter, you can configure many different settings before the request reaches your upstream service, such as the following. For more information, see the [route proto reference]({{% versioned_link_path fromRoot="/reference/api/envoy/api/v2/route/route.proto.sk/" %}}).
     * Add or remove request headers
     * Add or remove response headers
     * Set upstream timeouts
@@ -100,5 +105,3 @@ Review the following diagram of how Gloo Edge filters traffic, depending on what
     * Retry policies
     * Detect outliers
     * Shadow or mirror requests
-
-
