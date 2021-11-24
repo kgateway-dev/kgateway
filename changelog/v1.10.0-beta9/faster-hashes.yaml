@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Use the faster hashes for routes in addition to other resources.
+    issueLink: https://github.com/solo-io/gloo/issues/5621fa

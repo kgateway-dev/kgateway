@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/solo-io/solo-kit/test/matchers"
+
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -250,7 +252,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		listenersWithFallback := listeners.Items[fallbackListenerName]
 		clustersWithFallback := clusters.Items[fallbackClusterName]
 
-		Expect(sanitizedRoutes.ResourceProto()).To(Equal(expectedRoutes))
+		Expect(sanitizedRoutes.ResourceProto()).To(matchers.MatchProto(expectedRoutes))
 		Expect(listenersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackListener))
 		Expect(clustersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackCluster))
 	})
@@ -318,7 +320,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		listenersWithFallback := listeners.Items[fallbackListenerName]
 		clustersWithFallback := clusters.Items[fallbackClusterName]
 
-		Expect(sanitizedRoutes.ResourceProto()).To(Equal(expectedRoutes))
+		Expect(sanitizedRoutes.ResourceProto()).To(matchers.MatchProto(expectedRoutes))
 		Expect(listenersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackListener))
 		Expect(clustersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackCluster))
 
