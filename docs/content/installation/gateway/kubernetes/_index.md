@@ -15,13 +15,13 @@ Minimum required Kubernetes is 1.11.x. For older versions see our [release suppo
 
 ## Before you begin
 
-1. Make sure that you prepared your Kubernetes cluster according to the [platform configuration for Kubernetes instructions]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}).
+1. Make sure that you prepared your Kubernetes cluster according to the [instructions for platform configuration]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}).
    {{% notice note %}}
    Pay attention to provider-specific information in the setup guide. For example, [OpenShift]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#openshift" >}}) requires stricter multi-tenant support, so the setup guide includes an example Helm chart `values.yaml` file that you must supply while installing Gloo Edge Enterprise.
    {{% /notice %}}
 2. Get your Gloo Edge Enterprise license key. If you don't have one already, you may request a trial license key [here](https://www.solo.io/products/gloo/#enterprise-trial).
    {{% notice info %}}
-   Each trial license key is typically valid for **30 days**. You can request a new key if your current key has expired. When the license key expires, you can request a new license key by contacting your Account Representative or filling out [this form](https://lp.solo.io/request-trial). You must provide the license key during the installation process. When you install Gloo Edge, a Kubernetes secret is created to store the license key. When the key is about to expire, see [Updating Enterprise Licenses]({{< versioned_link_path fromRoot="/operations/updating_license/" >}}).
+   You must provide the license key during the installation process. When you install Gloo Edge, a Kubernetes secret is created to store the license key. Note that each trial license key is typically valid for **30 days**. When the license key expires, you can request a new license key by contacting your Account Representative or filling out [this form](https://lp.solo.io/request-trial). For more information, see [Updating Enterprise Licenses]({{< versioned_link_path fromRoot="/operations/updating_license/" >}}).
    {{% /notice %}}
 3. Install or upgrade `glooctl` with the following instructions.
 
