@@ -239,7 +239,7 @@ gloo:
       floatingUserId: true
     certGenJob:
       floatingUserId: true
-  oberservability:
+  observability:
     deployment:
       floatingUserId: true
   gatewayProxies:
@@ -269,7 +269,7 @@ gateway:
     floatingUserId: true
   certGenJob:
     floatingUserId: true
-oberservability:
+observability:
   deployment:
     floatingUserId: true
 gatewayProxies:
