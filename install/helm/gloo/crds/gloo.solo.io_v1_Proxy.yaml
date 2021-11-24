@@ -13,6 +13,7 @@ spec:
     plural: proxies
     shortNames:
     - px
+    - gpx
     singular: proxy
   scope: Namespaced
   versions:

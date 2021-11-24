@@ -87,9 +87,10 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHosts(params plugins.Pa
 	var envoyVirtualHosts []*envoy_config_route_v3.VirtualHost
 	for i, virtualHost := range virtualHosts {
 		vhostParams := plugins.VirtualHostParams{
-			Params:   params,
-			Listener: h.parentListener,
-			Proxy:    h.proxy,
+			Params:       params,
+			Listener:     h.parentListener,
+			HttpListener: h.listener,
+			Proxy:        h.proxy,
 		}
 		vhostReport := h.report.GetVirtualHostReports()[i]
 		envoyVirtualHosts = append(envoyVirtualHosts, h.computeVirtualHost(vhostParams, virtualHost, vhostReport))
