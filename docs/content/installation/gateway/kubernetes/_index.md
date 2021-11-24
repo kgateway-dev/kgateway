@@ -13,16 +13,23 @@ Minimum required Kubernetes is 1.11.x. For older versions see our [release suppo
 
 ---
 
-## Installing the Gloo Edge on Kubernetes
+## Before you begin
 
-These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your
-Kubernetes cluster [here]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}).
-
-{{% notice note %}}
-For certain providers with more strict multi-tenant security, like OpenShift, be sure to follow the cluster set up accordingly. 
-{{% /notice %}}
+1. Make sure that you prepared your Kubernetes cluster according to the [instructions for platform configuration]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}).
+   {{% notice note %}}
+   Pay attention to provider-specific information in the setup guide. For example, [OpenShift]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#openshift" >}}) requires stricter multi-tenant support, so the setup guide includes an example Helm chart `values.yaml` file that you must supply while installing Gloo Edge Enterprise.
+   {{% /notice %}}
+2. Get your Gloo Edge Enterprise license key. If you don't have one already, you may request a trial license key [here](https://www.solo.io/products/gloo/#enterprise-trial).
+   {{% notice info %}}
+   You must provide the license key during the installation process. When you install Gloo Edge, a Kubernetes secret is created to store the license key. Note that each trial license key is typically valid for **30 days**. When the license key expires, you can request a new license key by contacting your Account Representative or filling out [this form](https://lp.solo.io/request-trial). For more information, see [Updating Enterprise Licenses]({{< versioned_link_path fromRoot="/operations/updating_license/" >}}).
+   {{% /notice %}}
+3. Install or upgrade `glooctl` with the following instructions.
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
+
+## Installing Gloo Edge on Kubernetes
+
+Review the following steps to install Gloo Edge with `glooctl` or with Helm.
 
 ### Installing on Kubernetes with `glooctl`
 
@@ -110,9 +117,9 @@ Once you've installed Gloo Edge, please be sure [to verify your installation]({{
 
 #### Customizing your installation with Helm
 
-You can customize the Gloo Edge installation by providing your own value file.
+You can customize the Gloo Edge installation by providing your own Helm chart values file.
 
-For example, you can create a file named `value-overrides.yaml` with the following content:
+For example, you can create a file named `value-overrides.yaml` with the following content.
 
 ```yaml
 global:
@@ -124,7 +131,7 @@ settings:
   writeNamespace: my-custom-namespace
 ```
 
-and use it to override default values in the Gloo Edge Helm chart:
+Then, refer to the file during installation to override default values in the Gloo Edge Helm chart.
 
 ```shell
 helm install gloo-custom-0-7-6 gloo/gloo --namespace my-namespace -f value-overrides.yaml
@@ -186,30 +193,27 @@ NOT opening the listener ports when there are no listeners (routes) is by design
 
 ## Uninstall {#uninstall}
 
-It's so hard to say goodbye. Actually, in this case it's not. 
-
-### Uninstall with `glooctl`
-
-To uninstall Gloo Edge simply run the following.
-
-```shell
-glooctl uninstall
-```
-<video controls loop>
-  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/glooctl-uninstall.mp4" type="video/mp4">
-</video>
-
-If you installed Gloo Edge to a different namespace, you will have to specify that namespace using the `-n` option:
+To uninstall Gloo Edge, you can use the `glooctl` CLI. If you installed Gloo Edge to a different namespace, include the `-n` option.
 
 ```shell
 glooctl uninstall -n my-namespace
 ```
 
-The gloo-system namespace and Custom Resource Definitions created by the `glooctl install` command will not be removed. Those can also be deleted by running the following commands. Proceed with caution and only remove the CRDs if there are no more instances of Gloo Edge in the cluster.
+By default, the `gloo-system` namespace and Custom Resource Definitions created by the `glooctl install` command are not removed. To remove the namespace and CRDs, include the `--all` option. 
+
+{{% notice warning %}}
+Make sure that your cluster has no other instances of Gloo Edge running, such as by running `kubectl get pods --all-namespaces`. If you remove the CRDs while Gloo Edge is still installed, you will experience errors.
+{{% /notice %}}
 
 ```shell
 glooctl uninstall --all
 ```
+
+### Uninstall with `glooctl` video
+
+<video controls loop>
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/glooctl-uninstall.mp4" type="video/mp4">
+</video>
 
 ---
 

@@ -1,4 +1,4 @@
-### Install command line tool (CLI)
+### Install the Gloo Edge command line tool (CLI)
 
 The `glooctl` command line provides useful functions to install, configure, and debug Gloo Edge, though it is not required to use Gloo Edge.
 
@@ -35,7 +35,7 @@ Client: {"version":"1.2.3"}
 Server: version undefined, could not find any version of gloo running
 ```
 
-#### Update glooctl CLI version
+### Update glooctl CLI version
 
 You should always try to use the same minor `glooctl` version as the version of Gloo Edge installed in your cluster. For example, if you're using Gloo Edge {{< readfile file="static/content/gee_version_latest.md" markdown="true">}}, you should use a {{< readfile file="static/content/gee_version_latest.md" markdown="true">}} release of `glooctl`.
 
