@@ -20,7 +20,7 @@ Review how to install Gloo Edge Enterprise.
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 
-## Installing Gloo Edge Enterprise on Kubernetes
+## Installing Gloo Edge Enterprise on Kubernetes {#install-steps}
 
 Review the following steps to install Gloo Edge Enterprise with `glooctl` or with Helm.
 
